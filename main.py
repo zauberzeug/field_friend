@@ -22,4 +22,6 @@ automator = rosys.automation.Automator(robot, steerer)
 async def index():
     interface.navigation_bar(robot)
 
+    with ui.column().classes('w-full no-wrap items-stretch q-px-md'):
+        interface.operation(steerer, automator, odometer)
 ui.run()
