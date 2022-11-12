@@ -15,7 +15,9 @@ class Robot(rosys.hardware.Wheels):
 
 class RobotHardware(rosys.hardware.WheelsHardware, Robot):
 
-    def __init__(self, robot_brain: rosys.hardware.RobotBrain) -> None:
+    def __init__(self) -> None:
+        communication = rosys.hardware.SerialCommunication()
+        robot_brain = rosys.hardware.RobotBrain(communication)
         super().__init__(robot_brain)
         self.robot_brain = robot_brain
         self.last_battery_request: float = 0

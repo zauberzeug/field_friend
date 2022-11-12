@@ -9,8 +9,8 @@ class Robot(zauberzeug.Robot):
 
 class RobotHardware(zauberzeug.RobotHardware, Robot):
 
-    def __init__(self, robot_brain: rosys.hardware.RobotBrain) -> None:
-        super().__init__(robot_brain)
+    def __init__(self) -> None:
+        super().__init__()
 
 
 class RobotSimulation(zauberzeug.RobotSimulation, Robot):

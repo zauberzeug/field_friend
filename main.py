@@ -5,12 +5,9 @@ from nicegui import ui
 import hardware
 import interface
 
-is_real = rosys.hardware.SerialCommunication.is_possible()
-if is_real:
-    communication = rosys.hardware.SerialCommunication()
-    robot_brain = hardware.RobotBrain(communication)
-    robot = hardware.RobotHardware(robot_brain)
-else:
+try:
+    robot = hardware.RobotHardware()
+except:
     robot = hardware.RobotSimulation()
 steerer = rosys.driving.Steerer(robot, speed_scaling=0.5)
 
