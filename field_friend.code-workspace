@@ -1,0 +1,75 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.minimap.enabled": false,
+    "isort.args": ["--line-length", "120"],
+    "prettier.printWidth": 120,
+    "python.formatting.provider": "autopep8",
+    "python.formatting.autopep8Args": ["--max-line-length=120", "--experimental"],
+    "python.testing.pytestArgs": ["."],
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.python",
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+      }
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.vscode-pylance",
+      "ms-python.python",
+      "himanoa.python-autopep8",
+      "esbenp.prettier-vscode",
+      "littlefoxteam.vscode-python-test-adapter",
+      "eamodio.gitlens",
+      "mhutchie.git-graph",
+      "ms-python.isort"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "main.py",
+        "type": "python",
+        "request": "launch",
+        "program": "main.py",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "current file",
+        "type": "python",
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Docker",
+        "type": "python",
+        "request": "attach",
+
+        "connect": {
+          "port": 5678
+        }
+      },
+      {
+        "name": "Python: Current File",
+        "type": "python",
+        "request": "launch",
+        "program": "${file}",
+        "purpose": ["debug-test"],
+        "console": "integratedTerminal",
+        "justMyCode": false,
+        "version": "6.2"
+      }
+    ]
+  }
+}
