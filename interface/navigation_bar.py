@@ -7,7 +7,7 @@ import hardware
 
 def navigation_bar(robot: hardware.Robot):
     with ui.header().props('elevated').classes('q-pa-xs q-pt-sm', remove='q-pa-md items-start gap-4'):
-        ui.label('Zauberzeug Field Friend').classes('text-white text-weight-bold col-5 q-pl-md mt-1')
+        ui.label('Zauberzeug Field Friend').classes('text-white uppercase text-weight-bold col-5 q-pl-md mt-1')
         with ui.row().classes('col-7 justify-end q-pr-md items-bottom'):
             with ui.row().bind_visibility_from(robot, 'emergency_stop'):
                 ui.icon('report').classes('text-white')
