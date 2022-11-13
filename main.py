@@ -39,7 +39,7 @@ async def index():
             else:
                 rosys.simulation_ui()
 
-if not robot.is_real:
+if robot.is_simulation:
     rosys.on_startup(lambda: hardware.simulation.create_weedcam(usb_camera_provider))
 
 ui.run(title='Field Friend', port=80 if robot.is_real else 8080)

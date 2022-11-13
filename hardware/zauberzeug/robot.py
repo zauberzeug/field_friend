@@ -16,6 +16,10 @@ class Robot(rosys.hardware.Wheels):
     def is_real(self) -> bool:
         return isinstance(self, RobotHardware)
 
+    @property
+    def is_simulation(self) -> bool:
+        return isinstance(self, RobotSimulation)
+
 
 class RobotHardware(rosys.hardware.WheelsHardware, Robot):
 
