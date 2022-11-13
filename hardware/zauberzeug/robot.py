@@ -35,7 +35,6 @@ class RobotHardware(rosys.hardware.WheelsHardware, Robot):
     async def step(self) -> None:
         await super().step()
         for time, line in await self.robot_brain.read_lines():
-
             if line.startswith('bms'):
                 msg = BmsMessage([int(w, 16) for w in line.split()[1:]])
                 msg.check()
@@ -60,6 +59,9 @@ class RobotHardware(rosys.hardware.WheelsHardware, Robot):
         if rosys.time() > self.last_battery_request + battery_interval:
             await self.robot_brain.send('bms.send(0xdd, 0xa5, 0x03, 0x00, 0xff, 0xfd, 0x77)')
             self.last_battery_request = rosys.time()
+
+    async def stop(self) -> None:
+        await self.robot_brain.send('stop()')
 
 
 class RobotSimulation(rosys.hardware.WheelsSimulation, ):
