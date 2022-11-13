@@ -26,4 +26,5 @@ async def index():
     with ui.column().classes('w-full no-wrap items-stretch q-px-md'):
         with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
             interface.operation(steerer, automator, odometer)
-ui.run()
+
+ui.run(port=80 if robot.is_real else 8080)

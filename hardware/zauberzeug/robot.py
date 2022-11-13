@@ -12,6 +12,10 @@ class Robot(rosys.hardware.Wheels):
         self.emergency_stop: bool = False
         self.battery: Battery = Battery()
 
+    @property
+    def is_real(self) -> bool:
+        return isinstance(self, RobotHardware)
+
 
 class RobotHardware(rosys.hardware.WheelsHardware, Robot):
 

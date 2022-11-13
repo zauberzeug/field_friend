@@ -12,7 +12,7 @@ def navigation_bar(robot: hardware.Robot):
             with ui.row().bind_visibility_from(robot, 'emergency_stop'):
                 ui.icon('report').classes('text-white')
                 ui.label('emergency halt is pressed').classes('text-white qmt-3')
-            if isinstance(robot, hardware.RobotHardware):
+            if robot.is_real:
                 ui.icon('hardware').classes('text-white')
                 ui.label('Hardware').classes('text-white mt-1')
             else:
