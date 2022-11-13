@@ -32,7 +32,6 @@ then
     exit
 fi
 
-set -x
 cmd=$1
 cmd_args=${@:2}
 case $cmd in
