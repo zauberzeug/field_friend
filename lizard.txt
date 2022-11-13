@@ -1,0 +1,38 @@
+can = Can(32, 33, 1000000)
+
+l = ODriveMotor(can, 0x000)
+r = ODriveMotor(can, 0x100)
+l.m_per_tick = 0.05577
+r.m_per_tick = 0.05577
+r.reversed = true
+
+# Wheels
+wheels = ODriveWheels(l, r)
+wheels.width = 0.47
+
+# E-Stops
+estop1 = Input(34)
+estop2 = Input(35)
+
+
+# Expander
+#serial = Serial(32, 33, 115200, 1)
+#expander = Expander(serial, 25, 14)
+
+# Battery Management System
+bms = Serial(26, 27, 9600, 2)
+bms.unmute()
+
+let stop do
+    wheels.off();
+end
+
+when estop1.level == 0 or estop2.level == 0 then stop(); end
+when core.last_message_age > 500 then stop(); end
+
+core.output("core.millis wheels.linear_speed:3 wheels.angular_speed:3 estop1.level estop2.level")
+
+rdyp = Output(15)
+en3 = Output(12)
+en3.on()
+rdyp.on()
