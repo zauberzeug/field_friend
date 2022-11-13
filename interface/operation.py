@@ -10,7 +10,7 @@ def operation(steerer: rosys.driving.Steerer, automator: rosys.automation.Automa
             rosys.driving.keyboard_control(steerer)
             rosys.driving.joystick(steerer, size=50, color='#6E93D6').classes('m-4')
             with ui.column().classes('mt-4'):
-                ui.markdown('steer the robot manually with the JOYSTICK on the left or <br>hold SHIFT and use the arrow keys on your keyboard')\
+                ui.markdown('steer the robot manually with the JOYSTICK on the left or <br>hold SHIFT and use the ARROW KEYS on your keyboard')\
                     .classes('col-grow')
                 with ui.row():
                     rosys.automation.automation_controls(automator)
