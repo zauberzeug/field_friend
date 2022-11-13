@@ -1,2 +1,2 @@
-from . import zauberzeug
+from . import simulation, zauberzeug
 from .robot import Robot, RobotHardware, RobotSimulation
