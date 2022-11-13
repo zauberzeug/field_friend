@@ -4,6 +4,10 @@ from nicegui import ui
 
 import hardware
 import interface
+import log
+
+log = log.configure()
+
 
 try:
     robot = hardware.RobotHardware()
