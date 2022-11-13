@@ -18,15 +18,24 @@ class CalibrationPoint:
 
         return CalibrationPoint(name=name, world_position=rosys.geometry.Point3d(x=x, y=y, z=z), image_position=None)
 
-    def svg(self) -> str:
+    def svg(self, max_x: float, max_y: float) -> str:
         x = self.image_position.x
         y = self.image_position.y
+        if x < 0:
+            x = 20
+        if y < 0:
+            y = 20
+        if x > max_x:
+            x = max_x - 20
+        if y > max_y:
+            y = max_y - 20
         color = 'red'
-        content = f"<line x1='{x}' y1='{y}' x2='{x - 14}' y2='{y}' stroke='{color}' stroke-width='3' />"
-        content += f"<line x1='{x}' y1='{y}' x2='{x + 14}' y2='{y}' stroke='{color}' stroke-width='3' />"
-        content += f"<line x1='{x}' y1='{y}' x2='{x}' y2='{y - 14}' stroke='{color}' stroke-width='3' />"
-        content += f"<line x1='{x}' y1='{y}' x2='{x}' y2='{y + 14}' stroke='{color}' stroke-width='3' />"
-        content += f"<text x='{x - 15}' y='{y + 15}' stroke='{color}' fill='{color}' font-size='20' direction='rtl'>{self.name}</text>"
+        content = f"<line x1='{x}' y1='{y}' x2='{x - 14}' y2='{y}' stroke='{color}' stroke-width='1' />"
+        content += f"<line x1='{x}' y1='{y}' x2='{x + 14}' y2='{y}' stroke='{color}' stroke-width='1' />"
+        content += f"<line x1='{x}' y1='{y}' x2='{x}' y2='{y - 14}' stroke='{color}' stroke-width='1' />"
+        content += f"<line x1='{x}' y1='{y}' x2='{x}' y2='{y + 14}' stroke='{color}' stroke-width='1' />"
+        if not any([p.image_position.distance(self.image_position) < 40 for p in calibration_pattern if p != self]):
+            content += f"<text x='{x - 15}' y='{y + 15}' stroke='{color}' fill='{color}' font-size='10' direction='rtl'>{self.name}</text>"
         return content
 
 
@@ -72,18 +81,18 @@ class calibration_dialog(ui.dialog):
         if camera.calibration:
             # TODO project calibration points to image
             pass
-        image = camera.latest_captured_image
-        if image is None:
+        self.image = camera.latest_captured_image
+        if self.image is None:
             return
         for point in calibration_pattern:
             if point.image_position is None:
-                point.image_position = rosys.geometry.Point(x=image.size.width/2, y=image.size.height/2)
+                point.image_position = rosys.geometry.Point(x=self.image.size.width/2, y=self.image.size.height/2)
         self.draw_points()
 
     def draw_points(self):
         svg = ''
         for point in calibration_pattern:
-            svg += point.svg()
+            svg += point.svg(max_x=self.image.size.width, max_y=self.image.size.height)
         self.calibration_image.svg_content = svg
 
     def on_mouse_move(self, e: MouseEventArguments) -> None:
