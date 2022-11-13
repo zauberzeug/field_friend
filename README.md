@@ -35,9 +35,9 @@ Contact [sales@zauberzeug.com](mailto:sales@zauberzeug.com) if you are intereste
 3. go to your local `field_friend` folder and start LiveSync: <br>
    `livesync <ssh-host-name-of-field-friend>`
 4. this will deploy your local code to the Field Friend
-5. as long as LiveSync is active, any code change you make is automatically pushed to the machine
-6. the new code will automatically trigger a reload
-7. to watch the log output of the remote machine login via ssh and run <br>
+5. as long as [LiveSync](https://github.com/zauberzeug/livesync) is active, all code change are automatically pushed to the machine
+6. the new code will automatically trigger a reload on the Field Friend
+7. to watch the log output of the remote machine: login via ssh and run <br>
    `tail -f ~/.rosys/debug.log`
 
 ### Update RoSys
