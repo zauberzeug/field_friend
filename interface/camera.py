@@ -28,6 +28,6 @@ class camera:
 
             ui.timer(0.1, update)
             with ui.row().classes('m-4 justify-end'):
-                ui.button('calibrate', on_click=lambda: self.calibration_dialog.calibrate(camera)) \
+                ui.button('calibrate', on_click=lambda: self.calibration_dialog.edit(camera)) \
                     .props('icon=straighten outline').tooltip('Calibrate camera')
-            ui.timer(2, lambda: self.calibration_dialog.calibrate(camera), once=True)
+            ui.timer(2, lambda: self.calibration_dialog.edit(camera), once=True)
