@@ -81,7 +81,7 @@ class calibration_dialog(ui.dialog):
             self.calibration_image = \
                 ui.interactive_image('', on_mouse=self.on_mouse_move, events=events, cross=False)
             self.calibration_image.style('width: 900px')
-            with ui.row().classes('m-4 justify-end'):
+            with ui.row().classes('m-4 justify-end items-baseline'):
                 self.focal_length_input = ui.number('Focal length')
                 ui.button('Apply', on_click=self.apply_calibration)
 
@@ -100,6 +100,8 @@ class calibration_dialog(ui.dialog):
             if point.image_position is None:
                 point.image_position = rosys.geometry.Point(x=self.image.size.width/2, y=self.image.size.height/2)
         self.draw_points()
+        if camera.focal_length is None:
+            camera.focal_length = 400
         self.focal_length_input.value = camera.focal_length
 
     def draw_points(self):
