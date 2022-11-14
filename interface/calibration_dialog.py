@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+import numpy as np
 import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments
@@ -85,17 +86,18 @@ class calibration_dialog(ui.dialog):
                 self.focal_length_input = ui.number('Focal length')
                 ui.button('Apply', on_click=self.apply_calibration)
 
-    def edit(self, camera: rosys.vision.Camera) -> None:
-        update = self.calibration_image.set_source(self.camera_provider.get_latest_image_url(camera))
-        rosys.task_logger.create_task(update)
-        self.open()
-        if camera.calibration:
-            # TODO project calibration points to image
-            pass
+    async def edit(self, camera: rosys.vision.Camera) -> bool:
         self.image = camera.latest_captured_image
         if self.image is None:
             return
         self.points = create_calibration_pattern()
+        if camera.calibration:
+            world_points = np.array([p.world_position.tuple for p in self.points])
+            image_points = camera.calibration.project_array_to_image(world_points=world_points)
+            for i, point in enumerate(self.points):
+                point.image_position = rosys.geometry.Point(x=image_points[i][0], y=image_points[i][1])
+        update = self.calibration_image.set_source(self.camera_provider.get_latest_image_url(camera))
+        rosys.task_logger.create_task(update)
         for point in self.points:
             if point.image_position is None:
                 point.image_position = rosys.geometry.Point(x=self.image.size.width/2, y=self.image.size.height/2)
@@ -103,12 +105,14 @@ class calibration_dialog(ui.dialog):
         if camera.focal_length is None:
             camera.focal_length = 400
         self.focal_length_input.value = camera.focal_length
+        self.open()
+        return (await self) or False
 
-    def draw_points(self):
+    def draw_points(self) -> None:
         svg = ''
         for point in self.points:
             svg += point.svg_position(max_x=self.image.size.width, max_y=self.image.size.height)
-            if not any([p.image_position.distance(point.image_position) < 40 for p in self.points if p != point]):
+            if not any([p.image_position.distance(point.image_position) < 20 for p in self.points if p != point]):
                 svg += point.svg_text(max_x=self.image.size.width, max_y=self.image.size.height)
         self.calibration_image.svg_content = svg
 
@@ -125,7 +129,7 @@ class calibration_dialog(ui.dialog):
     def closest_point(self, x: float, y: float) -> CalibrationPoint:
         return sorted(self.points, key=lambda p: p.image_position.distance(rosys.geometry.Point(x=x, y=y)))[0]
 
-    def apply_calibration(self):
+    def apply_calibration(self) -> None:
         camera = self.camera_provider.cameras[self.image.camera_id]
         world_points = [p.world_position for p in self.points]
         image_points = [p.image_position for p in self.points]
@@ -138,4 +142,5 @@ class calibration_dialog(ui.dialog):
             ui.notify(str(err))
         else:
             ui.notify('Calibration applied')
-            self.close()
+            self.camera_provider.needs_backup = True
+            self.submit(True)

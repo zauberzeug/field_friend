@@ -4,10 +4,16 @@ from nicegui import ui
 import interface
 
 
-def operation(steerer: rosys.driving.Steerer, automator: rosys.automation.Automator, odometer: rosys.driving.Odometer) -> None:
+def operation(
+    steerer: rosys.driving.Steerer,
+    automator: rosys.automation.Automator,
+    odometer: rosys.driving.Odometer,
+    camera_provider: rosys.vision.CameraProvider,
+) -> None:
     with ui.card().tight():
         with ui.scene(640, 460) as scene:
             interface.robot(odometer)
+            rosys.vision.camera_objects(camera_provider, rosys.vision.CameraProjector(camera_provider))
             scene.move_camera(-0.5, -1, 1.3)
         with ui.row():
             rosys.driving.keyboard_control(steerer)

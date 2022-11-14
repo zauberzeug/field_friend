@@ -29,7 +29,7 @@ async def index():
     interface.navigation_bar(robot)
 
     with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
-        interface.operation(steerer, automator, odometer)
+        interface.operation(steerer, automator, odometer, usb_camera_provider)
         interface.camera(usb_camera_provider)
         with ui.card():
             if robot.is_real:
