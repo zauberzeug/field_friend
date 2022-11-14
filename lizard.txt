@@ -16,11 +16,11 @@ estop2 = Input(35)
 
 
 # Expander
-#serial = Serial(32, 33, 115200, 1)
-#expander = Expander(serial, 25, 14)
+serial = Serial(26, 27, 115200, 1)
+expander = Expander(serial, 25, 14)
 
 # Battery Management System
-bms = Serial(26, 27, 9600, 2)
+bms = expander.Serial(26, 27, 9600, 2)
 bms.unmute()
 
 let stop do
