@@ -10,14 +10,29 @@ r.reversed = true
 wheels = ODriveWheels(l, r)
 wheels.width = 0.47
 
-# E-Stops
-estop1 = Input(34)
-estop2 = Input(35)
-
-
 # Expander
 serial = Serial(26, 27, 115200, 1)
 expander = Expander(serial, 25, 14)
+
+# Y-Axis
+yaxis = expander.StepperMotor(19, 18)
+y_end_l = Input(36)
+y_end_r = Input(13)
+
+bool y_is_referencing = false
+when !y_is_referencing and y_end_l.level == 0 then yaxis.stop(); end
+when y_is_referencing and y_end_l.level == 1 then yaxis.stop(); end
+when y_end_r.level == 0 then yaxis.stop(); end
+
+
+# Z-Axis
+z_end_t = expander.Input(13)
+z_end_b = expander.Input(15)
+
+
+# E-Stops
+estop1 = Input(34)
+estop2 = Input(35)
 
 # Battery Management System
 bms = expander.Serial(26, 27, 9600, 2)
@@ -30,7 +45,7 @@ end
 when estop1.level == 0 or estop2.level == 0 then stop(); end
 when core.last_message_age > 500 then stop(); end
 
-core.output("core.millis wheels.linear_speed:3 wheels.angular_speed:3 estop1.level estop2.level")
+core.output("core.millis wheels.linear_speed:3 wheels.angular_speed:3 estop1.level estop2.level y_end_l.level y_end_r.level yaxis.idle z_end_t.level z_end_b.level")
 
 rdyp = Output(15)
 en3 = Output(12)
