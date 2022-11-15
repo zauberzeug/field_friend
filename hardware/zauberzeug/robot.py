@@ -1,8 +1,8 @@
-import numpy as np
+""" import numpy as np
 import rosys
 
-from .battery import Battery
-from .bms import BmsMessage
+from ..battery import Battery
+from ..bms import BmsMessage
 
 
 class Robot(rosys.hardware.Wheels):
@@ -74,3 +74,4 @@ class RobotSimulation(rosys.hardware.WheelsSimulation, ):
         super().__init__()
 
         # TODO simulate battery and emergency stop
+ """
