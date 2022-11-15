@@ -62,11 +62,11 @@ def create_calibration_pattern():
         CalibrationPoint.create('H', 0.40, 0, 0),
         CalibrationPoint.create('I', 0.40, -0.10, 0),
 
-        CalibrationPoint.create('X', 0.45, 0, 0),
-        CalibrationPoint.create('X-Top', 0.45, 0, 0.051),
+        #CalibrationPoint.create('X', 0.45, 0, 0),
+        #CalibrationPoint.create('X-Top', 0.45, 0, 0.051),
 
-        CalibrationPoint.create('J', 0.50, 0.10, 0),
-        CalibrationPoint.create('K', 0.50, -0.10, 0),
+        #CalibrationPoint.create('J', 0.50, 0.10, 0),
+        # CalibrationPoint.create('K', 0.50, -0.10, 0),
     ]
 
 
