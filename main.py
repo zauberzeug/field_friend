@@ -17,7 +17,7 @@ if is_real:
 else:
     robot = hardware.RobotSimulation()
     usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
-steerer = rosys.driving.Steerer(robot, speed_scaling=0.5)
+steerer = rosys.driving.Steerer(robot, speed_scaling=0.2)
 odometer = rosys.driving.Odometer(robot)
 driver = rosys.driving.Driver(robot, odometer)
 driver.parameters.linear_speed_limit = 0.5
@@ -27,6 +27,7 @@ automator = rosys.automation.Automator(robot, steerer)
 
 async def start_homing() -> None:
     await robot.try_reference_yaxis()
+    await robot.try_reference_zaxis()
 
 
 @ui.page('/', shared=True)
@@ -42,12 +43,20 @@ async def index():
                 robot.robot_brain.developer_ui()
                 robot.robot_brain.communication.debug_ui()
                 with ui.row():
-                    with ui.menu() as menu:
+                    with ui.menu() as developer_menu:
                         ui.menu_item('perform homing', on_click=start_homing)
-                    ui.button(on_click=menu.open).props('dense fab-mini outline icon=more_vert')
+                        ui.menu_item('Disable end stops', on_click=robot.disable_end_stops)
+                        ui.menu_item('Enable end stops', on_click=robot.enable_end_stops)
+                    ui.button(on_click=developer_menu.open).props('dense fab-mini outline icon=more_vert')
+                    robot_status = ui.markdown()
                 rosys.on_startup(robot.robot_brain.lizard_firmware.ensure_lizard_version)
             else:
                 rosys.simulation_ui()
+
+    ui.timer(1, lambda: robot_status.set_content(
+        f' yaxis: A:{robot.yaxis_alarm} I:{robot.yaxis_idle} P:{robot.yaxis_position} H:{robot.yaxis_home_position} <br>'
+        f'zaxis: A:{robot.zaxis_alarm} I:{robot.zaxis_idle} P:{robot.zaxis_position} H:{robot.zaxis_home_position}'
+    ))
 
 if robot.is_simulation:
     rosys.on_startup(lambda: hardware.simulation.create_weedcam(usb_camera_provider))

@@ -4,7 +4,7 @@ l = ODriveMotor(can, 0x000)
 r = ODriveMotor(can, 0x100)
 l.m_per_tick = 0.05577
 r.m_per_tick = 0.05577
-r.reversed = true
+l.reversed = true
 
 # Wheels
 wheels = ODriveWheels(l, r)
@@ -16,25 +16,42 @@ expander = Expander(serial, 25, 14)
 
 # Y-Axis
 yaxis = expander.StepperMotor(19, 18)
+y_alarm = expander.Input(35)
 y_end_l = Input(36)
 y_end_r = Input(13)
 
 bool y_is_referencing = false
-when !y_is_referencing and y_end_l.level == 0 then yaxis.stop(); end
-when y_is_referencing and y_end_l.level == 1 then yaxis.stop(); end
-when y_end_r.level == 0 then yaxis.stop(); end
+bool yend_stops_active = true
+
+when y_is_referencing and y_end_l.change != 0 then yaxis.stop(); end
+
+when !y_is_referencing and yend_stops_active and y_end_l.level == 0 then yaxis.stop(); end
+when yend_stops_active and y_end_r.level == 0 then yaxis.stop(); end
 
 
 # Z-Axis
 zaxis = expander.StepperMotor(5, 4, 1, 1, 1, 1)
+z_alarm = expander.Input(33)
 z_end_t = expander.Input(13)
 z_end_b = expander.Input(15)
 
 bool z_is_referencing = false
-when !z_is_referencing and z_end_t.level == 0 then zaxis.stop(); end
-when z_is_referencing and z_end_t.level == 1 then zaxis.stop(); end
-when z_end_b.level == 0 then zaxis.stop(); end
+bool zend_stops_active = true
 
+when zend_stops_active and z_is_referencing and z_end_t.level == 0 then
+    zaxis.stop();
+    zend_stops_active = false;
+end
+
+when !zend_stops_active and z_is_referencing and z_end_t.level == 1 then 
+    zaxis.stop(); 
+    zend_stops_active = true;
+end
+
+# when z_is_referencing and z_end_t.change != 0 then zaxis.stop(); end
+
+when !z_is_referencing and zend_stops_active and z_end_t.level == 0 then zaxis.stop(); end
+when zend_stops_active and z_end_b.level == 0 then zaxis.stop(); end
 
 # E-Stops
 estop1 = Input(34)
@@ -46,12 +63,14 @@ bms.unmute()
 
 let stop do
     wheels.off();
+    yaxis.stop();
+    zaxis.stop();
 end
 
 when estop1.level == 0 or estop2.level == 0 then stop(); end
-when core.last_message_age > 500 then stop(); end
+# when core.last_message_age > 500 then stop(); end
 
-core.output("core.millis wheels.linear_speed:3 wheels.angular_speed:3 estop1.level estop2.level y_end_l.level y_end_r.level yaxis.idle z_end_t.level z_end_b.level zaxis.idle")
+core.output("core.millis wheels.linear_speed:3 wheels.angular_speed:3 estop1.level estop2.level y_end_l.level y_end_r.level yaxis.idle yaxis.position y_alarm.level z_end_t.level z_end_b.level zaxis.idle zaxis.position z_alarm.level")
 
 rdyp = Output(15)
 en3 = Output(12)
