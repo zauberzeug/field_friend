@@ -15,7 +15,7 @@ class camera:
         self.camera: rosys.vision.Camera = None
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
-        with ui.card().tight().classes('col gap-4').style('width: 600px') as self.card:
+        with ui.card().tight().classes('col gap-4').style('width:24em;height:22.4em') as self.card:
             if camera_provider.cameras.keys():
                 self.use_camera(list(camera_provider.cameras.values())[0])
             else:
