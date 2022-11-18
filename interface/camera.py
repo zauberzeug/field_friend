@@ -1,21 +1,30 @@
 import colorsys
+import logging
+from typing import Callable
 
 import numpy as np
 import rosys
 from nicegui import ui
-from nicegui.events import ValueChangeEventArguments
+from nicegui.events import MouseEventArguments, ValueChangeEventArguments
+
+import hardware
 
 from .calibration_dialog import calibration_dialog
 
 
 class camera:
 
-    def __init__(self, camera_provider: rosys.vision.CameraProvider) -> None:
+    def __init__(
+            self, camera_provider: rosys.vision.CameraProvider, automator: rosys.automation.Automator,
+            robot: hardware.robot.Robot) -> None:
+        self.log = logging.getLogger('field_friend.camera')
         self.camera_provider = camera_provider
         self.camera: rosys.vision.Camera = None
+        self.automator = automator
+        self.robot = robot
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
-        with ui.card().tight().classes('col gap-4').style('width:24em;height:22.4em') as self.card:
+        with ui.card().tight().classes('col gap-4').style('width:600px') as self.card:
             if camera_provider.cameras.keys():
                 self.use_camera(list(camera_provider.cameras.values())[0])
             else:
@@ -23,22 +32,38 @@ class camera:
                 ui.label('no camera available').classes('text-center')
                 camera_provider.CAMERA_ADDED.register(self.use_camera)
 
+    def on_mouse_move(self, e: MouseEventArguments):
+        if e.type == 'mousemove':
+            point2d = rosys.geometry.Point(x=e.image_x, y=e.image_y)
+            point3d = self.camera.calibration.project_from_image(point2d)
+            self.debug_position.set_text(f'{point2d} -> {point3d}')
+        if e.type == 'mouseup':
+            point2d = rosys.geometry.Point(x=e.image_x, y=e.image_y)
+            point3d = self.camera.calibration.project_from_image(point2d)
+            if point3d is not None:
+                self.automator.start(self.robot.catch_coin(point3d.y))
+        if e.type == 'mouseout':
+            self.debug_position.set_text('')
+
     def use_camera(self, camera: rosys.vision.Camera) -> None:
         self.camera = camera
         self.card.clear()
+        events = ['mousemove', 'mouseout', 'mouseup']
         with self.card:
-            self.image_view = ui.interactive_image(self.camera_provider.get_latest_image_url(camera), cross=False) \
-                .classes('w-full')
+            self.image_view = ui.interactive_image(self.camera_provider.get_latest_image_url(
+                camera), cross=True, on_mouse=self.on_mouse_move, events=events).classes('w-full')
 
             async def update():
                 await self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))
 
-            ui.timer(0.1, update)
+            ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
                 self.show_mapping = ui.checkbox('Show Mapping', on_change=self.show_mapping)\
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
                     .props('icon=straighten outline').tooltip('Calibrate camera')
+            with ui.row():
+                self.debug_position = ui.label()
             #ui.timer(2, lambda: self.calibrate, once=True)
 
     async def calibrate(self) -> None:

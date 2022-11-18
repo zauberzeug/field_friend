@@ -32,7 +32,7 @@ async def index():
 
     with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
         interface.operation(steerer, automator, odometer, usb_camera_provider)
-        interface.camera(usb_camera_provider)
+        interface.camera(usb_camera_provider, automator, robot)
     interface.development(robot, automator)
 
 if robot.is_simulation:
