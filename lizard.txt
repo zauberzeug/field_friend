@@ -23,11 +23,18 @@ y_end_r = Input(13)
 bool y_is_referencing = false
 bool yend_stops_active = true
 
-when y_is_referencing and y_end_l.change != 0 then yaxis.stop(); end
+when yend_stops_active and y_is_referencing and y_end_l.level == 0then
+    yaxis.stop();
+    yend_stops_active = false
+end
+
+when !yend_stops_active and y_is_referencing and y_end_l.level == 1 then
+    yaxis.stop();
+    yend_stops_active = true
+end
 
 when !y_is_referencing and yend_stops_active and y_end_l.level == 0 then yaxis.stop(); end
 when yend_stops_active and y_end_r.level == 0 then yaxis.stop(); end
-
 
 # Z-Axis
 zaxis = expander.StepperMotor(5, 4, 1, 1, 1, 1)
@@ -47,8 +54,6 @@ when !zend_stops_active and z_is_referencing and z_end_t.level == 1 then
     zaxis.stop(); 
     zend_stops_active = true;
 end
-
-# when z_is_referencing and z_end_t.change != 0 then zaxis.stop(); end
 
 when !z_is_referencing and zend_stops_active and z_end_t.level == 0 then zaxis.stop(); end
 when zend_stops_active and z_end_b.level == 0 then zaxis.stop(); end
