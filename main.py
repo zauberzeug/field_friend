@@ -14,9 +14,11 @@ if is_real:
     robot_brain = rosys.hardware.RobotBrain(communication)
     robot = hardware.RobotHardware(robot_brain)
     usb_camera_provider = rosys.vision.UsbCameraProviderHardware()
+    detector = rosys.vision.DetectorHardware(port=8004)
 else:
     robot = hardware.RobotSimulation()
     usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
+    detector = rosys.vision.DetectorSimulation(usb_camera_provider)
 steerer = rosys.driving.Steerer(robot, speed_scaling=0.2)
 odometer = rosys.driving.Odometer(robot)
 driver = rosys.driving.Driver(robot, odometer)
@@ -32,7 +34,7 @@ async def index():
 
     with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
         interface.operation(steerer, automator, odometer, usb_camera_provider)
-        interface.camera(usb_camera_provider, automator, robot)
+        interface.camera(usb_camera_provider, automator, robot, detector)
     interface.development(robot, automator)
 
 if robot.is_simulation:

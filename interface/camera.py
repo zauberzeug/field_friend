@@ -16,12 +16,16 @@ class camera:
 
     def __init__(
             self, camera_provider: rosys.vision.CameraProvider, automator: rosys.automation.Automator,
-            robot: hardware.robot.Robot) -> None:
+            robot: hardware.robot.Robot,
+            detector: rosys.vision.Detector,
+    ) -> None:
         self.log = logging.getLogger('field_friend.camera')
         self.camera_provider = camera_provider
         self.camera: rosys.vision.Camera = None
         self.automator = automator
         self.robot = robot
+        self.capture_images = \
+            ui.timer(1, lambda: rosys.create_task(detector.upload(self.camera.latest_captured_image)), active=False)
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
         with ui.card().tight().classes('col gap-4').style('width:600px') as self.card:
@@ -62,6 +66,8 @@ class camera:
 
             ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
+                ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active')\
+                    .tooltip('Record new images for the Learning Loop')
                 self.show_mapping = ui.checkbox('Show Mapping', on_change=self.show_mapping)\
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
