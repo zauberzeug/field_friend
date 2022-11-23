@@ -20,6 +20,7 @@ else:
     robot = hardware.RobotSimulation()
     usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
     detector = rosys.vision.DetectorSimulation(usb_camera_provider)
+camera_selector = hardware.CameraSelector(usb_camera_provider)
 plant_provider = automations.PlantProvider()
 steerer = rosys.driving.Steerer(robot, speed_scaling=0.2)
 odometer = rosys.driving.Odometer(robot)
@@ -27,7 +28,7 @@ driver = rosys.driving.Driver(robot, odometer)
 driver.parameters.linear_speed_limit = 0.1
 driver.parameters.angular_speed_limit = 0.1
 automator = rosys.automation.Automator(robot, steerer)
-weeding = automations.Weeding(robot, driver, detector, usb_camera_provider, plant_provider)
+weeding = automations.Weeding(robot, driver, detector, camera_selector, plant_provider)
 automator.default_automation = weeding.start
 
 
@@ -37,8 +38,8 @@ async def index():
     interface.navigation_bar(robot)
 
     with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
-        interface.operation(steerer, automator, odometer, usb_camera_provider)
-        interface.camera(usb_camera_provider, automator, robot, detector, weeding)
+        interface.operation(robot, steerer, automator, odometer, usb_camera_provider)
+        interface.camera(camera_selector, usb_camera_provider, automator, robot, detector, weeding)
     interface.development(robot, automator)
 
 if robot.is_simulation:
