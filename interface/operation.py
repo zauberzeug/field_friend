@@ -12,7 +12,7 @@ def operation(
 ) -> None:
     with ui.card().tight():
         with ui.scene(640, 460) as scene:
-            interface.robot(odometer)
+            interface.robot_object(odometer, camera_provider)
             rosys.vision.camera_objects(camera_provider, rosys.vision.CameraProjector(camera_provider))
             scene.move_camera(-0.5, -1, 1.3)
         with ui.row():
