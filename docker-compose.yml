@@ -28,3 +28,33 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+
+  detector:
+    image: "zauberzeug/yolov5-detector:32.6.1"
+    restart: always
+    ports:
+      - "8004:80"
+    hostname: ${ROBOT_ID}
+    environment:
+      - HOST=learning-loop.ai
+      - ORGANIZATION=zauberzeug
+      - PROJECT=coins
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ~/data:/data
+    # healthcheck:
+    #   test:
+    #     [
+    #       "CMD",
+    #       "curl",
+    #       "-f",
+    #       "-X POST",
+    #       "-F 'file=@/usr/local/lib/python3.6/dist-packages/learning_loop_node/detector/tests/test.jpg'",
+    #       "-H 'mac: FF:FF:FF:FF:FF'",
+    #       "localhost/detect",
+    #       "|| exit 1",
+    #     ]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 3
+    #   start_period: 500s
