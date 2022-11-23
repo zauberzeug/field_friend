@@ -10,41 +10,43 @@ from .plant_detection import DetectorError, PlantDetection
 
 class Weeding:
     def __init__(self, robot: hardware.Robot, driver: rosys.driving.Driver, detector: rosys.vision.Detector,
-                 camera_provider: rosys.vision.CameraProvider, plant_provider: PlantProvider) -> None:
+                 camera_selector: hardware.CameraSelector, plant_provider: PlantProvider) -> None:
         self.log = logging.getLogger('field_friend.weeding')
         self.robot = robot
         self.driver = driver
         self.detector = detector
         self.plant_provider = plant_provider
-        self.camera_privder = camera_provider
-        self.plant_detection = PlantDetection(self.detector, self.camera_privder, self.plant_provider, self.robot)
+        self.camera_selector = camera_selector
+        self.plant_detection = PlantDetection(self.detector, self.plant_provider, self.robot)
 
         self.weed_load: int = 0
         self.max_weeds: int = 5
-        self.max_distance: float = 0.1
+        self.max_distance: float = 0.05
 
     async def start(self) -> None:
         if self.robot.is_real:
             if not await self.start_homing():
                 return
-        if self.weed_load >= self.max_weeds:
-            rosys.notify('stopping because of max weed load')
-            return
         while True:
             try:
+                if self.weed_load >= self.max_weeds:
+                    rosys.notify('stopping because of max weed load')
+                    return
                 self.plant_provider.clear_weeds()
                 self.plant_provider.clear_beets()
                 target_weed = await self.get_target_weed()
                 if not target_weed:
                     distance = self.max_distance + self.robot.AXIS_OFFSET_X
-                    await self.drive_forward_to(distance)
                     self.log.info(f'No weed in sight, will advance {self.max_distance} cm')
+                    await self.drive_forward_to(distance)
+                    await rosys.sleep(1)
                     continue
                 self.log.info(
                     f'{target_weed.type}: {target_weed.id} in sight, will advance to {target_weed.position}'
                 )
                 await self.drive_forward_to(target_weed.position.x)
                 await self.catch_weed(target_weed.position.y)
+                await rosys.sleep(1)
             except (DetectorError):
                 self.log.exception('aborting sequence because AI was not reachable')
                 return
@@ -58,12 +60,11 @@ class Weeding:
         await self.robot.stop()
 
     async def get_target_weed(self) -> Plant:
-        await self.plant_detection.check_cam()
+        await self.plant_detection.check_cam(self.camera_selector.camera)
         for weed in sorted(self.plant_provider.weeds, key=lambda w: w.position.x):
             if weed.position.x >= self.robot.AXIS_OFFSET_X and self.robot.MIN_Y <= weed.position.y <= self.robot.MAX_Y:
                 return weed
-            self.log.info(f'WEED FALSE WITH {weed.position.x} and {weed.position.y}')
-        self.log.info('no weed is in work range')
+        self.log.info('no weed in work range')
         return None
 
     async def start_homing(self) -> bool:
@@ -94,6 +95,7 @@ class Weeding:
         await self.robot.move_zaxis_to(self.robot.MAX_Z, speed)
         await self.robot.move_yaxis_to(self.robot.MAX_Y, speed)
         self.log.info(f'weed at {y} got catched')
+        self.weed_load += 1
         await self.robot.stop()
 
     async def punch(self, x: float, y: float) -> None:
