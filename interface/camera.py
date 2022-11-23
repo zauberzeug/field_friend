@@ -16,12 +16,11 @@ from .calibration_dialog import calibration_dialog
 class camera:
 
     def __init__(
-            self, camera_provider: rosys.vision.CameraProvider, automator: rosys.automation.Automator,
-            robot: hardware.robot.Robot,
-            detector: rosys.vision.Detector,
-            weeding: automations.Weeding
-    ) -> None:
+            self, camera_selector: hardware.CameraSelector, camera_provider: rosys.vision.CameraProvider,
+            automator: rosys.automation.Automator, robot: hardware.robot.Robot, detector: rosys.vision.Detector,
+            weeding: automations.Weeding) -> None:
         self.log = logging.getLogger('field_friend.camera')
+        self.camera_selector = camera_selector
         self.camera_provider = camera_provider
         self.camera: rosys.vision.Camera = None
         self.automator = automator
@@ -31,14 +30,11 @@ class camera:
             self.detector.upload(self.camera.latest_captured_image)), active=False)
         self.weeding = weeding
         self.image_view: ui.interactive_image = None
-        self.calibration_dialog = calibration_dialog(camera_provider)
+        self.calibration_dialog = calibration_dialog(camera_selector)
         with ui.card().tight().classes('col gap-4').style('width:600px') as self.card:
-            if camera_provider.cameras.keys():
-                self.use_camera(list(camera_provider.cameras.values())[0])
-            else:
-                ui.image('assets/field_friend.webp').classes('w-full')
-                ui.label('no camera available').classes('text-center')
-                camera_provider.CAMERA_ADDED.register(self.use_camera)
+            ui.image('assets/field_friend.webp').classes('w-full')
+            ui.label('no camera available').classes('text-center')
+            self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
 
     def on_mouse_move(self, e: MouseEventArguments):
         if e.type == 'mousemove':
