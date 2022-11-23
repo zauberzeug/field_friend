@@ -77,7 +77,7 @@ let stop do
 end
 
 when estop1.level == 0 or estop2.level == 0 then stop(); end
-# when core.last_message_age > 500 then stop(); end
+when core.last_message_age > 1000 then wheels.off(); end
 
 core.output("core.millis wheels.linear_speed:3 wheels.angular_speed:3 estop1.level estop2.level y_end_l.level y_end_r.level yaxis.idle yaxis.position y_alarm.level z_end_t.level z_end_b.level zaxis.idle zaxis.position z_alarm.level")
 
