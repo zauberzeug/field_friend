@@ -1,3 +1,3 @@
-from .coin import Coin, CoinProvider
-from .coin_collecting import CoinCollecting
-from .coin_detection import CoinDetection
+from .plant import Plant, PlantProvider
+from .plant_detection import PlantDetection
+from .weeding import Weeding
