@@ -1,10 +1,12 @@
 import rosys
 from nicegui import ui
 
+import hardware
 import interface
 
 
 def operation(
+    robot: hardware.Robot,
     steerer: rosys.driving.Steerer,
     automator: rosys.automation.Automator,
     odometer: rosys.driving.Odometer,
@@ -22,5 +24,9 @@ def operation(
                 ui.markdown('steer the robot manually with the JOYSTICK on the left or <br>hold SHIFT and use the ARROW KEYS on your keyboard')\
                     .classes('col-grow')
                 with ui.row():
+                    def stop():
+                        if automator.is_running:
+                            automator.stop(because='emergency stop triggered')
                     rosys.automation.automation_controls(automator)
+                    robot.ESTOP_TRIGGERED.register(stop)
                 ui.label('press PLAY to start weeding')
