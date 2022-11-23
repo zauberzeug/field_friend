@@ -2,6 +2,7 @@
 import rosys
 from nicegui import ui
 
+import automations
 import hardware
 import interface
 import log
@@ -19,12 +20,15 @@ else:
     robot = hardware.RobotSimulation()
     usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
     detector = rosys.vision.DetectorSimulation(usb_camera_provider)
+plant_provider = automations.PlantProvider()
 steerer = rosys.driving.Steerer(robot, speed_scaling=0.2)
 odometer = rosys.driving.Odometer(robot)
 driver = rosys.driving.Driver(robot, odometer)
-driver.parameters.linear_speed_limit = 0.5
-driver.parameters.angular_speed_limit = 0.5
+driver.parameters.linear_speed_limit = 0.1
+driver.parameters.angular_speed_limit = 0.1
 automator = rosys.automation.Automator(robot, steerer)
+weeding = automations.Weeding(robot, driver, detector, usb_camera_provider, plant_provider)
+automator.default_automation = weeding.start
 
 
 @ui.page('/', shared=True)
@@ -34,7 +38,7 @@ async def index():
 
     with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
         interface.operation(steerer, automator, odometer, usb_camera_provider)
-        interface.camera(usb_camera_provider, automator, robot, detector)
+        interface.camera(usb_camera_provider, automator, robot, detector, weeding)
     interface.development(robot, automator)
 
 if robot.is_simulation:
