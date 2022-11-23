@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
@@ -74,6 +75,7 @@ class calibration_dialog(ui.dialog):
 
     def __init__(self, camera_provider: rosys.vision.CameraProvider) -> None:
         super().__init__()
+        self.log = logging.getLogger('field_friend.calibration')
         self.camera_provider = camera_provider
         self.points: list[CalibrationPoint] = []
         self.active_point: rosys.geometry.Point = None
@@ -87,7 +89,9 @@ class calibration_dialog(ui.dialog):
                 ui.button('Apply', on_click=self.apply_calibration)
 
     async def edit(self, camera: rosys.vision.Camera) -> bool:
+        self.log.info(f'{camera.id}')
         self.image = camera.latest_captured_image
+        self.log.info(f'{self.image}')
         if self.image is None:
             return
         self.points = create_calibration_pattern()
