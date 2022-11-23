@@ -7,6 +7,7 @@ import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 
+import automations
 import hardware
 
 from .calibration_dialog import calibration_dialog
@@ -16,12 +17,19 @@ class camera:
 
     def __init__(
             self, camera_provider: rosys.vision.CameraProvider, automator: rosys.automation.Automator,
-            robot: hardware.robot.Robot) -> None:
+            robot: hardware.robot.Robot,
+            detector: rosys.vision.Detector,
+            weeding: automations.Weeding
+    ) -> None:
         self.log = logging.getLogger('field_friend.camera')
         self.camera_provider = camera_provider
         self.camera: rosys.vision.Camera = None
         self.automator = automator
         self.robot = robot
+        self.detector = detector
+        self.capture_images = ui.timer(1, lambda: rosys.create_task(
+            self.detector.upload(self.camera.latest_captured_image)), active=False)
+        self.weeding = weeding
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
         with ui.card().tight().classes('col gap-4').style('width:600px') as self.card:
@@ -41,7 +49,7 @@ class camera:
             point2d = rosys.geometry.Point(x=e.image_x, y=e.image_y)
             point3d = self.camera.calibration.project_from_image(point2d)
             if point3d is not None:
-                self.automator.start(self.robot.catch_coin(point3d.y))
+                self.automator.start(self.weeding.punch(point3d.x, point3d.y))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
@@ -56,8 +64,10 @@ class camera:
             async def update():
                 await self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))
 
-            ui.timer(1, update)
+            ui.timer(0.5, update)
             with ui.row().classes('m-4 justify-end items-center'):
+                ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active')\
+                    .tooltip('Record new images for the Learning Loop')
                 self.show_mapping = ui.checkbox('Show Mapping', on_change=self.show_mapping)\
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
