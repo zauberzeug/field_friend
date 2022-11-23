@@ -15,20 +15,20 @@ if is_real:
     robot_brain = rosys.hardware.RobotBrain(communication)
     robot = hardware.RobotHardware(robot_brain)
     usb_camera_provider = rosys.vision.UsbCameraProviderHardware()
-    detector = rosys.vision.DetectorHardware
+    detector = rosys.vision.DetectorHardware(port=8004)
 else:
     robot = hardware.RobotSimulation()
     usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
-    detector = rosys.vision.DetectorSimulation
-coin_provider = automations.CoinProvider()
+    detector = rosys.vision.DetectorSimulation()
+plant_provider = automations.PlantProvider()
 steerer = rosys.driving.Steerer(robot, speed_scaling=0.2)
 odometer = rosys.driving.Odometer(robot)
 driver = rosys.driving.Driver(robot, odometer)
-driver.parameters.linear_speed_limit = 0.2
-driver.parameters.angular_speed_limit = 0.2
+driver.parameters.linear_speed_limit = 0.1
+driver.parameters.angular_speed_limit = 0.1
 automator = rosys.automation.Automator(robot, steerer)
-coin_collecting = automations.CoinCollecting(robot, driver, detector, usb_camera_provider, coin_provider)
-automator.default_automation = coin_collecting.start()
+weeding = automations.Weeding(robot, driver, detector, usb_camera_provider, plant_provider)
+automator.default_automation = weeding.start
 
 
 @ui.page('/', shared=True)
@@ -38,7 +38,7 @@ async def index():
 
     with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
         interface.operation(steerer, automator, odometer, usb_camera_provider)
-        interface.camera(usb_camera_provider, automator, robot, coin_collecting)
+        interface.camera(usb_camera_provider, automator, robot, detector, weeding)
     interface.development(robot, automator)
 
 if robot.is_simulation:
