@@ -385,3 +385,24 @@ class RobotSimulation(Robot):
         await super().stop_zaxis()
 
     # TODO simulate battery and emergency stop
+
+    async def stop_yaxis(self) -> None:
+        await super().stop_yaxis()
+
+    async def stop_zaxis(self) -> None:
+        await super().stop_zaxis()
+
+    async def try_reference_yaxis(self) -> None:
+        await super().try_reference_yaxis()
+
+    async def try_reference_zaxis(self) -> None:
+        await super().try_reference_zaxis()
+
+    async def move_yaxis_to(self) -> None:
+        await super().move_yaxis_to()
+
+    async def move_zaxis_to(self) -> None:
+        await super().move_zaxis_to()
+
+    async def catch_coin(self) -> None:
+        await super().catch_coin()

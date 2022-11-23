@@ -58,8 +58,12 @@ class camera:
         self.card.clear()
         events = ['mousemove', 'mouseout', 'mouseup']
         with self.card:
-            self.image_view = ui.interactive_image(self.camera_provider.get_latest_image_url(
-                camera), cross=True, on_mouse=self.on_mouse_move, events=events).classes('w-full')
+            self.image_view = ui.interactive_image(
+                self.camera_provider.get_latest_image_url(camera),
+                cross=True,
+                on_mouse=self.on_mouse_move,
+                events=events
+            ).classes('w-full')
 
             async def update():
                 await self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))

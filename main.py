@@ -19,7 +19,7 @@ if is_real:
 else:
     robot = hardware.RobotSimulation()
     usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
-    detector = rosys.vision.DetectorSimulation()
+    detector = rosys.vision.DetectorSimulation(usb_camera_provider)
 plant_provider = automations.PlantProvider()
 steerer = rosys.driving.Steerer(robot, speed_scaling=0.2)
 odometer = rosys.driving.Odometer(robot)
