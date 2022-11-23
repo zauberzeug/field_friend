@@ -30,6 +30,9 @@ class Robot(abc.ABC):
         self.VELOCITY_MEASURED = Event()
         '''new velocity measurements are available for processing (argument: list of velocities)'''
 
+        self.ESTOP_TRIGGERED = Event()
+        '''estop was triggered'''
+
         self.log = logging.getLogger('field_friend.robot')
 
         self.emergency_stop: bool = False
@@ -168,7 +171,7 @@ class RobotHardware(Robot):
         while not self.yaxis_idle and not self.yaxis_alarm:
             await rosys.sleep(0.4)
         if self.yaxis_alarm:
-            self.log.info("alarm")
+            self.log.info("yaxis alarm")
             return False
         return True
 
@@ -179,32 +182,32 @@ class RobotHardware(Robot):
         try:
             await rosys.sleep(0.2)
             if self.yaxis_end_l or self.yaxis_end_r:
-                self.log.info('Yaxis is in end stops')
+                self.log.info('yaxis is in end stops')
                 return False
-            self.log.info('starting homing of Yaxis...')
-            self.log.info('driving FAST to left reference point')
+            self.log.info('starting homing of yaxis...')
+            self.log.info('yaxis driving FAST to left reference point')
             await self.robot_brain.send(
                 'y_is_referencing = true;'
                 f'yaxis.speed({self.HOMING_SPEED*2});'
             )
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
-            self.log.info('driving out of reference')
+            self.log.info('yaxis driving out of reference')
             await self.robot_brain.send(f'yaxis.speed(-{self.HOMING_SPEED*2});')
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
-            self.log.info('driving to left reference')
+            self.log.info('yaxis driving to left reference')
             await self.robot_brain.send(f'yaxis.speed({self.HOMING_SPEED});')
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
-            self.log.info('driving out of reference and save as HOME')
+            self.log.info('yaxis driving out of reference and save as HOME')
             await self.robot_brain.send(f'yaxis.speed(-{self.HOMING_SPEED});')
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
             await self.robot_brain.send('y_is_referencing = false;')
             await rosys.sleep(0.2)
             self.yaxis_home_position = self.yaxis_position
-            self.log.info('driving to offset 3mm')
+            self.log.info('yaxis driving to offset 3mm')
             self.yaxis_is_referenced = True
             self.log.info('yaxis referenced')
             await self.move_yaxis_to(self.MAX_Y, speed=self.HOMING_SPEED*3)
@@ -215,28 +218,28 @@ class RobotHardware(Robot):
     async def move_yaxis_to(self, y_world_position: float, speed: float = 80000) -> None:
         await super().move_yaxis_to()
         if not self.yaxis_is_referenced:
-            self.log.info('Yaxis ist not referenced')
+            self.log.info('yaxis ist not referenced')
             return
         if self.yaxis_end_l or self.yaxis_end_r:
-            self.log.info('Yaxis is in end stops')
+            self.log.info('yaxis is in end stops')
             return
         assert speed <= self.WORKING_SPEED
         assert self.MIN_Y <= y_world_position <= self.MAX_Y
         y_axis_position: float = y_world_position - self.AXIS_OFFSET_Y
-        self.log.info(f'driving to world: {y_world_position} yaxis: {y_axis_position}')
+        self.log.info(f'yaxis driving to world: {y_world_position} yaxis: {y_axis_position}')
         steps = self.linear_to_steps(y_axis_position)
         target_position = self.yaxis_home_position + steps
         await self.robot_brain.send(f'yaxis.position({target_position}, {speed}, 160000);')
         if not await self.check_if_idle_or_alarm_yaxis():
             return
-        self.log.info('reached target')
+        self.log.info('yaxis reached target')
 
     async def check_if_idle_or_alarm_zaxis(self) -> bool:
         await rosys.sleep(0.2)
         while not self.zaxis_idle and not self.zaxis_alarm:
             await rosys.sleep(0.5)
         if self.zaxis_alarm:
-            self.log.info("alarm")
+            self.log.info("zaxis alarm")
             return False
         return True
 
@@ -246,9 +249,9 @@ class RobotHardware(Robot):
         try:
             await rosys.sleep(0.2)
             if self.zaxis_end_t or self.zaxis_end_b:
-                self.log.info('Yaxis is in end stops')
+                self.log.info('zaxis is in end stops')
                 return False
-            self.log.info('starting homing of Zaxis...')
+            self.log.info('starting homing of zaxis...')
             self.log.info('driving FAST to left reference point')
             await self.robot_brain.send(
                 'z_is_referencing = true;'
@@ -256,22 +259,22 @@ class RobotHardware(Robot):
             )
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
-            self.log.info('driving out of reference')
+            self.log.info('zaxis driving out of reference')
             await self.robot_brain.send(f'zaxis.speed(-{self.HOMING_SPEED*3});')
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
-            self.log.info('driving to left reference')
+            self.log.info('zaxis driving to left reference')
             await self.robot_brain.send(f'zaxis.speed({self.HOMING_SPEED});')
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
-            self.log.info('driving out of reference and save as HOME')
+            self.log.info('zaxis driving out of reference and save as HOME')
             await self.robot_brain.send(f'zaxis.speed(-{self.HOMING_SPEED});')
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
             await self.robot_brain.send('z_is_referencing = false;')
             await rosys.sleep(0.2)
             self.zaxis_home_position = self.zaxis_position
-            self.log.info('driving to offset 1cm')
+            self.log.info('zaxis driving to offset 1cm')
             self.zaxis_is_referenced = True
             await self.move_zaxis_to(self.MAX_Z, speed=self.HOMING_SPEED*3)
             self.log.info('zaxis referenced')
@@ -282,20 +285,20 @@ class RobotHardware(Robot):
     async def move_zaxis_to(self, z_position: float, speed: float = 160000) -> None:
         await super().move_zaxis_to()
         if not self.zaxis_is_referenced:
-            self.log.info('Zaxis ist not referenced')
+            self.log.info('zaxis ist not referenced')
             return
         if self.zaxis_end_t or self.zaxis_end_b:
-            self.log.info('Zaxis is in end stops')
+            self.log.info('zaxis is in end stops')
             return
         assert speed <= self.WORKING_SPEED
         assert self.MIN_Z <= z_position <= self.MAX_Z
-        self.log.info(f'driving to {z_position}')
+        self.log.info(f'zaxis driving to {z_position}')
         steps = self.depth_to_steps(z_position)
         target_position = self.zaxis_home_position + steps
         await self.robot_brain.send(f'zaxis.position({target_position}, {speed}, 160000);')
         if not await self.check_if_idle_or_alarm_zaxis():
             return
-        self.log.info('reached target')
+        self.log.info('zaxis reached target')
 
     async def enable_end_stops(self, value: bool) -> None:
         await self.robot_brain.send(
@@ -321,6 +324,8 @@ class RobotHardware(Robot):
 
                 # bumper and e-stops
                 self.emergency_stop = int(words.pop(0)) == 0 or int(words.pop(0)) == 0
+                if self.emergency_stop:
+                    self.ESTOP_TRIGGERED.emit()
 
                 # yaxis
                 self.yaxis_end_l = int(words.pop(0)) == 0
