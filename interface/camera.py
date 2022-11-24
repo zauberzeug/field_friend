@@ -64,7 +64,7 @@ class camera:
             async def update():
                 await self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))
 
-            ui.timer(0.5, update)
+            ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
                 ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active')\
                     .tooltip('Record new images for the Learning Loop')
