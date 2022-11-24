@@ -24,7 +24,7 @@ class Weeding:
         self.max_weeds: int = 5
         self.beet_search_failures: int = 0
         self.max_beet_search_failures: int = 5
-        self.max_distance: float = 0.1
+        self.max_distance: float = 0.10
 
     async def start(self) -> None:
         if self.robot.is_real:
@@ -34,6 +34,9 @@ class Weeding:
         self.beet_search_failures = 0
         while True:
             try:
+                await self.robot.stop()
+                await rosys.sleep(2)
+                self.log.info(f'{self.driver.odometer.get_pose(5)}')
                 if self.weed_load >= self.max_weeds:
                     rosys.notify(f'stopping because weed load is {self.max_weeds}')
                     return
@@ -43,17 +46,31 @@ class Weeding:
                 self.plant_provider.clear_weeds()
                 self.plant_provider.clear_beets()
                 target_weed = await self.get_target_weed()
-                if not target_weed:
-                    self.log.info(f'no beet or weed found, will drive forward {self.max_distance}')
-                    await self.drive_forward_to(self.max_distance + self.robot.AXIS_OFFSET_X, 0)
-                    await rosys.sleep(3)
+                target_beet = await self.get_target_beet()
+                if not target_beet:
+                    self.beet_search_failures += 1
+                    if not target_weed:
+                        self.log.info(f'no beet and weed found, search failures at {self.beet_search_failures}')
+                        await self.drive_forward_to(self.max_distance + self.robot.AXIS_OFFSET_X, 0)
+                        await rosys.sleep(1)
+                        continue
+                    self.log.info(f'no beet found, search failures at {self.beet_search_failures}')
+                    await self.drive_forward_to(target_weed.position.x, 0)
+                    await rosys.sleep(1)
                     continue
+                if not target_weed:
+                    self.log.info(f'no weed found, will drive forward to next beet')
+                    await self.drive_forward_to(target_beet.position.x, target_beet.position.y)
+                    await rosys.sleep(1)
+                    continue
+                self.log.info(f'weed and beet found!!!, rotate to beet and drive to weed')
+                await self.rotate_to(target_beet)
+                await self.drive_forward_to(target_weed.position.x, target_beet.position.y)
                 self.log.info(
                     f'{target_weed.type} in sight, will advance to {target_weed.position}'
                 )
-                await self.drive_forward_to(target_weed.position.x, 0)
-                updated_target_weed = await self.get_target_weed()
                 await rosys.sleep(1)
+                updated_target_weed = await self.get_target_weed()
                 await self.catch_weed(updated_target_weed.position.y)
                 await rosys.sleep(1)
             except (DetectorError):
@@ -61,35 +78,30 @@ class Weeding:
                 return
 
     async def drive_forward_to(self, target_distance_x: float, target_distance_y: float) -> None:
-        MAX_DISTANCE = 0.5
-        distance = target_distance_x - self.robot.AXIS_OFFSET_X
-        start = self.driver.odometer.prediction.point.x
-        if distance > 0:
-            line = self.estimate_line([b.position for b in self.plant_provider.beets])
-            if line is None:
-                target = rosys.geometry.Point(x=start+distance, y=0)
-                linear = 0.1
-                angular = 0
-            else:
-                target = line.foot_point(rosys.geometry.Point(x=0, y=0)).polar(
-                    distance=MAX_DISTANCE, yaw=rosys.helpers.eliminate_pi(line.yaw))
-                angle = self.driver.odometer.prediction.point.direction(target) * 2
-                chord = self.driver.odometer.prediction.point.distance(target)
-                radius = chord / (2 * np.sin(angle / 2))
-                linear = self.driver.parameters.linear_speed_limit
-                angular = linear / radius
-                self.log.info(
-                    f'driving parameters: angle:{angle} chord:{chord} radius:{radius} linear:{linear} angular:{angular}')
-            while self.driver.odometer.prediction.point.x < start + distance:
-                await self.robot.drive(linear, angular)
-                await rosys.sleep(0.02)
-            await self.robot.drive(0, 0)
+        min_drive_distance = 0.05
+        self.driver.odometer.history = []
+        self.driver.odometer.prediction = rosys.geometry.Pose()
+        real_distance = max(target_distance_x - self.robot.AXIS_OFFSET_X, min_drive_distance)
+        target = rosys.geometry.Point(x=real_distance, y=target_distance_y)
+        await self.driver.drive_to(target)
+        await rosys.sleep(0.02)
+        await self.robot.stop()
+
+    async def rotate_to(self, target_distance_x: float, target_distance_y: float) -> None:
+        min_drive_distance = 0.05
+        self.driver.odometer.history = []
+        self.driver.odometer.prediction = rosys.geometry.Pose()
+        real_distance = max(target_distance_x - self.robot.AXIS_OFFSET_X, min_drive_distance)
+        target = rosys.geometry.Point(x=real_distance, y=target_distance_y)
+        await self.driver.drive_arc(target)
+        await rosys.sleep(0.02)
         await self.robot.stop()
 
     async def get_target_beet(self) -> Plant:
         await self.plant_detection.check_cam(self.camera_selector.camera)
         for beet in sorted(self.plant_provider.beets, key=lambda b: b.position.x):
             if beet.position.x >= self.robot.AXIS_OFFSET_X:
+                self.log.info(f'found beet at position {beet.position.y}')
                 return beet
         self.log.info('no beet in work range')
         return None
@@ -112,9 +124,9 @@ class Weeding:
                 self.log.warning('remove from end stops to start homing')
                 rosys.notify('robot in end stops')
                 return False
-            if not await self.robot.try_reference_yaxis():
-                return False
             if not await self.robot.try_reference_zaxis():
+                return False
+            if not await self.robot.try_reference_yaxis():
                 return False
             return True
         finally:
