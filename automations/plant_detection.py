@@ -49,7 +49,6 @@ class PlantDetection:
         if self.calibration is None:
             rosys.notify('camera has no calibration')
             raise DetectorError()
-        self.log.info(f'found {detection.points}')
         weed_detections = [
             d for d in detection.points
             if d.category_name in WEED_CATEGORY_NAME and d.confidence >= MINIMUM_WEED_CONFIDENCE]
