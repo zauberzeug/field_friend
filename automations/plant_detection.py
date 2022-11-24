@@ -10,7 +10,9 @@ from hardware import Robot
 from .plant import Plant, PlantProvider
 
 WEED_CATEGORY_NAME = ['coin']
+BEET_CATEGORY_NAME = ['coin_with_hole']
 MINIMUM_WEED_CONFIDENCE = 0.3
+MINIMUM_BEET_CONFIDENCE = 0.3
 
 
 class DetectorError(Exception):
@@ -47,24 +49,41 @@ class PlantDetection:
         if self.calibration is None:
             rosys.notify('camera has no calibration')
             raise DetectorError()
+        self.log.info(f'found {detection.points}')
         weed_detections = [
             d for d in detection.points
             if d.category_name in WEED_CATEGORY_NAME and d.confidence >= MINIMUM_WEED_CONFIDENCE]
-        if not weed_detections:
+        if weed_detections:
+            weed_image_positions = [
+                rosys.geometry.Point(x=d.cx, y=d.cy) for d in weed_detections
+            ]
+            weed_world_positions: list[Point3d] = [
+                self.calibration.project_from_image(w) for w in weed_image_positions
+            ]
+            weeds: list[Plant] = [
+                Plant(position=Point(x=p.x, y=p.y), id=weed_detections[i].uuid, type='weed', mac='detected', detection_time=rosys.time())
+                for i, p in enumerate(weed_world_positions)
+            ]
+            self.log.info(f'found {len(weeds)} weeds')
+            await self.plant_provider.add_weed(*weeds)
+
+        beet_detections = [
+            d for d in detection.points
+            if d.category_name in BEET_CATEGORY_NAME and d.confidence >= MINIMUM_BEET_CONFIDENCE]
+        if not beet_detections:
             return
-        weed_image_positions = [
-            rosys.geometry.Point(x=d.cx, y=d.cy) for d in weed_detections
+        beet_image_positions = [
+            rosys.geometry.Point(x=d.cx, y=d.cy) for d in beet_detections
         ]
-        weed_world_positions: list[Point3d] = [
-            self.calibration.project_from_image(w) for w in weed_image_positions  # for p in point2d
+        beet_world_positions: list[Point3d] = [
+            self.calibration.project_from_image(b) for b in beet_image_positions
         ]
-        weeds: list[Plant] = [
-            Plant(position=Point(x=p.x, y=p.y), id=weed_detections[i].uuid, type='weed', mac='detected', detection_time=rosys.time())
-            for i, p in enumerate(weed_world_positions)
+        beets: list[Plant] = [
+            Plant(position=Point(x=p.x, y=p.y), id=beet_detections[i].uuid, type='beet', mac='detected', detection_time=rosys.time())
+            for i, p in enumerate(beet_world_positions)
         ]
-        self.log.info(f'found {len(weeds)} weeds')
-        await self.plant_provider.add_weed(*weeds)
-        self.log.info(f'weed_provider: {self.plant_provider.weeds}')
+        self.log.info(f'found {len(beets)} beets')
+        await self.plant_provider.add_beet(*beets)
 
     def place_simulated_objects(self) -> None:
         self.log.info('Placing simulated objects')
