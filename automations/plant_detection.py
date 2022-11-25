@@ -34,7 +34,7 @@ class PlantDetection:
 
     async def detect(self, camera: rosys.vision.Camera) -> rosys.vision.Detections:
         self.image = camera.latest_captured_image
-        self.log.info(f'getting last captured image')
+        self.log.info(f'getting last captured image {self.image.time}')
         if self.image is None:
             self.log.info('no image found')
             raise DetectorError()
