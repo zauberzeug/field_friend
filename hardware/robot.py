@@ -187,7 +187,7 @@ class RobotHardware(Robot):
             self.log.info('starting homing of yaxis...')
             await self.robot_brain.send(
                 'y_is_referencing = true;'
-                f'yaxis.speed({self.HOMING_SPEED*2});'
+                f'yaxis.speed({self.HOMING_SPEED*3});'
             )
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
@@ -248,7 +248,7 @@ class RobotHardware(Robot):
             self.log.info('starting homing of zaxis...')
             await self.robot_brain.send(
                 'z_is_referencing = true;'
-                f'zaxis.speed({self.HOMING_SPEED*3});'
+                f'zaxis.speed({self.HOMING_SPEED*4});'
             )
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
