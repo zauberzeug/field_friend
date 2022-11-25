@@ -26,7 +26,7 @@ steerer = rosys.driving.Steerer(robot, speed_scaling=0.2)
 odometer = rosys.driving.Odometer(robot)
 driver = rosys.driving.Driver(robot, odometer)
 driver.parameters.linear_speed_limit = 0.2
-driver.parameters.angular_speed_limit = 0.2
+driver.parameters.angular_speed_limit = 0.4
 driver.parameters.can_drive_backwards = False
 automator = rosys.automation.Automator(robot, steerer)
 weeding = automations.Weeding(robot, driver, detector, camera_selector, plant_provider)
