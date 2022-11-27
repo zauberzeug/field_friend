@@ -14,8 +14,7 @@ def operation(
 ) -> None:
     with ui.card().tight():
         with ui.scene(640, 460) as scene:
-            interface.robot_object(odometer, camera_provider)
-            rosys.vision.camera_objects(camera_provider, rosys.vision.CameraProjector(camera_provider))
+            interface.robot_object(odometer, camera_provider, robot)
             scene.move_camera(-0.5, -1, 1.3)
         with ui.row():
             rosys.driving.keyboard_control(steerer)
