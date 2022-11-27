@@ -1,11 +1,13 @@
 import abc
 import logging
+from typing import Callable, Optional
 
 import numpy as np
 import rosys
 from rosys.event import Event
 from rosys.geometry import Velocity
 from rosys.hardware import RobotBrain
+from rosys.helpers import ramp
 
 from .battery import Battery
 from .bms import BmsMessage
@@ -35,15 +37,12 @@ class Robot(abc.ABC):
 
         self.log = logging.getLogger('field_friend.robot')
 
-        self.emergency_stop: bool = False
-
         self.yaxis_end_l: bool = False
         self.yaxis_end_r: bool = False
         self.yaxis_position: int = 0
         self.yaxis_alarm: bool = False
         self.yaxis_idle: bool = False
         self.yaxis_is_referenced: bool = False
-        self.yaxis_position: int = 0
         self.yaxis_home_position: int = 0
 
         self.zaxis_end_t: bool = False
@@ -52,11 +51,10 @@ class Robot(abc.ABC):
         self.zaxis_alarm: bool = False
         self.zaxis_idle: bool = False
         self.zaxis_is_referenced: bool = False
-        self.zaxis_position: int = 0
         self.zaxis_home_position: int = 0
 
         self.end_stops_active: bool = True
-
+        self.emergency_stop: bool = False
         self.battery: Battery = Battery()
 
         self.linear_target_speed: float = 0
@@ -271,7 +269,7 @@ class RobotHardware(Robot):
         finally:
             await self.stop()
 
-    async def move_zaxis_to(self, z_position: float, speed: float = 160000) -> None:
+    async def move_zaxis_to(self, z_world_position: float, speed: float = 160000) -> None:
         await super().move_zaxis_to()
         if not self.zaxis_is_referenced:
             self.log.info('zaxis ist not referenced')
@@ -280,8 +278,8 @@ class RobotHardware(Robot):
             self.log.info('zaxis is in end stops')
             return
         assert speed <= self.WORKING_SPEED
-        assert self.MIN_Z <= z_position <= self.MAX_Z
-        steps = self.depth_to_steps(z_position)
+        assert self.MIN_Z <= z_world_position <= self.MAX_Z
+        steps = self.depth_to_steps(z_world_position)
         target_position = self.zaxis_home_position + steps
         await self.robot_brain.send(f'zaxis.position({target_position}, {speed}, 160000);')
         if not await self.check_if_idle_or_alarm_zaxis():
@@ -310,7 +308,7 @@ class RobotHardware(Robot):
                 # odometry
                 velocities.append(Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time))
 
-                # bumper and e-stops
+                # e-stops
                 self.emergency_stop = int(words.pop(0)) == 0 or int(words.pop(0)) == 0
                 if self.emergency_stop:
                     self.ESTOP_TRIGGERED.emit()
@@ -368,34 +366,109 @@ class RobotSimulation(Robot):
     def __init__(self) -> None:
         super().__init__()
 
+        self.pose: rosys.geometry.Pose = rosys.geometry.Pose()
+        self.linear_velocity: float = 0
+        self.angular_velocity: float = 0
+        self.is_charging: bool = False
+        self.last_update: Optional[float] = None
+        self.yaxis_velocity: float = 0.0
+        self.zaxis_velocity: float = 0.0
+        self.yaxis_target: Optional[float] = None
+        self.zaxis_target: Optional[float] = None
+
     async def drive(self, linear: float, angular: float) -> None:
+        if self.emergency_stop:
+            return
         await super().drive(linear, angular)
+        self.linear_velocity = self.linear_target_speed
+        self.angular_velocity = self.angular_target_speed
 
     async def stop_yaxis(self) -> None:
         await super().stop_yaxis()
+        self.yaxis_velocity = 0
+        self.yaxis_target = None
 
     async def stop_zaxis(self) -> None:
         await super().stop_zaxis()
+        self.zaxis_velocity = 0
+        self.zaxis_target = None
 
     # TODO simulate battery and emergency stop
 
-    async def stop_yaxis(self) -> None:
-        await super().stop_yaxis()
-
-    async def stop_zaxis(self) -> None:
-        await super().stop_zaxis()
-
     async def try_reference_yaxis(self) -> None:
-        await super().try_reference_yaxis()
+        if not await super().try_reference_yaxis():
+            return False
+        self.yaxis_position = 0
+        return True
 
     async def try_reference_zaxis(self) -> None:
-        await super().try_reference_zaxis()
+        if not await super().try_reference_zaxis():
+            return False
+        self.zaxis_position = 0
+        return True
 
-    async def move_yaxis_to(self) -> None:
+    async def move_yaxis_to(self, y_world_position: float, speed: float = 80000) -> None:
         await super().move_yaxis_to()
+        if not self.yaxis_is_referenced:
+            self.log.info('yaxis ist not referenced')
+            return
+        if self.yaxis_end_l or self.yaxis_end_r or self.emergency_stop:
+            self.log.info('yaxis is in end stops')
+            return
+        assert speed <= self.WORKING_SPEED
+        assert self.MIN_Y <= y_world_position <= self.MAX_Y
+        y_axis_position: float = y_world_position - self.AXIS_OFFSET_Y
+        steps = self.linear_to_steps(y_axis_position)
+        self.yaxis_target = self.yaxis_home_position + steps
+        self.yaxis_velocity = speed
 
-    async def move_zaxis_to(self) -> None:
+    async def move_zaxis_to(self, z_world_position: float, speed: float = 80000) -> None:
         await super().move_zaxis_to()
+        if not self.zaxis_is_referenced:
+            self.log.info('zaxis ist not referenced')
+            return
+        if self.zaxis_end_t or self.zaxis_end_b or self.emergency_stop:
+            self.log.info('zaxis is in end stops')
+            return
+        assert speed <= self.WORKING_SPEED
+        assert self.MIN_Z <= z_world_position <= self.MAX_Z
+        steps = self.depth_to_steps(z_world_position)
+        self.zaxis_target = self.zaxis_home_position + steps
+        self.zaxis_velocity = speed
 
-    async def catch_coin(self) -> None:
-        await super().catch_coin()
+    async def update(self) -> None:
+        await super().update()
+
+        # time
+        dt = rosys.time() - self.last_update if self.last_update is not None else 0
+        self.last_update = rosys.time()
+
+        # odometry
+        self.pose += rosys.geometry.PoseStep(linear=dt*self.linear_velocity,
+                                             angular=dt*self.angular_velocity, time=rosys.time())
+        velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=rosys.time())
+        self.VELOCITY_MEASURED.emit([velocity])
+
+        # yaxis
+        self.yaxis_position += dt * self.yaxis_velocity
+        if self.yaxis_target is not None:
+            if (self.yaxis_velocity > 0) == (self.yaxis_position > self.yaxis_target):
+                self.yaxis_position = self.yaxis_target
+                self.yaxis_target = None
+                self.yaxis_velocity = 0
+
+        # zaxis
+        self.zaxis_position += dt * self.zaxis_velocity
+        if self.zaxis_target is not None:
+            if (self.zaxis_velocity > 0) == (self.zaxis_position > self.zaxis_target):
+                self.zaxis_position = self.zaxis_target
+                self.zaxis_target = None
+                self.zaxis_velocity = 0
+
+        # battery
+        self.battery.is_charging = self.is_charging
+        self.battery.voltage = 25.0 + np.sin(0.01 * rosys.time())
+        self.battery.percentage = ramp(self.battery.voltage, 24.0, 26.0, 30.0, 70.0)
+        self.battery.current = 1.0 if self.battery.is_charging else -0.7
+        self.battery.temperature = 20.0 + np.sin(0.01 * rosys.time())
+        self.battery.last_update = rosys.time()
