@@ -399,12 +399,14 @@ class RobotSimulation(Robot):
         if not await super().try_reference_yaxis():
             return False
         self.yaxis_position = 0
+        self.yaxis_is_referenced = True
         return True
 
     async def try_reference_zaxis(self) -> None:
         if not await super().try_reference_zaxis():
             return False
         self.zaxis_position = 0
+        self.zaxis_is_referenced = True
         return True
 
     async def move_yaxis_to(self, y_world_position: float, speed: float = 80000) -> None:
