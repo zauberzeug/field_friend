@@ -1,7 +1,6 @@
 import logging
 import random
 
-import numpy as np
 import rosys
 from rosys.geometry import Point, Point3d
 

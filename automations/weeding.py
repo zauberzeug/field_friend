@@ -1,6 +1,5 @@
 import logging
 
-import numpy as np
 import rosys
 
 import hardware
@@ -85,7 +84,7 @@ class Weeding:
         if not target_beet:
             target = rosys.geometry.Point(x=real_distance, y=0)
             self.log.info(
-                f'No beet found driving staight forward, reamainig beet search failure {self.max_beet_search_failures - self.beet_search_failures}')
+                f'No beet found driving straight forward, remaining beet search failure {self.max_beet_search_failures - self.beet_search_failures}')
             self.beet_search_failures += 1
         else:
             if not -0.07 < target_beet.position.y < 0.07:

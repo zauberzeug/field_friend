@@ -1,6 +1,5 @@
 import colorsys
 import logging
-from typing import Callable
 
 import numpy as np
 import rosys
@@ -74,7 +73,6 @@ class camera:
                     .props('icon=straighten outline').tooltip('Calibrate camera')
             with ui.row():
                 self.debug_position = ui.label()
-            #ui.timer(2, lambda: self.calibrate, once=True)
 
     async def calibrate(self) -> None:
         result = await self.calibration_dialog.edit(self.camera)

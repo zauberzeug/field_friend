@@ -1,6 +1,6 @@
 import rosys
 from nicegui import ui
-from nicegui.elements.scene_objects import Box, Cylinder, Group
+from nicegui.elements.scene_objects import Box, Group
 
 import hardware
 

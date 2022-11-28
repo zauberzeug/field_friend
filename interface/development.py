@@ -20,7 +20,7 @@ def development(robot: hardware.robot.Robot, automator: rosys.automation.automat
                             if not await robot.start_homing():
                                 rosys.notify('homing: failed')
                             else:
-                                rosys.notify('homing successfull')
+                                rosys.notify('homing successful')
                         ui.menu_item('perform homing', on_click=lambda: automator.start(try_axis_home()))
                         ui.menu_item('Disable end stops', on_click=lambda: automator.start(
                             robot.enable_end_stops(False)))
