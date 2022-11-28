@@ -16,9 +16,9 @@ The full system is build by [Zauberzeug](http://zauberzeug.com) as a development
 ## Getting Started
 
 ```bash
-python3 -m pip install rosys
 git clone git@github.com:zauberzeug/field_friend.git
 cd field_friend
+python3 -m pip install -r requirements.txt
 ./main.py
 ```
 

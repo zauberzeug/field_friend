@@ -1,17 +1,16 @@
 version: "3.9"
 services:
   rosys:
-    image: "zauberzeug/rosys:latest"
+    image: "zauberzeug/rosys:0.6.21"
     volumes:
       - ./:/app
-      - ./../rosys:/rosys # TODO remove this when rosys is published with https://github.com/zauberzeug/rosys/pull/16
       - ~/.rosys:/root/.rosys
       - ~/data:/data
     network_mode: host
     restart: always
     privileged: true
     environment:
-      - ROBOT_ID
+      - ROBOT_ID=Field Friend
       - TZ=Europe/Amsterdam
     hostname: docker
     cap_add:
