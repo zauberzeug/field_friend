@@ -36,7 +36,7 @@ class robot_object(rosys.driving.robot_object):
         self.with_stl('assets/field_friend.stl', x=-0.15, y=-0.3, z=0.05, scale=0.001, color='#6E93D6')
         with self:
             with Group() as self.camera:
-                rosys.vision.camera_objects(camera_provider, rosys.vision.CameraProjector(camera_provider), debug=True)
+                rosys.vision.camera_objects(camera_provider, rosys.vision.CameraProjector(camera_provider))
             with Group() as self.tool:
                 Box(width=0.05, height=0.63, depth=0.08).move(
                     x=self.robot.AXIS_OFFSET_X+0.025, z=0.34).material('#6E93D6', 1.0)

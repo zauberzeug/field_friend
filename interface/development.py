@@ -4,7 +4,7 @@ from nicegui import ui
 import hardware
 
 
-def development(robot: hardware.robot.Robot, automator: rosys.automation.automator) -> None:
+def development(robot: hardware.Robot, automator: rosys.automation.automator) -> None:
     with ui.card():
         if robot.is_real:
             with ui.row():
