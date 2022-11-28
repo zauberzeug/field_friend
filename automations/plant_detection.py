@@ -6,12 +6,13 @@ from rosys.geometry import Point, Point3d
 
 from hardware import Robot
 
-from .plant import Plant, PlantProvider
+from .plant import Plant
+from .plant_provider import PlantProvider
 
 WEED_CATEGORY_NAME = ['coin']
-BEET_CATEGORY_NAME = ['coin_with_hole']
-MINIMUM_WEED_CONFIDENCE = 0.3
-MINIMUM_BEET_CONFIDENCE = 0.3
+CROP_CATEGORY_NAME = ['coin_with_hole']
+MINIMUM_WEED_CONFIDENCE = 0.6
+MINIMUM_CROP_CONFIDENCE = 0.6
 
 
 class DetectorError(Exception):
@@ -65,23 +66,23 @@ class PlantDetection:
             self.log.info(f'found {len(weeds)} weeds')
             await self.plant_provider.add_weed(*weeds)
 
-        beet_detections = [
+        crop_detections = [
             d for d in detection.points
-            if d.category_name in BEET_CATEGORY_NAME and d.confidence >= MINIMUM_BEET_CONFIDENCE]
-        if not beet_detections:
+            if d.category_name in CROP_CATEGORY_NAME and d.confidence >= MINIMUM_CROP_CONFIDENCE]
+        if not crop_detections:
             return
-        beet_image_positions = [
-            rosys.geometry.Point(x=d.cx, y=d.cy) for d in beet_detections
+        crop_image_positions = [
+            rosys.geometry.Point(x=d.cx, y=d.cy) for d in crop_detections
         ]
-        beet_world_positions: list[Point3d] = [
-            self.calibration.project_from_image(b) for b in beet_image_positions
+        crop_world_positions: list[Point3d] = [
+            self.calibration.project_from_image(b) for b in crop_image_positions
         ]
-        beets: list[Plant] = [
-            Plant(position=Point(x=p.x, y=p.y), id=beet_detections[i].uuid, type='beet', mac='detected', detection_time=rosys.time())
-            for i, p in enumerate(beet_world_positions)
+        crops: list[Plant] = [
+            Plant(position=Point(x=p.x, y=p.y), id=crop_detections[i].uuid, type='crop', mac='detected', detection_time=rosys.time())
+            for i, p in enumerate(crop_world_positions)
         ]
-        self.log.info(f'found {len(beets)} beets')
-        await self.plant_provider.add_beet(*beets)
+        self.log.info(f'found {len(crops)} crops')
+        await self.plant_provider.add_crop(*crops)
 
     def place_simulated_objects(self) -> None:
         self.log.info('Placing simulated objects')
