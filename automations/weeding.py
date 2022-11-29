@@ -89,8 +89,8 @@ class Weeding:
                 f'No crop found driving straight forward, remaining crop search failure {self.max_crop_search_failures - self.crop_search_failures}')
             self.crop_search_failures += 1
         else:
-            if not -0.05 < target_crop.position.y < 0.05:
-                target = rosys.geometry.Point(x=min_drive_distance, y=target_crop.position.y/2)
+            if not -0.025 < target_crop.position.y < 0.025:
+                target = rosys.geometry.Point(x=real_distance, y=target_crop.position.y*0.3)
                 self.log.info(f'found crop at y = {target.y}, driving to x={real_distance:.2f} and y={target.y:.2f}')
             else:
                 self.log.info(f'crops in line, driving straight forward to {real_distance}')
