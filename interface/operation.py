@@ -17,7 +17,7 @@ def operation(
             interface.robot_object(odometer, camera_provider, robot)
             scene.move_camera(-0.5, -1, 1.3)
         with ui.row():
-            rosys.driving.keyboard_control(steerer)
+            interface.KeyControls(robot, steerer, automator)
             rosys.driving.joystick(steerer, size=50, color='#6E93D6').classes('m-4')
             with ui.column().classes('mt-4'):
                 ui.markdown('steer the robot manually with the JOYSTICK on the left or <br>hold SHIFT and use the ARROW KEYS on your keyboard')\
