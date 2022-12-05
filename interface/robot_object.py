@@ -37,12 +37,15 @@ class robot_object(rosys.driving.robot_object):
         with self:
             with Group() as self.camera:
                 rosys.vision.camera_objects(camera_provider, rosys.vision.CameraProjector(camera_provider))
-            with Group() as self.tool:
+            with Group() as self.axis:
                 Box(width=0.05, height=0.63, depth=0.08).move(
                     x=self.robot.AXIS_OFFSET_X+0.025, z=0.34).material('#6E93D6', 1.0)
+            with Group() as self.tool:
                 Box(width=0.02, height=0.02, depth=0.3).move(
-                    x=self.robot.AXIS_OFFSET_X, z=0.4).material('#3A3E42', 1.0)
+                    x=self.robot.AXIS_OFFSET_X, z=0.3).material('#C0C0C0', 1.0)
 
     def update(self) -> None:
         super().update()
-        self.tool.move(y=self.robot.yaxis_position, z=self.robot.zaxis_position)
+        y_relative_position = self.robot.steps_to_linear(self.robot.yaxis_home_position + self.robot.yaxis_position)
+        z_relative_position = self.robot.steps_to_depth(self.robot.zaxis_home_position + self.robot.zaxis_position)
+        self.tool.move(y=y_relative_position+self.robot.MAX_Y, z=z_relative_position)

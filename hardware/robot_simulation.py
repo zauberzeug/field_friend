@@ -58,30 +58,40 @@ class RobotSimulation(Robot):
         await super().move_yaxis_to()
         if not self.yaxis_is_referenced:
             self.log.info('yaxis ist not referenced')
+            rosys.notify('yaxis ist not referenced')
             return
         if self.yaxis_end_l or self.yaxis_end_r or self.emergency_stop:
             self.log.info('yaxis is in end stops')
+            rosys.notify('yaxis is in end stops')
             return
         assert speed <= self.WORKING_SPEED
         assert self.MIN_Y <= y_world_position <= self.MAX_Y
         y_axis_position: float = y_world_position - self.AXIS_OFFSET_Y
         steps = self.linear_to_steps(y_axis_position)
         self.yaxis_target = self.yaxis_home_position + steps
-        self.yaxis_velocity = speed
+        if self.yaxis_target > self.yaxis_position:
+            self.yaxis_velocity = speed
+        if self.yaxis_target < self.yaxis_position:
+            self.yaxis_velocity = -speed
 
     async def move_zaxis_to(self, z_world_position: float, speed: float = 80000) -> None:
         await super().move_zaxis_to()
         if not self.zaxis_is_referenced:
             self.log.info('zaxis ist not referenced')
+            rosys.notify('zaxis ist not referenced')
             return
         if self.zaxis_end_t or self.zaxis_end_b or self.emergency_stop:
             self.log.info('zaxis is in end stops')
+            rosys.notify('zaxis is in end stops')
             return
         assert speed <= self.WORKING_SPEED
         assert self.MIN_Z <= z_world_position <= self.MAX_Z
         steps = self.depth_to_steps(z_world_position)
         self.zaxis_target = self.zaxis_home_position + steps
-        self.zaxis_velocity = speed
+        if self.zaxis_target > self.zaxis_position:
+            self.zaxis_velocity = speed
+        if self.zaxis_target < self.zaxis_position:
+            self.zaxis_velocity = -speed
 
     async def update(self) -> None:
         await super().update()
@@ -97,7 +107,7 @@ class RobotSimulation(Robot):
         self.VELOCITY_MEASURED.emit([velocity])
 
         # yaxis
-        self.yaxis_position += dt * self.yaxis_velocity
+        self.yaxis_position += int(dt * self.yaxis_velocity)
         if self.yaxis_target is not None:
             if (self.yaxis_velocity > 0) == (self.yaxis_position > self.yaxis_target):
                 self.yaxis_position = self.yaxis_target
@@ -105,7 +115,7 @@ class RobotSimulation(Robot):
                 self.yaxis_velocity = 0
 
         # zaxis
-        self.zaxis_position += dt * self.zaxis_velocity
+        self.zaxis_position += int(dt * self.zaxis_velocity)
         if self.zaxis_target is not None:
             if (self.zaxis_velocity > 0) == (self.zaxis_position > self.zaxis_target):
                 self.zaxis_position = self.zaxis_target

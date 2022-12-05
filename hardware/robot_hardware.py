@@ -78,9 +78,11 @@ class RobotHardware(Robot):
         await super().move_yaxis_to()
         if not self.yaxis_is_referenced:
             self.log.info('yaxis ist not referenced')
+            rosys.notify('yaxis ist not referenced')
             return
         if self.yaxis_end_l or self.yaxis_end_r:
             self.log.info('yaxis is in end stops')
+            rosys.notify('yaxis is in end stops')
             return
         assert speed <= self.WORKING_SPEED
         assert self.MIN_Y <= y_world_position <= self.MAX_Y
@@ -139,9 +141,11 @@ class RobotHardware(Robot):
         await super().move_zaxis_to()
         if not self.zaxis_is_referenced:
             self.log.info('zaxis ist not referenced')
+            rosys.notify('zaxis ist not referenced')
             return
         if self.zaxis_end_t or self.zaxis_end_b:
             self.log.info('zaxis is in end stops')
+            rosys.notify('zaxis is in end stops')
             return
         assert speed <= self.WORKING_SPEED
         assert self.MIN_Z <= z_world_position <= self.MAX_Z
