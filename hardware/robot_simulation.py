@@ -64,7 +64,7 @@ class RobotSimulation(Robot):
             self.log.info('yaxis is in end stops')
             rosys.notify('yaxis is in end stops')
             return
-        assert speed <= self.WORKING_SPEED
+        assert speed <= self.AXIS_MAX_SPEED
         assert self.MIN_Y <= y_world_position <= self.MAX_Y
         y_axis_position: float = y_world_position - self.AXIS_OFFSET_Y
         steps = self.linear_to_steps(y_axis_position)
@@ -73,6 +73,8 @@ class RobotSimulation(Robot):
             self.yaxis_velocity = speed
         if self.yaxis_target < self.yaxis_position:
             self.yaxis_velocity = -speed
+        while self.yaxis_target is not None:
+            await rosys.sleep(0.2)
 
     async def move_zaxis_to(self, z_world_position: float, speed: float = 80000) -> None:
         await super().move_zaxis_to()
@@ -84,7 +86,7 @@ class RobotSimulation(Robot):
             self.log.info('zaxis is in end stops')
             rosys.notify('zaxis is in end stops')
             return
-        assert speed <= self.WORKING_SPEED
+        assert speed <= self.AXIS_MAX_SPEED
         assert self.MIN_Z <= z_world_position <= self.MAX_Z
         steps = self.depth_to_steps(z_world_position)
         self.zaxis_target = self.zaxis_home_position + steps
@@ -92,6 +94,8 @@ class RobotSimulation(Robot):
             self.zaxis_velocity = speed
         if self.zaxis_target < self.zaxis_position:
             self.zaxis_velocity = -speed
+        while self.zaxis_target is not None:
+            await rosys.sleep(0.2)
 
     async def update(self) -> None:
         await super().update()
