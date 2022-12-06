@@ -28,7 +28,7 @@ class Weeding:
 
     async def start(self) -> None:
         if self.robot.is_real:
-            if not await self.start_homing():
+            if not await self.robot.start_homing():
                 return
         self.weed_load = 0
         self.crop_search_failures = 0
@@ -91,9 +91,9 @@ class Weeding:
         else:
             if not -0.025 < target_crop.position.y < 0.025:
                 target = rosys.geometry.Point(x=real_distance, y=target_crop.position.y*0.3)
-                self.log.info(f'found crop at y = {target.y}, driving to x={real_distance:.2f} and y={target.y:.2f}')
+                self.log.info(f'found crop, driving to x={real_distance:.2f} and y={target.y:.2f}')
             else:
-                self.log.info(f'crops in line, driving straight forward to {real_distance}')
+                self.log.info(f'found crops in line, driving straight forward to {real_distance}')
                 target = rosys.geometry.Point(x=real_distance, y=0)
         await self.driver.drive_to(target)
         await rosys.sleep(0.7)
@@ -118,41 +118,24 @@ class Weeding:
         self.log.info(f'found {len(weeds_in_range)} weeds in range')
         return weeds_in_range
 
-    async def start_homing(self) -> bool:
-        try:
-            if not self.robot.end_stops_active:
-                self.log.warning('end stops not activated')
-                rosys.notify('end stops not active')
-                return False
-            if self.robot.yaxis_end_l or self.robot.yaxis_end_r or self.robot.zaxis_end_b or self.robot.zaxis_end_t:
-                self.log.warning('remove from end stops to start homing')
-                rosys.notify('robot in end stops')
-                return False
-            if not await self.robot.try_reference_zaxis():
-                return False
-            if not await self.robot.try_reference_yaxis():
-                return False
-            return True
-        finally:
-            await self.robot.stop()
-
     async def punch_weed(self, y: float) -> None:
         if not self.robot.yaxis_is_referenced or not self.robot.zaxis_is_referenced:
             rosys.notify('axis are not referenced')
             return
-        speed = self.robot.WORKING_SPEED
+        speed = self.robot.AXIS_MAX_SPEED
         await self.robot.move_yaxis_to(y, speed)
-        await self.robot.move_zaxis_to(self.robot.MIN_Z+0.005, speed)
+        await self.robot.move_zaxis_to(self.robot.zaxis_drill_depth, speed)
         await self.robot.move_zaxis_to(self.robot.MAX_Z, speed)
-        self.log.info(f'weed at {y} got catched')
+        self.log.info(f'weed at {y:.3f} punched')
         self.weed_load += 1
         await self.robot.stop()
 
-    async def punch(self, x: float, y: float) -> None:
+    async def punch(self, x: float, y: float, speed: float = None) -> None:
         if not self.robot.yaxis_is_referenced or not self.robot.zaxis_is_referenced:
-            rosys.notify('axis are not referenced, homing')
-            await self.start_homing()
-        speed = self.robot.WORKING_SPEED
+            rosys.notify('axis are not referenced, homing..')
+            await self.robot.start_homing()
+        if speed == None:
+            speed = self.robot.AXIS_MAX_SPEED
         self.reset_world()
         await self.drive_to_punch(x)
         await self.punch_weed(y)

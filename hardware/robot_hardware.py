@@ -51,17 +51,17 @@ class RobotHardware(Robot):
             self.log.info('starting homing of yaxis...')
             await self.robot_brain.send(
                 'y_is_referencing = true;'
-                f'yaxis.speed({self.HOMING_SPEED*3});'
+                f'yaxis.speed({self.AXIS_HOMING_SPEED*3});'
             )
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
-            await self.robot_brain.send(f'yaxis.speed(-{self.HOMING_SPEED*2});')
+            await self.robot_brain.send(f'yaxis.speed(-{self.AXIS_HOMING_SPEED*2});')
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
-            await self.robot_brain.send(f'yaxis.speed({self.HOMING_SPEED});')
+            await self.robot_brain.send(f'yaxis.speed({self.AXIS_HOMING_SPEED});')
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
-            await self.robot_brain.send(f'yaxis.speed(-{self.HOMING_SPEED});')
+            await self.robot_brain.send(f'yaxis.speed(-{self.AXIS_HOMING_SPEED});')
             if not await self.check_if_idle_or_alarm_yaxis():
                 return False
             await self.robot_brain.send('y_is_referencing = false;')
@@ -69,7 +69,7 @@ class RobotHardware(Robot):
             self.yaxis_home_position = self.yaxis_position
             self.yaxis_is_referenced = True
             self.log.info('yaxis referenced')
-            await self.move_yaxis_to(self.MAX_Y, speed=self.HOMING_SPEED*3)
+            await self.move_yaxis_to(self.MAX_Y, speed=self.AXIS_HOMING_SPEED*3)
             return True
         finally:
             await self.stop()
@@ -84,7 +84,7 @@ class RobotHardware(Robot):
             self.log.info('yaxis is in end stops')
             rosys.notify('yaxis is in end stops')
             return
-        assert speed <= self.WORKING_SPEED
+        assert speed <= self.AXIS_MAX_SPEED
         assert self.MIN_Y <= y_world_position <= self.MAX_Y
         y_axis_position: float = y_world_position - self.AXIS_OFFSET_Y
         steps = self.linear_to_steps(y_axis_position)
@@ -114,24 +114,24 @@ class RobotHardware(Robot):
             self.log.info('starting homing of zaxis...')
             await self.robot_brain.send(
                 'z_is_referencing = true;'
-                f'zaxis.speed({self.HOMING_SPEED*4});'
+                f'zaxis.speed({self.AXIS_HOMING_SPEED*4});'
             )
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
-            await self.robot_brain.send(f'zaxis.speed(-{self.HOMING_SPEED*3});')
+            await self.robot_brain.send(f'zaxis.speed(-{self.AXIS_HOMING_SPEED*3});')
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
-            await self.robot_brain.send(f'zaxis.speed({self.HOMING_SPEED});')
+            await self.robot_brain.send(f'zaxis.speed({self.AXIS_HOMING_SPEED});')
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
-            await self.robot_brain.send(f'zaxis.speed(-{self.HOMING_SPEED});')
+            await self.robot_brain.send(f'zaxis.speed(-{self.AXIS_HOMING_SPEED});')
             if not await self.check_if_idle_or_alarm_zaxis():
                 return False
             await self.robot_brain.send('z_is_referencing = false;')
             await rosys.sleep(0.2)
             self.zaxis_home_position = self.zaxis_position
             self.zaxis_is_referenced = True
-            await self.move_zaxis_to(self.MAX_Z, speed=self.HOMING_SPEED*3)
+            await self.move_zaxis_to(self.MAX_Z, speed=self.AXIS_HOMING_SPEED*3)
             self.log.info('zaxis referenced')
             return True
         finally:
@@ -147,8 +147,8 @@ class RobotHardware(Robot):
             self.log.info('zaxis is in end stops')
             rosys.notify('zaxis is in end stops')
             return
-        assert speed <= self.WORKING_SPEED
-        assert self.MIN_Z <= z_world_position <= self.MAX_Z
+        assert speed <= self.AXIS_MAX_SPEED
+        assert self.MIN_Z <= z_world_position <= self.MAX_Z, 'drill depth not in work range'
         steps = self.depth_to_steps(z_world_position)
         target_position = self.zaxis_home_position + steps
         await self.robot_brain.send(f'zaxis.position({target_position}, {speed}, 160000);')
