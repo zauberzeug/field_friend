@@ -29,7 +29,7 @@ class camera:
             self.detector.upload(self.camera.latest_captured_image)), active=False)
         self.weeding = weeding
         self.image_view: ui.interactive_image = None
-        self.calibration_dialog = calibration_dialog(camera_selector)
+        self.calibration_dialog = calibration_dialog(camera_provider)
         with ui.card().tight().classes('col gap-4').style('width:600px') as self.card:
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label('no camera available').classes('text-center')

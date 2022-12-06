@@ -91,7 +91,6 @@ class calibration_dialog(ui.dialog):
     async def edit(self, camera: rosys.vision.Camera) -> bool:
         self.log.info(f'{camera.id}')
         self.image = camera.latest_captured_image
-        self.log.info(f'{self.image}')
         if self.image is None:
             return
         self.points = create_calibration_pattern()
