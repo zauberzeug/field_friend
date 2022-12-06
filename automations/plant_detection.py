@@ -9,8 +9,8 @@ from hardware import Robot
 from .plant import Plant
 from .plant_provider import PlantProvider
 
-WEED_CATEGORY_NAME = ['coin']
-CROP_CATEGORY_NAME = ['coin_with_hole']
+WEED_CATEGORY_NAME = ['coin', 'weed']
+CROP_CATEGORY_NAME = ['coin_with_hole', 'crop']
 MINIMUM_WEED_CONFIDENCE = 0.6
 MINIMUM_CROP_CONFIDENCE = 0.6
 
@@ -28,13 +28,12 @@ class PlantDetection:
         self.log = logging.getLogger('field_friend.plant_detection')
 
     async def check_cam(self, camera: rosys.vision.Camera) -> None:
-        self.log.info('Detecting in cam')
+        self.log.info('detecting in cam')
         detections = await self.detect(camera)
         await self.update_plants(detections, camera)
 
     async def detect(self, camera: rosys.vision.Camera) -> rosys.vision.Detections:
         self.image = camera.latest_captured_image
-        self.log.info(f'getting last captured image {self.image.time}')
         if self.image is None:
             self.log.info('no image found')
             raise DetectorError()
@@ -86,12 +85,13 @@ class PlantDetection:
 
     def place_simulated_objects(self) -> None:
         self.log.info('Placing simulated objects')
-        number_of_weeds = random.randint(2, 5)
+        self.detector.simulated_objects.clear()
+        number_of_weeds = random.randint(1, 3)
         weeds = [
             rosys.vision.SimulatedObject(
                 category_name='weed',
-                position=Point3d(x=random.uniform(-0.3, 1),
-                                 y=random.uniform(-0.15, 0.15),
+                position=Point3d(x=random.uniform(0.1, 0.3),
+                                 y=random.uniform(-0.12, 0.12),
                                  z=0),
                 size=None,
             )

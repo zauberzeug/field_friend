@@ -27,20 +27,22 @@ class Weeding:
         self.max_distance: float = 0.10
 
     async def start(self) -> None:
-        if self.robot.is_real:
-            if not await self.robot.start_homing():
-                return
+        if not await self.robot.start_homing():
+            return
+        await self.reset_world()
         self.weed_load = 0
         self.crop_search_failures = 0
         while True:
             try:
+                if not self.robot.is_real:
+                    self.plant_detection.place_simulated_objects()
                 if self.weed_load >= self.max_weeds:
                     rosys.notify(f'stopping because weed load is {self.max_weeds}')
                     return
                 if self.crop_search_failures >= self.max_crop_search_failures:
                     rosys.notify('stopping because asuming out of crop row')
                     return
-                self.reset_world()
+                await self.reset_world()
                 await self.punch_weeds_in_range()
                 distance = await self.get_distance_to_drive()
                 await self.drive_forward_to(distance)
@@ -58,7 +60,6 @@ class Weeding:
                 self.log.info('no target weeds found')
                 return
             for weed in sorted(target_weeds, key=lambda w: w.position.y, reverse=True):
-                self.log.info(f' weed position which i am checking {weed.position}')
                 await self.punch_weed(weed.position.y)
                 self.log.info(f'punched y: {weed.position.y:.2f} with weeds {[w.position.y for w in target_weeds]}')
             await self.robot.move_yaxis_to(self.robot.MAX_Y)
@@ -67,7 +68,7 @@ class Weeding:
 
     async def get_distance_to_drive(self) -> float:
         self.log.info(f'getting distance to drive')
-        self.reset_world()
+        await self.reset_world()
         await self.plant_detection.check_cam(self.camera_selector.camera)
         max_distance = self.robot.AXIS_OFFSET_X + 0.05  # max distance we like to drive if no weed has been detected
         distance = max_distance
@@ -86,7 +87,7 @@ class Weeding:
         if not target_crop:
             target = rosys.geometry.Point(x=real_distance, y=0)
             self.log.info(
-                f'No crop found driving straight forward, remaining crop search failure {self.max_crop_search_failures - self.crop_search_failures}')
+                f'no crop found driving straight forward, remaining crop search failure {self.max_crop_search_failures - self.crop_search_failures}')
             self.crop_search_failures += 1
         else:
             if not -0.025 < target_crop.position.y < 0.025:
@@ -149,7 +150,8 @@ class Weeding:
         await rosys.sleep(0.02)
         await self.robot.stop()
 
-    def reset_world(self) -> None:
+    async def reset_world(self) -> None:
+        self.log.info('resetting world')
         self.plant_provider.clear_weeds()
         self.plant_provider.clear_crops()
         self.driver.odometer.history = []
