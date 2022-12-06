@@ -16,8 +16,8 @@ from .bms import BmsMessage
 
 
 class Robot(abc.ABC):
-    HOMING_SPEED: float = 8000
-    WORKING_SPEED: float = 80000
+    AXIS_HOMING_SPEED: float = 8000
+    AXIS_MAX_SPEED: float = 80000
     MIN_Y: float = -0.12
     MAX_Y: float = 0.12
     AXIS_OFFSET_Y = 0.123
@@ -54,6 +54,7 @@ class Robot(abc.ABC):
         self.zaxis_idle: bool = False
         self.zaxis_is_referenced: bool = False
         self.zaxis_home_position: int = 0
+        self.zaxis_drill_depth: float = self.MIN_Z
 
         self.end_stops_active: bool = True
         self.emergency_stop: bool = False
