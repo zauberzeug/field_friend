@@ -39,7 +39,7 @@ async def index():
     interface.navigation_bar(robot)
 
     with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
-        interface.operation(robot, steerer, automator, odometer, usb_camera_provider)
+        interface.operation(robot, steerer, automator, odometer, usb_camera_provider, plant_provider)
         interface.camera(camera_selector, usb_camera_provider, automator, robot, detector, weeding)
     interface.development(robot, automator)
 

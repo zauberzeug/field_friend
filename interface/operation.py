@@ -1,6 +1,7 @@
 import rosys
 from nicegui import ui
 
+import automations
 import hardware
 import interface
 
@@ -11,10 +12,12 @@ def operation(
     automator: rosys.automation.Automator,
     odometer: rosys.driving.Odometer,
     camera_provider: rosys.vision.CameraProvider,
+    plant_provider: automations.plant_provider
 ) -> None:
     with ui.card().tight():
         with ui.scene(640, 460) as scene:
             interface.robot_object(odometer, camera_provider, robot)
+            interface.plant_objects(plant_provider)
             scene.move_camera(-0.5, -1, 1.3)
         with ui.row():
             key_controls = interface.KeyControls(robot, steerer, automator)
