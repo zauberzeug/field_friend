@@ -15,7 +15,7 @@ class plant_objects(Object3D):
         self.plant_provider = plant_provider
         self.log = logging.getLogger('field_friend.plant_objects')
         self.update()
-        ui.timer(1, self.update)
+        ui.timer(0.5, self.update)
 
     def update(self) -> None:
         in_world = {p.id: p for p in self.plant_provider.weeds+self.plant_provider.crops}

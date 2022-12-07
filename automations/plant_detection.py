@@ -86,18 +86,29 @@ class PlantDetection:
     def place_simulated_objects(self) -> None:
         self.log.info('Placing simulated objects')
         self.detector.simulated_objects.clear()
-        number_of_weeds = random.randint(1, 3)
+        number_of_weeds = random.randint(1, 2)
+        number_of_crops = 1  # random.randint(1, 3)
         weeds = [
             rosys.vision.SimulatedObject(
                 category_name='weed',
-                position=Point3d(x=random.uniform(0.1, 0.3),
+                position=Point3d(x=random.uniform(0.25, 0.35),
                                  y=random.uniform(-0.12, 0.12),
                                  z=0),
                 size=None,
             )
             for _ in range(0, number_of_weeds)
         ]
-        self.detector.simulated_objects = weeds
+        beets = [
+            rosys.vision.SimulatedObject(
+                category_name='crop',
+                position=Point3d(x=random.uniform(0.25, 0.35),
+                                 y=random.uniform(-0.03, 0.03),
+                                 z=0),
+                size=None,
+            )
+            for _ in range(0, number_of_crops)
+        ]
+        self.detector.simulated_objects = weeds + beets
 
     def remove(self, weed: Plant) -> None:
         self.detector.simulated_objects = [o for o in self.detector.simulated_objects if o.uuid != weed.id]
