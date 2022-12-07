@@ -10,8 +10,8 @@ def navigation_bar(robot: hardware.Robot):
         ui.label('Zauberzeug Field Friend').classes('text-white uppercase text-weight-bold col-5 q-pl-md mt-1')
         with ui.row().classes('col-7 justify-end q-pr-md items-bottom'):
             with ui.row().bind_visibility_from(robot, 'emergency_stop'):
-                ui.icon('report').classes('text-white')
-                ui.label('emergency halt is pressed').classes('text-white qmt-3')
+                ui.icon('report').classes('text-red')
+                ui.label('emergency stop is pressed').classes('text-red mt-1')
             if robot.is_real:
                 ui.icon('hardware').classes('text-white')
                 ui.label('Hardware').classes('text-white mt-1')
