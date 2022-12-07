@@ -14,7 +14,7 @@ class PlantProvider:
         rosys.on_repeat(self.forget_old_weed, 10.0)
 
         self.needs_backup: bool = False
-        persistence.register(self)
+        # persistence.register(self)
 
     def backup(self) -> dict:
         return {
