@@ -132,12 +132,12 @@ class Weeding:
         await self.robot.stop()
 
     async def punch(self, x: float, y: float, speed: float = None) -> None:
+        await self.reset_world()
         if not self.robot.yaxis_is_referenced or not self.robot.zaxis_is_referenced:
             rosys.notify('axis are not referenced, homing..')
             await self.robot.start_homing()
         if speed == None:
             speed = self.robot.AXIS_MAX_SPEED
-        self.reset_world()
         await self.drive_to_punch(x)
         await self.punch_weed(y)
         await self.robot.move_yaxis_to(self.robot.MAX_Y, speed)
