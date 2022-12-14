@@ -179,7 +179,9 @@ class RobotHardware(Robot):
                 velocities.append(Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time))
 
                 # e-stops
-                self.emergency_stop = int(words.pop(0)) == 0 or int(words.pop(0)) == 0
+                estop1 = int(words.pop(0)) == 0
+                estop2 = int(words.pop(0)) == 0
+                self.emergency_stop = estop1 or estop2
                 if self.emergency_stop:
                     self.ESTOP_TRIGGERED.emit()
 
