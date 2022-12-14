@@ -9,10 +9,13 @@ import log
 
 log = log.configure()
 
+rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
 is_real = rosys.hardware.SerialCommunication.is_possible()
 if is_real:
     communication = rosys.hardware.SerialCommunication()
     robot_brain = rosys.hardware.RobotBrain(communication)
+    if communication.device_path == '/dev/ttyTHS0':
+        robot_brain.lizard_firmware.flash_params = ['xavier']
     robot = hardware.RobotHardware(robot_brain)
     usb_camera_provider = rosys.vision.UsbCameraProviderHardware()
     detector = rosys.vision.DetectorHardware(port=8004)
