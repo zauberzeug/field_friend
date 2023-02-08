@@ -19,7 +19,7 @@ class plant_objects(Object3D):
 
     def update(self) -> None:
         in_world = {p.id: p for p in self.plant_provider.weeds+self.plant_provider.crops}
-        rendered = {o.name.split('_')[1]: o for o in self.view.objects.values()
+        rendered = {o.name.split('_')[1]: o for o in self.scene.objects.values()
                     if o.name and o.name.startswith('plant_')}
         for id, obj in rendered.items():
             if id not in in_world:

@@ -36,7 +36,7 @@ weeding = automations.Weeding(robot, driver, detector, camera_selector, plant_pr
 automator.default_automation = weeding.start
 
 
-@ui.page('/', shared=True)
+@ui.page('/')
 async def index():
     ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
     interface.navigation_bar(robot)

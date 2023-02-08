@@ -1,5 +1,5 @@
 import rosys
-from nicegui import ui
+from nicegui import app, ui
 from nicegui.elements.scene_objects import Box, Group
 
 import hardware
@@ -32,7 +32,7 @@ class robot_object(rosys.driving.robot_object):
         self.robot = robot
         self.odometer = odometer
 
-        ui.add_static_files('/assets', 'assets')
+        app.add_static_files('/assets', 'assets')
         self.with_stl('assets/field_friend.stl', x=-0.15, y=-0.3, z=0.05, scale=0.001, color='#6E93D6')
         with self:
             with Group() as self.camera:
