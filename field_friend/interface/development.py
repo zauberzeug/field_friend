@@ -1,12 +1,13 @@
 import rosys
 from nicegui import ui
+from rosys.automation import Automator
 
-import hardware
+from ..hardware import Robot, RobotHardware
 
 
-def development(robot: hardware.Robot, automator: rosys.automation.automator) -> None:
+def development(robot: Robot, automator: Automator) -> None:
     with ui.card():
-        if robot.is_real:
+        if isinstance(robot, RobotHardware):
             with ui.row():
                 with ui.column():
                     robot.robot_brain.developer_ui()

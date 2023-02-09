@@ -1,12 +1,14 @@
 import rosys
 from nicegui.events import KeyEventArguments
+from rosys.automation import Automator
+from rosys.driving import Steerer
 
-import hardware
+from ..hardware import Robot
 
 
 class KeyControls(rosys.driving.keyboard_control):
 
-    def __init__(self, robot: hardware.Robot, steerer: rosys.driving.Steerer, automator: rosys.automation.Automator) -> None:
+    def __init__(self, robot: Robot, steerer: Steerer, automator: Automator) -> None:
         super().__init__(steerer)
 
         self.robot = robot

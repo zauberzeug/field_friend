@@ -1,17 +1,19 @@
 import logging
 
 import rosys
+from rosys.driving import Driver
+from rosys.geometry import Point, Pose
+from rosys.vision import Detector
 
-import hardware
-
+from ..hardware import CameraSelector, Robot
 from .plant import Plant
 from .plant_detection import DetectorError, PlantDetection
 from .plant_provider import PlantProvider
 
 
 class Weeding:
-    def __init__(self, robot: hardware.Robot, driver: rosys.driving.Driver, detector: rosys.vision.Detector,
-                 camera_selector: hardware.CameraSelector, plant_provider: PlantProvider) -> None:
+    def __init__(self, robot: Robot, driver: Driver, detector: Detector,
+                 camera_selector: CameraSelector, plant_provider: PlantProvider) -> None:
         self.log = logging.getLogger('field_friend.weeding')
         self.robot = robot
         self.driver = driver
@@ -85,17 +87,17 @@ class Weeding:
         real_distance = max(target_distance_x - self.robot.AXIS_OFFSET_X, min_drive_distance)
         target_crop = await self.get_target_crop()
         if not target_crop:
-            target = rosys.geometry.Point(x=real_distance, y=0)
+            target = Point(x=real_distance, y=0)
             self.log.info(
                 f'no crop found driving straight forward, remaining crop search failure {self.max_crop_search_failures - self.crop_search_failures}')
             self.crop_search_failures += 1
         else:
             if not -0.025 < target_crop.position.y < 0.025:
-                target = rosys.geometry.Point(x=real_distance, y=target_crop.position.y*0.3)
+                target = Point(x=real_distance, y=target_crop.position.y*0.3)
                 self.log.info(f'found crop, driving to x={real_distance:.2f} and y={target.y:.2f}')
             else:
                 self.log.info(f'found crops in line, driving straight forward to {real_distance}')
-                target = rosys.geometry.Point(x=real_distance, y=0)
+                target = Point(x=real_distance, y=0)
         await self.driver.drive_to(target)
         await rosys.sleep(0.7)
         await self.robot.stop()
@@ -145,7 +147,7 @@ class Weeding:
     async def drive_to_punch(self, target_distance_x: float) -> None:
         min_drive_distance = 0.01
         real_distance = max(target_distance_x - self.robot.AXIS_OFFSET_X, min_drive_distance)
-        target = rosys.geometry.Point(x=real_distance, y=0)
+        target = Point(x=real_distance, y=0)
         await self.driver.drive_to(target)
         await rosys.sleep(0.02)
         await self.robot.stop()
@@ -155,4 +157,4 @@ class Weeding:
         self.plant_provider.clear_weeds()
         self.plant_provider.clear_crops()
         self.driver.odometer.history = []
-        self.driver.odometer.prediction = rosys.geometry.Pose()
+        self.driver.odometer.prediction = Pose()

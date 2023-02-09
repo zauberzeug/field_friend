@@ -2,17 +2,17 @@ import os
 
 from nicegui import ui
 
-import hardware
+from ..hardware import Robot, RobotHardware
 
 
-def navigation_bar(robot: hardware.Robot):
+def navigation_bar(robot: Robot):
     with ui.header().props('elevated').classes('q-pa-xs q-pt-sm', remove='q-pa-md items-start gap-4'):
         ui.label('Zauberzeug Field Friend').classes('text-white uppercase text-weight-bold col-5 q-pl-md mt-1')
         with ui.row().classes('col-7 justify-end q-pr-md items-bottom'):
             with ui.row().bind_visibility_from(robot, 'emergency_stop'):
                 ui.icon('report').classes('text-red')
                 ui.label('emergency stop is pressed').classes('text-red mt-1')
-            if robot.is_real:
+            if isinstance(robot, RobotHardware):
                 ui.icon('hardware').classes('text-white')
                 ui.label('Hardware').classes('text-white mt-1')
             else:

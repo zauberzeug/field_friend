@@ -5,23 +5,25 @@ import numpy as np
 import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
+from rosys.automation import Automator
+from rosys.geometry import Point, Point3d
+from rosys.vision import Camera, CameraProvider, Detector
 
-import automations
-import hardware
-
+from ..automations import Weeding
+from ..hardware import CameraSelector, Robot
 from .calibration_dialog import calibration_dialog
 
 
 class camera:
 
     def __init__(
-            self, camera_selector: hardware.CameraSelector, camera_provider: rosys.vision.CameraProvider,
-            automator: rosys.automation.Automator, robot: hardware.robot.Robot, detector: rosys.vision.Detector,
-            weeding: automations.Weeding) -> None:
+            self, camera_selector: CameraSelector, camera_provider: CameraProvider,
+            automator: Automator, robot: Robot, detector: Detector,
+            weeding: Weeding) -> None:
         self.log = logging.getLogger('field_friend.camera')
         self.camera_selector = camera_selector
         self.camera_provider = camera_provider
-        self.camera: rosys.vision.Camera = None
+        self.camera: Camera = None
         self.automator = automator
         self.robot = robot
         self.detector = detector
@@ -37,18 +39,18 @@ class camera:
 
     def on_mouse_move(self, e: MouseEventArguments):
         if e.type == 'mousemove':
-            point2d = rosys.geometry.Point(x=e.image_x, y=e.image_y)
+            point2d = Point(x=e.image_x, y=e.image_y)
             point3d = self.camera.calibration.project_from_image(point2d)
             self.debug_position.set_text(f'{point2d} -> {point3d}')
         if e.type == 'mouseup':
-            point2d = rosys.geometry.Point(x=e.image_x, y=e.image_y)
+            point2d = Point(x=e.image_x, y=e.image_y)
             point3d = self.camera.calibration.project_from_image(point2d)
             if point3d is not None:
                 self.automator.start(self.weeding.punch(point3d.x, point3d.y))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
-    def use_camera(self, camera: rosys.vision.Camera) -> None:
+    def use_camera(self, camera: Camera) -> None:
         self.camera = camera
         self.card.clear()
         events = ['mousemove', 'mouseout', 'mouseup']
@@ -95,13 +97,13 @@ class camera:
                                                 g in enumerate(grid_image_points)))
 
     @staticmethod
-    def create_grid_points() -> list[rosys.geometry.Point3d]:
+    def create_grid_points() -> list[Point3d]:
         result = []
         x = 0
         while x <= 0.7:
             y = -0.2
             while y <= 0.2:
-                result.append(rosys.geometry.Point3d(x=x, y=y, z=0))
+                result.append(Point3d(x=x, y=y, z=0))
                 y += 0.03
             x += 0.03
         return result

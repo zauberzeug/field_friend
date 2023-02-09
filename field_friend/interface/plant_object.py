@@ -2,9 +2,9 @@ import logging
 
 from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
-from nicegui.elements.scene_objects import Extrusion, Sphere
+from nicegui.elements.scene_objects import Sphere
 
-from automations import PlantProvider
+from ..automations import PlantProvider
 
 
 class plant_objects(Object3D):

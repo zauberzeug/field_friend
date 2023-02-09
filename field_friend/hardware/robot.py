@@ -1,18 +1,10 @@
 import abc
 import logging
-from typing import Optional
 
-import numpy as np
 import rosys
 from rosys.event import Event
-from rosys.geometry import Velocity
-from rosys.hardware import RobotBrain
-from rosys.helpers import ramp
-
-import hardware
 
 from .battery import Battery
-from .bms import BmsMessage
 
 
 class Robot(abc.ABC):
@@ -65,14 +57,6 @@ class Robot(abc.ABC):
 
         rosys.on_repeat(self.update, 0.01)
         rosys.on_shutdown(self.stop)
-
-    @property
-    def is_real(self) -> bool:
-        return isinstance(self, hardware.RobotHardware)
-
-    @property
-    def is_simulation(self) -> bool:
-        return isinstance(self, hardware.RobotSimulation)
 
     def depth_to_steps(self, depth: float) -> int:
         steps = int((depth * 1000) * self.STEPS_PER_MM_ZAXIS)

@@ -1,17 +1,20 @@
 import rosys
-from nicegui import app, ui
+from nicegui import app
 from nicegui.elements.scene_objects import Box, Group
+from rosys.driving import Odometer, robot_object
+from rosys.geometry import Prism
+from rosys.vision import CameraProjector, CameraProvider, camera_objects
 
-import hardware
+from ..hardware import Robot
 
 
-class robot_object(rosys.driving.robot_object):
+class robot_object(robot_object):
     width = 0.63
     length = 0.78
     offset = 0.16
     chain_width = 0.145
 
-    shape = rosys.geometry.Prism(
+    shape = Prism(
         outline=[
             (-offset, -width/2),
             (length - offset, -width/2),
@@ -25,8 +28,8 @@ class robot_object(rosys.driving.robot_object):
         height=0.40,
     )
 
-    def __init__(self, odometer: rosys.driving.Odometer, camera_provider: rosys.vision.CameraProvider,
-                 robot: hardware.Robot) -> None:
+    def __init__(self, odometer: Odometer, camera_provider: CameraProvider,
+                 robot: Robot) -> None:
         super().__init__(self.shape, odometer, debug=True)
 
         self.robot = robot
@@ -36,7 +39,7 @@ class robot_object(rosys.driving.robot_object):
         self.with_stl('assets/field_friend.stl', x=-0.15, y=-0.3, z=0.05, scale=0.001, color='#6E93D6')
         with self:
             with Group() as self.camera:
-                rosys.vision.camera_objects(camera_provider, rosys.vision.CameraProjector(camera_provider))
+                camera_objects(camera_provider, CameraProjector(camera_provider))
             with Group() as self.axis:
                 Box(width=0.05, height=0.63, depth=0.08).move(
                     x=self.robot.AXIS_OFFSET_X+0.025, z=0.34).material('#6E93D6', 1.0)
