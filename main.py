@@ -2,10 +2,8 @@
 import rosys
 from nicegui import ui
 
-import automations
-import hardware
-import interface
 import log
+from field_friend import automations, hardware, interface
 
 log = log.configure()
 
