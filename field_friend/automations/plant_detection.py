@@ -4,7 +4,7 @@ import random
 import rosys
 from rosys.geometry import Point, Point3d
 
-from ..hardware import Robot
+from ..old_hardware import Robot
 from .plant import Plant
 from .plant_provider import PlantProvider
 

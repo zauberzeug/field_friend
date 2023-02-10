@@ -1,8 +1,9 @@
 bluetooth = Bluetooth("FIELD FRIEND")
 
-
+# Can
 can = Can(32, 33, 1000000)
 
+# Wheels
 l = ODriveMotor(can, 0x000)
 r = ODriveMotor(can, 0x100)
 float motor_gear_ratio = 12.52
@@ -13,7 +14,7 @@ l.m_per_tick = wheel_diameter * pi / motor_gear_ratio
 r.m_per_tick = wheel_diameter * pi / motor_gear_ratio 
 l.reversed = true
 
-# Wheels
+
 wheels = ODriveWheels(l, r)
 wheels.width = 0.47
 

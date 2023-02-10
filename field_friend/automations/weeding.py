@@ -5,7 +5,7 @@ from rosys.driving import Driver
 from rosys.geometry import Point, Pose
 from rosys.vision import Detector
 
-from ..hardware import CameraSelector, Robot
+from ..old_hardware import CameraSelector, Robot
 from .plant import Plant
 from .plant_detection import DetectorError, PlantDetection
 from .plant_provider import PlantProvider

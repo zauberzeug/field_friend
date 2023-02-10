@@ -5,7 +5,7 @@ from rosys.driving import Odometer, Steerer, joystick
 from rosys.vision import CameraProvider
 
 from ..automations import plant_provider
-from ..hardware import Robot
+from ..old_hardware import Robot
 from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .robot_object import robot_object

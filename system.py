@@ -3,8 +3,9 @@ import os
 import rosys
 
 from field_friend.automations import PlantProvider, Weeding
-from field_friend.hardware import CameraSelector, RobotHardware, RobotSimulation
-from field_friend.hardware.simulation import create_weedcam
+from field_friend.hardware import EStopHardware, EStopSimulation, SafetyHardware, SafetySimulation
+from field_friend.old_hardware import CameraSelector, RobotHardware, RobotSimulation
+from field_friend.vision.simulation import create_weedcam
 
 
 class System:
@@ -16,24 +17,41 @@ class System:
             self.robot_brain = rosys.hardware.RobotBrain(self.communication)
             if self.communication.device_path == '/dev/ttyTHS0':
                 self.robot_brain.lizard_firmware.flash_params = ['xavier']
-            self.robot = RobotHardware(self.robot_brain)
+            # self.robot = RobotHardware(self.robot_brain)
+            self.can = rosys.hardware.CanHardware(self.robot_brain)
+            self.estop = EStopHardware(self.robot_brain)
+            self.wheels = rosys.hardware.WheelsHardware(self.robot_brain,
+                                                        can=self.can,
+                                                        left_can_address=0x000,
+                                                        right_can_address=0x100,
+                                                        m_per_tick=0.057712964083518566,
+                                                        width=0.47,
+                                                        is_right_reversed=True)
+            self.safety = SafetyHardware(self.robot_brain, wheels=self.wheels, estop=self.estop)
+            self.robot = rosys.hardware.RobotHardware(
+                [self.can, self.wheels, self.estop, self.safety],
+                self.robot_brain)
             self.usb_camera_provider = rosys.vision.UsbCameraProviderHardware()
             self.detector = rosys.vision.DetectorHardware(port=8004)
         else:
-            self.robot = RobotSimulation()
+            self.wheels = rosys.hardware.WheelsSimulation()
+            self.estop = EStopSimulation()
+            self.safety = SafetySimulation(self.wheels, self.estop)
+            self.robot = rosys.hardware.RobotSimulation([self.wheels, self.estop])
+            # self.robot = RobotSimulation()
             self.usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
         self.camera_selector = CameraSelector(self.usb_camera_provider)
         self.plant_provider = PlantProvider()
-        self.steerer = rosys.driving.Steerer(self.robot, speed_scaling=0.2)
-        self.odometer = rosys.driving.Odometer(self.robot)
-        self.driver = rosys.driving.Driver(self.robot, self.odometer)
+        self.steerer = rosys.driving.Steerer(self.wheels, speed_scaling=0.2)
+        self.odometer = rosys.driving.Odometer(self.wheels)
+        self.driver = rosys.driving.Driver(self.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.2
         self.driver.parameters.angular_speed_limit = 0.5
         self.driver.parameters.can_drive_backwards = False
-        self.automator = rosys.automation.Automator(self.robot, self.steerer)
-        self.weeding = Weeding(self.robot, self.driver, self.detector, self.camera_selector, self.plant_provider)
-        self.automator.default_automation = self.weeding.start
+        self.automator = rosys.automation.Automator(self.wheels, self.steerer)
+        # self.weeding = Weeding(self.wheels, self.driver, self.detector, self.camera_selector, self.plant_provider)
+        # self.automator.default_automation = self.weeding.start
 
         if not self.is_real:
             rosys.on_startup(lambda: create_weedcam(self.usb_camera_provider))

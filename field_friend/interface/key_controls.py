@@ -3,7 +3,7 @@ from nicegui.events import KeyEventArguments
 from rosys.automation import Automator
 from rosys.driving import Steerer
 
-from ..hardware import Robot
+from ..old_hardware import Robot
 
 
 class KeyControls(rosys.driving.keyboard_control):

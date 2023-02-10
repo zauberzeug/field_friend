@@ -14,7 +14,7 @@ def startup() -> None:
     @ui.page('/')
     async def main_page():
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
-        interface.navigation_bar(system.robot)
+        interface.navigation_bar(system.robot, system.estop)
 
         with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
             interface.operation(system.robot, system.steerer, system.automator, system.odometer,
