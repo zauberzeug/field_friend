@@ -18,14 +18,13 @@ class camera:
 
     def __init__(
             self, camera_selector: CameraSelector, camera_provider: CameraProvider,
-            automator: Automator, robot: Robot, detector: Detector,
+            automator: Automator, detector: Detector,
             weeding: Weeding) -> None:
         self.log = logging.getLogger('field_friend.camera')
         self.camera_selector = camera_selector
         self.camera_provider = camera_provider
         self.camera: Camera = None
         self.automator = automator
-        self.robot = robot
         self.detector = detector
         self.capture_images = ui.timer(1, lambda: rosys.create_task(
             self.detector.upload(self.camera.latest_captured_image)), active=False)
