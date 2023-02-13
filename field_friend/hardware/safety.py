@@ -32,7 +32,7 @@ class SafetySimulation(Safety, ModuleSimulation):
     '''This module implements safety simulation.
     '''
 
-    def __init__(self, *, wheels: Wheels, estop: EStop) -> None:
+    def __init__(self, wheels: Wheels, estop: EStop) -> None:
         super().__init__()
         self.wheels = wheels
         self.estop = estop
