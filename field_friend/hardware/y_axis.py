@@ -206,4 +206,10 @@ class YAxisSimulation(YAxis, ModuleSimulation):
         return True
 
     async def step(self, dt: float) -> None:
-        return await super().step(dt)
+        await super().step(dt)
+        self.yaxis_position += int(dt * self.yaxis_velocity)
+        if self.yaxis_target is not None:
+            if (self.yaxis_velocity > 0) == (self.yaxis_position > self.yaxis_target):
+                self.yaxis_position = self.yaxis_target
+                self.yaxis_target = None
+                self.yaxis_velocity = 0
