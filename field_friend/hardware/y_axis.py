@@ -16,6 +16,8 @@ class YAxis(Module):
     AXIS_OFFSET_Y = 0.123
     STEPS_PER_MM: float = 666.67
 
+    AXIS_OFFSET_X = 0.2915
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
