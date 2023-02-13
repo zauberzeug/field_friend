@@ -207,4 +207,10 @@ class ZAxisSimulation(ZAxis, ModuleSimulation):
         return True
 
     async def step(self, dt: float) -> None:
-        return await super().step(dt)
+        await super().step(dt)
+        self.zaxis_position += int(dt * self.zaxis_velocity)
+        if self.zaxis_target is not None:
+            if (self.zaxis_velocity > 0) == (self.zaxis_position > self.zaxis_target):
+                self.zaxis_position = self.zaxis_target
+                self.zaxis_target = None
+                self.zaxis_velocity = 0
