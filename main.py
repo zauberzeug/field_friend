@@ -17,8 +17,8 @@ def startup() -> None:
         interface.navigation_bar(system.robot, system.estop)
 
         with ui.row().classes('fit items-stretch justify-around').style('flex-wrap:nowrap'):
-            interface.operation(system.robot, system.steerer, system.automator, system.odometer,
-                                system.usb_camera_provider, system.plant_provider)
+            interface.operation(system.wheels, system.y_axis, system.z_axis, system.estop, system.steerer,
+                                system.automator, system.odometer, system.usb_camera_provider, system.plant_provider)
             interface.camera(system.camera_selector, system.usb_camera_provider,
                              system.automator, system.robot, system.detector, system.weeding)
         interface.development(system.robot, system.automator)

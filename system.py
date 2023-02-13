@@ -3,7 +3,8 @@ import os
 import rosys
 
 from field_friend.automations import PlantProvider, Weeding
-from field_friend.hardware import EStopHardware, EStopSimulation, SafetyHardware, SafetySimulation
+from field_friend.hardware import (EStopHardware, EStopSimulation, SafetyHardware, SafetySimulation, YAxisHardware,
+                                   YAxisSimulation, ZAxisHardware, ZAxisSimulation)
 from field_friend.old_hardware import CameraSelector, RobotHardware, RobotSimulation
 from field_friend.vision.simulation import create_weedcam
 
@@ -28,6 +29,8 @@ class System:
                                                         width=0.47,
                                                         is_right_reversed=True)
             self.safety = SafetyHardware(self.robot_brain, wheels=self.wheels, estop=self.estop)
+            self.y_axis = YAxisHardware(self.robot_brain)
+            self.z_axis = ZAxisHardware(self.robot_brain)
             self.robot = rosys.hardware.RobotHardware(
                 [self.can, self.wheels, self.estop, self.safety],
                 self.robot_brain)
@@ -37,6 +40,8 @@ class System:
             self.wheels = rosys.hardware.WheelsSimulation()
             self.estop = EStopSimulation()
             self.safety = SafetySimulation(self.wheels, self.estop)
+            self.y_axis = YAxisSimulation()
+            self.z_axis = ZAxisSimulation()
             self.robot = rosys.hardware.RobotSimulation([self.wheels, self.estop])
             # self.robot = RobotSimulation()
             self.usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
