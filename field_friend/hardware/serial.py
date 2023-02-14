@@ -16,6 +16,3 @@ class SerialHardware(ModuleHardware):
         self.name = name
         lizard_code = f'{name} = Serial({rx_pin}, {tx_pin}, {baud}, {num})'
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
-
-    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
-        return words

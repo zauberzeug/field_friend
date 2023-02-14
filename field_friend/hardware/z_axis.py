@@ -7,7 +7,7 @@ from rosys.hardware import Module, ModuleHardware, ModuleSimulation, RobotBrain
 from .expander import ExpanderHardware
 
 
-class ZAxis(Module):
+class ZAxis(Module, abc.ABC):
     '''The z axis module is a simple example for a representation of real or simulated robot hardware.
     '''
     Z_AXIS_MAX_SPEED: float = 80_000
@@ -129,6 +129,9 @@ class ZAxisHardware(ZAxis, ModuleHardware):
         if not await super().try_reference():
             return False
         try:
+            if not self.end_stops_active:
+                self.log.warning('end stops not activated')
+                return False
             if self.zaxis_end_t or self.zaxis_end_b:
                 self.log.info('zaxis is in end stops, remove to reference')
                 return False
@@ -161,7 +164,7 @@ class ZAxisHardware(ZAxis, ModuleHardware):
         await super().enable_end_stops(value)
         await self.robot_brain.send(f'zend_stops_active = {str(value).lower()};')
 
-    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
+    async def handle_core_output(self, time: float, words: list[str]) -> None:
         self.zaxis_end_t = int(words.pop(0)) == 0
         self.zaxis_end_b = int(words.pop(0)) == 0
         self.zaxis_idle = words.pop(0) == 'true'
@@ -169,7 +172,6 @@ class ZAxisHardware(ZAxis, ModuleHardware):
         self.zaxis_alarm = int(words.pop(0)) == 0
         if self.zaxis_alarm:
             self.zaxis_is_referenced = False
-        return words
 
 
 class ZAxisSimulation(ZAxis, ModuleSimulation):

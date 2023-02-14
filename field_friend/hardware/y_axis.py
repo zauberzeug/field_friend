@@ -7,7 +7,7 @@ from rosys.hardware import Module, ModuleHardware, ModuleSimulation, RobotBrain
 from .expander import ExpanderHardware
 
 
-class YAxis(Module):
+class YAxis(Module, abc.ABC):
     '''The y axis module is a simple example for a representation of real or simulated robot hardware.
     '''
     Y_AXIS_MAX_SPEED: float = 80_000
@@ -130,6 +130,9 @@ class YAxisHardware(YAxis, ModuleHardware):
         if not await super().try_reference():
             return False
         try:
+            if not self.end_stops_active:
+                self.log.warning('end stops not activated')
+                return False
             if self.yaxis_end_l or self.yaxis_end_r:
                 self.log.info('yaxis is in end stops, remove to reference')
                 return False
@@ -162,7 +165,7 @@ class YAxisHardware(YAxis, ModuleHardware):
         await super().enable_end_stops(value)
         await self.robot_brain.send(f'yend_stops_active = {str(value).lower()};')
 
-    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
+    async def handle_core_output(self, time: float, words: list[str]) -> None:
         self.yaxis_end_l = int(words.pop(0)) == 0
         self.yaxis_end_r = int(words.pop(0)) == 0
         self.yaxis_idle = words.pop(0) == 'true'
@@ -170,7 +173,6 @@ class YAxisHardware(YAxis, ModuleHardware):
         self.yaxis_alarm = int(words.pop(0)) == 0
         if self.yaxis_alarm:
             self.yaxis_is_referenced = False
-        return words
 
 
 class YAxisSimulation(YAxis, ModuleSimulation):

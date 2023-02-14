@@ -18,6 +18,3 @@ class ExpanderHardware(ModuleHardware):
         self.name = name
         lizard_code = f'{name} = Expander({serial.name}, {boot}, {enable})'
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
-
-    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
-        return words

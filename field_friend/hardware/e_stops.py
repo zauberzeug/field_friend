@@ -5,7 +5,7 @@ from rosys.hardware import Module, ModuleHardware, ModuleSimulation
 from rosys.hardware.robot_brain import RobotBrain
 
 
-class EStop(Module):
+class EStop(Module, abc.ABC):
     '''The estop module is a simple example for a representation of real or simulated robot hardware.
     '''
 
@@ -36,14 +36,13 @@ class EStopHardware(EStop, ModuleHardware):
         '''
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 
-    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
+    async def handle_core_output(self, time: float, words: list[str]) -> None:
 
         estop1 = int(words.pop(0)) == 0
         estop2 = int(words.pop(0)) == 0
         self.emergency_stop = estop1 or estop2
         if self.emergency_stop:
             self.ESTOP_TRIGGERED.emit()
-        return words
 
 
 class EStopSimulation(EStop, ModuleSimulation):

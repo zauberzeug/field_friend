@@ -1,9 +1,11 @@
+import abc
+
 from rosys.hardware import Module, ModuleHardware, ModuleSimulation, RobotBrain, Wheels
 
 from ..hardware import EStop
 
 
-class Safety(Module):
+class Safety(Module, abc.ABC):
     '''The safety module is a simple example for a representation of real or simulated robot hardware.
     '''
 
@@ -23,9 +25,6 @@ class SafetyHardware(Safety, ModuleHardware):
             when {estop.name1}.level == 0 or {estop.name2}.level ==  0 then stop(); end
             when core.last_massage_age > 1000 then {wheels.name}.speed(0, 0); end'''
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
-
-    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
-        return words
 
 
 class SafetySimulation(Safety, ModuleSimulation):
