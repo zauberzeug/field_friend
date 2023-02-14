@@ -108,7 +108,7 @@ class ZAxisHardware(ZAxis, ModuleHardware):
         await super().stop()
         await self.robot_brain.send(f'{self.name}.stop()')
 
-    async def move_to(self, world_position: float, speed: float = 16_000) -> None:
+    async def move_to(self, world_position: float, speed: float = 80_000) -> None:
         target_position = await super().move_to(world_position=world_position, speed=speed)
         if target_position is None:
             return

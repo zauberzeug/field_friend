@@ -41,7 +41,7 @@ class YAxis(Module, abc.ABC):
         if not self.yaxis_is_referenced:
             rosys.notify('yaxis is not referenced, reference first')
             return None
-        if self.yaxis_end_b or self.yaxis_end_t:
+        if self.yaxis_end_l or self.yaxis_end_r:
             rosys.notify('yaxis is in end stops, remove to move')
             return None
         if speed > self.Y_AXIS_MAX_SPEED:
