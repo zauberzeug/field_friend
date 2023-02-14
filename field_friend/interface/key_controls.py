@@ -5,31 +5,30 @@ from rosys.automation import Automator
 from rosys.driving import Steerer
 from rosys.hardware import Wheels
 
-from ..hardware import EStop, YAxis, ZAxis
+from ..automations import Puncher
+from ..hardware import FieldFriend, YAxis, ZAxis
 from ..old_hardware import Robot
 
 
 class KeyControls(rosys.driving.keyboard_control):
 
-    def __init__(self, wheels: Wheels, y_axis: YAxis, z_axis: ZAxis, steerer: Steerer, automator: Automator) -> None:
+    def __init__(self, field_friend: FieldFriend, steerer: Steerer, automator: Automator, puncher: Puncher) -> None:
         super().__init__(steerer)
-
-        self.wheels = wheels
-        self.y_axis = y_axis
-        self.z_axis = z_axis
+        self.field_friend = field_friend
+        self.wheels = field_friend.wheels
+        self.y_axis = field_friend.y_axis
+        self.z_axis = field_friend.z_axis
         self.automator = automator
+        self.puncher = puncher
 
     def handle_keys(self, e: KeyEventArguments) -> None:
         super().handle_keys(e)
 
-        # if e.modifiers.shift and e.action.keydown:
-        #     if e.key == '!':
-        #         async def try_axis_home():
-        #             if not await self.robot.start_homing():
-        #                 rosys.notify('homing: failed')
-        #             else:
-        #                 rosys.notify('homing successful')
-        #         self.automator.start(try_axis_home())
+        if e.modifiers.shift and e.action.keydown:
+            if e.key == '!':
+                async def try_axis_home():
+                    await self.puncher.home()
+                self.automator.start(try_axis_home())
 
         if e.modifiers.shift and e.action.keydown:
             if e.key == 'W':
@@ -48,7 +47,7 @@ class KeyControls(rosys.driving.keyboard_control):
         if e.modifiers.shift and e.action.keyup:
             if e.key.name in 'AD':
                 background_tasks.create(self.y_axis.stop())
+                rosys.notify('y axis stopped')
 
         if e.key == ' ' and e.action.keydown:
-            background_tasks.create(self.wheels.stop())
-            # TODO: stopp all background tasks when the operation is stopped
+            background_tasks.create(self.field_friend.stop())

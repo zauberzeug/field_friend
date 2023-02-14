@@ -9,7 +9,7 @@ from rosys.automation import Automator
 from rosys.geometry import Point, Point3d
 from rosys.vision import Camera, CameraProvider, Detector
 
-from ..automations import Weeding
+from ..automations import Puncher
 from ..old_hardware import CameraSelector, Robot
 from .calibration_dialog import calibration_dialog
 
@@ -19,7 +19,7 @@ class camera:
     def __init__(
             self, camera_selector: CameraSelector, camera_provider: CameraProvider,
             automator: Automator, detector: Detector,
-            weeding: Weeding) -> None:
+            puncher: Puncher) -> None:
         self.log = logging.getLogger('field_friend.camera')
         self.camera_selector = camera_selector
         self.camera_provider = camera_provider
@@ -28,7 +28,7 @@ class camera:
         self.detector = detector
         self.capture_images = ui.timer(1, lambda: rosys.create_task(
             self.detector.upload(self.camera.latest_captured_image)), active=False)
-        self.weeding = weeding
+        self.puncher = puncher
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
         with ui.card().tight().classes('col gap-4').style('width:600px') as self.card:
@@ -45,7 +45,7 @@ class camera:
             point2d = Point(x=e.image_x, y=e.image_y)
             point3d = self.camera.calibration.project_from_image(point2d)
             if point3d is not None:
-                self.automator.start(self.weeding.punch(point3d.x, point3d.y))
+                self.automator.start(self.puncher.punch_weed(point3d.x, point3d.y))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
