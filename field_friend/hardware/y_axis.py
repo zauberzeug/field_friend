@@ -2,9 +2,7 @@ import abc
 from typing import Optional
 
 import rosys
-from rosys.hardware import Module, ModuleHardware, ModuleSimulation, RobotBrain
-
-from .expander import ExpanderHardware
+from rosys.hardware import ExpanderHardware, Module, ModuleHardware, ModuleSimulation, RobotBrain
 
 
 class YAxis(Module, abc.ABC):

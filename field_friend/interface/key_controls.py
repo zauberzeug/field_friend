@@ -3,11 +3,9 @@ from nicegui.events import KeyEventArguments
 from rosys import background_tasks
 from rosys.automation import Automator
 from rosys.driving import Steerer
-from rosys.hardware import Wheels
 
 from ..automations import Puncher
-from ..hardware import FieldFriend, YAxis, ZAxis
-from ..old_hardware import Robot
+from ..hardware import FieldFriend
 
 
 class KeyControls(rosys.driving.keyboard_control):

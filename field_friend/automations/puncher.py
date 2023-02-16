@@ -1,7 +1,6 @@
 import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
-from rosys.hardware import Wheels
 
 from ..hardware import EStop, YAxis, ZAxis
 

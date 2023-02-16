@@ -1,4 +1,3 @@
-import rosys
 from nicegui import app
 from nicegui.elements.scene_objects import Box, Group
 from rosys.driving import Odometer, robot_object
@@ -6,7 +5,6 @@ from rosys.geometry import Prism
 from rosys.vision import CameraProjector, CameraProvider, camera_objects
 
 from ..hardware import YAxis, ZAxis
-from ..old_hardware import Robot
 
 
 class robot_object(robot_object):

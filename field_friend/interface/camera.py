@@ -10,7 +10,7 @@ from rosys.geometry import Point, Point3d
 from rosys.vision import Camera, CameraProvider, Detector
 
 from ..automations import Puncher
-from ..old_hardware import CameraSelector, Robot
+from ..vision import CameraSelector
 from .calibration_dialog import calibration_dialog
 
 

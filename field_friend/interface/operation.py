@@ -1,13 +1,10 @@
-import rosys
 from nicegui import ui
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Odometer, Steerer, joystick
-from rosys.hardware import Wheels
 from rosys.vision import CameraProvider
 
 from ..automations import Puncher, plant_provider
-from ..hardware import EStop, FieldFriend, YAxis, ZAxis
-from ..old_hardware import Robot
+from ..hardware import FieldFriend
 from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .robot_object import robot_object

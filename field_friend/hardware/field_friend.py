@@ -1,11 +1,7 @@
-from typing import Optional
-
 import rosys
 
-from .e_stops import EStop, EStopHardware, EStopSimulation
-from .expander import ExpanderHardware
-from .safety import Safety, SafetyHardware, SafetySimulation
-from .serial import SerialHardware
+from .e_stops import EStopHardware, EStopSimulation
+from .safety import SafetyHardware, SafetySimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
 
@@ -43,8 +39,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                     is_right_reversed=True)
         self.estop = EStopHardware(self.robot_brain)
         self.safety = SafetyHardware(self.robot_brain)
-        self.serial = SerialHardware(self.robot_brain)
-        self.expander = ExpanderHardware(self.robot_brain, serial=self.serial)
+        self.serial = rosys.hardware.SerialHardware(self.robot_brain)
+        self.expander = rosys.hardware.ExpanderHardware(self.robot_brain, serial=self.serial)
         if with_yaxis:
             self.y_axis = YAxisHardware(self.robot_brain, expander=self.expander)
         if with_zaxis:
