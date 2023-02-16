@@ -45,7 +45,7 @@ class camera:
             point2d = Point(x=e.image_x, y=e.image_y)
             point3d = self.camera.calibration.project_from_image(point2d)
             if point3d is not None:
-                self.automator.start(self.puncher.punch_weed(point3d.x, point3d.y))
+                self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 

@@ -51,7 +51,7 @@ class Puncher:
             self.y_axis.stop()
             self.z_axis.stop()
 
-    async def punch_weed(self, x: float, y: float, depth: float = None, speed: float = None) -> None:
+    async def drive_and_punch(self, x: float, y: float, depth: float = None, speed: float = None) -> None:
         await self.drive_to_punch(x)
         await self.punch(y, depth, speed)
         await self.y_axis.move_to(self.y_axis.MAX_Y, speed)
