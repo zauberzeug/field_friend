@@ -18,12 +18,12 @@ class FieldFriend(rosys.hardware.Robot):
         self.z_axis = z_axis
         rosys.on_shutdown(self.stop)
 
-    def stop(self) -> None:
+    async def stop(self) -> None:
         self.wheels.stop()
         if self.y_axis:
-            self.y_axis.stop()
+            await self.y_axis.stop()
         if self.z_axis:
-            self.z_axis.stop()
+            await self.z_axis.stop()
 
 
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
