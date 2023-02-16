@@ -4,7 +4,7 @@ import random
 import rosys
 from rosys.geometry import Point, Point3d
 
-from ..old_hardware import Robot
+from ..hardware import FieldFriend
 from .plant import Plant
 from .plant_provider import PlantProvider
 
@@ -20,10 +20,10 @@ class DetectorError(Exception):
 
 class PlantDetection:
 
-    def __init__(self, detector: rosys.vision.Detector, plant_provider: PlantProvider, robot: Robot) -> None:
+    def __init__(self, detector: rosys.vision.Detector, plant_provider: PlantProvider, field_friend: FieldFriend) -> None:
         self.detector = detector
         self.plant_provider = plant_provider
-        self.robot = robot
+        self.field_friend = field_friend
         self.log = logging.getLogger('field_friend.plant_detection')
 
     async def check_cam(self, camera: rosys.vision.Camera) -> None:
