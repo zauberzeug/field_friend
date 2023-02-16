@@ -5,22 +5,25 @@ from rosys.driving import Driver
 from rosys.geometry import Point, Pose
 from rosys.vision import Detector
 
-from ..old_hardware import CameraSelector, Robot
+from ..hardware import FieldFriend, FieldFriendSimulation
+from ..vision import CameraSelector
 from .plant import Plant
 from .plant_detection import DetectorError, PlantDetection
 from .plant_provider import PlantProvider
+from .puncher import Puncher
 
 
 class Weeding:
-    def __init__(self, robot: Robot, driver: Driver, detector: Detector,
-                 camera_selector: CameraSelector, plant_provider: PlantProvider) -> None:
+    def __init__(self, field_friend: FieldFriend, driver: Driver, detector: Detector,
+                 camera_selector: CameraSelector, plant_provider: PlantProvider, puncher: Puncher) -> None:
         self.log = logging.getLogger('field_friend.weeding')
-        self.robot = robot
+        self.field_friend = field_friend
+        self.puncher = puncher
         self.driver = driver
         self.detector = detector
         self.plant_provider = plant_provider
         self.camera_selector = camera_selector
-        self.plant_detection = PlantDetection(self.detector, self.plant_provider, self.robot)
+        self.plant_detection = PlantDetection(self.detector, self.plant_provider, self.field_friend)
 
         self.weed_load: int = 0
         self.max_weeds: int = 10
@@ -28,15 +31,17 @@ class Weeding:
         self.max_crop_search_failures: int = 10
         self.max_distance: float = 0.10
 
+    def is_simulation(self) -> bool:
+        return isinstance(self.field_friend, FieldFriendSimulation)
+
     async def start(self) -> None:
-        if not await self.robot.start_homing():
-            return
+        await self.puncher.home()
         await self.reset_world()
         self.weed_load = 0
         self.crop_search_failures = 0
         while True:
             try:
-                if not self.robot.is_real:
+                if self.is_simulation:
                     self.plant_detection.place_simulated_objects()
                 if self.weed_load >= self.max_weeds:
                     rosys.notify(f'stopping because weed load is {self.max_weeds}')
@@ -62,9 +67,9 @@ class Weeding:
                 self.log.info('no target weeds found')
                 return
             for weed in sorted(target_weeds, key=lambda w: w.position.y, reverse=True):
-                await self.punch_weed(weed.position.y)
+                await self.puncher.punch(weed.position.y)
                 self.log.info(f'punched y: {weed.position.y:.2f} with weeds {[w.position.y for w in target_weeds]}')
-            await self.robot.move_yaxis_to(self.robot.MAX_Y)
+            await self.field_friend.y_axis.move_to(self.field_friend.y_axis.MAX_Y)
             self.log.info(f'all target weeds removed')
             return
 
@@ -72,10 +77,11 @@ class Weeding:
         self.log.info(f'getting distance to drive')
         await self.reset_world()
         await self.plant_detection.check_cam(self.camera_selector.camera)
-        max_distance = self.robot.AXIS_OFFSET_X + 0.05  # max distance we like to drive if no weed has been detected
+        # max distance we like to drive if no weed has been detected
+        max_distance = self.field_friend.y_axis.AXIS_OFFSET_X + 0.05
         distance = max_distance
         for weed in sorted(self.plant_provider.weeds, key=lambda w: w.position.x):
-            if weed.position.x > self.robot.AXIS_OFFSET_X:
+            if weed.position.x > self.field_friend.y_axis.AXIS_OFFSET_X:
                 distance = weed.position.x - 0.008
                 self.log.info(f'Weed in sight, at position {distance*100:.0f} cm')
                 return distance
@@ -84,7 +90,7 @@ class Weeding:
 
     async def drive_forward_to(self, target_distance_x: float) -> None:
         min_drive_distance = 0.01
-        real_distance = max(target_distance_x - self.robot.AXIS_OFFSET_X, min_drive_distance)
+        real_distance = max(target_distance_x - self.field_friend.y_axis.AXIS_OFFSET_X, min_drive_distance)
         target_crop = await self.get_target_crop()
         if not target_crop:
             target = Point(x=real_distance, y=0)
@@ -100,57 +106,27 @@ class Weeding:
                 target = Point(x=real_distance, y=0)
         await self.driver.drive_to(target)
         await rosys.sleep(0.7)
-        await self.robot.stop()
+        await self.field_friend.stop()
 
     async def get_target_crop(self) -> Plant:
         await self.plant_detection.check_cam(self.camera_selector.camera)
         for crop in sorted(self.plant_provider.crops, key=lambda b: b.position.x):
-            if crop.position.x > self.robot.AXIS_OFFSET_X:
+            if crop.position.x > self.field_friend.y_axis.AXIS_OFFSET_X:
                 self.log.info(f'found crop at position {crop.position.y}')
                 return crop
         self.log.info('no crop in work range')
         return None
 
     async def get_target_weeds(self) -> list[Plant]:
-        weeds_in_range = [w for w in self.plant_provider.weeds
-                          if self.robot.AXIS_OFFSET_X - 0.035 <= w.position.x <= self.robot.AXIS_OFFSET_X + 0.035 and
-                          self.robot.MIN_Y <= w.position.y <= self.robot.MAX_Y]
+        weeds_in_range = [
+            w for w in self.plant_provider.weeds
+            if self.field_friend.y_axis.AXIS_OFFSET_X - 0.035 <= w.position.x <= self.field_friend.y_axis.AXIS_OFFSET_X + 0.035 and
+            self.field_friend.y_axis.MIN_Y <= w.position.y <= self.field_friend.y_axis.MAX_Y]
         if not weeds_in_range:
             self.log.info(f'no weeds in work range')
             return []
         self.log.info(f'found {len(weeds_in_range)} weeds in range')
         return weeds_in_range
-
-    async def punch_weed(self, y: float) -> None:
-        if not self.robot.yaxis_is_referenced or not self.robot.zaxis_is_referenced:
-            rosys.notify('axis are not referenced')
-            return
-        speed = self.robot.AXIS_MAX_SPEED
-        await self.robot.move_yaxis_to(y, speed)
-        await self.robot.move_zaxis_to(self.robot.zaxis_drill_depth, speed)
-        await self.robot.move_zaxis_to(self.robot.MAX_Z, speed)
-        self.log.info(f'weed at {y:.3f} punched')
-        self.weed_load += 1
-        await self.robot.stop()
-
-    async def punch(self, x: float, y: float, speed: float = None) -> None:
-        await self.reset_world()
-        if not self.robot.yaxis_is_referenced or not self.robot.zaxis_is_referenced:
-            rosys.notify('axis are not referenced, homing..')
-            await self.robot.start_homing()
-        if speed == None:
-            speed = self.robot.AXIS_MAX_SPEED
-        await self.drive_to_punch(x)
-        await self.punch_weed(y)
-        await self.robot.move_yaxis_to(self.robot.MAX_Y, speed)
-
-    async def drive_to_punch(self, target_distance_x: float) -> None:
-        min_drive_distance = 0.01
-        real_distance = max(target_distance_x - self.robot.AXIS_OFFSET_X, min_drive_distance)
-        target = Point(x=real_distance, y=0)
-        await self.driver.drive_to(target)
-        await rosys.sleep(0.02)
-        await self.robot.stop()
 
     async def reset_world(self) -> None:
         self.log.info('resetting world')

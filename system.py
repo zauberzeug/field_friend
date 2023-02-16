@@ -36,8 +36,9 @@ class System:
         self.automator = rosys.automation.Automator(self.field_friend.wheels, self.steerer)
         self.puncher = Puncher(self.field_friend.y_axis, self.field_friend.z_axis,
                                self.field_friend.e_stop, self.driver)
-        # self.weeding = Weeding(self.wheels, self.driver, self.detector, self.camera_selector, self.plant_provider)
-        # self.automator.default_automation = self.weeding.start
+        self.weeding = Weeding(self.field_friend, self.driver, self.detector,
+                               self.camera_selector, self.plant_provider, self.puncher)
+        self.automator.default_automation = self.weeding.start
 
         if not self.is_real:
             rosys.on_startup(lambda: create_weedcam(self.usb_camera_provider))
