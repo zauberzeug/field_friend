@@ -1,1 +1,1 @@
-from . import automations, hardware, interface
+from . import automations, hardware, interface, vision
