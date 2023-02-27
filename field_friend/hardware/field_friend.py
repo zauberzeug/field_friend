@@ -1,9 +1,14 @@
+import numpy as np
 import rosys
 
 from .e_stops import EStopHardware, EStopSimulation
 from .safety import SafetyHardware, SafetySimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
+
+MOTOR_GEAR_RATIO = 12.52
+WHEEL_DIAMETER = 0.23
+M_PER_TICK = WHEEL_DIAMETER * np.pi / MOTOR_GEAR_RATIO
 
 
 class FieldFriend(rosys.hardware.Robot):
@@ -34,7 +39,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                     can=self.can,
                                                     left_can_address=0x000,
                                                     right_can_address=0x100,
-                                                    m_per_tick=0.057712964083518566,
+                                                    m_per_tick=M_PER_TICK,
                                                     width=0.47,
                                                     is_right_reversed=True)
         self.estop = EStopHardware(self.robot_brain)
@@ -46,13 +51,13 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         if with_zaxis:
             self.z_axis = ZAxisHardware(self.robot_brain, expander=self.expander)
 
-        super().__init__([self.can, self.wheels, self.serial, self.expander,
-                          self.y_axis, self.z_axis, self.estop, self.safety], self.robot_brain)
+        super().__init__(wheels=self.wheels, y_axis=self.y_axis, z_axis=self.z_axis, modules=[
+            self.can, self.wheels, self.serial, self.expander, self.y_axis, self.z_axis, self.estop, self.safety], robot_brain=self.robot_brain)
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
-    def __init__(self, with_yaxis: bool = True, with_zaxis: bool = True) -> None:
+    def __init__(self,  with_yaxis: bool = True, with_zaxis: bool = True) -> None:
         self.wheels = rosys.hardware.WheelsSimulation()
         self.e_stop = EStopSimulation()
         self.safety = SafetySimulation(self.wheels, self.e_stop)
