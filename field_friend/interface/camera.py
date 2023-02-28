@@ -31,10 +31,15 @@ class camera:
         self.puncher = puncher
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
-        with ui.card().tight().classes('col gap-4').style('width:600px') as self.card:
-            ui.image('assets/field_friend.webp').classes('w-full')
-            ui.label('no camera available').classes('text-center')
-            self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
+        with ui.row():
+            with ui.card().tight().classes('col gap-4').style('width:600px') as self.bottom_cam_card:
+                ui.image('assets/field_friend.webp').classes('w-full')
+                ui.label('no bottom camera available').classes('text-center')
+                self.camera_selector.BOTTOM_CAMERA_SELECTED.register(self.use_camera, self.bottom_cam_card)
+            with ui.card().tight().classes('col gap-4').style('width:600px') as self.front_cam_card:
+                ui.image('assets/field_friend.webp').classes('w-full')
+                ui.label('no front camera available').classes('text-center')
+                self.camera_selector.FRONT_CAMERA_SELECTED.register(self.use_camera, self.front_cam_card)
 
     def on_mouse_move(self, e: MouseEventArguments):
         if e.type == 'mousemove':
@@ -49,8 +54,9 @@ class camera:
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
-    def use_camera(self, camera: Camera) -> None:
+    def use_camera(self, camera: Camera, card: ui.card) -> None:
         self.camera = camera
+        self.card = card
         self.card.clear()
         events = ['mousemove', 'mouseout', 'mouseup']
         with self.card:
