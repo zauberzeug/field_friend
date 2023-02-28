@@ -12,6 +12,7 @@ class PlantProvider:
         self.crops: list[Plant] = []
 
         rosys.on_repeat(self.forget_old_weed, 10.0)
+        rosys.on_repeat(self.forget_old_crop, 10.0)
 
         self.needs_backup: bool = False
         # persistence.register(self)
@@ -26,11 +27,11 @@ class PlantProvider:
         persistence.replace_list(self.weeds, Plant, data.get('weed', []))
         persistence.replace_list(self.crops, Plant, data.get('crop', []))
 
-    async def forget_old_weed(self) -> None:
+    def forget_old_weed(self) -> None:
         self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - 3600]
         self.needs_backup = True
 
-    async def add_weed(self, *new: Plant) -> None:
+    def add_weed(self, *new: Plant) -> None:
         for weed in new:
             self.weeds.append(weed)
         self.needs_backup = True
@@ -42,11 +43,11 @@ class PlantProvider:
     def restore_crops(self, data: dict[str, Any]) -> None:
         persistence.replace_list(self.crops, Plant, data.get('crop', []))
 
-    async def forget_old_crop(self) -> None:
+    def forget_old_crop(self) -> None:
         self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - 3600]
         self.needs_backup = True
 
-    async def add_crop(self, *new: Plant) -> None:
+    def add_crop(self, *new: Plant) -> None:
         for crop in new:
             self.crops.append(crop)
         self.needs_backup = True
