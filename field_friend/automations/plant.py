@@ -18,4 +18,4 @@ class Plant:
         self.id = self.id or str(uuid.uuid4())
 
     def __str__(self) -> str:
-        return f'plant with id: {self.id[:5]}, pos: {self.position}, mac: {self.mac}'
+        return f'{self.type} plant with id: {self.id[:5]}, pos: {self.position}, mac: {self.mac}'
