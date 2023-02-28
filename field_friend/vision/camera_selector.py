@@ -23,9 +23,13 @@ class CameraSelector:
         self.log.info(f'selected camera is {self.camera.id}')
         if camera.id not in FRONT_CAMERA_IDS and camera.id not in BOTTOM_CAMERA_IDS:
             self.log.warning(f'camera {camera.id} is not a known camera')
+            return
+        self.log.info(f'selected camera is {self.camera.id}')
         if camera.id in FRONT_CAMERA_IDS:
             self.log.info(f'camera {camera.id} is a front camera')
             self.FRONT_CAMERA_SELECTED.emit(self.camera)
+            return
         if camera.id in BOTTOM_CAMERA_IDS:
             self.log.info(f'camera {camera.id} is a bottom camera')
             self.BOTTOM_CAMERA_SELECTED.emit(self.camera)
+            return
