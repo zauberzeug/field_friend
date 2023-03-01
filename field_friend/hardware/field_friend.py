@@ -53,7 +53,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.bms = rosys.hardware.BmsHardware(self.robot_brain, expander=None, rx_pin=13, tx_pin=4)
 
         super().__init__(wheels=self.wheels, y_axis=self.y_axis, z_axis=self.z_axis, modules=[
-            self.can, self.wheels, self.serial, self.expander, self.bms, self.e_stop], robot_brain=self.robot_brain)
+            self.can, self.wheels, self.serial, self.expander, self.bms, self.e_stop, self.safety], robot_brain=self.robot_brain)
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):

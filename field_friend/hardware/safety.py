@@ -21,9 +21,13 @@ class SafetyHardware(Safety, ModuleHardware):
                  wheels: Wheels,
                  estop: EStop) -> None:
         lizard_code = f'''
-            let stop do {wheels.name}.stop(); end
-            when {estop.name1}.level == 0 or {estop.name2}.level ==  0 then stop(); end
-            when core.last_massage_age > 1000 then {wheels.name}.speed(0, 0); end'''
+            let stop do 
+                {wheels.name}.speed(0, 0); 
+            end
+
+            when {estop.name1}.level == 0 or {estop.name2}.level == 0 then stop(); end
+            when core.last_message_age > 1000 then stop(); end
+            '''
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 
 
