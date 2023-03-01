@@ -20,7 +20,7 @@ class FieldFriend(rosys.hardware.Robot):
         rosys.on_shutdown(self.stop)
 
     async def stop(self) -> None:
-        self.wheels.stop()
+        await self.wheels.stop()
         if self.y_axis:
             await self.y_axis.stop()
         if self.z_axis:
@@ -42,17 +42,18 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                     m_per_tick=M_PER_TICK,
                                                     width=0.47,
                                                     is_right_reversed=True)
-        self.estop = EStopHardware(self.robot_brain)
-        self.safety = SafetyHardware(self.robot_brain)
+        self.e_stop = EStopHardware(self.robot_brain)
+        self.safety = SafetyHardware(self.robot_brain, estop=self.e_stop, wheels=self.wheels)
         self.serial = rosys.hardware.SerialHardware(self.robot_brain)
         self.expander = rosys.hardware.ExpanderHardware(self.robot_brain, serial=self.serial)
         if with_yaxis:
             self.y_axis = YAxisHardware(self.robot_brain, expander=self.expander)
         if with_zaxis:
             self.z_axis = ZAxisHardware(self.robot_brain, expander=self.expander)
+        self.bms = rosys.hardware.BmsHardware(self.robot_brain, expander=None, rx_pin=13, tx_pin=4)
 
         super().__init__(wheels=self.wheels, y_axis=self.y_axis, z_axis=self.z_axis, modules=[
-            self.can, self.wheels, self.serial, self.expander, self.y_axis, self.z_axis, self.estop, self.safety], robot_brain=self.robot_brain)
+            self.can, self.wheels, self.serial, self.expander, self.bms, self.e_stop], robot_brain=self.robot_brain)
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):

@@ -25,4 +25,4 @@ def navigation_bar(field_friend: FieldFriend):
                     ui.menu_item('restart RoSys', on_click=lambda: os.utime('main.py'))
                 ui.button(on_click=menu.open).classes('text-white').props('icon=settings size=sm dense unelevated flat')
 
-    # ui.timer(1, lambda: battery_status.set_content(f' {robot.battery.short_string}'))
+    ui.timer(1, lambda: battery_status.set_content(f' {field_friend.bms.state.short_string}'))
