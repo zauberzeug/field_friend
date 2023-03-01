@@ -163,7 +163,7 @@ class YAxisHardware(YAxis, ModuleHardware):
         await super().enable_end_stops(value)
         await self.robot_brain.send(f'yend_stops_active = {str(value).lower()};')
 
-    async def handle_core_output(self, time: float, words: list[str]) -> None:
+    def handle_core_output(self, time: float, words: list[str]) -> None:
         self.yaxis_end_l = int(words.pop(0)) == 0
         self.yaxis_end_r = int(words.pop(0)) == 0
         self.yaxis_idle = words.pop(0) == 'true'

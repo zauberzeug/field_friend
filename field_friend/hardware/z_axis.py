@@ -162,7 +162,7 @@ class ZAxisHardware(ZAxis, ModuleHardware):
         await super().enable_end_stops(value)
         await self.robot_brain.send(f'zend_stops_active = {str(value).lower()};')
 
-    async def handle_core_output(self, time: float, words: list[str]) -> None:
+    def handle_core_output(self, time: float, words: list[str]) -> None:
         self.zaxis_end_t = int(words.pop(0)) == 0
         self.zaxis_end_b = int(words.pop(0)) == 0
         self.zaxis_idle = words.pop(0) == 'true'
