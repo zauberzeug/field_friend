@@ -34,7 +34,8 @@ class EStopHardware(EStop, ModuleHardware):
             {name1} = Input({pin1})
             {name2} = Input({pin2})
         '''
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        core_message_fields: list[str] = [f'{self.name1}.level', f'{self.name2}.level']
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def handle_core_output(self, time: float, words: list[str]) -> None:
 
