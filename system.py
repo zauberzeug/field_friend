@@ -13,14 +13,12 @@ class System:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         if self.is_real:
-            # self.robot = RobotHardware(self.robot_brain)
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = rosys.vision.UsbCameraProviderHardware()
             self.detector = rosys.vision.DetectorHardware(port=8004)
         else:
 
             self.field_friend = FieldFriendSimulation()
-            # self.robot = RobotSimulation()
             self.usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
         self.camera_selector = CameraSelector(self.usb_camera_provider)
