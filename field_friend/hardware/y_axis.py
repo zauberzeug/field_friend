@@ -6,8 +6,8 @@ from rosys.hardware import ExpanderHardware, Module, ModuleHardware, ModuleSimul
 
 
 class YAxis(Module, abc.ABC):
-    '''The y axis module is a simple example for a representation of real or simulated robot hardware.
-    '''
+    """The y axis module is a simple example for a representation of real or simulated robot hardware."""
+
     Y_AXIS_MAX_SPEED: float = 80_000
     MIN_Y: float = -0.12
     MAX_Y: float = 0.12
@@ -70,9 +70,7 @@ class YAxis(Module, abc.ABC):
 
 
 class YAxisHardware(YAxis, ModuleHardware):
-    '''The y axis hardware module is a simple example for a representation of real robot hardware.
-    '''
-    CORE_MESSAGE_FIELDS: list[str] = ['y_end_l.level', 'y_end_r.level', 'yaxis.idle', 'yaxis.position', 'yaxis.alarm']
+    """The y axis hardware module is a simple example for a representation of real robot hardware."""
 
     def __init__(self, robot_brain: RobotBrain, *,
                  name: str = 'yaxis',
@@ -101,7 +99,8 @@ class YAxisHardware(YAxis, ModuleHardware):
             when !y_is_referencing and yend_stops_active and y_end_l.level == 0 then {name}.stop(); end
             when yend_stops_active and y_end_r.level == 0 then {name}.stop(); end
         '''
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        core_message_fields = ['y_end_l.level', 'y_end_r.level', 'yaxis.idle', 'yaxis.position', 'yaxis.alarm']
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
         await super().stop()
@@ -179,6 +178,7 @@ class YAxisSimulation(YAxis, ModuleSimulation):
 
     def __init__(self) -> None:
         super().__init__()
+
         self.yaxis_velocity: float = 0.0
         self.yaxis_target: Optional[float] = None
 

@@ -6,8 +6,8 @@ from rosys.hardware import ExpanderHardware, Module, ModuleHardware, ModuleSimul
 
 
 class ZAxis(Module, abc.ABC):
-    '''The z axis module is a simple example for a representation of real or simulated robot hardware.
-    '''
+    """The z axis module is a simple example for a representation of real or simulated robot hardware."""
+
     Z_AXIS_MAX_SPEED: float = 80_000
     MIN_Z: float = -0.197
     MAX_Z: float = -0.003
@@ -68,8 +68,8 @@ class ZAxis(Module, abc.ABC):
 
 
 class ZAxisHardware(ZAxis, ModuleHardware):
-    '''The z axis module is a simple example for a representation of real or simulated robot hardware.
-    '''
+    """The z axis module is a simple example for a representation of real or simulated robot hardware."""
+
     CORE_MESSAGE_FIELDS: list[str] = ['z_end_t.level', 'z_end_b.level', 'zaxis.idle', 'zaxis.position', 'z_alarm.level']
 
     def __init__(self, robot_brain: RobotBrain, *,
@@ -82,6 +82,7 @@ class ZAxisHardware(ZAxis, ModuleHardware):
                  end_b_pin: int = 15,
                  ) -> None:
         self.name = name
+        core_message_fields = ['z_end_t.level', 'z_end_b.level', 'zaxis.idle', 'zaxis.position', 'z_alarm.level']
         lizard_code = f'''
             {name} = {expander.name}.StepperMotor({step_pin}, {dir_pin}, 1, 1, 1, 1)
             z_alarm = {expander.name}.Input({alarm_pin})
@@ -100,7 +101,7 @@ class ZAxisHardware(ZAxis, ModuleHardware):
             when !z_is_referencing and zend_stops_active and z_end_t.level == 0 then {name}.stop(); end
             when zend_stops_active and z_end_b.level == 0 then {name}.stop(); end
         '''
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
         await super().stop()
@@ -173,8 +174,7 @@ class ZAxisHardware(ZAxis, ModuleHardware):
 
 
 class ZAxisSimulation(ZAxis, ModuleSimulation):
-    '''The z axis module is a simple example for a representation of real or simulated robot hardware.
-    '''
+    """The z axis module is a simple example for a representation of real or simulated robot hardware."""
 
     def __init__(self) -> None:
         super().__init__()

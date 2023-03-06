@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 import rosys
 
-from .e_stops import EStopHardware, EStopSimulation
+from .e_stops import EStop, EStopHardware, EStopSimulation
 from .safety import SafetyHardware, SafetySimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
@@ -14,13 +14,24 @@ M_PER_TICK = WHEEL_DIAMETER * np.pi / MOTOR_GEAR_RATIO
 
 
 class FieldFriend(rosys.hardware.Robot):
+    MOTOR_GEAR_RATIO = 12.52
+    WHEEL_DIAMETER = 0.23
+    M_PER_TICK = WHEEL_DIAMETER * np.pi / MOTOR_GEAR_RATIO
+
     def __init__(
-            self, *, wheels: rosys.hardware.Wheels, y_axis: Optional[YAxis] = None, z_axis: Optional[ZAxis] = None, **
-            kwargs) -> None:
+            self, *,
+            wheels: rosys.hardware.Wheels,
+            y_axis: Optional[YAxis] = None,
+            z_axis: Optional[ZAxis] = None,
+            estop: EStop,
+            bms: rosys.hardware.Bms,
+            **kwargs) -> None:
         super().__init__(**kwargs)
         self.wheels = wheels
         self.y_axis = y_axis
         self.z_axis = z_axis
+        self.estop = estop
+        self.bms = bms
         rosys.on_shutdown(self.stop)
 
     async def stop(self) -> None:
@@ -29,50 +40,60 @@ class FieldFriend(rosys.hardware.Robot):
             await self.y_axis.stop()
         if self.z_axis:
             await self.z_axis.stop()
+        # TODO: stop other modules
 
 
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self, with_yaxis: bool = True, with_zaxis: bool = True) -> None:
-        self.communication = rosys.hardware.SerialCommunication()
-        self.robot_brain = rosys.hardware.RobotBrain(self.communication)
-        if self.communication.device_path == '/dev/ttyTHS0':
-            self.robot_brain.lizard_firmware.flash_params = ['xavier']
-        self.can = rosys.hardware.CanHardware(self.robot_brain)
-        self.wheels = rosys.hardware.WheelsHardware(self.robot_brain,
-                                                    can=self.can,
-                                                    left_can_address=0x000,
-                                                    right_can_address=0x100,
-                                                    m_per_tick=M_PER_TICK,
-                                                    width=0.47,
-                                                    is_right_reversed=True)
-        self.e_stop = EStopHardware(self.robot_brain)
-        self.safety = SafetyHardware(self.robot_brain, estop=self.e_stop, wheels=self.wheels)
-        self.serial = rosys.hardware.SerialHardware(self.robot_brain)
-        self.expander = rosys.hardware.ExpanderHardware(self.robot_brain, serial=self.serial)
+        communication = rosys.hardware.SerialCommunication()
+        robot_brain = rosys.hardware.RobotBrain(self.communication)
+        if communication.device_path == '/dev/ttyTHS0':
+            robot_brain.lizard_firmware.flash_params = ['xavier']
+        can = rosys.hardware.CanHardware(robot_brain)
+        wheels = rosys.hardware.WheelsHardware(robot_brain,
+                                               can=can,
+                                               left_can_address=0x000,
+                                               right_can_address=0x100,
+                                               m_per_tick=M_PER_TICK,
+                                               width=0.47,
+                                               is_right_reversed=True)
+        estop = EStopHardware(robot_brain)
+        safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels)
+        serial = rosys.hardware.SerialHardware(robot_brain)
+        expander = rosys.hardware.ExpanderHardware(robot_brain, serial=serial)
         if with_yaxis:
-            self.y_axis = YAxisHardware(self.robot_brain, expander=self.expander)
+            y_axis = YAxisHardware(robot_brain, expander=expander)
         if with_zaxis:
-            self.z_axis = ZAxisHardware(self.robot_brain, expander=self.expander)
-        self.bms = rosys.hardware.BmsHardware(self.robot_brain, expander=None, rx_pin=13, tx_pin=4)
+            z_axis = ZAxisHardware(robot_brain, expander=expander)
+        bms = rosys.hardware.BmsHardware(robot_brain, expander=None, rx_pin=13, tx_pin=4)
 
-        super().__init__(wheels=self.wheels, y_axis=self.y_axis, z_axis=self.z_axis, modules=[
-            self.can, self.wheels, self.serial, self.expander, self.bms, self.e_stop, self.safety], robot_brain=self.robot_brain)
+        super().__init__(wheels=self.wheels,
+                         y_axis=self.y_axis,
+                         z_axis=self.z_axis,
+                         estop=estop,
+                         bms=bms,
+                         modules=[can, wheels, serial, expander, bms, estop, safety],
+                         robot_brain=robot_brain)
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
     def __init__(self,  with_yaxis: bool = True, with_zaxis: bool = True) -> None:
-        self.wheels = rosys.hardware.WheelsSimulation()
-        self.e_stop = EStopSimulation()
-        self.safety = SafetySimulation(self.wheels, self.e_stop)
-        self.bms = rosys.hardware.BmsSimulation()
+        wheels = rosys.hardware.WheelsSimulation()
+        estop = EStopSimulation()
+        self.safety = SafetySimulation(wheels, estop)
+        bms = rosys.hardware.BmsSimulation()
         if with_yaxis:
-            self.y_axis = YAxisSimulation()
+            y_axis = YAxisSimulation()
         if with_zaxis:
-            self.z_axis = ZAxisSimulation()
-        super().__init__(wheels=self.wheels, y_axis=self.y_axis, z_axis=self.z_axis,
-                         modules=[self.wheels, self.y_axis, self.z_axis, self.e_stop, self.safety])
+            z_axis = ZAxisSimulation()
+        super().__init__(wheels=wheels,
+                         y_axis=y_axis,
+                         z_axis=z_axis,
+                         estop=estop,
+                         bms=bms,
+                         modules=[wheels, y_axis, z_axis, bms, estop, self.safety])
 
 
 # class Uckerbot(FieldFriend):
