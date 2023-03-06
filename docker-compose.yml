@@ -1,13 +1,15 @@
 version: "3.9"
 services:
   rosys:
-    image: "zauberzeug/rosys:latest"
+    image: "zauberzeug/field_friend:latest"
     volumes:
       - ./:/app
       - ~/.rosys:/root/.rosys
       - ./../rosys:/rosys
       - ./../nicegui/nicegui:/usr/local/lib/python3.11/site-packages/nicegui
       - ~/data:/data
+    build:
+      context: ./
     network_mode: host
     restart: always
     privileged: true
