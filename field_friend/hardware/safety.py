@@ -6,16 +6,14 @@ from ..hardware import EStop
 
 
 class Safety(Module, abc.ABC):
-    '''The safety module is a simple example for a representation of real or simulated robot hardware.
-    '''
+    """The safety module is a simple example for a representation of real or simulated robot hardware."""
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
 
 class SafetyHardware(Safety, ModuleHardware):
-    '''This module implements safety hardware.
-    '''
+    """This module implements safety hardware."""
 
     def __init__(self, robot_brain: RobotBrain, *,
                  wheels: Wheels,
@@ -32,8 +30,7 @@ class SafetyHardware(Safety, ModuleHardware):
 
 
 class SafetySimulation(Safety, ModuleSimulation):
-    '''This module implements safety simulation.
-    '''
+    """This module implements safety simulation."""
 
     def __init__(self, wheels: Wheels, estop: EStop) -> None:
         super().__init__()
