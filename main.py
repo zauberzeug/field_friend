@@ -19,8 +19,8 @@ def startup() -> None:
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
                 interface.operation(system.field_friend, system.steerer, system.automator, system.odometer,
                                     system.usb_camera_provider, system.plant_provider, system.puncher)
-                # interface.camera(system.camera_selector, system.usb_camera_provider,
-                #                  system.automator, system.detector, system.puncher)
+                interface.cameras(system.camera_selector, system.usb_camera_provider,
+                                  system.automator, system.detector, system.puncher)
             with ui.row().classes('items-stretch justify-items-stretch'):
                 interface.development(system.field_friend, system.automator, system.puncher)
 

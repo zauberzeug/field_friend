@@ -1,10 +1,13 @@
 import colorsys
 import logging
+from typing import Optional
 
 import numpy as np
 import rosys
 from nicegui import ui
+from nicegui.elements.card import Card
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
+from rosys import background_tasks
 from rosys.automation import Automator
 from rosys.geometry import Point, Point3d
 from rosys.vision import Camera, CameraProvider, Detector
@@ -14,52 +17,37 @@ from ..vision import CameraSelector
 from .calibration_dialog import calibration_dialog
 
 
-class camera:
+class CameraCard(Card):
 
-    def __init__(
-            self, camera_selector: CameraSelector, camera_provider: CameraProvider,
-            automator: Automator, detector: Detector,
-            puncher: Puncher) -> None:
-        self.log = logging.getLogger('field_friend.camera')
-        self.camera_selector = camera_selector
+    def __init__(self, camera_type: str, camera_provider: CameraProvider, camera_selector: CameraSelector,
+                 automator: Automator, detector: Detector, puncher: Optional[Puncher] = None) -> None:
+        super().__init__()
+        self.log = logging.getLogger(f'rosys.camera_card')
+        self.camera_type = camera_type
+        self.camera = None
         self.camera_provider = camera_provider
-        self.camera: Camera = None
+        self.camera_selector = camera_selector
         self.automator = automator
         self.detector = detector
-        self.capture_images = ui.timer(1, lambda: rosys.create_task(
+        self.capture_images = ui.timer(1, lambda: background_tasks.create(
             self.detector.upload(self.camera.latest_captured_image)), active=False)
         self.puncher = puncher
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
-        with ui.row():
-            with ui.card().tight().classes('col gap-4').style('width:600px') as self.bottom_cam_card:
-                ui.image('assets/field_friend.webp').classes('w-full')
-                ui.label('no bottom camera available').classes('text-center')
-                self.camera_selector.BOTTOM_CAMERA_SELECTED.register(self.use_camera, self.bottom_cam_card)
-            with ui.card().tight().classes('col gap-4').style('width:600px') as self.front_cam_card:
-                ui.image('assets/field_friend.webp').classes('w-full')
-                ui.label('no front camera available').classes('text-center')
-                self.camera_selector.FRONT_CAMERA_SELECTED.register(self.use_camera, self.front_cam_card)
+        with self.tight().classes('col gap-4').style('width:600px'):
+            ui.label(f'{camera_type}:').classes('text-xl')
+            ui.image('assets/field_friend.webp').classes('w-full')
+            ui.label(f'no {camera_type} available').classes('text-center')
+        self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
 
-    def on_mouse_move(self, e: MouseEventArguments):
-        if e.type == 'mousemove':
-            point2d = Point(x=e.image_x, y=e.image_y)
-            point3d = self.camera.calibration.project_from_image(point2d)
-            self.debug_position.set_text(f'{point2d} -> {point3d}')
-        if e.type == 'mouseup':
-            point2d = Point(x=e.image_x, y=e.image_y)
-            point3d = self.camera.calibration.project_from_image(point2d)
-            if point3d is not None:
-                self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y))
-        if e.type == 'mouseout':
-            self.debug_position.set_text('')
-
-    def use_camera(self, camera: Camera, card: ui.card) -> None:
+    def use_camera(self, camera_data: tuple[str, Camera]) -> None:
+        camera_type, camera = camera_data
+        if camera_type != self.camera_type:
+            return
         self.camera = camera
-        self.card = card
-        self.card.clear()
+        self.clear()
         events = ['mousemove', 'mouseout', 'mouseup']
-        with self.card:
+        with self:
             self.image_view = ui.interactive_image(
                 self.camera_provider.get_latest_image_url(camera),
                 cross=True,
@@ -80,6 +68,19 @@ class camera:
                     .props('icon=straighten outline').tooltip('Calibrate camera')
             with ui.row():
                 self.debug_position = ui.label()
+
+    def on_mouse_move(self, e: MouseEventArguments):
+        if e.type == 'mousemove':
+            point2d = Point(x=e.image_x, y=e.image_y)
+            point3d = self.camera.calibration.project_from_image(point2d)
+            self.debug_position.set_text(f'{point2d} -> {point3d}')
+        if e.type == 'mouseup':
+            point2d = Point(x=e.image_x, y=e.image_y)
+            point3d = self.camera.calibration.project_from_image(point2d)
+            if point3d is not None and self.puncher is not None:
+                self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y))
+        if e.type == 'mouseout':
+            self.debug_position.set_text('')
 
     async def calibrate(self) -> None:
         result = await self.calibration_dialog.edit(self.camera)
@@ -112,3 +113,22 @@ class camera:
                 y += 0.03
             x += 0.03
         return result
+
+
+class cameras:
+
+    def __init__(
+            self, camera_selector: CameraSelector, camera_provider: CameraProvider,
+            automator: Automator, detector: Detector,
+            puncher: Optional[Puncher] = None) -> None:
+        self.log = logging.getLogger('field_friend.cameras')
+        self.camera_selector = camera_selector
+        self.camera_provider = camera_provider
+        self.automator = automator
+        self.detector = detector
+        self.puncher = puncher
+        with ui.card():
+            with ui.row():
+                for camera_type in self.camera_selector.camera_ids.keys():
+                    CameraCard(camera_type, self.camera_provider, self.camera_selector,
+                               self.automator, self.detector, self.puncher)
