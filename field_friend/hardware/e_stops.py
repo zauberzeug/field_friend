@@ -21,7 +21,6 @@ class EStop(Module, abc.ABC):
 class EStopHardware(EStop, ModuleHardware):
     '''This module implements estop hardware.
     '''
-    CORE_MESSAGE_FIELDS: list[str] = ['estop1.level', 'estop2.level']
 
     def __init__(self, robot_brain: RobotBrain, *,
                  name1: str = 'estop1',
@@ -50,8 +49,8 @@ class EStopSimulation(EStop, ModuleSimulation):
     '''This module implements estop simulation.
     '''
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self) -> None:
+        super().__init__()
 
     async def step(self, dt: float) -> None:
         pass
