@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 import rosys
 
@@ -12,7 +14,9 @@ M_PER_TICK = WHEEL_DIAMETER * np.pi / MOTOR_GEAR_RATIO
 
 
 class FieldFriend(rosys.hardware.Robot):
-    def __init__(self, *, wheels: rosys.hardware.Wheels, y_axis: YAxis = None, z_axis: ZAxis = None, **kwargs) -> None:
+    def __init__(
+            self, *, wheels: rosys.hardware.Wheels, y_axis: Optional[YAxis] = None, z_axis: Optional[ZAxis] = None, **
+            kwargs) -> None:
         super().__init__(**kwargs)
         self.wheels = wheels
         self.y_axis = y_axis
@@ -62,6 +66,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         self.wheels = rosys.hardware.WheelsSimulation()
         self.e_stop = EStopSimulation()
         self.safety = SafetySimulation(self.wheels, self.e_stop)
+        self.bms = rosys.hardware.BmsSimulation()
         if with_yaxis:
             self.y_axis = YAxisSimulation()
         if with_zaxis:
