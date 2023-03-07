@@ -94,6 +94,7 @@ class calibration_dialog(ui.dialog):
         self.log.info(f'{camera.id}')
         self.image = camera.latest_captured_image
         if self.image is None:
+            self.log.info('No image available')
             return
         self.points = create_calibration_pattern()
         if camera.calibration:
@@ -101,8 +102,10 @@ class calibration_dialog(ui.dialog):
             image_points = camera.calibration.project_array_to_image(world_points=world_points)
             for i, point in enumerate(self.points):
                 point.image_position = Point(x=image_points[i][0], y=image_points[i][1])
-        update = self.calibration_image.set_source(self.camera_provider.get_latest_image_url(camera))
-        rosys.task_logger.create_task(update)
+        self.calibration_image.set_source(self.camera_provider.get_latest_image_url(camera))
+        # update = self.calibration_image.set_source(self.camera_provider.get_latest_image_url(camera))
+        # rosys.background_tasks.create(self.calibration_image.set_source(
+        #     self.camera_provider.get_latest_image_url(camera)))
         for point in self.points:
             if point.image_position is None:
                 point.image_position = Point(x=self.image.size.width/2, y=self.image.size.height/2)
@@ -119,14 +122,20 @@ class calibration_dialog(ui.dialog):
             svg += point.svg_position(max_x=self.image.size.width, max_y=self.image.size.height)
             if not any([p.image_position.distance(point.image_position) < 20 for p in self.points if p != point]):
                 svg += point.svg_text(max_x=self.image.size.width, max_y=self.image.size.height)
-        self.calibration_image.svg_content = svg
+        self.calibration_image.content = svg
 
     def on_mouse_move(self, e: MouseEventArguments) -> None:
         if e.type == 'mouseup':
             self.active_point = None
             self.draw_points()
-        if e.type == 'mousedown' or (e.type == 'mousemove' and self.active_point):
+        # if e.type == 'mousedown' or (e.type == 'mousemove' and self.active_point):
+        #     self.active_point = self.closest_point(e.image_x, e.image_y)
+        #     self.active_point.image_position.x = e.image_x
+        #     self.active_point.image_position.y = e.image_y
+        #     self.draw_points()
+        if e.type == 'mousedown':
             self.active_point = self.closest_point(e.image_x, e.image_y)
+        if e.type == 'mousemove' and self.active_point:
             self.active_point.image_position.x = e.image_x
             self.active_point.image_position.y = e.image_y
             self.draw_points()

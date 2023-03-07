@@ -35,7 +35,6 @@ class CameraCard(Card):
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
         with self.tight().classes('col gap-4').style('width:600px'):
-            ui.label(f'{camera_type}:').classes('text-xl')
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label(f'no {camera_type} available').classes('text-center')
         self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
@@ -48,6 +47,7 @@ class CameraCard(Card):
         self.clear()
         events = ['mousemove', 'mouseout', 'mouseup']
         with self:
+            ui.label(f'{camera_type}:').classes('text-xl')
             self.image_view = ui.interactive_image(
                 self.camera_provider.get_latest_image_url(camera),
                 cross=True,
@@ -55,8 +55,8 @@ class CameraCard(Card):
                 events=events
             ).classes('w-full')
 
-            async def update():
-                await self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))
+            def update():
+                self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))
 
             ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
@@ -89,7 +89,7 @@ class CameraCard(Card):
 
     def show_mapping(self, args: ValueChangeEventArguments) -> None:
         if not args.value:
-            self.image_view.svg_content = ''
+            self.image_view.content = ''
             return
 
         grid_points = np.array([p.tuple for p in self.create_grid_points()])
@@ -99,8 +99,8 @@ class CameraCard(Card):
         def get_color(i: int) -> str:
             rgb = colorsys.hsv_to_rgb(i/c, 1, 1)
             return f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}{int(rgb[2]*255):02x}"
-        self.image_view.set_svg_content(''.join(f'<circle cx="{g[0]}" cy="{g[1]}" r="2" fill="{get_color(i)}"/>' for i,
-                                                g in enumerate(grid_image_points)))
+        self.image_view.set_content(''.join(f'<circle cx="{g[0]}" cy="{g[1]}" r="2" fill="{get_color(i)}"/>' for i,
+                                            g in enumerate(grid_image_points)))
 
     @staticmethod
     def create_grid_points() -> list[Point3d]:
