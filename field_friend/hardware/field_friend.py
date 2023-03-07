@@ -47,7 +47,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self, with_yaxis: bool = True, with_zaxis: bool = True) -> None:
         communication = rosys.hardware.SerialCommunication()
-        robot_brain = rosys.hardware.RobotBrain(self.communication)
+        robot_brain = rosys.hardware.RobotBrain(communication)
         if communication.device_path == '/dev/ttyTHS0':
             robot_brain.lizard_firmware.flash_params = ['xavier']
         can = rosys.hardware.CanHardware(robot_brain)
@@ -68,9 +68,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             z_axis = ZAxisHardware(robot_brain, expander=expander)
         bms = rosys.hardware.BmsHardware(robot_brain, expander=None, rx_pin=13, tx_pin=4)
 
-        super().__init__(wheels=self.wheels,
-                         y_axis=self.y_axis,
-                         z_axis=self.z_axis,
+        super().__init__(wheels=wheels,
+                         y_axis=y_axis,
+                         z_axis=z_axis,
                          estop=estop,
                          bms=bms,
                          modules=[can, wheels, serial, expander, bms, estop, safety],
