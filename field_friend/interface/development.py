@@ -29,8 +29,6 @@ def development(field_friend: FieldFriend, automator: Automator, puncher: Punche
                         field_friend.z_axis.enable_end_stops(True)))
                 ui.button(on_click=developer_menu.open).props('dense fab-mini outline icon=more_vert')
                 robot_status = ui.markdown()
-            if isinstance(field_friend, FieldFriendHardware):
-                ui.button('configure microcontroller', on_click=field_friend.configure).props('outline')
         ui.timer(1, lambda: robot_status.set_content(
             f' YAXIS: Alarm: {field_friend.y_axis.yaxis_alarm} | Idle: {field_friend.y_axis.yaxis_idle} | Pos: {field_friend.y_axis.yaxis_position} | Home: {field_friend.y_axis.yaxis_home_position} | Ref:{field_friend.y_axis.yaxis_is_referenced} | endL: {field_friend.y_axis.yaxis_end_l} | endR: {field_friend.y_axis.yaxis_end_r}<br>'
             f'ZAXIS: Alarm: {field_friend.z_axis.zaxis_alarm} | Idle: {field_friend.z_axis.zaxis_idle} | Pos: {field_friend.z_axis.zaxis_position} | Home: {field_friend.z_axis.zaxis_home_position} | Ref:{field_friend.z_axis.zaxis_is_referenced} | endT: {field_friend.z_axis.zaxis_end_t} | endB: {field_friend.z_axis.zaxis_end_b}'

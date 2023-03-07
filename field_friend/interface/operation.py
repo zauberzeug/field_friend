@@ -49,5 +49,5 @@ def operation(
                             automator.stop(because='emergency stop triggered')
                     automation_controls(automator)
 
-                    field_friend.e_stop.ESTOP_TRIGGERED.register(stop)
+                    field_friend.estop.ESTOP_TRIGGERED.register(stop)
                 ui.label('press PLAY to start weeding with the set drill depth')
