@@ -32,7 +32,7 @@ class Puncher:
 
     async def punch(self, y: float, depth: float = None, speed: float = None) -> None:
         try:
-            if not self.field_friend.y_axis.yaxis_is_referenced or not self.field_friend.z_axis.zaxis_is_referenced:
+            if not self.field_friend.y_axis.is_referenced or not self.field_friend.z_axis.is_referenced:
                 rosys.notify('axis are not referenced')
                 return
             if speed == None:
@@ -40,7 +40,7 @@ class Puncher:
                 speed = self.field_friend.y_axis.Y_AXIS_MAX_SPEED
             await self.field_friend.y_axis.move_to(y, speed)
             if depth == None:
-                depth = self.field_friend.z_axis.zaxis_drill_depth
+                depth = self.field_friend.z_axis.drill_depth
             await self.field_friend.z_axis.move_to(depth, speed)
             await self.field_friend.z_axis.move_to(self.field_friend.z_axis.MAX_Z, speed)
         except Exception as e:
