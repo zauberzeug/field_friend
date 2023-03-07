@@ -47,7 +47,8 @@ class CameraCard(Card):
         self.clear()
         events = ['mousemove', 'mouseout', 'mouseup']
         with self:
-            ui.label(f'{camera_type}:').classes('text-xl')
+            with ui.row().classes('w-full items-center').style('gap:0.5em;margin-left:1em;margin-right:1em'):
+                ui.label(f'{camera_type}:').classes('text-xl')
             self.image_view = ui.interactive_image(
                 self.camera_provider.get_latest_image_url(camera),
                 cross=True,
@@ -58,7 +59,7 @@ class CameraCard(Card):
             def update():
                 self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))
 
-            ui.timer(1, update)
+            ui.timer(0.5, update)
             with ui.row().classes('m-4 justify-end items-center'):
                 ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active')\
                     .tooltip('Record new images for the Learning Loop')
