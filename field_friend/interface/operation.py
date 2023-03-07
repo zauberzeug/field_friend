@@ -33,16 +33,17 @@ def operation(
                     'Steer the robot manually with the JOYSTICK on the left. <br>Hold SHIFT and use the ARROW KEYS to steer the robot \
                         <br>or press ! to HOME both axis and move them with WASD').classes('col-grow')
                 with ui.row():
-                    def check_depth(depth: float) -> None:
-                        if depth > field_friend.z_axis.MAX_Z*100:
-                            depth_number.set_value(field_friend.z_axis.MAX_Z*100)
-                        if depth < field_friend.z_axis.MIN_Z*100:
-                            depth_number.set_value(field_friend.z_axis.MIN_Z*100)
                     speed_number = ui.number('Robot speed').props(
                         'dense outlined').classes('w-24').bind_value(key_controls, 'speed')
-                    depth_number = ui.number('Drill depth', format='%.2f', on_change=lambda e: check_depth(e.value)).props(
-                        'dense outlined suffix=cm').classes('w-28').bind_value(field_friend.z_axis, 'zaxis_drill_depth',
-                                                                               backward=lambda x: x * 100, forward=lambda x: x / 100)
+                    if field_friend.z_axis is not None:
+                        def check_depth(depth: float) -> None:
+                            if depth > field_friend.z_axis.MAX_Z*100:
+                                depth_number.set_value(field_friend.z_axis.MAX_Z*100)
+                            if depth < field_friend.z_axis.MIN_Z*100:
+                                depth_number.set_value(field_friend.z_axis.MIN_Z*100)
+                        depth_number = ui.number('Drill depth', format='%.2f', on_change=lambda e: check_depth(e.value)).props(
+                            'dense outlined suffix=cm').classes('w-28').bind_value(field_friend.z_axis, 'drill_depth',
+                                                                                   backward=lambda x: x * 100, forward=lambda x: x / 100)
                 with ui.row():
                     def stop():
                         if automator.is_running:
