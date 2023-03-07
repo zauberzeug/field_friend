@@ -29,9 +29,9 @@ class System:
         self.driver.parameters.linear_speed_limit = 0.2
         self.driver.parameters.angular_speed_limit = 0.5
         self.driver.parameters.can_drive_backwards = False
-        self.automator = rosys.automation.Automator(self.field_friend.wheels, self.steerer)
+        self.automator = rosys.automation.Automator(self.steerer, on_interrupt=self.field_friend.stop)
         self.puncher = Puncher(self.field_friend.y_axis, self.field_friend.z_axis,
-                               self.field_friend.e_stop, self.driver)
+                               self.field_friend.estop, self.driver)
         self.weeding = Weeding(self.field_friend, self.driver, self.detector,
                                self.camera_selector, self.plant_provider, self.puncher)
         self.automator.default_automation = self.weeding.start
