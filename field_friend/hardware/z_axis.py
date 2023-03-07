@@ -2,10 +2,10 @@ import abc
 from typing import Optional
 
 import rosys
-from rosys.hardware import ExpanderHardware, Module, ModuleHardware, ModuleSimulation, RobotBrain
+from rosys.helpers import remove_indentation
 
 
-class ZAxis(Module, abc.ABC):
+class ZAxis(rosys.hardware.Module, abc.ABC):
     """The z axis module is a simple example for a representation of real or simulated robot hardware."""
 
     Z_AXIS_MAX_SPEED: float = 80_000
@@ -16,14 +16,14 @@ class ZAxis(Module, abc.ABC):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.zaxis_end_t: bool = False
-        self.zaxis_end_b: bool = False
-        self.zaxis_position: int = 0
-        self.zaxis_alarm: bool = False
-        self.zaxis_idle: bool = False
-        self.zaxis_is_referenced: bool = False
-        self.zaxis_home_position: int = 0
-        self.zaxis_drill_depth: float = self.MIN_Z
+        self.end_t: bool = False
+        self.end_b: bool = False
+        self.position: int = 0
+        self.alarm: bool = False
+        self.idle: bool = False
+        self.is_referenced: bool = False
+        self.home_position: int = 0
+        self.drill_depth: float = self.MIN_Z
         self.end_stops_active: bool = True
 
         rosys.on_shutdown(self.stop)
@@ -34,10 +34,10 @@ class ZAxis(Module, abc.ABC):
 
     @abc.abstractmethod
     async def move_to(self, world_position: float, speed: float) -> float:
-        if not self.zaxis_is_referenced:
+        if not self.is_referenced:
             rosys.notify('zaxis is not referenced, reference first')
             return None
-        if self.zaxis_end_b or self.zaxis_end_t:
+        if self.end_b or self.end_t:
             rosys.notify('zaxis is in end stops, remove to move')
             return None
         if speed > self.Z_AXIS_MAX_SPEED:
@@ -47,7 +47,7 @@ class ZAxis(Module, abc.ABC):
             rosys.notify('zaxis position is out of range')
             return None
         steps = self.depth_to_steps(world_position)
-        target_position = self.zaxis_home_position + steps
+        target_position = self.home_position + steps
         return target_position
 
     @abc.abstractmethod
@@ -67,40 +67,39 @@ class ZAxis(Module, abc.ABC):
         self.log.info(f'end stops active = {value}')
 
 
-class ZAxisHardware(ZAxis, ModuleHardware):
+class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
     """The z axis module is a simple example for a representation of real or simulated robot hardware."""
 
-    CORE_MESSAGE_FIELDS: list[str] = ['z_end_t.level', 'z_end_b.level', 'zaxis.idle', 'zaxis.position', 'z_alarm.level']
-
-    def __init__(self, robot_brain: RobotBrain, *,
+    def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'zaxis',
-                 expander: ExpanderHardware,
+                 expander: Optional[rosys.hardware.ExpanderHardware],
                  step_pin: int = 5,
                  dir_pin: int = 4,
                  alarm_pin: int = 33,
                  end_t_pin: int = 13,
-                 end_b_pin: int = 15,
-                 ) -> None:
+                 end_b_pin: int = 15,) -> None:
         self.name = name
-        core_message_fields = ['z_end_t.level', 'z_end_b.level', 'zaxis.idle', 'zaxis.position', 'z_alarm.level']
-        lizard_code = f'''
-            {name} = {expander.name}.StepperMotor({step_pin}, {dir_pin}, 1, 1, 1, 1)
-            z_alarm = {expander.name}.Input({alarm_pin})
-            z_end_t = {expander.name}.Input({end_t_pin})
-            z_end_b = {expander.name}.Input({end_b_pin})
-            bool z_is_referencing = false;
-            bool z_is_referenced = false;
-            when zend_stops_active and z_is_referencing and z_end_t.level == 0 then
+        self.expander = expander
+        lizard_code = remove_indentation(f'''
+            {name} = {expander.name}.StepperMotor({step_pin}, {dir_pin})
+            {name}_alarm = {expander.name}.Input({alarm_pin})
+            {name}_end_t = {expander.name}.Input({end_t_pin})
+            {name}_end_b = {expander.name}.Input({end_b_pin})
+            bool {name}_is_referencing = false;
+            bool {name}_end_stops_active = true
+            when {name}_end_stops_active and {name}_is_referencing and {name}_end_t.level == 0 then
                 {name}.stop();
-                zend_stops_active = false;
+                {name}_end_stops_active = false;
             end
-            when !zend_stops_active and z_is_referencing and z_end_t.level == 1 then 
+            when !{name}_end_stops_active and {name}_is_referencing and {name}_end_t.level == 1 then 
                 {name}.stop(); 
-                zend_stops_active = true;
+                {name}_end_stops_active = true;
             end
-            when !z_is_referencing and zend_stops_active and z_end_t.level == 0 then {name}.stop(); end
-            when zend_stops_active and z_end_b.level == 0 then {name}.stop(); end
-        '''
+            when !{name}_is_referencing and {name}_end_stops_active and {name}_end_t.level == 0 then {name}.stop(); end
+            when {name}_end_stops_active and {name}_end_b.level == 0 then {name}.stop(); end
+        ''')
+        core_message_fields = [f'{name}_end_t.level', f'{name}_end_b.level',
+                               f'{name}.idle', f'{name}.position', f'{name}_alarm.level']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
@@ -117,9 +116,9 @@ class ZAxisHardware(ZAxis, ModuleHardware):
         self.log.info(f'zaxis moved to {world_position}')
 
     async def check_idle_or_alarm(self) -> bool:
-        while not self.zaxis_idle and not self.zaxis_alarm:
+        while not self.idle and not self.alarm:
             await rosys.sleep(0.2)
-        if self.zaxis_alarm:
+        if self.alarm:
             self.log.info("zaxis alarm")
             return False
         return True
@@ -131,11 +130,11 @@ class ZAxisHardware(ZAxis, ModuleHardware):
             if not self.end_stops_active:
                 self.log.warning('end stops not activated')
                 return False
-            if self.zaxis_end_t or self.zaxis_end_b:
+            if self.end_t or self.end_b:
                 self.log.info('zaxis is in end stops, remove to reference')
                 return False
             await self.robot_brain.send(
-                'z_is_referencing = true;'
+                f'{self.name}_is_referencing = true;'
                 f'{self.name}.speed({self.Z_AXIS_MAX_SPEED/2});'
             )
             if not await self.check_idle_or_alarm():
@@ -149,10 +148,10 @@ class ZAxisHardware(ZAxis, ModuleHardware):
             await self.robot_brain.send(f'{self.name}.speed(-{self.Z_AXIS_MAX_SPEED/10});')
             if not await self.check_idle_or_alarm():
                 return False
-            await self.robot_brain.send('z_is_referencing = false;')
+            await self.robot_brain.send(f'{self.name}_is_referencing = false;')
             await rosys.sleep(0.1)
-            self.zaxis_home_position = self.zaxis_position
-            self.zaxis_is_referenced = True
+            self.home_position = self.position
+            self.is_referenced = True
             await self.move_to(self.MAX_Z, speed=self.Z_AXIS_MAX_SPEED/2)
             self.log.info('zaxis referenced')
             return True
@@ -161,56 +160,56 @@ class ZAxisHardware(ZAxis, ModuleHardware):
 
     async def enable_end_stops(self, value: bool) -> None:
         await super().enable_end_stops(value)
-        await self.robot_brain.send(f'zend_stops_active = {str(value).lower()};')
+        await self.robot_brain.send(f'{self.name}_end_stops_active = {str(value).lower()};')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.zaxis_end_t = int(words.pop(0)) == 0
-        self.zaxis_end_b = int(words.pop(0)) == 0
-        self.zaxis_idle = words.pop(0) == 'true'
-        self.zaxis_position = int(words.pop(0))
-        self.zaxis_alarm = int(words.pop(0)) == 0
-        if self.zaxis_alarm:
-            self.zaxis_is_referenced = False
+        self.end_t = int(words.pop(0)) == 0
+        self.end_b = int(words.pop(0)) == 0
+        self.idle = words.pop(0) == 'true'
+        self.position = int(words.pop(0))
+        self.alarm = int(words.pop(0)) == 0
+        if self.alarm:
+            self.is_referenced = False
 
 
-class ZAxisSimulation(ZAxis, ModuleSimulation):
+class ZAxisSimulation(ZAxis, rosys.hardware.ModuleSimulation):
     """The z axis module is a simple example for a representation of real or simulated robot hardware."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.zaxis_velocity: float = 0.0
-        self.zaxis_target: Optional[float] = None
+        self.velocity: float = 0.0
+        self.target: Optional[float] = None
 
     async def stop(self) -> None:
         await super().stop()
-        self.zaxis_velocity = 0.0
-        self.zaxis_target = None
+        self.velocity = 0.0
+        self.target = None
 
     async def move_to(self, world_position: float, speed: float = 16_000) -> None:
         target_position = await super().move_to(world_position=world_position, speed=speed)
         if target_position is None:
             return
-        self.zaxis_target = target_position
-        if self.zaxis_target > self.zaxis_position:
-            self.zaxis_velocity = speed
-        if self.zaxis_target < self.zaxis_position:
-            self.zaxis_velocity = -speed
-        while self.zaxis_target is not None:
+        self.target = target_position
+        if self.target > self.position:
+            self.velocity = speed
+        if self.target < self.position:
+            self.velocity = -speed
+        while self.target is not None:
             await rosys.sleep(0.2)
 
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
-        self.zaxis_position = 0
-        self.zaxis_home_position = 0
-        self.zaxis_is_referenced = True
+        self.position = 0
+        self.home_position = 0
+        self.is_referenced = True
         return True
 
     async def step(self, dt: float) -> None:
         await super().step(dt)
-        self.zaxis_position += int(dt * self.zaxis_velocity)
-        if self.zaxis_target is not None:
-            if (self.zaxis_velocity > 0) == (self.zaxis_position > self.zaxis_target):
-                self.zaxis_position = self.zaxis_target
-                self.zaxis_target = None
-                self.zaxis_velocity = 0
+        self.position += int(dt * self.velocity)
+        if self.target is not None:
+            if (self.velocity > 0) == (self.position > self.target):
+                self.position = self.target
+                self.target = None
+                self.velocity = 0

@@ -2,10 +2,10 @@ import abc
 from typing import Optional
 
 import rosys
-from rosys.hardware import ExpanderHardware, Module, ModuleHardware, ModuleSimulation, RobotBrain
+from rosys.helpers import remove_indentation
 
 
-class YAxis(Module, abc.ABC):
+class YAxis(rosys.hardware.Module, abc.ABC):
     """The y axis module is a simple example for a representation of real or simulated robot hardware."""
 
     Y_AXIS_MAX_SPEED: float = 80_000
@@ -19,13 +19,13 @@ class YAxis(Module, abc.ABC):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.yaxis_end_l: bool = False
-        self.yaxis_end_r: bool = False
-        self.yaxis_position: int = 0
-        self.yaxis_alarm: bool = False
-        self.yaxis_idle: bool = False
-        self.yaxis_is_referenced: bool = False
-        self.yaxis_home_position: int = 0
+        self.end_l: bool = False
+        self.end_r: bool = False
+        self.position: int = 0
+        self.alarm: bool = False
+        self.idle: bool = False
+        self.is_referenced: bool = False
+        self.home_position: int = 0
         self.end_stops_active: bool = True
 
         rosys.on_shutdown(self.stop)
@@ -36,10 +36,10 @@ class YAxis(Module, abc.ABC):
 
     @abc.abstractmethod
     async def move_to(self, world_position: float, speed: float) -> float:
-        if not self.yaxis_is_referenced:
+        if not self.is_referenced:
             rosys.notify('yaxis is not referenced, reference first')
             return None
-        if self.yaxis_end_l or self.yaxis_end_r:
+        if self.end_l or self.end_r:
             rosys.notify('yaxis is in end stops, remove to move')
             return None
         if speed > self.Y_AXIS_MAX_SPEED:
@@ -49,7 +49,7 @@ class YAxis(Module, abc.ABC):
             rosys.notify('yaxis position is out of range')
             return None
         steps = self.linear_to_steps(world_position-self.AXIS_OFFSET_Y)
-        target_position = self.yaxis_home_position + steps
+        target_position = self.home_position + steps
         return target_position
 
     @abc.abstractmethod
@@ -69,37 +69,39 @@ class YAxis(Module, abc.ABC):
         self.log.info(f'end stops active = {value}')
 
 
-class YAxisHardware(YAxis, ModuleHardware):
+class YAxisHardware(YAxis, rosys.hardware.ModuleHardware):
     """The y axis hardware module is a simple example for a representation of real robot hardware."""
 
-    def __init__(self, robot_brain: RobotBrain, *,
+    def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'yaxis',
-                 expander: ExpanderHardware,
+                 expander: Optional[rosys.hardware.ExpanderHardware],
                  step_pin: int = 19,
                  dir_pin: int = 18,
                  alarm_pin: int = 35,
                  end_l_pin: int = 36,
                  end_r_pin: int = 13) -> None:
         self.name = name
-        lizard_code = f'''
+        self.expander = expander
+        lizard_code = remove_indentation(f'''
             {name} = {expander.name}.StepperMotor({step_pin}, {dir_pin})
-            y_alarm = {expander.name}.Input({alarm_pin})
-            y_end_l = Input({end_l_pin})
-            y_end_r = Input({end_r_pin})
-            bool y_is_referencing = false
-            bool yend_stops_active = true
-            when yend_stops_active and y_is_referencing and y_end_l.level == 0 then
+            {name}_alarm = {expander.name}.Input({alarm_pin})
+            {name}_end_l = Input({end_l_pin})
+            {name}_end_r = Input({end_r_pin})
+            bool {name}_is_referencing = false
+            bool {name}_end_stops_active = true
+            when {name}_end_stops_active and {name}_is_referencing and {name}_end_l.level == 0 then
                 {name}.stop();
-                yend_stops_active = false
+                {name}_end_stops_active = false
             end
-            when !yend_stops_active and y_is_referencing and y_end_l.level == 1 then
+            when !{name}_end_stops_active and {name}_is_referencing and {name}_end_l.level == 1 then
                 {name}.stop();
-                yend_stops_active = true
+                {name}_end_stops_active = true
             end
-            when !y_is_referencing and yend_stops_active and y_end_l.level == 0 then {name}.stop(); end
-            when yend_stops_active and y_end_r.level == 0 then {name}.stop(); end
-        '''
-        core_message_fields = ['y_end_l.level', 'y_end_r.level', 'yaxis.idle', 'yaxis.position', 'yaxis.alarm']
+            when !{name}_is_referencing and {name}_end_stops_active and {name}_end_l.level == 0 then {name}.stop(); end
+            when {name}_end_stops_active and {name}_end_r.level == 0 then {name}.stop(); end
+        ''')
+        core_message_fields = [f'{name}_end_l.level', f'{name}_end_r.level',
+                               f'{name}.idle', f'{name}.position', f'{name}.alarm']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
@@ -116,9 +118,9 @@ class YAxisHardware(YAxis, ModuleHardware):
         self.log.info(f'yaxis moved to {world_position}')
 
     async def check_idle_or_alarm(self) -> bool:
-        while not self.yaxis_idle and not self.yaxis_alarm:
+        while not self.idle and not self.alarm:
             await rosys.sleep(0.2)
-        if self.yaxis_alarm:
+        if self.alarm:
             self.log.info('yaxis alarm')
             return False
         return True
@@ -130,11 +132,11 @@ class YAxisHardware(YAxis, ModuleHardware):
             if not self.end_stops_active:
                 self.log.warning('end stops not activated')
                 return False
-            if self.yaxis_end_l or self.yaxis_end_r:
+            if self.end_l or self.end_r:
                 self.log.info('yaxis is in end stops, remove to reference')
                 return False
             await self.robot_brain.send(
-                'y_is_referencing = true;'
+                f'{self.name}_is_referencing = true;'
                 f'{self.name}.speed({self.Y_AXIS_MAX_SPEED/2});'
             )
             if not await self.check_idle_or_alarm():
@@ -148,10 +150,10 @@ class YAxisHardware(YAxis, ModuleHardware):
             await self.robot_brain.send(f'{self.name}.speed(-{self.Y_AXIS_MAX_SPEED/10});')
             if not await self.check_idle_or_alarm():
                 return False
-            await self.robot_brain.send(f'y_is_referencing = false;')
+            await self.robot_brain.send(f'{self.name}_is_referencing = false;')
             await rosys.sleep(0.1)
-            self.yaxis_home_position = self.yaxis_position
-            self.yaxis_is_referenced = True
+            self.home_position = self.position
+            self.is_referenced = True
             await self.move_to(self.MAX_Y, speed=self.Y_AXIS_MAX_SPEED/2)
             self.log.info('yaxis referenced')
             return True
@@ -160,58 +162,58 @@ class YAxisHardware(YAxis, ModuleHardware):
 
     async def enable_end_stops(self, value: bool) -> None:
         await super().enable_end_stops(value)
-        await self.robot_brain.send(f'yend_stops_active = {str(value).lower()};')
+        await self.robot_brain.send(f'{self.name}_end_stops_active = {str(value).lower()};')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.yaxis_end_l = int(words.pop(0)) == 0
-        self.yaxis_end_r = int(words.pop(0)) == 0
-        self.yaxis_idle = words.pop(0) == 'true'
-        self.yaxis_position = int(words.pop(0))
-        self.yaxis_alarm = int(words.pop(0)) == 0
-        if self.yaxis_alarm:
-            self.yaxis_is_referenced = False
+        self.end_l = int(words.pop(0)) == 0
+        self.end_r = int(words.pop(0)) == 0
+        self.idle = words.pop(0) == 'true'
+        self.position = int(words.pop(0))
+        self.alarm = int(words.pop(0)) == 0
+        if self.alarm:
+            self.is_referenced = False
 
 
-class YAxisSimulation(YAxis, ModuleSimulation):
+class YAxisSimulation(YAxis, rosys.hardware.ModuleSimulation):
     '''The y axis simulation module is a simple example for a representation of simulated robot hardware.
     '''
 
     def __init__(self) -> None:
         super().__init__()
 
-        self.yaxis_velocity: float = 0.0
-        self.yaxis_target: Optional[float] = None
+        self.velocity: float = 0.0
+        self.target: Optional[float] = None
 
     async def stop(self) -> None:
         await super().stop()
-        self.yaxis_velocity = 0.0
-        self.yaxis_target = None
+        self.velocity = 0.0
+        self.target = None
 
     async def move_to(self, world_position: float, speed: float = 80_000) -> None:
         target_position = await super().move_to(world_position, speed)
         if target_position is None:
             return
-        self.yaxis_target = target_position
-        if self.yaxis_target > self.yaxis_position:
-            self.yaxis_velocity = speed
-        if self.yaxis_target < self.yaxis_position:
-            self.yaxis_velocity = -speed
-        while self.yaxis_target is not None:
+        self.target = target_position
+        if self.target > self.position:
+            self.velocity = speed
+        if self.target < self.position:
+            self.velocity = -speed
+        while self.target is not None:
             await rosys.sleep(0.2)
 
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
-        self.yaxis_position = 0
-        self.yaxis_home_position = 0
-        self.yaxis_is_referenced = True
+        self.position = 0
+        self.home_position = 0
+        self.is_referenced = True
         return True
 
     async def step(self, dt: float) -> None:
         await super().step(dt)
-        self.yaxis_position += int(dt * self.yaxis_velocity)
-        if self.yaxis_target is not None:
-            if (self.yaxis_velocity > 0) == (self.yaxis_position > self.yaxis_target):
-                self.yaxis_position = self.yaxis_target
-                self.yaxis_target = None
-                self.yaxis_velocity = 0
+        self.position += int(dt * self.velocity)
+        if self.target is not None:
+            if (self.velocity > 0) == (self.position > self.target):
+                self.position = self.target
+                self.target = None
+                self.velocity = 0
