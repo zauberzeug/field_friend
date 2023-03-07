@@ -3,8 +3,7 @@ from typing import Optional
 import numpy as np
 import rosys
 
-from .e_stops import EStop, EStopHardware, EStopSimulation
-from .safety import SafetyHardware, SafetySimulation
+from .safety import Safety, SafetyHardware, SafetySimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
 
@@ -23,8 +22,9 @@ class FieldFriend(rosys.hardware.Robot):
             wheels: rosys.hardware.Wheels,
             y_axis: Optional[YAxis] = None,
             z_axis: Optional[ZAxis] = None,
-            estop: EStop,
+            estop: rosys.hardware.EStop,
             bms: rosys.hardware.Bms,
+            safety: Safety,
             **kwargs) -> None:
         super().__init__(**kwargs)
         self.wheels = wheels
@@ -32,6 +32,7 @@ class FieldFriend(rosys.hardware.Robot):
         self.z_axis = z_axis
         self.estop = estop
         self.bms = bms
+        self.safety = safety
         rosys.on_shutdown(self.stop)
 
     async def stop(self) -> None:
@@ -57,23 +58,31 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                right_can_address=0x100,
                                                m_per_tick=M_PER_TICK,
                                                width=0.47,
-                                               is_right_reversed=True)
-        estop = EStopHardware(robot_brain)
-        safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels)
+                                               is_left_reversed=True)
+
         serial = rosys.hardware.SerialHardware(robot_brain)
         expander = rosys.hardware.ExpanderHardware(robot_brain, serial=serial)
         if with_yaxis:
             y_axis = YAxisHardware(robot_brain, expander=expander)
+        else:
+            y_axis = None
         if with_zaxis:
             z_axis = ZAxisHardware(robot_brain, expander=expander)
-        bms = rosys.hardware.BmsHardware(robot_brain, expander=None, rx_pin=13, tx_pin=4)
+        else:
+            z_axis = None
+        bms = rosys.hardware.BmsHardware(robot_brain, expander=expander, rx_pin=26, tx_pin=27, num=2)
+        estop = rosys.hardware.EStopHardware(robot_brain, pins={'1': 34, '2': 35})
+        safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, y_axis=y_axis, z_axis=z_axis)
+        modules = [can, wheels, serial, expander, y_axis, z_axis, bms, estop, safety]
+        active_modules = [module for module in modules if module is not None]
 
         super().__init__(wheels=wheels,
                          y_axis=y_axis,
                          z_axis=z_axis,
                          estop=estop,
                          bms=bms,
-                         modules=[can, wheels, serial, expander, bms, estop, safety],
+                         safety=safety,
+                         modules=active_modules,
                          robot_brain=robot_brain)
 
 
@@ -81,27 +90,21 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
     def __init__(self,  with_yaxis: bool = True, with_zaxis: bool = True) -> None:
         wheels = rosys.hardware.WheelsSimulation()
-        estop = EStopSimulation()
-        self.safety = SafetySimulation(wheels, estop)
+        estop = rosys.hardware.EStopSimulation()
         bms = rosys.hardware.BmsSimulation()
         if with_yaxis:
             y_axis = YAxisSimulation()
+        else:
+            y_axis = None
         if with_zaxis:
             z_axis = ZAxisSimulation()
+        else:
+            z_axis = None
+        safety = SafetySimulation(wheels, estop, y_axis=y_axis, z_axis=z_axis)
         super().__init__(wheels=wheels,
                          y_axis=y_axis,
                          z_axis=z_axis,
                          estop=estop,
                          bms=bms,
-                         modules=[wheels, y_axis, z_axis, bms, estop, self.safety])
-
-
-# class Uckerbot(FieldFriend):
-#     ...
-
-
-# class UckerbotHardware(Uckerbot, FieldFriendHardware):
-
-#     def __init__(self) -> None:
-#         super().__init__(with_yaxis=False)
-#         self.modules.append(LidarHardware(self.robot_brain))
+                         safety=safety,
+                         modules=[wheels, y_axis, z_axis, bms, estop, safety])
