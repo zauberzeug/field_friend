@@ -34,7 +34,7 @@ class CameraCard(Card):
         self.puncher = puncher
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
-        with self.tight().classes('col gap-4').style('width:600px'):
+        with self.tight().classes('col gap-4').style('width:400px'):
             app.add_static_files('/assets', 'assets')
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label(f'no {camera_type} available').classes('text-center')
@@ -130,7 +130,7 @@ class cameras:
         self.detector = detector
         self.puncher = puncher
         with ui.card():
-            with ui.row():
+            with ui.column():
                 for camera_type in self.camera_selector.camera_ids.keys():
                     CameraCard(camera_type, self.camera_provider, self.camera_selector,
                                self.automator, self.detector, self.puncher)
