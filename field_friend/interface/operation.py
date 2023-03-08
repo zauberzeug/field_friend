@@ -21,7 +21,7 @@ def operation(
 ) -> None:
     with ui.card().tight():
         with ui.scene(640, 460) as scene:
-            robot_object(odometer, camera_provider, field_friend.y_axis, field_friend.z_axis)
+            robot_object(odometer, camera_provider, field_friend)
             plant_objects(plant_provider)
             scene.move_camera(-0.5, -1, 1.3)
         with ui.row():

@@ -4,7 +4,7 @@ from rosys.driving import Odometer, robot_object
 from rosys.geometry import Prism
 from rosys.vision import CameraProjector, CameraProvider, camera_objects
 
-from ..hardware import YAxis, ZAxis
+from ..hardware import FieldFriend
 
 
 class robot_object(robot_object):
@@ -28,11 +28,11 @@ class robot_object(robot_object):
     )
 
     def __init__(self, odometer: Odometer, camera_provider: CameraProvider,
-                 y_axis: YAxis, z_axis: ZAxis) -> None:
+                 field_friend: FieldFriend) -> None:
         super().__init__(self.shape, odometer, debug=True)
 
-        self.y_axis = y_axis
-        self.z_axis = z_axis
+        self.y_axis = field_friend.y_axis
+        self.z_axis = field_friend.z_axis
         self.odometer = odometer
 
         app.add_static_files('/assets', 'assets')
@@ -40,12 +40,11 @@ class robot_object(robot_object):
         with self:
             with Group() as self.camera:
                 camera_objects(camera_provider, CameraProjector(camera_provider))
-            if y_axis is not None:
-                self.y_axis = y_axis
+            if self.y_axis is not None:
                 with Group() as self.axis:
                     Box(width=0.05, height=0.63, depth=0.08).move(
                         x=self.y_axis.AXIS_OFFSET_X+0.025, z=0.34).material('#6E93D6', 1.0)
-            if z_axis is not None:
+            if self.z_axis is not None:
                 with Group() as self.tool:
                     Box(width=0.02, height=0.02, depth=0.3).move(
                         x=self.y_axis.AXIS_OFFSET_X, z=0.3).material('#C0C0C0', 1.0)
