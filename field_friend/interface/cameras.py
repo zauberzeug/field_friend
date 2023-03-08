@@ -4,7 +4,7 @@ from typing import Optional
 
 import numpy as np
 import rosys
-from nicegui import ui
+from nicegui import app, ui
 from nicegui.elements.card import Card
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys import background_tasks
@@ -35,6 +35,7 @@ class CameraCard(Card):
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
         with self.tight().classes('col gap-4').style('width:600px'):
+            app.add_static_files('/assets', 'assets')
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label(f'no {camera_type} available').classes('text-center')
         self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
