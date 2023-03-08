@@ -23,6 +23,7 @@ def startup() -> None:
                                   system.automator, system.detector, system.puncher)
             with ui.row().classes('items-stretch justify-items-stretch'):
                 interface.development(system.field_friend, system.automator, system.puncher)
+                interface.axis_control(system.field_friend, system.automator, system.puncher)
 
 
 app.on_startup(startup)

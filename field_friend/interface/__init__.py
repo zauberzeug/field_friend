@@ -1,3 +1,4 @@
+from .axis_control import axis_control
 from .cameras import CameraCard, cameras
 from .development import development
 from .key_controls import KeyControls
