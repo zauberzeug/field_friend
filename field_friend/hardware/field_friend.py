@@ -7,10 +7,6 @@ from .safety import Safety, SafetyHardware, SafetySimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
 
-MOTOR_GEAR_RATIO = 12.52
-WHEEL_DIAMETER = 0.23
-M_PER_TICK = WHEEL_DIAMETER * np.pi / MOTOR_GEAR_RATIO
-
 
 class FieldFriend(rosys.hardware.Robot):
     MOTOR_GEAR_RATIO = 12.52
@@ -56,7 +52,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                can=can,
                                                left_can_address=0x000,
                                                right_can_address=0x100,
-                                               m_per_tick=M_PER_TICK,
+                                               m_per_tick=self.M_PER_TICK,
                                                width=0.47,
                                                is_left_reversed=True)
 
