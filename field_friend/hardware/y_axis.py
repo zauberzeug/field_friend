@@ -57,11 +57,11 @@ class YAxis(rosys.hardware.Module, abc.ABC):
         return True
 
     def linear_to_steps(self, linear: float) -> int:
-        steps = int((linear * 1000) * self.STEPS_PER_MM)
+        steps = int(linear * 1000 * self.STEPS_PER_MM)
         return steps
 
     def steps_to_linear(self, steps: int) -> float:
-        linear = (steps * (1 / self.STEPS_PER_MM)) / 1000
+        linear = (steps / self.STEPS_PER_MM) / 1000
         return linear
 
     async def enable_end_stops(self, value: bool) -> None:
