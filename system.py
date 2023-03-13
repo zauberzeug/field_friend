@@ -36,7 +36,7 @@ class System:
         self.automator.default_automation = self.weeding.start
 
         if not self.is_real:
-            rosys.on_startup(lambda: create_weedcam(self.usb_camera_provider))
+            rosys.on_startup(lambda: create_weedcam('front_cam', self.usb_camera_provider))
 
     def restart(self) -> None:
         os.utime('main.py')
