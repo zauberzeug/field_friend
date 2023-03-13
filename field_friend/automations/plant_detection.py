@@ -58,11 +58,12 @@ class PlantDetection:
                 self.calibration.project_from_image(w) for w in weed_image_positions
             ]
             weeds: list[Plant] = [
-                Plant(position=Point(x=p.x, y=p.y), id=weed_detections[i].uuid, type='weed', mac='detected', detection_time=rosys.time())
-                for i, p in enumerate(weed_world_positions)
-            ]
+                Plant(
+                    position=Point(x=p.x, y=p.y),
+                    id=weed_detections[i].uuid, type=weed_detections[i].category_name, mac='detected',
+                    detection_time=rosys.time()) for i, p in enumerate(weed_world_positions)]
             self.log.info(f'found {len(weeds)} weeds')
-            await self.plant_provider.add_weed(*weeds)
+            self.plant_provider.add_weed(*weeds)
 
         crop_detections = [
             d for d in detection.points
@@ -76,11 +77,12 @@ class PlantDetection:
             self.calibration.project_from_image(b) for b in crop_image_positions
         ]
         crops: list[Plant] = [
-            Plant(position=Point(x=p.x, y=p.y), id=crop_detections[i].uuid, type='crop', mac='detected', detection_time=rosys.time())
-            for i, p in enumerate(crop_world_positions)
-        ]
+            Plant(
+                position=Point(x=p.x, y=p.y),
+                id=crop_detections[i].uuid, type=crop_detections[i].category_name, mac='detected',
+                detection_time=rosys.time()) for i, p in enumerate(crop_world_positions)]
         self.log.info(f'found {len(crops)} crops')
-        await self.plant_provider.add_crop(*crops)
+        self.plant_provider.add_crop(*crops)
 
     def place_simulated_objects(self) -> None:
         self.log.info('Placing simulated objects')
