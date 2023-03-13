@@ -15,21 +15,21 @@ class plant_objects(Object3D):
         self.plant_provider = plant_provider
         self.log = logging.getLogger('field_friend.plant_objects')
         self.update()
-        self.plant_provider.CROPS_CHANGED.register(self.update)
-        self.plant_provider.WEEDS_CHANGED.register(self.update)
+        self.plant_provider.PLANTS_CHANGED.register(self.update)
 
     def update(self) -> None:
         in_world = {p.id: p for p in self.plant_provider.weeds+self.plant_provider.crops}
-        rendered = {o.name.split('_')[1]: o for o in self.scene.objects.values()
+        rendered = {o.name.split('_')[2]: o for o in self.scene.objects.values()
                     if o.name and o.name.startswith('plant_')}
         for id, obj in rendered.items():
             if id not in in_world:
                 obj.delete()
-        for id, plant in in_world.items():
-            if id not in rendered:
-                if plant.type == 'weed':
-                    Sphere(0.02).material('#ef1208').move(plant.position.x, plant.position.y, 0.02) \
-                        .with_name(f'plant_weed_{id}')
-                else:
-                    Sphere(0.02).material('#11ede3').move(plant.position.x, plant.position.y, 0.02) \
-                        .with_name(f'plant_crop_{id}')
+        with self.scene:
+            for id, plant in in_world.items():
+                if id not in rendered:
+                    if plant.type == 'weed':
+                        Sphere(0.02).material('#ef1208').move(plant.position.x, plant.position.y, 0.02) \
+                            .with_name(f'plant_weed_{id}')
+                    else:
+                        Sphere(0.02).material('#11ede3').move(plant.position.x, plant.position.y, 0.02) \
+                            .with_name(f'plant_crop_{id}')
