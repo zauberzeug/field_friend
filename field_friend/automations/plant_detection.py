@@ -24,6 +24,10 @@ class PlantDetection:
         self.detector = detector
         self.plant_provider = plant_provider
         self.field_friend = field_friend
+        self.weed_category_names: list[str] = WEED_CATEGORY_NAME
+        self.crop_category_names: list[str] = CROP_CATEGORY_NAME
+        self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
+        self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         self.log = logging.getLogger('field_friend.plant_detection')
 
     async def check_cam(self, camera: rosys.vision.Camera) -> None:
@@ -49,7 +53,7 @@ class PlantDetection:
             raise DetectorError()
         weed_detections = [
             d for d in detection.points
-            if d.category_name in WEED_CATEGORY_NAME and d.confidence >= MINIMUM_WEED_CONFIDENCE]
+            if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence]
         if weed_detections:
             weed_image_positions = [
                 rosys.geometry.Point(x=d.cx, y=d.cy) for d in weed_detections
@@ -64,12 +68,9 @@ class PlantDetection:
                     detection_time=rosys.time()) for i, p in enumerate(weed_world_positions)]
             self.log.info(f'found {len(weeds)} weeds')
             self.plant_provider.add_weed(*weeds)
-
         crop_detections = [
             d for d in detection.points
-            if d.category_name in CROP_CATEGORY_NAME and d.confidence >= MINIMUM_CROP_CONFIDENCE]
-        if not crop_detections:
-            return
+            if d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence]
         crop_image_positions = [
             rosys.geometry.Point(x=d.cx, y=d.cy) for d in crop_detections
         ]
@@ -87,7 +88,7 @@ class PlantDetection:
     def place_simulated_objects(self) -> None:
         self.log.info('Placing simulated objects')
         self.detector.simulated_objects.clear()
-        number_of_weeds = random.randint(1, 2)
+        number_of_weeds = 2
         number_of_crops = 1  # random.randint(1, 3)
         weeds = [
             rosys.vision.SimulatedObject(
@@ -102,7 +103,7 @@ class PlantDetection:
         beets = [
             rosys.vision.SimulatedObject(
                 category_name='crop',
-                position=Point3d(x=random.uniform(0.25, 0.35),
+                position=Point3d(x=random.uniform(0.27, 0.35),
                                  y=random.uniform(-0.03, 0.03),
                                  z=0),
                 size=None,
