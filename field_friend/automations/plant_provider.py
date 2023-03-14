@@ -42,6 +42,11 @@ class PlantProvider:
         self.needs_backup = True
         self.PLANTS_CHANGED.emit()
 
+    def remove_weed(self, weed: Plant) -> None:
+        self.weeds[:] = [w for w in self.weeds if w.id != weed.id]
+        self.needs_backup = True
+        self.PLANTS_CHANGED.emit()
+
     def clear_weeds(self) -> None:
         self.weeds.clear()
         self.needs_backup = True
@@ -55,6 +60,11 @@ class PlantProvider:
     def add_crop(self, *new: Plant) -> None:
         for crop in new:
             self.crops.append(crop)
+        self.needs_backup = True
+        self.PLANTS_CHANGED.emit()
+
+    def remove_crop(self, crop: Plant) -> None:
+        self.crops[:] = [c for c in self.crops if c.id != crop.id]
         self.needs_backup = True
         self.PLANTS_CHANGED.emit()
 
