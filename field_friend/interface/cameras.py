@@ -34,7 +34,7 @@ class CameraCard(Card):
         self.puncher = puncher
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
-        with self.tight().classes('col gap-4').style('width:400px'):
+        with self.tight().classes('col gap-4').style('width:640px'):
             app.add_static_files('/assets', 'assets')
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label(f'no {camera_type} available').classes('text-center')
@@ -43,6 +43,7 @@ class CameraCard(Card):
     def use_camera(self, camera_data: tuple[str, Camera]) -> None:
         camera_type, camera = camera_data
         if camera_type != self.camera_type:
+            self.log.info(f'ignoring camera {camera_type} (expected {self.camera_type})')
             return
         self.camera = camera
         self.clear()
@@ -62,9 +63,9 @@ class CameraCard(Card):
 
             ui.timer(0.5, update)
             with ui.row().classes('m-4 justify-end items-center'):
-                ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active')\
+                ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active') \
                     .tooltip('Record new images for the Learning Loop')
-                self.show_mapping = ui.checkbox('Show Mapping', on_change=self.show_mapping)\
+                self.show_mapping = ui.checkbox('Show Mapping', on_change=self.show_mapping) \
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
                     .props('icon=straighten outline').tooltip('Calibrate camera')
@@ -129,8 +130,19 @@ class cameras:
         self.automator = automator
         self.detector = detector
         self.puncher = puncher
-        with ui.card():
-            with ui.column():
+        self.cards: dict[str, CameraCard] = {}
+
+        # with ui.row() as self.camera_grid:
+        #     for camera_type in self.camera_selector.camera_ids.keys():
+        #         CameraCard(camera_type, self.camera_provider, self.camera_selector,
+        #                    self.automator, self.detector, self.puncher)
+        self.camera_grid = ui.row()
+        ui.timer(1, self.update_cameras)
+
+    def update_cameras(self) -> None:
+        with self.camera_grid:
+            if set(self.camera_selector.camera_ids.keys()) != set(self.cards.keys()):
+                self.camera_grid.clear()
                 for camera_type in self.camera_selector.camera_ids.keys():
-                    CameraCard(camera_type, self.camera_provider, self.camera_selector,
-                               self.automator, self.detector, self.puncher)
+                    self.cards[camera_type] = CameraCard(camera_type, self.camera_provider, self.camera_selector,
+                                                         self.automator, self.detector, self.puncher)
