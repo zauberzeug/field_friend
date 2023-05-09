@@ -1,21 +1,15 @@
 import uuid
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
 
 from rosys.geometry import Point
 
 
 @dataclass(slots=True, kw_only=True)
 class Plant:
-    id: Optional[str] = None
+    id: str = field(init=False)
     type: str
     position: Point
-    mac: str
     detection_time: float
-    outline: Optional[list[tuple[float, float]]] = None
 
     def __post_init__(self) -> None:
-        self.id = self.id or str(uuid.uuid4())
-
-    def __str__(self) -> str:
-        return f'{self.type} plant with id: {self.id[:5]}, pos: {self.position}, mac: {self.mac}'
+        self.id = str(uuid.uuid4())

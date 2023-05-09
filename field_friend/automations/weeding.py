@@ -8,7 +8,7 @@ from rosys.vision import Detector
 from ..hardware import FieldFriend, FieldFriendSimulation
 from ..vision import CameraSelector
 from .plant import Plant
-from .plant_detection import DetectorError, PlantDetection
+from .plant_detector import DetectorError, PlantDetector
 from .plant_provider import PlantProvider
 from .puncher import Puncher
 
@@ -23,7 +23,7 @@ class Weeding:
         self.detector = detector
         self.plant_provider = plant_provider
         self.camera_selector = camera_selector
-        self.plant_detection = PlantDetection(self.detector, self.plant_provider, self.field_friend)
+        self.plant_detection = PlantDetector(self.detector, self.plant_provider)
 
         self.weed_load: int = 0
         self.max_weeds: int = 10

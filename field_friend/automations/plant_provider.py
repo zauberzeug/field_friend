@@ -1,74 +1,48 @@
-from typing import Any
-
 import rosys
-from rosys import persistence
 
 from .plant import Plant
 
 
 class PlantProvider:
+    
     def __init__(self) -> None:
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 
         self.PLANTS_CHANGED = rosys.event.Event()
-        '''The list of plants has changed'''
+        """The collection of plants has changed."""
 
-        rosys.on_repeat(self.forget_old_weed, 10.0)
-        rosys.on_repeat(self.forget_old_crop, 10.0)
-
-        self.needs_backup: bool = False
-        # persistence.register(self)
-
-    def backup(self) -> dict:
-        return {
-            'weed': persistence.to_dict(self.weeds),
-            'crop': persistence.to_dict(self.crops)
-        }
-
-    def restore(self, data: dict[str, Any]) -> None:
-        persistence.replace_list(self.weeds, Plant, data.get('weed', []))
-        persistence.replace_list(self.crops, Plant, data.get('crop', []))
+        rosys.on_repeat(self.prune, 10.0)
+        
+    def prune(self, max_age: float = 10 * 60.0) -> None:
+        self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - max_age]
+        self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - max_age]
         self.PLANTS_CHANGED.emit()
 
-    def forget_old_weed(self) -> None:
-        self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - 3600]
-        self.needs_backup = True
+    def add_weed(self, weed: Plant) -> None:
+        self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()
 
-    def add_weed(self, *new: Plant) -> None:
-        for weed in new:
-            self.weeds.append(weed)
-        self.needs_backup = True
-        self.PLANTS_CHANGED.emit()
-
-    def remove_weed(self, weed: Plant) -> None:
-        self.weeds[:] = [w for w in self.weeds if w.id != weed.id]
-        self.needs_backup = True
+    def remove_weed(self, weed_id: str) -> None:
+        self.weeds[:] = [weed for weed in self.weeds if weed.id != weed_id]
         self.PLANTS_CHANGED.emit()
 
     def clear_weeds(self) -> None:
         self.weeds.clear()
-        self.needs_backup = True
         self.PLANTS_CHANGED.emit()
 
-    def forget_old_crop(self) -> None:
-        self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - 3600]
-        self.needs_backup = True
-        self.PLANTS_CHANGED.emit()
-
-    def add_crop(self, *new: Plant) -> None:
-        for crop in new:
-            self.crops.append(crop)
-        self.needs_backup = True
+    def add_crop(self, crop: Plant) -> None:
+        self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
 
     def remove_crop(self, crop: Plant) -> None:
         self.crops[:] = [c for c in self.crops if c.id != crop.id]
-        self.needs_backup = True
         self.PLANTS_CHANGED.emit()
 
     def clear_crops(self) -> None:
         self.crops.clear()
-        self.needs_backup = True
         self.PLANTS_CHANGED.emit()
+
+    def clear(self) -> None:
+        self.clear_weeds()
+        self.clear_crops()
