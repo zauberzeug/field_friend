@@ -48,7 +48,6 @@ class PlantDetector:
             self.log.info('no detection found')
             raise DetectorError()
 
-        print(f'{len(image.detections.points)=}')
         for d in image.detections.points:
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
