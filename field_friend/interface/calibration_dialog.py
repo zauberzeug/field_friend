@@ -52,24 +52,18 @@ class CalibrationPoint:
 
 def create_calibration_pattern():
     return [
-        CalibrationPoint.create('A', 0.20, 0.10, 0),
-        CalibrationPoint.create('B', 0.20, 0, 0),
-        CalibrationPoint.create('B-Top', 0.20, 0, 0.05),
-        CalibrationPoint.create('C', 0.20, -0.10, 0),
+        CalibrationPoint.create('A', 0.00, 0.10, 0.00),
+        CalibrationPoint.create('B', 0.00, 0.00, 0.00),
+        CalibrationPoint.create('B-Top', 0.00, 0.00, 0.05),
+        CalibrationPoint.create('C', 0.00, -0.10, 0.00),
 
-        CalibrationPoint.create('D', 0.30, 0.10, 0),
-        CalibrationPoint.create('E', 0.30, 0, 0),
-        CalibrationPoint.create('F', 0.30, -0.10, 0),
+        CalibrationPoint.create('D', 0.10, 0.10, 0.00),
+        CalibrationPoint.create('E', 0.10, 0.00, 0.00),
+        CalibrationPoint.create('F', 0.10, -0.10, 0.00),
 
-        CalibrationPoint.create('G', 0.40, 0.10, 0),
-        CalibrationPoint.create('H', 0.40, 0, 0),
-        CalibrationPoint.create('I', 0.40, -0.10, 0),
-
-        # CalibrationPoint.create('X', 0.45, 0, 0),
-        # CalibrationPoint.create('X-Top', 0.45, 0, 0.051),
-
-        # CalibrationPoint.create('J', 0.50, 0.10, 0),
-        # CalibrationPoint.create('K', 0.50, -0.10, 0),
+        CalibrationPoint.create('G', 0.20, 0.10, 0.00),
+        CalibrationPoint.create('H', 0.20, 0.00, 0.00),
+        CalibrationPoint.create('I', 0.20, -0.10, 0.00),
     ]
 
 
