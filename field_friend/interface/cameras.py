@@ -65,7 +65,7 @@ class CameraCard(Card):
             with ui.row().classes('m-4 justify-end items-center'):
                 ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active') \
                     .tooltip('Record new images for the Learning Loop')
-                self.show_mapping = ui.checkbox('Show Mapping', on_change=self.show_mapping) \
+                self.show_mapping_checkbox = ui.checkbox('Show Mapping', on_change=self.show_mapping) \
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
                     .props('icon=straighten outline').tooltip('Calibrate camera')
@@ -88,7 +88,7 @@ class CameraCard(Card):
     async def calibrate(self) -> None:
         result = await self.calibration_dialog.edit(self.camera)
         if result:
-            self.show_mapping.value = True
+            self.show_mapping_checkbox.value = True
 
     def show_mapping(self, args: ValueChangeEventArguments) -> None:
         if not args.value:
