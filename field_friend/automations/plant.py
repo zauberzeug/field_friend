@@ -1,15 +1,17 @@
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from rosys.geometry import Point
 
 
 @dataclass(slots=True, kw_only=True)
 class Plant:
-    id: str = field(init=False)
+    id: str = ...
     type: str
     position: Point
     detection_time: float
 
     def __post_init__(self) -> None:
-        self.id = str(uuid.uuid4())
+        """Generate a unique ID if not already loaded from persistence"""
+        if self.id == ...:
+            self.id = str(uuid.uuid4())
