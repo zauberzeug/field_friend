@@ -1,6 +1,5 @@
 import logging
 
-from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Sphere
 
@@ -27,9 +26,6 @@ class plant_objects(Object3D):
         with self.scene:
             for id, plant in in_world.items():
                 if id not in rendered:
-                    if plant.type == 'weed':
-                        Sphere(0.02).material('#ef1208').move(plant.position.x, plant.position.y, 0.02) \
-                            .with_name(f'plant_weed_{id}')
-                    else:
-                        Sphere(0.02).material('#11ede3').move(plant.position.x, plant.position.y, 0.02) \
-                            .with_name(f'plant_crop_{id}')
+                    Sphere(0.02).with_name(f'plant_{plant.type}_{id}') \
+                        .material('#ef1208' if plant.type == 'weed' else '#11ede3') \
+                        .move(plant.position.x, plant.position.y, 0.02)
