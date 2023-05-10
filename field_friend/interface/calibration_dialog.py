@@ -54,7 +54,7 @@ def create_calibration_pattern():
     return [
         CalibrationPoint.create('A', 0.20, 0.10, 0),
         CalibrationPoint.create('B', 0.20, 0, 0),
-        CalibrationPoint.create('B-Top', 0.20, 0, 0.048),
+        CalibrationPoint.create('B-Top', 0.20, 0, 0.05),
         CalibrationPoint.create('C', 0.20, -0.10, 0),
 
         CalibrationPoint.create('D', 0.30, 0.10, 0),
