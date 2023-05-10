@@ -1,8 +1,6 @@
 import logging
-import random
 
 import rosys
-from rosys.geometry import Point3d
 
 from .plant import Plant
 from .plant_provider import PlantProvider
@@ -56,21 +54,3 @@ class PlantDetector:
                 world_point = camera.calibration.project_from_image(image_point)
                 crop = Plant(position=world_point.projection(), type=d.category_name, detection_time=rosys.time())
                 self.plant_provider.add_crop(crop)
-
-    def add_simulated_objects(self, number_of_weeds: int = 2, number_of_crops: int = 1) -> None:
-        self.log.info('Adding simulated objects')
-        assert isinstance(self.detector, rosys.vision.DetectorSimulation)
-        for _ in range(number_of_weeds):
-            self.detector.simulated_objects.append(rosys.vision.SimulatedObject(
-                category_name='weed',
-                position=Point3d(x=random.uniform(0.25, 0.35), y=random.uniform(-0.12, 0.12), z=0),
-            ))
-        for _ in range(number_of_crops):
-            self.detector.simulated_objects.append(rosys.vision.SimulatedObject(
-                category_name='crop',
-                position=Point3d(x=random.uniform(0.27, 0.35), y=random.uniform(-0.03, 0.03), z=0),
-            ))
-
-    def remove_simulated_object(self, weed: Plant) -> None:
-        assert isinstance(self.detector, rosys.vision.DetectorSimulation)
-        self.detector.simulated_objects = [o for o in self.detector.simulated_objects if o.uuid != weed.id]
