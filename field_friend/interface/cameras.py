@@ -3,7 +3,6 @@ import logging
 from typing import Optional
 
 import numpy as np
-import rosys
 from nicegui import app, ui
 from nicegui.elements.card import Card
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
@@ -90,32 +89,17 @@ class CameraCard(Card):
         if result:
             self.show_mapping_checkbox.value = True
 
-    def show_mapping(self, args: ValueChangeEventArguments) -> None:
-        if not args.value:
+    def show_mapping(self, event: ValueChangeEventArguments) -> None:
+        if not event.value:
             self.image_view.content = ''
             return
 
-        grid_points = np.array([p.tuple for p in self.create_grid_points()])
-        grid_image_points = self.camera.calibration.project_array_to_image(world_points=grid_points)
-        c = len(grid_image_points)
-
-        def get_color(i: int) -> str:
-            rgb = colorsys.hsv_to_rgb(i/c, 1, 1)
-            return f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}{int(rgb[2]*255):02x}"
-        self.image_view.set_content(''.join(f'<circle cx="{g[0]}" cy="{g[1]}" r="2" fill="{get_color(i)}"/>' for i,
-                                            g in enumerate(grid_image_points)))
-
-    @staticmethod
-    def create_grid_points() -> list[Point3d]:
-        result = []
-        x = 0
-        while x <= 0.7:
-            y = -0.2
-            while y <= 0.2:
-                result.append(Point3d(x=x, y=y, z=0))
-                y += 0.03
-            x += 0.03
-        return result
+        world_points = np.array([[x, y, 0] for x in np.linspace(0, 0.3, 15) for y in np.linspace(-0.2, 0.2, 20)])
+        image_points = self.camera.calibration.project_array_to_image(world_points)
+        colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
+        colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
+        self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'
+                                          for p, color in zip(image_points, colors_hex))
 
 
 class cameras:
