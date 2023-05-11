@@ -35,7 +35,6 @@ class CalibrationPoint:
         return f'<text x="{p.x - 15}" y="{p.y + 15}" stroke="red" fill="red" font-size="10">{self.name}</text>'
 
     def map_image_position(self, image_size: ImageSize) -> Point:
-        logging.warning(image_size)
         return Point(x=min(max(self.image_position.x, 20), image_size.width - 20),
                      y=min(max(self.image_position.y, 20), image_size.height - 20))
 
@@ -86,7 +85,7 @@ class calibration_dialog(ui.dialog):
                 point.image_position = Point(x=self.image.size.width / 2, y=self.image.size.height / 2)
         self.draw_points()
         if camera.focal_length is None:
-            camera.focal_length = 400
+            camera.focal_length = 1830
         self.focal_length_input.value = camera.focal_length
         self.open()
         return (await self) or False
@@ -95,7 +94,7 @@ class calibration_dialog(ui.dialog):
         svg = ''
         for point in self.points:
             svg += point.svg_position(self.image.size)
-            if not any([p.image_position.distance(point.image_position) < 20 for p in self.points if p != point]):
+            if not any(p.image_position.distance(point.image_position) < 20 for p in self.points if p != point):
                 svg += point.svg_text(self.image.size)
         self.calibration_image.content = svg
 
