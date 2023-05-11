@@ -4,7 +4,7 @@ from .plant import Plant
 
 
 class PlantProvider:
-    
+
     def __init__(self) -> None:
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
@@ -13,7 +13,7 @@ class PlantProvider:
         """The collection of plants has changed."""
 
         rosys.on_repeat(self.prune, 10.0)
-        
+
     def prune(self, max_age: float = 10 * 60.0) -> None:
         self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - max_age]
         self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - max_age]
