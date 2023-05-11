@@ -48,7 +48,7 @@ class calibration_dialog(ui.dialog):
         self.points = [
             CalibrationPoint.create('A',  0.00,  0.10, 0.00),
             CalibrationPoint.create('B',  0.00,  0.00, 0.00),
-            CalibrationPoint.create('B*', 0.00,  0.00, 0.05),
+            CalibrationPoint.create('B*', 0.00,  0.00, 0.048),
             CalibrationPoint.create('C',  0.00, -0.10, 0.00),
 
             CalibrationPoint.create('D',  0.10,  0.10, 0.00),
@@ -57,6 +57,7 @@ class calibration_dialog(ui.dialog):
 
             CalibrationPoint.create('G',  0.20,  0.10, 0.00),
             CalibrationPoint.create('H',  0.20,  0.00, 0.00),
+            CalibrationPoint.create('H*',  0.20,  0.00, 0.048),
             CalibrationPoint.create('I',  0.20, -0.10, 0.00),
         ]
         self.active_point: Optional[CalibrationPoint] = None
