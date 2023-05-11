@@ -8,10 +8,11 @@ from ..automations import PlantProvider
 
 class plant_objects(Object3D):
 
-    def __init__(self, plant_provider: PlantProvider) -> None:
+    def __init__(self, plant_provider: PlantProvider, weed_category_names: list[str]) -> None:
         super().__init__('group')
 
         self.plant_provider = plant_provider
+        self.weed_category_names = weed_category_names
         self.log = logging.getLogger('field_friend.plant_objects')
         self.update()
         self.plant_provider.PLANTS_CHANGED.register_ui(self.update)
@@ -27,5 +28,5 @@ class plant_objects(Object3D):
             for id, plant in in_world.items():
                 if id not in rendered:
                     Sphere(0.02).with_name(f'plant_{plant.type}_{id}') \
-                        .material('#ef1208' if plant.type == 'weed' else '#11ede3') \
+                        .material('#ef1208' if plant.type in self.weed_category_names else '#11ede3') \
                         .move(plant.position.x, plant.position.y, 0.02)
