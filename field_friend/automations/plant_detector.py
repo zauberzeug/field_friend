@@ -38,6 +38,12 @@ class PlantDetector:
             rosys.notify('camera has no calibration')
             raise DetectorError()
 
+        # wait for new image
+        deadline = rosys.time() + 5.0
+        image = camera.latest_captured_image
+        while image == camera.latest_captured_image and rosys.time() < deadline:
+            await rosys.sleep(0.1)
+
         image = camera.latest_captured_image
         if image is None:
             self.log.info('no image found')
