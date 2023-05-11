@@ -8,7 +8,7 @@ import numpy as np
 from nicegui import ui
 from nicegui.events import MouseEventArguments
 from rosys.geometry import Point, Point3d
-from rosys.vision import Calibration, Camera, CameraProvider
+from rosys.vision import Calibration, Camera, CameraProvider, ImageSize
 
 
 @dataclass
@@ -22,21 +22,22 @@ class CalibrationPoint:
         """Create a calibration point with the given name and world position."""
         return CalibrationPoint(name=name, world_position=Point3d(x=x, y=y, z=z))
 
-    def svg_position(self, max_x: float, max_y: float) -> str:
-        p = self.map_image_position(max_x, max_y)
+    def svg_position(self, image_size: ImageSize) -> str:
+        p = self.map_image_position(image_size)
         content = f'<line x1="{p.x}" y1="{p.y}" x2="{p.x - 14}" y2="{p.y}" stroke="red" stroke-width="1" />'
         content += f'<line x1="{p.x}" y1="{p.y}" x2="{p.x + 14}" y2="{p.y}" stroke="red" stroke-width="1" />'
         content += f'<line x1="{p.x}" y1="{p.y}" x2="{p.x}" y2="{p.y - 14}" stroke="red" stroke-width="1" />'
         content += f'<line x1="{p.x}" y1="{p.y}" x2="{p.x}" y2="{p.y + 14}" stroke="red" stroke-width="1" />'
         return content
 
-    def svg_text(self, max_x: float, max_y: float) -> str:
-        p = self.map_image_position(max_x, max_y)
+    def svg_text(self, image_size: ImageSize) -> str:
+        p = self.map_image_position(image_size)
         return f'<text x="{p.x - 15}" y="{p.y + 15}" stroke="red" fill="red" font-size="10">{self.name}</text>'
 
-    def map_image_position(self, max_x: float, max_y: float) -> Point:
-        return Point(x=min(max(self.image_position.x, 20), max_x - 20),
-                     y=min(max(self.image_position.y, 20), max_y - 20))
+    def map_image_position(self, image_size: ImageSize) -> Point:
+        logging.warning(image_size)
+        return Point(x=min(max(self.image_position.x, 20), image_size.width - 20),
+                     y=min(max(self.image_position.y, 20), image_size.height - 20))
 
 
 class calibration_dialog(ui.dialog):
@@ -93,9 +94,9 @@ class calibration_dialog(ui.dialog):
     def draw_points(self) -> None:
         svg = ''
         for point in self.points:
-            svg += point.svg_position(self.image.size.width, self.image.size.height)
+            svg += point.svg_position(self.image.size)
             if not any([p.image_position.distance(point.image_position) < 20 for p in self.points if p != point]):
-                svg += point.svg_text(self.image.size.width, self.image.size.height)
+                svg += point.svg_text(self.image.size)
         self.calibration_image.content = svg
 
     def on_mouse_move(self, e: MouseEventArguments) -> None:
@@ -110,8 +111,7 @@ class calibration_dialog(ui.dialog):
             self.draw_points()
 
     def closest_point(self, x: float, y: float) -> CalibrationPoint:
-        s = self.image.size
-        return sorted(self.points, key=lambda p: p.map_image_position(s.width, s.height).distance(Point(x=x, y=y)))[0]
+        return sorted(self.points, key=lambda p: p.map_image_position(self.image.size).distance(Point(x=x, y=y)))[0]
 
     def apply_calibration(self) -> None:
         camera = self.camera_provider.cameras[self.image.camera_id]
