@@ -57,13 +57,17 @@ class PlantDetector:
         for d in image.detections.points:
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = camera.calibration.project_from_image(image_point).projection()
-                world_point = self.odometer.prediction.transform(floor_point)
+                floor_point = camera.calibration.project_from_image(image_point)
+                if floor_point is None:
+                    continue
+                world_point = self.odometer.prediction.transform(floor_point.projection())
                 weed = Plant(position=world_point, type=d.category_name, detection_time=rosys.time())
                 self.plant_provider.add_weed(weed)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = camera.calibration.project_from_image(image_point).projection()
-                world_point = self.odometer.prediction.transform(floor_point)
+                floor_point = camera.calibration.project_from_image(image_point)
+                if floor_point is None:
+                    continue
+                world_point = self.odometer.prediction.transform(floor_point.projection())
                 crop = Plant(position=world_point, type=d.category_name, detection_time=rosys.time())
                 self.plant_provider.add_crop(crop)
