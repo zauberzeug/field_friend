@@ -6,7 +6,7 @@ from rosys.helpers import remove_indentation
 
 
 class ZAxis(rosys.hardware.Module, abc.ABC):
-    MAX_SPEED: float = 66_000
+    MAX_SPEED: float = 60_000
     MIN_DEPTH: float = 0.00
     MAX_DEPTH: float = 0.197
     STEPS_PER_M: float = 1600 * 1000
@@ -134,7 +134,7 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
             return
         steps = self.compute_steps(depth)
 
-        await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 66000);')
+        await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 60000);')
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
             rosys.notify('z_axis fault detected', type='negative')
@@ -228,7 +228,7 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.name}_ref_t_enabled = {str(value).lower()};')
 
     async def enable_end_stop(self, value: bool) -> None:
-        await super().enable_end_stops(value)
+        await super().enable_end_stop(value)
         self.log.info(f'zaxis end b stop enabled: {value}')
         await self.robot_brain.send(f'{self.name}_end_b_enabled = {str(value).lower()};')
 
