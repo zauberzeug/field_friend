@@ -83,8 +83,8 @@ class YAxisHardware(YAxis, rosys.hardware.ModuleHardware):
         self.name = name
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name}.StepperMotor({step_pin}, {dir_pin})
-            {name}_alarm = {expander.name}.Input({alarm_pin})
+            {name} = {expander.name + "." if expander else ""}StepperMotor({step_pin}, {dir_pin})
+            {name}_alarm = {expander.name + "." if expander else ""}Input({alarm_pin})
             {name}_end_l = Input({end_l_pin})
             {name}_end_r = Input({end_r_pin})
             bool {name}_is_referencing = false

@@ -6,7 +6,7 @@ from ..automations import Puncher
 from ..hardware import FieldFriend, FieldFriendHardware
 
 
-def development(field_friend: FieldFriend, automator: Automator, puncher: Puncher) -> None:
+def development(field_friend: FieldFriend) -> None:
     with ui.card():
         if isinstance(field_friend, rosys.hardware.RobotHardware):
             with ui.row():
