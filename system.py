@@ -12,6 +12,7 @@ class System:
     def __init__(self) -> None:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
+        self.camera_selector = CameraSelector()
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = rosys.vision.UsbCameraProviderHardware()
@@ -21,7 +22,7 @@ class System:
             self.field_friend = FieldFriendSimulation()
             self.usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
-        self.camera_selector = CameraSelector(self.usb_camera_provider)
+        self.usb_camera_provider.CAMERA_ADDED.register(self.camera_selector.use_camera)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.2)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
