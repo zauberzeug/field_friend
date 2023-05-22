@@ -75,7 +75,7 @@ class ZAxis(rosys.hardware.Module, abc.ABC):
 
     async def return_to_reference(self) -> bool:
         try:
-            await self.move_to(0 - self.REF_OFFSET)
+            await self.move_to(0 - self.REF_OFFSET, speed=self.MAX_SPEED/2)
         except RuntimeError as e:
             rosys.notify(e, type='negative')
 
