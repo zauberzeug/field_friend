@@ -179,33 +179,30 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
                 )
                 while self.ref_t:
                     await rosys.sleep(0.2)
-                await self.stop()
 
             # move to top ref
             await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/2});')
             while not self.ref_t:
                 await rosys.sleep(0.2)
-            await self.stop()
 
             # move out of top ref
             await self.robot_brain.send(f'{self.name}.speed(-{self.MAX_SPEED/2});')
             while self.ref_t:
                 await rosys.sleep(0.2)
-            await self.stop()
 
             # move slowly to top ref
             await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/10});')
             while not self.ref_t:
                 await rosys.sleep(0.2)
-            await self.stop()
 
             # save position
             await rosys.sleep(0.2)
             await self.robot_brain.send(
-                f'{self.name}.position = 0;'
-            )
-            await self.robot_brain.send(
                 f'{self.name}_is_referencing = false;'
+            )
+            await rosys.sleep(0.5)
+            await self.robot_brain.send(
+                f'{self.name}.position = 0;'
             )
             await rosys.sleep(0.5)
             self.is_referenced = True
