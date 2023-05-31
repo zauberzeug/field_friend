@@ -22,6 +22,7 @@ class ZAxis(rosys.hardware.Module, abc.ABC):
         self.is_referenced: bool = False
         self.is_ref_enabled: bool = False
         self.is_end_b_enabled: bool = False
+        self.homesteps: int = 0
 
         self.ref_t: bool = False
         self.end_b: bool = False
@@ -54,7 +55,7 @@ class ZAxis(rosys.hardware.Module, abc.ABC):
 
         Depth is positive and steps are negative when moving down.
         """
-        return int(-depth * self.STEPS_PER_M)
+        return int(-depth * self.STEPS_PER_M + self.homesteps)
 
     def compute_depth(self, steps: int) -> float:
         """Compute the depth of the z axis from the given number of steps.
@@ -75,7 +76,7 @@ class ZAxis(rosys.hardware.Module, abc.ABC):
 
     async def return_to_reference(self) -> bool:
         try:
-            await self.move_to(0 - self.REF_OFFSET, speed=self.MAX_SPEED/2)
+            await self.move_to(0 - self.REF_OFFSET, speed=self.MAX_SPEED*0.8)
         except RuntimeError as e:
             rosys.notify(e, type='negative')
 
@@ -109,7 +110,6 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
                 {name}.stop(); 
                 {name}_ref_t_enabled = true;
             end
-            when {name}_end_b_enabled and {name}_end_b.level == 0 then {name}.stop(); end
         ''')
         core_message_fields = [
             f'{name}_ref_t.level',
@@ -203,9 +203,11 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.5)
             await self.robot_brain.send(
                 f'{self.name}.position = 0;'
-            )
+            )  # this seems to be buggy on expander
             await rosys.sleep(0.5)
             self.is_referenced = True
+            self.homesteps = self.steps
+            self.log.info(f'zaxis homesteps: {self.homesteps}')
 
             # drive to reference with offset
             await self.return_to_reference()
