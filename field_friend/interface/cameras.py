@@ -37,12 +37,20 @@ class CameraCard(Card):
             app.add_static_files('/assets', 'assets')
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label(f'no {camera_type} available').classes('text-center')
-        self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
+        # self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
+        ui.timer(1, self.update_content)
+
+    def update_content(self) -> None:
+        if self.camera is None:
+            self.log.info(f'looking for {self.camera_type}')
+            for camera_type, camera in self.camera_selector.cameras.items():
+                self.log.info(f'found {camera_type} {camera.id}')
+                self.use_camera((camera_type, camera))
 
     def use_camera(self, camera_data: tuple[str, Camera]) -> None:
         camera_type, camera = camera_data
         if camera_type != self.camera_type:
-            self.log.info(f'ignoring camera {camera_type} (expected {self.camera_type})')
+            self.log.info(f'ignoring camera (expected {self.camera_type})')
             return
         self.camera = camera
         self.clear()
@@ -60,7 +68,7 @@ class CameraCard(Card):
             def update():
                 self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))
 
-            ui.timer(1, update)
+            ui.timer(0.5, update)
             with ui.row().classes('m-4 justify-end items-center'):
                 ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active') \
                     .tooltip('Record new images for the Learning Loop')
