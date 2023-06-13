@@ -15,6 +15,8 @@ from ..automations import Puncher
 from ..vision import CameraSelector
 from .calibration_dialog import calibration_dialog
 
+IMAGE_SHRINK_FACTOR: int = 3
+
 
 class CameraCard(Card):
 
@@ -59,14 +61,15 @@ class CameraCard(Card):
             with ui.row().classes('w-full items-center').style('gap:0.5em;margin-left:1em;margin-right:1em'):
                 ui.label(f'{camera_type}:').classes('text-xl')
             self.image_view = ui.interactive_image(
-                self.camera_provider.get_latest_image_url(camera),
+                '',
                 cross=True,
                 on_mouse=self.on_mouse_move,
                 events=events
             ).classes('w-full')
 
             def update():
-                self.image_view.set_source(self.camera_provider.get_latest_image_url(camera))
+                url = f'{self.camera_provider.get_latest_image_url(camera)}?shrink={IMAGE_SHRINK_FACTOR}'
+                self.image_view.set_source(url)
 
             ui.timer(0.5, update)
             with ui.row().classes('m-4 justify-end items-center'):
