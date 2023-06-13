@@ -76,7 +76,7 @@ class ZAxis(rosys.hardware.Module, abc.ABC):
 
     async def return_to_reference(self) -> bool:
         try:
-            await self.move_to(0 - self.REF_OFFSET, speed=self.MAX_SPEED*0.8)
+            await self.move_to(0, speed=self.MAX_SPEED*0.8)
         except RuntimeError as e:
             rosys.notify(e, type='negative')
 
@@ -209,8 +209,18 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
             self.homesteps = self.steps
             self.log.info(f'zaxis homesteps: {self.homesteps}')
 
-            # drive to reference with offset
-            await self.return_to_reference()
+            # drive to offset
+            await rosys.sleep(0.2)
+            await self.robot_brain.send(f'{self.name}.position({self.homesteps + 1000}, {self.MAX_SPEED/10})')
+            await rosys.sleep(0.5)
+            if not await self.check_idle_or_alarm():
+                rosys.notify('z_axis fault detected', type='negative')
+                return
+            await rosys.sleep(0.5)
+            self.homesteps = self.steps
+
+            # # drive to reference with offset
+            # await self.return_to_reference()
             await self.enable_end_stop(True)
 
             self.log.info('zaxis referenced')
