@@ -15,8 +15,6 @@ from ..automations import Puncher
 from ..vision import CameraSelector
 from .calibration_dialog import calibration_dialog
 
-IMAGE_SHRINK_FACTOR: int = 3
-
 
 class CameraCard(Card):
 
@@ -36,7 +34,6 @@ class CameraCard(Card):
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
         with self.tight().classes('col gap-4').style('width:640px'):
-            app.add_static_files('/assets', 'assets')
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label(f'no {camera_type} available').classes('text-center')
         # self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
@@ -68,11 +65,12 @@ class CameraCard(Card):
             ).classes('w-full')
 
             def update():
-                url = f'{self.camera_provider.get_latest_image_url(camera)}?shrink={IMAGE_SHRINK_FACTOR}'
+                url = f'{self.camera_provider.get_latest_image_url(camera)}'
                 self.image_view.set_source(url)
 
             ui.timer(0.5, update)
             with ui.row().classes('m-4 justify-end items-center'):
+                self.depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01)
                 ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active') \
                     .tooltip('Record new images for the Learning Loop')
                 self.show_mapping_checkbox = ui.checkbox('Show Mapping', on_change=self.show_mapping) \
@@ -91,7 +89,8 @@ class CameraCard(Card):
             point2d = Point(x=e.image_x, y=e.image_y)
             point3d = self.camera.calibration.project_from_image(point2d)
             if point3d is not None and self.puncher is not None:
-                self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y))
+                self.log.info(f'punching {point3d}')
+                self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
