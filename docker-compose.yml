@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   rosys:
-    image: "zauberzeug/rosys:0.8.0"
+    image: "zauberzeug/rosys:0.8.5"
     volumes:
       - ./:/app
       - ~/.rosys:/root/.rosys
