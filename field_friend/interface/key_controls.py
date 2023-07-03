@@ -24,24 +24,22 @@ class KeyControls(rosys.driving.keyboard_control):
 
         if e.modifiers.shift and e.action.keydown:
             if e.key == '!':
-                async def try_axis_home():
-                    await self.puncher.home()
-                self.automator.start(try_axis_home())
+                self.automator.start(self.puncher.try_home())
 
         if e.modifiers.shift and e.action.keydown:
             if e.key == 'W':
-                background_tasks.create(self.z_axis.move_to(self.z_axis.MAX_Z))
+                background_tasks.create(self.field_friend.z_axis.move(self.field_friend.z_axis.MAX_SPEED/4))
             if e.key == 'S':
-                background_tasks.create(self.z_axis.move_to(self.z_axis.MIN_Z))
+                background_tasks.create(self.field_friend.z_axis.move(-(self.field_friend.z_axis.MAX_SPEED/4)))
         if e.modifiers.shift and e.action.keyup:
             if e.key.name in 'WS':
                 background_tasks.create(self.z_axis.stop())
 
         if e.modifiers.shift and e.action.keydown:
             if e.key == 'A':
-                background_tasks.create(self.y_axis.move_to(self.y_axis.MAX_Y))
+                background_tasks.create(self.y_axis.move_to(self.y_axis.MAX_POSITION))
             if e.key == 'D':
-                background_tasks.create(self.y_axis.move_to(self.y_axis.MIN_Y))
+                background_tasks.create(self.y_axis.move_to(self.y_axis.MIN_POSITION))
         if e.modifiers.shift and e.action.keyup:
             if e.key.name in 'AD':
                 background_tasks.create(self.y_axis.stop())
