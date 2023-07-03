@@ -34,7 +34,7 @@ class ZAxis(rosys.hardware.Module, abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def move_to(self, depth: float, speed: int) -> float:
+    async def move_to(self, depth: float, speed: int) -> None:
         if not self.is_referenced:
             raise RuntimeError('zaxis is not referenced, reference first')
         if speed > self.MAX_SPEED:
@@ -55,14 +55,14 @@ class ZAxis(rosys.hardware.Module, abc.ABC):
 
         Depth is positive and steps are negative when moving down.
         """
-        return int(-depth * self.STEPS_PER_M + self.homesteps)
+        return int(depth * self.STEPS_PER_M + self.homesteps)
 
     def compute_depth(self, steps: int) -> float:
         """Compute the depth of the z axis from the given number of steps.
 
         Depth is positive and steps are negative when moving down.
         """
-        return -steps / self.STEPS_PER_M
+        return steps / self.STEPS_PER_M
 
     @property
     def depth(self) -> float:
@@ -91,14 +91,17 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
                  dir_pin: int = 4,
                  alarm_pin: int = 33,
                  ref_t_pin: int = 13,
-                 end_b_pin: int = 15,) -> None:
+                 end_b_pin: int = 15,
+                 motor_on_expander: bool = False,
+                 end_stops_on_expander: bool = False,
+                 ) -> None:
         self.name = name
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name + "." if expander else ""}StepperMotor({step_pin}, {dir_pin})
-            {name}_alarm = {expander.name + "." if expander else ""}Input({alarm_pin})
-            {name}_ref_t = {expander.name + "." if expander else ""}Input({ref_t_pin})
-            {name}_end_b = {expander.name + "." if expander else ""}Input({end_b_pin})
+            {name} = {expander.name + "." if motor_on_expander == True else ""}StepperMotor({step_pin}, {dir_pin})
+            {name}_alarm = {expander.name + "." if motor_on_expander == True else ""}Input({alarm_pin})
+            {name}_ref_t = {expander.name + "." if end_stops_on_expander == True else ""}Input({ref_t_pin})
+            {name}_end_b = {expander.name + "." if end_stops_on_expander == True else ""}Input({end_b_pin})
             bool {name}_is_referencing = false;
             bool {name}_ref_t_enabled = true;
             bool {name}_end_b_enabled = true;
@@ -110,6 +113,9 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
                 {name}.stop(); 
                 {name}_ref_t_enabled = true;
             end
+            when {name}_end_b_enabled and {name}_end_b.level == 0 then
+                {name}.stop();
+            end 
         ''')
         core_message_fields = [
             f'{name}_ref_t.level',
@@ -131,10 +137,11 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
             await super().move_to(depth, speed)
         except RuntimeError as e:
             rosys.notify(e, type='negative')
+            self.log.info(f'could not move zaxis to {depth} because of {e}')
             return
         steps = self.compute_steps(depth)
 
-        await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 60000);')
+        await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 160000);')
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
             rosys.notify('z_axis fault detected', type='negative')
@@ -175,23 +182,23 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
                 await self.enable_ref_stop(False)
                 await rosys.sleep(0.5)
                 await self.robot_brain.send(
-                    f'{self.name}.speed(-{self.MAX_SPEED/2});'
+                    f'{self.name}.speed({self.MAX_SPEED/2});'
                 )
                 while self.ref_t:
                     await rosys.sleep(0.2)
 
             # move to top ref
-            await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/2});')
+            await self.robot_brain.send(f'{self.name}.speed(-{self.MAX_SPEED/2});')
             while not self.ref_t:
                 await rosys.sleep(0.2)
 
             # move out of top ref
-            await self.robot_brain.send(f'{self.name}.speed(-{self.MAX_SPEED/2});')
+            await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/2});')
             while self.ref_t:
                 await rosys.sleep(0.2)
 
             # move slowly to top ref
-            await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/10});')
+            await self.robot_brain.send(f'{self.name}.speed(-{self.MAX_SPEED/10});')
             while not self.ref_t:
                 await rosys.sleep(0.2)
 
@@ -206,12 +213,12 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
             )  # this seems to be buggy on expander
             await rosys.sleep(0.5)
             self.is_referenced = True
-            self.homesteps = self.steps
-            self.log.info(f'zaxis homesteps: {self.homesteps}')
+            zero_steps = self.steps
+            self.log.info(f'zaxis homesteps: {zero_steps}')
 
             # drive to offset
             await rosys.sleep(0.2)
-            await self.robot_brain.send(f'{self.name}.position({self.homesteps + 1000}, {self.MAX_SPEED/10})')
+            await self.robot_brain.send(f'{self.name}.position({zero_steps - 1000}, {self.MAX_SPEED/10})')
             await rosys.sleep(0.5)
             if not await self.check_idle_or_alarm():
                 rosys.notify('z_axis fault detected', type='negative')
@@ -242,7 +249,7 @@ class ZAxisHardware(ZAxis, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.name}_end_b_enabled = {str(value).lower()};')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.ref_t = int(words.pop(0)) == 0
+        self.ref_t = int(words.pop(0)) == 1
         self.end_b = int(words.pop(0)) == 0
         if self.end_b:
             self.is_referenced = False
@@ -294,7 +301,7 @@ class ZAxisSimulation(ZAxis, rosys.hardware.ModuleSimulation):
 
     async def step(self, dt: float) -> None:
         self.steps += int(dt * self.speed)
-        self.is_reference_active = self.steps >= self.reference_steps
+        self.ref_t = self.steps >= self.reference_steps
         self.idle = self.speed == 0
         if self.target_steps is not None and (self.speed > 0) == (self.steps > self.target_steps):
             self.steps = self.target_steps

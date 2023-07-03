@@ -8,25 +8,27 @@ from rosys.helpers import remove_indentation
 class YAxis(rosys.hardware.Module, abc.ABC):
     """The y axis module is a simple example for a representation of real or simulated robot hardware."""
 
-    Y_AXIS_MAX_SPEED: float = 80_000
-    MIN_Y: float = -0.12
-    MAX_Y: float = 0.12
-    AXIS_OFFSET_Y = 0.123
-    STEPS_PER_MM: float = 666.67
+    MAX_SPEED: float = 80_000
+    MIN_POSITION: float = -0.12
+    MAX_POSITION: float = 0.12
+    AXIS_OFFSET = 0.123
+    STEPS_PER_M: float = 666.67 * 1000
 
-    AXIS_OFFSET_X = 0.2915
+    OFFSET_X = 0.2915
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.end_l: bool = False
-        self.end_r: bool = False
-        self.position: int = 0
+        self.steps: int = 0
         self.alarm: bool = False
         self.idle: bool = False
+
         self.is_referenced: bool = False
-        self.home_position: int = 0
-        self.end_stops_active: bool = True
+        self.end_stops_enabled: bool = True
+        self.homesteps: int = 0
+
+        self.end_l: bool = False
+        self.end_r: bool = False
 
         rosys.on_shutdown(self.stop)
 
@@ -35,38 +37,35 @@ class YAxis(rosys.hardware.Module, abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def move_to(self, world_position: float, speed: float) -> float:
+    async def move_to(self, position: float, speed: float) -> None:
         if not self.is_referenced:
-            rosys.notify('yaxis is not referenced, reference first')
-            return None
-        if self.end_l or self.end_r:
-            rosys.notify('yaxis is in end stops, remove to move')
-            return None
-        if speed > self.Y_AXIS_MAX_SPEED:
-            rosys.notify('yaxis speed is too high')
-            return None
-        if world_position < self.MIN_Y or world_position > self.MAX_Y:
-            rosys.notify('yaxis position is out of range')
-            return None
-        steps = self.linear_to_steps(world_position-self.AXIS_OFFSET_Y)
-        target_position = self.home_position + steps
-        return target_position
+            raise RuntimeError('yaxis is not referenced, reference first')
+        if speed > self.MAX_SPEED:
+            raise RuntimeError(f'yaxis speed is too high, max speed is {self.MAX_SPEED}')
+        if not self.MIN_POSITION <= position <= self.MAX_POSITION:
+            raise RuntimeError(f'target position ist out of yaxis range')
 
     @abc.abstractmethod
     async def try_reference(self) -> bool:
         return True
 
-    def linear_to_steps(self, linear: float) -> int:
-        steps = int(linear * 1000 * self.STEPS_PER_MM)
-        return steps
+    def compute_steps(self, position: float) -> int:
+        """Compute the number of steps to move the y axis to the given position.   
 
-    def steps_to_linear(self, steps: int) -> float:
-        linear = (steps / self.STEPS_PER_MM) / 1000
-        return linear
+        The position is given in meters.
+        """
+        return int((-position + self.AXIS_OFFSET) * self.STEPS_PER_M + self.homesteps)
+
+    def compute_position(self, steps: int) -> float:
+        return -steps / self.STEPS_PER_M + self.AXIS_OFFSET
+
+    @property
+    def position(self) -> float:
+        return self.compute_position(self.steps)
 
     async def enable_end_stops(self, value: bool) -> None:
-        self.end_stops_active = value
-        self.log.info(f'end stops active = {value}')
+        self.end_stops_enabled = value
+        self.log.info(f'end stops enabled = {value}')
 
 
 class YAxisHardware(YAxis, rosys.hardware.ModuleHardware):
@@ -79,43 +78,57 @@ class YAxisHardware(YAxis, rosys.hardware.ModuleHardware):
                  dir_pin: int = 18,
                  alarm_pin: int = 35,
                  end_l_pin: int = 36,
-                 end_r_pin: int = 13) -> None:
+                 end_r_pin: int = 13,
+                 motor_on_expander: bool = False,
+                 end_stops_on_expander: bool = False,
+                 ) -> None:
         self.name = name
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name + "." if expander else ""}StepperMotor({step_pin}, {dir_pin})
-            {name}_alarm = {expander.name + "." if expander else ""}Input({alarm_pin})
-            {name}_end_l = Input({end_l_pin})
-            {name}_end_r = Input({end_r_pin})
+            {name} = {expander.name + "." if motor_on_expander == True else ""}StepperMotor({step_pin}, {dir_pin})
+            {name}_alarm = {expander.name + "." if motor_on_expander == True else ""}Input({alarm_pin})
+            {name}_end_l = {expander.name + "." if end_stops_on_expander == True else ""}Input({end_l_pin})
+            {name}_end_r = {expander.name + "." if end_stops_on_expander == True else ""}Input({end_r_pin})
             bool {name}_is_referencing = false
-            bool {name}_end_stops_active = true
-            when {name}_end_stops_active and {name}_is_referencing and {name}_end_l.level == 0 then
+            bool {name}_end_stops_enabled = true
+            when {name}_end_stops_enabled and {name}_is_referencing and {name}_end_l.level == 0 then
                 {name}.stop();
-                {name}_end_stops_active = false
+                {name}_end_stops_enabled = false
             end
-            when !{name}_end_stops_active and {name}_is_referencing and {name}_end_l.level == 1 then
+            when !{name}_end_stops_enabled and {name}_is_referencing and {name}_end_l.level == 1 then
                 {name}.stop();
-                {name}_end_stops_active = true
+                {name}_end_stops_enabled = true
             end
-            when !{name}_is_referencing and {name}_end_stops_active and {name}_end_l.level == 0 then {name}.stop(); end
-            when {name}_end_stops_active and {name}_end_r.level == 0 then {name}.stop(); end
+            when !{name}_is_referencing and {name}_end_stops_enabled and {name}_end_l.level == 0 then {name}.stop(); end
+            when {name}_end_stops_enabled and {name}_end_r.level == 0 then {name}.stop(); end
         ''')
-        core_message_fields = [f'{name}_end_l.level', f'{name}_end_r.level',
-                               f'{name}.idle', f'{name}.position', f'{name}.alarm']
+        core_message_fields = [
+            f'{name}_end_l.level',
+            f'{name}_end_r.level',
+            f'{name}.idle',
+            f'{name}.position',
+            f'{name}_alarm.level'
+        ]
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
         await super().stop()
         await self.robot_brain.send(f'{self.name}.stop()')
 
-    async def move_to(self, world_position: float, speed: float = 80_000) -> None:
-        target_position = await super().move_to(world_position, speed)
-        if target_position is None:
+    async def move_to(self, position: float, speed: float = YAxis.MAX_SPEED) -> None:
+        try:
+            await super().move_to(position, speed)
+        except RuntimeError as error:
+            rosys.notify(error, type='negative')
+            self.log.info(f'could not move yaxis to {position} because of {error}')
+            raise RuntimeError(f'could not move yaxis to {position} because of {error}')
             return
-        await self.robot_brain.send(f'{self.name}.position({target_position}, {speed}, 160000);')
+        steps = self.compute_steps(position)
+        await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 250000);')
+        await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
+            rosys.notify('yaxis fault detected', type='negative')
             return
-        self.log.info(f'yaxis moved to {world_position}')
 
     async def check_idle_or_alarm(self) -> bool:
         while not self.idle and not self.alarm:
@@ -129,46 +142,76 @@ class YAxisHardware(YAxis, rosys.hardware.ModuleHardware):
         if not await super().try_reference():
             return False
         try:
-            if not self.end_stops_active:
-                self.log.warning('end stops not activated')
+            if not self.end_stops_enabled:
+                self.log.warning('end stops not enabled')
                 return False
-            if self.end_l or self.end_r:
-                self.log.info('yaxis is in end stops, remove to reference')
-                return False
-            await self.robot_brain.send(
-                f'{self.name}_is_referencing = true;'
-                f'{self.name}.speed({self.Y_AXIS_MAX_SPEED/2});'
-            )
-            if not await self.check_idle_or_alarm():
-                return False
-            await self.robot_brain.send(f'{self.name}.speed(-{self.Y_AXIS_MAX_SPEED/2});')
-            if not await self.check_idle_or_alarm():
-                return False
-            await self.robot_brain.send(f'{self.name}.speed({self.Y_AXIS_MAX_SPEED/10});')
-            if not await self.check_idle_or_alarm():
-                return False
-            await self.robot_brain.send(f'{self.name}.speed(-{self.Y_AXIS_MAX_SPEED/10});')
-            if not await self.check_idle_or_alarm():
-                return False
+
+            # if in end r stop, disable end stops and move out
+            if self.end_r:
+                await self.enable_end_stops(False)
+                await self.robot_brain.send(f'{self.name}.speed(-{self.MAX_SPEED/10});')
+                while self.end_r:
+                    await rosys.sleep(0.2)
+                await self.robot_brain.send(f'{self.name}.stop();')
+                await self.enable_end_stops(True)
+
+            # if in end l stop, move out
+            if self.end_l:
+                await self.enable_end_stops(False)
+                await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/10});')
+                while self.end_l:
+                    await rosys.sleep(0.2)
+                await self.robot_brain.send(f'{self.name}.stop();')
+                await self.enable_end_stops(True)
+
+            await self.robot_brain.send(f'{self.name}_is_referencing = true;')
+
+            # move to end l stop
+            await self.robot_brain.send(f'{self.name}.speed(-{self.MAX_SPEED/6});')
+            while not self.end_l:
+                await rosys.sleep(0.2)
+
+            # move out of end l stop
+            await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/6});')
+            while self.end_l:
+                await rosys.sleep(0.2)
+
+            # move slowly to end l stop
+            await self.robot_brain.send(f'{self.name}.speed(-{self.MAX_SPEED/10});')
+            while not self.end_l:
+                await rosys.sleep(0.2)
+
+            # move slowly out of end l stop
+            await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/10});')
+            while self.end_l:
+                await rosys.sleep(0.2)
+
+            # save position
+            await rosys.sleep(0.2)
             await self.robot_brain.send(f'{self.name}_is_referencing = false;')
-            await rosys.sleep(0.1)
-            self.home_position = self.position
+            await self.robot_brain.send(f'{self.name}.position = 0;')  # ToDO: This seems to be buggy on expander
+            await rosys.sleep(0.5)
             self.is_referenced = True
-            await self.move_to(self.MAX_Y, speed=self.Y_AXIS_MAX_SPEED/2)
-            self.log.info('yaxis referenced')
+            self.homesteps = self.steps
+            self.log.info(f'yaxis referenced, homesteps: {self.homesteps}')
             return True
+        except Exception as error:
+            self.log.error(f'could not reference yaxis because of {error}')
+            return False
         finally:
             await self.stop()
 
     async def enable_end_stops(self, value: bool) -> None:
         await super().enable_end_stops(value)
-        await self.robot_brain.send(f'{self.name}_end_stops_active = {str(value).lower()};')
+        await self.robot_brain.send(f'{self.name}_end_stops_enabled = {str(value).lower()};')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         self.end_l = int(words.pop(0)) == 0
         self.end_r = int(words.pop(0)) == 0
+        if self.end_l or self.end_r:
+            self.is_referenced = False
         self.idle = words.pop(0) == 'true'
-        self.position = int(words.pop(0))
+        self.steps = int(words.pop(0))
         self.alarm = int(words.pop(0)) == 0
         if self.alarm:
             self.is_referenced = False
@@ -181,39 +224,38 @@ class YAxisSimulation(YAxis, rosys.hardware.ModuleSimulation):
     def __init__(self) -> None:
         super().__init__()
 
-        self.velocity: float = 0.0
-        self.target: Optional[float] = None
+        self.speed: int = 0
+        self.target_steps: Optional[float] = None
 
     async def stop(self) -> None:
         await super().stop()
-        self.velocity = 0.0
-        self.target = None
+        self.speed = 0
+        self.target_steps = None
 
     async def move_to(self, world_position: float, speed: float = 80_000) -> None:
-        target_position = await super().move_to(world_position, speed)
-        if target_position is None:
+        try:
+            await super().move_to(world_position, speed)
+        except RuntimeError as e:
+            rosys.notify(e, type='negative')
             return
-        self.target = target_position
-        if self.target > self.position:
-            self.velocity = speed
-        if self.target < self.position:
-            self.velocity = -speed
-        while self.target is not None:
+        self.target_steps = self.compute_steps(world_position)
+        self.speed = speed if self.target_steps > self.steps else -speed
+        while self.target_steps is not None:
             await rosys.sleep(0.2)
 
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
-        self.position = 0
-        self.home_position = 0
+        self.steps = 0
+        self.homesteps = 0
         self.is_referenced = True
         return True
 
     async def step(self, dt: float) -> None:
         await super().step(dt)
-        self.position += int(dt * self.velocity)
-        if self.target is not None:
-            if (self.velocity > 0) == (self.position > self.target):
-                self.position = self.target
-                self.target = None
-                self.velocity = 0
+        self.steps += int(dt * self.speed)
+        if self.target_steps is not None:
+            if (self.speed > 0) == (self.steps > self.target_steps):
+                self.steps = self.target_steps
+                self.target_steps = None
+                self.speed = 0
