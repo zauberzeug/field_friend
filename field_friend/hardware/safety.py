@@ -32,12 +32,16 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  y_axis: Optional[YAxisHardware] = None,
                  z_axis: Optional[ZAxisHardware] = None) -> None:
         if y_axis is not None and z_axis is not None:
-            lizard_code = f'let stop do {wheels.name}.speed(0, 0); {y_axis.name}.stop(); {z_axis.name}.stop()); end\n'
+            lizard_code = f'let stop do {wheels.name}.speed(0, 0); {y_axis.name}.stop(); {z_axis.name}.stop(); end\n'
         else:
             lizard_code = f'let stop do {wheels.name}.speed(0, 0); end\n'
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
-        lizard_code += f'when core.last_message_age > 500 then stop(); end\n'
+        if y_axis is not None and z_axis is not None:
+            lizard_code += f'when {z_axis.name}_ref_t.level == 0 then {wheels.name}.speed(0, 0); end\n'
+            lizard_code += f'when {z_axis.name}_ref_t.level == 0 then {y_axis.name}.stop(); end\n'
+        lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
+        lizard_code += f'when core.last_message_age > 15000 then stop(); end\n'
         super().__init__(wheels=wheels,
                          estop=estop,
                          robot_brain=robot_brain,
