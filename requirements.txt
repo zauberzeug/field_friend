@@ -1,1 +1,3 @@
-orjson
+pynmea2
+geopy
+pywebview
