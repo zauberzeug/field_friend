@@ -1,13 +1,19 @@
+
 from nicegui import ui
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Odometer, Steerer, joystick
 from rosys.vision import CameraProvider
 
-from ..automations import Puncher, plant_provider
+from ..automations import Puncher, Weeding, plant_detector, plant_provider
 from ..hardware import FieldFriend
 from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .robot_object import robot_object
+
+SHORTCUT_INFO = '''
+    Steer the robot manually with the JOYSTICK on the left. <br>
+    Or hold SHIFT and use the ARROW KEYS
+'''
 
 
 def operation(
@@ -17,38 +23,28 @@ def operation(
     odometer: Odometer,
     camera_provider: CameraProvider,
     plant_provider: plant_provider,
-    puncher: Puncher
+    plant_detector: plant_detector,
+    puncher: Puncher,
+    weeding: Weeding,
 ) -> None:
     with ui.card().tight():
-        with ui.scene(640, 460) as scene:
+        with ui.scene(720, 540) as scene:
             robot_object(odometer, camera_provider, field_friend)
-            plant_objects(plant_provider)
+            plant_objects(plant_provider, plant_detector.weed_category_names)
             scene.move_camera(-0.5, -1, 1.3)
         with ui.row():
             key_controls = KeyControls(field_friend, steerer, automator, puncher)
             joystick(steerer, size=50, color='#6E93D6').classes(
                 'm-4').style('width:15em; height:15em;')
             with ui.column().classes('mt-4'):
-                ui.markdown(
-                    'Steer the robot manually with the JOYSTICK on the left. <br>Hold SHIFT and use the ARROW KEYS to steer the robot \
-                        <br>or press ! to HOME both axis and move them with WASD').classes('col-grow')
                 with ui.row():
-                    speed_number = ui.number('Robot speed').props(
+                    ui.markdown(SHORTCUT_INFO).classes('col-grow')
+                    ui.number('speed', format='%.0f', max=9, min=1).props(
                         'dense outlined').classes('w-24').bind_value(key_controls, 'speed')
-                    if field_friend.z_axis is not None:
-                        def check_depth(depth: float) -> None:
-                            if depth > field_friend.z_axis.MAX_Z*100:
-                                depth_number.set_value(field_friend.z_axis.MAX_Z*100)
-                            if depth < field_friend.z_axis.MIN_Z*100:
-                                depth_number.set_value(field_friend.z_axis.MIN_Z*100)
-                        depth_number = ui.number('Drill depth', format='%.2f', on_change=lambda e: check_depth(e.value)).props(
-                            'dense outlined suffix=cm').classes('w-28').bind_value(field_friend.z_axis, 'drill_depth',
-                                                                                   backward=lambda x: x * 100, forward=lambda x: x / 100)
                 with ui.row():
-                    def stop():
-                        if automator.is_running:
-                            automator.stop(because='emergency stop triggered')
                     automation_controls(automator)
+                    if field_friend.z_axis is not None:
+                        ui.number('Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.20).props(
+                            'dense outlined suffix=cm').classes('w-24').bind_value(weeding, 'drill_depth')
 
-                    field_friend.estop.ESTOP_TRIGGERED.register(stop)
                 ui.label('press PLAY to start weeding with the set drill depth')
