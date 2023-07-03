@@ -4,8 +4,9 @@ import rosys
 
 
 class CameraSelector:
-    FRONT_CAMERA_IDS = ['front_cam', 'usb-70090000.xusb-2.4.1']
-    BOTTOM_CAMERA_IDS = ['bottom_cam', 'usb-70090000.xusb-2.4.2']
+    FRONT_CAMERA_IDS = ['front_cam']
+    BOTTOM_CAMERA_IDS = ['bottom_cam', 'usb-70090000.xusb-2.4.2',
+                         'usb-70090000.xusb-2.2', 'usb-70090000.xusb-2.4', 'usb-70090000.xusb-2.3']
 
     def __init__(self) -> None:
         self.CAMERA_SELECTED = rosys.event.Event()
