@@ -68,7 +68,7 @@ class CameraCard(Card):
                 url = f'{self.camera_provider.get_latest_image_url(camera)}'
                 self.image_view.set_source(url)
 
-            ui.timer(0.5, update)
+            ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
                 self.depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01)
                 ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active') \
