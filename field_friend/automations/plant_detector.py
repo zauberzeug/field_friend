@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import rosys
 
@@ -31,30 +32,30 @@ class PlantDetector:
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
 
-    async def detect_plants(self, camera: rosys.vision.Camera) -> None:
+    async def detect_plants(self, camera: rosys.vision.Camera, *, image: Optional[rosys.vision.Image] = None) -> None:
         self.log.info('detecting plants')
 
         if camera.calibration is None:
             rosys.notify('camera has no calibration')
             raise DetectorError()
+        if image == None:
+            # wait for new image
+            deadline = rosys.time() + 5.0
+            new_image = camera.latest_captured_image
+            while new_image == camera.latest_captured_image and rosys.time() < deadline:
+                await rosys.sleep(0.1)
 
-        # wait for new image
-        deadline = rosys.time() + 5.0
-        image = camera.latest_captured_image
-        while image == camera.latest_captured_image and rosys.time() < deadline:
-            await rosys.sleep(0.1)
+            new_image = camera.latest_captured_image
+            if new_image is None:
+                self.log.info('no image found')
+                raise DetectorError()
 
-        image = camera.latest_captured_image
-        if image is None:
-            self.log.info('no image found')
-            raise DetectorError()
-
-        await self.detector.detect(image)
-        if not image.detections:
+        await self.detector.detect(new_image)
+        if not new_image.detections:
             self.log.info('no detection found')
             raise DetectorError()
 
-        for d in image.detections.points:
+        for d in new_image.detections.points:
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
                 floor_point = camera.calibration.project_from_image(image_point)
