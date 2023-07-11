@@ -73,12 +73,15 @@ class GnssHardware(Gnss):
         super().__init__()
 
         self.log.info('Searching for GNSS device...')
+        self.log.info(
+            f'Available ports: {[port.description for port in list_ports.comports() if "Septentrio" in port.description]}')
         for port in list_ports.comports():
             self.log.info(f'Found port: {port.device} - {port.description}')
             if 'Septentrio' in port.description:
-                self.device = port.device
-                self.log.info(f'Found GNSS device: {self.device}')
-                break
+                self.log.info(f'Found GNSS device: {port.device}')
+                if port.device == '/dev/ttyACM0':
+                    self.device = port.device
+                    break
         else:
             self.device = None
             self.log.error('No GNSS device found')
