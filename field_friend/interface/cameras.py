@@ -65,7 +65,7 @@ class CameraCard(Card):
             ).classes('w-full')
 
             def update():
-                url = f'{self.camera_provider.get_latest_image_url(camera)}'
+                url = f'{self.camera_provider.get_latest_image_url(camera)}?shrink=2'
                 self.image_view.set_source(url)
 
             ui.timer(1, update)
