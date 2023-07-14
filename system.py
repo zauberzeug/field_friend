@@ -21,17 +21,19 @@ class System:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = rosys.vision.UsbCameraProviderHardware()
             self.detector = rosys.vision.DetectorHardware(port=8004)
-            self.gnss = GnssHardware()
         else:
 
             self.field_friend = FieldFriendSimulation()
             self.usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
-            self.gnss = GnssSimulation(self.field_friend.wheels)
         self.usb_camera_provider.CAMERA_ADDED.register(self.camera_selector.use_camera)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.2)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
+        if self.is_real:
+            self.gnss = GnssHardware(self.odometer)
+        else:
+            self.gnss = GnssSimulation(self.field_friend.wheels)
         self.gnss.ROBOT_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.4

@@ -37,14 +37,16 @@ class Gnss(ABC):
         """the robot has been located (argument: pose)"""
 
         self.record = GNSSRecord()
-        self.device = 'simulation'
+        self.device = None
+        self.ser = None
         self.reference_lat: Optional[float] = None
         self.reference_lon: Optional[float] = None
 
         self.needs_backup = False
         rosys.persistence.register(self)
 
-        rosys.on_repeat(self.update, 1)
+        rosys.on_repeat(self.update, 1.2)
+        rosys.on_repeat(self.try_connection, 3.0)
 
     def backup(self) -> dict[str, Any]:
         return {
@@ -60,6 +62,10 @@ class Gnss(ABC):
     async def update(self) -> None:
         pass
 
+    @abstractmethod
+    async def try_connection(self) -> None:
+        pass
+
     def clear_reference(self) -> None:
         self.reference_lat = None
         self.reference_lon = None
@@ -69,19 +75,21 @@ class Gnss(ABC):
 class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
 
-    def __init__(self) -> None:
+    def __init__(self, odometer: rosys.driving.Odometer) -> None:
         super().__init__()
+        self.odometer = odometer
 
+    async def try_connection(self) -> None:
+        await super().try_connection()
+        if self.device is not None:
+            return
         self.log.info('Searching for GNSS device...')
-        self.log.info(
-            f'Available ports: {[port.description for port in list_ports.comports() if "Septentrio" in port.description]}')
         for port in list_ports.comports():
             self.log.info(f'Found port: {port.device} - {port.description}')
             if 'Septentrio' in port.description:
                 self.log.info(f'Found GNSS device: {port.device}')
-                if port.device == '/dev/ttyACM0':
-                    self.device = port.device
-                    break
+                self.device = port.device
+                break
         else:
             self.device = None
             self.log.error('No GNSS device found')
@@ -89,7 +97,7 @@ class GnssHardware(Gnss):
 
         self.log.info(f'Connecting to GNSS device "{self.device}"')
         try:
-            self.ser = serial.Serial(port.device, baudrate=115200, timeout=0.5)
+            self.ser = serial.Serial(self.device, baudrate=115200, timeout=0.5)
         except serial.SerialException as e:
             self.log.error(f'Could not connect to GNSS device: {e}')
             self.device = None
@@ -101,43 +109,46 @@ class GnssHardware(Gnss):
         record = GNSSRecord()
         has_location = False
         has_heading = False
-        for line in await rosys.run.io_bound(self.ser.readlines):
-            if not line:
-                self.log.info('No data')
-                continue
-            try:
-                msg = await rosys.run.cpu_bound(pynmea2.parse, line.decode())
-                if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
-                    # self.log.info(f'GGA: gps_qual: {msg.gps_qual}, lat:{msg.latitude} and long:{msg.longitude}')
-                    record.gps_qual = msg.gps_qual
-                    record.altitude = msg.altitude
-                    record.separation = msg.geo_sep
-                if getattr(msg, 'spd_over_grnd_kmph', None) is not None:
-                    record.speed_kmh = msg.spd_over_grnd_kmph
-                if msg.sentence_type == 'GNS' and getattr(msg, 'mode_indicator', None):
-                    # self.log.info(f'GNS: mode: {msg.mode_indicator}, lat:{msg.latitude} and long:{msg.longitude}')
-                    if isinstance(msg.timestamp, datetime.time):
-                        dt = datetime.datetime.combine(datetime.date.today(), msg.timestamp)
-                        dt.replace(tzinfo=datetime.timezone.utc)
-                        record.timestamp = dt.timestamp()
-                    else:
-                        record.timestamp = msg.timestamp
-                    record.latitude = msg.latitude
-                    record.longitude = msg.longitude
-                    record.mode = msg.mode_indicator
-                    has_location = True
-                if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None) is not None:
-                    # self.log.info(f'HDT: Heading: {msg.heading}')
-                    record.heading = msg.heading
-                    has_heading = True
-            except serial.SerialException as e:
-                print(f'Device error: {e}')
-                self.log.info(f'Device error: {e}')
-                break
-            except pynmea2.ParseError as e:
-                print(f'Parse error: {e}')
-                self.log.info(f'Parse error: {e}')
-                continue
+        try:
+            lines = await rosys.run.io_bound(self.ser.readlines)
+            for line in lines:
+                if not line:
+                    self.log.info('No data')
+                    continue
+                try:
+                    msg = await rosys.run.cpu_bound(pynmea2.parse, line.decode())
+                    if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
+                        # self.log.info(f'GGA: gps_qual: {msg.gps_qual}, lat:{msg.latitude} and long:{msg.longitude}')
+                        record.gps_qual = msg.gps_qual
+                        record.altitude = msg.altitude
+                        record.separation = msg.geo_sep
+                    if getattr(msg, 'spd_over_grnd_kmph', None) is not None:
+                        record.speed_kmh = msg.spd_over_grnd_kmph
+                    if msg.sentence_type == 'GNS' and getattr(msg, 'mode_indicator', None):
+                        # self.log.info(f'GNS: mode: {msg.mode_indicator}, lat:{msg.latitude} and long:{msg.longitude}')
+                        if isinstance(msg.timestamp, datetime.time):
+                            dt = datetime.datetime.combine(datetime.date.today(), msg.timestamp)
+                            dt.replace(tzinfo=datetime.timezone.utc)
+                            record.timestamp = dt.timestamp()
+                        else:
+                            record.timestamp = msg.timestamp
+                        record.latitude = msg.latitude
+                        record.longitude = msg.longitude
+                        record.mode = msg.mode_indicator
+                        has_location = True
+                    if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None) is not None:
+                        # self.log.info(f'HDT: Heading: {msg.heading}')
+                        record.heading = msg.heading
+                        has_heading = True
+                except pynmea2.ParseError as e:
+                    print(f'Parse error: {e}')
+                    self.log.info(f'Parse error: {e}')
+                    continue
+        except serial.SerialException as e:
+            print(f'Device error: {e}')
+            self.log.info(f'Device error: {e}')
+            self.device = None
+            return
         self.record = record
         if has_location and record.gps_qual >= 4:  # 4 = RTK fixed, 5 = RTK float
             if self.reference_lat is None or self.reference_lon is None:
@@ -147,6 +158,10 @@ class GnssHardware(Gnss):
                 r = Geodesic.WGS84.Inverse(self.reference_lat, self.reference_lon, record.latitude, record.longitude)
                 s = r['s12']
                 a = -np.deg2rad(r['azi1'])
+                if has_heading:
+                    yaw = np.deg2rad(float(-record.heading))
+                else:
+                    yaw = self.odometer.get_pose(time=record.timestamp).yaw
                 pose = rosys.geometry.Pose(
                     x=s * np.cos(a),
                     y=s * np.sin(a),
@@ -170,7 +185,12 @@ class GnssSimulation(Gnss):
         self.pose_provider = pose_provider
 
     async def update(self) -> None:
+        if self.device is None:
+            return
         pose = deepcopy(self.pose_provider.pose)
         pose.time = rosys.time()
         await rosys.sleep(0.5)
         self.ROBOT_LOCATED.emit(pose)
+
+    async def try_connection(self) -> None:
+        self.device = 'simulation'
