@@ -32,9 +32,9 @@ def axis_control(field_friend: FieldFriend, automator: rosys.automation.Automato
                     await field_friend.y_axis.enable_end_stops(False)
                     rosys.notify('Y-Axis end stops disabled')
             ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
-            # ui.switch(
-            #     'Enable end stops', on_change=toggle_end_stops).bind_value_from(
-            #     field_friend.y_axis, 'end_stops_enabled')
+            ui.switch(
+                'Enable end stops', on_change=toggle_end_stops).bind_value_from(
+                field_friend.y_axis, 'end_stops_enabled').disable()
 
         with ui.column():
             ui.markdown('**Z-Axis**')
@@ -62,10 +62,11 @@ def axis_control(field_friend: FieldFriend, automator: rosys.automation.Automato
             ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
             ui.button('Return to reference', on_click=lambda: automator.start(
                 field_friend.z_axis.return_to_reference()))
-            # ui.switch('Enable ref stop', on_change=toggle_z_ref).bind_value_from(field_friend.z_axis, 'is_ref_enabled')
-            # ui.switch(
-            #     'Enable end stop', on_change=toggle_end_b).bind_value_from(
-            #     field_friend.z_axis, 'is_end_b_enabled')
+            ui.switch('Enable ref stop', on_change=toggle_z_ref).bind_value_from(
+                field_friend.z_axis, 'is_ref_enabled').disable()
+            ui.switch(
+                'Enable end stop', on_change=toggle_end_b).bind_value_from(
+                field_friend.z_axis, 'is_end_b_enabled').disable()
         with ui.column():
             ui.markdown('**Punch control**')
             ui.button('Reference all', on_click=lambda: automator.start(puncher.try_home()))

@@ -301,7 +301,7 @@ class ZAxisSimulation(ZAxis, rosys.hardware.ModuleSimulation):
 
     async def step(self, dt: float) -> None:
         self.steps += int(dt * self.speed)
-        self.ref_t = self.steps >= self.reference_steps
+        self.ref_t = self.steps <= self.reference_steps
         self.idle = self.speed == 0
         if self.target_steps is not None and (self.speed > 0) == (self.steps > self.target_steps):
             self.steps = self.target_steps

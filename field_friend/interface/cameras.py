@@ -19,9 +19,9 @@ from .calibration_dialog import calibration_dialog
 class CameraCard(Card):
 
     def __init__(self, camera_type: str, camera_provider: CameraProvider, camera_selector: CameraSelector,
-                 automator: Automator, detector: Detector, puncher: Optional[Puncher] = None) -> None:
+                 automator: Automator, detector: Detector, puncher: Optional[Puncher] = None, shrink_factor: int = 1) -> None:
         super().__init__()
-        self.log = logging.getLogger(f'rosys.camera_card')
+        self.log = logging.getLogger('field_friend.camera_card')
         self.camera_type = camera_type
         self.camera = None
         self.camera_provider = camera_provider
@@ -31,6 +31,7 @@ class CameraCard(Card):
         self.capture_images = ui.timer(1, lambda: background_tasks.create(
             self.detector.upload(self.camera.latest_captured_image)), active=False)
         self.puncher = puncher
+        self.shrink_factor = shrink_factor
         self.image_view: ui.interactive_image = None
         self.calibration_dialog = calibration_dialog(camera_provider)
         with self.tight().classes('col gap-4').style('width:640px'):
@@ -65,7 +66,10 @@ class CameraCard(Card):
             ).classes('w-full')
 
             def update():
-                url = f'{self.camera_provider.get_latest_image_url(camera)}?shrink=2'
+                if self.shrink_factor > 1:
+                    url = f'{self.camera_provider.get_latest_image_url(camera)}?shrink={self.shrink_factor}'
+                else:
+                    url = self.camera_provider.get_latest_image_url(camera)
                 self.image_view.set_source(url)
 
             ui.timer(1, update)
@@ -88,9 +92,11 @@ class CameraCard(Card):
         if e.type == 'mouseup':
             point2d = Point(x=e.image_x, y=e.image_y)
             point3d = self.camera.calibration.project_from_image(point2d)
-            if point3d is not None and self.puncher is not None:
-                self.log.info(f'punching {point3d}')
-                self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
+            if point3d is not None:
+                self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
+                if self.puncher is not None and self.shrink_factor == 1:
+                    self.log.info(f'punching {point3d}')
+                    self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
@@ -117,13 +123,14 @@ class cameras:
     def __init__(
             self, camera_selector: CameraSelector, camera_provider: CameraProvider,
             automator: Automator, detector: Detector,
-            puncher: Optional[Puncher] = None) -> None:
+            puncher: Optional[Puncher] = None, *, shrink_factor: int = 1) -> None:
         self.log = logging.getLogger('field_friend.cameras')
         self.camera_selector = camera_selector
         self.camera_provider = camera_provider
         self.automator = automator
         self.detector = detector
         self.puncher = puncher
+        self.shrink_factor = shrink_factor
         self.cards: dict[str, CameraCard] = {}
 
         # with ui.row() as self.camera_grid:
@@ -139,4 +146,4 @@ class cameras:
                 self.camera_grid.clear()
                 for camera_type in self.camera_selector.camera_ids.keys():
                     self.cards[camera_type] = CameraCard(camera_type, self.camera_provider, self.camera_selector,
-                                                         self.automator, self.detector, self.puncher)
+                                                         self.automator, self.detector, self.puncher, self.shrink_factor)

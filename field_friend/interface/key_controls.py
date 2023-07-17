@@ -28,9 +28,9 @@ class KeyControls(rosys.driving.keyboard_control):
 
         if e.modifiers.shift and e.action.keydown:
             if e.key == 'W':
-                background_tasks.create(self.field_friend.z_axis.move(self.field_friend.z_axis.MAX_SPEED/4))
-            if e.key == 'S':
                 background_tasks.create(self.field_friend.z_axis.move(-(self.field_friend.z_axis.MAX_SPEED/4)))
+            if e.key == 'S':
+                background_tasks.create(self.field_friend.z_axis.move(self.field_friend.z_axis.MAX_SPEED/4))
         if e.modifiers.shift and e.action.keyup:
             if e.key.name in 'WS':
                 background_tasks.create(self.z_axis.stop())
