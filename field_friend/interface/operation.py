@@ -34,8 +34,8 @@ def operation(
             scene.move_camera(-0.5, -1, 1.3)
         with ui.row():
             key_controls = KeyControls(field_friend, steerer, automator, puncher)
-            joystick(steerer, size=50, color='#6E93D6').classes(
-                'm-4').style('width:15em; height:15em;')
+            joystick(steerer, size=50, color='#6E93D6')
+            # .classes('m-4').style('width:15em; height:15em;')
             with ui.column().classes('mt-4'):
                 with ui.row():
                     ui.markdown(SHORTCUT_INFO).classes('col-grow')
