@@ -32,9 +32,9 @@ class Puncher:
 
     async def drive_to_punch(self, local_target_x: float) -> None:
         self.log.info(f'Driving to punch at {local_target_x}...')
-        if local_target_x < self.driver.odometer.prediction.x + self.field_friend.WORK_X:
+        if local_target_x < self.field_friend.WORK_X:
             self.log.info('Target is behind')
-            return
+            raise Exception('Target is behind')
         axis_distance = local_target_x - self.field_friend.WORK_X
         local_target = Point(x=axis_distance, y=0)
         world_target = self.driver.odometer.prediction.transform(local_target)
@@ -61,6 +61,12 @@ class Puncher:
         await self.field_friend.y_axis.stop()
 
     async def drive_and_punch(self, x: float, y: float, depth: float = 0.05) -> None:
-        await self.drive_to_punch(x)
-        await self.punch(y, depth)
-        await self.clear_view()
+        try:
+            if not self.field_friend.y_axis.is_referenced or not self.field_friend.z_axis.is_referenced:
+                await self.try_home()
+            await self.drive_to_punch(x)
+            await self.punch(y, depth)
+            await self.clear_view()
+        except Exception as e:
+            rosys.notify('drive and punch failed', 'negative')
+            raise Exception('drive and punch failed') from e
