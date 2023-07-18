@@ -36,6 +36,9 @@ class Gnss(ABC):
         self.ROBOT_LOCATED = rosys.event.Event()
         """the robot has been located (argument: pose)"""
 
+        self.REFERENCE_CLEARED = rosys.event.Event()
+        """the reference location has been set"""
+
         self.record = GNSSRecord()
         self.device = None
         self.ser = None
@@ -45,7 +48,7 @@ class Gnss(ABC):
         self.needs_backup = False
         rosys.persistence.register(self)
 
-        rosys.on_repeat(self.update, 1.2)
+        rosys.on_repeat(self.update, 1.0)
         rosys.on_repeat(self.try_connection, 3.0)
 
     def backup(self) -> dict[str, Any]:
@@ -70,6 +73,7 @@ class Gnss(ABC):
         self.reference_lat = None
         self.reference_lon = None
         self.needs_backup = True
+        self.REFERENCE_CLEARED.emit()
 
 
 class GnssHardware(Gnss):
@@ -152,6 +156,7 @@ class GnssHardware(Gnss):
         self.record = record
         if has_location and record.gps_qual >= 4:  # 4 = RTK fixed, 5 = RTK float
             if self.reference_lat is None or self.reference_lon is None:
+                self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
                 self.reference_lat = record.latitude
                 self.reference_lon = record.longitude
             else:

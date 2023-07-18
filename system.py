@@ -2,7 +2,7 @@ import os
 
 import rosys
 
-from field_friend.automations import PlantDetector, PlantProvider, Puncher, Weeding
+from field_friend.automations import PathRecorder, PlantDetector, PlantProvider, Puncher, Weeding
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import CameraSelector
@@ -40,11 +40,13 @@ class System:
         self.driver.parameters.angular_speed_limit = 0.4
         self.driver.parameters.can_drive_backwards = False
         self.driver.parameters.minimum_turning_radius = 1.0
-        self.automator = rosys.automation.Automator(self.steerer, on_interrupt=self.field_friend.stop)
+        self.automator = rosys.automation.Automator(steerer=None, on_interrupt=self.field_friend.stop)
         self.puncher = Puncher(self.field_friend, self.driver)
         self.plant_detector = PlantDetector(self.detector, self.plant_provider, self.odometer)
         self.weeding = Weeding(self.field_friend, self.driver, self.detector,
                                self.camera_selector, self.plant_provider, self.puncher, self.plant_detector)
+        self.path_recorder = PathRecorder(self.driver, self.steerer, self.gnss)
+        self.gnss.REFERENCE_CLEARED.register(self.path_recorder.paths.clear)
         self.automator.default_automation = self.weeding.start
 
         if self.is_real:
@@ -83,6 +85,13 @@ class System:
         def stop():
             if self.automator.is_running:
                 self.automator.stop(because='emergency stop triggered')
+
+        def pause():
+            if self.automator.is_running:
+                if self.path_recorder.state != 'recording':
+                    self.automator.pause(because='steering started')
+
+        self.steerer.STEERING_STARTED.register(pause)
         self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
 
     def restart(self) -> None:

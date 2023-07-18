@@ -13,7 +13,7 @@ def startup() -> None:
     system = System()
 
     @ui.page('/')
-    def page() -> None:
+    def page(dev: bool = False) -> None:
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
@@ -25,9 +25,24 @@ def startup() -> None:
                     system.plant_provider, system.plant_detector, system.puncher, system.weeding)
                 interface.cameras(system.camera_selector, system.usb_camera_provider,
                                   system.automator, system.detector, system.puncher)
-            with ui.row().classes('items-stretch justify-items-stretch'):
-                interface.development(system.field_friend)
-                interface.axis_control(system.field_friend, system.automator, system.puncher)
+            if dev:
+                with ui.row().classes('items-stretch justify-items-stretch'):
+                    interface.development(system.field_friend)
+                    interface.axis_control(system.field_friend, system.automator, system.puncher)
+
+    @ui.page('/dev')
+    def dev_page():
+        page(dev=True)
+
+    @ui.page('/path')
+    def path_page():
+        ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
+        status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
+        interface.header_bar(system, status_drawer)
+        interface.system_bar()
+        with ui.column().classes('w-full items-stretch'):
+            with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
+                interface.path_planner(system.path_recorder, system.automator, system.driver, system.gnss)
 
     @app.get('/status')
     def status():
