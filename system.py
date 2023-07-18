@@ -43,11 +43,16 @@ class System:
         self.automator = rosys.automation.Automator(steerer=None, on_interrupt=self.field_friend.stop)
         self.puncher = Puncher(self.field_friend, self.driver)
         self.plant_detector = PlantDetector(self.detector, self.plant_provider, self.odometer)
+        self.plant_detector.weed_category_names = ['coin', 'weed']
+        self.plant_detector.crop_category_names = ['sugar_beet', 'crop']
+        self.plant_detector.minimum_crop_confidence = 0.5
+        self.plant_detector.minimum_weed_confidence = 0.5
         self.weeding = Weeding(self.field_friend, self.driver, self.detector,
                                self.camera_selector, self.plant_provider, self.puncher, self.plant_detector)
+        self.automator.default_automation = self.weeding.start
+
         self.path_recorder = PathRecorder(self.driver, self.steerer, self.gnss)
         self.gnss.REFERENCE_CLEARED.register(self.path_recorder.paths.clear)
-        self.automator.default_automation = self.weeding.start
 
         if self.is_real:
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
