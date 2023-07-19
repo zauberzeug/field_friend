@@ -1,3 +1,5 @@
 pynmea2
 geopy
 pywebview
+imgsize
+netifaces
