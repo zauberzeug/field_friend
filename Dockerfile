@@ -1,4 +1,4 @@
-FROM zauberzeug/rosys:0.8.5
+FROM zauberzeug/rosys:0.9.0
 
 COPY ./requirements.txt /app
 
