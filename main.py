@@ -21,14 +21,14 @@ def startup() -> None:
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
                 interface.operation(
-                    system.field_friend, system.steerer, system.automator, system.odometer, system.usb_camera_provider,
-                    system.plant_provider, system.plant_detector, system.puncher, system.weeding)
-                interface.cameras(system.camera_selector, system.usb_camera_provider,
-                                  system.automator, system.detector, system.puncher)
+                    system.field_friend, system.steerer, system.driver, system.automator, system.odometer, system.usb_camera_provider,
+                    system.plant_provider, system.plant_detector, system.puncher, system.weeding, dev=dev, path_recorder=system.path_recorder)
+                interface.cameras(system.camera_selector, system.usb_camera_provider, system.automator,
+                                  system.detector, system.puncher, version=system.field_friend.version)
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):
                     interface.development(system.field_friend)
-                    interface.axis_control(system.field_friend, system.automator, system.puncher)
+                    interface.hardware_control(system.field_friend, system.automator, system.puncher)
 
     @ui.page('/dev')
     def dev_page():
@@ -43,6 +43,16 @@ def startup() -> None:
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
                 interface.path_planner(system.path_recorder, system.automator, system.driver, system.gnss)
+
+    @ui.page('/test')
+    def test_page():
+        status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
+        interface.header_bar(system, status_drawer)
+        interface.system_bar()
+        with ui.column().classes('w-full items-stretch'):
+            with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
+                interface.test(system.field_friend, system.steerer, system.odometer, system.automator, system.driver,
+                               system.usb_camera_provider)
 
     @app.get('/status')
     def status():
