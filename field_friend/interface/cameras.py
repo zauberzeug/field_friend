@@ -18,8 +18,10 @@ from .calibration_dialog import calibration_dialog
 
 class CameraCard(Card):
 
-    def __init__(self, camera_type: str, camera_provider: CameraProvider, camera_selector: CameraSelector,
-                 automator: Automator, detector: Detector, puncher: Optional[Puncher] = None, shrink_factor: int = 1) -> None:
+    def __init__(
+            self, camera_type: str, camera_provider: CameraProvider, camera_selector: CameraSelector,
+            automator: Automator, detector: Detector, puncher: Optional[Puncher] = None, *, version: str,
+            shrink_factor: int = 1) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.camera_card')
         self.camera_type = camera_type
@@ -33,11 +35,10 @@ class CameraCard(Card):
         self.puncher = puncher
         self.shrink_factor = shrink_factor
         self.image_view: ui.interactive_image = None
-        self.calibration_dialog = calibration_dialog(camera_provider)
+        self.calibration_dialog = calibration_dialog(camera_provider, version=version)
         with self.tight().classes('col gap-4').style('width:640px'):
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label(f'no {camera_type} available').classes('text-center')
-        # self.camera_selector.CAMERA_SELECTED.register(self.use_camera)
         ui.timer(1, self.update_content)
 
     def update_content(self) -> None:
@@ -123,7 +124,7 @@ class cameras:
     def __init__(
             self, camera_selector: CameraSelector, camera_provider: CameraProvider,
             automator: Automator, detector: Detector,
-            puncher: Optional[Puncher] = None, *, shrink_factor: int = 1) -> None:
+            puncher: Optional[Puncher] = None, *, version: str, shrink_factor: int = 1) -> None:
         self.log = logging.getLogger('field_friend.cameras')
         self.camera_selector = camera_selector
         self.camera_provider = camera_provider
@@ -131,12 +132,8 @@ class cameras:
         self.detector = detector
         self.puncher = puncher
         self.shrink_factor = shrink_factor
+        self.version = version
         self.cards: dict[str, CameraCard] = {}
-
-        # with ui.row() as self.camera_grid:
-        #     for camera_type in self.camera_selector.camera_ids.keys():
-        #         CameraCard(camera_type, self.camera_provider, self.camera_selector,
-        #                    self.automator, self.detector, self.puncher)
         self.camera_grid = ui.row()
         ui.timer(1, self.update_cameras)
 
@@ -145,5 +142,6 @@ class cameras:
             if set(self.camera_selector.camera_ids.keys()) != set(self.cards.keys()):
                 self.camera_grid.clear()
                 for camera_type in self.camera_selector.camera_ids.keys():
-                    self.cards[camera_type] = CameraCard(camera_type, self.camera_provider, self.camera_selector,
-                                                         self.automator, self.detector, self.puncher, self.shrink_factor)
+                    self.cards[camera_type] = CameraCard(
+                        camera_type, self.camera_provider, self.camera_selector, self.automator, self.detector, self.
+                        puncher, version=self.version, shrink_factor=self.shrink_factor)
