@@ -5,7 +5,7 @@ from rosys.automation import Automator
 from rosys.driving import Steerer
 
 from ..automations import Puncher
-from ..hardware import FieldFriend
+from ..hardware import FieldFriend, YAxis
 
 
 class KeyControls(rosys.driving.keyboard_control):
@@ -25,25 +25,26 @@ class KeyControls(rosys.driving.keyboard_control):
         if e.modifiers.shift and e.action.keydown:
             if e.key == '!':
                 self.automator.start(self.puncher.try_home())
+        if self.z_axis is not None:
+            if e.modifiers.shift and e.action.keydown:
+                if e.key == 'W':
+                    background_tasks.create(self.field_friend.z_axis.move(-(self.field_friend.z_axis.MAX_SPEED/6)))
+                if e.key == 'S':
+                    background_tasks.create(self.field_friend.z_axis.move(self.field_friend.z_axis.MAX_SPEED/6))
+            if e.modifiers.shift and e.action.keyup:
+                if e.key.name in 'WS':
+                    background_tasks.create(self.z_axis.stop())
 
-        if e.modifiers.shift and e.action.keydown:
-            if e.key == 'W':
-                background_tasks.create(self.field_friend.z_axis.move(-(self.field_friend.z_axis.MAX_SPEED/4)))
-            if e.key == 'S':
-                background_tasks.create(self.field_friend.z_axis.move(self.field_friend.z_axis.MAX_SPEED/4))
-        if e.modifiers.shift and e.action.keyup:
-            if e.key.name in 'WS':
-                background_tasks.create(self.z_axis.stop())
-
-        if e.modifiers.shift and e.action.keydown:
-            if e.key == 'A':
-                background_tasks.create(self.y_axis.move_to(self.y_axis.MAX_POSITION))
-            if e.key == 'D':
-                background_tasks.create(self.y_axis.move_to(self.y_axis.MIN_POSITION))
-        if e.modifiers.shift and e.action.keyup:
-            if e.key.name in 'AD':
-                background_tasks.create(self.y_axis.stop())
-                rosys.notify('y axis stopped')
+        if isinstance(self.y_axis, YAxis):
+            if e.modifiers.shift and e.action.keydown:
+                if e.key == 'A':
+                    background_tasks.create(self.y_axis.move_to(self.y_axis.MAX_POSITION))
+                if e.key == 'D':
+                    background_tasks.create(self.y_axis.move_to(self.y_axis.MIN_POSITION))
+            if e.modifiers.shift and e.action.keyup:
+                if e.key.name in 'AD':
+                    background_tasks.create(self.y_axis.stop())
+                    rosys.notify('y axis stopped')
 
         if e.key == ' ' and e.action.keydown:
             background_tasks.create(self.field_friend.stop())

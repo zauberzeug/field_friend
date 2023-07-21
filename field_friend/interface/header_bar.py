@@ -9,7 +9,10 @@ if TYPE_CHECKING:
 
 def header_bar(system: 'System', right_drawer: ui.right_drawer) -> None:
     with ui.header().classes('items-center'):
-        ui.label('Zauberzeug Field Friend').classes('text-2xl mr-auto')
+        if system.field_friend.version in ['u1', 'u2']:
+            ui.label('Uckerbot').classes('text-2xl mr-auto')
+        else:
+            ui.label('Zauberzeug Field Friend').classes('text-2xl mr-auto')
 
         rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
         with ui.button().props('icon=settings flat color=white'):
