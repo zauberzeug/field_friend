@@ -121,6 +121,9 @@ class GnssHardware(Gnss):
                     continue
                 try:
                     msg = await rosys.run.cpu_bound(pynmea2.parse, line.decode())
+                    if not hasattr(msg, 'sentence_type'):
+                        self.log.info(f'No sentence type: {msg}')
+                        continue
                     if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
                         # self.log.info(f'GGA: gps_qual: {msg.gps_qual}, lat:{msg.latitude} and long:{msg.longitude}')
                         record.gps_qual = msg.gps_qual
