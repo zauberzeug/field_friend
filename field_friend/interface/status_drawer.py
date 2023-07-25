@@ -16,6 +16,10 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             ui.icon('report').props('size=md').classes('text-red')
             ui.label('Emergency stop is pressed!').classes('text-red mt-1')
 
+        with ui.row().bind_visibility_from(robot.estop, 'en3_active'):
+            ui.icon('report').props('size=md').classes('text-red')
+            ui.label('Software ESTOP is active!').classes('text-red mt-1')
+
         with ui.row().bind_visibility_from(robot.estop, 'active', value=False):
             if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
                 with ui.row().bind_visibility_from(robot.z_axis, 'ref_t', value=False):
@@ -49,6 +53,8 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
         with ui.row():
             ui.markdown('**Battery:**').style('color: #6E93D6')
             bms_label = ui.label()
+            if hasattr(robot, 'battery_control'):
+                battery_control_label = ui.label('')
 
         with ui.row():
             ui.markdown('**Y-Axis:**').style('color: #6E93D6')
@@ -123,6 +129,8 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             else:
                 z_axis_flags = ['no z-axis']
             bms_label.text = ', '.join(flag for flag in bms_flags if flag)
+            if hasattr(robot, 'battery_control') and robot.battery_control is not None:
+                battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
             y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
             z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
             direction_flag = 'N' if gnss.record.heading <= 23 else \
