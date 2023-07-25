@@ -29,7 +29,7 @@ class System:
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
         self.usb_camera_provider.CAMERA_ADDED.register(self.camera_selector.use_camera)
         self.plant_provider = PlantProvider()
-        self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.2)
+        self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.4)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         if self.is_real:
             self.gnss = GnssHardware(self.odometer)
@@ -41,10 +41,9 @@ class System:
         self.driver.parameters.angular_speed_limit = 1.0
         self.driver.parameters.can_drive_backwards = False
         # self.driver.parameters.minimum_turning_radius = 0.5
-        self.driver.parameters.hook_offset = 0.8
-        self.driver.parameters.carrot_distance = 0.3
+        self.driver.parameters.hook_offset = 0.6
+        self.driver.parameters.carrot_distance = 0.2
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
-        # self.driver.parameters.hook_bending_factor = 0  # 3.0
         self.automator = rosys.automation.Automator(steerer=None, on_interrupt=self.field_friend.stop)
         if self.is_real:
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
