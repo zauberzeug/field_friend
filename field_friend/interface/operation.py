@@ -37,38 +37,58 @@ class operation:
         path_recorder: Optional[PathRecorder] = None,
     ) -> None:
         with ui.card().tight():
+            self.scene_look = False
+
             def handle_click(event: events.SceneClickEventArguments) -> None:
                 if event.click_type == 'dblclick':
                     position = odometer.prediction.point
-                    scene.move_camera(x=position.x-0.5, y=position.y-1, z=1.5,
+                    if self.scene_look:
+                        self.scene_look = False
+                        height = 10
+                        x = position.x-0.5
+                        y = position.y-0.5
+                    else:
+                        self.scene_look = True
+                        height = 2
+                        x = position.x + 0.8
+                        y = position.y - 0.8
+                    scene.move_camera(x=x, y=y, z=height,
                                       look_at_x=position.x, look_at_y=position.y)
                     return
-                if event.click_type == 'click':
-                    scene.move_camera(x=event.hits[0].x-0.5, y=event.hits[0].y-1, z=1.5,
-                                      look_at_x=event.hits[0].x, look_at_y=event.hits[0].y)
-            with ui.scene(720, 540, on_click=handle_click) as scene:
+                # if event.click_type == 'click':
+                #     scene.move_camera(x=event.hits[0].x-0.5, y=event.hits[0].y-0.5, z=2,
+                #                       look_at_x=event.hits[0].x, look_at_y=event.hits[0].y)
+            with ui.scene(650, 500, on_click=handle_click) as scene:
                 robot_object(odometer, camera_provider, field_friend)
                 driver_object(driver)
                 plant_objects(plant_provider, plant_detector.weed_category_names)
                 self.path3d = path_object()
-                scene.move_camera(-0.5, -1, 1.5)
+                scene.move_camera(-0.5, -1, 2)
+                scene.tooltip('double click to zoom in/out')
             with ui.row():
-                if dev:
-                    key_controls = KeyControls(field_friend, steerer, automator, puncher)
-                else:
-                    key_controls = keyboard_control(steerer)
-                joystick(steerer, size=50, color='#6E93D6').classes('m-4').style('width:15em; height:15em;')
+
+                key_controls = KeyControls(field_friend, steerer, automator, puncher)
+
+                joystick(steerer, size=70, color='#6E93D6').classes('m-4').style('width:10em; height:10em;')
                 with ui.column().classes('mt-4'):
                     with ui.row():
                         ui.markdown(SHORTCUT_INFO).classes('col-grow')
-                        ui.number('speed', format='%.0f', max=9, min=1).props(
-                            'dense outlined').classes('w-24').bind_value(key_controls, 'speed')
+                        ui.number('speed', format='%.0f', max=3, min=1).props('dense outlined').classes(
+                            'w-24 mr-4').bind_value(key_controls, 'speed').tooltip('Set the speed of the robot (1-3)')
                     with ui.row():
                         automation_controls(automator)
                         if field_friend.z_axis is not None:
-                            ui.number('Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.20).props(
-                                'dense outlined suffix=cm').classes('w-24').bind_value(weeding, 'drill_depth')
-
+                            ui.number('Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.18).props('dense outlined suffix=cm').classes(
+                                'w-24').bind_value(weeding, 'drill_depth').tooltip('Set the drill depth for the weeding automation')
                     ui.label('press PLAY to start weeding with the set drill depth')
+            with ui.row().classes('m-4'):
+                emergency_stop = ui.button('emergency stop', on_click=field_friend.estop.software_emergency_stop).props(
+                    'color=red').classes('py-3 px-6 text-lg').bind_visibility_from(field_friend.estop, 'en3_active', value=False)
+                emergency_reset = ui.button('emergency reset', on_click=field_friend.estop.release_en3).props(
+                    'color=red-700 outline').classes('py-3 px-6 text-lg').bind_visibility_from(field_friend.estop, 'en3_active')
+                emergency_on_space = ui.checkbox(
+                    'Space bar emergency stop').tooltip(
+                    'Enable or disable the emergency stop on space bar').bind_value(key_controls, 'estop_on_space')
+
         if path_recorder is not None:
             path_recorder.PATH_DRIVING_STARTED.register(self.path3d.update)

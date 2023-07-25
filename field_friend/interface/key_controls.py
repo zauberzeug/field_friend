@@ -18,6 +18,7 @@ class KeyControls(rosys.driving.keyboard_control):
         self.z_axis = field_friend.z_axis
         self.automator = automator
         self.puncher = puncher
+        self.estop_on_space = False
 
     def handle_keys(self, e: KeyEventArguments) -> None:
         super().handle_keys(e)
@@ -48,3 +49,11 @@ class KeyControls(rosys.driving.keyboard_control):
 
         if e.key == ' ' and e.action.keydown:
             background_tasks.create(self.field_friend.stop())
+            if not self.estop_on_space:
+                return
+            if not self.field_friend.estop.en3_active:
+                background_tasks.create(self.field_friend.estop.software_emergency_stop())
+                rosys.notify('ESTOP activated')
+            else:
+                background_tasks.create(self.field_friend.estop.release_en3())
+                rosys.notify('ESTOP released')
