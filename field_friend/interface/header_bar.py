@@ -14,6 +14,14 @@ def header_bar(system: 'System', right_drawer: ui.right_drawer) -> None:
         else:
             ui.label('Zauberzeug Field Friend').classes('text-2xl mr-auto')
 
+        with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto'):
+            ui.icon('report').props('size=md').classes('text-red-400')
+            ui.label('Emergency stop is pressed!').classes('text-red-400 text-2xl')
+
+        with ui.row().bind_visibility_from(system.field_friend.estop, 'en3_active').classes('mr-auto'):
+            ui.icon('report').props('size=md').classes('text-red-400')
+            ui.label('Software ESTOP is active!').classes('text-red-400 text-2xl')
+
         rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
         with ui.button().props('icon=settings flat color=white'):
             with ui.menu().props(remove='no-parent-event'):

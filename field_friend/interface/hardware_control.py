@@ -19,7 +19,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.label('RDYP').classes('mr-auto')
                     ui.button('OFF', on_click=lambda: automator.start(field_friend.robot_brain.send('rdyp.off()')))
                     ui.button('ON', on_click=lambda: automator.start(field_friend.robot_brain.send('rdyp.on()')))
-                if hasattr(field_friend, 'battery_control'):
+                if hasattr(field_friend, 'battery_control') and field_friend.battery_control is not None:
                     with ui.row().classes('items-center'):
                         ui.label('Battery_relais').classes('mr-auto')
                         ui.button('OFF', on_click=lambda: automator.start(
