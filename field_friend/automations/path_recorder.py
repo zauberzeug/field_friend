@@ -61,7 +61,7 @@ class PathRecorder:
         splines = []
         last_pose = self.driver.odometer.prediction
         while self.state == 'recording':
-            if self.steerer.state != self.steerer.state.IDLE:
+            if self.driver.odometer.current_velocity.linear > 0.05:
                 new_pose = self.driver.odometer.prediction
                 splines.append(Spline.from_poses(last_pose, new_pose))
                 last_pose = new_pose
