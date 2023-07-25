@@ -75,7 +75,7 @@ class CameraCard(Card):
 
             ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
-                self.depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01)
+                self.depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=0.01, max=0.18)
                 ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active') \
                     .tooltip('Record new images for the Learning Loop')
                 self.show_mapping_checkbox = ui.checkbox('Show Mapping', on_change=self.show_mapping) \
