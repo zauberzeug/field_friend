@@ -49,13 +49,15 @@ class path_planner:
                             'recording...', on_click=self.stop_recording).props(
                             'icon=radio_button_checked color=red fab-mini flat').bind_visibility_from(
                             self.path_recorder, 'state', lambda s: s == 'recording').tooltip('stop recording')
-                    ui.button('play', on_click=lambda name=name: self.automator.start(
-                        self.path_recorder.drive_path(name))).props(
-                        'icon=play_arrow fab-mini flat').tooltip('drive recorded path').bind_visibility_from(
-                        self.path_recorder, 'paths', lambda p, name=name: p[name] != [])
-                    ui.button('stop', on_click=self.stop_driving).props(
-                        'icon=stop fab-mini flat').tooltip('stop driving').bind_visibility_from(self.path_recorder,
-                                                                                                'state', lambda s: s == 'driving')
+                    with ui.row().bind_visibility_from(
+                            self.path_recorder, 'paths', lambda p, name=name: p[name] != []):
+                        ui.button('play', on_click=lambda name=name: self.automator.start(
+                            self.path_recorder.drive_path(name))).props(
+                            'icon=play_arrow fab-mini flat').tooltip('drive recorded path').bind_visibility_from(self.path_recorder,
+                                                                                                                 'state', lambda s: s == 'idle')
+                        ui.button('stop', on_click=self.stop_driving).props(
+                            'icon=stop fab-mini flat').tooltip('stop driving').bind_visibility_from(self.path_recorder,
+                                                                                                    'state', lambda s: s == 'driving')
 
     def stop_recording(self) -> None:
         self.path_recorder.state = 'idle'

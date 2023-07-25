@@ -41,8 +41,8 @@ class System:
         self.driver.parameters.angular_speed_limit = 1.0
         self.driver.parameters.can_drive_backwards = False
         # self.driver.parameters.minimum_turning_radius = 0.5
-        self.driver.parameters.hook_offset = 0.6
-        self.driver.parameters.carrot_distance = 0.2
+        self.driver.parameters.hook_offset = 0.3
+        self.driver.parameters.carrot_distance = 0.1
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.automator = rosys.automation.Automator(steerer=None, on_interrupt=self.field_friend.stop)
         if self.is_real:
@@ -105,6 +105,7 @@ class System:
         def stop():
             if self.automator.is_running:
                 self.automator.stop(because='emergency stop triggered')
+            self.field_friend.stop()
 
         def pause():
             if self.automator.is_running:
