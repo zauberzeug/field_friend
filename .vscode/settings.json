@@ -3,12 +3,11 @@
   "editor.formatOnSave": true,
   "editor.minimap.enabled": false,
   "isort.args": ["--line-length", "120"],
-  "prettier.printWidth": 120,
   "python.formatting.provider": "autopep8",
-  "python.formatting.autopep8Args": ["--max-line-length=120", "--experimental"],
-  "python.testing.pytestEnabled": false,
+  "python.formatting.autopep8Args": ["--max-line-length", "120", "--experimental"],
+  "python.testing.pytestArgs": ["tests"],
+  "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
-  "python.testing.promptToConfigure": false,
   "[python]": {
     "editor.defaultFormatter": "ms-python.python",
     "editor.codeActionsOnSave": {
