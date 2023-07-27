@@ -6,6 +6,7 @@ from .configurations import fieldfriend_configurations
 from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
 from .flashlight_v2 import FlashlightHardwareV2
+from .imu import IMUHardware
 from .safety import SafetyHardware
 from .y_axis import YAxisHardware
 from .z_axis import ZAxisHardware
@@ -163,10 +164,17 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             )
         else:
             self.battery_control = None
+
+        if 'imu' in self.config:
+            self.imu = IMUHardware(robot_brain,
+                                   name=self.config['imu']['name'],
+                                   )
+        else:
+            self.imu = None
         safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels,
                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, safety]
+                   z_axis, flashlight, bms, estop, self.battery_control, self.imu, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(version=version,
                          wheels=wheels,
