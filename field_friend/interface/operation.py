@@ -4,14 +4,15 @@ from typing import Optional
 from nicegui import events, ui
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, Steerer, driver_object, joystick, keyboard_control
-from rosys.pathplanning import path_object
 from rosys.vision import CameraProvider
 
-from ..automations import PathRecorder, Puncher, Weeding, plant_detector, plant_provider
+from ..automations import Puncher, Weeding, plant_detector, plant_provider
 from ..hardware import FieldFriend
+from ..navigation import PathProvider
 from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .robot_object import robot_object
+from .visualizer_object import visualizer_object
 
 SHORTCUT_INFO = '''
     Steer the robot manually with the JOYSTICK on the left. <br>
@@ -34,7 +35,7 @@ class operation:
         puncher: Puncher,
         weeding: Weeding,
         *, dev: bool = False,
-        path_recorder: Optional[PathRecorder] = None,
+        path_recorder: Optional[PathProvider] = None,
     ) -> None:
         with ui.card().tight():
             self.scene_look = False
@@ -62,7 +63,8 @@ class operation:
                 robot_object(odometer, camera_provider, field_friend)
                 driver_object(driver)
                 plant_objects(plant_provider, plant_detector.weed_category_names)
-                self.path3d = path_object()
+                if path_recorder is not None:
+                    visualizer_object(path_recorder, automator)
                 scene.move_camera(-0.5, -1, 2)
                 scene.tooltip('double click to zoom in/out')
             with ui.row():
@@ -73,8 +75,8 @@ class operation:
                 with ui.column().classes('mt-4'):
                     with ui.row():
                         ui.markdown(SHORTCUT_INFO).classes('col-grow')
-                        ui.number('speed', format='%.0f', max=3, min=1).props('dense outlined').classes(
-                            'w-24 mr-4').bind_value(key_controls, 'speed').tooltip('Set the speed of the robot (1-3)')
+                        ui.number('speed', format='%.0f', max=4, min=1).props('dense outlined').classes(
+                            'w-24 mr-4').bind_value(key_controls, 'speed').tooltip('Set the speed of the robot (1-4)')
                     with ui.row():
                         automation_controls(automator)
                         if field_friend.z_axis is not None:
@@ -89,6 +91,3 @@ class operation:
                 emergency_on_space = ui.checkbox(
                     'Space bar emergency stop').tooltip(
                     'Enable or disable the emergency stop on space bar').bind_value(key_controls, 'estop_on_space')
-
-        if path_recorder is not None:
-            path_recorder.PATH_DRIVING_STARTED.register(self.path3d.update)
