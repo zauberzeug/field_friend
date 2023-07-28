@@ -4,16 +4,15 @@ import uuid
 import rosys
 from nicegui import ui
 
-from ..automations import PathRecorder
-from ..navigation import Gnss
+from ..navigation import Gnss, Path, PathProvider
 
 
 class path_planner:
 
     def __init__(
-            self, path_recorder: PathRecorder, automator: rosys.automation.Automator, driver: rosys.driving.Driver,
+            self, path_provider: PathProvider, automator: rosys.automation.Automator, driver: rosys.driving.Driver,
             gnss: Gnss) -> None:
-        self.path_recorder = path_recorder
+        self.path_recorder = path_provider
         self.automator = automator
         self.driver = driver
         self.gnss = gnss
@@ -29,30 +28,27 @@ class path_planner:
 
     @ ui.refreshable
     def show_path_settings(self) -> None:
-        for name, path in self.path_recorder.paths.items():
+        for path in self.path_recorder.paths:
             with ui.card().classes('items-stretch'):
                 with ui.row():
-                    def change_name(name: str):
-                        self.new_name = name
-                    ui.input('name', value=f'{name}', on_change=lambda e: change_name(e.value)).on(
-                        'blur', lambda name=name: self.update_path_name(self.new_name, name))
-                    ui.button(on_click=lambda name=name: self.delete_path(name)).props(
+                    ui.input('name', value=f'{path.name}').bind_value(path, 'name')
+                    ui.button(on_click=lambda path=path: self.delete_path(path)).props(
                         'icon=delete color=warning fab-mini flat').classes('ml-auto')
 
                 with ui.row().classes('items-canter'):
-                    with ui.row().bind_visibility_from(self.path_recorder, 'current_path_recording', lambda p, name=name: p != name):
-                        ui.button('record', on_click=lambda name=name: self.automator.start(
-                            self.path_recorder.record_path(name))).props(
+                    with ui.row().bind_visibility_from(self.path_recorder, 'current_path_recording', lambda p, name=path.name: p != name):
+                        ui.button('record', on_click=lambda path=path: self.automator.start(
+                            self.path_recorder.record_path(path))).props(
                             'icon=radio_button_checked color=grey fab-mini flat').tooltip('start recording')
-                    with ui.row().bind_visibility_from(self.path_recorder, 'current_path_recording', lambda p, name=name: p == name):
+                    with ui.row().bind_visibility_from(self.path_recorder, 'current_path_recording', lambda p, name=path.name: p == name):
                         ui.button(
                             'recording...', on_click=self.stop_recording).props(
                             'icon=radio_button_checked color=red fab-mini flat').bind_visibility_from(
                             self.path_recorder, 'state', lambda s: s == 'recording').tooltip('stop recording')
                     with ui.row().bind_visibility_from(
-                            self.path_recorder, 'paths', lambda p, name=name: p[name] != []):
-                        ui.button('play', on_click=lambda name=name: self.automator.start(
-                            self.path_recorder.drive_path(name))).props(
+                            path, 'path', lambda path: path != []):
+                        ui.button('play', on_click=lambda path=path: self.automator.start(
+                            self.path_recorder.drive_path(path))).props(
                             'icon=play_arrow fab-mini flat').tooltip('drive recorded path').bind_visibility_from(self.path_recorder,
                                                                                                                  'state', lambda s: s == 'idle')
                         ui.button('stop', on_click=self.stop_driving).props(
@@ -69,32 +65,18 @@ class path_planner:
         self.path_recorder.state = 'idle'
         self.show_path_settings.refresh()
 
-    def update_path_name(self, new_name: str, old_name: str) -> None:
-        self.log.info(f'update path name {old_name} -> {new_name}')
-        self.path_recorder.paths[new_name] = self.path_recorder.paths[old_name]
-        del self.path_recorder.paths[old_name]
-        self.new_name = ''
-        self.show_path_settings.refresh()
-        self.path_recorder.invalidate()
-
     def add_path(self) -> None:
-        # if self.gnss.reference_lat is None or self.gnss.reference_lon is None:
-        #     rosys.notify('Couldn\'t add path, no reference position set', 'warning')
-        #     return
-        name = f'path {str(uuid.uuid4())}'
-        self.path_recorder.paths[name] = []
+        path = Path(name=f'{str(uuid.uuid4())}')
+        self.path_recorder.add_path(path)
         self.show_path_settings.refresh()
-        self.path_recorder.invalidate()
 
-    def delete_path(self, name: str) -> None:
-        del self.path_recorder.paths[name]
+    def delete_path(self, path: Path) -> None:
+        self.path_recorder.remove_path(path)
         self.show_path_settings.refresh()
-        self.path_recorder.invalidate()
 
     def clear_paths(self) -> None:
-        self.path_recorder.paths.clear()
+        self.path_recorder.clear_paths()
         self.show_path_settings.refresh()
-        self.path_recorder.invalidate()
 
     def check_for_reference(self) -> None:
         if self.gnss.reference_lat is None or self.gnss.reference_lon is None:

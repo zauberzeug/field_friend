@@ -75,6 +75,27 @@ class Gnss(ABC):
         self.needs_backup = True
         self.REFERENCE_CLEARED.emit()
 
+    def set_reference(self, lat: float, lon: float) -> None:
+        self.reference_lat = lat
+        self.reference_lon = lon
+        self.needs_backup = True
+
+    def get_current_lat(self) -> Optional[float]:
+        if self.record.gps_qual >= 4:
+            return self.record.latitude
+        return None
+
+    def get_current_lon(self) -> Optional[float]:
+        if self.record.gps_qual >= 4:
+            return self.record.longitude
+        return None
+
+    def calculate_distance(self, lat: float, lon: float) -> Optional[float]:
+        if self.reference_lat is None or self.reference_lon is None:
+            return None
+        geodetic_measurement = Geodesic.WGS84.Inverse(self.reference_lat, self.reference_lon, lat2, lon2)
+        return geodetic_measurement['s12']
+
 
 class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
@@ -160,8 +181,7 @@ class GnssHardware(Gnss):
         if has_location and record.gps_qual >= 4:  # 4 = RTK fixed, 5 = RTK float
             if self.reference_lat is None or self.reference_lon is None:
                 self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
-                self.reference_lat = record.latitude
-                self.reference_lon = record.longitude
+                self.set_reference(record.latitude, record.longitude)
             else:
                 r = Geodesic.WGS84.Inverse(self.reference_lat, self.reference_lon, record.latitude, record.longitude)
                 s = r['s12']

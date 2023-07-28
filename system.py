@@ -2,9 +2,9 @@ import os
 
 import rosys
 
-from field_friend.automations import PathRecorder, PlantDetector, PlantProvider, Puncher, Weeding
+from field_friend.automations import PlantDetector, PlantProvider, Puncher, Weeding
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
-from field_friend.navigation import GnssHardware, GnssSimulation
+from field_friend.navigation import GnssHardware, GnssSimulation, PathProvider
 from field_friend.vision import CameraSelector
 from field_friend.vision.simulation import create_weedcam
 
@@ -29,7 +29,7 @@ class System:
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
         self.usb_camera_provider.CAMERA_ADDED.register(self.camera_selector.use_camera)
         self.plant_provider = PlantProvider()
-        self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.4)
+        self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         if self.is_real:
             self.gnss = GnssHardware(self.odometer)
@@ -37,10 +37,10 @@ class System:
             self.gnss = GnssSimulation(self.field_friend.wheels)
         self.gnss.ROBOT_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
-        self.driver.parameters.linear_speed_limit = 0.2
+        self.driver.parameters.linear_speed_limit = 0.25
         self.driver.parameters.angular_speed_limit = 1.0
         self.driver.parameters.can_drive_backwards = False
-        self.driver.parameters.minimum_turning_radius = 0.5
+        self.driver.parameters.minimum_turning_radius = 0.2
         # self.driver.parameters.hook_offset = 0.6
         # self.driver.parameters.carrot_distance = 0.2
         # self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
@@ -56,9 +56,7 @@ class System:
         self.weeding = Weeding(self.field_friend, self.driver, self.detector,
                                self.camera_selector, self.plant_provider, self.puncher, self.plant_detector)
         self.automator.default_automation = self.weeding.start
-
-        self.path_recorder = PathRecorder(self.driver, self.steerer, self.gnss)
-        self.gnss.REFERENCE_CLEARED.register(self.path_recorder.paths.clear)
+        self.path_recorder = PathProvider(self.driver, self.steerer, self.gnss)
 
         if self.is_real:
             # camera configuration
