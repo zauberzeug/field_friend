@@ -3,6 +3,7 @@ import rosys
 
 from .chain_axis import ChainAxisHardware
 from .configurations import fieldfriend_configurations
+from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
 from .flashlight_v2 import FlashlightHardwareV2
@@ -64,16 +65,33 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                          tx_pin=self.config['can']['tx_pin'],
                                          baud=self.config['can']['baud'],
                                          )
-        wheels = rosys.hardware.WheelsHardware(robot_brain,
-                                               can=can,
-                                               name=self.config['wheels']['name'],
-                                               left_can_address=self.config['wheels']['left_can_address'],
-                                               right_can_address=self.config['wheels']['right_can_address'],
-                                               m_per_tick=self.M_PER_TICK,
-                                               width=self.WHEEL_DISTANCE,
-                                               is_right_reversed=self.config['wheels']['is_right_reversed'],
-                                               is_left_reversed=self.config['wheels']['is_left_reversed'],
-                                               )
+        if self.config['wheels']['version'] == 'wheels':
+            wheels = rosys.hardware.WheelsHardware(robot_brain,
+                                                   can=can,
+                                                   name=self.config['wheels']['name'],
+                                                   left_can_address=self.config['wheels']['left_can_address'],
+                                                   right_can_address=self.config['wheels']['right_can_address'],
+                                                   m_per_tick=self.M_PER_TICK,
+                                                   width=self.WHEEL_DISTANCE,
+                                                   is_right_reversed=self.config['wheels']['is_right_reversed'],
+                                                   is_left_reversed=self.config['wheels']['is_left_reversed'],
+                                                   )
+        elif self.config['wheels']['version'] == 'double_wheels':
+            wheels = DoubleWheelsHardware(robot_brain,
+                                          can=can,
+                                          name=self.config['wheels']['name'],
+                                          left_back_can_address=self.config['wheels']['left_back_can_address'],
+                                          right_back_can_address=self.config['wheels']['right_back_can_address'],
+                                          left_front_can_address=self.config['wheels']['left_front_can_address'],
+                                          right_front_can_address=self.config['wheels']['right_front_can_address'],
+                                          m_per_tick=self.M_PER_TICK,
+                                          width=self.WHEEL_DISTANCE,
+                                          is_right_reversed=self.config['wheels']['is_right_reversed'],
+                                          is_left_reversed=self.config['wheels']['is_left_reversed'],
+                                          )
+        else:
+            raise NotImplementedError(f'Unknown wheels version: {self.config["wheels"]["version"]}')
+
         if self.config['y_axis']['version'] == 'y_axis':
             y_axis = YAxisHardware(robot_brain,
                                    expander=expander,

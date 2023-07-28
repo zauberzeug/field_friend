@@ -4,6 +4,7 @@ from typing import Union
 import rosys
 
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
+from .double_wheels import DoubleWheelsHardware
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
@@ -58,6 +59,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
 
         lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
         lizard_code += f'when core.last_message_age > 20000 then stop(); end\n'
+
         super().__init__(wheels=wheels,
                          estop=estop,
                          y_axis=y_axis,
