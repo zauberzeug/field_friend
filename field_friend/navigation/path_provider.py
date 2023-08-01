@@ -31,6 +31,7 @@ class PathProvider:
 
         self.paths: list[Path] = []
         self.current_path_recording: str = ''
+        self.current_path_driving: str = ''
         self.state: Literal['recording', 'driving', 'idle'] = 'idle'
         self.needs_backup: bool = False
         rosys.persistence.register(self)
@@ -126,11 +127,13 @@ class PathProvider:
                 rosys.notify('Distance to reference location is too large', 'negative')
                 return
         self.log.info(f'path: {path}')
+        self.current_path_driving = path.name
         rosys.notify(f'Driving path {path.name}...', 'info')
         self.PATH_DRIVING_STARTED.emit(path.path)
         await self.driver.drive_to(path.path[0].spline.start)
         await self.driver.drive_path(path.path)
         self.state = 'idle'
+        self.current_path_driving = ''
         rosys.notify(f'Path {path.name} succesfully driven', 'positive')
         # self.driver.parameters.can_drive_backwards = False
 
