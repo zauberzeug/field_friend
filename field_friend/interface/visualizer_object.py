@@ -1,19 +1,27 @@
+from typing import Optional
+
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Curve
 from rosys.automation import Automator
 from rosys.driving import PathSegment
 
+from ..automations import Mowing
 from ..navigation import PathProvider
 
 
 class visualizer_object(Object3D):
-    def __init__(self, path_provider: PathProvider, automator: Automator) -> None:
+    def __init__(
+            self, automator: Automator, path_provider: Optional[PathProvider],
+            mowing: Optional[Mowing] = None) -> None:
         super().__init__('group')
-
+        self.mowing = mowing
         self.path_provider = path_provider
         self.automator = automator
 
-        self.path_provider.PATH_DRIVING_STARTED.register_ui(self.update_path)
+        if self.path_provider:
+            self.path_provider.SHOW_PATH.register_ui(self.update_path)
+        if self.mowing:
+            self.mowing.MOWING_STARTED.register_ui(self.update_path)
         automator.AUTOMATION_STOPPED.register_ui(lambda _: self.clear())
         automator.AUTOMATION_FAILED.register_ui(lambda _: self.clear())
 

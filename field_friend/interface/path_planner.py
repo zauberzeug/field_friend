@@ -4,18 +4,17 @@ import uuid
 import rosys
 from nicegui import ui
 
-from ..navigation import Gnss, Path, PathProvider
+from ..automations import PathRecorder
+from ..navigation import Path, PathProvider
 
 
 class path_planner:
 
     def __init__(
-            self, path_provider: PathProvider, automator: rosys.automation.Automator, driver: rosys.driving.Driver,
-            gnss: Gnss) -> None:
-        self.path_recorder = path_provider
+            self, path_provider: PathProvider, path_recorder: PathRecorder, automator: rosys.automation.Automator, ) -> None:
+        self.path_provider = path_provider
+        self.path_recorder = path_recorder
         self.automator = automator
-        self.driver = driver
-        self.gnss = gnss
         self.log = logging.getLogger('field_friend.path_planner')
         self.new_name = ''
         with ui.card():
@@ -28,9 +27,10 @@ class path_planner:
 
     @ ui.refreshable
     def show_path_settings(self) -> None:
-        for path in self.path_recorder.paths:
+        for path in self.path_provider.paths:
             with ui.card().classes('items-stretch'):
-                with ui.row():
+                with ui.row().classes('items-center'):
+                    ui.icon('route').props('size=sm color=primary')
                     ui.input('name', value=f'{path.name}').bind_value(path, 'name')
                     ui.button(on_click=lambda path=path: self.delete_path(path)).props(
                         'icon=delete color=warning fab-mini flat').classes('ml-auto')
@@ -46,7 +46,9 @@ class path_planner:
                             'icon=radio_button_checked color=red fab-mini flat').bind_visibility_from(
                             self.path_recorder, 'state', lambda s: s == 'recording').tooltip('stop recording')
                     with ui.row().bind_visibility_from(
-                            path, 'path', lambda path: path != []):
+                            path, 'path_segments', lambda path_segments: path_segments != []):
+                        ui.button('visualize', on_click=lambda _, path=path: self.path_provider.SHOW_PATH.emit(
+                            path.path_segments)).props('icon=visibility fab-mini flat').tooltip('visualize path')
                         ui.button('drive', on_click=lambda path=path: self.automator.start(
                             self.path_recorder.drive_path(path))).props(
                             'icon=play_arrow fab-mini flat').tooltip('drive recorded path').bind_visibility_from(self.path_recorder,
@@ -69,17 +71,13 @@ class path_planner:
 
     def add_path(self) -> None:
         path = Path(name=f'{str(uuid.uuid4())}')
-        self.path_recorder.add_path(path)
+        self.path_provider.add_path(path)
         self.show_path_settings.refresh()
 
     def delete_path(self, path: Path) -> None:
-        self.path_recorder.remove_path(path)
+        self.path_provider.remove_path(path)
         self.show_path_settings.refresh()
 
     def clear_paths(self) -> None:
-        self.path_recorder.clear_paths()
+        self.path_provider.clear_paths()
         self.show_path_settings.refresh()
-
-    def check_for_reference(self) -> None:
-        if self.gnss.reference_lat is None or self.gnss.reference_lon is None:
-            self.clear_paths()
