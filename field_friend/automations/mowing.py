@@ -25,49 +25,75 @@ class Mowing:
         self.gnss = gnss
 
         self.padding: float = 1.0
-        self.lane_distance: float = 0.4
+        self.lane_distance: float = 0.5
         self.corner_radius: float = self.driver.parameters.minimum_turning_radius
-        self.minimum_distance = int(np.ceil(self.corner_radius * 2 / self.lane_distance))
+
         self.field: Optional[Field] = None
         self.MOWING_STARTED = rosys.event.Event()
         """Mowing has started."""
 
     async def start(self) -> None:
         self.log.info('starting mowing')
-        rosys.notify('Starting mowing')
         if self.gnss.device is None:
-            self.log.warning('not driving because no GNSS device found')
+            rosys.notify('No GNSS device found', 'negative')
             return
         if self.gnss.device != 'simulation':
             if self.field.reference_lat is None or self.field.reference_lon is None:
-                self.log.warning('not driving because no reference location set')
+                rosys.notify('Field has no reference location set', 'negative')
                 return
             self.gnss.set_reference(self.field.reference_lat, self.field.reference_lon)
             distance = self.gnss.calculate_distance(self.gnss.record.latitude, self.gnss.record.longitude)
             if not distance or distance > 10:
-                self.log.warning('not driving because distance to reference location is too large')
                 rosys.notify('Distance to reference location is too large', 'negative')
                 return
-        self.field = self.field_provider.fields[0] if self.field_provider.fields else None
-        if self.field is None or len(self.field.outline) < 3:
-            self.log.warning(f'not driving because no field is defined field: {self.field}')
+        if self.field is None and self.field_provider.fields:
+            self.field = self.field_provider.fields[0]
+        if len(self.field.outline) < 3:
+            rosys.notify('No field is defined', 'negative')
             return
-        self.path_planner.obstacles.clear()
-        self.path_planner.areas.clear()
-        for obstacle in self.field.obstacles:
-            if len(obstacle.points) < 3:
-                self.log.warning(f'not driving because obstacle has less than 3 points: {obstacle}')
-                continue
-            self.path_planner.obstacles[obstacle.name] = rosys.pathplanning.Obstacle(id=obstacle.name,
-                                                                                     outline=obstacle.points)
-        self.log.info(f'obstacles: {self.path_planner.obstacles}')
-        area = rosys.pathplanning.Area(id=f'{self.field.name}', outline=self.field.outline)
-        self.path_planner.areas = {area.id: area}
-        self.log.info(f'areas: {self.path_planner.areas}')
-        paths = self.generate_mowing_path()
-        self.log.info(f'paths {paths}')
-        self.MOWING_STARTED.emit([path_segment for path in paths for path_segment in path])
+        await self._mowing()
+
+    async def _mowing(self) -> None:
+        rosys.notify('Starting mowing')
+        while True:
+            try:
+                self.path_planner.obstacles.clear()
+                self.path_planner.areas.clear()
+                for obstacle in self.field.obstacles:
+                    self.path_planner.obstacles[obstacle.name] = rosys.pathplanning.Obstacle(id=obstacle.name,
+                                                                                             outline=obstacle.points)
+                area = rosys.pathplanning.Area(id=f'{self.field.name}', outline=self.field.outline)
+                self.path_planner.areas = {area.id: area}
+                if self.corner_radius * 2 > self.lane_distance:
+                    self.minimum_distance = int(np.ceil(self.corner_radius * 2 / self.lane_distance))
+                else:
+                    self.minimum_distance = 1
+                paths = self._generate_mowing_path()
+                self.MOWING_STARTED.emit([path_segment for path in paths for path_segment in path])
+                await self._drive_mowing_paths(paths)
+                rosys.notify('Mowing finished', 'positive')
+                break
+            except Exception as e:
+                self.log.exception(e)
+                rosys.notify('Mowing failed', 'negative')
+                break
+
+    def _generate_mowing_path(self) -> list[list[rosys.driving.PathSegment]]:
+        self.log.info('generating mowing path')
+        lane_groups = self._decompose_into_lanes()
+        paths = []
+        for lanes in lane_groups:
+            odered_splines = self._make_plan(lanes)
+            splines = self._generate_turn_splines(odered_splines)
+            path = [rosys.driving.PathSegment(spline=spline) for spline in splines]
+            if path:
+                paths.append(path)
+        return paths
+
+    async def _drive_mowing_paths(self, paths: list[list[rosys.driving.PathSegment]]) -> None:
         self.driver.parameters.can_drive_backwards = True
+        if not paths:
+            raise Exception('no paths to drive')
         first_path = paths.pop(0)
         await self.driver.drive_to(first_path[0].spline.start)
         await self.driver.drive_path(first_path)
@@ -82,10 +108,9 @@ class Mowing:
                 return
             await self.driver.drive_path(path_switch)
             await self.driver.drive_path(path)
-        rosys.notify('Mowing finished', 'positive')
         self.driver.parameters.can_drive_backwards = False
 
-    def decompose_into_lanes(self) -> list[LineString]:
+    def _decompose_into_lanes(self) -> list[LineString]:
         self.log.info('decomposing field into lanes')
         lanes_groups = []  # List to hold lists of lanes
         current_groups = [[]]  # Current groups of lanes
@@ -99,16 +124,14 @@ class Mowing:
         p1, p2 = translated_field.exterior.coords[:2]
         direction = np.array([p2[0] - p1[0], p2[1] - p1[1]])
         direction /= np.linalg.norm(direction)
-        self.log.info(f'direction {direction}')
 
         # Calculate the angle of rotation based on the direction
         theta = np.arctan2(direction[1], direction[0])
-        self.log.info(f'rotation angle (radians): {theta}')
 
         # Rotate the translated_field
         rotated_field = affinity.rotate(translated_field, -theta, origin=(0, 0), use_radians=True)
 
-        padded_polygon = rotated_field.buffer(-self.padding - self.corner_radius)
+        padded_polygon = rotated_field.buffer((-self.padding - self.corner_radius)*self.minimum_distance)
 
         obstacle_polygons = []  # List to hold all obstacle polygons
         if self.field.obstacles:  # Check if the obstacles list is not empty
@@ -123,18 +146,14 @@ class Mowing:
             navigable_area = padded_polygon.difference(obstacles_union)
         else:
             navigable_area = padded_polygon
-        self.log.info(f'navigable area: {navigable_area}')
 
         # Direction and perpendicular direction vectors after rotation
         direction = np.array([1, 0])
         perp_direction = np.array([0, 1])
 
-        self.log.info(f'perp_direction {perp_direction}')
         # Determine the minimum and maximum projections along the direction and perpendicular direction
         min_proj = max_proj = np.dot(np.array(p1), direction)
-        self.log.info(f'min_proj {min_proj}')
         min_perp_proj = max_perp_proj = np.dot(np.array(p1), perp_direction)
-        self.log.info(f'min_perp_proj {min_perp_proj}')
         for coord in padded_polygon.exterior.coords:
             proj = np.dot(coord, direction)
             perp_proj = np.dot(coord, perp_direction)
@@ -142,28 +161,17 @@ class Mowing:
             max_proj = max(max_proj, proj)
             min_perp_proj = min(min_perp_proj, perp_proj)
             max_perp_proj = max(max_perp_proj, perp_proj)
-        self.log.info(f'proj {proj}')
-        self.log.info(f'perp_proj {perp_proj}')
-        self.log.info(f'min_proj {min_proj}')
-        self.log.info(f'max_proj {max_proj}')
-        self.log.info(f'min_perp_proj {min_perp_proj}')
-        self.log.info(f'max_perp_proj {max_perp_proj}')
 
         length = min_perp_proj
         while length <= max_perp_proj:
             start_point = np.array(p1) + length * perp_direction + min_proj * direction
-            self.log.info(f'start point {start_point}')
             end_point = np.array(p1) + length * perp_direction + max_proj * direction
-            self.log.info(f'end point {end_point}')
             line = LineString([start_point, end_point])
-            self.log.info(f'line: {line}')
 
             # Intersect the line with the inverse of the obstacle polygon
             intersection = navigable_area.intersection(line)
-            self.log.info(f'intersection: {intersection}')
             if intersection and not intersection.is_empty:
                 if isinstance(intersection, MultiLineString):
-                    self.log.info(f'Multiline found')
                     if not current_groups or len(current_groups) != len(intersection.geoms):
                         for group in current_groups:
                             lanes_groups.append(group)
@@ -172,7 +180,6 @@ class Mowing:
                         current_groups[i].append(line_segment)
                     is_multiline = True
                 elif isinstance(intersection, LineString):
-                    self.log.info(f'LineString found')
                     if is_multiline:
                         for group in current_groups:
                             lanes_groups.append(group)
@@ -184,8 +191,7 @@ class Mowing:
 
         for group in current_groups:
             lanes_groups.append(group)
-        # Convert back to your coordinate system
-        # lanes_groups = [[LineString([(x, -y) for x, y in line.coords]) for line in group] for group in lanes_groups]
+
         lanes_groups = [
             [affinity.translate(  # Translating the lanes back to their original position
                 affinity.rotate(  # Rotating the lanes back to their original orientation
@@ -199,11 +205,11 @@ class Mowing:
             ) for line in group]
             for group in lanes_groups
         ]
-        self.log.info(f'lane groups: {len(lanes_groups)}')
         return lanes_groups
 
-    def make_plan(self, lanes: list[LineString]) -> list[Spline]:
+    def _make_plan(self, lanes: list[LineString]) -> list[Spline]:
         self.log.info(f'converting {len(lanes)} lanes into splines and finding sequence')
+
         if self.minimum_distance > 1:
             sequence = find_sequence(len(lanes), minimum_distance=self.minimum_distance)
         else:
@@ -234,7 +240,7 @@ class Mowing:
 
         return splines
 
-    def generate_turn_splines(self, rows: list[rosys.geometry.Spline]) -> list[rosys.geometry.Spline]:
+    def _generate_turn_splines(self, rows: list[rosys.geometry.Spline]) -> list[rosys.geometry.Spline]:
         splines = []
         for i in range(len(rows)):
             splines.append(rows[i])
@@ -250,16 +256,3 @@ class Mowing:
                             rows[i+1].end)),)
                 splines.append(turn_spline)
         return splines
-
-    def generate_mowing_path(self):
-        self.log.info('generating mowing path')
-        lane_groups = self.decompose_into_lanes()
-        paths = []
-        for lanes in lane_groups:
-            odered_rows = self.make_plan(lanes)
-            splines = self.generate_turn_splines(odered_rows)
-            path = [rosys.driving.PathSegment(spline=spline) for spline in splines]
-            if path:
-                paths.append(path)
-
-        return paths
