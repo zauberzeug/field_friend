@@ -6,6 +6,7 @@ from typing import Optional
 import numpy as np
 import rosys
 from rosys.geometry import Pose, Spline
+from shapely import affinity
 from shapely.geometry import LineString, MultiLineString, Polygon
 from shapely.ops import unary_union
 
@@ -23,7 +24,7 @@ class Mowing:
         self.path_planner = path_planner
         self.gnss = gnss
 
-        self.padding: float = 0.5
+        self.padding: float = 1.0
         self.lane_distance: float = 0.4
         self.corner_radius: float = self.driver.parameters.minimum_turning_radius
         self.minimum_distance = int(np.ceil(self.corner_radius * 2 / self.lane_distance))
@@ -64,7 +65,8 @@ class Mowing:
         self.path_planner.areas = {area.id: area}
         self.log.info(f'areas: {self.path_planner.areas}')
         paths = self.generate_mowing_path()
-        self.MOWING_STARTED.emit(chain([path_segment for path in paths for path_segment in path]))
+        self.log.info(f'paths {paths}')
+        self.MOWING_STARTED.emit([path_segment for path in paths for path_segment in path])
         self.driver.parameters.can_drive_backwards = True
         first_path = paths.pop(0)
         await self.driver.drive_to(first_path[0].spline.start)
@@ -89,14 +91,31 @@ class Mowing:
         current_groups = [[]]  # Current groups of lanes
         is_multiline = False
 
-        self.polygon = Polygon([(point.x, point.y) for point in self.field.outline])
-        padded_polygon = self.polygon.buffer(-self.padding - self.corner_radius)
+        min_x = self.field.outline[0].x
+        min_y = self.field.outline[0].y
+        translated_field = Polygon([(point.x - min_x, point.y - min_y) for point in self.field.outline])
+
+        # Determine the unit vector direction of the first line of the polygon
+        p1, p2 = translated_field.exterior.coords[:2]
+        direction = np.array([p2[0] - p1[0], p2[1] - p1[1]])
+        direction /= np.linalg.norm(direction)
+        self.log.info(f'direction {direction}')
+
+        # Calculate the angle of rotation based on the direction
+        theta = np.arctan2(direction[1], direction[0])
+        self.log.info(f'rotation angle (radians): {theta}')
+
+        # Rotate the translated_field
+        rotated_field = affinity.rotate(translated_field, -theta, origin=(0, 0), use_radians=True)
+
+        padded_polygon = rotated_field.buffer(-self.padding - self.corner_radius)
 
         obstacle_polygons = []  # List to hold all obstacle polygons
         if self.field.obstacles:  # Check if the obstacles list is not empty
             for obstacle in self.field.obstacles:
-                obstacle_polygon = Polygon([(point.x, point.y) for point in obstacle.points])
-                padded_obstacle = obstacle_polygon.buffer(self.padding + self.corner_radius)
+                translated_obstacle = Polygon([(point.x - min_x, point.y - min_y) for point in obstacle.points])
+                rotated_obstacle = affinity.rotate(translated_obstacle, -theta, origin=(0, 0), use_radians=True)
+                padded_obstacle = rotated_obstacle.buffer(self.padding + self.corner_radius)
                 obstacle_polygons.append(padded_obstacle)
         obstacles_union = unary_union(obstacle_polygons) if obstacle_polygons else None
 
@@ -104,17 +123,18 @@ class Mowing:
             navigable_area = padded_polygon.difference(obstacles_union)
         else:
             navigable_area = padded_polygon
-        # Determine the unit vector direction of the first line of the polygon
-        p1, p2 = self.polygon.exterior.coords[:2]
-        direction = np.array([p2[0] - p1[0], p2[1] - p1[1]])
-        direction /= np.linalg.norm(direction)
+        self.log.info(f'navigable area: {navigable_area}')
 
-        # Determine the perpendicular direction
-        perp_direction = np.array([-direction[1], direction[0]])
+        # Direction and perpendicular direction vectors after rotation
+        direction = np.array([1, 0])
+        perp_direction = np.array([0, 1])
 
+        self.log.info(f'perp_direction {perp_direction}')
         # Determine the minimum and maximum projections along the direction and perpendicular direction
         min_proj = max_proj = np.dot(np.array(p1), direction)
+        self.log.info(f'min_proj {min_proj}')
         min_perp_proj = max_perp_proj = np.dot(np.array(p1), perp_direction)
+        self.log.info(f'min_perp_proj {min_perp_proj}')
         for coord in padded_polygon.exterior.coords:
             proj = np.dot(coord, direction)
             perp_proj = np.dot(coord, perp_direction)
@@ -122,16 +142,25 @@ class Mowing:
             max_proj = max(max_proj, proj)
             min_perp_proj = min(min_perp_proj, perp_proj)
             max_perp_proj = max(max_perp_proj, perp_proj)
+        self.log.info(f'proj {proj}')
+        self.log.info(f'perp_proj {perp_proj}')
+        self.log.info(f'min_proj {min_proj}')
+        self.log.info(f'max_proj {max_proj}')
+        self.log.info(f'min_perp_proj {min_perp_proj}')
+        self.log.info(f'max_perp_proj {max_perp_proj}')
 
         length = min_perp_proj
         while length <= max_perp_proj:
             start_point = np.array(p1) + length * perp_direction + min_proj * direction
+            self.log.info(f'start point {start_point}')
             end_point = np.array(p1) + length * perp_direction + max_proj * direction
+            self.log.info(f'end point {end_point}')
             line = LineString([start_point, end_point])
+            self.log.info(f'line: {line}')
 
             # Intersect the line with the inverse of the obstacle polygon
             intersection = navigable_area.intersection(line)
-
+            self.log.info(f'intersection: {intersection}')
             if intersection and not intersection.is_empty:
                 if isinstance(intersection, MultiLineString):
                     self.log.info(f'Multiline found')
@@ -155,12 +184,30 @@ class Mowing:
 
         for group in current_groups:
             lanes_groups.append(group)
+        # Convert back to your coordinate system
+        # lanes_groups = [[LineString([(x, -y) for x, y in line.coords]) for line in group] for group in lanes_groups]
+        lanes_groups = [
+            [affinity.translate(  # Translating the lanes back to their original position
+                affinity.rotate(  # Rotating the lanes back to their original orientation
+                    line,
+                    theta,
+                    origin=(0, 0),
+                    use_radians=True
+                ),
+                xoff=min_x,
+                yoff=min_y
+            ) for line in group]
+            for group in lanes_groups
+        ]
         self.log.info(f'lane groups: {len(lanes_groups)}')
         return lanes_groups
 
     def make_plan(self, lanes: list[LineString]) -> list[Spline]:
         self.log.info(f'converting {len(lanes)} lanes into splines and finding sequence')
-        sequence = find_sequence(len(lanes), minimum_distance=self.minimum_distance)
+        if self.minimum_distance > 1:
+            sequence = find_sequence(len(lanes), minimum_distance=self.minimum_distance)
+        else:
+            sequence = list(range(len(lanes)))
         self.log.info(f'sequence of splines: {sequence}')
         splines = []
 
