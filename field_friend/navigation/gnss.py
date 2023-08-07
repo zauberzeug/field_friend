@@ -80,20 +80,13 @@ class Gnss(ABC):
         self.reference_lon = lon
         self.needs_backup = True
 
-    def get_current_lat(self) -> Optional[float]:
-        if self.record.gps_qual >= 4:
-            return self.record.latitude
-        return None
-
-    def get_current_lon(self) -> Optional[float]:
-        if self.record.gps_qual >= 4:
-            return self.record.longitude
-        return None
+    def get_reference(self) -> Optional[tuple[float, float]]:
+        return self.reference_lat, self.reference_lon
 
     def calculate_distance(self, lat: float, lon: float) -> Optional[float]:
         if self.reference_lat is None or self.reference_lon is None:
             return None
-        geodetic_measurement = Geodesic.WGS84.Inverse(self.reference_lat, self.reference_lon, lat2, lon2)
+        geodetic_measurement = Geodesic.WGS84.Inverse(self.reference_lat, self.reference_lon, lat, lon)
         return geodetic_measurement['s12']
 
 
@@ -178,7 +171,7 @@ class GnssHardware(Gnss):
             self.device = None
             return
         self.record = record
-        if has_location and record.gps_qual >= 4:  # 4 = RTK fixed, 5 = RTK float
+        if has_location and record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
             if self.reference_lat is None or self.reference_lon is None:
                 self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
                 self.set_reference(record.latitude, record.longitude)
