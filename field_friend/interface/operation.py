@@ -8,7 +8,7 @@ from rosys.vision import CameraProvider
 
 from ..automations import Mowing, Puncher, Weeding, plant_detector, plant_provider
 from ..hardware import FieldFriend
-from ..navigation import PathProvider
+from ..navigation import FieldProvider, PathProvider
 from .field_object import field_object
 from .key_controls import KeyControls
 from .plant_object import plant_objects
@@ -37,7 +37,7 @@ class operation:
         weeding: Weeding,
         mowing: Mowing,
         path_provider: PathProvider,
-        field_provider: PathProvider,
+        field_provider: FieldProvider,
         automations: dict[str, Callable],
     ) -> None:
         with ui.card().tight():
@@ -87,13 +87,21 @@ class operation:
 
                     with ui.column().bind_visibility_from(automations_toggle, 'value', value='mowing'):
                         with ui.row():
+
                             def set_field() -> None:
                                 for field in field_provider.fields:
                                     if field.name == field_selection.value:
                                         mowing.field = field
+
+                            def change_field_selections() -> None:
+                                field_selection.options = [field.name for field in field_provider.fields]
+                                field_selection.value = mowing.field.name if mowing.field is not None else None
+
                             field_selection = ui.select(
                                 [field.name for field in field_provider.fields],
                                 with_input=True, on_change=set_field).tooltip('Select the field to mow')
+                            field_provider.FIELDS_CHANGED.register(change_field_selections)
+
                             ui.number('padding', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
                                 'w-24').bind_value_to(mowing, 'padding').tooltip('Set the padding for the mowing automation')
                             ui.number('lane distance', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
