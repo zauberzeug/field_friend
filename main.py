@@ -23,7 +23,7 @@ def startup() -> None:
                 interface.operation(
                     system.field_friend, system.steerer, system.driver, system.automator, system.odometer, system.
                     usb_camera_provider, system.plant_provider, system.plant_detector, system.puncher, system.weeding,
-                    path_provider=system.path_provider)
+                    system.mowing, system.path_provider, system.field_provider, system.automations)
                 interface.cameras(system.camera_selector, system.usb_camera_provider, system.automator,
                                   system.detector, system.puncher, version=system.field_friend.version)
             if dev:
@@ -46,7 +46,7 @@ def startup() -> None:
                 interface.operation(
                     system.field_friend, system.steerer, system.driver, system.automator, system.odometer, system.
                     usb_camera_provider, system.plant_provider, system.plant_detector, system.puncher, system.weeding,
-                    field_provider=system.field_provider, mowing=system.mowing)
+                    system.mowing, system.path_provider, system.field_provider, system.automations)
                 interface.field_planner(system.field_provider, system.odometer, system.gnss)
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):
@@ -64,7 +64,7 @@ def startup() -> None:
                 interface.operation(
                     system.field_friend, system.steerer, system.driver, system.automator, system.odometer, system.
                     usb_camera_provider, system.plant_provider, system.plant_detector, system.puncher, system.weeding,
-                    path_provider=system.path_provider)
+                    system.mowing, system.path_provider, system.field_provider, system.automations)
                 interface.path_planner(system.path_provider, system.path_recorder, system.automator)
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):
