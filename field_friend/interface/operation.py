@@ -6,9 +6,10 @@ from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, Steerer, driver_object, joystick, keyboard_control
 from rosys.vision import CameraProvider
 
-from ..automations import Puncher, Weeding, plant_detector, plant_provider
+from ..automations import Mowing, Puncher, Weeding, plant_detector, plant_provider
 from ..hardware import FieldFriend
 from ..navigation import PathProvider
+from .field_object import field_object
 from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .robot_object import robot_object
@@ -34,8 +35,9 @@ class operation:
         plant_detector: plant_detector,
         puncher: Puncher,
         weeding: Weeding,
-        *, dev: bool = False,
-        path_recorder: Optional[PathProvider] = None,
+        *, path_provider: Optional[PathProvider] = None,
+        field_provider: Optional[PathProvider] = None,
+        mowing: Optional[Mowing] = None,
     ) -> None:
         with ui.card().tight():
             self.scene_look = False
@@ -63,8 +65,9 @@ class operation:
                 robot_object(odometer, camera_provider, field_friend)
                 driver_object(driver)
                 plant_objects(plant_provider, plant_detector.weed_category_names)
-                if path_recorder is not None:
-                    visualizer_object(path_recorder, automator)
+                visualizer_object(automator, path_provider, mowing)
+                if field_provider is not None:
+                    field_object(field_provider)
                 scene.move_camera(-0.5, -1, 2)
                 scene.tooltip('double click to zoom in/out')
             with ui.row():

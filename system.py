@@ -2,9 +2,9 @@ import os
 
 import rosys
 
-from field_friend.automations import PlantDetector, PlantProvider, Puncher, Weeding
+from field_friend.automations import Mowing, PathRecorder, PlantDetector, PlantProvider, Puncher, Weeding
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
-from field_friend.navigation import GnssHardware, GnssSimulation, PathProvider
+from field_friend.navigation import FieldProvider, GnssHardware, GnssSimulation, PathProvider
 from field_friend.vision import CameraSelector
 from field_friend.vision.simulation import create_weedcam
 
@@ -55,8 +55,31 @@ class System:
         self.plant_detector.minimum_weed_confidence = 0.5
         self.weeding = Weeding(self.field_friend, self.driver, self.detector,
                                self.camera_selector, self.plant_provider, self.puncher, self.plant_detector)
-        self.automator.default_automation = self.weeding.start
-        self.path_recorder = PathProvider(self.driver, self.steerer, self.gnss)
+        self.path_provider = PathProvider()
+        self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
+
+        width = 0.63
+        length = 0.78
+        offset = 0.16
+        chain_width = 0.145
+        height = 0.3
+        outline = [
+            (-offset, -width/2),
+            (length - offset, -width/2),
+            (length - offset, -width/2 + chain_width),
+            (0, -width/2 + chain_width),
+            (0, width/2 - chain_width),
+            (length - offset, width/2 - chain_width),
+            (length - offset, width/2),
+            (-offset, width/2)
+        ]
+        self.shape = rosys.geometry.Prism(
+            outline=outline,
+            height=height)
+        self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
+        self.field_provider = FieldProvider()
+        self.mowing = Mowing(self.field_provider, driver=self.driver, path_planner=self.path_planner, gnss=self.gnss,)
+        self.automator.default_automation = self.mowing.start
 
         if self.is_real:
             # camera configuration
