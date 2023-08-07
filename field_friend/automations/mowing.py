@@ -1,6 +1,5 @@
 
 import logging
-from itertools import chain
 from typing import Optional
 
 import numpy as np
@@ -80,7 +79,7 @@ class Mowing:
 
     def _generate_mowing_path(self) -> list[list[rosys.driving.PathSegment]]:
         self.log.info('generating mowing path')
-        lane_groups = self._decompose_into_lanes()
+        lane_groups, outer_lanes = self._decompose_into_lanes()
         paths = []
         for lanes in lane_groups:
             odered_splines = self._make_plan(lanes)
@@ -88,6 +87,17 @@ class Mowing:
             path = [rosys.driving.PathSegment(spline=spline) for spline in splines]
             if path:
                 paths.append(path)
+
+        splines = []
+        for lane in outer_lanes:
+            lane_points = lane.coords
+            p1, p2 = lane_points[0], lane_points[1]
+            yaw = np.arctan2(p2[1] - p1[1], p2[0] - p1[0])
+            splines.append(rosys.geometry.Spline.from_poses(rosys.geometry.Pose(
+                x=p1[0], y=p1[1], yaw=yaw), rosys.geometry.Pose(x=p2[0], y=p2[1], yaw=yaw)))
+        path = [rosys.driving.PathSegment(spline=spline) for spline in splines]
+        if path:
+            paths.append(path)
         return paths
 
     async def _drive_mowing_paths(self, paths: list[list[rosys.driving.PathSegment]]) -> None:
@@ -110,7 +120,7 @@ class Mowing:
             await self.driver.drive_path(path)
         self.driver.parameters.can_drive_backwards = False
 
-    def _decompose_into_lanes(self) -> list[LineString]:
+    def _decompose_into_lanes(self) -> (list[list[LineString]], list[LineString]):
         self.log.info('decomposing field into lanes')
         lanes_groups = []  # List to hold lists of lanes
         current_groups = [[]]  # Current groups of lanes
@@ -205,39 +215,40 @@ class Mowing:
             ) for line in group]
             for group in lanes_groups
         ]
-        return lanes_groups
+
+        # Create line segments along the outline
+        padded_polygon_lines = []
+        padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]
+                                 ).buffer(-self.padding*self.minimum_distance)
+        outline_coords = list(padded_polygon.exterior.coords)
+        for i in range(len(outline_coords) - 1):
+            p1 = outline_coords[i]
+            p2 = outline_coords[i + 1]
+            line = LineString([p1, p2])
+            padded_polygon_lines.append(line)
+
+        return (lanes_groups, padded_polygon_lines)
 
     def _make_plan(self, lanes: list[LineString]) -> list[Spline]:
         self.log.info(f'converting {len(lanes)} lanes into splines and finding sequence')
-
         if self.minimum_distance > 1:
             sequence = find_sequence(len(lanes), minimum_distance=self.minimum_distance)
         else:
             sequence = list(range(len(lanes)))
         self.log.info(f'sequence of splines: {sequence}')
         splines = []
-
         for i, index in enumerate(sequence):
             lane = lanes[index]
-            # Extract the points from the lane
-            lane_points = lane.coords if isinstance(lane, LineString) else lane[0].coords
-
-            # Reverse the points of every other lane
+            lane_points = lane.coords
             if i % 2 != 0:
                 lane_points = lane_points[::-1]
-
-            # Create a new splines list for this lane
             lane_splines = []
-
             for i in range(len(lane_points) - 1):
-                # Add straight segments
                 p1, p2 = lane_points[i], lane_points[i + 1]
                 yaw = np.arctan2(p2[1] - p1[1], p2[0] - p1[0])
                 lane_splines.append(rosys.geometry.Spline.from_poses(rosys.geometry.Pose(
                     x=p1[0], y=p1[1], yaw=yaw), rosys.geometry.Pose(x=p2[0], y=p2[1], yaw=yaw)))
-
             splines.append(*lane_splines)
-
         return splines
 
     def _generate_turn_splines(self, rows: list[rosys.geometry.Spline]) -> list[rosys.geometry.Spline]:
