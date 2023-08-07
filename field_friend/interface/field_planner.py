@@ -34,7 +34,7 @@ class field_planner:
                 with ui.tabs() as self.tabs:
                     ui.tab('Outline', 'Outline')
                     ui.tab('Obstacles', 'Obstacles')
-                with ui.tab_panels(self.tabs, value='Outline'):
+                with ui.tab_panels(self.tabs, value='Outline') as self.panels:
                     with ui.tab_panel('Outline'):
                         for point in field.outline:
                             with ui.row().classes('items-center'):
@@ -81,8 +81,8 @@ class field_planner:
                                 ui.icon('place').props('size=sm color=grey').classes('ml-8')
                                 ui.button('', on_click=lambda field=field, obstacle=obstacle: self.add_obstacle_point(
                                     field, obstacle)).props('icon=add color=primary fab-mini flat')
-                                ui.button('', on_click=lambda field=field, obstacle=obstacle: self.remove_obstacle_point(
-                                    field, obstacle)).props('icon=remove color=warning fab-mini flat')
+                                ui.button('', on_click=lambda obstacle=obstacle: self.remove_obstacle_point(
+                                    obstacle)).props('icon=remove color=warning fab-mini flat')
 
                         with ui.row().classes('items-center mt-3'):
                             ui.icon('block').props('size=sm color=grey')
@@ -120,28 +120,34 @@ class field_planner:
         field.outline.remove(point)
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.panels.set_value('Outline')
 
     def add_field(self) -> None:
         field = Field(name=f'{str(uuid.uuid4())}')
         self.field_provider.add_field(field)
         self.show_field_settings.refresh()
+        self.panels.set_value('Outline')
 
     def delete_field(self, field: Field) -> None:
         self.field_provider.remove_field(field)
         self.show_field_settings.refresh()
+        self.panels.set_value('Outline')
 
     def clear_fields(self) -> None:
         self.field_provider.clear_fields()
         self.show_field_settings.refresh()
+        self.panels.set_value('Outline')
 
     def add_obstacle(self, field: Field) -> None:
         obstacle = FieldObstacle(name=f'{str(uuid.uuid4())}')
         self.field_provider.add_obstacle(field, obstacle)
         self.show_field_settings.refresh()
+        self.panels.set_value('Obstacles')
 
     def remove_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         self.field_provider.remove_obstacle(field, obstacle)
         self.show_field_settings.refresh()
+        self.panels.set_value('Obstacles')
 
     def add_obstacle_point(
             self, field: Field, obstacle: FieldObstacle, point: Optional[rosys.geometry.Point] = None) -> None:
@@ -168,6 +174,7 @@ class field_planner:
         obstacle.points.append(point)
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.panels.set_value('Obstacles')
 
     def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[rosys.geometry.Point] = None) -> None:
         if point is None and obstacle.points != []:
@@ -175,3 +182,4 @@ class field_planner:
         obstacle.points.remove(point)
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.panels.set_value('Obstacles')
