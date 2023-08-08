@@ -1,4 +1,5 @@
 
+import logging
 from typing import Callable
 
 from nicegui import events, ui
@@ -40,6 +41,11 @@ class operation:
         field_provider: FieldProvider,
         automations: dict[str, Callable],
     ) -> None:
+        self.field_provider = field_provider
+        self.mowing = mowing
+        self.log = logging.getLogger('field_friend.operation')
+        self.field_provider.FIELDS_CHANGED.register(self.show_field_selection.refresh)
+
         with ui.card().tight():
             self.scene_look = False
 
@@ -59,9 +65,6 @@ class operation:
                     scene.move_camera(x=x, y=y, z=height,
                                       look_at_x=position.x, look_at_y=position.y)
                     return
-                # if event.click_type == 'click':
-                #     scene.move_camera(x=event.hits[0].x-0.5, y=event.hits[0].y-0.5, z=2,
-                #                       look_at_x=event.hits[0].x, look_at_y=event.hits[0].y)
             with ui.scene(650, 500, on_click=handle_click) as scene:
                 robot_object(odometer, camera_provider, field_friend)
                 driver_object(driver)
@@ -87,21 +90,7 @@ class operation:
 
                     with ui.column().bind_visibility_from(automations_toggle, 'value', value='mowing'):
                         with ui.row():
-
-                            def set_field() -> None:
-                                for field in field_provider.fields:
-                                    if field.name == field_selection.value:
-                                        mowing.field = field
-
-                            def change_field_selections() -> None:
-                                field_selection.options = [field.name for field in field_provider.fields]
-                                field_selection.value = mowing.field.name if mowing.field is not None else None
-
-                            field_selection = ui.select(
-                                [field.name for field in field_provider.fields],
-                                with_input=True, on_change=set_field).tooltip('Select the field to mow')
-                            field_provider.FIELDS_CHANGED.register(change_field_selections)
-
+                            self.show_field_selection()
                             ui.number('padding', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
                                 'w-24').bind_value_to(mowing, 'padding').tooltip('Set the padding for the mowing automation')
                             ui.number('lane distance', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
@@ -121,3 +110,15 @@ class operation:
                 ui.checkbox(
                     'Space bar emergency stop').tooltip(
                     'Enable or disable the emergency stop on space bar').bind_value(key_controls, 'estop_on_space')
+
+    @ui.refreshable
+    def show_field_selection(self) -> None:
+
+        def set_field() -> None:
+            for field in self.field_provider.fields:
+                if field.name == self.field_selection.value:
+                    self.mowing.field = field
+
+        self.field_selection = ui.select(
+            [field.name for field in self.field_provider.fields],
+            with_input=True, on_change=set_field).tooltip('Select the field to mow')
