@@ -9,10 +9,12 @@ if TYPE_CHECKING:
 
 def header_bar(system: 'System', right_drawer: ui.right_drawer) -> None:
     with ui.header().classes('items-center'):
+        with ui.link(target='/'):
+            ui.image('assets/zz_logo.png').tailwind.width('12')
         if system.field_friend.version in ['u1', 'u2']:
-            ui.label('Uckerbot').classes('text-2xl mr-auto')
+            ui.link('UCKERBOT', '/').classes('text-2xl text-white !no-underline mr-auto')
         else:
-            ui.label('Zauberzeug Field Friend').classes('text-2xl mr-auto')
+            ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
 
         with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto'):
             ui.icon('report').props('size=md').classes('text-red-400')
@@ -22,6 +24,10 @@ def header_bar(system: 'System', right_drawer: ui.right_drawer) -> None:
             ui.icon('report').props('size=md').classes('text-red-400')
             ui.label('Software ESTOP is active!').classes('text-red-400 text-2xl')
 
+        with ui.row():
+            ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
+            ui.link('Path planner', '/path').classes('text-white text-lg !no-underline')
+            ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
         rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
         with ui.button().props('icon=settings flat color=white'):
             with ui.menu().props(remove='no-parent-event'):
