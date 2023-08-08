@@ -24,6 +24,7 @@ class visualizer_object(Object3D):
             self.mowing.MOWING_STARTED.register_ui(self.update_path)
         automator.AUTOMATION_STOPPED.register_ui(lambda _: self.clear())
         automator.AUTOMATION_FAILED.register_ui(lambda _: self.clear())
+        automator.AUTOMATION_COMPLETED.register_ui(lambda _: self.clear())
 
     def update_path(self, path: list[PathSegment], height: float = 0) -> None:
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name == 'path']
