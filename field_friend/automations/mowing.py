@@ -5,6 +5,7 @@ from typing import Any, Optional
 import numpy as np
 import rosys
 from rosys.geometry import Pose, Spline
+from rosys.helpers import angle, eliminate_pi
 from shapely import affinity
 from shapely.geometry import LineString, MultiLineString, Polygon
 from shapely.ops import unary_union
@@ -79,13 +80,16 @@ class Mowing:
                 area = rosys.pathplanning.Area(id=f'{self.field.name}', outline=self.field.outline)
                 self.path_planner.areas = {area.id: area}
                 paths = self._generate_mowing_path()
+                if not paths:
+                    rosys.notify('No paths to drive', 'negative')
+                    raise Exception('No paths to drive')
                 self.MOWING_STARTED.emit([path_segment for path in paths for path_segment in path])
                 await self._drive_mowing_paths(paths)
                 rosys.notify('Mowing finished', 'positive')
                 break
             except Exception as e:
                 self.log.exception(e)
-                rosys.notify('Mowing failed', 'negative')
+                rosys.notify(f'Mowing failed because of {e}', 'negative')
                 break
 
     def _generate_mowing_path(self) -> list[list[rosys.driving.PathSegment]]:
@@ -96,17 +100,20 @@ class Mowing:
             splines = []
             for lane in outer_lanes:
                 lane_points = lane.coords
-                p1 = rosys.geometry.Point(x=lane_points[0][0], y=lane_points[0][1])
-                p2 = rosys.geometry.Point(x=lane_points[1][0], y=lane_points[1][1])
-                yaw = p1.direction(p2)
-                shorten_p1 = p1.polar(self.turning_radius, yaw)
-                shorten_p2 = p2.polar(self.turning_radius, yaw-np.pi)
+                p1_start = rosys.geometry.Point(x=lane_points[0][0], y=lane_points[0][1])
+                p1_end = rosys.geometry.Point(x=lane_points[1][0], y=lane_points[1][1])
+                yaw = p1_start.direction(p1_end)
+                distance = self.turning_radius
+                if distance * 2 > p1_start.distance(p1_end):
+                    distance = p1_start.distance(p1_end)/3
+                p1_start = p1_start.polar(distance, yaw)
+                p1_end = p1_end.polar(distance, yaw-np.pi)
                 splines.append(
                     rosys.geometry.Spline.from_poses(
-                        rosys.geometry.Pose(x=shorten_p1.x, y=shorten_p1.y, yaw=yaw),
-                        rosys.geometry.Pose(x=shorten_p2.x, y=shorten_p2.y, yaw=yaw)))
-            connected_splines = self._generate_turn_splines(splines)
-            path = [rosys.driving.PathSegment(spline=spline) for spline in connected_splines]
+                        rosys.geometry.Pose(x=p1_start.x, y=p1_start.y, yaw=yaw),
+                        rosys.geometry.Pose(x=p1_end.x, y=p1_end.y, yaw=yaw)))
+            # connected_splines = self._generate_turn_splines(splines, True)
+            path = [rosys.driving.PathSegment(spline=spline) for spline in splines]
             if path:
                 paths.append(path)
 
@@ -128,15 +135,19 @@ class Mowing:
         for path in paths:
             start_pose = self.driver.odometer.prediction
             end_pose = path[0].spline.pose(0)
-            self.log.info(f'end pose: {end_pose}')
-            path_switch = await self.path_planner.search(start=start_pose, goal=end_pose, timeout=20)
-            self.log.info(f'start path: {path_switch}')
+            path_switch = await self.path_planner.search(start=start_pose, goal=end_pose, timeout=30)
             if path_switch is None:
                 self.log.warning('not driving because no path to start point found')
-                return
+                raise Exception('no path to start point found')
             self.driver.parameters.can_drive_backwards = True
+            self.driver.parameters.hook_offset = 1
+            self.driver.parameters.carrot_distance = 0.3
+            self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
             await self.driver.drive_path(path_switch)
             self.driver.parameters.can_drive_backwards = False
+            self.driver.parameters.hook_offset = 0.4
+            self.driver.parameters.carrot_distance = 0.2
+            self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
             await self.driver.drive_path(path)
 
     def _make_plan(self, lanes: list[LineString]) -> list[Spline]:
@@ -149,7 +160,7 @@ class Mowing:
         if minimum_distance > 1:
             sequence = find_sequence(len(lanes), minimum_distance=minimum_distance)
             if sequence == []:  # ToDO: handle missing sequence better
-                self.log.warning('no valid sequence found')
+                self.log.warning('!!!no valid sequence found!!!')
                 sequence = list(range(len(lanes)))
         else:
             sequence = list(range(len(lanes)))
@@ -169,19 +180,29 @@ class Mowing:
             splines.append(*lane_splines)
         return splines
 
-    def _generate_turn_splines(self, rows: list[rosys.geometry.Spline]) -> list[rosys.geometry.Spline]:
+    def _generate_turn_splines(self, lanes: list[rosys.geometry.Spline]) -> list[rosys.geometry.Spline]:
         splines = []
-        for i in range(len(rows)):
-            splines.append(rows[i])
-            if i != len(rows) - 1:
-                turn_spline = rosys.geometry.Spline.from_poses(
+        for i in range(len(lanes)):
+            splines.append(lanes[i])
+            if i != len(lanes) - 1:
+                middle_point = lanes[i].end.polar(
+                    self.turning_radius, lanes[i].pose(1).yaw).polar(
+                    self.turning_radius, lanes[i].end.direction(lanes[i + 1].start))
+                middle_pose = Pose(x=middle_point.x, y=middle_point.y,
+                                   yaw=lanes[i].end.direction(
+                                       lanes[i+1].start))
+                first_turn_spline = rosys.geometry.Spline.from_poses(
                     Pose(
-                        x=rows[i].end.x, y=rows[i].end.y,
-                        yaw=rows[i].start.direction(
-                            rows[i].end)),
+                        x=lanes[i].end.x, y=lanes[i].end.y,
+                        yaw=lanes[i].start.direction(
+                            lanes[i].end)),
+                    middle_pose)
+                splines.append(first_turn_spline)
+                second_turn_spline = rosys.geometry.Spline.from_poses(
+                    middle_pose,
                     Pose(
-                        x=rows[i+1].start.x, y=rows[i+1].start.y,
-                        yaw=rows[i+1].start.direction(
-                            rows[i+1].end)),)
-                splines.append(turn_spline)
+                        x=lanes[i+1].start.x, y=lanes[i+1].start.y,
+                        yaw=lanes[i+1].start.direction(
+                            lanes[i+1].end)))
+                splines.append(second_turn_spline)
         return splines
