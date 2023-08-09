@@ -1,4 +1,5 @@
 
+from .coverage_planer import CoveragePlanner
 from .mowing import Mowing
 from .path_recorder import PathRecorder
 from .plant import Plant
