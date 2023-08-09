@@ -37,13 +37,13 @@ class System:
             self.gnss = GnssSimulation(self.field_friend.wheels)
         self.gnss.ROBOT_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
-        self.driver.parameters.linear_speed_limit = 0.25
+        self.driver.parameters.linear_speed_limit = 0.4
         self.driver.parameters.angular_speed_limit = 1.0
         self.driver.parameters.can_drive_backwards = False
-        self.driver.parameters.minimum_turning_radius = 0.3
-        # self.driver.parameters.hook_offset = 0.6
-        # self.driver.parameters.carrot_distance = 0.2
-        # self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
+        self.driver.parameters.minimum_turning_radius = 0.7
+        self.driver.parameters.hook_offset = 0.6
+        self.driver.parameters.carrot_distance = 0.1
+        self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.automator = rosys.automation.Automator(steerer=None, on_interrupt=self.field_friend.stop)
         if self.is_real:
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
@@ -59,11 +59,11 @@ class System:
         self.path_provider = PathProvider()
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
 
-        width = 0.63
+        width = 0.64
         length = 0.78
-        offset = 0.16
-        chain_width = 0.145
-        height = 0.3
+        offset = 0.36
+        chain_width = 0.10
+        height = 0.67
         outline = [
             (-offset, -width/2),
             (length - offset, -width/2),
