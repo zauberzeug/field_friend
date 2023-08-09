@@ -41,8 +41,8 @@ class System:
         self.driver.parameters.angular_speed_limit = 1.0
         self.driver.parameters.can_drive_backwards = False
         self.driver.parameters.minimum_turning_radius = 0.7
-        self.driver.parameters.hook_offset = 0.6
-        self.driver.parameters.carrot_distance = 0.1
+        self.driver.parameters.hook_offset = 0.4
+        self.driver.parameters.carrot_distance = 0.2
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.automator = rosys.automation.Automator(steerer=None, on_interrupt=self.field_friend.stop)
         if self.is_real:
@@ -82,7 +82,7 @@ class System:
         self.mowing = Mowing(self.field_provider, driver=self.driver, path_planner=self.path_planner, gnss=self.gnss,)
 
         self.automations = {'weeding': self.weeding.start, 'mowing': self.mowing.start}
-        self.automator.default_automation = self.mowing.start
+        self.automator.default_automation = self.weeding.start
 
         if self.is_real:
             # camera configuration
