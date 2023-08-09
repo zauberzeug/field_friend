@@ -92,9 +92,9 @@ class operation:
                         with ui.row():
                             self.show_field_selection()
                             ui.number('padding', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
-                                'w-24').bind_value_to(mowing, 'padding').tooltip('Set the padding for the mowing automation')
+                                'w-24').bind_value(mowing, 'padding').tooltip('Set the padding for the mowing automation')
                             ui.number('lane distance', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
-                                'w-24').bind_value_to(mowing, 'lane_distance').tooltip('Set the lane distance for the mowing automation')
+                                'w-24').bind_value(mowing, 'lane_distance').tooltip('Set the lane distance for the mowing automation')
                     with ui.column().bind_visibility_from(automations_toggle, 'value', value='weeding'):
                         if field_friend.z_axis is not None:
                             ui.number('Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.18).props('dense outlined suffix=cm').classes(

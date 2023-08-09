@@ -17,8 +17,9 @@ class field_planner:
         self.gnss = gnss
         with ui.card():
             with ui.row():
-                ui.button('Add field', on_click=self.add_field)
-                ui.button('Clear fields', on_click=self.clear_fields).props('outline color=warning')
+                ui.button('Add field', on_click=self.add_field).tooltip('Add a new field')
+                ui.button('Clear fields', on_click=self.clear_fields).props(
+                    'outline color=warning').tooltip('Delete all fields')
             with ui.row():
                 self.show_field_settings()
 
@@ -30,7 +31,7 @@ class field_planner:
                     ui.icon('fence').props('size=lg color=primary')
                     ui.input('Field name', value=f'{field.name}').bind_value(field, 'name').classes('w-32')
                     ui.button(on_click=lambda field=field: self.delete_field(field)) \
-                        .props('icon=delete color=warning fab-mini flat').classes('ml-auto')
+                        .props('icon=delete color=warning fab-mini flat').classes('ml-auto').tooltip('Delete field')
                 with ui.tabs() as self.tabs:
                     ui.tab('Outline', 'Outline')
                     ui.tab('Obstacles', 'Obstacles')
@@ -51,9 +52,9 @@ class field_planner:
                         with ui.row().classes('items-center mt-2'):
                             ui.icon('place').props('size=sm color=grey').classes('ml-2')
                             ui.button('', on_click=lambda field=field: self.add_point(field)) \
-                                .props('icon=add color=primary fab-mini flat')
+                                .props('icon=add color=primary fab-mini flat').tooltip('Add point')
                             ui.button('', on_click=lambda field=field: self.remove_point(field)) \
-                                .props('icon=remove color=warning fab-mini flat')
+                                .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
 
                     with ui.tab_panel('Obstacles'):
                         for obstacle in field.obstacles:
@@ -62,8 +63,8 @@ class field_planner:
                                 ui.input(
                                     'Obstacle name', value=f'{obstacle.name}').bind_value(
                                     obstacle, 'name').classes('w-32')
-                                ui.button(on_click=lambda field=field, obstacle=obstacle: self.remove_obstacle(
-                                    field, obstacle)).props('icon=delete color=warning fab-mini flat').classes('ml-auto')
+                                ui.button(on_click=lambda field=field, obstacle=obstacle: self.remove_obstacle(field, obstacle)).props(
+                                    'icon=delete color=warning fab-mini flat').classes('ml-auto').tooltip('Delete obstacle')
                             for point in obstacle.points:
                                 with ui.row().classes('items-center'):
                                     ui.button(
