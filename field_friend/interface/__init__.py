@@ -1,3 +1,4 @@
+from .automation_controls import automation_controls
 from .cameras import CameraCard, cameras
 from .development import development
 from .field_object import field_object
