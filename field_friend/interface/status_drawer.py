@@ -16,7 +16,7 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             ui.icon('report').props('size=md').classes('text-red')
             ui.label('Emergency stop is pressed!').classes('text-red mt-1')
 
-        with ui.row().bind_visibility_from(robot.estop, 'en3_active'):
+        with ui.row().bind_visibility_from(robot.estop, 'is_soft_estop_active'):
             ui.icon('report').props('size=md').classes('text-red')
             ui.label('Software ESTOP is active!').classes('text-red mt-1')
 
