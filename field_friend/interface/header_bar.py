@@ -17,12 +17,12 @@ def header_bar(system: 'System', right_drawer: ui.right_drawer) -> None:
             ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
 
         with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto'):
-            ui.icon('report').props('size=md').classes('text-red-400')
-            ui.label('Emergency stop is pressed!').classes('text-red-400 text-2xl')
+            ui.icon('report').props('size=md').classes('text-red-500').props('elevated')
+            ui.label('Emergency stop is pressed!').classes('text-red-500 text-3xl').props('elevated')
 
-        with ui.row().bind_visibility_from(system.field_friend.estop, 'en3_active').classes('mr-auto'):
-            ui.icon('report').props('size=md').classes('text-red-400')
-            ui.label('Software ESTOP is active!').classes('text-red-400 text-2xl')
+        with ui.row().bind_visibility_from(system.field_friend.estop, 'is_soft_estop_active').classes('mr-auto'):
+            ui.icon('report').props('size=md').classes('text-red-500').props('elevated')
+            ui.label('Software ESTOP is active!').classes('text-red-500 text-3xl').props('elevated')
 
         with ui.row():
             ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
