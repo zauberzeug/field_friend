@@ -189,6 +189,9 @@ class GnssHardware(Gnss):
                     yaw=np.deg2rad(float(-record.heading)),
                     time=record.timestamp,
                 )
+                distance = self.odometer.prediction.distance(pose)
+                if distance > 1:
+                    self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
                 self.ROBOT_LOCATED.emit(pose)
 
 
