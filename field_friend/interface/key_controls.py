@@ -51,9 +51,9 @@ class KeyControls(rosys.driving.keyboard_control):
             background_tasks.create(self.field_friend.stop())
             if not self.estop_on_space:
                 return
-            if not self.field_friend.estop.en3_active:
-                background_tasks.create(self.field_friend.estop.software_emergency_stop())
+            if not self.field_friend.estop.is_soft_estop_active:
+                background_tasks.create(self.field_friend.estop.set_soft_estop(True))
                 rosys.notify('ESTOP activated')
             else:
-                background_tasks.create(self.field_friend.estop.release_en3())
+                background_tasks.create(self.field_friend.estop.set_soft_estop(False))
                 rosys.notify('ESTOP released')
