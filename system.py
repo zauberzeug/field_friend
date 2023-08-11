@@ -37,11 +37,11 @@ class System:
             self.gnss = GnssSimulation(self.field_friend.wheels)
         self.gnss.ROBOT_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
-        self.driver.parameters.linear_speed_limit = 0.4
+        self.driver.parameters.linear_speed_limit = 0.5
         self.driver.parameters.angular_speed_limit = 1.0
         self.driver.parameters.can_drive_backwards = False
-        self.driver.parameters.minimum_turning_radius = 0.7
-        self.driver.parameters.hook_offset = 0.4
+        self.driver.parameters.minimum_turning_radius = 1.0
+        self.driver.parameters.hook_offset = 0.6
         self.driver.parameters.carrot_distance = 0.2
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.automator = rosys.automation.Automator(steerer=None, on_interrupt=self.field_friend.stop)
@@ -62,24 +62,19 @@ class System:
         width = 0.64
         length = 0.78
         offset = 0.36
-        chain_width = 0.10
         height = 0.67
-        outline = [
-            (-offset, -width/2),
-            (length - offset, -width/2),
-            (length - offset, -width/2 + chain_width),
-            (0, -width/2 + chain_width),
-            (0, width/2 - chain_width),
-            (length - offset, width/2 - chain_width),
-            (length - offset, width/2),
-            (-offset, width/2)
-        ]
         self.shape = rosys.geometry.Prism(
-            outline=outline,
+            outline=[
+                (-offset, -width/2),
+                (length - offset, -width/2),
+                (length - offset, width/2),
+                (-offset, width/2)
+            ],
             height=height)
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
         self.field_provider = FieldProvider()
-        self.mowing = Mowing(self.field_provider, driver=self.driver, path_planner=self.path_planner, gnss=self.gnss,)
+        self.mowing = Mowing(self.field_friend, self.field_provider, driver=self.driver,
+                             path_planner=self.path_planner, gnss=self.gnss, robot_width=width,)
 
         self.automations = {'weeding': self.weeding.start, 'mowing': self.mowing.start}
         self.automator.default_automation = self.weeding.start
@@ -127,6 +122,8 @@ class System:
             rosys.on_startup(lambda: create_weedcam('bottom_cam', self.usb_camera_provider))
 
         def stop():
+            if self.field_friend.estop.is_soft_estop_active:
+                self.automator.pause(because='soft estop active')
             if self.automator.is_running:
                 self.automator.stop(because='emergency stop triggered')
             self.field_friend.stop()
