@@ -121,12 +121,13 @@ class System:
         else:
             rosys.on_startup(lambda: create_weedcam('bottom_cam', self.usb_camera_provider))
 
-        def stop():
-            if self.field_friend.estop.is_soft_estop_active:
-                self.automator.pause(because='soft estop active')
+        async def stop():
             if self.automator.is_running:
-                self.automator.stop(because='emergency stop triggered')
-            self.field_friend.stop()
+                if self.field_friend.estop.is_soft_estop_active:
+                    self.automator.pause(because='soft estop active')
+                else:
+                    self.automator.stop(because='emergency stop triggered')
+            await self.field_friend.stop()
 
         def pause():
             if self.automator.is_running:
