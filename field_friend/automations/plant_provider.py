@@ -20,7 +20,7 @@ class PlantProvider:
 
         rosys.on_repeat(self.prune, 10.0)
 
-    def prune(self, max_age: float = 10 * 60.0) -> None:
+    def prune(self, max_age: float = 100 * 60.0) -> None:
         self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - max_age]
         self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - max_age]
         self.PLANTS_CHANGED.emit()

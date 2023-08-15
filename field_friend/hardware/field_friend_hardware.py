@@ -47,17 +47,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         bluetooth = rosys.hardware.BluetoothHardware(robot_brain,
                                                      name=self.config['bluetooth']['name'],
                                                      )
-        serial = rosys.hardware.SerialHardware(robot_brain,
-                                               name=self.config['serial']['name'],
-                                               rx_pin=self.config['serial']['rx_pin'],
-                                               tx_pin=self.config['serial']['tx_pin'],
-                                               baud=self.config['serial']['baud'],
-                                               num=self.config['serial']['num'],)
-        expander = rosys.hardware.ExpanderHardware(robot_brain,
-                                                   serial=serial,
-                                                   name=self.config['expander']['name'],
-                                                   boot=self.config['expander']['boot'],
-                                                   enable=self.config['expander']['enable'],)
+        serial = rosys.hardware.SerialHardware(robot_brain)
+        expander = rosys.hardware.ExpanderHardware(robot_brain, serial=serial)
         can = rosys.hardware.CanHardware(robot_brain,
                                          expander=expander if self.config['can']['on_expander'] else None,
                                          name=self.config['can']['name'],
@@ -155,7 +146,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             flashlight = FlashlightHardwareV2(robot_brain,
                                               expander=expander if self.config['flashlight']['on_expander'] else None,
                                               name=self.config['flashlight']['name'],
-                                              front_pin=self.config['flashlight']['pin'],
+                                              front_pin=self.config['flashlight']['front_pin'],
                                               back_pin=self.config['flashlight']['back_pin'],
                                               )
         else:

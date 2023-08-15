@@ -108,11 +108,11 @@ class System:
                         self.was_charging = True
                         return
                     if not self.field_friend.bms.state.is_charging and self.was_charging:
-                        self.automator.start(self.field_friend.battery_control.release_battery_relais())
+                        self.automator.start(self.field_friend.battery_control.release_battery_relay())
                         self.was_charging = False
 
                 def relase_relais_on_startup():
-                    self.automator.start(self.field_friend.battery_control.release_battery_relais())
+                    self.automator.start(self.field_friend.battery_control.release_battery_relay())
 
                 self.was_charging = False
                 rosys.on_repeat(check_if_charging, 0.5)

@@ -83,7 +83,7 @@ fieldfriend_configurations = {
             'chop_radius': 0.07,
         },
         'robot_brain': {
-            'flash_params': []
+            'flash_params': ['nand']
         },
         'bluetooth': {
             'name': 'uckerbot-u2',
@@ -108,10 +108,12 @@ fieldfriend_configurations = {
             'baud': 1_000_000,
         },
         'wheels': {
-            'version': 'wheels',
+            'version': 'double_wheels',
             'name': 'wheels',
-            'left_can_address': 0x000,
-            'right_can_address': 0x100,
+            'left_back_can_address': 0x000,
+            'left_front_can_address': 0x100,
+            'right_back_can_address': 0x200,
+            'right_front_can_address': 0x300,
             'is_left_reversed': False,
             'is_right_reversed': True,
         },
@@ -128,7 +130,7 @@ fieldfriend_configurations = {
             'ref_t_pin': 21,
         },
         'z_axis': {
-            'version': 'z_axis_v2',
+            'version': 'none',
             'name': 'z_axis',
             'step_pin': 5,
             'dir_pin': 4,
@@ -155,7 +157,7 @@ fieldfriend_configurations = {
             'rx_pin': 26,
             'tx_pin': 27,
             'baud': 9600,
-            'num': 1,
+            'num': 2,
         },
         'battery_control': {
             'name': 'battery_control',

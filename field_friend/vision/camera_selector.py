@@ -7,6 +7,9 @@ class CameraSelector:
     FRONT_CAMERA_IDS = ['front_cam']
     BOTTOM_CAMERA_IDS = ['bottom_cam',
                          'usb-70090000.xusb-2.2',
+                         'usb-70090000.xusb-2.2.1',
+                         'usb-70090000.xusb-2.2.2',
+                         'usb-70090000.xusb-2.2.3',
                          'usb-70090000.xusb-2.3',
                          'usb-70090000.xusb-2.3.1',
                          'usb-70090000.xusb-2.3.2',

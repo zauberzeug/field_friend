@@ -29,7 +29,9 @@ class field_planner:
             with ui.card().classes('items-stretch'):
                 with ui.row().classes('items-center'):
                     ui.icon('fence').props('size=lg color=primary')
-                    ui.input('Field name', value=f'{field.name}').bind_value(field, 'name').classes('w-32')
+                    ui.input(
+                        'Field name', value=f'{field.name}', on_change=self.field_provider.invalidate).bind_value(
+                        field, 'name').classes('w-32')
                     ui.button(on_click=lambda field=field: self.delete_field(field)) \
                         .props('icon=delete color=warning fab-mini flat').classes('ml-auto').tooltip('Delete field')
                 with ui.tabs() as self.tabs:
