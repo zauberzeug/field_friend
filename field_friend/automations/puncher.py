@@ -62,6 +62,9 @@ class Puncher:
                     rosys.notify('homing failed!', type='negative')
                     return
                 await rosys.sleep(0.5)
+            if not self.field_friend.y_axis.MIN_POSITION+0.05 <= y <= self.field_friend.y_axis.MAX_POSITION-0.05:
+                rosys.notify('y position out of range', type='error')
+                raise Exception('y position out of range')
             await self.field_friend.y_axis.move_to(y)
             await self.field_friend.z_axis.move_to(depth)
             await self.field_friend.z_axis.return_to_reference()
@@ -90,7 +93,7 @@ class Puncher:
         try:
             await self.drive_to_punch(x)
             await self.punch(y, depth)
-            await self.clear_view()
+            # await self.clear_view()
         except Exception as e:
             raise Exception('drive and punch failed') from e
 

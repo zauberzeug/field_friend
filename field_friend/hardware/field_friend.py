@@ -65,10 +65,10 @@ class FieldFriend(rosys.hardware.Robot):
             if second_tool == False:
                 work_x = self.WORK_X_CHOP
                 tool_radius = self.CHOP_RADIUS
-                return work_x - tool_radius - 0.03 <= local_point.x <= work_x + tool_radius + 0.03 \
+                return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
                     and self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
             else:
                 work_x = self.WORK_X_DRILL
                 tool_radius = self.DRILL_RADIUS
                 return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
-                    and self.y_axis.MIN_POSITION + 0.05 <= local_point.y <= self.y_axis.MAX_POSITION - 0.05
+                    and self.y_axis.MIN_POSITION+0.05 <= local_point.y <= self.y_axis.MAX_POSITION-0.05
