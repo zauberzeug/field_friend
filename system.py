@@ -126,7 +126,7 @@ class System:
                 if self.field_friend.estop.is_soft_estop_active:
                     self.automator.pause(because='soft estop active')
                 else:
-                    self.automator.stop(because='emergency stop triggered')
+                    self.automator.pause(because='emergency stop triggered')
             await self.field_friend.stop()
 
         def pause():
