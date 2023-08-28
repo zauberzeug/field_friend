@@ -7,18 +7,32 @@ from rosys.geometry import Point
 
 @dataclass(slots=True, kw_only=True)
 class FieldObstacle:
-    name: str
+    id: str
     points: list[Point] = field(default_factory=list)
 
 
 @dataclass(slots=True, kw_only=True)
+class Row:
+    id: str
+    points: list[Point] = field(default_factory=list)
+    reverse: bool = False
+
+    def reversed(self):
+        return Row(
+            id=self.id,
+            points=list(reversed(self.points)),
+        )
+
+
+@dataclass(slots=True, kw_only=True)
 class Field:
-    name: str
+    id: str
     outline: list[Point] = field(default_factory=list)
     reference_lat: Optional[float] = None
     reference_lon: Optional[float] = None
     visualized: bool = False
     obstacles: list[FieldObstacle] = field(default_factory=list)
+    rows: list[Row] = field(default_factory=list)
 
 
 class FieldProvider:
@@ -59,4 +73,12 @@ class FieldProvider:
 
     def remove_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         field.obstacles.remove(obstacle)
+        self.invalidate()
+
+    def add_row(self, field: Field, row: Row) -> None:
+        field.rows.append(row)
+        self.invalidate()
+
+    def remove_row(self, field: Field, row: Row) -> None:
+        field.rows.remove(row)
         self.invalidate()

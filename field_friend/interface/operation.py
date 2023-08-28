@@ -115,11 +115,11 @@ class operation:
 
                                 def set_field() -> None:
                                     for field in self.field_provider.fields:
-                                        if field.name == self.field_selection.value:
+                                        if field.id == self.field_selection.value:
                                             self.mowing.field = field
 
                                 self.field_selection = ui.select(
-                                    [field.name for field in self.field_provider.fields],
+                                    [field.id for field in self.field_provider.fields],
                                     with_input=True, on_change=set_field).tooltip('Select the field to mow')
                             show_field_selection()
                             self.field_provider.FIELDS_CHANGED.register(show_field_selection.refresh)

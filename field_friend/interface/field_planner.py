@@ -5,7 +5,7 @@ from typing import Optional
 import rosys
 from nicegui import ui
 
-from ..navigation import Field, FieldObstacle, FieldProvider, Gnss
+from ..navigation import Field, FieldObstacle, FieldProvider, Gnss, Row
 
 
 class field_planner:
@@ -26,17 +26,18 @@ class field_planner:
     @ui.refreshable
     def show_field_settings(self) -> None:
         for field in self.field_provider.fields:
-            with ui.card().classes('items-stretch'):
+            with ui.card():
                 with ui.row().classes('items-center'):
                     ui.icon('fence').props('size=lg color=primary')
                     ui.input(
-                        'Field name', value=f'{field.name}', on_change=self.field_provider.invalidate).bind_value(
-                        field, 'name').classes('w-32')
+                        'Field name', value=f'{field.id}', on_change=self.field_provider.invalidate).bind_value(
+                        field, 'id').classes('w-32')
                     ui.button(on_click=lambda field=field: self.delete_field(field)) \
                         .props('icon=delete color=warning fab-mini flat').classes('ml-auto').tooltip('Delete field')
                 with ui.tabs() as self.tabs:
                     ui.tab('Outline', 'Outline')
                     ui.tab('Obstacles', 'Obstacles')
+                    ui.tab('Rows', 'Rows')
                 with ui.tab_panels(self.tabs, value='Outline') as self.panels:
                     with ui.tab_panel('Outline'):
                         for point in field.outline:
@@ -59,37 +60,75 @@ class field_planner:
                                 .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
 
                     with ui.tab_panel('Obstacles'):
-                        for obstacle in field.obstacles:
-                            with ui.row().classes('items-center'):
-                                ui.icon('block').props('size=sm color=primary')
-                                ui.input(
-                                    'Obstacle name', value=f'{obstacle.name}').bind_value(
-                                    obstacle, 'name').classes('w-32')
-                                ui.button(on_click=lambda field=field, obstacle=obstacle: self.remove_obstacle(field, obstacle)).props(
-                                    'icon=delete color=warning fab-mini flat').classes('ml-auto').tooltip('Delete obstacle')
-                            for point in obstacle.points:
-                                with ui.row().classes('items-center'):
-                                    ui.button(
-                                        on_click=lambda field=field, point=point: self.add_point(field, point)).props(
-                                        'icon=place color=primary fab-mini flat').tooltip('Relocate point').classes('ml-6')
-                                    ui.number(
-                                        'x', value=point.x, format='%.2f', step=0.1,
-                                        on_change=self.field_provider.invalidate).bind_value(
-                                        point, 'x').classes('w-16')
-                                    ui.number(
-                                        'y', value=point.y, format='%.2f', step=0.1,
-                                        on_change=self.field_provider.invalidate).bind_value(
-                                        point, 'y').classes('w-16')
-                            with ui.row().classes('items-center mt-2'):
-                                ui.icon('place').props('size=sm color=grey').classes('ml-8')
-                                ui.button('', on_click=lambda field=field, obstacle=obstacle: self.add_obstacle_point(
-                                    field, obstacle)).props('icon=add color=primary fab-mini flat')
-                                ui.button('', on_click=lambda obstacle=obstacle: self.remove_obstacle_point(
-                                    obstacle)).props('icon=remove color=warning fab-mini flat')
+                        with ui.row().classes('items-center'):
+                            for obstacle in field.obstacles:
+                                with ui.card().classes('items-stretch'):
+                                    with ui.row().classes('items-center'):
+                                        ui.icon('block').props('size=sm color=primary')
+                                        ui.input(
+                                            'Obstacle name', value=f'{obstacle.id}').bind_value(
+                                            obstacle, 'id').classes('w-32')
+                                        ui.button(on_click=lambda field=field, obstacle=obstacle: self.remove_obstacle(field, obstacle)).props(
+                                            'icon=delete color=warning fab-mini flat').classes('ml-auto').tooltip('Delete obstacle')
+                                    for point in obstacle.points:
+                                        with ui.row().classes('items-center'):
+                                            ui.button(
+                                                on_click=lambda field=field, point=point: self.add_point(field, point)).props(
+                                                'icon=place color=primary fab-mini flat').tooltip('Relocate point').classes('ml-6')
+                                            ui.number(
+                                                'x', value=point.x, format='%.2f', step=0.1,
+                                                on_change=self.field_provider.invalidate).bind_value(
+                                                point, 'x').classes('w-16')
+                                            ui.number(
+                                                'y', value=point.y, format='%.2f', step=0.1,
+                                                on_change=self.field_provider.invalidate).bind_value(
+                                                point, 'y').classes('w-16')
+                                    with ui.row().classes('items-center mt-2'):
+                                        ui.icon('place').props('size=sm color=grey').classes('ml-8')
+                                    ui.button('', on_click=lambda field=field,
+                                              obstacle=obstacle: self.add_obstacle_point(field, obstacle)).props(
+                                        'icon=add color=primary fab-mini flat')
+                                    ui.button('', on_click=lambda obstacle=obstacle: self.remove_obstacle_point(
+                                        obstacle)).props('icon=remove color=warning fab-mini flat')
 
                         with ui.row().classes('items-center mt-3'):
                             ui.icon('block').props('size=sm color=grey')
                             ui.button('ADD OBSTACLE', on_click=lambda field=field: self.add_obstacle(field)) \
+                                .props('color=primary outline')
+
+                    with ui.tab_panel('Rows'):
+                        with ui.row():
+                            for row in field.rows:
+                                with ui.card().classes('items-stretch'):
+                                    with ui.row().classes('items-center'):
+                                        ui.icon('spa').props('size=sm color=primary')
+                                        ui.input(
+                                            'Row name', value=row.id, on_change=self.field_provider.invalidate).bind_value(
+                                            row, 'id').classes('w-32')
+                                        ui.button(on_click=lambda row=row: self.remove_row(row)) \
+                                            .props('icon=delete color=warning fab-mini flat').classes('ml-auto')
+                                    for point in row.points:
+                                        with ui.row().classes('items-center'):
+                                            ui.button(on_click=lambda row=row, point=point: self.add_row_point(row, point)).props(
+                                                'icon=place color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
+                                            ui.number(
+                                                'x', value=point.x, format='%.2f', step=0.1,
+                                                on_change=self.field_provider.invalidate).bind_value(
+                                                point, 'x').classes('w-16')
+                                            ui.number(
+                                                'y', value=point.y, format='%.2f', step=0.1,
+                                                on_change=self.field_provider.invalidate).bind_value(
+                                                point, 'y').classes('w-16')
+                                    with ui.row().classes('items-center mt-2'):
+                                        ui.icon('place').props('size=sm color=grey').classes('ml-2')
+                                        ui.button('', on_click=lambda row=row: self.add_row_point(row)) \
+                                            .props('icon=add color=primary fab-mini flat').tooltip('Add point')
+                                        ui.button('', on_click=lambda row=row: self.remove_row_point(row)) \
+                                            .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
+
+                        with ui.row().classes('items-center mt-3'):
+                            ui.icon('spa').props('size=sm color=grey')
+                            ui.button('ADD ROW', on_click=lambda field=field: self.add_row(field)) \
                                 .props('color=primary outline')
 
     def add_point(self, field: Field, point: Optional[rosys.geometry.Point] = None) -> None:
@@ -111,22 +150,27 @@ class field_planner:
                 field.reference_lat = ref_lat
                 field.reference_lon = ref_lon
         if point is not None:
-            self.remove_point(field, point)
-        point = self.odometer.prediction.point
-        field.outline.append(point)
+            index = field.outline.index(point)
+            point = self.odometer.prediction.point
+            field.outline[index] = point
+        else:
+            point = self.odometer.prediction.point
+            field.outline.append(point)
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
 
     def remove_point(self, field: Field, point: Optional[rosys.geometry.Point] = None) -> None:
-        if point is None and field.outline != []:
-            point = field.outline[-1]
-        field.outline.remove(point)
+        if point is not None:
+            index = field.outline.index(point)
+            del field.outline[index]
+        elif field.outline != []:
+            del field.outline[-1]
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
         self.panels.set_value('Outline')
 
     def add_field(self) -> None:
-        field = Field(name=f'{str(uuid.uuid4())}')
+        field = Field(id=f'{str(uuid.uuid4())}')
         self.field_provider.add_field(field)
         self.show_field_settings.refresh()
         self.panels.set_value('Outline')
@@ -142,7 +186,7 @@ class field_planner:
         self.panels.set_value('Outline')
 
     def add_obstacle(self, field: Field) -> None:
-        obstacle = FieldObstacle(name=f'{str(uuid.uuid4())}')
+        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}')
         self.field_provider.add_obstacle(field, obstacle)
         self.show_field_settings.refresh()
         self.panels.set_value('Obstacles')
@@ -172,17 +216,72 @@ class field_planner:
                 field.reference_lat = ref_lat
                 field.reference_lon = ref_lon
         if point is not None:
-            self.remove_obstacle_point(obstacle, point)
-        point = self.odometer.prediction.point
-        obstacle.points.append(point)
+            index = obstacle.points.index(point)
+            point = self.odometer.prediction.point
+            obstacle.points[index] = point
+        else:
+            point = self.odometer.prediction.point
+            obstacle.points.append(point)
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
         self.panels.set_value('Obstacles')
 
     def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[rosys.geometry.Point] = None) -> None:
-        if point is None and obstacle.points != []:
-            point = obstacle.points[-1]
-        obstacle.points.remove(point)
+        if point is not None:
+            index = obstacle.points.index(point)
+            del obstacle.points[index]
+        elif obstacle.points != []:
+            del obstacle.points[-1]
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
         self.panels.set_value('Obstacles')
+
+    def add_row(self, field: Field) -> None:
+        row = Row(id=f'{str(uuid.uuid4())}')
+        self.field_provider.add_row(field, row)
+        self.show_field_settings.refresh()
+        self.panels.set_value('Rows')
+
+    def remove_row(self, row: Row) -> None:
+        self.field_provider.remove_row(row)
+        self.show_field_settings.refresh()
+        self.panels.set_value('Rows')
+
+    def add_row_point(self, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
+        if self.gnss.device != 'simulation':
+            if self.gnss.device is None:
+                self.log.warning('not creating Point because no GNSS device found')
+                rosys.notify('No GNSS device found')
+                return
+            if self.gnss.record.gps_qual != 4:
+                self.log.warning('not creating Point because no RTK fix available')
+                rosys.notify('No RTK fix available')
+                return
+            if row.reference_lat is None or row.reference_lon is None:
+                ref_lat, ref_lon = self.gnss.get_reference()
+                if ref_lat is None or ref_lon is None:
+                    self.log.warning('not creating Point because no reference position available')
+                    rosys.notify('No reference position available')
+                    return
+                row.reference_lat = ref_lat
+                row.reference_lon = ref_lon
+        if point is not None:
+            index = row.points.index(point)
+            point = self.odometer.prediction.point
+            row.points[index] = point
+        else:
+            point = self.odometer.prediction.point
+            row.points.append(point)
+        self.field_provider.invalidate()
+        self.show_field_settings.refresh()
+        self.panels.set_value('Rows')
+
+    def remove_row_point(self, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
+        if point is not None:
+            index = row.points.index(point)
+            del row.points[index]
+        elif row.points != []:
+            del row.points[-1]
+        self.field_provider.invalidate()
+        self.show_field_settings.refresh()
+        self.panels.set_value('Rows')

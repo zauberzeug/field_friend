@@ -103,9 +103,9 @@ class Mowing:
                     self.path_planner.obstacles.clear()
                     self.path_planner.areas.clear()
                     for obstacle in self.field.obstacles:
-                        self.path_planner.obstacles[obstacle.name] = rosys.pathplanning.Obstacle(
-                            id=obstacle.name, outline=obstacle.points)
-                    area = rosys.pathplanning.Area(id=f'{self.field.name}', outline=self.field.outline)
+                        self.path_planner.obstacles[obstacle.id] = rosys.pathplanning.Obstacle(
+                            id=obstacle.id, outline=obstacle.points)
+                    area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
                     self.path_planner.areas = {area.id: area}
                     self.paths = self._generate_mowing_path()
                     self.invalidate()
