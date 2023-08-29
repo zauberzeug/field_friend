@@ -41,7 +41,7 @@ class Weeding:
             rosys.notify('Puncher homing failed, aborting', 'error')
             return
         self.plant_provider.clear()
-        MAX_PUNCH_ATTEMPTS = 10
+        MAX_PUNCH_ATTEMPTS = 50
         while True:
             self.set_simulated_objects()
             for attempt in range(MAX_PUNCH_ATTEMPTS):
@@ -93,7 +93,7 @@ class Weeding:
             self.log.info(f'Found crop, driving in direction of {crops[0][1].position}')
         else:
             line = Line.from_points(self.driver.odometer.prediction.point,
-                                    self.driver.odometer.prediction.transform(Point(x=1, y=0)))
+                                    self.driver.odometer.prediction.transform(Point(x=2, y=0)))
 
         if weeds:
             target = line.foot_point(weeds[0][1].position).polar(-self.field_friend.WORK_X, line.yaw)

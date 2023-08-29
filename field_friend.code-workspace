@@ -11,7 +11,12 @@
       "name": "nicegui relative"
     }
   ],
-  "settings": {},
+  "settings": {
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none"
+  },
   "extensions": {
     "recommendations": [
       "ms-python.vscode-pylance",

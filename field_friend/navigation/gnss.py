@@ -186,7 +186,7 @@ class GnssHardware(Gnss):
                 pose = rosys.geometry.Pose(
                     x=s * np.cos(a),
                     y=s * np.sin(a),
-                    yaw=np.deg2rad(float(-record.heading)),
+                    yaw=yaw,
                     time=record.timestamp,
                 )
                 distance = self.odometer.prediction.distance(pose)

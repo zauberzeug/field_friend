@@ -172,7 +172,7 @@ fieldfriend_configurations = {
             'thooth_count': 17,
             'pitch': 0.041,
             'wheel_distance': 0.47,
-            'work_x: 0.118'
+            'work_x': 0.118,
             'drill_radius': 0.025,
         },
         'robot_brain': {

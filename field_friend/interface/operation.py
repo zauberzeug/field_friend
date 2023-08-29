@@ -110,7 +110,7 @@ class operation:
 
                     with ui.column().bind_visibility_from(automations_toggle, 'value', value='mowing'):
                         with ui.row():
-                            @ ui.refreshable
+                            @ui.refreshable
                             def show_field_selection() -> None:
 
                                 def set_field() -> None:

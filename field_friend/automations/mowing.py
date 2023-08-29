@@ -77,6 +77,8 @@ class Mowing:
         if self.gnss.device is None:
             rosys.notify('No GNSS device found', 'negative')
             return
+        if self.field is None and self.field_provider.fields:
+            self.field = self.field_provider.fields[0]
         if self.gnss.device != 'simulation':
             if self.field.reference_lat is None or self.field.reference_lon is None:
                 rosys.notify('Field has no reference location set', 'negative')
@@ -86,8 +88,6 @@ class Mowing:
             if not distance or distance > 50:
                 rosys.notify('Distance to reference location is too large', 'negative')
                 return
-        if self.field is None and self.field_provider.fields:
-            self.field = self.field_provider.fields[0]
         if len(self.field.outline) < 3:
             rosys.notify('No field is defined', 'negative')
             return
