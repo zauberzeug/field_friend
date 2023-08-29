@@ -192,8 +192,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         try:
             await super().move_to(position, speed)
         except RuntimeError as e:
-            rosys.notify(e, type='negative')
-            return
+            raise Exception(e)
         self.log.info(f'>>>{self.name} is moving to {position}mm with speed {speed}...')
         steps = self.compute_steps(position)
         self.log.info(f'>>>steps: {steps}')
@@ -203,9 +202,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         )
         await rosys.sleep(0.3)
         if not await self.check_idle_or_alarm():
-            rosys.notify('yaxis fault detected', type='negative')
-            self.log.error(f'{self.name} fault detected')
-            return
+            raise Exception('chain_axis fault detected')
 
     async def try_reference(self) -> bool:
         if not await super().try_reference():
@@ -341,8 +338,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             f'{self.name}.speed(-{self.DEFAULT_SPEED / 10});'
         )
         if not await self.check_idle_or_alarm():
-            rosys.notify('chain_axis fault detected', type='negative')
-            return False
+            raise Exception('chain_axis fault detected')
         self.is_referenced = False
         return True
 
@@ -358,8 +354,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         try:
             await super().move_dw_to_l_ref()
         except RuntimeError as e:
-            rosys.notify(f'error while moving down to l ref: {e}', type='negative')
-            return
+            raise Exception(e)
         await self.robot_brain.send(
             f'{self.name}_ref_l_return = true;'
             f'{self.name}.speed({self.DEFAULT_SPEED}, 40000);'
@@ -378,8 +373,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         try:
             await super().move_dw_to_r_ref()
         except RuntimeError as e:
-            rosys.notify(f'error while moving down to r ref: {e}', type='negative')
-            return
+            raise Exception(e)
         await self.robot_brain.send(
             f'{self.name}_ref_r_return = true;'
             f'{self.name}.speed(-{self.DEFAULT_SPEED}, 40000);'
@@ -397,8 +391,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         try:
             await super().return_to_l_ref()
         except RuntimeError as e:
-            rosys.notify(f'error while returning to l ref: {e}', type='negative')
-            return
+            raise Exception(e)
         await self.robot_brain.send(
             f'{self.name}_ref_l_return = true;'
             f'{self.name}.speed(-{self.DEFAULT_SPEED/3}, 20000);'
@@ -418,8 +411,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         try:
             await super().return_to_r_ref()
         except RuntimeError as e:
-            rosys.notify(f'error while returning to r ref: {e}', type='negative')
-            return
+            raise Exception
         await self.robot_brain.send(
             f'{self.name}_ref_r_return = true;'
             f'{self.name}.speed({self.DEFAULT_SPEED/3}, 20000);'

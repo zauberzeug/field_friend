@@ -136,23 +136,19 @@ class ZAxisHardwareV2(ZAxisV2, rosys.hardware.ModuleHardware):
         try:
             await super().move_to(depth, speed)
         except RuntimeError as e:
-            rosys.notify(e, type='negative')
-            self.log.info(f'could not move zaxis to {depth} because of {e}')
-            return
+            raise Exception(e)
         steps = self.compute_steps(depth)
 
         await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 160000);')
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
-            rosys.notify('z_axis fault detected', type='negative')
-            return
+            raise Exception('z_axis fault detected')
 
     async def move(self, speed: int) -> None:
         try:
             await super().move(speed)
         except RuntimeError as e:
-            rosys.notify(e, type='negative')
-            return
+            raise Exception(e)
         await self.robot_brain.send(f'{self.name}.speed({speed}, 8000)')
 
     async def check_idle_or_alarm(self) -> bool:
