@@ -105,8 +105,14 @@ class field_planner:
                                         ui.input(
                                             'Row name', value=row.id, on_change=self.field_provider.invalidate).bind_value(
                                             row, 'id').classes('w-32')
-                                        ui.button(on_click=lambda row=row: self.remove_row(row)) \
-                                            .props('icon=delete color=warning fab-mini flat').classes('ml-auto')
+                                        ui.button(on_click=lambda row=row: self.remove_row(field, row)) \
+                                            .props('icon=delete color=warning fab-mini flat')
+                                        if row != field.rows[0]:
+                                            ui.button(on_click=lambda row=row: self.move_row(field, row)) .props(
+                                                'icon=navigate_before color=primary fab-mini flat')
+                                        if row != field.rows[-1]:
+                                            ui.button(on_click=lambda row=row: self.move_row(field, row, next=True)) .props(
+                                                'icon=navigate_next color=primary fab-mini flat').classes('ml-auto')
                                     for point in row.points:
                                         with ui.row().classes('items-center'):
                                             ui.button(on_click=lambda row=row, point=point: self.add_row_point(row, point)).props(
@@ -242,8 +248,8 @@ class field_planner:
         self.show_field_settings.refresh()
         self.panels.set_value('Rows')
 
-    def remove_row(self, row: Row) -> None:
-        self.field_provider.remove_row(row)
+    def remove_row(self, field: Field, row: Row) -> None:
+        self.field_provider.remove_row(field, row)
         self.show_field_settings.refresh()
         self.panels.set_value('Rows')
 
@@ -282,6 +288,16 @@ class field_planner:
             del row.points[index]
         elif row.points != []:
             del row.points[-1]
+        self.field_provider.invalidate()
+        self.show_field_settings.refresh()
+        self.panels.set_value('Rows')
+
+    def move_row(self, field: Field, row: Row, next: bool = False) -> None:
+        index = field.rows.index(row)
+        if next:
+            field.rows[index], field.rows[index+1] = field.rows[index+1], field.rows[index]
+        else:
+            field.rows[index], field.rows[index-1] = field.rows[index-1], field.rows[index]
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
         self.panels.set_value('Rows')
