@@ -9,8 +9,9 @@ from rosys.helpers import angle
 from shapely.geometry import LineString
 
 from ..hardware import FieldFriend
-from ..navigation import Field, FieldProvider, Gnss
+from ..navigation import Gnss
 from .coverage_planer import CoveragePlanner
+from .field_provider import Field, FieldProvider
 from .sequence import find_sequence
 
 

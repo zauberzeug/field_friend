@@ -4,8 +4,7 @@ import uuid
 import rosys
 from nicegui import ui
 
-from ..automations import PathRecorder
-from ..navigation import Path, PathProvider
+from ..automations import Path, PathProvider, PathRecorder
 
 
 class path_planner:

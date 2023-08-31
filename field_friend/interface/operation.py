@@ -7,9 +7,8 @@ from rosys.automation import Automator
 from rosys.driving import Driver, Odometer, Steerer, driver_object, joystick
 from rosys.vision import CameraProvider
 
-from ..automations import Mowing, Puncher, Weeding, plant_detector, plant_provider
+from ..automations import FieldProvider, Mowing, PathProvider, PlantDetector, PlantProvider, Puncher, Weeding
 from ..hardware import FieldFriend
-from ..navigation import FieldProvider, PathProvider
 from .automation_controls import automation_controls
 from .field_object import field_object
 from .key_controls import KeyControls
@@ -33,8 +32,8 @@ class operation:
         automator: Automator,
         odometer: Odometer,
         camera_provider: CameraProvider,
-        plant_provider: plant_provider,
-        plant_detector: plant_detector,
+        plant_provider: PlantProvider,
+        plant_detector: PlantDetector,
         puncher: Puncher,
         weeding: Weeding,
         mowing: Mowing,
@@ -129,7 +128,7 @@ class operation:
                                 'w-24').bind_value(mowing, 'lane_distance').tooltip('Set the lane distance for the mowing automation')
                     with ui.column().bind_visibility_from(automations_toggle, 'value', value='weeding'):
                         if field_friend.z_axis is not None:
-                            ui.number('Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.18).props('dense outlined suffix=cm').classes(
+                            ui.number('Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.18).props('dense outlined suffix=m').classes(
                                 'w-24').bind_value(weeding, 'drill_depth').tooltip('Set the drill depth for the weeding automation')
                             ui.label('press PLAY to start weeding with the set drill depth')
                         else:
