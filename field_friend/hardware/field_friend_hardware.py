@@ -133,6 +133,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      end_b_pin=self.config['z_axis']['end_b_pin'],
                                      motor_on_expander=self.config['z_axis']['motor_on_expander'],
                                      end_stops_on_expander=self.config['z_axis']['end_stops_on_expander'],
+                                     ref_t_inverted=self.config['z_axis']['ref_t_inverted'],
+                                     end_b_inverted=self.config['z_axis']['end_b_inverted'],
+                                     ccw=self.config['z_axis']['ccw'],
                                      )
         else:
             z_axis = None

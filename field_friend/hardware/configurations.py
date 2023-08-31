@@ -139,6 +139,9 @@ fieldfriend_configurations = {
             'end_b_pin': 22,
             'motor_on_expander': True,
             'end_stops_on_expander': True,
+            'ref_t_inverted': False,
+            'end_b_inverted':  False,
+            'ccw': False,
         },
         'flashlight': {
             'version': 'flashlight_v2',
@@ -220,7 +223,7 @@ fieldfriend_configurations = {
             'end_r_pin': 35,
         },
         'z_axis': {
-            'version': 'z_axis',
+            'version': 'z_axis_v2',
             'name': 'z_axis',
             'step_pin': 5,
             'dir_pin': 4,
@@ -229,6 +232,10 @@ fieldfriend_configurations = {
             'end_b_pin': 22,
             'motor_on_expander': True,
             'end_stops_on_expander': True,
+            'ref_t_inverted': True,
+            'end_b_inverted':  False,
+            'ccw': True,
+
         },
         'flashlight': {
             'version': 'none',

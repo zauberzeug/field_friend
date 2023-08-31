@@ -119,16 +119,13 @@ class YAxisHardware(YAxis, rosys.hardware.ModuleHardware):
         try:
             await super().move_to(position, speed)
         except RuntimeError as error:
-            rosys.notify(error, type='negative')
             self.log.info(f'could not move yaxis to {position} because of {error}')
-            raise RuntimeError(f'could not move yaxis to {position} because of {error}')
-            return
+            raise Exception(f'could not move yaxis to {position} because of {error}')
         steps = self.compute_steps(position)
         await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 250000);')
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
-            rosys.notify('yaxis fault detected', type='negative')
-            return
+            raise Exception
 
     async def check_idle_or_alarm(self) -> bool:
         while not self.idle and not self.alarm:
@@ -142,9 +139,6 @@ class YAxisHardware(YAxis, rosys.hardware.ModuleHardware):
         if not await super().try_reference():
             return False
         try:
-            if not self.end_stops_enabled:
-                self.log.warning('end stops not enabled')
-                return False
 
             # if in end r stop, disable end stops and move out
             if self.end_r:

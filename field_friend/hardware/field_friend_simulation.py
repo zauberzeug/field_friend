@@ -28,7 +28,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         if config['z_axis']['version'] == 'z_axis':
             z_axis = ZAxisSimulation()
         elif config['z_axis']['version'] == 'z_axis_v2':
-            z_axis = ZAxisSimulationV2()
+            z_axis = ZAxisSimulationV2(ccw=config['z_axis']['ccw'])
         else:
             z_axis = None
 

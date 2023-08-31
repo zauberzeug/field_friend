@@ -12,9 +12,13 @@ class ZAxisV2(rosys.hardware.Module, abc.ABC):
     STEPS_PER_M: float = 1600 * 1000
     REF_OFFSET: int = 0.0001
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, ccw, **kwargs) -> None:
         super().__init__(**kwargs)
-
+        self.ccw = ccw
+        self.multiplier: float = 1.0
+        if self.ccw:
+            self.multiplier = -1.0
+        self.log.info(f'zaxis multiplier: {self.multiplier}')
         self.steps: int = 0
         self.alarm: bool = False
         self.idle: bool = False
@@ -55,14 +59,14 @@ class ZAxisV2(rosys.hardware.Module, abc.ABC):
 
         Depth is positive and steps are negative when moving down.
         """
-        return int(-depth * self.STEPS_PER_M + self.homesteps)
+        return int(self.multiplier * -depth * self.STEPS_PER_M + self.homesteps)
 
     def compute_depth(self, steps: int) -> float:
         """Compute the depth of the z axis from the given number of steps.
 
         Depth is positive and steps are negative when moving down.
         """
-        return -steps / self.STEPS_PER_M
+        return self.multiplier * -steps / self.STEPS_PER_M
 
     @property
     def depth(self) -> float:
@@ -94,9 +98,15 @@ class ZAxisHardwareV2(ZAxisV2, rosys.hardware.ModuleHardware):
                  end_b_pin: int = 22,
                  motor_on_expander: bool = True,
                  end_stops_on_expander: bool = True,
+                 ref_t_inverted: bool = False,
+                 end_b_inverted: bool = False,
+                 ccw: bool = False,
                  ) -> None:
         self.name = name
         self.expander = expander
+        self.ref_t_inverted = ref_t_inverted
+        self.end_b_inverted = end_b_inverted
+
         lizard_code = remove_indentation(f'''
             {name} = {expander.name + "." if motor_on_expander == True else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander == True else ""}Input({alarm_pin})
@@ -105,15 +115,15 @@ class ZAxisHardwareV2(ZAxisV2, rosys.hardware.ModuleHardware):
             bool {name}_is_referencing = false;
             bool {name}_ref_t_enabled = true;
             bool {name}_end_b_enabled = true;
-            when {name}_ref_t_enabled and {name}_is_referencing and {name}_ref_t.level == 0 then
+            when {name}_ref_t_enabled and {name}_is_referencing and {name}_ref_t.level == {0 if not self.ref_t_inverted else 1} then
                 {name}.stop();
                 {name}_ref_t_enabled = false;
             end
-            when !{name}_ref_t_enabled and {name}_is_referencing and {name}_ref_t.level == 1 then 
+            when !{name}_ref_t_enabled and {name}_is_referencing and {name}_ref_t.level == {1 if not self.ref_t_inverted else 0} then 
                 {name}.stop(); 
                 {name}_ref_t_enabled = true;
             end
-            when {name}_end_b_enabled and {name}_end_b.level == 0 then
+            when {name}_end_b_enabled and {name}_end_b.level == {0 if not self.end_b_inverted else 1} then
                 {name}.stop();
             end 
         ''')
@@ -126,7 +136,9 @@ class ZAxisHardwareV2(ZAxisV2, rosys.hardware.ModuleHardware):
             f'{name}_ref_t_enabled',
             f'{name}_end_b_enabled',
         ]
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+        super().__init__(ccw=ccw, robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+        self.log.info(f'zaxis end b inverted: {self.end_b_inverted}')
+        self.log.info(f'zaxis ref t inverted: {self.ref_t_inverted}')
 
     async def stop(self) -> None:
         await super().stop()
@@ -178,23 +190,23 @@ class ZAxisHardwareV2(ZAxisV2, rosys.hardware.ModuleHardware):
                 await self.enable_ref_stop(False)
                 await rosys.sleep(0.5)
                 await self.robot_brain.send(
-                    f'{self.name}.speed(-{self.MAX_SPEED/2});'
+                    f'{self.name}.speed({self.multiplier*-self.MAX_SPEED/2});'
                 )
                 while self.ref_t:
                     await rosys.sleep(0.2)
 
             # move to top ref
-            await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/2});')
+            await self.robot_brain.send(f'{self.name}.speed({self.multiplier * self.MAX_SPEED/2});')
             while not self.ref_t:
                 await rosys.sleep(0.2)
 
             # move out of top ref
-            await self.robot_brain.send(f'{self.name}.speed(-{self.MAX_SPEED/2});')
+            await self.robot_brain.send(f'{self.name}.speed({self.multiplier * -self.MAX_SPEED/2});')
             while self.ref_t:
                 await rosys.sleep(0.2)
 
             # move slowly to top ref
-            await self.robot_brain.send(f'{self.name}.speed({self.MAX_SPEED/10});')
+            await self.robot_brain.send(f'{self.name}.speed({self.multiplier * self.MAX_SPEED/10});')
             while not self.ref_t:
                 await rosys.sleep(0.2)
 
@@ -214,7 +226,7 @@ class ZAxisHardwareV2(ZAxisV2, rosys.hardware.ModuleHardware):
 
             # drive to offset
             await rosys.sleep(0.2)
-            await self.robot_brain.send(f'{self.name}.position({zero_steps + 1000}, {self.MAX_SPEED/10})')
+            await self.robot_brain.send(f'{self.name}.position({zero_steps + (1000 * self.multiplier)}, {self.MAX_SPEED/10})')
             await rosys.sleep(0.5)
             if not await self.check_idle_or_alarm():
                 rosys.notify('z_axis fault detected', type='negative')
@@ -245,8 +257,8 @@ class ZAxisHardwareV2(ZAxisV2, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.name}_end_b_enabled = {str(value).lower()};')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.ref_t = int(words.pop(0)) == 0
-        self.end_b = int(words.pop(0)) == 0
+        self.ref_t = int(words.pop(0)) == (0 if self.ref_t_inverted == False else 1)
+        self.end_b = int(words.pop(0)) == (0 if self.end_b_inverted == False else 1)
         if self.end_b:
             self.is_referenced = False
         self.idle = words.pop(0) == 'true'
@@ -261,8 +273,8 @@ class ZAxisHardwareV2(ZAxisV2, rosys.hardware.ModuleHardware):
 class ZAxisSimulationV2(ZAxisV2, rosys.hardware.ModuleSimulation):
     """The z axis module is a simple example for a representation of real or simulated robot hardware."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, ccw: bool = False) -> None:
+        super().__init__(ccw=ccw)
         self.speed: int = 0
         self.target_steps: Optional[int] = None
         self.reference_steps: int = 0
