@@ -5,7 +5,8 @@ from typing import Optional
 import rosys
 from nicegui import ui
 
-from ..navigation import Field, FieldObstacle, FieldProvider, Gnss, Row
+from ..automations import Field, FieldObstacle, FieldProvider, Row
+from ..navigation import Gnss
 
 
 class field_planner:
@@ -115,7 +116,7 @@ class field_planner:
                                                 'icon=navigate_next color=primary fab-mini flat').classes('ml-auto')
                                     for point in row.points:
                                         with ui.row().classes('items-center'):
-                                            ui.button(on_click=lambda row=row, point=point: self.add_row_point(row, point)).props(
+                                            ui.button(on_click=lambda field=field, row=row, point=point: self.add_row_point(field, row, point)).props(
                                                 'icon=place color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                                             ui.number(
                                                 'x', value=point.x, format='%.2f', step=0.1,
@@ -127,10 +128,13 @@ class field_planner:
                                                 point, 'y').classes('w-16')
                                     with ui.row().classes('items-center mt-2'):
                                         ui.icon('place').props('size=sm color=grey').classes('ml-2')
-                                        ui.button('', on_click=lambda row=row: self.add_row_point(row)) \
+                                        ui.button('', on_click=lambda field=field, row=row: self.add_row_point(field, row)) \
                                             .props('icon=add color=primary fab-mini flat').tooltip('Add point')
                                         ui.button('', on_click=lambda row=row: self.remove_row_point(row)) \
                                             .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
+                                    with ui.button('CLEAR ROW CROPS', on_click=lambda row=row: self.clear_row_crops(row=row)) \
+                                            .props('color=warning outline'):
+                                        pass
 
                         with ui.row().classes('items-center mt-3'):
                             ui.icon('spa').props('size=sm color=grey')
@@ -155,6 +159,8 @@ class field_planner:
                     return
                 field.reference_lat = ref_lat
                 field.reference_lon = ref_lon
+        if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
+            self.gnss.set_reference(field.reference_lat, field.reference_lon)
         if point is not None:
             index = field.outline.index(point)
             point = self.odometer.prediction.point
@@ -221,6 +227,8 @@ class field_planner:
                     return
                 field.reference_lat = ref_lat
                 field.reference_lon = ref_lon
+        if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
+            self.gnss.set_reference(field.reference_lat, field.reference_lon)
         if point is not None:
             index = obstacle.points.index(point)
             point = self.odometer.prediction.point
@@ -253,7 +261,7 @@ class field_planner:
         self.show_field_settings.refresh()
         self.panels.set_value('Rows')
 
-    def add_row_point(self, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
+    def add_row_point(self, field: Field, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
         if self.gnss.device != 'simulation':
             if self.gnss.device is None:
                 self.log.warning('not creating Point because no GNSS device found')
@@ -263,14 +271,16 @@ class field_planner:
                 self.log.warning('not creating Point because no RTK fix available')
                 rosys.notify('No RTK fix available')
                 return
-            if row.reference_lat is None or row.reference_lon is None:
+            if field.reference_lat is None or field.reference_lon is None:
                 ref_lat, ref_lon = self.gnss.get_reference()
                 if ref_lat is None or ref_lon is None:
                     self.log.warning('not creating Point because no reference position available')
                     rosys.notify('No reference position available')
                     return
-                row.reference_lat = ref_lat
-                row.reference_lon = ref_lon
+                field.reference_lat = ref_lat
+                field.reference_lon = ref_lon
+        if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
+            self.gnss.set_reference(field.reference_lat, field.reference_lon)
         if point is not None:
             index = row.points.index(point)
             point = self.odometer.prediction.point
@@ -298,6 +308,12 @@ class field_planner:
             field.rows[index], field.rows[index+1] = field.rows[index+1], field.rows[index]
         else:
             field.rows[index], field.rows[index-1] = field.rows[index-1], field.rows[index]
+        self.field_provider.invalidate()
+        self.show_field_settings.refresh()
+        self.panels.set_value('Rows')
+
+    def clear_row_crops(self, row: Row) -> None:
+        row.crops = []
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
         self.panels.set_value('Rows')
