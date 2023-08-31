@@ -31,7 +31,10 @@ class automation_controls:
             automator.resume()
         self.resume_button = ui.button(on_click=resume) \
             .props('icon=play_arrow outline').tooltip('resume automation')
-        self.stop_button = ui.button(on_click=lambda: automator.stop(because='stop button was pressed')) \
+
+        async def stop() -> None:
+            automator.stop(because='stop button was pressed')
+        self.stop_button = ui.button(on_click=stop) \
             .props('icon=stop outline').tooltip('stop automation')
 
         def refresh() -> None:
