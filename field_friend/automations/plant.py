@@ -10,6 +10,7 @@ class Plant:
     type: str
     position: Point
     detection_time: float
+    confidence: float = 0.0
 
     def __post_init__(self) -> None:
         """Generate a unique ID if not already loaded from persistence"""

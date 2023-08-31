@@ -71,5 +71,6 @@ class PlantDetector:
                 if floor_point is None:
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
-                crop = Plant(position=world_point, type=d.category_name, detection_time=rosys.time())
+                crop = Plant(position=world_point, type=d.category_name,
+                             detection_time=rosys.time(), confidence=d.confidence)
                 self.plant_provider.add_crop(crop)
