@@ -4,6 +4,8 @@ from typing import Any, Optional
 import rosys
 from rosys.geometry import Point
 
+from .plant import Plant
+
 
 @dataclass(slots=True, kw_only=True)
 class FieldObstacle:
@@ -16,6 +18,7 @@ class Row:
     id: str
     points: list[Point] = field(default_factory=list)
     reverse: bool = False
+    crops: list[Plant] = field(default_factory=list)
 
     def reversed(self):
         return Row(
