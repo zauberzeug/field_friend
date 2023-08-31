@@ -394,7 +394,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             raise Exception(e)
         await self.robot_brain.send(
             f'{self.name}_ref_l_return = true;'
-            f'{self.name}.speed(-{self.DEFAULT_SPEED/3}, 20000);'
+            f'{self.name}.speed(-{self.DEFAULT_SPEED/5});'
         )
         while not self.ref_l or not self.ref_t:
             await rosys.sleep(0.1)
@@ -414,7 +414,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             raise Exception
         await self.robot_brain.send(
             f'{self.name}_ref_r_return = true;'
-            f'{self.name}.speed({self.DEFAULT_SPEED/3}, 20000);'
+            f'{self.name}.speed({self.DEFAULT_SPEED/5});'
         )
         while not self.ref_r or not self.ref_t:
             await rosys.sleep(0.1)
