@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+import inspect
+import sys
+import time
+
 import odrive
 import odrive.enums as enums
-import inspect
-import time
-import sys
 
 odrv0 = odrive.find_any()
 
@@ -29,8 +30,8 @@ assert_equal(odrv0.config.dc_max_positive_current, 50)
 assert_equal(odrv0.config.dc_max_negative_current, -20)
 assert_equal(odrv0.config.brake_resistance, 0)
 assert_equal(odrv0.can.config.baud_rate, 1_000_000)
-assert_equal(odrv0.axis0.config.can.node_id, 0x000 >> 5)
-assert_equal(odrv0.axis1.config.can.node_id, 0x200 >> 5)
+assert_equal(odrv0.axis0.config.can.node_id, 0x200 >> 5)
+assert_equal(odrv0.axis1.config.can.node_id, 0x300 >> 5)
 assert_equal(odrv0.axis0.config.can.heartbeat_rate_ms, 1000)
 assert_equal(odrv0.axis1.config.can.heartbeat_rate_ms, 1000)
 assert_equal(odrv0.axis0.config.can.encoder_rate_ms, 10)
@@ -80,7 +81,6 @@ except:
 finally:
     time.sleep(1.0)
     odrv0 = odrive.find_any()
-
 
 
 print('- Calibration axis 0...')
