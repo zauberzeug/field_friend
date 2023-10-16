@@ -18,7 +18,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self, *, version: str) -> None:
         if version not in fieldfriend_configurations:
-            raise ValueError(f'Unknown FieldFriend version: {version}')
+            self.log.info(f'{fieldfriend_configurations}')
+            raise NotImplementedError(f'Unknown FieldFriend version: {version}')
         self.config = fieldfriend_configurations[version]
         self.check_pins(self.config)
 
@@ -31,7 +32,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         if version in ['u1', 'ff3']:
             self.WORK_X = self.config['params']['work_x']
             self.DRILL_RADIUS = self.config['params']['drill_radius']
-        elif version == 'u2':
+        elif version in ['u2', 'u3']:
             self.WORK_X_CHOP = self.config['params']['work_x_chop']
             self.WORK_X_DRILL = self.config['params']['work_x_drill']
             self.DRILL_RADIUS = self.config['params']['drill_radius']

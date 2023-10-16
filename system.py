@@ -2,9 +2,10 @@ import os
 
 import rosys
 
-from field_friend.automations import Mowing, PathRecorder, PlantDetector, PlantProvider, Puncher, Weeding
+from field_friend.automations import (FieldProvider, Mowing, PathProvider, PathRecorder, PlantDetector, PlantProvider,
+                                      Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
-from field_friend.navigation import FieldProvider, GnssHardware, GnssSimulation, PathProvider
+from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import CameraSelector
 from field_friend.vision.simulation import create_weedcam
 
@@ -13,7 +14,7 @@ class System:
     def __init__(self) -> None:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'u1'  # insert here your field friend version
+        version = 'ff4'  # insert here your field friend version
         self.camera_selector = CameraSelector()
         self.camera_selector.camera_ids = {
             'bottom cam': self.camera_selector.BOTTOM_CAMERA_IDS,

@@ -182,7 +182,61 @@ class calibration_dialog(ui.dialog):
                 CalibrationPoint.create('u',  0.30,    0.05, 0.00),
                 CalibrationPoint.create('v',  0.30,    0.10, 0.00),
                 CalibrationPoint.create('w',  0.30,    0.15, 0.00),
-            ]  # FOR FF3
+            ]
+        elif version == 'u3':
+            self.points = [
+                CalibrationPoint.create('A',  0.00,  -0.15, 0.00),
+                CalibrationPoint.create('B',  0.00,  -0.10, 0.00),
+                CalibrationPoint.create('C',  0.00,  -0.05, 0.00),
+                CalibrationPoint.create('D',  0.00,   0.00, 0.00),
+                CalibrationPoint.create('E',  0.00,   0.05, 0.00),
+                CalibrationPoint.create('F',  0.00,   0.10, 0.00),
+                CalibrationPoint.create('G',  0.00,   0.15, 0.00),
+
+                CalibrationPoint.create('H',  0.05,   -0.15, 0.00),
+                CalibrationPoint.create('I',  0.05,   -0.10, 0.00),
+                CalibrationPoint.create('J',  0.05,   -0.05, 0.00),
+                CalibrationPoint.create('K',  0.05,    0.00, 0.00),
+                CalibrationPoint.create('K*',  0.05,    0.00, 0.051),
+                CalibrationPoint.create('L',  0.05,    0.05, 0.00),
+                CalibrationPoint.create('M',  0.05,    0.10, 0.00),
+                CalibrationPoint.create('N',  0.05,    0.15, 0.00),
+
+                CalibrationPoint.create('O',  0.10,   -0.15, 0.00),
+                CalibrationPoint.create('P',  0.10,   -0.10, 0.00),
+                CalibrationPoint.create('Q',  0.10,   -0.05, 0.00),
+                CalibrationPoint.create('R',  0.10,    0.00, 0.00),
+                CalibrationPoint.create('S',  0.10,    0.05, 0.00),
+                CalibrationPoint.create('T',  0.10,    0.10, 0.00),
+                CalibrationPoint.create('U',  0.10,    0.15, 0.00),
+
+                CalibrationPoint.create('V',  0.15,   -0.15, 0.00),
+                CalibrationPoint.create('W',  0.15,   -0.10, 0.00),
+                CalibrationPoint.create('X',  0.15,   -0.05, 0.00),
+                CalibrationPoint.create('Y',  0.15,    0.00, 0.00),
+                CalibrationPoint.create('Z',  0.15,    0.05, 0.00),
+                CalibrationPoint.create('a',  0.15,    0.10, 0.00),
+                CalibrationPoint.create('b',  0.15,    0.15, 0.00),
+
+                CalibrationPoint.create('c',  0.20,   -0.15, 0.00),
+                CalibrationPoint.create('d',  0.20,   -0.10, 0.00),
+                CalibrationPoint.create('e',  0.20,   -0.05, 0.00),
+                CalibrationPoint.create('f',  0.20,    0.00, 0.00),
+                CalibrationPoint.create('f*',  0.20,    0.00, 0.029),
+                CalibrationPoint.create('g',  0.20,    0.05, 0.00),
+                CalibrationPoint.create('h',  0.20,    0.10, 0.00),
+                CalibrationPoint.create('i',  0.20,    0.15, 0.00),
+
+                CalibrationPoint.create('j',  0.25,   -0.15, 0.00),
+                CalibrationPoint.create('k',  0.25,   -0.10, 0.00),
+                CalibrationPoint.create('l',  0.25,   -0.05, 0.00),
+                CalibrationPoint.create('m',  0.25,    0.00, 0.00),
+                CalibrationPoint.create('n',  0.25,    0.05, 0.00),
+                CalibrationPoint.create('o',  0.25,    0.10, 0.00),
+                CalibrationPoint.create('p',  0.25,    0.15, 0.00),
+            ]  # FOR U3
+        else:
+            raise ValueError(f'Unknown version: {version}')
         self.active_point: Optional[CalibrationPoint] = None
         with self, ui.card().tight().style('max-width: 2000px'):
             self.calibration_image = ui.interactive_image(on_mouse=self.on_mouse_move,
