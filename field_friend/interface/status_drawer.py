@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING
+from datetime import timedelta
 
+import psutil
 import rosys
 from nicegui import ui
 
@@ -64,6 +65,23 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             ui.markdown('**Z-Axis:**').style('color: #6E93D6')
             z_axis_label = ui.label()
 
+        ui.markdown('**Robot Brain:**')
+        with ui.row():
+            ui.markdown('**Uptime:**').style('color: #6E93D6')
+            uptime_label = ui.label()
+
+        with ui.row():
+            ui.markdown('**CPU:**').style('color: #6E93D6')
+            cpu_label = ui.label()
+
+        with ui.row():
+            ui.markdown('**RAM:**').style('color: #6E93D6')
+            ram_label = ui.label()
+
+        with ui.row():
+            ui.markdown('**Temperature:**').style('color: #6E93D6')
+            temperature_label = ui.label()
+
         ui.markdown('**Positioning:**')
 
         with ui.row():
@@ -96,8 +114,6 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     'not referenced' if not robot.y_axis.is_referenced else '',
                     'alarm' if robot.y_axis.alarm else '',
                     'idle'if robot.y_axis.idle else 'moving',
-                    'ref l' if robot.y_axis.ref_l else '',
-                    'ref r' if robot.y_axis.ref_r else '',
                     'ref t' if robot.y_axis.ref_t else '',
                     f'{robot.y_axis.steps:.0f}',
                     f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
@@ -133,6 +149,16 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
             y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
             z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
+
+            uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
+            cpu_label.text = f'{psutil.cpu_percent():.0f}%'
+            ram_label.text = f'{psutil.virtual_memory().percent:.0f}%'
+
+            def get_jetson_cpu_temperature():
+                with open("/sys/devices/virtual/thermal/thermal_zone1/temp", "r") as f:
+                    temp = f.read().strip()
+                return float(temp) / 1000.0  # Convert from milli°C to °C
+            temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
             direction_flag = 'N' if gnss.record.heading <= 23 else \
                 'NE' if gnss.record.heading <= 68 else \
                 'E' if gnss.record.heading <= 113 else \
