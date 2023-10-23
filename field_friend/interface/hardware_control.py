@@ -23,9 +23,9 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     with ui.row().classes('items-center'):
                         ui.label('Battery_relais').classes('mr-auto')
                         ui.button('OFF', on_click=lambda: automator.start(
-                            field_friend.robot_brain.send('battery_reset.off()')))
+                            field_friend.robot_brain.send(f'{field_friend.battery_control.name}_reset.off()')))
                         ui.button('ON', on_click=lambda: automator.start(
-                            field_friend.robot_brain.send('battery_reset.on()')))
+                            field_friend.robot_brain.send(f'{field_friend.battery_control.name}_reset.on()')))
         if field_friend.flashlight is not None:
             with ui.column():
                 ui.markdown('**Flashlight**')
