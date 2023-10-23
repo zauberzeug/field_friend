@@ -40,10 +40,10 @@ class Puncher:
         self.log.info(f'Driving to punch at {local_target_x}...')
         if self.field_friend.version == 'ff3':
             work_x = self.field_friend.WORK_X
-        elif self.field_friend.version == 'u2':
+        elif self.field_friend.version in ['u2', 'u3']:
             work_x = self.field_friend.WORK_X_DRILL
         if local_target_x < work_x:
-            self.log.info('Target is behind')
+            self.log.info(f'Target: {local_target_x} is behind')
             raise Exception('Target is behind')
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
@@ -63,7 +63,7 @@ class Puncher:
                     return
                 await rosys.sleep(0.5)
             if isinstance(self.field_friend.y_axis, ChainAxis):
-                if not self.field_friend.y_axis.MIN_POSITION+0.05 <= y <= self.field_friend.y_axis.MAX_POSITION-0.05:
+                if not self.field_friend.y_axis.MIN_POSITION+self.field_friend.y_axis.WORK_OFFSET <= y <= self.field_friend.y_axis.MAX_POSITION-self.field_friend.y_axis.WORK_OFFSET:
                     rosys.notify('y position out of range', type='error')
                     raise Exception('y position out of range')
             await self.field_friend.y_axis.move_to(y)

@@ -71,4 +71,4 @@ class FieldFriend(rosys.hardware.Robot):
                 work_x = self.WORK_X_DRILL
                 tool_radius = self.DRILL_RADIUS
                 return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
-                    and self.y_axis.MIN_POSITION+0.05 <= local_point.y <= self.y_axis.MAX_POSITION-0.05
+                    and self.y_axis.MIN_POSITION+self.y_axis.WORK_OFFSET <= local_point.y <= self.y_axis.MAX_POSITION-self.y_axis.WORK_OFFSET
