@@ -32,6 +32,7 @@ class CameraCard(Card):
         self.detector = detector
         self.capture_images = ui.timer(1, lambda: background_tasks.create(
             self.detector.upload(self.camera.latest_captured_image)), active=False)
+        self.punching_enabled = False
         self.puncher = puncher
         self.shrink_factor = shrink_factor
         self.image_view: ui.interactive_image = None
@@ -75,11 +76,13 @@ class CameraCard(Card):
 
             ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
-                self.depth = ui.number('punch depth', value=0.02, format='%.2f',
-                                       step=0.01, min=0.01, max=0.18).classes('w-24')
-                ui.checkbox('Capture Images').bind_value_to(self.capture_images, 'active') \
+                ui.checkbox('Punching').bind_value(self, 'punching_enabled') \
+                    .tooltip('Enable punching mode')
+                self.depth = ui.number('depth', value=0.02, format='%.2f',
+                                       step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
+                ui.checkbox('Capturing').bind_value_to(self.capture_images, 'active') \
                     .tooltip('Record new images for the Learning Loop')
-                self.show_mapping_checkbox = ui.checkbox('Show Mapping', on_change=self.show_mapping) \
+                self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
                     .props('icon=straighten outline').tooltip('Calibrate camera')
@@ -96,7 +99,7 @@ class CameraCard(Card):
             point3d = self.camera.calibration.project_from_image(point2d)
             if point3d is not None:
                 self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
-                if self.puncher is not None and self.shrink_factor == 1:
+                if self.puncher is not None and self.punching_enabled:
                     self.log.info(f'punching {point3d}')
                     self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
         if e.type == 'mouseout':
