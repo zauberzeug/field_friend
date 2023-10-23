@@ -127,8 +127,15 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.button('chop', on_click=lambda: automator.start(puncher.chop()))
                 depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=0.01, max=0.18)
                 with ui.row():
-                    ui.button(on_click=lambda: automator.start(
-                        puncher.punch(field_friend.y_axis.MAX_POSITION, depth.value)))
-                    ui.button(on_click=lambda: automator.start(puncher.punch(0, depth.value)))
-                    ui.button(on_click=lambda: automator.start(
-                        puncher.punch(field_friend.y_axis.MIN_POSITION, depth.value)))
+                    if isinstance(field_friend.y_axis, ChainAxis):
+                        ui.button(on_click=lambda: automator.start(
+                            puncher.punch(field_friend.y_axis.MAX_POSITION-field_friend.y_axis.WORK_OFFSET, depth.value)))
+                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth.value)))
+                        ui.button(on_click=lambda: automator.start(
+                            puncher.punch(field_friend.y_axis.MIN_POSITION+field_friend.y_axis.WORK_OFFSET, depth.value)))
+                    elif isinstance(field_friend.y_axis, YAxis):
+                        ui.button(on_click=lambda: automator.start(
+                            puncher.punch(field_friend.y_axis.MAX_POSITION, depth.value)))
+                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth.value)))
+                        ui.button(on_click=lambda: automator.start(
+                            puncher.punch(field_friend.y_axis.MIN_POSITION, depth.value)))
