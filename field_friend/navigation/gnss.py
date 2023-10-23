@@ -28,7 +28,7 @@ class GNSSRecord:
     speed_kmh: float = 0.0
 
 
-class Gnss(ABC):
+class Gnss(rosys.persistence.PersistentModule, ABC):
 
     def __init__(self) -> None:
         self.log = logging.getLogger('field_friend.gnss')
@@ -46,7 +46,6 @@ class Gnss(ABC):
         self.reference_lon: Optional[float] = None
 
         self.needs_backup = False
-        rosys.persistence.register(self)
 
         rosys.on_repeat(self.update, 1.0)
         rosys.on_repeat(self.try_connection, 3.0)
@@ -72,13 +71,13 @@ class Gnss(ABC):
     def clear_reference(self) -> None:
         self.reference_lat = None
         self.reference_lon = None
-        self.needs_backup = True
+        self.request_backup()
         self.REFERENCE_CLEARED.emit()
 
     def set_reference(self, lat: float, lon: float) -> None:
         self.reference_lat = lat
         self.reference_lon = lon
-        self.needs_backup = True
+        self.request_backup()
 
     def get_reference(self) -> Optional[tuple[float, float]]:
         return self.reference_lat, self.reference_lon
@@ -162,11 +161,9 @@ class GnssHardware(Gnss):
                         record.heading = msg.heading
                         has_heading = True
                 except pynmea2.ParseError as e:
-                    print(f'Parse error: {e}')
                     self.log.info(f'Parse error: {e}')
                     continue
         except serial.SerialException as e:
-            print(f'Device error: {e}')
             self.log.info(f'Device error: {e}')
             self.device = None
             return

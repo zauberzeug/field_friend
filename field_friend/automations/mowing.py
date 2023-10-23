@@ -15,7 +15,7 @@ from .field_provider import Field, FieldProvider
 from .sequence import find_sequence
 
 
-class Mowing:
+class Mowing(rosys.persistence.PersistentModule):
 
     def __init__(self, field_friend: FieldFriend, field_provider: FieldProvider, driver: rosys.driving.Driver,
                  path_planner: rosys.pathplanning.PathPlanner, gnss: Gnss, *, robot_width: float) -> None:
@@ -42,7 +42,6 @@ class Mowing:
         """Mowing has started."""
 
         self.needs_backup = False
-        rosys.persistence.register(self)
 
     def backup(self) -> dict:
         return {
@@ -68,7 +67,7 @@ class Mowing:
             rosys.driving.PathSegment, data['current_path_segment']) if data['current_path_segment'] else None
 
     def invalidate(self) -> None:
-        self.needs_backup = True
+        self.request_backup()
 
     async def start(self) -> None:
         self.log.info('starting mowing')

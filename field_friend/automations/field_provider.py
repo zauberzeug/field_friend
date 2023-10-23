@@ -38,7 +38,7 @@ class Field:
     rows: list[Row] = field(default_factory=list)
 
 
-class FieldProvider:
+class FieldProvider(rosys.persistence.PersistentModule):
     def __init__(self) -> None:
         self.fields: list[Field] = []
 
@@ -46,7 +46,6 @@ class FieldProvider:
         """The dict of fields has changed."""
 
         self.needs_backup: bool = False
-        rosys.persistence.register(self)
 
     def backup(self) -> dict:
         return {'fields': rosys.persistence.to_dict(self.fields)}
@@ -55,7 +54,7 @@ class FieldProvider:
         rosys.persistence.replace_list(self.fields, Field, data.get('fields', []))
 
     def invalidate(self) -> None:
-        self.needs_backup = True
+        self.request_backup()
         self.FIELDS_CHANGED.emit()
 
     def add_field(self, field: Field) -> None:

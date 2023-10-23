@@ -13,7 +13,7 @@ class Path:
     visualized: bool = False
 
 
-class PathProvider:
+class PathProvider(rosys.persistence.PersistentModule):
     def __init__(self) -> None:
         self.paths: list[Path] = []
 
@@ -24,7 +24,6 @@ class PathProvider:
         """Show the path in the map."""
 
         self.needs_backup: bool = False
-        rosys.persistence.register(self)
 
     def backup(self) -> dict:
         return {'paths': rosys.persistence.to_dict(self.paths)}
@@ -33,7 +32,7 @@ class PathProvider:
         rosys.persistence.replace_list(self.paths, Path, data.get('paths', []))
 
     def invalidate(self) -> None:
-        self.needs_backup = True
+        self.request_backup()
         self.PATHS_CHANGED.emit()
 
     def add_path(self, path: Path) -> None:

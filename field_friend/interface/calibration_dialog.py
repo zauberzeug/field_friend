@@ -302,5 +302,5 @@ class calibration_dialog(ui.dialog):
             ui.notify(str(e))
         else:
             ui.notify('Calibration applied')
-            self.camera_provider.needs_backup = True
+            self.camera_provider.request_backup()
             self.submit(True)
