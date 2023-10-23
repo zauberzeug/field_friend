@@ -10,7 +10,7 @@ class ZAxisV2(rosys.hardware.Module, abc.ABC):
     MIN_DEPTH: float = 0.00
     MAX_DEPTH: float = 0.197
     STEPS_PER_M: float = 1600 * 1000
-    REF_OFFSET: int = 0.0001
+    REF_OFFSET: int = 0.00005
 
     def __init__(self, ccw, **kwargs) -> None:
         super().__init__(**kwargs)
