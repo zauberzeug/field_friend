@@ -17,7 +17,6 @@ def startup() -> None:
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
-        interface.system_bar()
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
                 interface.operation(
