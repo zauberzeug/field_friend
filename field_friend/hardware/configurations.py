@@ -125,8 +125,6 @@ fieldfriend_configurations = {
             'step_pin': 5,
             'dir_pin': 4,
             'alarm_pin': 13,
-            'ref_l_pin': 14,
-            'ref_r_pin': 35,
             'ref_t_pin': 21,
         },
         'z_axis': {
@@ -223,8 +221,6 @@ fieldfriend_configurations = {
             'step_pin': 13,
             'dir_pin': 4,
             'alarm_pin': 36,
-            'ref_l_pin': 14,
-            'ref_r_pin': 21,
             'ref_t_pin': 35,
         },
         'z_axis': {

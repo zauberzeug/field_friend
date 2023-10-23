@@ -18,7 +18,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self, *, version: str) -> None:
         if version not in fieldfriend_configurations:
-            self.log.info(f'{fieldfriend_configurations}')
             raise NotImplementedError(f'Unknown FieldFriend version: {version}')
         self.config = fieldfriend_configurations[version]
         self.check_pins(self.config)
@@ -42,8 +41,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         communication = rosys.hardware.SerialCommunication()
         robot_brain = rosys.hardware.RobotBrain(communication)
-        if communication.device_path == '/dev/ttyTHS0':
-            robot_brain.lizard_firmware.flash_params = ['xavier']
+        # if communication.device_path == '/dev/ttyTHS0':
+        #     robot_brain.lizard_firmware.flash_params = ['xavier']
         robot_brain.lizard_firmware.flash_params += self.config['robot_brain']['flash_params']
         bluetooth = rosys.hardware.BluetoothHardware(robot_brain,
                                                      name=self.config['bluetooth']['name'],
@@ -103,8 +102,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                        step_pin=self.config['y_axis']['step_pin'],
                                        dir_pin=self.config['y_axis']['dir_pin'],
                                        alarm_pin=self.config['y_axis']['alarm_pin'],
-                                       ref_l_pin=self.config['y_axis']['ref_l_pin'],
-                                       ref_r_pin=self.config['y_axis']['ref_r_pin'],
                                        ref_t_pin=self.config['y_axis']['ref_t_pin'],
                                        motor_on_expander=self.config['y_axis']['motor_on_expander'],
                                        end_stops_on_expander=self.config['y_axis']['end_stops_on_expander'],
