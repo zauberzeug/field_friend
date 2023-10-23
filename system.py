@@ -14,7 +14,7 @@ class System:
     def __init__(self) -> None:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'ff4'  # insert here your field friend version
+        version = 'ff3'  # insert here your field friend version
         self.camera_selector = CameraSelector()
         self.camera_selector.camera_ids = {
             'bottom cam': self.camera_selector.BOTTOM_CAMERA_IDS,
