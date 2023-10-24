@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+import rosys
 from nicegui import app, ui
 from nicegui.elements.card import Card
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
@@ -10,6 +11,7 @@ from rosys import background_tasks
 from rosys.automation import Automator
 from rosys.geometry import Point, Point3d
 from rosys.vision import Camera, CameraProvider, Detector
+from rosys.vision.detector import Autoupload
 
 from ..automations import Puncher
 from ..vision import CameraSelector
@@ -30,8 +32,8 @@ class CameraCard(Card):
         self.camera_selector = camera_selector
         self.automator = automator
         self.detector = detector
-        self.capture_images = ui.timer(1, lambda: background_tasks.create(
-            self.detector.upload(self.camera.latest_captured_image)), active=False)
+        self.capture_images = ui.timer(7, lambda: background_tasks.create(
+            self.capture_image()), active=False)
         self.punching_enabled = False
         self.puncher = puncher
         self.shrink_factor = shrink_factor
@@ -41,6 +43,11 @@ class CameraCard(Card):
             ui.image('assets/field_friend.webp').classes('w-full')
             ui.label(f'no {camera_type} available').classes('text-center')
         ui.timer(1, self.update_content)
+
+    async def capture_image(self) -> None:
+        async with self.puncher.field_friend.flashlight:
+            await rosys.sleep(4.0)
+            await self.detector.detect(self.camera.latest_captured_image, autoupload=Autoupload.ALL, tags=['capture'])
 
     def update_content(self) -> None:
         if self.camera is None:
