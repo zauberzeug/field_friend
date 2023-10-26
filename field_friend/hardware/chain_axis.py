@@ -11,11 +11,11 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
     # STEPS_PER_REV = 1600
     CIRCUMFERENCE = 51.85 * 2 * np.pi / 1000
     # STEPS_PER_M: float = STEPS_PER_REV * GEAR / CIRCUMFERENCE
-    DEFAULT_SPEED: float = 20000  # TODO: make configurable (U2=40000)
+    DEFAULT_SPEED: float = 40000  # TODO: make configurable (U2=40000, U3 = 20000)
     MIN_POSITION = -0.14235
     MAX_POSITION = 0.14235
     CHAIN_RADIUS = 0.05185
-    RADIUS_STEPS = 6500  # TODO: make configurable (U2=16000)
+    RADIUS_STEPS = 16000  # TODO: make configurable (U2=16000, U3 = 6500)
     WORK_OFFSET = 0.04
     REF_OFFSET = 1500
     POSITION_OFFSET = CHAIN_RADIUS / RADIUS_STEPS * REF_OFFSET
@@ -381,6 +381,8 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             await super().return_to_l_ref()
         except RuntimeError as e:
             raise Exception(e)
+        if self.steps <= self.steps_to_end + self.REF_OFFSET:
+            return
         await self.robot_brain.send(
             f'{self.name}.position({self.steps_to_end}, {self.DEFAULT_SPEED/2}, 40000);'
         )
@@ -393,6 +395,8 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             await super().return_to_r_ref()
         except RuntimeError as e:
             raise Exception(e)
+        if self.steps >= -self.REF_OFFSET:
+            return
         await self.robot_brain.send(
             f'{self.name}.position(0, {self.DEFAULT_SPEED/2}, 40000);'
         )
