@@ -158,7 +158,8 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 with open("/sys/devices/virtual/thermal/thermal_zone1/temp", "r") as f:
                     temp = f.read().strip()
                 return float(temp) / 1000.0  # Convert from milli°C to °C
-            temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
+            if isinstance(robot, FieldFriendHardware):
+                temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
             direction_flag = 'N' if gnss.record.heading <= 23 else \
                 'NE' if gnss.record.heading <= 68 else \
                 'E' if gnss.record.heading <= 113 else \
