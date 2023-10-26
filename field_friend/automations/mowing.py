@@ -19,6 +19,7 @@ class Mowing(rosys.persistence.PersistentModule):
 
     def __init__(self, field_friend: FieldFriend, field_provider: FieldProvider, driver: rosys.driving.Driver,
                  path_planner: rosys.pathplanning.PathPlanner, gnss: Gnss, *, robot_width: float) -> None:
+        super().__init__()
         self.log = logging.getLogger('field_friend.path_recorder')
         self.field_friend = field_friend
         self.field_provider = field_provider

@@ -40,6 +40,7 @@ class Field:
 
 class FieldProvider(rosys.persistence.PersistentModule):
     def __init__(self) -> None:
+        super().__init__()
         self.fields: list[Field] = []
 
         self.FIELDS_CHANGED = rosys.event.Event()

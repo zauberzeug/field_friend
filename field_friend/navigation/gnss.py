@@ -31,6 +31,7 @@ class GNSSRecord:
 class Gnss(rosys.persistence.PersistentModule, ABC):
 
     def __init__(self) -> None:
+        super().__init__()
         self.log = logging.getLogger('field_friend.gnss')
 
         self.ROBOT_LOCATED = rosys.event.Event()
@@ -121,7 +122,7 @@ class GnssHardware(Gnss):
 
     async def update(self) -> None:
         await super().update()
-        if self.device is None:
+        if self.ser is None:
             return
         record = GNSSRecord()
         has_location = False

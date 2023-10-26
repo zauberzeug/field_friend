@@ -15,6 +15,7 @@ class Path:
 
 class PathProvider(rosys.persistence.PersistentModule):
     def __init__(self) -> None:
+        super().__init__()
         self.paths: list[Path] = []
 
         self.PATHS_CHANGED = rosys.event.Event()
