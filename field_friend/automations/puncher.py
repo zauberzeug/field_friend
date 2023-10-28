@@ -21,10 +21,10 @@ class Puncher:
             if self.field_friend.estop.active:
                 rosys.notify('Estop active, relaese first', 'error')
                 return False
-            if not await self.field_friend.y_axis.try_reference():
+            if not await self.field_friend.z_axis.try_reference():
                 return False
             await rosys.sleep(0.2)
-            if not await self.field_friend.z_axis.try_reference():
+            if not await self.field_friend.y_axis.try_reference():
                 return False
             return True
         except Exception as e:
