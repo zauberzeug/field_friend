@@ -3,7 +3,8 @@ from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
 from ..automations import Puncher
-from ..hardware import ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightV2, YAxis, ZAxis, ZAxisV2
+from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightV2, YAxis,
+                        ZAxis, ZAxisV2)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -44,7 +45,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.switch(
                         'On for 10s', on_change=toggle_flashlight).bind_value_from(
                         field_friend.flashlight, 'is_active')
-                elif isinstance(field_friend.flashlight, FlashlightV2):
+                elif isinstance(field_friend.flashlight, FlashlightV2) or isinstance(field_friend.flashlight, FlashlightPWM):
                     async def toggle_flashlight(e: ValueChangeEventArguments) -> None:
                         if e.value:
                             await field_friend.flashlight.turn_on()

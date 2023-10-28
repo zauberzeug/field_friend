@@ -6,6 +6,7 @@ from .configurations import fieldfriend_configurations
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
+from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_v2 import FlashlightHardwareV2
 from .imu import IMUHardware
 from .safety import SafetyHardware
@@ -150,6 +151,16 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                               front_pin=self.config['flashlight']['front_pin'],
                                               back_pin=self.config['flashlight']['back_pin'],
                                               )
+        elif self.config['flashlight']['version'] == 'flashlight_pwm':
+            flashlight = FlashlightPWMHardware(robot_brain,
+                                               expander=expander if self.config['flashlight']['on_expander'] else None,
+                                               name=self.config['flashlight']['name'],
+                                               front_pin=self.config['flashlight']['front_pin'],
+                                               back_pin=self.config['flashlight']['back_pin'],
+                                               duty_cycle=self.config['flashlight']['duty_cycle'],
+                                               frequency=self.config['flashlight']['frequency'],
+                                               )
+
         else:
             flashlight = None
         estop = rosys.hardware.EStopHardware(robot_brain,
