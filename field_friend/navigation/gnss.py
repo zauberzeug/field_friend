@@ -129,6 +129,9 @@ class GnssHardware(Gnss):
         has_heading = False
         try:
             lines = await rosys.run.io_bound(self.ser.readlines)
+            if not lines:
+                self.log.info('No data')
+                return
             for line in lines:
                 if not line:
                     self.log.info('No data')
