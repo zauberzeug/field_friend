@@ -11,11 +11,11 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
     # STEPS_PER_REV = 1600
     CIRCUMFERENCE = 51.85 * 2 * np.pi / 1000
     # STEPS_PER_M: float = STEPS_PER_REV * GEAR / CIRCUMFERENCE
-    DEFAULT_SPEED: float = 40000  # TODO: make configurable (U2=40000, U3 = 20000)
+    DEFAULT_SPEED: float = 20000  # TODO: make configurable (U2=40000, U3 = 20000)
     MIN_POSITION = -0.14235
     MAX_POSITION = 0.14235
     CHAIN_RADIUS = 0.05185
-    RADIUS_STEPS = 16000  # TODO: make configurable (U2=16000, U3 = 6500)
+    RADIUS_STEPS = 8400  # TODO: make configurable (U2=16000, U3 = 8400)
     WORK_OFFSET = 0.04
     REF_OFFSET = 1500
     POSITION_OFFSET = CHAIN_RADIUS / RADIUS_STEPS * REF_OFFSET
