@@ -58,7 +58,7 @@ class FieldFriend(rosys.hardware.Robot):
 
         The point is given in local coordinates, i.e. the origin is the center of the tool.
         """
-        if self.version == 'ff3':
+        if self.version in ['ff3', 'u4']:
             return self.WORK_X - self.DRILL_RADIUS <= local_point.x <= self.WORK_X + self.DRILL_RADIUS \
                 and self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
         elif self.version in ['u2', 'u3']:
@@ -72,3 +72,5 @@ class FieldFriend(rosys.hardware.Robot):
                 tool_radius = self.DRILL_RADIUS
                 return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
                     and self.y_axis.MIN_POSITION+self.y_axis.WORK_OFFSET <= local_point.y <= self.y_axis.MAX_POSITION-self.y_axis.WORK_OFFSET
+        else:
+            raise NotImplementedError(f'Version {self.version} not implemented')

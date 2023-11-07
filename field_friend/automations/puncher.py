@@ -38,7 +38,7 @@ class Puncher:
             rosys.notify('no y or z axis', 'negative')
             return
         self.log.info(f'Driving to punch at {local_target_x}...')
-        if self.field_friend.version == 'ff3':
+        if self.field_friend.version in ['ff3', 'u4']:
             work_x = self.field_friend.WORK_X
         elif self.field_friend.version in ['u2', 'u3']:
             work_x = self.field_friend.WORK_X_DRILL
