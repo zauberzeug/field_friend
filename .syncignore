@@ -1,7 +1,17 @@
 # the ignore-file for https://github.com/zauberzeug/livesync
-.pytest_cache/
+
+.pytest*cache/
 .vscode/
 .github/
 tests/
 config.hjson
 backups/
+**pycache**/
+*.egg-info/
+.cache/
+.pio/
+detector/
+\_.env
+\*.swp
+site/
+.git
