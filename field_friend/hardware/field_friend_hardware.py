@@ -10,6 +10,7 @@ from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_v2 import FlashlightHardwareV2
 from .imu import IMUHardware
 from .safety import SafetyHardware
+from .status_control import StatusControlHardware
 from .y_axis import YAxisHardware
 from .z_axis import ZAxisHardware
 from .z_axis_v2 import ZAxisHardwareV2
@@ -138,31 +139,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      )
         else:
             z_axis = None
-        if self.config['flashlight']['version'] == 'flashlight':
-            flashlight = FlashlightHardware(robot_brain,
-                                            expander=expander if self.config['flashlight']['on_expander'] else None,
-                                            name=self.config['flashlight']['name'],
-                                            pin=self.config['flashlight']['pin'],
-                                            )
-        elif self.config['flashlight']['version'] == 'flashlight_v2':
-            flashlight = FlashlightHardwareV2(robot_brain,
-                                              expander=expander if self.config['flashlight']['on_expander'] else None,
-                                              name=self.config['flashlight']['name'],
-                                              front_pin=self.config['flashlight']['front_pin'],
-                                              back_pin=self.config['flashlight']['back_pin'],
-                                              )
-        elif self.config['flashlight']['version'] == 'flashlight_pwm':
-            flashlight = FlashlightPWMHardware(robot_brain,
-                                               expander=expander if self.config['flashlight']['on_expander'] else None,
-                                               name=self.config['flashlight']['name'],
-                                               front_pin=self.config['flashlight']['front_pin'],
-                                               back_pin=self.config['flashlight']['back_pin'],
-                                               duty_cycle=self.config['flashlight']['duty_cycle'],
-                                               frequency=self.config['flashlight']['frequency'],
-                                               )
-
-        else:
-            flashlight = None
         estop = rosys.hardware.EStopHardware(robot_brain,
                                              name=self.config['estop']['name'],
                                              pins=self.config['estop']['pins'],
@@ -186,16 +162,49 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             self.battery_control = None
 
+        if self.config['flashlight']['version'] == 'flashlight':
+            flashlight = FlashlightHardware(robot_brain,
+                                            expander=expander if self.config['flashlight']['on_expander'] else None,
+                                            name=self.config['flashlight']['name'],
+                                            pin=self.config['flashlight']['pin'],
+                                            )
+        elif self.config['flashlight']['version'] == 'flashlight_v2':
+            flashlight = FlashlightHardwareV2(robot_brain,
+                                              expander=expander if self.config['flashlight']['on_expander'] else None,
+                                              name=self.config['flashlight']['name'],
+                                              front_pin=self.config['flashlight']['front_pin'],
+                                              back_pin=self.config['flashlight']['back_pin'],
+                                              )
+        elif self.config['flashlight']['version'] == 'flashlight_pwm':
+            flashlight = FlashlightPWMHardware(robot_brain,
+                                               bms,
+                                               expander=expander if self.config['flashlight']['on_expander'] else None,
+                                               name=self.config['flashlight']['name'],
+                                               pin=self.config['flashlight']['pin'],
+                                               rated_voltage=self.config['flashlight']['rated_voltage'],
+                                               )
+
+        else:
+            flashlight = None
         if 'imu' in self.config:
             self.imu = IMUHardware(robot_brain,
                                    name=self.config['imu']['name'],
                                    )
         else:
             self.imu = None
+        if 'status_control' in self.config:
+            self.status_control = StatusControlHardware(robot_brain,
+                                                        expander=expander,
+                                                        rdyp_pin=39,
+                                                        vdp_pin=39,
+                                                        )
+        else:
+            self.status_control = None
+
         safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels,
                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, self.imu, safety]
+                   z_axis, flashlight, bms, estop, self.battery_control, self.imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(version=version,
                          wheels=wheels,
