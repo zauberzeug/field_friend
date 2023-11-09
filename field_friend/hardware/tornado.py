@@ -157,12 +157,12 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             bool {name}_ref_t_enabled = false;
             bool {name}_ref_b_enabled = false;
 
-            when {name}_ref_t_enabled {name}_ref_t.level == 0 then
+            when {name}_ref_t_enabled and {name}_ref_t.level == 0 then
                 {name}_z.speed(0);
                 {name}_ref_t_enabled = false;
             end
 
-            when {name}_ref_b_enabled {name}_ref_b.level == 1 then
+            when {name}_ref_b_enabled and {name}_ref_b.level == 1 then
                 {name}_z.speed(0);
                 {name}_ref_b_enabled = false;
             end
