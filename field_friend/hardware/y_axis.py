@@ -14,8 +14,6 @@ class YAxis(rosys.hardware.Module, abc.ABC):
     AXIS_OFFSET = 0.123
     STEPS_PER_M: float = 666.67 * 1000
 
-    OFFSET_X = 0.2915
-
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
