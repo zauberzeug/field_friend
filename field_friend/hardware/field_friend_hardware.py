@@ -11,7 +11,9 @@ from .flashlight_v2 import FlashlightHardwareV2
 from .imu import IMUHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware
+from .tornado import TornadoHardware
 from .y_axis import YAxisHardware
+from .y_axis_tornado import YAxisHardwareTornado
 from .z_axis import ZAxisHardware
 from .z_axis_v2 import ZAxisHardwareV2
 
@@ -108,6 +110,23 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                        motor_on_expander=self.config['y_axis']['motor_on_expander'],
                                        end_stops_on_expander=self.config['y_axis']['end_stops_on_expander'],
                                        )
+        elif self.config['y_axis']['version'] == 'y_axis_tornado':
+            y_axis = YAxisHardwareTornado(robot_brain,
+                                          expander=expander,
+                                          name=self.config['y_axis']['name'],
+                                          max_speed=self.config['y_axis']['max_speed'],
+                                          min_position=self.config['y_axis']['min_position'],
+                                          max_position=self.config['y_axis']['max_position'],
+                                          axis_offset=self.config['y_axis']['axis_offset'],
+                                          steps_per_m=self.config['y_axis']['steps_per_m'],
+                                          step_pin=self.config['y_axis']['step_pin'],
+                                          dir_pin=self.config['y_axis']['dir_pin'],
+                                          alarm_pin=self.config['y_axis']['alarm_pin'],
+                                          end_r_pin=self.config['y_axis']['end_r_pin'],
+                                          end_l_pin=self.config['y_axis']['end_l_pin'],
+                                          motor_on_expander=self.config['y_axis']['motor_on_expander'],
+                                          end_stops_on_expander=self.config['y_axis']['end_stops_on_expander'],
+                                          )
         else:
             y_axis = None
         if self.config['z_axis']['version'] == 'z_axis':
@@ -136,6 +155,28 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      ref_t_inverted=self.config['z_axis']['ref_t_inverted'],
                                      end_b_inverted=self.config['z_axis']['end_b_inverted'],
                                      ccw=self.config['z_axis']['ccw'],
+                                     )
+        elif self.config['z_axis']['version'] == 'tornado':
+            z_axis = TornadoHardware(robot_brain,
+                                     expander=expander,
+                                     can=can,
+                                     name=self.config['z_axis']['name'],
+                                     min_position=self.config['z_axis']['min_position'],
+                                     z_can_address=self.config['z_axis']['z_can_address'],
+                                     turn_can_address=self.config['z_axis']['turn_can_address'],
+                                     m_per_tick=self.config['z_axis']['m_per_tick'],
+                                     end_top_pin=self.config['z_axis']['end_top_pin'],
+                                     end_bottom_pin=self.config['z_axis']['end_bottom_pin'],
+                                     ref_motor_pin=self.config['z_axis']['ref_motor_pin'],
+                                     ref_gear_pin=self.config['z_axis']['ref_gear_pin'],
+                                     ref_t_pin=self.config['z_axis']['ref_t_pin'],
+                                     ref_b_pin=self.config['z_axis']['ref_b_pin'],
+                                     motors_on_expander=self.config['z_axis']['motors_on_expander'],
+                                     end_stops_on_expander=self.config['z_axis']['end_stops_on_expander'],
+                                     is_z_reversed=self.config['z_axis']['is_z_reversed'],
+                                     is_turn_reversed=self.config['z_axis']['is_turn_reversed'],
+                                     speed_limit=self.config['z_axis']['speed_limit'],
+                                     current_limit=self.config['z_axis']['current_limit'],
                                      )
         else:
             z_axis = None

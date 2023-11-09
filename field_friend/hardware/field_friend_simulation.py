@@ -6,6 +6,7 @@ from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_v2 import FlashlightSimulationV2
 from .safety import SafetySimulation
+from .tornado import TornadoSimulation
 from .y_axis import YAxisSimulation
 from .y_axis_tornado import YAxisSimulationTornado
 from .z_axis import ZAxisSimulation
@@ -32,6 +33,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             z_axis = ZAxisSimulation()
         elif config['z_axis']['version'] == 'z_axis_v2':
             z_axis = ZAxisSimulationV2(ccw=config['z_axis']['ccw'])
+        elif config['z_axis']['version'] == 'tornado':
+            z_axis = TornadoSimulation()
         else:
             z_axis = None
 
