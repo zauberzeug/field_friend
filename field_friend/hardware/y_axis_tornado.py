@@ -72,13 +72,13 @@ class YAxisHardwareTornado(YAxisTornado, rosys.hardware.ModuleHardware):
                  max_position: float = 0.12,
                  axis_offset: float = 0.123,
                  steps_per_m: float = 666.67 * 1000,
-                 step_pin: int = 19,
-                 dir_pin: int = 18,
-                 alarm_pin: int = 35,
-                 end_r_pin: int = 13,
-                 end_l_pin: int = 36,
+                 step_pin: int = 5,
+                 dir_pin: int = 4,
+                 alarm_pin: int = 36,
+                 end_r_pin: int = 19,
+                 end_l_pin: int = 21,
                  motor_on_expander: bool = False,
-                 end_stops_on_expander: bool = False,
+                 end_stops_on_expander: bool = True,
                  ) -> None:
         self.name = name
         self.expander = expander
@@ -87,7 +87,7 @@ class YAxisHardwareTornado(YAxisTornado, rosys.hardware.ModuleHardware):
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
-            {name} = MotorAxis({name}_motor, {name}_end_l, {name}_end_r)
+            {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name}_end_l, {name}_end_r)
         ''')
         core_message_fields = [
             f'{name}_end_l.level',
