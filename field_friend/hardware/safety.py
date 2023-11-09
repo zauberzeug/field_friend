@@ -51,7 +51,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                 lizard_code += f' {z_axis.name}.stop();'
             else:
                 lizard_code += f'{z_axis.name}_z.speed(0);'
-                lizard_code += f'{z_axis.name}_y.speed(0);'
+                lizard_code += f'{z_axis.name}_turn.speed(0);'
         if isinstance(flashlight, FlashlightHardware):
             lizard_code += f' {flashlight.name}.on();'
         elif isinstance(flashlight, FlashlightHardwareV2):
