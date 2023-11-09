@@ -343,7 +343,7 @@ fieldfriend_configurations = {
         'bumper': {
             'name': 'bumper',
             'on_expander': True,
-            'pins': {'front': 12, 'down': 22, 'back': 23},
+            'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
         },
 
 
