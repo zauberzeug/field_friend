@@ -4,7 +4,7 @@ import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
 
-from ..hardware import ChainAxis, FieldFriend, Tornado, YAxisTornado
+from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado
 
 
 class Puncher:
@@ -50,7 +50,7 @@ class Puncher:
         world_target = self.driver.odometer.prediction.transform(local_target)
         await self.driver.drive_to(world_target)
 
-    async def punch(self, y: float, depth: float, angle: float = 180) -> None:
+    async def punch(self, y: float, depth: float = 0.01, angle: float = 180) -> None:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             return
@@ -67,9 +67,6 @@ class Puncher:
                     rosys.notify('y position out of range', type='error')
                     raise Exception('y position out of range')
             if isinstance(self.field_friend.z_axis, Tornado) and isinstance(self.field_friend.y_axis, YAxisTornado):
-                if not self.field_friend.z_axis.min_position <= -depth <= self.field_friend.z_axis.min_position:
-                    rosys.notify('depth out of range', type='error')
-                    raise Exception('depth out of range')
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='error')
                     raise Exception('y position out of range')
@@ -94,8 +91,12 @@ class Puncher:
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
-        y = self.field_friend.y_axis.MIN_POSITION if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.MAX_POSITION
-        await self.field_friend.y_axis.move_to(y)
+        if isinstance(self.field_friend.y_axis, YAxisTornado):
+            y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
+            await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
+        elif isinstance(self.field_friend.y_axis, YAxis):
+            y = self.field_friend.y_axis.MIN_POSITION if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.MAX_POSITION
+            await self.field_friend.y_axis.move_to(y)
         await self.field_friend.y_axis.stop()
 
     async def drive_and_punch(self, x: float, y: float, depth: float = 0.05, angle: float = 180) -> None:
@@ -104,7 +105,7 @@ class Puncher:
             return
         try:
             await self.drive_to_punch(x)
-            await self.punch(y, depth)
+            await self.punch(y, depth, angle=angle)
             await self.clear_view()
         except Exception as e:
             raise Exception('drive and punch failed') from e
@@ -118,7 +119,7 @@ class Puncher:
             await self.field_friend.y_axis.move_dw_to_r_ref()
         await self.field_friend.y_axis.stop()
 
-    async def tornado_drill(self, angle: float) -> None:
+    async def tornado_drill(self, angle: float = 180) -> None:
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise Exception('tornado drill is only available for tornado axis')
         try:
