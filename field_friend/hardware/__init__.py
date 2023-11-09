@@ -9,6 +9,7 @@ from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMS
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .imu import IMUHardware
 from .safety import Safety, SafetyHardware, SafetySimulation
+from .status_control import StatusControlHardware
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
 from .z_axis_v2 import ZAxisHardwareV2, ZAxisSimulationV2, ZAxisV2

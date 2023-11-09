@@ -4,7 +4,7 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ..hardware import ChainAxis, FieldFriend, FieldFriendHardware, YAxis, ZAxis, ZAxisV2
+from ..hardware import ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, YAxis, ZAxis, ZAxisV2
 from ..navigation import Gnss
 
 
@@ -51,6 +51,11 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             else:
                 ui.label('simulated hardware')
 
+        if hasattr(robot, 'status_control'):
+            with ui.row():
+                ui.markdown('**Status Control:**').style('color: #6E93D6')
+                status_control_label = ui.label()
+
         with ui.row():
             ui.markdown('**Battery:**').style('color: #6E93D6')
             bms_label = ui.label()
@@ -64,6 +69,10 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
         with ui.row():
             ui.markdown('**Z-Axis:**').style('color: #6E93D6')
             z_axis_label = ui.label()
+
+        with ui.row():
+            ui.markdown('**Flashlight:**').style('color: #6E93D6')
+            flashlight_label = ui.label()
 
         ui.markdown('**Robot Brain:**')
         with ui.row():
@@ -149,6 +158,8 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
             y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
             z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
+            if isinstance(robot.flashlight, FlashlightPWMHardware):
+                flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
 
             uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
             cpu_label.text = f'{psutil.cpu_percent():.0f}%'
@@ -160,6 +171,9 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 return float(temp) / 1000.0  # Convert from milli°C to °C
             if isinstance(robot, FieldFriendHardware):
                 temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
+
+            if hasattr(robot, 'status_control') and robot.status_control is not None:
+                status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}'
             direction_flag = 'N' if gnss.record.heading <= 23 else \
                 'NE' if gnss.record.heading <= 68 else \
                 'E' if gnss.record.heading <= 113 else \
