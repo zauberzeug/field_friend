@@ -4,7 +4,8 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ..hardware import ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, YAxis, ZAxis, ZAxisV2
+from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, Tornado, YAxis,
+                        YAxisTornado, ZAxis, ZAxisV2)
 from ..navigation import Gnss
 
 
@@ -147,6 +148,16 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     f'{robot.y_axis.steps:.0f}',
                     f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
                 ]
+            elif isinstance(robot.y_axis, YAxisTornado):
+                y_axis_flags = [
+                    'not referenced' if not robot.y_axis.is_referenced else '',
+                    'alarm' if robot.y_axis.alarm else '',
+                    'idle'if robot.y_axis.idle else 'moving',
+                    'end l' if robot.y_axis.end_l else '',
+                    'end r' if robot.y_axis.end_r else '',
+                    f'{robot.y_axis.steps:.0f}',
+                    f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
+                ]
             else:
                 y_axis_flags = ['no y-axis']
             if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
@@ -161,6 +172,19 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     f'{robot.z_axis.steps}',
                     f'{robot.z_axis.depth:.2f}m' if robot.z_axis.is_referenced else '',
                 ]
+            elif isinstance(robot.z_axis, Tornado):
+                z_axis_flags = [
+                    '' if robot.z_axis.is_referenced else 'not referenced',
+                    'end_top' if robot.z_axis.end_top else '',
+                    'end_bottom' if robot.z_axis.end_bottom else '',
+                    'ref_motor' if robot.z_axis.ref_motor else '',
+                    'ref_gear' if robot.z_axis.ref_gear else '',
+                    'ref_t' if robot.z_axis.ref_t else '',
+                    'ref_b' if robot.z_axis.ref_b else '',
+                    f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.is_referenced else '',
+                    f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.is_referenced else '',
+                ]
+
             else:
                 z_axis_flags = ['no z-axis']
             bms_label.text = ', '.join(flag for flag in bms_flags if flag)
