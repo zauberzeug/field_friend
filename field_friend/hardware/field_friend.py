@@ -30,6 +30,7 @@ class FieldFriend(rosys.hardware.Robot):
             y_axis: Union[YAxis, ChainAxis, None],
             z_axis: Union[ZAxis, ZAxisV2, None],
             estop: rosys.hardware.EStop,
+            bumper: Union[rosys.hardware.Bumper, None],
             bms: rosys.hardware.Bms,
             safety: Safety,
             **kwargs) -> None:
@@ -40,6 +41,7 @@ class FieldFriend(rosys.hardware.Robot):
         self.y_axis = y_axis
         self.z_axis = z_axis
         self.estop = estop
+        self.bumper = bumper
         self.bms = bms
         self.safety = safety
         rosys.on_shutdown(self.stop)

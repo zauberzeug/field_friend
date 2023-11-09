@@ -40,9 +40,13 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             flashlight = None
 
         estop = rosys.hardware.EStopSimulation()
+        if 'bumper' in config:
+            bumper = rosys.hardware.BumperSimulation(estop=estop)
+        else:
+            bumper = None
         bms = rosys.hardware.BmsSimulation()
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
-        modules = [wheels, y_axis, z_axis, flashlight, bms, estop, safety]
+        modules = [wheels, y_axis, z_axis, flashlight, bumper, bms, estop, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(version=version,
                          wheels=wheels,
@@ -50,6 +54,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                          y_axis=y_axis,
                          z_axis=z_axis,
                          estop=estop,
+                         bumper=bumper,
                          bms=bms,
                          safety=safety,
                          modules=active_modules)

@@ -186,12 +186,24 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         else:
             flashlight = None
+
+        if 'bumper' in self.config:
+            bumper = rosys.hardware.BumperHardware(robot_brain,
+                                                   expander=expander if self.config['bumper']['on_expander'] else None,
+                                                   estop=estop,
+                                                   name=self.config['bumper']['name'],
+                                                   pins=self.config['bumper']['pins'],
+                                                   )
+        else:
+            bumper = None
+
         if 'imu' in self.config:
             self.imu = IMUHardware(robot_brain,
                                    name=self.config['imu']['name'],
                                    )
         else:
             self.imu = None
+
         if 'status_control' in self.config:
             self.status_control = StatusControlHardware(robot_brain,
                                                         expander=expander,
@@ -204,13 +216,14 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels,
                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, self.imu, self.status_control, safety]
+                   z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(version=version,
                          wheels=wheels,
                          y_axis=y_axis,
                          z_axis=z_axis,
                          estop=estop,
+                         bumper=bumper,
                          bms=bms,
                          safety=safety,
                          flashlight=flashlight,
