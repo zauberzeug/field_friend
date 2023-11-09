@@ -11,5 +11,6 @@ from .imu import IMUHardware
 from .safety import Safety, SafetyHardware, SafetySimulation
 from .status_control import StatusControlHardware
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
+from .y_axis_tornado import YAxisHardwareTornado, YAxisSimulationTornado, YAxisTornado
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
 from .z_axis_v2 import ZAxisHardwareV2, ZAxisSimulationV2, ZAxisV2
