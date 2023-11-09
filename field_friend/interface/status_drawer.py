@@ -44,6 +44,11 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     ui.icon('report').props('size=md').classes('text-yellow')
                     ui.label('Chain-axis not in top position, warning!').classes('text-orange mt-1')
 
+            if isinstance(robot.bumper, rosys.hardware.Bumper):
+                with ui.row().bind_visibility_from(robot.bumper, 'active_bumpers'):
+                    ui.icon('report').props('size=md').classes('text-yellow')
+                    ui.label('Bumper triggered, warning!').classes('text-orange mt-1')
+
         with ui.row():
             ui.markdown('**Robot:**').style('color: #6E93D6')
             if isinstance(robot, FieldFriendHardware):
@@ -51,7 +56,7 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             else:
                 ui.label('simulated hardware')
 
-        if hasattr(robot, 'status_control'):
+        if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row():
                 ui.markdown('**Status Control:**').style('color: #6E93D6')
                 status_control_label = ui.label()
@@ -73,6 +78,11 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
         with ui.row():
             ui.markdown('**Flashlight:**').style('color: #6E93D6')
             flashlight_label = ui.label()
+
+        if hasattr(robot, 'bumper') and robot.bumper is not None:
+            with ui.row():
+                ui.markdown('**Bumper:**').style('color: #6E93D6')
+                bumper_label = ui.label()
 
         ui.markdown('**Robot Brain:**')
         with ui.row():
@@ -156,10 +166,13 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             bms_label.text = ', '.join(flag for flag in bms_flags if flag)
             if hasattr(robot, 'battery_control') and robot.battery_control is not None:
                 battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
+
             y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
             z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
             if isinstance(robot.flashlight, FlashlightPWMHardware):
                 flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
+            if isinstance(robot.bumper, rosys.hardware.Bumper):
+                bumper_label.text = ', '.join(robot.bumper.active_bumpers)
 
             uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
             cpu_label.text = f'{psutil.cpu_percent():.0f}%'
