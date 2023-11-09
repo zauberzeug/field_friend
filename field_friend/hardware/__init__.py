@@ -10,6 +10,7 @@ from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, Flashli
 from .imu import IMUHardware
 from .safety import Safety, SafetyHardware, SafetySimulation
 from .status_control import StatusControlHardware
+from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .y_axis_tornado import YAxisHardwareTornado, YAxisSimulationTornado, YAxisTornado
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
