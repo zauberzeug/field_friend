@@ -32,8 +32,7 @@ class CameraCard(Card):
         self.camera_selector = camera_selector
         self.automator = automator
         self.detector = detector
-        self.capture_images = ui.timer(7, lambda: background_tasks.create(
-            self.capture_image()), active=False)
+        self.capture_images = ui.timer(7, lambda: background_tasks.create(self.capture_image()), active=False)
         self.punching_enabled = False
         self.puncher = puncher
         self.shrink_factor = shrink_factor
