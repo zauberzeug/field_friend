@@ -54,7 +54,7 @@ class YAxisTornado(rosys.hardware.Module, abc.ABC):
         return int((position + self.axis_offset) * self.steps_per_m)
 
     def compute_position(self, steps: int) -> float:
-        return steps / self.steps_per_m + self.axis_offset
+        return steps / self.steps_per_m - self.axis_offset
 
     @property
     def position(self) -> float:
