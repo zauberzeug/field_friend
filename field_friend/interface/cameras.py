@@ -73,12 +73,15 @@ class CameraCard(Card):
                 events=events
             ).classes('w-full')
 
-            def update():
+            async def update():
+                image = self.camera.latest_captured_image
                 if self.shrink_factor > 1:
-                    url = f'{self.camera_provider.get_latest_image_url(camera)}?shrink={self.shrink_factor}'
+                    url = f'{self.camera_provider.get_image_url(image)}?shrink={self.shrink_factor}'
                 else:
-                    url = self.camera_provider.get_latest_image_url(camera)
+                    url = self.camera_provider.get_image_url(image)
                 self.image_view.set_source(url)
+                if image.detections:
+                    self.image_view.set_content(image.detections.to_svg())
 
             ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
