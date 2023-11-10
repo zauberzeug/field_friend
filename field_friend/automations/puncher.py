@@ -135,10 +135,10 @@ class Puncher:
 
             current_angle = self.field_friend.z_axis.position_turn
             await self.field_friend.z_axis.turn_by(current_angle-angle)
-            await rosys.sleep(0.5)
+            await rosys.sleep(2)
             current_angle = self.field_friend.z_axis.position_turn
             await self.field_friend.z_axis.turn_by(current_angle+360)
-            await rosys.sleep(0.5)
+            await rosys.sleep(3)
 
             await self.field_friend.z_axis.return_to_reference()
             await rosys.sleep(0.5)
