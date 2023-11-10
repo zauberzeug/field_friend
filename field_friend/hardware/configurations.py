@@ -312,7 +312,7 @@ fieldfriend_configurations = {
         'y_axis': {
             'version': 'y_axis_tornado',
             'name': 'y_axis',
-            'max_speed': 40_000,
+            'max_speed': 80_000,
             'min_position': -0.070,
             'max_position': 0.070,
             'axis_offset': 0.075,
@@ -342,7 +342,7 @@ fieldfriend_configurations = {
             'end_stops_on_expander': True,
             'is_z_reversed': True,
             'is_turn_reversed': True,
-            'speed_limit': 1,
+            'speed_limit': 1.0,
             'turn_speed_limit': 1.0,
             'current_limit': 30,
         },
