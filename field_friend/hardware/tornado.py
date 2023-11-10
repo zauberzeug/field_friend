@@ -217,7 +217,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         )
         await rosys.sleep(0.2)
         await self.robot_brain.send(
-            f'{self.name}_z.position(-0.05);'
+            f'{self.name}_z.position({self.min_position});'
         )
         while self.ref_b and not self.ref_t and self.position_z > self.min_position:
             self.log.info('moving z axis down')
