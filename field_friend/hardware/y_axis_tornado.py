@@ -87,7 +87,7 @@ class YAxisHardwareTornado(YAxisTornado, rosys.hardware.ModuleHardware):
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
-            {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name}_end_l, {name}_end_r)
+            {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name}_end_r, {name}_end_l)
         ''')
         core_message_fields = [
             f'{name}_end_l.level',
@@ -137,43 +137,52 @@ class YAxisHardwareTornado(YAxisTornado, rosys.hardware.ModuleHardware):
             return False
         try:
 
-            # if in end l stop, disable end stops and move out
+            # if in end l stop, move out
             if self.end_l:
+                self.log.info('already in end_l moving out of end_l stop')
                 await self.robot_brain.send(f'{self.name}.speed(-{self.max_speed/10});')
-                while self.end_r:
+                while self.end_l:
                     await rosys.sleep(0.2)
                 await self.robot_brain.send(f'{self.name}.stop();')
 
             # if in end r stop, move out
             if self.end_r:
+                self.log.info('already in end_r moving out of end_r stop')
                 await self.robot_brain.send(f'{self.name}.speed({self.max_speed/10});')
                 while self.end_r:
                     await rosys.sleep(0.2)
                 await self.robot_brain.send(f'{self.name}.stop();')
 
             # move to end r stop
+            self.log.info('moving to end_r stop')
             await self.robot_brain.send(f'{self.name}.speed(-{self.max_speed/6});')
             while not self.end_r:
                 await rosys.sleep(0.2)
 
             # move out of end r stop
+            self.log.info('moving out of end_r stop')
             await self.robot_brain.send(f'{self.name}.speed({self.max_speed/6});')
             while self.end_r:
                 await rosys.sleep(0.2)
+            await self.robot_brain.send(f'{self.name}.stop();')
 
+            await rosys.sleep(1)
             # move slowly to end r stop
+            self.log.info('moving slowly to end_r stop')
             await self.robot_brain.send(f'{self.name}.speed(-{self.max_speed/10});')
             while not self.end_r:
                 await rosys.sleep(0.2)
 
             # move slowly out of end r stop
+            self.log.info('moving slowly out of end_r stop')
             await self.robot_brain.send(f'{self.name}.speed({self.max_speed/10});')
             while self.end_r:
                 await rosys.sleep(0.2)
+            await self.robot_brain.send(f'{self.name}.stop();')
 
             # save position
             await rosys.sleep(0.2)
-            await self.robot_brain.send(f'{self.name}.position = 0;')
+            await self.robot_brain.send(f'{self.name}_motor.position = 0;')
             await rosys.sleep(0.5)
             self.is_referenced = True
             return True

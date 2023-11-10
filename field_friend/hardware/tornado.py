@@ -15,6 +15,8 @@ class Tornado(rosys.hardware.Module, abc.ABC):
         self.position_turn: float = 0.0
 
         self.is_referenced: bool = False
+        self.z_is_referenced: bool = False
+        self.turn_is_referenced: bool = False
 
         self.end_top: bool = False
         self.end_bottom: bool = False
@@ -40,19 +42,19 @@ class Tornado(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def move_to(self, position: float) -> None:
-        if not self.is_referenced:
+        if not self.z_is_referenced:
             raise RuntimeError('zaxis is not referenced, reference first')
-        if not self.min_position <= position <= self.min_position:
+        if not self.min_position <= position:
             raise RuntimeError('zaxis depth is out of range')
 
     @abc.abstractmethod
     async def move_down_until_reference(self) -> None:
-        if not self.is_referenced:
-            raise RuntimeError('yaxis is not referenced, reference first')
+        if not self.z_is_referenced:
+            raise RuntimeError('zaxis is not referenced, reference first')
 
     @abc.abstractmethod
     async def turn_by(self, angle: float) -> None:
-        if not self.is_referenced:
+        if not self.turn_is_referenced:
             raise RuntimeError('zaxis is not referenced, reference first')
 
     @abc.abstractmethod
@@ -102,11 +104,13 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                  is_z_reversed: bool = False,
                  is_turn_reversed: bool = False,
                  speed_limit: int = 1,
+                 turn_speed_limit: int = 1,
                  current_limit: int = 20,
                  ) -> None:
         self.name = name
         self.expander = expander
         self.speed_limit = speed_limit
+        self.turn_speed_limit = turn_speed_limit
         self.current_limit = current_limit
 
         lizard_code = remove_indentation(f'''
@@ -115,7 +119,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_z.m_per_tick = {m_per_tick}
             {name}_turn.m_per_tick = {1/12.52} 
             {name}_z.limits({self.speed_limit}, {self.current_limit})
-            {name}_turn.limits({self.speed_limit}, {self.current_limit})
+            {name}_turn.limits({self.turn_speed_limit}, {self.current_limit})
             {name}_z.reversed = {'true' if is_z_reversed else 'false'}
             {name}_turn.reversed = {'true' if is_turn_reversed else 'false'}
 
@@ -206,12 +210,20 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await super().move_down_until_reference()
         except RuntimeError as e:
             raise Exception(e)
+        self.log.info('moving z axis down')
         await self.robot_brain.send(
             f'{self.name}_ref_b_enabled = true;'
             f'{self.name}_ref_t_enabled = true;'
-            f'{self.name}_z.speed({-self.speed_limit});')
+        )
+        await rosys.sleep(0.2)
+        await self.robot_brain.send(
+            f'{self.name}_z.position({self.min_position});'
+        )
         while self.ref_b and not self.ref_t and self.position_z > self.min_position:
+            self.log.info('moving z axis down')
             await rosys.sleep(0.2)
+        if self.ref_b:
+            self.log.info('still in ref_b but minimum position reached')
         await self.robot_brain.send(
             f'{self.name}_z.speed(0);'
             f'{self.name}_ref_b_enabled = false;'
@@ -219,8 +231,6 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         )
         if self.ref_t:
             raise Exception('Error while moving z axis down: Ref Top is active')
-        if self.position_z <= self.min_position:
-            raise Exception('Error while moving z axis down: Position is below min position')
 
     async def turn_by(self, angle: float) -> None:
         try:
@@ -237,65 +247,81 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
 
             await self.robot_brain.send(
                 f'{self.name}_z_is_referencing = true;'
-                f'{self.name}_z.limits({self.speed_limit}, {self.current_limit});'
             )
             await rosys.sleep(0.5)
 
-            # if in end bottom_stop disable end_stop
-            if self.end_bottom:
-                await self.robot_brain.send(f'{self.name}_end_bottom_enabled = false;')
-
             # if already in end_top_stop disable and move down
             if self.end_top:
+                self.log.info('already in end_top, moving out of end top stop')
                 await self.robot_brain.send(
                     f'{self.name}_end_top_enabled = false;'
                     f'{self.name}_end_bottom_enabled = true;'
-                    f'{self.name}_z.move({-0.5*self.speed_limit});'
+                    f'{self.name}_z.speed({-0.001*self.speed_limit});'
                 )
                 await rosys.sleep(0.2)
                 while self.end_top:
+                    await self.robot_brain.send(f'{self.name}_z.speed({-0.001*self.speed_limit});')
                     await rosys.sleep(0.2)
+                await self.robot_brain.send(f'{self.name}_z.speed(0);')
+
+            # if in end bottom_stop disable end_stop
+            if self.end_bottom:
+                self.log.info('already in end_bottom, moving out of end bottom stop')
+                await self.robot_brain.send(f'{self.name}_end_bottom_enabled = false;')
 
             # move up until end top
+            self.log.info('moving up until end top')
             await self.robot_brain.send(
                 f'{self.name}_end_top_enabled = true;'
-                f'{self.name}_z.move({0.5*self.speed_limit});'
+                f'{self.name}_z.speed({0.001*self.speed_limit});'
             )
             await rosys.sleep(0.2)
             while not self.end_top:
+                await self.robot_brain.send(f'{self.name}_z.speed({0.001*self.speed_limit});')
                 await rosys.sleep(0.2)
+            await self.robot_brain.send(f'{self.name}_z.speed(0);')
 
             # move out of end top
+            self.log.info('moving out of end top')
             await self.robot_brain.send(
-                f'{self.name}_z.move({-0.5*self.speed_limit});'
+                f'{self.name}_z.speed({-0.001*self.speed_limit});'
             )
             await rosys.sleep(0.2)
             while self.end_top:
+                await self.robot_brain.send(f'{self.name}_z.speed({-0.001*self.speed_limit});')
                 await rosys.sleep(0.2)
+            await self.robot_brain.send(f'{self.name}_z.speed(0);')
 
             # move slowly to end top
+            self.log.info('moving slowly to end top')
             await self.robot_brain.send(
-                f'{self.name}_z.move({0.2*self.speed_limit})t;'
+                f'{self.name}_z.speed({0.0005*self.speed_limit});'
             )
             await rosys.sleep(0.2)
             while not self.end_top:
+                await self.robot_brain.send(f'{self.name}_z.speed({0.0005*self.speed_limit});')
                 await rosys.sleep(0.2)
+            await self.robot_brain.send(f'{self.name}_z.speed(0);')
 
             # move slowly out of end top
+            self.log.info('moving slowly out of end top')
             await self.robot_brain.send(
-                f'{self.name}_z.move({-0.2*self.speed_limit});'
+                f'{self.name}_z.speed({-0.0005*self.speed_limit});'
             )
             await rosys.sleep(0.2)
             while self.end_top:
+                await self.robot_brain.send(f'{self.name}_z.speed({-0.0005*self.speed_limit});')
                 await rosys.sleep(0.2)
+            await self.robot_brain.send(f'{self.name}_z.speed(0);')
 
             # set as zero position
+            self.log.info('setting as zero position')
             await self.robot_brain.send(
                 f'{self.name}_z.zero();'
                 f'{self.name}_z_is_referencing = false;'
             )
-            await rosys.sleep(0.2)
             self.log.info('referencing tornado z position done')
+            self.z_is_referenced = True
             return True
         except Exception as e:
             self.log.error(f'error while referencing tornado z position: {e}')
@@ -315,27 +341,30 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
 
             await self.robot_brain.send(
                 f'{self.name}_turn_is_referencing = true;'
-                f'{self.name}_turn.limits({self.speed_limit}, {self.current_limit});'
             )
             await rosys.sleep(0.5)
-
-            # drive to motor ref
-            await self.robot_brain.send(
-                f'{self.name}_ref_motor_enabled = true;'
-                f'{self.name}_turn.move({0.2*self.speed_limit});'
-            )
-            await rosys.sleep(0.2)
-            while not self.ref_motor:
-                await rosys.sleep(0.2)
 
             # drive to gear ref
             await self.robot_brain.send(
                 f'{self.name}_ref_gear_enabled = true;'
-                f'{self.name}_turn.move({-0.2*self.speed_limit});'
+                f'{self.name}_turn.speed({0.1*self.speed_limit});'
             )
             await rosys.sleep(0.2)
             while not self.ref_gear:
-                await rosys.sleep(0.2)
+                await self.robot_brain.send(f'{self.name}_turn.speed({0.1*self.speed_limit});')
+                await rosys.sleep(0.1)
+            await self.robot_brain.send(f'{self.name}_turn.speed(0);')
+
+            # drive to motor ref
+            await self.robot_brain.send(
+                f'{self.name}_ref_motor_enabled = true;'
+                f'{self.name}_turn.move({-0.1*self.speed_limit});'
+            )
+            await rosys.sleep(0.2)
+            while not self.ref_motor:
+                await self.robot_brain.send(f'{self.name}_turn.speed({-0.1*self.speed_limit});')
+                await rosys.sleep(0.1)
+            await self.robot_brain.send(f'{self.name}_turn.speed(0);')
 
             # set as zero position
             await self.robot_brain.send(
@@ -344,6 +373,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             )
             await rosys.sleep(0.2)
             self.log.info('referencing tornado turn position done')
+            self.turn_is_referenced = True
             return True
         except Exception as e:
             self.log.error(f'error while referencing tornado turn position: {e}')
@@ -416,8 +446,8 @@ class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
         try:
             self.log.info('referencing tornado z position')
             self.position_z = 0
-            self.is_referenced = True
             self.log.info('referencing tornado z position done')
+            self.z_is_referenced = True
             return True
         except Exception as e:
             self.log.error(f'error while referencing tornado z position: {e}')
@@ -429,8 +459,8 @@ class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
         try:
             self.log.info('referencing tornado turn position')
             self.position_turn = 0
-            self.is_referenced = True
             self.log.info('referencing tornado turn position done')
+            self.turn_is_referenced = True
             return True
         except Exception as e:
             self.log.error(f'error while referencing tornado turn position: {e}')
