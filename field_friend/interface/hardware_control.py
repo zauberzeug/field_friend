@@ -132,6 +132,8 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         field_friend.z_axis.try_reference_turn()))
                     ui.button('Return to reference', on_click=lambda: automator.start(
                         field_friend.z_axis.return_to_reference()))
+                    ui.button('down until reference', on_click=lambda: automator.start(
+                        field_friend.z_axis.move_down_until_reference()))
 
         if field_friend.z_axis is not None and field_friend.y_axis is not None:
             with ui.column():
