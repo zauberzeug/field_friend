@@ -175,14 +175,16 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             elif isinstance(robot.z_axis, Tornado):
                 z_axis_flags = [
                     '' if robot.z_axis.is_referenced else 'not referenced',
+                    '' if robot.z_axis.z_is_referenced else 'z not referenced',
+                    '' if robot.z_axis.turn_is_referenced else 'turn not referenced',
                     'end_top' if robot.z_axis.end_top else '',
                     'end_bottom' if robot.z_axis.end_bottom else '',
                     'ref_motor' if robot.z_axis.ref_motor else '',
                     'ref_gear' if robot.z_axis.ref_gear else '',
                     'ref_t' if robot.z_axis.ref_t else '',
                     'ref_b' if robot.z_axis.ref_b else '',
-                    f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.is_referenced else '',
-                    f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.is_referenced else '',
+                    f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.z_is_referenced else '',
+                    f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.turn_is_referenced else '',
                 ]
 
             else:
