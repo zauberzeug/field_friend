@@ -176,6 +176,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      is_z_reversed=self.config['z_axis']['is_z_reversed'],
                                      is_turn_reversed=self.config['z_axis']['is_turn_reversed'],
                                      speed_limit=self.config['z_axis']['speed_limit'],
+                                     turn_speed_limit=self.config['z_axis']['turn_speed_limit'],
                                      current_limit=self.config['z_axis']['current_limit'],
                                      )
         else:
