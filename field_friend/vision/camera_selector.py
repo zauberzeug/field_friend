@@ -18,10 +18,11 @@ class CameraSelector:
                          'usb-70090000.xusb-2.4.1',
                          'usb-70090000.xusb-2.4.2',
                          'usb-70090000.xusb-2.4.3',
-                         'usb-3610000.xhci-2.1'
-                         'usb-3610000.xhci-2.2'
-                         'usb-3610000.xhci-2.2.1'
-                         'usb-3610000.xhci-2.2.2'
+                         'usb-3610000.xhci-2.1',
+                         'usb-3610000.xhci-2.1',
+                         'usb-3610000.xhci-2.2',
+                         'usb-3610000.xhci-2.2.1',
+                         'usb-3610000.xhci-2.2.2',
                          ]
 
     def __init__(self) -> None:
