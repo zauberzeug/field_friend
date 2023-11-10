@@ -70,7 +70,7 @@ for i, axis in enumerate([odrv0.axis0, odrv0.axis1]):
     assert_equal(axis.controller.config.vel_differentiator_gain, 0.8999999761581421)
     assert_equal(axis.controller.config.vel_limit, 20)
     assert_equal(axis.controller.config.pos_gain, 2.200000047683716)
-    assert_equal(axis.controller.config.control_mode, enums.CONTROL_MODE_POSITION_CONTROL)
+    assert_equal(axis.controller.config.control_mode, enums.CONTROL_MODE_VELOCITY_CONTROL)
     assert_equal(axis.controller.config.enable_overspeed_error, False)
     assert_equal(axis.controller.config.spinout_mechanical_power_threshold, -1000)
     assert_equal(axis.controller.config.spinout_electrical_power_threshold, 1000)
