@@ -143,7 +143,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                 if isinstance(field_friend.y_axis, ChainAxis):
                     ui.button('chop', on_click=lambda: automator.start(puncher.chop()))
                 if isinstance(field_friend.z_axis, Tornado):
-                    angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=360)
+                    angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
                 else:
                     depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=0.01, max=0.18)
                 with ui.row():
@@ -161,7 +161,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                             puncher.punch(field_friend.y_axis.MIN_POSITION, depth.value)))
                     elif isinstance(field_friend.y_axis, YAxisTornado):
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.min_position, angle.value)))
-                        ui.button(on_click=lambda: automator.start(puncher.punch(0, angle.value)))
+                            puncher.punch(field_friend.y_axis.min_position, angle=angle.value)))
+                        ui.button(on_click=lambda: automator.start(puncher.punch(0, angle=angle.value)))
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.max_position, angle.value)))
+                            puncher.punch(field_friend.y_axis.max_position, angle=angle.value)))

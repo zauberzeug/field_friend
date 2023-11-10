@@ -71,7 +71,7 @@ class Puncher:
                     rosys.notify('y position out of range', type='error')
                     raise Exception('y position out of range')
                 await self.field_friend.y_axis.move_to(y)
-                await self.tornado_drill(angle)
+                await self.tornado_drill(angle=angle)
             else:
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(depth)
@@ -135,7 +135,7 @@ class Puncher:
 
             current_angle = self.field_friend.z_axis.position_turn
             await self.field_friend.z_axis.turn_by(current_angle-angle)
-            await rosys.sleep(2)
+            await rosys.sleep(4)
             current_angle = self.field_friend.z_axis.position_turn
             await self.field_friend.z_axis.turn_by(current_angle+360)
             await rosys.sleep(3)
