@@ -271,7 +271,7 @@ fieldfriend_configurations = {
             'thooth_count': 17,
             'pitch': 0.041,
             'wheel_distance': 0.47,
-            'work_x': 0.118,
+            'work_x': 0.0,
             'drill_radius': 0.025,
         },
         'robot_brain': {
@@ -328,7 +328,7 @@ fieldfriend_configurations = {
         'z_axis': {
             'version': 'tornado',
             'name': 'tornado',
-            'min_position': -0.085,
+            'min_position': -0.07,
             'z_can_address': 0x500,
             'turn_can_address': 0x400,
             'm_per_tick': 0.025/12.52,
@@ -371,14 +371,14 @@ fieldfriend_configurations = {
             'reset_pin': 15,
             'status_pin': 13,
         },
-        'bumper': {
-            'name': 'bumper',
-            'on_expander': True,
-            'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
-        },
-        'status_control': {
-            'name': 'status_control',
-        },
+        # 'bumper': {
+        #     'name': 'bumper',
+        #     'on_expander': True,
+        #     'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
+        # },
+        # 'status_control': {
+        #     'name': 'status_control',
+        # },
     },
 
 
