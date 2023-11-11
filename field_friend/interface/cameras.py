@@ -87,8 +87,9 @@ class CameraCard(Card):
             with ui.row().classes('m-4 justify-end items-center'):
                 ui.checkbox('Punching').bind_value(self, 'punching_enabled') \
                     .tooltip('Enable punching mode')
-                self.depth = ui.number('depth', value=0.02, format='%.2f',
-                                       step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
+                # self.depth = ui.number('depth', value=0.02, format='%.2f',
+                #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
+                self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
                 ui.checkbox('Capturing').bind_value_to(self.capture_images, 'active') \
                     .tooltip('Record new images for the Learning Loop')
                 self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
@@ -102,7 +103,7 @@ class CameraCard(Card):
         if e.type == 'mousemove':
             point2d = Point(x=e.image_x, y=e.image_y)
             if self.camera.calibration is None:
-                self.debug_position.set_text(f'{point2d}')
+                self.debug_position.set_text(f'{point2d} no calibration')
                 return
             point3d = self.camera.calibration.project_from_image(point2d)
             self.debug_position.set_text(f'{point2d} -> {point3d}')
@@ -116,7 +117,9 @@ class CameraCard(Card):
                 self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
                 if self.puncher is not None and self.punching_enabled:
                     self.log.info(f'punching {point3d}')
-                    self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
+                    # self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
+                    self.automator.start(self.puncher.drive_and_punch(
+                        point3d.x, point3d.y, depth=0.05, angle=self.angle.value))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
