@@ -69,6 +69,7 @@ class Puncher:
             if isinstance(self.field_friend.z_axis, Tornado) and isinstance(self.field_friend.y_axis, YAxisTornado):
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='error')
+
                     raise Exception('y position out of range')
                 await self.field_friend.y_axis.move_to(y)
                 await self.tornado_drill(angle=angle)
@@ -78,7 +79,7 @@ class Puncher:
                 await self.field_friend.z_axis.return_to_reference()
             self.log.info(f'punched successfully at {y} with depth {depth}')
         except Exception as e:
-            raise Exception('punching failed') from e
+            raise Exception(f'punching failed: {e}') from e
         finally:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()
@@ -135,7 +136,7 @@ class Puncher:
 
             current_angle = self.field_friend.z_axis.position_turn
             await self.field_friend.z_axis.turn_by(current_angle-angle)
-            await rosys.sleep(4)
+            await rosys.sleep(3)
             current_angle = self.field_friend.z_axis.position_turn
             await self.field_friend.z_axis.turn_by(current_angle+360)
             await rosys.sleep(3)
