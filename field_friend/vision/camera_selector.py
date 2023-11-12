@@ -30,8 +30,8 @@ class CameraSelector:
         """A camera was selected"""
 
         self.camera_ids = {
-            'front cam': self.FRONT_CAMERA_IDS,
-            'bottom cam': self.BOTTOM_CAMERA_IDS,
+            'front_cam': self.FRONT_CAMERA_IDS,
+            'bottom_cam': self.BOTTOM_CAMERA_IDS,
         }
         self.cameras: dict[str, rosys.vision.Camera] = {}
         self.log = logging.getLogger('field_friend.camera_selector')
