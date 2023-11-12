@@ -60,6 +60,8 @@ class CameraCard(Card):
         if camera_type != self.camera_type:
             self.log.info(f'ignoring camera (expected {self.camera_type})')
             return
+        else:
+            self.log.info(f'camera of {self.camera_type} accepted')
         self.camera = camera
         self.clear()
         events = ['mousemove', 'mouseout', 'mouseup']
@@ -75,10 +77,13 @@ class CameraCard(Card):
 
             async def update():
                 image = self.camera.latest_captured_image
+                if image is None:
+                    return
                 if self.shrink_factor > 1:
                     url = f'{self.camera_provider.get_image_url(image)}?shrink={self.shrink_factor}'
                 else:
                     url = self.camera_provider.get_image_url(image)
+
                 self.image_view.set_source(url)
                 if image.detections:
                     self.image_view.set_content(image.detections.to_svg())
