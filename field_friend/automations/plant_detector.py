@@ -34,7 +34,6 @@ class PlantDetector:
 
     async def detect_plants(self, camera: rosys.vision.Camera, *, image: Optional[rosys.vision.Image] = None) -> None:
         self.log.info('detecting plants')
-
         if camera.calibration is None:
             rosys.notify('camera has no calibration')
             raise DetectorError()
@@ -49,6 +48,8 @@ class PlantDetector:
             if new_image is None:
                 self.log.info('no image found')
                 raise DetectorError()
+        else:
+            new_image = image
 
         await self.detector.detect(new_image)
         if not new_image.detections:
