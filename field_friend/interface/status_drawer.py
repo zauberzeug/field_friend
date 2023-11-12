@@ -9,7 +9,7 @@ from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightP
 from ..navigation import Gnss
 
 
-def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer) -> None:
+def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer):
     with ui.right_drawer().classes('bg-[#edf4fa]') as status_drawer, ui.column():
         ui.label('System status').classes('text-xl')
         ui.markdown('**Hardware:**')
