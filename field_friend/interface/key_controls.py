@@ -56,6 +56,12 @@ class KeyControls(rosys.driving.keyboard_control):
         if e.action.keydown and e.key == 'r':
             self.system.restart()
 
+        if e.action.keydown and e.key == 's':
+            if self.automator.is_running:
+                self.automator.stop(because='stop button was pressed')
+            else:
+                self.automator.start()
+
         if e.key == ' ' and e.action.keydown:
             background_tasks.create(self.field_friend.stop())
             if not self.estop_on_space:
