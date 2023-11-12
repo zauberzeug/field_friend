@@ -55,8 +55,6 @@ class FieldFriend(rosys.hardware.Robot):
             await self.y_axis.stop()
         if self.z_axis:
             await self.z_axis.stop()
-        if self.flashlight:
-            await self.flashlight.turn_off()
 
     def can_reach(self, local_point: rosys.geometry.Point, second_tool: bool = False) -> bool:
         """Check if the given point is reachable by the tool.
