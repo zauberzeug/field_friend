@@ -1,6 +1,6 @@
 
 import logging
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from nicegui import events, ui
 from rosys.automation import Automator
@@ -15,6 +15,9 @@ from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .robot_object import robot_object
 from .visualizer_object import visualizer_object
+
+if TYPE_CHECKING:
+    from system import System
 
 SHORTCUT_INFO = '''
     Steer the robot manually with the JOYSTICK on the left. <br>
@@ -40,6 +43,7 @@ class operation:
         path_provider: PathProvider,
         field_provider: FieldProvider,
         automations: dict[str, Callable],
+        system: 'System',
     ) -> None:
         self.field_provider = field_provider
         self.mowing = mowing
@@ -72,7 +76,7 @@ class operation:
                 field_object(field_provider)
                 scene.move_camera(-0.5, -1, 2)
             with ui.row():
-                key_controls = KeyControls(field_friend, steerer, automator, puncher)
+                key_controls = KeyControls(field_friend, steerer, automator, puncher, system)
                 joystick(steerer, size=50, color='#6E93D6').classes('m-4').style('width:12em; height:12em;')
                 with ui.column().classes('mt-4'):
                     with ui.row():

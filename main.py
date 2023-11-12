@@ -22,7 +22,7 @@ def startup() -> None:
                 interface.operation(
                     system.field_friend, system.steerer, system.driver, system.automator, system.odometer, system.
                     usb_camera_provider, system.plant_provider, system.plant_detector, system.puncher, system.weeding,
-                    system.mowing, system.path_provider, system.field_provider, system.automations)
+                    system.mowing, system.path_provider, system.field_provider, system.automations, system)
                 interface.cameras(system.camera_selector, system.usb_camera_provider, system.automator,
                                   system.detector, system.puncher, version=system.field_friend.version)
             if dev:
