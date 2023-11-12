@@ -28,6 +28,7 @@ class PlantProvider:
     def add_weed(self, weed: Plant) -> None:
         for w in self.weeds:
             if w.position.distance(weed.position) < 0.02 and w.type == weed.type:
+                w.position = weed.position
                 return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()
@@ -44,6 +45,7 @@ class PlantProvider:
     def add_crop(self, crop: Plant) -> None:
         for c in self.crops:
             if c.position.distance(crop.position) < 0.03 and c.type == crop.type:
+                c.position = crop.position
                 return
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
