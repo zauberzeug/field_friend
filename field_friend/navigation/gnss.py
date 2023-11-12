@@ -101,7 +101,7 @@ class GnssHardware(Gnss):
         await super().try_connection()
         if self.device is not None:
             return
-        self.log.info('Searching for GNSS device...')
+        # self.log.info('Searching for GNSS device...')
         for port in list_ports.comports():
             self.log.info(f'Found port: {port.device} - {port.description}')
             if 'Septentrio' in port.description:
@@ -110,7 +110,7 @@ class GnssHardware(Gnss):
                 break
         else:
             self.device = None
-            self.log.error('No GNSS device found')
+            # self.log.error('No GNSS device found')
             return
 
         self.log.info(f'Connecting to GNSS device "{self.device}"')
