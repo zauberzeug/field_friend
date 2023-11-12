@@ -38,7 +38,7 @@ class PlantDetector:
         if camera.calibration is None:
             rosys.notify('camera has no calibration')
             raise DetectorError()
-        if image == None:
+        if not image:
             # wait for new image
             deadline = rosys.time() + 5.0
             new_image = camera.latest_captured_image
@@ -53,24 +53,33 @@ class PlantDetector:
         await self.detector.detect(new_image)
         if not new_image.detections:
             self.log.info('no detection found')
-            raise DetectorError()
+            return
+            # raise DetectorError()
 
         self.log.info(f'{[point.category_name for point in new_image.detections.points]} detections found')
         for d in new_image.detections.points:
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
+                self.log.info('weed found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
                 floor_point = camera.calibration.project_from_image(image_point)
                 if floor_point is None:
+                    self.log.error('could not generate floor point of detection, calibration error')
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
                 weed = Plant(position=world_point, type=d.category_name, detection_time=rosys.time())
                 self.plant_provider.add_weed(weed)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
+                self.log.info('crop found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
                 floor_point = camera.calibration.project_from_image(image_point)
                 if floor_point is None:
+                    self.log.error('could not generate floor point of detection, calibration error')
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
                 crop = Plant(position=world_point, type=d.category_name,
                              detection_time=rosys.time(), confidence=d.confidence)
                 self.plant_provider.add_crop(crop)
+            elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
+                self.log.info(f'{d.category_name} not in categories')
+            else:
+                self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
