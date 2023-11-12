@@ -312,9 +312,9 @@ fieldfriend_configurations = {
         'y_axis': {
             'version': 'y_axis_tornado',
             'name': 'y_axis',
-            'max_speed': 80_000,
-            'min_position': -0.070,
-            'max_position': 0.070,
+            'max_speed': 60_000,
+            'min_position': -0.068,
+            'max_position': 0.068,
             'axis_offset': 0.075,
             'steps_per_m': 599251,
             'step_pin': 5,
