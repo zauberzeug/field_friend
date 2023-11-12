@@ -107,7 +107,7 @@ class Puncher:
         try:
             await self.drive_to_punch(x)
             await self.punch(y, depth, angle=angle)
-            await self.clear_view()
+            # await self.clear_view()
         except Exception as e:
             raise Exception('drive and punch failed') from e
 
