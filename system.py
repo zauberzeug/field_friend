@@ -2,7 +2,7 @@ import os
 
 import rosys
 
-from field_friend.automations import (FieldProvider, Mowing, PathProvider, PathRecorder, PlantDetector, PlantProvider,
+from field_friend.automations import (FieldProvider, Mowing, PathProvider, PathRecorder, PlantLocator, PlantProvider,
                                       Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
@@ -49,7 +49,7 @@ class System:
         if self.is_real:
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
         self.puncher = Puncher(self.field_friend, self.driver)
-        self.plant_detector = PlantDetector(self.detector, self.plant_provider, self.odometer)
+        self.plant_detector = PlantLocator(self.detector, self.plant_provider, self.odometer)
         self.plant_detector.weed_category_names = ['coin', 'weed']
         self.plant_detector.crop_category_names = ['sugar_beet', 'crop']
         self.plant_detector.minimum_crop_confidence = 0.5
