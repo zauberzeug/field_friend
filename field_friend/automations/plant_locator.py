@@ -16,7 +16,7 @@ class DetectorError(Exception):
     pass
 
 
-class PlantDetector:
+class PlantLocator:
 
     def __init__(self,
                  detector: rosys.vision.Detector,

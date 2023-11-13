@@ -12,7 +12,7 @@ from rosys.vision import Detector
 from ..hardware import FieldFriend
 from ..vision import CameraSelector
 from .plant import Plant
-from .plant_detector import DetectorError, PlantDetector
+from .plant_locator import DetectorError, PlantLocator
 from .plant_provider import PlantProvider
 from .puncher import Puncher
 
@@ -22,7 +22,7 @@ MAX_DRIVE_DISTANCE = 0.08
 
 class Weeding:
     def __init__(self, field_friend: FieldFriend, driver: Driver, detector: Detector, camera_selector: CameraSelector,
-                 plant_provider: PlantProvider, puncher: Puncher, plant_detector: PlantDetector) -> None:
+                 plant_provider: PlantProvider, puncher: Puncher, plant_detector: PlantLocator) -> None:
         self.log = logging.getLogger('field_friend.weeding')
         self.field_friend = field_friend
         self.puncher = puncher

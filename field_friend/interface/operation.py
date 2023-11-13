@@ -7,7 +7,7 @@ from rosys.automation import Automator
 from rosys.driving import Driver, Odometer, Steerer, driver_object, joystick
 from rosys.vision import CameraProvider
 
-from ..automations import FieldProvider, Mowing, PathProvider, PlantDetector, PlantProvider, Puncher, Weeding
+from ..automations import FieldProvider, Mowing, PathProvider, PlantLocator, PlantProvider, Puncher, Weeding
 from ..hardware import FieldFriend
 from .automation_controls import automation_controls
 from .field_object import field_object
@@ -36,7 +36,7 @@ class operation:
         odometer: Odometer,
         camera_provider: CameraProvider,
         plant_provider: PlantProvider,
-        plant_detector: PlantDetector,
+        plant_detector: PlantLocator,
         puncher: Puncher,
         weeding: Weeding,
         mowing: Mowing,
