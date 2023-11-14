@@ -1,3 +1,5 @@
+import logging
+
 import rosys
 
 from .plant import Plant
@@ -6,6 +8,7 @@ from .plant import Plant
 class PlantProvider:
 
     def __init__(self) -> None:
+        self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 

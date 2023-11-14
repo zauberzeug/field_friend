@@ -30,6 +30,7 @@ class PlantLocator:
         self.detector = detector
         self.plant_provider = plant_provider
         self.odometer = odometer
+        self.is_paused = False
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
@@ -37,6 +38,9 @@ class PlantLocator:
         rosys.on_repeat(self.detect_plants, 0.001)  # as fast as possible, function will sleep if necessary
 
     async def detect_plants(self) -> None:
+        if self.is_paused:
+            await asyncio.sleep(0.01)
+            return
         t = rosys.time()
         if self.camera.calibration is None:
             rosys.notify('camera has no calibration')
@@ -79,3 +83,11 @@ class PlantLocator:
                 self.log.info(f'{d.category_name} not in categories')
             else:
                 self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
+
+    def pause(self) -> None:
+        self.log.info('pausing plant detection')
+        self.is_paused = True
+
+    def resume(self) -> None:
+        self.log.info('resuming plant detection')
+        self.is_paused = False
