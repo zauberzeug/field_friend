@@ -81,8 +81,8 @@ class PlantLocator:
                 self.plant_provider.add_crop(crop)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
-            else:
-                self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
+            # else:
+            #     self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
 
     def pause(self) -> None:
         self.log.info('pausing plant detection')
