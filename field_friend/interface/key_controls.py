@@ -53,7 +53,7 @@ class KeyControls(rosys.driving.keyboard_control):
                     background_tasks.create(self.y_axis.stop())
                     rosys.notify('y axis stopped')
 
-        if e.action.keydown and e.key == 'r':
+        if e.action.keydown and e.key == 'r' and e.modifiers.shift:
             self.system.restart()
 
         if e.action.keydown and e.key == 's':
