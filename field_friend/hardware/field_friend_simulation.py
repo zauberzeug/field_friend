@@ -37,10 +37,11 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             z_axis = TornadoSimulation()
         else:
             z_axis = None
-
         if config['flashlight']['version'] == 'flashlight':
             flashlight = FlashlightSimulation()
         elif config['flashlight']['version'] == 'flashlight_v2':
+            flashlight = FlashlightSimulationV2()
+        elif config['flashlight']['version'] == 'flashlight_pwm':
             flashlight = FlashlightSimulationV2()
         else:
             flashlight = None
