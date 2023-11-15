@@ -9,6 +9,7 @@ class FlashlightPWM(rosys.hardware.Module, abc.ABC):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        self.is_active: bool = False
 
     async def __aenter__(self):
         await self.turn_on()
@@ -18,11 +19,11 @@ class FlashlightPWM(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def turn_on(self) -> None:
-        pass
+        self.is_active = True
 
     @abc.abstractmethod
     async def turn_off(self) -> None:
-        pass
+        self.is_active = False
 
 
 class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
