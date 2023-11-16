@@ -1,29 +1,13 @@
-import abc
 from typing import Optional
 
 import rosys
 from rosys.helpers import remove_indentation
 
+from .flashlight_v2 import FlashlightV2
 
-class FlashlightPWM(rosys.hardware.Module, abc.ABC):
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.is_active: bool = False
-
-    async def __aenter__(self):
-        await self.turn_on()
-
-    async def __aexit__(self, exc_t, exc_v, exc_tb):
-        await self.turn_off()
-
-    @abc.abstractmethod
-    async def turn_on(self) -> None:
-        self.is_active = True
-
-    @abc.abstractmethod
-    async def turn_off(self) -> None:
-        self.is_active = False
+class FlashlightPWM(FlashlightV2):
+    ...
 
 
 class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
