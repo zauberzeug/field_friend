@@ -47,7 +47,7 @@ class PlantProvider:
 
     def add_crop(self, crop: Plant) -> None:
         for c in self.crops:
-            if c.position.distance(crop.position) < 0.03 and c.type == crop.type:
+            if c.position.distance(crop.position) < 0.05 and c.type == crop.type:
                 c.position = crop.position
                 return
         self.crops.append(crop)

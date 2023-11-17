@@ -9,8 +9,8 @@ from .plant_provider import PlantProvider
 
 WEED_CATEGORY_NAME = ['coin', 'weed']
 CROP_CATEGORY_NAME = ['coin_with_hole', 'crop']
-MINIMUM_WEED_CONFIDENCE = 0.6
-MINIMUM_CROP_CONFIDENCE = 0.6
+MINIMUM_WEED_CONFIDENCE = 0.8
+MINIMUM_CROP_CONFIDENCE = 0.75
 
 
 class DetectorError(Exception):
