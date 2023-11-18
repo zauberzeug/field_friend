@@ -77,7 +77,7 @@ class Puncher:
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(depth)
                 await self.field_friend.z_axis.return_to_reference()
-            self.log.info(f'punched successfully at {y} with depth {depth}')
+            self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
         except Exception as e:
             raise Exception(f'punching failed: {e}') from e
         finally:
