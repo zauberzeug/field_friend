@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 from nicegui import app, ui
 
-import log
+import field_friend.log_configuration as log_configuration
 from field_friend import interface
-from system import System
+from field_friend.system import System
 
-log = log.configure()
+log_configuration = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
 
 
@@ -19,10 +19,7 @@ def startup() -> None:
         interface.header_bar(system, status_drawer)
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                interface.operation(
-                    system.field_friend, system.steerer, system.driver, system.automator, system.odometer, system.
-                    usb_camera_provider, system.plant_provider, system.plant_detector, system.puncher, system.weeding,
-                    system.mowing, system.path_provider, system.field_provider, system.automations, system)
+                interface.operation(system)
                 interface.cameras(system.camera_selector, system.usb_camera_provider, system.automator,
                                   system.detector, system.puncher, version=system.field_friend.version)
             if dev:
@@ -42,10 +39,7 @@ def startup() -> None:
         interface.system_bar()
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                interface.operation(
-                    system.field_friend, system.steerer, system.driver, system.automator, system.odometer, system.
-                    usb_camera_provider, system.plant_provider, system.plant_detector, system.puncher, system.weeding,
-                    system.mowing, system.path_provider, system.field_provider, system.automations)
+                interface.operation(system)
                 interface.field_planner(system.field_provider, system.odometer, system.gnss)
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):
@@ -60,10 +54,7 @@ def startup() -> None:
         interface.system_bar()
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                interface.operation(
-                    system.field_friend, system.steerer, system.driver, system.automator, system.odometer, system.
-                    usb_camera_provider, system.plant_provider, system.plant_detector, system.puncher, system.weeding,
-                    system.mowing, system.path_provider, system.field_provider, system.automations)
+                interface.operation(system)
                 interface.path_planner(system.path_provider, system.path_recorder, system.automator)
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):

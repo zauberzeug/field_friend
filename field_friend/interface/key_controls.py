@@ -3,26 +3,23 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui.events import KeyEventArguments
 from rosys import background_tasks
-from rosys.automation import Automator
-from rosys.driving import Steerer
 
-from ..automations import Puncher
-from ..hardware import FieldFriend, YAxis
+from ..hardware import YAxis
 
 if TYPE_CHECKING:
-    from system import System
+    from field_friend.system import System
 
 
 class KeyControls(rosys.driving.keyboard_control):
 
-    def __init__(self, field_friend: FieldFriend, steerer: Steerer, automator: Automator, puncher: Puncher, system: 'System') -> None:
-        super().__init__(steerer)
-        self.field_friend = field_friend
-        self.wheels = field_friend.wheels
-        self.y_axis = field_friend.y_axis
-        self.z_axis = field_friend.z_axis
-        self.automator = automator
-        self.puncher = puncher
+    def __init__(self, system: 'System') -> None:
+        super().__init__(system.steerer)
+        self.field_friend = system.field_friend
+        self.wheels = system.field_friend.wheels
+        self.y_axis = system.field_friend.y_axis
+        self.z_axis = system.field_friend.z_axis
+        self.automator = system.automator
+        self.puncher = system.puncher
         self.system = system
         self.estop_on_space = True
 

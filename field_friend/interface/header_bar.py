@@ -4,7 +4,7 @@ import rosys
 from nicegui import ui
 
 if TYPE_CHECKING:
-    from system import System
+    from field_friend.system import System
 
 
 def header_bar(system: 'System', right_drawer: ui.right_drawer) -> None:
