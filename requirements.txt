@@ -1,3 +1,8 @@
+bacs >= 0.1.7
+icecream
+pillow
+prompt-toolkit # for lizard monitor
 pynmea2
 geopy
 shapely
+rosys >= 0.9.5
