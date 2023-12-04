@@ -26,22 +26,22 @@ This will start the simulated robot and open the user interface in your browser.
 
 ## On Real Hardware
 
+### Development
+
 The following instructions will only work if you have a real "Zauberzeug Field Friend" at your disposal.
 Contact [sales@zauberzeug.com](mailto:sales@zauberzeug.com) if you are interested in a non-profit purchase of this development hardware.
 
 1. make sure you can login via ssh without providing a password (via `ssh-copy-id` command)
-2. get [LiveSync](https://github.com/zauberzeug/livesync) to hot-deploy local code to the machine: <br>
-   `git clone git@github.com:zauberzeug/livesync.git`
-3. go to your local `field_friend` folder and start the LiveSync script: <br>
+2. go to your local `field_friend` folder and start the LiveSync script: <br>
    `./sync.py <ssh-host-name-of-field-friend>`
-4. this will deploy your local code to the Field Friend
-5. as long as [LiveSync](https://github.com/zauberzeug/livesync) is active, all code change are automatically pushed to the machine
-6. the new code will automatically trigger a reload on the Field Friend
+3. this will deploy your local code to the Field Friend
+4. as long as [LiveSync](https://github.com/zauberzeug/livesync) is active, all code change are automatically pushed to the machine
+5. the new code will automatically trigger a reload on the Field Friend
 
 ### Update RoSys and NiceGUI
 
 To utilize personal versions of RoSys and NiceGUI instead of the default ones provided in the docker image,
-modify the docker-compose.yml file by enabling the volume mounts. Then execute the following commands:
+modify the docker-compose.yml file by uncommenting the volume mounts. Then execute the following commands:
 
 ```bash
 cd ~/field_friend
