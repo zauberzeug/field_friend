@@ -1,7 +1,7 @@
 # Zauberzeug Field Friend
 
 This is an example implementation of an mechanical weeding robot with [RoSys](https://rosys.io).
-The full [Field Friend](http://field-friend.com) system is build by [Zauberzeug](http://zauberzeug.com) as a development platform to advance organic and regenerative agriculture.
+The full [Field Friend](http://feldfreund.de) system is build by [Zauberzeug](http://zauberzeug.com) as a development platform to advance organic and regenerative agriculture.
 
 ![](assets/field_friend.webp)
 

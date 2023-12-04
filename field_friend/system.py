@@ -77,6 +77,7 @@ class System:
         self.coin_collecting = CoinCollecting(self)
         self.path_provider = PathProvider()
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
+        self.field_provider = FieldProvider()
 
         width = 0.64
         length = 0.78
@@ -91,7 +92,6 @@ class System:
             ],
             height=height)
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
-        self.field_provider = FieldProvider()
         self.mowing = Mowing(self.field_friend, self.field_provider, driver=self.driver,
                              path_planner=self.path_planner, gnss=self.gnss, robot_width=width)
 

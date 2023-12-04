@@ -78,4 +78,4 @@ def startup() -> None:
 
 app.on_startup(startup)
 
-ui.run(title='Field Friend', port=80)
+ui.run(title='Field Friend', port=80, favicon='assets/favicon.ico')
