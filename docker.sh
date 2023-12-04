@@ -34,6 +34,7 @@ fi
 
 cmd=$1
 cmd_args=${@:2}
+set -x
 case $cmd in
     u | up)
         docker-compose $compose_args up -d $cmd_args
@@ -73,7 +74,7 @@ case $cmd in
         docker stats $cmd_args
         ;;
     l | log | logs)
-        docker-compose $compose_args logs -f --tail 100 $cmd_args
+        docker-compose $compose_args logs -f --tail 1000 $cmd_args
         ;;
     e | exec)
         docker-compose $compose_args exec $cmd_args
