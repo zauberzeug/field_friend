@@ -1,4 +1,3 @@
-bacs >= 0.1.7
 icecream
 pillow
 prompt-toolkit # for lizard monitor
