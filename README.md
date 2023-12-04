@@ -1,7 +1,7 @@
 # Zauberzeug Field Friend
 
 This is an example implementation of an mechanical weeding robot with [RoSys](https://rosys.io).
-The full system is build by [Zauberzeug](http://zauberzeug.com) as a development platform to advance organic and regenerative agriculture.
+The full [Field Friend](http://field-friend.com) system is build by [Zauberzeug](http://zauberzeug.com) as a development platform to advance organic and regenerative agriculture.
 
 ![](assets/field_friend.webp)
 
@@ -32,20 +32,26 @@ Contact [sales@zauberzeug.com](mailto:sales@zauberzeug.com) if you are intereste
 1. make sure you can login via ssh without providing a password (via `ssh-copy-id` command)
 2. get [LiveSync](https://github.com/zauberzeug/livesync) to hot-deploy local code to the machine: <br>
    `git clone git@github.com:zauberzeug/livesync.git`
-3. go to your local `field_friend` folder and start LiveSync: <br>
-   `livesync <ssh-host-name-of-field-friend>`
+3. go to your local `field_friend` folder and start the LiveSync script: <br>
+   `./sync.py <ssh-host-name-of-field-friend>`
 4. this will deploy your local code to the Field Friend
 5. as long as [LiveSync](https://github.com/zauberzeug/livesync) is active, all code change are automatically pushed to the machine
 6. the new code will automatically trigger a reload on the Field Friend
-7. to watch the log output of the remote machine: login via ssh and run <br>
-   `tail -f ~/.rosys/debug.log`
 
-### Update RoSys
+### Update RoSys and NiceGUI
 
-On the machine you can update RoSys by logging in and running
+To utilize personal versions of RoSys and NiceGUI instead of the default ones provided in the docker image,
+modify the docker-compose.yml file by enabling the volume mounts. Then execute the following commands:
 
 ```bash
 cd ~/field_friend
-./docker.sh pull
-./docker.sh up
+./docker.sh u rosys
+```
+
+### Debugging
+
+You can see the current log with
+
+```bash
+./docker.sh l rosys
 ```
