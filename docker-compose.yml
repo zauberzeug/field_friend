@@ -2,14 +2,15 @@ version: "3.9"
 services:
   rosys:
     image: "zauberzeug/field-friend:latest"
+    build:
+      context: .
     volumes:
       - ./:/app
       # - ./rosys:/home/zauberzeug/.local/lib/python3.11/site-package/rosys
       #- ./nicegui:/home/zauberzeug/.local/lib/python3.11/site-package/nicegui
-      - ~/.rosys:/home/zauebrezug/.rosys
+      - ~/.rosys:/home/zauberzeug/.rosys
       - ~/data:/data
-    build:
-      context: ./
+      - /run/udev:/run/udev:ro # to get the device identifiers
     network_mode: host
     restart: always
     privileged: true
@@ -26,7 +27,7 @@ services:
       options:
         max-size: "200m"
         max-file: "100"
-    command: /start.sh
+    init: true
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 60s

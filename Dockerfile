@@ -41,6 +41,7 @@ RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
     python3 -m pip install pyudev
 
+RUN mkdir -p /home/zauberzeug/.lizard # ensure dir is owned by zauberzeug
 WORKDIR /home/zauberzeug/.lizard
 RUN CURL="curl -s https://api.github.com/repos/zauberzeug/lizard/releases" && \
     ZIP=$(eval "$CURL/latest" | jq -r '.assets[0].id') && \
@@ -54,10 +55,11 @@ RUN pip install --no-cache prompt-toolkit
 WORKDIR /app
 COPY  --chown=${USERNAME}:${USER_GID} field_friend ./field_friend/
 COPY  --chown=${USERNAME}:${USER_GID} *.py ./
+COPY  --chown=${USERNAME}:${USER_GID} assets/favicon.ico ./
 
 WORKDIR /app
 
-RUN sudo setcap 'cap_net_bind_service=+ep' /usr/local/bin/python3.11
-RUN sudo setcap 'cap_sys_nice=eip' /usr/local/bin/python3.11
+RUN sudo setcap 'cap_net_bind_service=+ep cap_sys_nice=+ep' /usr/local/bin/python3.11
+RUN sudo usermod -a -G video $USERNAME
 
 CMD python3 main.py
