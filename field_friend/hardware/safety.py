@@ -63,7 +63,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
         if isinstance(y_axis, ChainAxisHardware):
             lizard_code += f'when {y_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); end\n'
-        if isinstance(z_axis, ZAxisHardware) or isinstance(z_axis, ZAxisHardwareV2):
+        if (isinstance(z_axis, ZAxisHardware) or isinstance(z_axis, ZAxisHardwareV2)) and y_axis is not None:
             lizard_code += f'when {z_axis.name}_ref_t.level == {1 if not z_axis.ccw else -1} then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
         # if isinstance(z_axis, TornadoHardware):
         #     lizard_code += f'when {z_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
