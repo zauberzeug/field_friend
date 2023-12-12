@@ -1,10 +1,13 @@
 import logging
 import os
 import sys
+from pathlib import Path
 
 import icecream
 
 project = 'field_friend'
+
+PATH = Path('~/.rosys').expanduser()
 
 
 class PackagePathFilter(logging.Filter):
@@ -24,6 +27,8 @@ class PackagePathFilter(logging.Filter):
 
 def configure():
     icecream.install()
+
+    PATH.mkdir(parents=True, exist_ok=True)
 
     config = {
         'version': 1,
@@ -52,7 +57,7 @@ def configure():
                 'class': 'logging.handlers.RotatingFileHandler',
                 'formatter': 'default',
                 'filters': ['package_path_filter'],
-                'filename': os.path.expanduser('~/.rosys/debug.log'),
+                'filename': PATH / 'debug.log',
                 'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
                 'backupCount': 10  # max 100 mb of logs
             },
@@ -61,7 +66,7 @@ def configure():
                 'class': 'logging.handlers.RotatingFileHandler',
                 'formatter': 'default',
                 'filters': ['package_path_filter'],
-                'filename': os.path.expanduser('~/.rosys/communication.log'),
+                'filename': PATH / 'communication.log',
                 'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
                 'backupCount': 50  # max 500 mb of logs
             }

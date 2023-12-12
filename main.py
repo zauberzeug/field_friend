@@ -5,7 +5,7 @@ import field_friend.log_configuration as log_configuration
 from field_friend import interface
 from field_friend.system import System
 
-log_configuration = log_configuration.configure()
+logger = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
 
 
