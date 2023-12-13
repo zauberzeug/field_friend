@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 
 class CoveragePlanner:
     OBSTACLE_PADDING = 0.7
-    NUM_OUTER_LANES = 3
 
     def __init__(self, mowing: 'Mowing') -> None:
         self.log = logging.getLogger('field_friend.coverage_planner')
@@ -84,7 +83,7 @@ class CoveragePlanner:
         self.mowing.lane_distance = (max_perp_proj - min_perp_proj) / number_of_lanes
         self.log.info(f'corrected lane distance: {self.mowing.lane_distance}')
 
-    def _determine_inner_lanes(self) -> None:
+    def _determine_inner_lanes(self) -> list[list[LineString]]:
         lanes_groups = []  # List to hold lists of lanes
         current_groups = [[]]  # Current groups of lanes
         is_multiline = False
@@ -135,10 +134,10 @@ class CoveragePlanner:
 
         return lanes_groups
 
-    def _determine_outer_lanes(self) -> None:
+    def _determine_outer_lanes(self) -> list[list[LineString]]:
         # Create line segments along the outline
         outer_lanes_groups = []
-        for i in range(self.NUM_OUTER_LANES):
+        for i in range(self.mowing.num_outer_lanes):
             outer_lanes = []
             padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]
                                      ).buffer(-self.mowing.padding-self.mowing.lane_distance*i)

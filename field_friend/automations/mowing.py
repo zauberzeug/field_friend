@@ -30,6 +30,7 @@ class Mowing(rosys.persistence.PersistentModule):
 
         self.padding: float = 1.0
         self.lane_distance: float = 0.5
+        self.num_outer_lanes: int = 3
         self.turning_radius: float = self.driver.parameters.minimum_turning_radius
         self.robot_width: float = robot_width
 
@@ -48,8 +49,8 @@ class Mowing(rosys.persistence.PersistentModule):
         return {
             'padding': self.padding,
             'lane_distance': self.lane_distance,
-            'paths': [[rosys.persistence.to_dict(segment) for segment in path] for path in self.paths],
-            'current_path': [rosys.persistence.to_dict(segment) for segment in self.current_path],
+            'paths': [[rosys.persistence.to_dict(segment) for segment in path] for path in self.paths] if self.paths else [],
+            'current_path': [rosys.persistence.to_dict(segment) for segment in self.current_path] if self.current_path else [],
             'current_path_segment': rosys.persistence.to_dict(self.current_path_segment) if self.current_path_segment else None,
         }
 
@@ -92,8 +93,8 @@ class Mowing(rosys.persistence.PersistentModule):
         if len(self.field.outline) < 3:
             rosys.notify('No field is defined', 'negative')
             return
-        if self.padding < self.robot_width:
-            self.padding = self.robot_width
+        if self.padding < self.robot_width+self.lane_distance:
+            self.padding = self.robot_width+self.lane_distance
         await self._mowing()
 
     async def _mowing(self) -> None:
@@ -183,6 +184,7 @@ class Mowing(rosys.persistence.PersistentModule):
                 self.driver.parameters.carrot_distance = 0.4
                 self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
                 await self.driver.drive_path(path_switch)
+                await rosys.sleep(0.5)
                 self.driver.parameters.can_drive_backwards = False
                 self.driver.parameters.hook_offset = 0.6
                 self.driver.parameters.carrot_distance = 0.2
