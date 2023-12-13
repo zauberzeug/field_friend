@@ -167,9 +167,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                 en3.off();
             end
 
-            when {name}_ref_b_enabled and {name}_ref_b.level == 0 and {name}_ref_t.level == 0 then
+            when {name}_ref_b_enabled and {name}_ref_b.level == 1 then
                 {name}_z.speed(0);
-                {name}_ref_b_enabled = false;
             end
 
 
@@ -222,26 +221,29 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                 f'{self.name}_z.position({self.min_position});'
             )
             await rosys.sleep(2)
-            # while self.ref_b and not self.ref_t and self.position_z > self.min_position:
-            #     self.log.info('moving z axis down')
-            #     await rosys.sleep(0.1)
-            # if self.ref_b:
-            #     self.log.info('still in ref_b but minimum position reached')
-            # await self.robot_brain.send(
-            #     f'{self.name}_z.speed(0);'
-            # ) #ToDO. implent this when bottom ref properly installed
+            while self.ref_b and not self.ref_t:
+                if self.min_position - 0.005 <= self.position_z <= self.min_position + 0.005:
+                    self.log.info('minimum position reached')
+                    break
+                self.log.info('moving z axis down')
+                await rosys.sleep(0.1)
             if self.ref_t:
-                await rosys.sleep()
                 raise Exception('Error while moving z axis down: Ref Top is active')
+            if not self.ref_b:
+                self.log.info('bottom ref reached')
         except Exception as e:
             self.log.error(f'error while moving z axis down: {e}')
+            self.is_referenced = False
+            self.z_is_referenced = False
+            self.turn_is_referenced = False
             raise Exception(e)
         finally:
             # await rosys.sleep(1.5)
             self.log.info('finalizing moving z axis down')
             await self.robot_brain.send(
+                f'{self.name}_z.speed(0);'
                 f'{self.name}_ref_b_enabled = false;'
-                # f'{self.name}_ref_t_enabled = false;'
+                f'{self.name}_ref_t_enabled = false;'
             )
 
     async def turn_by(self, angle: float) -> None:
@@ -405,7 +407,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.ref_motor = int(words.pop(0)) == 0
         self.ref_gear = int(words.pop(0)) == 1
         self.ref_t = int(words.pop(0)) == 1
-        self.ref_b = int(words.pop(0)) == 1
+        self.ref_b = int(words.pop(0)) == 0
         self.position_z = float(words.pop(0))
         self.position_turn = (float(words.pop(0)) * 360)
 
