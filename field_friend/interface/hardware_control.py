@@ -11,9 +11,9 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
     with ui.card(), ui.row():
         with ui.column().classes('items-stretch'):
             if isinstance(field_friend, FieldFriendHardware):
-                ui.markdown('**Software E-Stop**')
+                ui.markdown('**Robot Brain Control**')
                 with ui.row().classes('items-center'):
-                    ui.label('E-Stop').classes('mr-auto')
+                    ui.label('EN3').classes('mr-auto')
                     ui.button('OFF', on_click=lambda: automator.start(field_friend.robot_brain.send('en3.off()')))
                     ui.button('ON', on_click=lambda: automator.start(field_friend.robot_brain.send('en3.on()')))
                 with ui.row().classes('items-center'):
