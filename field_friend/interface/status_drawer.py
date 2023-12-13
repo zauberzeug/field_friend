@@ -205,7 +205,7 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             ram_label.text = f'{psutil.virtual_memory().percent:.0f}%'
 
             def get_jetson_cpu_temperature():
-                with open("/sys/devices/virtual/thermal/thermal_zone1/temp", "r") as f:
+                with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
                     temp = f.read().strip()
                 return float(temp) / 1000.0  # Convert from milli°C to °C
             if isinstance(robot, FieldFriendHardware):
