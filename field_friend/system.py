@@ -58,10 +58,10 @@ class System:
             self.gnss = GnssSimulation(self.field_friend.wheels)
         self.gnss.ROBOT_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
-        self.driver.parameters.linear_speed_limit = 0.05
+        self.driver.parameters.linear_speed_limit = 0.1
         self.driver.parameters.angular_speed_limit = 1.0
         self.driver.parameters.can_drive_backwards = False
-        self.driver.parameters.minimum_turning_radius = 0
+        self.driver.parameters.minimum_turning_radius = 0.1
         self.driver.parameters.hook_offset = 0.6
         self.driver.parameters.carrot_distance = 0.2
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
@@ -158,6 +158,7 @@ class System:
                 self.was_charging = False
                 rosys.on_repeat(check_if_charging, 0.5)
                 rosys.on_startup(relase_relais_on_startup)
+                rosys.on_startup(self.start_esp)
 
         else:
             rosys.on_startup(lambda: create_weedcam('bottom_cam', self.usb_camera_provider))
@@ -176,7 +177,24 @@ class System:
                     self.automator.pause(because='steering started')
 
         self.steerer.STEERING_STARTED.register(pause)
-        self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
+        # self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
+
+    def start_esp(self):
+        self.log.info('>>>>>>>>>>starting esp')
+        self.automator.start(self.enable_esp())
+
+    async def enable_esp(self):
+        self.log.info('>>>>>>>>>>enabling esp because buggy')
+        with open(f'/sys/class/gpio/export', 'w') as f:
+            f.write('492\n')
+        with open(f'/sys/class/gpio/export', 'w') as f:
+            f.write('460\n')
+        # with open(f'/sys/class/gpio/unexport', 'w') as f:
+        #     f.write('492\n')
+        # with open(f'/sys/class/gpio/unexport', 'w') as f:
+        #     f.write('460\n')
+        await rosys.sleep(0.1)
+        self.field_friend.robot_brain.enable_esp()
 
     def _create_plant_locator(self, camera: rosys.vision.Camera) -> None:
         if camera == self.camera_selector.cameras['bottom_cam']:
