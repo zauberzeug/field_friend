@@ -117,7 +117,7 @@ class Mowing(rosys.persistence.PersistentModule):
                 self.MOWING_STARTED.emit([path_segment for path in self.paths for path_segment in path])
                 await self._drive_mowing_paths(self.paths)
                 rosys.notify('Mowing finished', 'positive')
-                break
+                # break TODO: only for demo
             except Exception as e:
                 self.log.exception(e)
                 rosys.notify(f'Mowing failed because of {e}', 'negative')
