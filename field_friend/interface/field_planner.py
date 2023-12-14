@@ -141,30 +141,33 @@ class field_planner:
                             ui.button('ADD ROW', on_click=lambda field=field: self.add_row(field)) \
                                 .props('color=primary outline')
 
-    def add_point(self, field: Field, point: Optional[rosys.geometry.Point] = None) -> None:
-        if self.gnss.device != 'simulation':
-            if self.gnss.device is None:
-                self.log.warning('not creating Point because no GNSS device found')
-                rosys.notify('No GNSS device found')
+    def get_field_reference(self, field: Field) -> None:
+        if self.gnss.device is None:
+            self.log.warning('not creating Reference because no GNSS device found')
+            rosys.notify('No GNSS device found', 'negative')
+            return
+        if self.gnss.record.gps_qual != 4:
+            self.log.warning('not creating Reference because no RTK fix available')
+            rosys.notify('No RTK fix available', 'negative')
+            return
+        if field.reference_lat is None or field.reference_lon is None:
+            ref_lat, ref_lon = self.gnss.get_reference()
+            if ref_lat is None or ref_lon is None:
+                self.log.warning('not creating Point because no reference position available')
+                rosys.notify('No reference position available')
                 return
-            if self.gnss.record.gps_qual != 4:
-                self.log.warning('not creating Point because no RTK fix available')
-                rosys.notify('No RTK fix available')
-                return
-            if field.reference_lat is None or field.reference_lon is None:
-                ref_lat, ref_lon = self.gnss.get_reference()
-                if ref_lat is None or ref_lon is None:
-                    self.log.warning('not creating Point because no reference position available')
-                    rosys.notify('No reference position available')
-                    return
-                field.reference_lat = ref_lat
-                field.reference_lon = ref_lon
+            field.reference_lat = ref_lat
+            field.reference_lon = ref_lon
         if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
             self.gnss.set_reference(field.reference_lat, field.reference_lon)
+
+    def add_point(self, field: Field, point: Optional[rosys.geometry.Point] = None) -> None:
+        if self.gnss.device != 'simulation':
+            self.get_field_reference(field)
         if point is not None:
             index = field.outline.index(point)
-            point = self.odometer.prediction.point
-            field.outline[index] = point
+            new_point = self.odometer.prediction.point
+            field.outline[index] = new_point
         else:
             point = self.odometer.prediction.point
             field.outline.append(point)
@@ -211,24 +214,7 @@ class field_planner:
     def add_obstacle_point(
             self, field: Field, obstacle: FieldObstacle, point: Optional[rosys.geometry.Point] = None) -> None:
         if self.gnss.device != 'simulation':
-            if self.gnss.device is None:
-                self.log.warning('not creating Point because no GNSS device found')
-                rosys.notify('No GNSS device found')
-                return
-            if self.gnss.record.gps_qual != 4:
-                self.log.warning('not creating Point because no RTK fix available')
-                rosys.notify('No RTK fix available')
-                return
-            if field.reference_lat is None or field.reference_lon is None:
-                ref_lat, ref_lon = self.gnss.get_reference()
-                if ref_lat is None or ref_lon is None:
-                    self.log.warning('not creating Point because no reference position available')
-                    rosys.notify('No reference position available')
-                    return
-                field.reference_lat = ref_lat
-                field.reference_lon = ref_lon
-        if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
-            self.gnss.set_reference(field.reference_lat, field.reference_lon)
+            self.get_field_reference(field)
         if point is not None:
             index = obstacle.points.index(point)
             point = self.odometer.prediction.point
@@ -263,24 +249,7 @@ class field_planner:
 
     def add_row_point(self, field: Field, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
         if self.gnss.device != 'simulation':
-            if self.gnss.device is None:
-                self.log.warning('not creating Point because no GNSS device found')
-                rosys.notify('No GNSS device found')
-                return
-            if self.gnss.record.gps_qual != 4:
-                self.log.warning('not creating Point because no RTK fix available')
-                rosys.notify('No RTK fix available')
-                return
-            if field.reference_lat is None or field.reference_lon is None:
-                ref_lat, ref_lon = self.gnss.get_reference()
-                if ref_lat is None or ref_lon is None:
-                    self.log.warning('not creating Point because no reference position available')
-                    rosys.notify('No reference position available')
-                    return
-                field.reference_lat = ref_lat
-                field.reference_lon = ref_lon
-        if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
-            self.gnss.set_reference(field.reference_lat, field.reference_lon)
+            self.get_field_reference(field)
         if point is not None:
             index = row.points.index(point)
             point = self.odometer.prediction.point
