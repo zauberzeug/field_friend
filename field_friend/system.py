@@ -69,7 +69,7 @@ class System:
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
         self.small_weed_category_names = ['weed', 'coin']
         self.plant_locator: Optional[PlantLocator] = None
-        self.usb_camera_provider.CAMERA_ADDED.register(self._create_plant_locator)
+        # self.usb_camera_provider.CAMERA_ADDED.register(self._create_plant_locator)
         self.demo_weeding = DemoWeeding(self.field_friend, self.driver, self.detector,
                                         self.camera_selector, self.plant_provider, self.puncher, self.plant_locator)
         self.weeding = Weeding(self)
@@ -177,7 +177,7 @@ class System:
                     self.automator.pause(because='steering started')
 
         self.steerer.STEERING_STARTED.register(pause)
-        # self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
+        self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
 
     def start_esp(self):
         self.log.info('>>>>>>>>>>starting esp')
@@ -189,10 +189,6 @@ class System:
             f.write('492\n')
         with open(f'/sys/class/gpio/export', 'w') as f:
             f.write('460\n')
-        # with open(f'/sys/class/gpio/unexport', 'w') as f:
-        #     f.write('492\n')
-        # with open(f'/sys/class/gpio/unexport', 'w') as f:
-        #     f.write('460\n')
         await rosys.sleep(0.1)
         self.field_friend.robot_brain.enable_esp()
 
