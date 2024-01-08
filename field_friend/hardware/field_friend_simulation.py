@@ -11,6 +11,7 @@ from .y_axis import YAxisSimulation
 from .y_axis_tornado import YAxisSimulationTornado
 from .z_axis import ZAxisSimulation
 from .z_axis_v2 import ZAxisSimulationV2
+from .imu import IMUSimulation
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
@@ -45,7 +46,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             flashlight = FlashlightSimulationV2()
         else:
             flashlight = None
-
+        
+        imu = IMUSimulation()
         estop = rosys.hardware.EStopSimulation()
         if 'bumper' in config:
             bumper = rosys.hardware.BumperSimulation(estop=estop)
@@ -64,4 +66,5 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                          bumper=bumper,
                          bms=bms,
                          safety=safety,
+                         imu= imu,
                          modules=active_modules)

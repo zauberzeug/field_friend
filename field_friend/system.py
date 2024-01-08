@@ -5,7 +5,7 @@ from typing import Optional
 import rosys
 
 from field_friend.automations import (CoinCollecting, DemoWeeding, FieldProvider, Mowing, PathProvider, PathRecorder,
-                                      PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew)
+                                      PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew, Rolling)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import CameraSelector
@@ -50,6 +50,7 @@ class System:
         self.usb_camera_provider.CAMERA_ADDED.register(self.camera_selector.use_camera)
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
+        self.rolling = Rolling(self.field_friend.imu,self.field_friend)
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         if self.is_real:

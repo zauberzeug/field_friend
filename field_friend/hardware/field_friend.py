@@ -13,6 +13,7 @@ from .y_axis import YAxis
 from .y_axis_tornado import YAxisTornado
 from .z_axis import ZAxis
 from .z_axis_v2 import ZAxisV2
+from .imu import IMU
 
 
 class FieldFriend(rosys.hardware.Robot):
@@ -36,6 +37,7 @@ class FieldFriend(rosys.hardware.Robot):
             bumper: Union[rosys.hardware.Bumper, None],
             bms: rosys.hardware.Bms,
             safety: Safety,
+            imu: IMU,
             **kwargs) -> None:
         super().__init__(**kwargs)
         self.version = version
@@ -47,6 +49,7 @@ class FieldFriend(rosys.hardware.Robot):
         self.bumper = bumper
         self.bms = bms
         self.safety = safety
+        self.imu = imu
         rosys.on_shutdown(self.stop)
 
     async def stop(self) -> None:

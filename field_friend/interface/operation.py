@@ -11,6 +11,7 @@ from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .robot_object import robot_object
 from .visualizer_object import visualizer_object
+from ..automations import rolling
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -85,6 +86,17 @@ class operation:
                             return True
                     with ui.row().classes('items-center'):
                         automation_controls(self.system.automator, can_start=ensure_start)
+                        if not system.is_real:
+                            ui.number('Roll', format='%.2f', value=0, step=1, min=-180, max=180).props(
+                                    'dense outlined suffix=Deg').classes('w-24').bind_value(
+                                    self.system.field_friend.imu, 'roll').tooltip(
+                                    'Set teh roll for a simulated Robot')
+                            ui.number('Pitch', format='%.2f', value=0, step=1, min=-180, max=180).props(
+                                    'dense outlined suffix=Deg').classes('w-24').bind_value(
+                                    self.system.field_friend.imu, 'pitch').tooltip(
+                                    'Set teh tilt for a simulated Robot')
+                            ui.button(text='rolled?',on_click=lambda :self.system.rolling.is_rolled(),)
+                            ui.button(text='pitched?',on_click=lambda :self.system.rolling.is_pitched(),)
 
                         @ui.refreshable
                         def show_field_selection() -> None:
