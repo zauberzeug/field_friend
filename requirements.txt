@@ -4,4 +4,4 @@ prompt-toolkit # for lizard monitor
 pynmea2
 geopy
 shapely
-rosys == 0.9.5
+rosys == 0.9.9
