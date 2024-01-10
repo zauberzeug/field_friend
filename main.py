@@ -18,10 +18,10 @@ def startup() -> None:
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
         with ui.column().classes('w-full items-stretch'):
-            with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
+            with ui.row().style('flex-wrap:nowrap'):
                 interface.operation(system)
-                interface.cameras(system.camera_selector, system.usb_camera_provider, system.automator,
-                                  system.detector, system.puncher, version=system.field_friend.version)
+                interface.camera(system.usb_camera_provider, system.automator,
+                                 system.detector, system.puncher, version=system.field_friend.version)
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):
                     interface.development(system.field_friend)

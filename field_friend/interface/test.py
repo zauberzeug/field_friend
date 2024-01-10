@@ -10,7 +10,7 @@ from rosys.pathplanning import path_object
 from rosys.vision import CameraProvider
 
 from ..hardware import FieldFriend
-from .robot_object import robot_object
+from .field_friend_object import robot_object
 
 
 class test:

@@ -257,7 +257,7 @@ class calibration_dialog(ui.dialog):
             image_points = camera.calibration.project_array_to_image(world_points=world_points)
             for i, point in enumerate(self.points):
                 point.image_position = Point(x=image_points[i][0], y=image_points[i][1])
-        self.calibration_image.source = self.camera_provider.get_latest_image_url(camera)
+        self.calibration_image.source = camera.get_latest_image_url()
         for point in self.points:
             if point.image_position is None:
                 point.image_position = Point(x=self.image.size.width / 2, y=self.image.size.height / 2)
