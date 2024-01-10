@@ -34,7 +34,6 @@ class UsbCamProvider(rosys.vision.CameraProvider[UsbCam], rosys.persistence.Pers
 
     async def update_device_list(self) -> None:
         camera_uids = await self.scan_for_cameras()
-        self.log.info(f'Found {len(camera_uids)} cameras: {camera_uids}')
         for uid in camera_uids:
             if uid not in self._cameras:
                 self.add_camera(UsbCam(id=uid))
