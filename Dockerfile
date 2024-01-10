@@ -30,7 +30,6 @@ ENV PATH="/home/zauberzeug/.local/bin:${PATH}"
 RUN python3 -m pip install --upgrade pip
 
 WORKDIR /app
-COPY requirements.txt ./
 # NOTE installing some older version of rosys beforehand will improves overall build times because most of the dependencies are already installed
 # this obviously only works if we do not change the old version of rosys (here 0.9.5)
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
@@ -39,9 +38,11 @@ RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
     python3 -m pip install pillow
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
-    python3 -m pip install -r requirements.txt
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
     python3 -m pip install pyudev
+
+COPY requirements.txt ./
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
+    python3 -m pip install -r requirements.txt
 
 RUN mkdir -p /home/zauberzeug/.lizard # ensure dir is owned by zauberzeug
 WORKDIR /home/zauberzeug/.lizard
