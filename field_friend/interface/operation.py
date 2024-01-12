@@ -11,6 +11,7 @@ from .field_object import field_object
 from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .visualizer_object import visualizer_object
+from .leaflet_map import leaflet_map
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -28,6 +29,7 @@ class operation:
         self.system = system
         self.field = None
         with ui.card().tight():
+            self.leaflet_map = leaflet_map()
             self.scene_look = False
 
             def handle_click(event: events.SceneClickEventArguments) -> None:
@@ -46,6 +48,7 @@ class operation:
                     scene.move_camera(x=x, y=y, z=height,
                                       look_at_x=position.x, look_at_y=position.y)
                     return
+
             with ui.scene(650, 500, on_click=handle_click) as scene:
                 field_friend_object(self.system.odometer, self.system.usb_camera_provider, self.system.field_friend)
                 rosys.driving.driver_object(self.system.driver)

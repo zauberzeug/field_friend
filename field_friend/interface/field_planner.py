@@ -8,6 +8,14 @@ from nicegui import ui
 from ..automations import Field, FieldObstacle, FieldProvider, Row
 from ..navigation import Gnss
 
+import xml.etree.ElementTree as ET
+from .local_file_picker import local_file_picker
+import geopandas as gpd
+from shapely.ops import transform
+import json
+from geographiclib.geodesic import Geodesic
+import numpy as np
+
 
 class field_planner:
 
@@ -16,8 +24,11 @@ class field_planner:
         self.field_provider = field_provider
         self.odometer = odometer
         self.gnss = gnss
+
         with ui.card():
             with ui.row():
+                ui.button('Upload Field Boundaries', on_click=self.upload_field).tooltip(
+                    'Upload a file with field boundaries. Supported file formates: KML, XML and Shape')
                 ui.button('Add field', on_click=self.add_field).tooltip('Add a new field')
                 ui.button('Clear fields', on_click=self.clear_fields).props(
                     'outline color=warning').tooltip('Delete all fields')
@@ -183,6 +194,84 @@ class field_planner:
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
         self.panels.set_value('Outline')
+
+    # Define a custom transformation function to swap coordinates
+    def swap_coordinates(self, lon, lat):
+        return lat, lon
+
+    def extract_coordinates_kml(self, kml_path) -> list:
+        gdf = gpd.read_file(kml_path, drivr="KML")
+        coordinates = []
+        for tuple in gdf["geometry"][0].coords:
+            lon = tuple[0]
+            lat = tuple[1]
+            current_point = rosys.geometry.Point(x=lon, y=lat)
+            coordinates.append(current_point)
+        return coordinates
+
+    def extract_coordinates_xml(self, xml_path) -> list:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        coordinates = []
+        for geo_data in root.findall('.//LSG'):
+            for point in geo_data.findall('.//PNT'):
+                lat = float(point.attrib['C'])
+                lon = float(point.attrib['D'])
+                current_point = rosys.geometry.Point(x=lon, y=lat)
+                coordinates.append(current_point)
+        return coordinates
+
+    async def upload_field(self) -> None:
+        result = await local_file_picker('~', multiple=True)
+        ui.notify(f'You chose {result}')
+        print(result[0][-3:])
+        if result[0][-3:].casefold() == "shp":
+            gdf = gpd.read_file(result[0])
+            # TODO: doing the swap somewhere else because it is only important for the vizualisation in leaflet
+            # gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
+            feature = json.loads(gdf.to_json())
+            coordinates_carth = []
+            reference_point = feature["features"][0]["geometry"]["coordinates"][0][0]
+            print("💂‍♂️", reference_point)
+            for point in feature["features"][0]["geometry"]["coordinates"][0]:
+                # calc the carthesian coordiantes
+                r = Geodesic.WGS84.Inverse(reference_point[0], reference_point[1], point[0], point[1])
+                s = r['s12']
+                a = -np.deg2rad(r['azi1'])
+                x = s * np.cos(a)
+                y = s * np.sin(a)
+                current_point = rosys.geometry.Point(x=x, y=y)
+                coordinates_carth.append(current_point)
+            # funktioniert aktuell nur für files mit nur einem einzigen Polygon und nicht mit Features die mehrere Polygone enthalten, keine exception bisher
+            # die Koordinaten umwandlen als karthesische Koordinaten und dann als Points speichern
+            # den ersten Punkt als Referenzpunkt nehmen oder einen anderen
+
+            field = Field(id=f'{str(uuid.uuid4())}', outline=coordinates_carth,
+                          outline_wgs84=feature["features"][0]["geometry"]["coordinates"][0])
+            self.field_provider.add_field(field)
+            self.show_field_settings.refresh()
+            self.panels.set_value('Outline')
+
+            # Feld anlegen
+            # diesem feld die Punkte übergeben und damit direkt die Outline anzeigen
+            # diese wird dann im field Planner angezeigt
+            # in leaflet muss dann nurnoch dem event für neues feld subscribed werden.
+
+            # weitere ideen:
+            # die Outline in einem Field sowohl karthesisch als auch
+            # im Field speichern ob dieses gerade als visible oder nicht markiert ist und damit dann in leaflet angezeigt wird oder nicht
+
+            # operation.m.generic_layer(name='polygon', args=[testarea["features"][0]["geometry"]["coordinates"]])
+        if result[0][-3:].casefold() == "kml":
+            # TODO: not done yet
+            coordinates = self.extract_coordinates_kml(result[0])
+            # operation.leaflet_map.generic_layer(name='polygon', args=[coordinates])
+        if result[0][-3:].casefold() == "xml":
+            # TODO: not done yet
+            coordinates = self.extract_coordinates_xml(result[0])
+            # operation.m.generic_layer(name='polygon', args=[coordinates])
+
+        return
 
     def add_field(self) -> None:
         field = Field(id=f'{str(uuid.uuid4())}')

@@ -31,6 +31,7 @@ class Row:
 class Field:
     id: str
     outline: list[Point] = field(default_factory=list)
+    outline_wgs84: list[list] = field(default_factory=list)
     reference_lat: Optional[float] = None
     reference_lon: Optional[float] = None
     visualized: bool = False
