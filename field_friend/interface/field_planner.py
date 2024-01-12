@@ -199,17 +199,16 @@ class field_planner:
     def swap_coordinates(self, lon, lat):
         return lat, lon
 
-    def extract_coordinates_kml(self, kml_path) -> list:
+    def extract_coordinates_kml(self, kml_path):
         gdf = gpd.read_file(kml_path, drivr="KML")
         coordinates = []
-        for tuple in gdf["geometry"][0].coords:
-            lon = tuple[0]
-            lat = tuple[1]
-            current_point = rosys.geometry.Point(x=lon, y=lat)
-            coordinates.append(current_point)
+        for c in gdf["geometry"][0].coords:
+            lat = c[1]
+            lon = c[0]
+            coordinates.append([lat, lon])
         return coordinates
 
-    def extract_coordinates_xml(self, xml_path) -> list:
+    def extract_coordinates_xml(self, xml_path):
         tree = ET.parse(xml_path)
         root = tree.getroot()
         coordinates = []
@@ -217,60 +216,57 @@ class field_planner:
             for point in geo_data.findall('.//PNT'):
                 lat = float(point.attrib['C'])
                 lon = float(point.attrib['D'])
-                current_point = rosys.geometry.Point(x=lon, y=lat)
-                coordinates.append(current_point)
+                coordinates.append([lat, lon])
         return coordinates
 
     async def upload_field(self) -> None:
         result = await local_file_picker('~', multiple=True)
         ui.notify(f'You chose {result}')
         print(result[0][-3:])
+        coordinates = []
+        coordinates_carth = []
+        # TODO: leichte Abweichungen in den vermeindlich gleichen Datensätzen in verschiedenen Dateiformaten? Sind Ursprungsdaten schon verschieden?
         if result[0][-3:].casefold() == "shp":
             gdf = gpd.read_file(result[0])
-            # TODO: doing the swap somewhere else because it is only important for the vizualisation in leaflet
-            # gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
+            gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
             feature = json.loads(gdf.to_json())
-            coordinates_carth = []
-            reference_point = feature["features"][0]["geometry"]["coordinates"][0][0]
-            print("💂‍♂️", reference_point)
-            for point in feature["features"][0]["geometry"]["coordinates"][0]:
-                # calc the carthesian coordiantes
-                r = Geodesic.WGS84.Inverse(reference_point[0], reference_point[1], point[0], point[1])
-                s = r['s12']
-                a = -np.deg2rad(r['azi1'])
-                x = s * np.cos(a)
-                y = s * np.sin(a)
-                current_point = rosys.geometry.Point(x=x, y=y)
-                coordinates_carth.append(current_point)
-            # funktioniert aktuell nur für files mit nur einem einzigen Polygon und nicht mit Features die mehrere Polygone enthalten, keine exception bisher
-            # die Koordinaten umwandlen als karthesische Koordinaten und dann als Points speichern
-            # den ersten Punkt als Referenzpunkt nehmen oder einen anderen
-
-            field = Field(id=f'{str(uuid.uuid4())}', outline=coordinates_carth,
-                          outline_wgs84=feature["features"][0]["geometry"]["coordinates"][0])
-            self.field_provider.add_field(field)
-            self.show_field_settings.refresh()
-            self.panels.set_value('Outline')
-
-            # Feld anlegen
-            # diesem feld die Punkte übergeben und damit direkt die Outline anzeigen
-            # diese wird dann im field Planner angezeigt
-            # in leaflet muss dann nurnoch dem event für neues feld subscribed werden.
-
-            # weitere ideen:
-            # die Outline in einem Field sowohl karthesisch als auch
-            # im Field speichern ob dieses gerade als visible oder nicht markiert ist und damit dann in leaflet angezeigt wird oder nicht
-
-            # operation.m.generic_layer(name='polygon', args=[testarea["features"][0]["geometry"]["coordinates"]])
-        if result[0][-3:].casefold() == "kml":
-            # TODO: not done yet
+            coordinates = feature["features"][0]["geometry"]["coordinates"][0]
+        elif result[0][-3:].casefold() == "kml":
             coordinates = self.extract_coordinates_kml(result[0])
-            # operation.leaflet_map.generic_layer(name='polygon', args=[coordinates])
-        if result[0][-3:].casefold() == "xml":
-            # TODO: not done yet
+        elif result[0][-3:].casefold() == "xml":
+            print("🥺" + str(result[0]))
             coordinates = self.extract_coordinates_xml(result[0])
-            # operation.m.generic_layer(name='polygon', args=[coordinates])
+        else:
+            # TODO: throw exception or notification
+            pass
+        reference_point = coordinates[0]
+        for point in coordinates:
+            # calc the carthesian coordiantes
+            r = Geodesic.WGS84.Inverse(reference_point[0], reference_point[1], point[0], point[1])
+            s = r['s12']
+            a = -np.deg2rad(r['azi1'])
+            x = s * np.cos(a)
+            y = s * np.sin(a)
+            current_point = rosys.geometry.Point(x=x, y=y)
+            coordinates_carth.append(current_point)
+        # funktioniert aktuell nur für files mit nur einem einzigen Polygon und nicht mit Features die mehrere Polygone enthalten, keine exception bisher
+        # die Koordinaten umwandlen als karthesische Koordinaten und dann als Points speichern
+        # den ersten Punkt als Referenzpunkt nehmen oder einen anderen
 
+        field = Field(id=f'{str(uuid.uuid4())}', outline=coordinates_carth,
+                      outline_wgs84=coordinates)
+        self.field_provider.add_field(field)
+        self.show_field_settings.refresh()
+        self.panels.set_value('Outline')
+
+        # Feld anlegen
+        # diesem feld die Punkte übergeben und damit direkt die Outline anzeigen
+        # diese wird dann im field Planner angezeigt
+        # in leaflet muss dann nurnoch dem event für neues feld subscribed werden.
+
+        # weitere ideen:
+        # die Outline in einem Field sowohl karthesisch als auch
+        # im Field speichern ob dieses gerade als visible oder nicht markiert ist und damit dann in leaflet angezeigt wird oder nicht
         return
 
     def add_field(self) -> None:
