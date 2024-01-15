@@ -4,6 +4,7 @@ import logging
 from nicegui import events, ui
 import fiona
 import rosys
+from ..automations import FieldProvider, Field
 
 # Enable fiona driver
 # gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
@@ -13,13 +14,9 @@ fiona.drvsupport.supported_drivers['KML'] = 'rw'
 
 class leaflet_map:
 
-    def __init__(self) -> None:
-        self.log = logging.getLogger('field_friend.map')
-
-        # TODO: make the leaflet map listen to changes of the field provider and show then all fields with WGS84 cords as layer
-        self.FIELDS_CHANGED = rosys.event.Event()
-        """The dict of fields has changed."""
-
+    def __init__(self, field_provider: FieldProvider) -> None:
+        self.log = logging.getLogger('field_friend.leaflet_map')
+        self.field_provider = field_provider
         self.draw_control = {
             'draw': {
                 'polygon': True,
@@ -42,6 +39,19 @@ class leaflet_map:
 
         with self.m as m:
             m.on('draw:created', handle_draw)
+            self.update_layers()
 
-    def add_layer(self, layer_type, content) -> None:
-        self.m.generic_layer(name=layer_type, args=[content])
+    @ui.refreshable
+    def update_layers(self) -> None:
+        self.m.clear_layers()
+        self.m.tile_layer(
+            url_template=r'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+            options={
+                'maxZoom': 18,
+                'attribution':
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            },
+        )
+        for field in self.field_provider.fields:
+            self.m.generic_layer(name="polygon", args=[field.outline_wgs84], )
+            self.m.set_center((field.outline_wgs84[0][0], field.outline_wgs84[0][1]))

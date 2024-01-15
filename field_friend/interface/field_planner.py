@@ -15,13 +15,15 @@ from shapely.ops import transform
 import json
 from geographiclib.geodesic import Geodesic
 import numpy as np
+from .operation import operation
 
 
 class field_planner:
 
-    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss) -> None:
+    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, operation: operation) -> None:
         self.log = logging.getLogger('field_friend.field_planner')
         self.field_provider = field_provider
+        self.operation = operation
         self.odometer = odometer
         self.gnss = gnss
 
@@ -52,8 +54,9 @@ class field_planner:
                     ui.tab('Rows', 'Rows')
                 with ui.tab_panels(self.tabs, value='Outline') as self.panels:
                     with ui.tab_panel('Outline'):
+                        switch_pointlist = ui.switch('show points')
                         for point in field.outline:
-                            with ui.row().classes('items-center'):
+                            with ui.row().classes('items-center').bind_visibility_from(switch_pointlist, 'value'):
                                 ui.button(on_click=lambda field=field, point=point: self.add_point(field, point)).props(
                                     'icon=place color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                                 ui.number(
@@ -64,7 +67,7 @@ class field_planner:
                                     'y', value=point.y, format='%.2f', step=0.1,
                                     on_change=self.field_provider.invalidate).bind_value(
                                     point, 'y').classes('w-16')
-                        with ui.row().classes('items-center mt-2'):
+                        with ui.row().classes('items-center mt-2').bind_visibility_from(switch_pointlist, 'value'):
                             ui.icon('place').props('size=sm color=grey').classes('ml-2')
                             ui.button('', on_click=lambda field=field: self.add_point(field)) \
                                 .props('icon=add color=primary fab-mini flat').tooltip('Add point')
@@ -184,6 +187,7 @@ class field_planner:
             field.outline.append(point)
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
 
     def remove_point(self, field: Field, point: Optional[rosys.geometry.Point] = None) -> None:
         if point is not None:
@@ -193,6 +197,7 @@ class field_planner:
             del field.outline[-1]
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
     # Define a custom transformation function to swap coordinates
@@ -222,10 +227,9 @@ class field_planner:
     async def upload_field(self) -> None:
         result = await local_file_picker('~', multiple=True)
         ui.notify(f'You chose {result}')
-        print(result[0][-3:])
+
         coordinates = []
         coordinates_carth = []
-        # TODO: leichte Abweichungen in den vermeindlich gleichen Datensätzen in verschiedenen Dateiformaten? Sind Ursprungsdaten schon verschieden?
         if result[0][-3:].casefold() == "shp":
             gdf = gpd.read_file(result[0])
             gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
@@ -234,7 +238,6 @@ class field_planner:
         elif result[0][-3:].casefold() == "kml":
             coordinates = self.extract_coordinates_kml(result[0])
         elif result[0][-3:].casefold() == "xml":
-            print("🥺" + str(result[0]))
             coordinates = self.extract_coordinates_xml(result[0])
         else:
             # TODO: throw exception or notification
@@ -257,6 +260,7 @@ class field_planner:
                       outline_wgs84=coordinates)
         self.field_provider.add_field(field)
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
         # Feld anlegen
@@ -273,27 +277,32 @@ class field_planner:
         field = Field(id=f'{str(uuid.uuid4())}')
         self.field_provider.add_field(field)
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
     def delete_field(self, field: Field) -> None:
         self.field_provider.remove_field(field)
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
     def clear_fields(self) -> None:
         self.field_provider.clear_fields()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
     def add_obstacle(self, field: Field) -> None:
         obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}')
         self.field_provider.add_obstacle(field, obstacle)
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Obstacles')
 
     def remove_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         self.field_provider.remove_obstacle(field, obstacle)
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Obstacles')
 
     def add_obstacle_point(
@@ -309,6 +318,7 @@ class field_planner:
             obstacle.points.append(point)
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Obstacles')
 
     def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[rosys.geometry.Point] = None) -> None:
@@ -319,17 +329,20 @@ class field_planner:
             del obstacle.points[-1]
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Obstacles')
 
     def add_row(self, field: Field) -> None:
         row = Row(id=f'{str(uuid.uuid4())}')
         self.field_provider.add_row(field, row)
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def remove_row(self, field: Field, row: Row) -> None:
         self.field_provider.remove_row(field, row)
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def add_row_point(self, field: Field, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
@@ -344,6 +357,7 @@ class field_planner:
             row.points.append(point)
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def remove_row_point(self, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
@@ -354,6 +368,7 @@ class field_planner:
             del row.points[-1]
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def move_row(self, field: Field, row: Row, next: bool = False) -> None:
@@ -364,10 +379,12 @@ class field_planner:
             field.rows[index], field.rows[index-1] = field.rows[index-1], field.rows[index]
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def clear_row_crops(self, row: Row) -> None:
         row.crops = []
         self.field_provider.invalidate()
         self.show_field_settings.refresh()
+        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')

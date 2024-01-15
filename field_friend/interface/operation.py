@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import events, ui
 
+from ..automations import FieldProvider
 from .automation_controls import automation_controls
 from .field_friend_object import field_friend_object
 from .field_object import field_object
@@ -24,12 +25,13 @@ SHORTCUT_INFO = '''
 
 class operation:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: 'System', field_provider: FieldProvider) -> None:
         self.log = logging.getLogger('field_friend.operation')
         self.system = system
+        self.field_provider = field_provider
         self.field = None
         with ui.card().tight():
-            self.leaflet_map = leaflet_map()
+            self. leaflet_map = leaflet_map(field_provider)
             self.scene_look = False
 
             def handle_click(event: events.SceneClickEventArguments) -> None:
