@@ -69,7 +69,7 @@ class camera:
                 ui.button('calibrate', on_click=self.calibrate) \
                     .props('icon=straighten outline').tooltip('Calibrate camera')
                 # Add a button to save the last captured image
-                ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
+                # ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
 
             with ui.row():
                 self.debug_position = ui.label()
@@ -145,21 +145,21 @@ class camera:
         self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'
                                           for p, color in zip(image_points, colors_hex))
 
-    async def save_last_image(self) -> None:
-        """Saves the last captured image to the .rosys folder."""
-        if self.camera and self.camera.latest_captured_image:
-            image = self.camera.latest_captured_image
-            self.log.info(f'Image captured at {image.size}')
-            img = Image.open(io.BytesIO(image.data))
-            # Resolves to the user's home directory  # modify the file name as needed
-            backup_path = Path('~/.rosys').expanduser()
-            save_path = backup_path / 'left_image.jpg'  # Modify the file name as needed
-            try:
-                # Use the save method of the image
-                img.save(save_path)
-                self.log.info(f'Image saved to {save_path}')
-            except Exception as e:
-                self.log.error(f'Error saving image: {e}')
+    # async def save_last_image(self) -> None:
+    #     """Saves the last captured image to the .rosys folder."""
+    #     if self.camera and self.camera.latest_captured_image:
+    #         image = self.camera.latest_captured_image
+    #         self.log.info(f'Image captured at {image.size}')
+    #         img = Image.open(io.BytesIO(image.data))
+    #         # Resolves to the user's home directory  # modify the file name as needed
+    #         backup_path = Path('~/.rosys').expanduser()
+    #         save_path = backup_path / 'left_image.jpg'  # Modify the file name as needed
+    #         try:
+    #             # Use the save method of the image
+    #             img.save(save_path)
+    #             self.log.info(f'Image saved to {save_path}')
+    #         except Exception as e:
+    #             self.log.error(f'Error saving image: {e}')
 
-        else:
-            self.log.warning('No image available to save.')
+    #     else:
+    #         self.log.warning('No image available to save.')
