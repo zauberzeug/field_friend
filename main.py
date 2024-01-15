@@ -39,8 +39,8 @@ def startup() -> None:
         interface.system_bar()
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                operation = interface.operation(system, system.field_provider)
-                interface.field_planner(system.field_provider, system.odometer, system.gnss, operation)
+                interface.operation(system, system.field_provider)
+                interface.field_planner(system.field_provider, system.odometer, system.gnss)
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):
                     interface.development(system.field_friend)

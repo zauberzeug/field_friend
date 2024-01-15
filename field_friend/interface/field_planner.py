@@ -20,7 +20,7 @@ from .operation import operation
 
 class field_planner:
 
-    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, operation: operation) -> None:
+    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss) -> None:
         self.log = logging.getLogger('field_friend.field_planner')
         self.field_provider = field_provider
         self.operation = operation
@@ -36,6 +36,7 @@ class field_planner:
                     'outline color=warning').tooltip('Delete all fields')
             with ui.row():
                 self.show_field_settings()
+                self.field_provider.FIELDS_CHANGED.register(self.show_field_settings.refresh)
 
     @ui.refreshable
     def show_field_settings(self) -> None:
@@ -186,8 +187,6 @@ class field_planner:
             point = self.odometer.prediction.point
             field.outline.append(point)
         self.field_provider.invalidate()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
 
     def remove_point(self, field: Field, point: Optional[rosys.geometry.Point] = None) -> None:
         if point is not None:
@@ -196,8 +195,6 @@ class field_planner:
         elif field.outline != []:
             del field.outline[-1]
         self.field_provider.invalidate()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
     # Define a custom transformation function to swap coordinates
@@ -226,8 +223,6 @@ class field_planner:
 
     async def upload_field(self) -> None:
         result = await local_file_picker('~', multiple=True)
-        ui.notify(f'You chose {result}')
-
         coordinates = []
         coordinates_carth = []
         if result[0][-3:].casefold() == "shp":
@@ -259,50 +254,29 @@ class field_planner:
         field = Field(id=f'{str(uuid.uuid4())}', outline=coordinates_carth,
                       outline_wgs84=coordinates)
         self.field_provider.add_field(field)
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
-
-        # Feld anlegen
-        # diesem feld die Punkte übergeben und damit direkt die Outline anzeigen
-        # diese wird dann im field Planner angezeigt
-        # in leaflet muss dann nurnoch dem event für neues feld subscribed werden.
-
-        # weitere ideen:
-        # die Outline in einem Field sowohl karthesisch als auch
-        # im Field speichern ob dieses gerade als visible oder nicht markiert ist und damit dann in leaflet angezeigt wird oder nicht
         return
 
     def add_field(self) -> None:
         field = Field(id=f'{str(uuid.uuid4())}')
         self.field_provider.add_field(field)
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
     def delete_field(self, field: Field) -> None:
         self.field_provider.remove_field(field)
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
     def clear_fields(self) -> None:
         self.field_provider.clear_fields()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Outline')
 
     def add_obstacle(self, field: Field) -> None:
         obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}')
         self.field_provider.add_obstacle(field, obstacle)
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Obstacles')
 
     def remove_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         self.field_provider.remove_obstacle(field, obstacle)
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Obstacles')
 
     def add_obstacle_point(
@@ -317,8 +291,6 @@ class field_planner:
             point = self.odometer.prediction.point
             obstacle.points.append(point)
         self.field_provider.invalidate()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Obstacles')
 
     def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[rosys.geometry.Point] = None) -> None:
@@ -328,21 +300,15 @@ class field_planner:
         elif obstacle.points != []:
             del obstacle.points[-1]
         self.field_provider.invalidate()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Obstacles')
 
     def add_row(self, field: Field) -> None:
         row = Row(id=f'{str(uuid.uuid4())}')
         self.field_provider.add_row(field, row)
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def remove_row(self, field: Field, row: Row) -> None:
         self.field_provider.remove_row(field, row)
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def add_row_point(self, field: Field, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
@@ -356,8 +322,6 @@ class field_planner:
             point = self.odometer.prediction.point
             row.points.append(point)
         self.field_provider.invalidate()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def remove_row_point(self, row: Row, point: Optional[rosys.geometry.Point] = None) -> None:
@@ -367,8 +331,6 @@ class field_planner:
         elif row.points != []:
             del row.points[-1]
         self.field_provider.invalidate()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def move_row(self, field: Field, row: Row, next: bool = False) -> None:
@@ -378,13 +340,9 @@ class field_planner:
         else:
             field.rows[index], field.rows[index-1] = field.rows[index-1], field.rows[index]
         self.field_provider.invalidate()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
 
     def clear_row_crops(self, row: Row) -> None:
         row.crops = []
         self.field_provider.invalidate()
-        self.show_field_settings.refresh()
-        self.operation.leaflet_map.update_layers.refresh()
         self.panels.set_value('Rows')
