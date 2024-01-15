@@ -127,6 +127,10 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
         with ui.row():
             ui.markdown('**imu:**').style('color: #6E93D6')
             imu_label = ui.label()
+        
+        with ui.row():
+            ui.markdown('**IMU Acc:**').style('color: #6E93D6')
+            imuacc_label = ui.label()
 
         def update_status() -> None:
             bms_flags = [
@@ -232,6 +236,7 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'
             odometry_label.text = str(odometer.prediction)
             imu_label.text = ('yaw:'+str( robot.imu.yaw)+ '°, pitch:'+ str(robot.imu.pitch) + '°, roll:' + str(robot.imu.roll)+'°')
+            imuacc_label.text = ('acc_x:'+str(robot.imu.acc_x))
 
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer

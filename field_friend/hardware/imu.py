@@ -9,11 +9,15 @@ class IMUHardware(IMU, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'imu') -> None:
+        self.name = name
+        self.acc_x = 0
         lizard_code = f'{name} = Imu()'
-        super().__init__(robot_brain, lizard_code=lizard_code)
+        core_message_fields = (f'{name}'.acc_x)
+        super().__init__(robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
-    def handle_core_output(self):
-        return
+
+    def handle_core_output(self, time: float, words: list[str]) -> None:
+        self.acc_x = float(words.pop(0))
     
     
 class IMUSimulation(IMU, rosys.hardware.ModuleSimulation):
