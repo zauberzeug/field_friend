@@ -76,17 +76,16 @@ class camera:
 
     def update_content(self) -> None:
         cameras = list(self.camera_provider.cameras.values())
-        if not cameras:
+        active_camera = next((camera for camera in cameras if camera.is_connected), None)
+        if not active_camera:
             self.camera = None
             self.camera_card.clear()
             with self.camera_card:
                 ui.label('no camera available').classes('text-center')
                 ui.image('assets/field_friend.webp').classes('w-full')
             return
-        if self.camera is None or self.camera not in cameras:
-            self.use_camera(cameras[0])
-            assert self.camera is not None
-
+        if self.camera is None or self.camera != active_camera:
+            self.use_camera(active_camera)
         if self.shrink_factor > 1:
             url = f'{self.camera.get_latest_image_url()}?shrink={self.shrink_factor}'
         else:
