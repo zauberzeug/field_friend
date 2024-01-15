@@ -9,7 +9,7 @@ from field_friend.automations import (CoinCollecting, DemoWeeding, FieldProvider
                                       PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import SimulatedCam, SimulatedCamProvider, UsbCamProvider
+from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
 
 
 class System:
@@ -34,6 +34,7 @@ class System:
                                                                                yaw=np.deg2rad(90)))
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             # self.circle_sight = None
+        self.camera_configurator = CameraConfigurator(self.usb_camera_provider, version)
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
@@ -92,40 +93,48 @@ class System:
 
         if self.is_real:
             # camera configuration
-            def configure_cameras() -> None:
-                for camera in self.usb_camera_provider.cameras.values():
-                    if self.field_friend.version == 'ff3':
-                        width, height, xoffset, yoffset = 1920, 1080, 420, 150
-                        camera.resolution = rosys.vision.ImageSize(width=width, height=height)
-                        camera.crop = rosys.geometry.Rectangle(
-                            x=xoffset, y=0, width=width - (2 * xoffset + 150),
-                            height=height - yoffset)
-                        camera.auto_exposure = True
-                    elif self.field_friend.version in ['u2', 'u1']:
-                        width, height, xoffset, yoffset = 1920, 1080, 450, 30
-                        camera.resolution = rosys.vision.ImageSize(width=width, height=height)
-                        camera.crop = rosys.geometry.Rectangle(
-                            x=xoffset, y=yoffset, width=width - 2 * xoffset, height=height - 2 * yoffset)
-                        camera.auto_exposure = True
-                        # camera.exposure = 0.005
-                    elif self.field_friend.version in ['u3']:
-                        width, height, xoffset, yoffset, width_offset = 1920, 1080, 400, 100, 200
-                        camera.resolution = rosys.vision.ImageSize(width=width, height=height)
-                        camera.crop = rosys.geometry.Rectangle(
-                            x=xoffset, y=yoffset, width=width - 2 * xoffset - width_offset, height=height - 2 * yoffset)
-                        camera.rotation = 90
-                        camera.auto_exposure = False
-                        camera.exposure = 0.004
-                    elif self.field_friend.version in ['u4']:
-                        width, height, xoffset, yoffset = 1920, 1080, 350, 50
-                        camera.resolution = rosys.vision.ImageSize(width=width, height=height)
-                        camera.crop = rosys.geometry.Rectangle(
-                            x=xoffset, y=yoffset, width=width - 2 * xoffset, height=height - 2 * yoffset)
-                        camera.rotation = 0
-                        camera.auto_exposure = True
-                        camera.exposure = 0.004
-                self.usb_camera_provider.needs_backup = True
-            rosys.on_repeat(configure_cameras, 1.0)
+            # def configure_cameras() -> None:
+            #     for camera in self.usb_camera_provider.cameras.values():
+            #         if self.field_friend.version == 'ff3':
+            #             width, height, xoffset, yoffset = 1920, 1080, 420, 150
+            #             camera.resolution = rosys.vision.ImageSize(width=width, height=height)
+            #             camera.crop = rosys.geometry.Rectangle(
+            #                 x=xoffset, y=0, width=width - (2 * xoffset + 150),
+            #                 height=height - yoffset)
+            #             camera.auto_exposure = True
+            #         elif self.field_friend.version in ['u2', 'u1']:
+            #             width, height, xoffset, yoffset = 1920, 1080, 450, 30
+            #             camera.resolution = rosys.vision.ImageSize(width=width, height=height)
+            #             camera.crop = rosys.geometry.Rectangle(
+            #                 x=xoffset, y=yoffset, width=width - 2 * xoffset, height=height - 2 * yoffset)
+            #             camera.auto_exposure = True
+            #             # camera.exposure = 0.005
+            #         elif self.field_friend.version in ['u3']:
+            #             width, height, xoffset, yoffset, width_offset = 1920, 1080, 400, 100, 200
+            #             camera.resolution = rosys.vision.ImageSize(width=width, height=height)
+            #             camera.crop = rosys.geometry.Rectangle(
+            #                 x=xoffset, y=yoffset, width=width - 2 * xoffset - width_offset, height=height - 2 * yoffset)
+            #             camera.rotation = 90
+            #             camera.auto_exposure = False
+            #             camera.exposure = 0.004
+            #         elif self.field_friend.version in ['u4']:
+            #             self.log.info('>>>>>>>>>>setting camera parameters for u4')
+            #             width, height, xoffset, yoffset = 1920, 1080, 350, 50
+            #             # camera.resolution = rosys.vision.ImageSize(width=width, height=height)
+            #             # camera.crop = None
+            #             # camera.rotation = 0
+            #             # camera.auto_exposure = False
+            #             # camera.exposure = 0.004
+            #             # camera.set_width(width)
+            #             # camera.set_height(height)
+            #             # camera.set_auto_exposure(False)
+            #             # camera.set_exposure(0.004)
+            #             camera.set_width(width)
+            #             camera.set_height(height)
+            #             camera.set_auto_exposure(True)
+            #     self.usb_camera_provider.needs_backup = True
+
+            # rosys.on_repeat(configure_cameras, 10.0)
 
             if self.field_friend.battery_control is not None:
                 def check_if_charging():
