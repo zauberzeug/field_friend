@@ -1,94 +1,61 @@
 import colorsys
+import io
 import logging
+import os
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import rosys
-from nicegui import app, ui
-from nicegui.elements.card import Card
+from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
+from PIL import Image
 from rosys import background_tasks
-from rosys.automation import Automator
-from rosys.geometry import Point, Point3d
-from rosys.vision import Camera, CameraProvider, Detector
+from rosys.geometry import Point
 from rosys.vision.detector import Autoupload
 
 from ..automations import Puncher
-from ..vision import CameraSelector
 from .calibration_dialog import calibration_dialog
 
 
-class CameraCard(Card):
+class camera:
 
-    def __init__(
-            self, camera_type: str, camera_provider: CameraProvider, camera_selector: CameraSelector,
-            automator: Automator, detector: Detector, puncher: Optional[Puncher] = None, *, version: str,
-            shrink_factor: int = 1) -> None:
-        super().__init__()
+    def __init__(self,
+                 camera_provider: rosys.vision.CameraProvider,
+                 automator: rosys.automation.Automator,
+                 detector: rosys.vision.Detector,
+                 puncher: Optional[Puncher] = None,
+                 *,
+                 version: str,
+                 shrink_factor: int = 1) -> None:
         self.log = logging.getLogger('field_friend.camera_card')
-        self.camera_type = camera_type
-        self.camera = None
+        self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.camera_provider = camera_provider
-        self.camera_selector = camera_selector
         self.automator = automator
         self.detector = detector
         self.capture_images = ui.timer(7, lambda: background_tasks.create(self.capture_image()), active=False)
         self.punching_enabled = False
         self.puncher = puncher
         self.shrink_factor = shrink_factor
-        self.image_view: ui.interactive_image = None
+        self.image_view: Optional[ui.interactive_image] = None
         self.calibration_dialog = calibration_dialog(camera_provider, version=version)
-        with self.tight().classes('col gap-4').style('width:640px'):
+        self.camera_card = ui.card()
+        with self.camera_card.tight().style('width:640px'):
+            ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
-            ui.label(f'no {camera_type} available').classes('text-center')
-        ui.timer(1, self.update_content)
+        ui.timer(0.5, self.update_content)
 
-    async def capture_image(self) -> None:
-        async with self.puncher.field_friend.flashlight:
-            await rosys.sleep(4.0)
-            await self.detector.detect(self.camera.latest_captured_image, autoupload=Autoupload.ALL, tags=['capture'])
-
-    def update_content(self) -> None:
-        if self.camera is None:
-            self.log.info(f'looking for {self.camera_type}')
-            for camera_type, camera in self.camera_selector.cameras.items():
-                self.log.info(f'found {camera_type} {camera.id}')
-                self.use_camera((camera_type, camera))
-
-    def use_camera(self, camera_data: tuple[str, Camera]) -> None:
-        camera_type, camera = camera_data
-        if camera_type != self.camera_type:
-            self.log.info(f'ignoring camera (expected {self.camera_type})')
-            return
-        else:
-            self.log.info(f'camera of {self.camera_type} accepted')
-        self.camera = camera
-        self.clear()
-        events = ['mousemove', 'mouseout', 'mouseup']
-        with self:
-            with ui.row().classes('w-full items-center').style('gap:0.5em;margin-left:1em;margin-right:1em'):
-                ui.label(f'{camera_type}:').classes('text-xl')
+    def use_camera(self, cam: rosys.vision.CalibratableCamera) -> None:
+        self.camera = cam
+        self.camera_card.clear()
+        with self.camera_card:
+            events = ['mousemove', 'mouseout', 'mouseup']
             self.image_view = ui.interactive_image(
                 '',
                 cross=True,
                 on_mouse=self.on_mouse_move,
                 events=events
             ).classes('w-full')
-
-            async def update():
-                image = self.camera.latest_captured_image
-                if image is None:
-                    return
-                if self.shrink_factor > 1:
-                    url = f'{self.camera_provider.get_image_url(image)}?shrink={self.shrink_factor}'
-                else:
-                    url = self.camera_provider.get_image_url(image)
-
-                self.image_view.set_source(url)
-                if image.detections:
-                    self.image_view.set_content(image.detections.to_svg())
-
-            ui.timer(1, update)
             with ui.row().classes('m-4 justify-end items-center'):
                 ui.checkbox('Punching').bind_value(self, 'punching_enabled') \
                     .tooltip('Enable punching mode')
@@ -101,10 +68,42 @@ class CameraCard(Card):
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
                     .props('icon=straighten outline').tooltip('Calibrate camera')
+                # Add a button to save the last captured image
+                # ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
+
             with ui.row():
                 self.debug_position = ui.label()
 
+    def update_content(self) -> None:
+        cameras = list(self.camera_provider.cameras.values())
+        if not cameras:
+            self.camera = None
+            self.camera_card.clear()
+            with self.camera_card:
+                ui.label('no camera available').classes('text-center')
+                ui.image('assets/field_friend.webp').classes('w-full')
+            return
+        if self.camera is None or self.camera not in cameras:
+            self.use_camera(cameras[0])
+            assert self.camera is not None
+
+        if self.shrink_factor > 1:
+            url = f'{self.camera.get_latest_image_url()}?shrink={self.shrink_factor}'
+        else:
+            url = self.camera.get_latest_image_url()
+        self.image_view.set_source(url)
+        image = self.camera.latest_captured_image
+        if image and image.detections:
+            self.image_view.set_content(image.detections.to_svg())
+
+    async def capture_image(self) -> None:
+        if self.camera is None:
+            return
+        await self.detector.detect(self.camera.latest_captured_image, autoupload=Autoupload.ALL, tags=['capture'])
+
     def on_mouse_move(self, e: MouseEventArguments):
+        if self.camera is None:
+            return
         if e.type == 'mousemove':
             point2d = Point(x=e.image_x, y=e.image_y)
             if self.camera.calibration is None:
@@ -134,10 +133,11 @@ class CameraCard(Card):
             self.show_mapping_checkbox.value = True
 
     def show_mapping(self, event: ValueChangeEventArguments) -> None:
+        if self.camera is None or self.image_view is None:
+            return
         if not event.value:
             self.image_view.content = ''
             return
-
         world_points = np.array([[x, y, 0] for x in np.linspace(0, 0.3, 15) for y in np.linspace(-0.2, 0.2, 20)])
         image_points = self.camera.calibration.project_array_to_image(world_points)
         colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
@@ -145,30 +145,21 @@ class CameraCard(Card):
         self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'
                                           for p, color in zip(image_points, colors_hex))
 
+    # async def save_last_image(self) -> None:
+    #     """Saves the last captured image to the .rosys folder."""
+    #     if self.camera and self.camera.latest_captured_image:
+    #         image = self.camera.latest_captured_image
+    #         self.log.info(f'Image captured at {image.size}')
+    #         img = Image.open(io.BytesIO(image.data))
+    #         # Resolves to the user's home directory  # modify the file name as needed
+    #         backup_path = Path('~/.rosys').expanduser()
+    #         save_path = backup_path / 'left_image.jpg'  # Modify the file name as needed
+    #         try:
+    #             # Use the save method of the image
+    #             img.save(save_path)
+    #             self.log.info(f'Image saved to {save_path}')
+    #         except Exception as e:
+    #             self.log.error(f'Error saving image: {e}')
 
-class cameras:
-
-    def __init__(
-            self, camera_selector: CameraSelector, camera_provider: CameraProvider,
-            automator: Automator, detector: Detector,
-            puncher: Optional[Puncher] = None, *, version: str, shrink_factor: int = 1) -> None:
-        self.log = logging.getLogger('field_friend.cameras')
-        self.camera_selector = camera_selector
-        self.camera_provider = camera_provider
-        self.automator = automator
-        self.detector = detector
-        self.puncher = puncher
-        self.shrink_factor = shrink_factor
-        self.version = version
-        self.cards: dict[str, CameraCard] = {}
-        self.camera_grid = ui.row()
-        ui.timer(1, self.update_cameras)
-
-    def update_cameras(self) -> None:
-        with self.camera_grid:
-            if set(self.camera_selector.camera_ids.keys()) != set(self.cards.keys()):
-                self.camera_grid.clear()
-                for camera_type in self.camera_selector.camera_ids.keys():
-                    self.cards[camera_type] = CameraCard(
-                        camera_type, self.camera_provider, self.camera_selector, self.automator, self.detector, self.
-                        puncher, version=self.version, shrink_factor=self.shrink_factor)
+    #     else:
+    #         self.log.warning('No image available to save.')

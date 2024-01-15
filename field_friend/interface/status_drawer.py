@@ -219,7 +219,7 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
-                status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}'
+                status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
             direction_flag = 'N' if gnss.record.heading <= 23 else \
                 'NE' if gnss.record.heading <= 68 else \
                 'E' if gnss.record.heading <= 113 else \

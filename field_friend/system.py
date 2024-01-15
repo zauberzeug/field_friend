@@ -2,52 +2,38 @@ import logging
 import os
 from typing import Optional
 
+import numpy as np
 import rosys
 
 from field_friend.automations import (CoinCollecting, DemoWeeding, FieldProvider, Mowing, PathProvider, PathRecorder,
                                       PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew, Rolling)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import CameraSelector
-from field_friend.vision.simulation import create_weedcam
-
-CAMERA_DEVICES = [
-    'bottom_cam',
-    'usb-70090000.xusb-2.4.2',
-    'FCQ21110245',
-    'usb-70090000.xusb-2.3.2',
-    'usb-70090000.xusb-2.2',
-    'usb-70090000.xusb-2.2.1',
-    'usb-70090000.xusb-2.3.3',
-    'usb-70090000.xusb-2.3',
-    'usb-70090000.xusb-2.4',
-    'usb-3610000.xhci-2.1',
-    'usb-70090000.xusb-2.2',
-    'usb-3610000.xhci-2.3',
-    'usb-3610000.xhci-2.2.2',
-    'usb-3610000.xhci-2.3.3',
-]
+from field_friend.vision import SimulatedCam, SimulatedCamProvider, UsbCamProvider
 
 
 class System:
     def __init__(self) -> None:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
-        self.log = logging.getLogger('uckerbot.system')
+        self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         version = 'u4'  # insert here your field friend version
-        self.camera_selector = CameraSelector()
-        self.camera_selector.camera_ids = {'bottom_cam': CAMERA_DEVICES}
         if self.is_real:
             self.field_friend = FieldFriendHardware(version=version)
-            self.usb_camera_provider = rosys.vision.UsbCameraProviderHardware()
+            self.usb_camera_provider = UsbCamProvider()
             self.detector = rosys.vision.DetectorHardware(port=8004)
             # self.circle_sight = CircleSight()
         else:
             self.field_friend = FieldFriendSimulation(version=version)
-            self.usb_camera_provider = rosys.vision.UsbCameraProviderSimulation()
+            self.usb_camera_provider = SimulatedCamProvider()
+            self.usb_camera_provider.remove_all_cameras()
+            self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
+                                                                               x=0.4, z=0.4,
+                                                                               roll=np.deg2rad(360-150),
+                                                                               pitch=np.deg2rad(0),
+                                                                               yaw=np.deg2rad(90)))
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             # self.circle_sight = None
-        self.usb_camera_provider.CAMERA_ADDED.register(self.camera_selector.use_camera)
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
         self.rolling = Rolling(self.field_friend.imu,self.field_friend)
@@ -72,7 +58,7 @@ class System:
         self.plant_locator: Optional[PlantLocator] = None
         # self.usb_camera_provider.CAMERA_ADDED.register(self._create_plant_locator)
         self.demo_weeding = DemoWeeding(self.field_friend, self.driver, self.detector,
-                                        self.camera_selector, self.plant_provider, self.puncher, self.plant_locator)
+                                        self.plant_provider, self.puncher, self.plant_locator)
         self.weeding = Weeding(self)
         self.weeding_new = WeedingNew(self)
         self.coin_collecting = CoinCollecting(self)
@@ -128,7 +114,7 @@ class System:
                         camera.resolution = rosys.vision.ImageSize(width=width, height=height)
                         camera.crop = rosys.geometry.Rectangle(
                             x=xoffset, y=yoffset, width=width - 2 * xoffset - width_offset, height=height - 2 * yoffset)
-                        camera.rotation = rosys.vision.usb_camera.ImageRotation.RIGHT
+                        camera.rotation = 90
                         camera.auto_exposure = False
                         camera.exposure = 0.004
                     elif self.field_friend.version in ['u4']:
@@ -136,7 +122,7 @@ class System:
                         camera.resolution = rosys.vision.ImageSize(width=width, height=height)
                         camera.crop = rosys.geometry.Rectangle(
                             x=xoffset, y=yoffset, width=width - 2 * xoffset, height=height - 2 * yoffset)
-                        camera.rotation = rosys.vision.usb_camera.ImageRotation.NONE
+                        camera.rotation = 0
                         camera.auto_exposure = True
                         camera.exposure = 0.004
                 self.usb_camera_provider.needs_backup = True
@@ -159,10 +145,7 @@ class System:
                 self.was_charging = False
                 rosys.on_repeat(check_if_charging, 0.5)
                 rosys.on_startup(relase_relais_on_startup)
-                rosys.on_startup(self.start_esp)
-
-        else:
-            rosys.on_startup(lambda: create_weedcam('bottom_cam', self.usb_camera_provider))
+                # rosys.on_startup(self.start_esp)
 
         async def stop():
             if self.automator.is_running:
@@ -180,18 +163,18 @@ class System:
         self.steerer.STEERING_STARTED.register(pause)
         self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
 
-    def start_esp(self):
-        self.log.info('>>>>>>>>>>starting esp')
-        self.automator.start(self.enable_esp())
+    # def start_esp(self):
+    #     self.log.info('>>>>>>>>>>starting esp')
+    #     self.automator.start(self.enable_esp())
 
-    async def enable_esp(self):
-        self.log.info('>>>>>>>>>>enabling esp because buggy')
-        with open(f'/sys/class/gpio/export', 'w') as f:
-            f.write('492\n')
-        with open(f'/sys/class/gpio/export', 'w') as f:
-            f.write('460\n')
-        await rosys.sleep(0.1)
-        self.field_friend.robot_brain.enable_esp()
+    # async def enable_esp(self):
+    #     self.log.info('>>>>>>>>>>enabling esp because buggy')
+    #     with open(f'/sys/class/gpio/export', 'w') as f:
+    #         f.write('492\n')
+    #     with open(f'/sys/class/gpio/export', 'w') as f:
+    #         f.write('460\n')
+    #     await rosys.sleep(0.1)
+    #     self.field_friend.robot_brain.enable_esp()
 
     def _create_plant_locator(self, camera: rosys.vision.Camera) -> None:
         if camera == self.camera_selector.cameras['bottom_cam']:

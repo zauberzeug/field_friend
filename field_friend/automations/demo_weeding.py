@@ -10,7 +10,6 @@ from rosys.helpers import eliminate_pi, ramp
 from rosys.vision import Detector
 
 from ..hardware import FieldFriend
-from ..vision import CameraSelector
 from .plant import Plant
 from .plant_locator import DetectorError, PlantLocator
 from .plant_provider import PlantProvider
@@ -21,7 +20,7 @@ MAX_DRIVE_DISTANCE = 0.08
 
 
 class DemoWeeding:
-    def __init__(self, field_friend: FieldFriend, driver: Driver, detector: Detector, camera_selector: CameraSelector,
+    def __init__(self, field_friend: FieldFriend, driver: Driver, detector: Detector,
                  plant_provider: PlantProvider, puncher: Puncher, plant_detector: PlantLocator) -> None:
         self.log = logging.getLogger('field_friend.weeding')
         self.field_friend = field_friend
@@ -29,7 +28,6 @@ class DemoWeeding:
         self.driver = driver
         self.detector = detector
         self.plant_provider = plant_provider
-        self.camera_selector = camera_selector
         self.plant_detector = plant_detector
 
         self.drill_depth: float = 0.05

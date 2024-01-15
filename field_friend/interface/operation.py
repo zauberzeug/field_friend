@@ -6,10 +6,10 @@ import rosys
 from nicegui import events, ui
 
 from .automation_controls import automation_controls
+from .field_friend_object import field_friend_object
 from .field_object import field_object
 from .key_controls import KeyControls
 from .plant_object import plant_objects
-from .robot_object import robot_object
 from .visualizer_object import visualizer_object
 from ..automations import rolling
 
@@ -48,7 +48,7 @@ class operation:
                                       look_at_x=position.x, look_at_y=position.y)
                     return
             with ui.scene(650, 500, on_click=handle_click) as scene:
-                robot_object(self.system.odometer, self.system.usb_camera_provider, self.system.field_friend)
+                field_friend_object(self.system.odometer, self.system.usb_camera_provider, self.system.field_friend)
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system.plant_provider, self.system.big_weed_category_names +
                               self.system.small_weed_category_names)

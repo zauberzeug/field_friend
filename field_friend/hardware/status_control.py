@@ -12,14 +12,17 @@ class StatusControlHardware(ModuleHardware):
                  ) -> None:
         self.rdyp_status: bool = False
         self.vdp_status: bool = False
+        self.heap: int = 0
         lizard_code = f'rdyp_status = Input({rdyp_pin})\n'
         lizard_code += f'vdp_status = {expander.name + "."}Input({vdp_pin})\n'
         core_message_fields = [
             'rdyp_status.level',
             'vdp_status.level',
+            'core.heap',
         ]
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     def handle_core_output(self, _: float, words: list[str]) -> None:
         self.rdyp_status = int(words.pop(0)) == 0
         self.vdp_status = int(words.pop(0)) == 0
+        self.heap = int(words.pop(0))
