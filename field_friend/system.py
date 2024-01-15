@@ -92,50 +92,6 @@ class System:
                                                     default_automation=self.coin_collecting.start)
 
         if self.is_real:
-            # camera configuration
-            # def configure_cameras() -> None:
-            #     for camera in self.usb_camera_provider.cameras.values():
-            #         if self.field_friend.version == 'ff3':
-            #             width, height, xoffset, yoffset = 1920, 1080, 420, 150
-            #             camera.resolution = rosys.vision.ImageSize(width=width, height=height)
-            #             camera.crop = rosys.geometry.Rectangle(
-            #                 x=xoffset, y=0, width=width - (2 * xoffset + 150),
-            #                 height=height - yoffset)
-            #             camera.auto_exposure = True
-            #         elif self.field_friend.version in ['u2', 'u1']:
-            #             width, height, xoffset, yoffset = 1920, 1080, 450, 30
-            #             camera.resolution = rosys.vision.ImageSize(width=width, height=height)
-            #             camera.crop = rosys.geometry.Rectangle(
-            #                 x=xoffset, y=yoffset, width=width - 2 * xoffset, height=height - 2 * yoffset)
-            #             camera.auto_exposure = True
-            #             # camera.exposure = 0.005
-            #         elif self.field_friend.version in ['u3']:
-            #             width, height, xoffset, yoffset, width_offset = 1920, 1080, 400, 100, 200
-            #             camera.resolution = rosys.vision.ImageSize(width=width, height=height)
-            #             camera.crop = rosys.geometry.Rectangle(
-            #                 x=xoffset, y=yoffset, width=width - 2 * xoffset - width_offset, height=height - 2 * yoffset)
-            #             camera.rotation = 90
-            #             camera.auto_exposure = False
-            #             camera.exposure = 0.004
-            #         elif self.field_friend.version in ['u4']:
-            #             self.log.info('>>>>>>>>>>setting camera parameters for u4')
-            #             width, height, xoffset, yoffset = 1920, 1080, 350, 50
-            #             # camera.resolution = rosys.vision.ImageSize(width=width, height=height)
-            #             # camera.crop = None
-            #             # camera.rotation = 0
-            #             # camera.auto_exposure = False
-            #             # camera.exposure = 0.004
-            #             # camera.set_width(width)
-            #             # camera.set_height(height)
-            #             # camera.set_auto_exposure(False)
-            #             # camera.set_exposure(0.004)
-            #             camera.set_width(width)
-            #             camera.set_height(height)
-            #             camera.set_auto_exposure(True)
-            #     self.usb_camera_provider.needs_backup = True
-
-            # rosys.on_repeat(configure_cameras, 10.0)
-
             if self.field_friend.battery_control is not None:
                 def check_if_charging():
                     if self.automator.is_running:
@@ -153,7 +109,6 @@ class System:
                 self.was_charging = False
                 rosys.on_repeat(check_if_charging, 0.5)
                 rosys.on_startup(relase_relais_on_startup)
-                # rosys.on_startup(self.start_esp)
 
         async def stop():
             if self.automator.is_running:
@@ -170,19 +125,6 @@ class System:
 
         self.steerer.STEERING_STARTED.register(pause)
         self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
-
-    # def start_esp(self):
-    #     self.log.info('>>>>>>>>>>starting esp')
-    #     self.automator.start(self.enable_esp())
-
-    # async def enable_esp(self):
-    #     self.log.info('>>>>>>>>>>enabling esp because buggy')
-    #     with open(f'/sys/class/gpio/export', 'w') as f:
-    #         f.write('492\n')
-    #     with open(f'/sys/class/gpio/export', 'w') as f:
-    #         f.write('460\n')
-    #     await rosys.sleep(0.1)
-    #     self.field_friend.robot_brain.enable_esp()
 
     def _create_plant_locator(self, camera: rosys.vision.Camera) -> None:
         if camera == self.camera_selector.cameras['bottom_cam']:
