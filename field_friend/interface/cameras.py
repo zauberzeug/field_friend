@@ -43,7 +43,7 @@ class camera:
         with self.camera_card.tight().style('width:640px'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
-        ui.timer(0.5, self.update_content)
+        ui.timer(0.2, self.update_content)
 
     def use_camera(self, cam: rosys.vision.CalibratableCamera) -> None:
         self.camera = cam
@@ -78,11 +78,12 @@ class camera:
         cameras = list(self.camera_provider.cameras.values())
         active_camera = next((camera for camera in cameras if camera.is_connected), None)
         if not active_camera:
-            self.camera = None
-            self.camera_card.clear()
-            with self.camera_card:
-                ui.label('no camera available').classes('text-center')
-                ui.image('assets/field_friend.webp').classes('w-full')
+            if self.camera:
+                self.camera = None
+                self.camera_card.clear()
+                with self.camera_card:
+                    ui.label('no camera available').classes('text-center')
+                    ui.image('assets/field_friend.webp').classes('w-full')
             return
         if self.camera is None or self.camera != active_camera:
             self.use_camera(active_camera)
