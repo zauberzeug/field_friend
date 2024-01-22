@@ -4,15 +4,12 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import events, ui
-
-from ..automations import FieldProvider
 from .automation_controls import automation_controls
 from .field_friend_object import field_friend_object
 from .field_object import field_object
 from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .visualizer_object import visualizer_object
-from .leaflet_map import leaflet_map
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -25,13 +22,13 @@ SHORTCUT_INFO = '''
 
 class operation:
 
-    def __init__(self, system: 'System', field_provider: FieldProvider) -> None:
+    def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.operation')
         self.system = system
-        self.field_provider = field_provider
+        self.field_provider = system.field_provider
         self.field = None
+
         with ui.card().tight():
-            self. leaflet_map = leaflet_map(field_provider)
             self.scene_look = False
 
             def handle_click(event: events.SceneClickEventArguments) -> None:
@@ -101,8 +98,12 @@ class operation:
                                         self.system.weeding_new.field = field
                                         show_row_selection.refresh()
 
+                            field_selection_dict = {}
+                            for field in self.system.field_provider.fields:
+                                field_selection_dict[field.id] = field.name
+
                             self.field_selection = ui.select(
-                                [field.id for field in self.system.field_provider.fields],
+                                field_selection_dict,
                                 with_input=True, on_change=set_field, label='Field').tooltip(
                                 'Select the field to weed').classes('w-24')
                             show_row_selection()
@@ -115,8 +116,13 @@ class operation:
                                         self.system.weeding.row = row
                                         self.system.weeding_new.start_row = row
                             if self.field is not None:
+                                row_selection_dict = {}
+                                if self.field is not None:
+                                    for row in self.field.rows:
+                                        row_selection_dict[row.id] = row.name
+
                                 self.row_selection = ui.select(
-                                    [row.id for row in self.field.rows if self.field is not None],
+                                    row_selection_dict,
                                     label='Row', with_input=True, on_change=set_row).tooltip(
                                     'Select the row to weed').classes('w-24')
                         show_field_selection()

@@ -1,27 +1,34 @@
 
 import logging
+from typing import TYPE_CHECKING
 import uuid
-from nicegui import events, ui
+from nicegui import events, ui, elements
 import fiona
 import rosys
 from ..automations import FieldProvider, Field
 from geographiclib.geodesic import Geodesic
+from copy import deepcopy
 import numpy as np
 # Enable fiona driver
-# gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
 fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
 fiona.drvsupport.supported_drivers['KML'] = 'rw'
 
 
+if TYPE_CHECKING:
+    from field_friend.system import System
+
+
 class leaflet_map:
 
-    def __init__(self, field_provider: FieldProvider) -> None:
+    def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.leaflet_map')
-        self.field_provider = field_provider
+        self.system = system
+        self.field_provider = system.field_provider
+        self.gnss = system.gnss
         self.draw_control = {
             'draw': {
                 'polygon': True,
-                'marker': False,
+                'marker': True,
                 'circle': False,
                 'rectangle': False,
                 'polyline': False,
@@ -29,12 +36,37 @@ class leaflet_map:
             },
             'edit': False,
         }
-        self.m = ui.leaflet(center=(54.593578543, 8.94665825599984), zoom=13, draw_control=self.draw_control)
+        self.m = ui.leaflet(center=(54.593578543, 8.94665825599984), zoom=13,
+                            draw_control=self.draw_control)
+        # self.roboter_reference_id = ""
+
+        def set_simulated_reference(latlon, dialog):
+            self.gnss.clear_reference()
+            self.gnss.set_reference(latlon[0], latlon[1])
+            dialog.close()
+            ui.notify(f'Robot reference has been set to {latlon[0]}, {latlon[1]}')
 
         def handle_draw(e: events.GenericEventArguments):
             if e.args['layerType'] == 'marker':
-                self.m.marker(latlng=(e.args['layer']['_latlng']['lat'],
-                                      e.args['layer']['_latlng']['lng']))
+                latlon = (e.args['layer']['_latlng']['lat'],
+                          e.args['layer']['_latlng']['lng'])
+                # print(self.roboter_reference_id)
+                # if self.roboter_reference_id != "":
+                # self.m.remove_layer(layer=self.roboter_reference_id)
+                self.m.marker(latlng=latlon)
+                # self.roboter_reference_id = new_marker.id
+                # TODO delete all layers and add them again when position of robo changes
+
+                if system.is_real:
+                    print("is real")
+                else:
+                    with ui.dialog() as simulated_marker_dialog, ui.card():
+                        ui.label('You are currently working in a simulation. What does the placed point represent?')
+                        ui.button('simulated roboter reference point',
+                                  on_click=lambda: set_simulated_reference(latlon, simulated_marker_dialog))
+                        ui.button('a boundary point', on_click=simulated_marker_dialog.close)
+                        ui.button('Close', on_click=simulated_marker_dialog.close)
+                    simulated_marker_dialog.open()
             if e.args['layerType'] == 'polygon':
                 coordinates = e.args['layer']['_latlngs']
                 coordinates_carth = []
@@ -48,7 +80,7 @@ class leaflet_map:
                     y = s * np.sin(a)
                     current_point = rosys.geometry.Point(x=x, y=y)
                     coordinates_carth.append(current_point)
-                field = Field(id=f'{str(uuid.uuid4())}', outline=coordinates_carth,
+                field = Field(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}', outline=coordinates_carth,
                               outline_wgs84=coordinates)
                 self.field_provider.add_field(field)
 
@@ -56,6 +88,8 @@ class leaflet_map:
             m.on('draw:created', handle_draw)
             self.update_layers()
             self.field_provider.FIELDS_CHANGED.register(self.update_layers.refresh)
+            self.update_robot_position(self.system.odometer.prediction)
+            # self.gnss.ROBOT_LOCATED.register(self.update_robot_position.refresh)
 
     @ui.refreshable
     def update_layers(self) -> None:
@@ -69,5 +103,15 @@ class leaflet_map:
             },
         )
         for field in self.field_provider.fields:
-            self.m.generic_layer(name="polygon", args=[field.outline_wgs84], )
-            self.m.set_center((field.outline_wgs84[0][0], field.outline_wgs84[0][1]))
+            self.m.generic_layer(name="polygon", args=[field.outline_wgs84])
+            if len(field.outline_wgs84) > 0:
+                self.m.set_center((field.outline_wgs84[0][0], field.outline_wgs84[0][1]))
+
+    @ui.refreshable
+    def update_robot_position(self, pose: rosys.geometry.Pose) -> None:
+        ref = [self.system.gnss.reference_lat, self.system.gnss.reference_lon]
+
+        # pose = self.system.odometer.prediction
+        # self.m.remove_layer(layer="robot")
+        # self.m.generic_layer(name="polygon", args=[])
+        # print(f'📥 {deepcopy(pose)}')

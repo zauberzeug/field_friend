@@ -37,14 +37,16 @@ def startup() -> None:
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
         interface.system_bar()
-        with ui.column().classes('w-full items-stretch'):
-            with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                interface.operation(system, system.field_provider)
+        with ui.column().classes('w-full items-stretch').style('max-height:calc(100vh - 125px); height:calc(100vh - 150px);'):
+            with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height:40%; max-height:40%;'):
+                leaflet_map = interface.leaflet_map(system)
+                leaflet_map.m.style('height: 100%; max-height:100%;')
+            with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height: 60%; max-height:60%;'):
                 interface.field_planner(system.field_provider, system.odometer, system.gnss)
-            if dev:
-                with ui.row().classes('items-stretch justify-items-stretch'):
-                    interface.development(system.field_friend)
-                    interface.hardware_control(system.field_friend, system.automator, system.puncher)
+       # if dev:
+        #    with ui.row().classes('items-stretch justify-items-stretch'):
+         #       interface.development(system.field_friend)
+          #      interface.hardware_control(system.field_friend, system.automator, system.puncher)
 
     @ui.page('/path')
     def path_page(dev: bool = True):

@@ -28,6 +28,8 @@ class local_file_picker(ui.dialog):
         self.show_hidden_files = show_hidden_files
 
         with self, ui.card():
+            with ui.row():
+                ui.label("Choose a file that contains a field boundary. Only a single polygon will be selected. Supported file formates are: .xml with ISO 11783, .shp, .kml ")
             self.add_drives_toggle()
             self.grid = ui.aggrid({
                 'columnDefs': [{'field': 'name', 'headerName': 'File'}],

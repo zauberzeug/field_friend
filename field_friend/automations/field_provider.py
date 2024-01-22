@@ -10,12 +10,14 @@ from .plant import Plant
 @dataclass(slots=True, kw_only=True)
 class FieldObstacle:
     id: str
+    name: str
     points: list[Point] = field(default_factory=list)
 
 
 @dataclass(slots=True, kw_only=True)
 class Row:
     id: str
+    name: str
     points: list[Point] = field(default_factory=list)
     reverse: bool = False
     crops: list[Plant] = field(default_factory=list)
@@ -23,6 +25,7 @@ class Row:
     def reversed(self):
         return Row(
             id=self.id,
+            name=self.name,
             points=list(reversed(self.points)),
         )
 
@@ -30,6 +33,7 @@ class Row:
 @dataclass(slots=True, kw_only=True)
 class Field:
     id: str
+    name: str
     outline: list[Point] = field(default_factory=list)
     outline_wgs84: list[list] = field(default_factory=list)
     reference_lat: Optional[float] = None
@@ -43,6 +47,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def __init__(self) -> None:
         super().__init__()
         self.fields: list[Field] = []
+        self.active_field: Optional[Field] = None
+
+        self.FIELD_SELECTED = rosys.event.Event()
+        """The currently selected field has changed"""
 
         self.FIELDS_CHANGED = rosys.event.Event()
         """The dict of fields has changed."""
@@ -86,3 +94,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def remove_row(self, field: Field, row: Row) -> None:
         field.rows.remove(row)
         self.invalidate()
+
+    def select_field(self, field: Optional[Field] = None) -> None:
+        self.active_field = field
+        self.FIELD_SELECTED.emit()

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Optional, Protocol
-
+from field_friend.navigation.point_transformation import wgs84_to_cartesian
 import numpy as np
 import pynmea2
 import rosys
@@ -177,16 +177,15 @@ class GnssHardware(Gnss):
                 self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
                 self.set_reference(record.latitude, record.longitude)
             else:
-                r = Geodesic.WGS84.Inverse(self.reference_lat, self.reference_lon, record.latitude, record.longitude)
-                s = r['s12']
-                a = -np.deg2rad(r['azi1'])
+                cart_coords = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
+                    record.latitude, record.longitude])
                 if has_heading:
                     yaw = np.deg2rad(float(-record.heading))
                 else:
                     yaw = self.odometer.get_pose(time=record.timestamp).yaw
                 pose = rosys.geometry.Pose(
-                    x=s * np.cos(a),
-                    y=s * np.sin(a),
+                    x=cart_coords[0],
+                    y=cart_coords[1],
                     yaw=yaw,
                     time=record.timestamp,
                 )
