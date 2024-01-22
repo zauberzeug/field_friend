@@ -14,15 +14,24 @@ class CameraConfigurator:
                  field_friend_version: str):
         self.log = logging.getLogger('field_friend.camera_configurator')
         self.camera_provider = camera_provider
-        self.config = configurations[field_friend_version]
+        self.version = field_friend_version
+        self.config = configurations[self.version]
         rosys.on_repeat(self.update_camera_config, 10)
 
-    def update_camera_config(self):
+    async def update_camera_config(self):
         for camera in self.camera_provider.cameras.values():
+            self.log.info(f'updating camera {camera.id}...')
             if not camera.is_connected:
+                self.log.info(f'skipping camera {camera.id}: not connected')
                 continue
             if isinstance(camera, UsbCam):
-                camera.set_parameters(self.config['parameters'])
+                if self.version == 'u1':
+                    # camera.set_parameters(self.config['parameters'])
+                    # Camera bug on u1 after setting the new parameters remove line and restart system
+                    pass
+                else:
+                    camera.set_parameters(self.config['parameters'])
+
             elif isinstance(camera, SimulatedCam):
                 camera.resolution = rosys.vision.ImageSize(
                     width=self.config['parameters']['width'],
