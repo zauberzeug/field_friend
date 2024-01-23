@@ -1,0 +1,15 @@
+{
+    "cameras": {
+        "32e4-9230-platform-70090000.xusb-usb-0:2.3.2:1.0": {
+            "id": "32e4-9230-platform-70090000.xusb-usb-0:2.3.2:1.0",
+            "name": "32e4-9230-platform-70090000.xusb-usb-0:2.3.2:1.0",
+            "connect_after_init": true,
+            "streaming": true,
+            "auto_exposure": true,
+            "exposure": false,
+            "width": 640,
+            "height": 480,
+            "fps": 30
+        }
+    }
+}

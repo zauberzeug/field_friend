@@ -1,0 +1,8 @@
+{
+    "left_roll_limit": -30,
+    "right_roll_limit": 30,
+    "forward_pitch_limit": -30,
+    "backward_pitch_limit": 30,
+    "offset_roll": 0,
+    "offste_pitch": 0
+}
