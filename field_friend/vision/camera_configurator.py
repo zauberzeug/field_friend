@@ -20,9 +20,8 @@ class CameraConfigurator:
 
     async def update_camera_config(self):
         for camera in self.camera_provider.cameras.values():
-            self.log.info(f'updating camera {camera.id}...')
             if not camera.is_connected:
-                self.log.info(f'skipping camera {camera.id}: not connected')
+                self.log.info(f'Not updating camera {camera.id}: not connected')
                 continue
             if isinstance(camera, UsbCam):
                 if self.version == 'u1':
