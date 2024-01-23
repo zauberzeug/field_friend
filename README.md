@@ -1,14 +1,14 @@
+<img src="https://github.com/zauberzeug/field_friend/raw/main/assets/field_friend.webp"  alt="Field Friend rendering" width="40%" align="right" />
+
 # Zauberzeug Field Friend
 
-This is an example implementation of an mechanical weeding robot with [RoSys](https://rosys.io).
-The full [Field Friend](http://feldfreund.de) system is build by [Zauberzeug](http://zauberzeug.com) as a development platform to advance organic and regenerative agriculture.
-
-![](assets/field_friend.webp)
+This is the full source code of the [Field Friend](http://feldfreund.de) (aka Feldfreund) weeding robot.
+The software is based on [RoSys](https://rosys.io) and fully Open Source.
+The hardware is build by [Zauberzeug](http://zauberzeug.com) and intended as a platform to advance organic and regenerative agriculture.
 
 ## Features
 
 - full control via web interface
-- 3D visualization of the robot and it's detected surrounding
 - manual steering with touch-joystick and keyboard
 - camera/motor calibration for real world coordinate system (unit: meters)
 - ...
@@ -23,6 +23,8 @@ python3 -m pip install -r requirements.txt
 ```
 
 This will start the simulated robot and open the user interface in your browser.
+
+NOTE: The software is intended to run on Linux and Unix systems. If you are using windows please consider running in a Docker container or virtual machine.
 
 ## On Real Hardware
 
