@@ -43,12 +43,7 @@ Contact [sales@zauberzeug.com](mailto:sales@zauberzeug.com) if you are intereste
 ### Update RoSys and NiceGUI
 
 To utilize personal versions of RoSys and NiceGUI instead of the default ones provided in the docker image,
-modify the docker-compose.yml file by uncommenting the volume mounts. Then execute the following commands:
-
-```bash
-cd ~/field_friend
-./docker.sh u rosys
-```
+modify the `sync.py` file by uncommenting the specific folders.
 
 ### Debugging
 
