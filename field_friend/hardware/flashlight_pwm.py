@@ -49,19 +49,24 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
     async def _set_duty_cycle(self) -> None:
         if rosys.time() > self.last_update + self.UPDATE_INTERVAL:
 
-            self.last_update = rosys.time()
-            current_voltage = self.bms.state.voltage
-            if current_voltage is None:
-                return
-            self.duty_cycle = (self.rated_voltage / current_voltage)**2
-            if self.duty_cycle > 1:
-                self.duty_cycle = 1
+            # get the current voltage from the BMS
+            voltage = self.bms.state.voltage
+
+            self.duty_cycle = self._calculate_duty_cycle(voltage)
             # get a 8 bit value for the duty cycle (0-255) no negative values
             duty = int(self.duty_cycle * 255)
 
             await self.robot_brain.send(
                 f'{self.name}.duty={duty};'
             )
+
+    def _calculate_duty_cycle(self, voltage: float) -> float:
+        # Using the formula provided: Duty Cycle = (20 W) / (V * (0.1864 * V - 3.4409))
+        current = 0.1864 * voltage - 3.4409
+        power_at_full_duty = voltage * current
+        duty_cycle = 20 / power_at_full_duty
+        # Ensuring the duty cycle is within 0 and 1
+        return min(max(duty_cycle, 0), 1)
 
 
 class FlashlightPWMSimulation(FlashlightPWM, rosys.hardware.ModuleSimulation):
