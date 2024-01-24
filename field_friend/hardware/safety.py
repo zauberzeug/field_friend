@@ -7,6 +7,7 @@ from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
 from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
+from .h_portal import HPortal, HPortalHardware
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .y_axis_tornado import YAxisHardwareTornado, YAxisSimulationTornado, YAxisTornado
@@ -20,7 +21,7 @@ class Safety(rosys.hardware.Module, abc.ABC):
     def __init__(self, *,
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[YAxis, ChainAxis, YAxisTornado, None] = None,
+                 y_axis: Union[YAxis, ChainAxis, YAxisTornado, HPortal, None] = None,
                  z_axis: Union[ZAxis, ZAxisV2, Tornado, None] = None,
                  flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, None] = None,
                  **kwargs) -> None:
@@ -38,14 +39,17 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  wheels: rosys.hardware.WheelsHardware,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[YAxisHardware, ChainAxisHardware, YAxisHardwareTornado, None] = None,
+                 y_axis: Union[YAxisHardware, ChainAxisHardware, YAxisHardwareTornado, HPortalHardware, None] = None,
                  z_axis: Union[ZAxisHardware, ZAxisHardwareV2, TornadoHardware, None] = None,
                  flashlight: Union[FlashlightHardware, FlashlightHardwareV2, FlashlightPWMHardware, None],
                  ) -> None:
 
         lizard_code = f'let stop do {wheels.name}.speed(0, 0);'
         if y_axis is not None:
-            lizard_code += f' {y_axis.name}.stop();'
+            if not isinstance(y_axis, HPortalHardware):
+                lizard_code += f' {y_axis.name}.stop();'
+            else:
+                lizard_code += f'{y_axis.name}_off();'
         if z_axis is not None:
             if not isinstance(z_axis, TornadoHardware):
                 lizard_code += f' {z_axis.name}.stop();'
@@ -70,7 +74,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f'when {z_axis.name}_end_bottom.level == 0 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
 
         lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
-        lizard_code += 'when core.last_message_age > 20000 then stop(); end\n'
+        lizard_code += 'when core.last_message_age > 10000 then stop(); end\n'
 
         super().__init__(wheels=wheels,
                          estop=estop,
