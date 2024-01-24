@@ -3,8 +3,8 @@ from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
 from ..automations import Puncher
-from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightV2, Tornado,
-                        YAxis, YAxisTornado, ZAxis, ZAxisV2)
+from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightV2, HPortal,
+                        Tornado, YAxis, YAxisTornado, ZAxis, ZAxisV2)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -89,6 +89,23 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                 with ui.column():
                     ui.markdown('**Y-Axis**')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
+            elif isinstance(field_friend.y_axis, HPortal):
+                with ui.column():
+                    ui.markdown('**H-Portal**')
+                    ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
+                    with ui.row().style('width:9em'):
+                        # width/height of area accessible to h-portal
+                        hp_range_y = field_friend.y_axis.MAX_Y - field_friend.y_axis.MIN_Y - 0.01
+                        hp_range_x = field_friend.y_axis.MAX_X - field_friend.y_axis.MIN_X
+                        punch_buttons = 3
+                        punch_step_y = hp_range_y / (punch_buttons-1)
+                        punch_step_x = hp_range_x / (punch_buttons-1)
+                        for i in range(0, punch_buttons, 1):
+                            for j in range(0, punch_buttons, 1):
+                                x = (punch_buttons-1-i) * punch_step_x + field_friend.y_axis.MIN_X
+                                y = (punch_buttons-1-j) * punch_step_y + field_friend.y_axis.MIN_Y + 0.005
+                                ui.button(f'', on_click=lambda _, x=x, y=y: automator.start(
+                                    puncher.aim_with_h_portal(x, y)))
 
         if field_friend.z_axis is not None:
             if isinstance(field_friend.z_axis, ZAxis) or isinstance(field_friend.z_axis, ZAxisV2):
