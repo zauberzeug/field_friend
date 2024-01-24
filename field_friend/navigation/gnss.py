@@ -37,9 +37,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.ROBOT_LOCATED = rosys.event.Event()
         """the robot has been located (argument: pose)"""
 
-        self.REFERENCE_CLEARED = rosys.event.Event()
-        """the reference location has been set"""
-
         self.record = GNSSRecord()
         self.device = None
         self.ser = None
@@ -73,7 +70,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.reference_lat = None
         self.reference_lon = None
         self.request_backup()
-        self.REFERENCE_CLEARED.emit()
 
     def set_reference(self, lat: float, lon: float) -> None:
         self.reference_lat = lat
@@ -192,7 +188,10 @@ class GnssHardware(Gnss):
                 distance = self.odometer.prediction.distance(pose)
                 if distance > 1:
                     self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
+                # TODO would it be helpful  to add an event that has the wgs84 coords as arg
                 self.ROBOT_LOCATED.emit(pose)
+        elif has_location and record.gps_qual == 5:
+            print("5")
 
 
 class PoseProvider(Protocol):
@@ -213,7 +212,7 @@ class GnssSimulation(Gnss):
             return
         pose = deepcopy(self.pose_provider.pose)
         pose.time = rosys.time()
-        await rosys.sleep(0.5)
+        # TODO cart to wgs
         self.ROBOT_LOCATED.emit(pose)
 
     async def try_connection(self) -> None:

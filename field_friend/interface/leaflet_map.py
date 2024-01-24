@@ -8,6 +8,7 @@ import rosys
 from ..automations import FieldProvider, Field
 from geographiclib.geodesic import Geodesic
 from copy import deepcopy
+from field_friend.navigation.point_transformation import wgs84_to_cartesian, cartesian_to_wgs84
 import numpy as np
 # Enable fiona driver
 fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
@@ -19,7 +20,6 @@ if TYPE_CHECKING:
 
 
 class leaflet_map:
-
     def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.leaflet_map')
         self.system = system
@@ -38,6 +38,7 @@ class leaflet_map:
         }
         self.m = ui.leaflet(center=(54.593578543, 8.94665825599984), zoom=13,
                             draw_control=self.draw_control)
+        self.marker = None
         # self.roboter_reference_id = ""
 
         def set_simulated_reference(latlon, dialog):
@@ -50,12 +51,12 @@ class leaflet_map:
             if e.args['layerType'] == 'marker':
                 latlon = (e.args['layer']['_latlng']['lat'],
                           e.args['layer']['_latlng']['lng'])
-                # print(self.roboter_reference_id)
-                # if self.roboter_reference_id != "":
-                # self.m.remove_layer(layer=self.roboter_reference_id)
-                self.m.marker(latlng=latlon)
-                # self.roboter_reference_id = new_marker.id
-                # TODO delete all layers and add them again when position of robo changes
+                if not self.marker:
+                    self.marker = self.m.marker(latlng=latlon)
+                else:
+                    self.marker.move(latlon[0], latlon[1])
+                    icon = 'L.icon({iconUrl: "http://leafletjs.com/examples/custom-icons/leaf-green.png"})'
+                    self.marker.run_method(':setIcon', icon)
 
                 if system.is_real:
                     print("is real")
@@ -87,11 +88,9 @@ class leaflet_map:
         with self.m as m:
             m.on('draw:created', handle_draw)
             self.update_layers()
-            self.field_provider.FIELDS_CHANGED.register(self.update_layers.refresh)
-            self.update_robot_position(self.system.odometer.prediction)
-            # self.gnss.ROBOT_LOCATED.register(self.update_robot_position.refresh)
+            self.field_provider.FIELDS_CHANGED.register(self.update_layers)
+        self.gnss.ROBOT_LOCATED.register(self.update_robot_position)
 
-    @ui.refreshable
     def update_layers(self) -> None:
         self.m.clear_layers()
         self.m.tile_layer(
@@ -106,12 +105,11 @@ class leaflet_map:
             self.m.generic_layer(name="polygon", args=[field.outline_wgs84])
             if len(field.outline_wgs84) > 0:
                 self.m.set_center((field.outline_wgs84[0][0], field.outline_wgs84[0][1]))
+        self.marker = None
 
-    @ui.refreshable
     def update_robot_position(self, pose: rosys.geometry.Pose) -> None:
-        ref = [self.system.gnss.reference_lat, self.system.gnss.reference_lon]
-
-        # pose = self.system.odometer.prediction
-        # self.m.remove_layer(layer="robot")
-        # self.m.generic_layer(name="polygon", args=[])
-        # print(f'📥 {deepcopy(pose)}')
+        ref = [self.gnss.reference_lat, self.gnss.reference_lon]
+        wgs84_coords = cartesian_to_wgs84(ref, [pose.x, pose.y])
+        if not self.marker:
+            self.marker = self.m.marker(latlng=(self.gnss.reference_lat, self.gnss.reference_lon))
+        self.marker.move(wgs84_coords[0], wgs84_coords[1])
