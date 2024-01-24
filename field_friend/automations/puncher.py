@@ -4,7 +4,7 @@ import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
 
-from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado
+from ..hardware import ChainAxis, FieldFriend, HPortal, Tornado, YAxis, YAxisTornado
 
 
 class Puncher:
@@ -92,12 +92,14 @@ class Puncher:
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
-        if isinstance(self.field_friend.y_axis, YAxisTornado):
+        elif isinstance(self.field_friend.y_axis, YAxisTornado):
             y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         elif isinstance(self.field_friend.y_axis, YAxis):
             y = self.field_friend.y_axis.MIN_POSITION if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.MAX_POSITION
             await self.field_friend.y_axis.move_to(y)
+        elif isinstance(self.field_friend.y_axis, HPortal):
+            return
         await self.field_friend.y_axis.stop()
 
     async def drive_and_punch(self, x: float, y: float, depth: float = 0.05, angle: float = 180) -> None:
@@ -150,3 +152,34 @@ class Puncher:
         finally:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()
+
+    async def aim_with_h_portal(self, x: float, y: float) -> None:
+        if not isinstance(self.field_friend.y_axis, HPortal):
+            raise Exception('aim with h portal is only available for h portal axis')
+        try:
+            if not self.field_friend.y_axis.is_referenced:
+                rosys.notify('axis are not referenced, homing!', type='info')
+                success = await self.field_friend.y_axis.try_reference()
+                if not success:
+                    rosys.notify('homing failed!', type='negative')
+                    return
+                await rosys.sleep(0.5)
+
+                # Looking down from above robot (in -z direction):
+                #
+                #       ^ x    ^ t
+                #       |      |
+                # y <---+      +---> s
+                assert self.field_friend.y_axis.MIN_X <= x <= self.field_friend.y_axis.MAX_X
+                assert self.field_friend.y_axis.MIN_Y <= y <= self.field_friend.y_axis.MAX_Y
+
+                await self.field_friend.y_axis.enable_h_motors()
+                await rosys.sleep(0.1)
+
+                # Offsets mapping local space (s,t) to world space (x,y)
+                s: float = 0.25 - (y - self.field_friend.y_axis.MIN_Y)  # y to s flips direction
+                t: float = x - self.field_friend.y_axis.MIN_X
+
+                await self.field_friend.y_axis.move_to_cartesian(s, t, 4)
+        except Exception as e:
+            raise Exception('aiming failed') from e
