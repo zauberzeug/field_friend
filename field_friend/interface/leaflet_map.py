@@ -70,18 +70,14 @@ class leaflet_map:
                     simulated_marker_dialog.open()
             if e.args['layerType'] == 'polygon':
                 coordinates = e.args['layer']['_latlngs']
-                coordinates_carth = []
+                coordinates_cart = []
                 reference_point = [coordinates[0][0]['lat'], coordinates[0][0]['lng']]
                 for point in coordinates[0]:
-                    # calc the carthesian coordiantes
-                    r = Geodesic.WGS84.Inverse(reference_point[0], reference_point[1], point['lat'], point['lng'])
-                    s = r['s12']
-                    a = -np.deg2rad(r['azi1'])
-                    x = s * np.cos(a)
-                    y = s * np.sin(a)
-                    current_point = rosys.geometry.Point(x=x, y=y)
-                    coordinates_carth.append(current_point)
-                field = Field(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}', outline=coordinates_carth,
+                    # calc the cartesian coordiantes
+                    cart_coords = wgs84_to_cartesian(reference_point, point)
+                    current_point = rosys.geometry.Point(x=cart_coords[0], y=cart_coords[1])
+                    coordinates_cart.append(current_point)
+                field = Field(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}', outline=coordinates_cart,
                               outline_wgs84=coordinates)
                 self.field_provider.add_field(field)
 

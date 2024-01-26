@@ -42,7 +42,7 @@ def startup() -> None:
                 leaflet_map = interface.leaflet_map(system)
                 leaflet_map.m.style('height: 100%; max-height:100%;')
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height: 60%; max-height:60%;'):
-                interface.field_planner(system.field_provider, system.odometer, system.gnss)
+                interface.field_planner(system.field_provider, system.odometer, system.gnss, leaflet_map)
 
     @ui.page('/path')
     def path_page(dev: bool = True):

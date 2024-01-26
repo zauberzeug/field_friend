@@ -16,5 +16,4 @@ def cartesian_to_wgs84(reference, point):
     r = Geodesic.WGS84.Direct(reference[0], reference[1], 90.0, point[0])
     r = Geodesic.WGS84.Direct(r['lat2'], r['lon2'], 0.0, point[1])
     wgs84_coords = [r['lat2'], r['lon2']]
-    # print(f'🔱 {wgs84_coords}')
     return wgs84_coords

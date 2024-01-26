@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Optional, Protocol
-from field_friend.navigation.point_transformation import wgs84_to_cartesian
+from field_friend.navigation.point_transformation import wgs84_to_cartesian, cartesian_to_wgs84
 import numpy as np
 import pynmea2
 import rosys
@@ -44,7 +44,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.reference_lon: Optional[float] = None
 
         self.needs_backup = False
-
         rosys.on_repeat(self.update, 1.0)
         rosys.on_repeat(self.try_connection, 3.0)
 
@@ -60,6 +59,10 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
 
     @abstractmethod
     async def update(self) -> None:
+        pass
+
+    @abstractmethod
+    async def get(self) -> dict:
         pass
 
     @abstractmethod
@@ -118,8 +121,14 @@ class GnssHardware(Gnss):
 
     async def update(self) -> None:
         await super().update()
+        position = await self.get()
+        if position.pose is not None:
+            self.ROBOT_LOCATED.emit(position.pose)
+
+    async def get(self) -> dict:
+        await super().get()
         if self.ser is None:
-            return
+            return {'coordinates': None, 'pose': None}
         record = GNSSRecord()
         has_location = False
         has_heading = False
@@ -127,7 +136,7 @@ class GnssHardware(Gnss):
             lines = await rosys.run.io_bound(self.ser.readlines)
             if not lines:
                 self.log.info('No data')
-                return
+                return {'coordinates': None, 'pose': None}
             for line in lines:
                 if not line:
                     self.log.info('No data')
@@ -166,12 +175,13 @@ class GnssHardware(Gnss):
         except serial.SerialException as e:
             self.log.info(f'Device error: {e}')
             self.device = None
-            return
+            return {'coordinates': None, 'pose': None}
         self.record = record
         if has_location and record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
             if self.reference_lat is None or self.reference_lon is None:
                 self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
                 self.set_reference(record.latitude, record.longitude)
+                return {'coordinates': None, 'pose': None}
             else:
                 cart_coords = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
                     record.latitude, record.longitude])
@@ -188,10 +198,11 @@ class GnssHardware(Gnss):
                 distance = self.odometer.prediction.distance(pose)
                 if distance > 1:
                     self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
-                # TODO would it be helpful  to add an event that has the wgs84 coords as arg
-                self.ROBOT_LOCATED.emit(pose)
+                return {'coordinates': [record.latitude, record.longitude], 'pose': pose}
+        # TODO  return coordinates and precision when quali is not perfect to display position on map with a buffer
         elif has_location and record.gps_qual == 5:
             print("5")
+            return {'coordinates': None, 'pose': None}
 
 
 class PoseProvider(Protocol):
@@ -212,8 +223,16 @@ class GnssSimulation(Gnss):
             return
         pose = deepcopy(self.pose_provider.pose)
         pose.time = rosys.time()
-        # TODO cart to wgs
         self.ROBOT_LOCATED.emit(pose)
 
     async def try_connection(self) -> None:
         self.device = 'simulation'
+
+    async def get(self) -> dict:
+        await super().get()
+        if self.device is None:
+            return {'coordinates': None, 'pose': None}
+        pose = deepcopy(self.pose_provider.pose)
+        pose.time = rosys.time()
+        current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
+        return {'coordinates': current_position, 'pose': pose}
