@@ -72,6 +72,10 @@ cmd=$1
 cmd_args=${@:2}
 set -x
 case $cmd in
+    b | build)
+        docker-compose $compose_args pull detector
+    	docker-compose $compose_args build --no-cache $cmd_args
+        ;;
     u | up)
         docker-compose $compose_args up -d $cmd_args
         ;;
@@ -80,7 +84,7 @@ case $cmd in
         ;;
     U | uppull)
         docker-compose $compose_args pull
-        docker-compose $compose_args up -d --build $cmd_args
+        docker-compose $compose_args up -d --build --force-recreate $cmd_args
         ;;
     d | down)
         docker-compose $compose_args down -d $cmd_args

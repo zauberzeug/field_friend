@@ -5,8 +5,8 @@ services:
     build:
       context: .
     volumes:
-      - ../:/app
-      - ../../lizard:/home/zauberzeug/.lizard
+      - ./:/app
+      - ./../lizard:/home/zauberzeug/.lizard
       - ~/.rosys:/home/zauberzeug/.rosys
       - ~/data:/data
       - /run/udev:/run/udev:ro # to get the device identifiers
