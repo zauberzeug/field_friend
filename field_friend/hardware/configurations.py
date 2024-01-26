@@ -70,6 +70,11 @@ fieldfriend_configurations = {
         'imu': {
             'name': 'imu',
         },
+        'falling':{
+            'version': 'calibrated',
+            'roll':30,
+            'pitch':30,
+        },
     },
     'u2': {
         'params': {

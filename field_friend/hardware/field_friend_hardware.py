@@ -240,11 +240,11 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             bumper = None
 
         if 'imu' in self.config:
-            self.imu = IMUHardware(robot_brain,
+            imu = IMUHardware(robot_brain,
                                    name=self.config['imu']['name'],
                                    )
         else:
-            self.imu = None
+            imu = None
 
         if 'status_control' in self.config:
             self.status_control = StatusControlHardware(robot_brain,
@@ -258,7 +258,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels,
                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
+                   z_axis, flashlight, bms, estop, self.battery_control, bumper, imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(version=version,
                          wheels=wheels,
@@ -267,6 +267,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          estop=estop,
                          bumper=bumper,
                          bms=bms,
+                         imu=imu,
                          safety=safety,
                          flashlight=flashlight,
                          modules=active_modules,

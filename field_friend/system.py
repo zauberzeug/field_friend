@@ -10,6 +10,7 @@ from field_friend.automations import (CoinCollecting, DemoWeeding, FieldProvider
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import SimulatedCam, SimulatedCamProvider, UsbCamProvider
+from field_friend.falling_detection import FallingSimulation
 
 
 class System:
@@ -17,7 +18,7 @@ class System:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'u4'  # insert here your field friend version
+        version = 'u1'  # insert here your field friend version
         if self.is_real:
             self.field_friend = FieldFriendHardware(version=version)
             self.usb_camera_provider = UsbCamProvider()
@@ -26,6 +27,7 @@ class System:
         else:
             self.field_friend = FieldFriendSimulation(version=version)
             self.usb_camera_provider = SimulatedCamProvider()
+            self.falling_detection = FallingSimulation(self.field_friend)
             self.usb_camera_provider.remove_all_cameras()
             self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
                                                                                x=0.4, z=0.4,
