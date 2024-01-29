@@ -221,9 +221,8 @@ class GnssSimulation(Gnss):
     async def update(self) -> None:
         if self.device is None:
             return
-        pose = deepcopy(self.pose_provider.pose)
-        pose.time = rosys.time()
-        self.ROBOT_LOCATED.emit(pose)
+        location = await self.get()
+        self.ROBOT_LOCATED.emit(location['pose'])
 
     async def try_connection(self) -> None:
         self.device = 'simulation'
