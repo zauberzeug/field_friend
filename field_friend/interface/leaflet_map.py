@@ -41,6 +41,7 @@ class leaflet_map:
         self.field_layers: list[list] = []
         self.robot_marker = None
         self.drawn_marker = None
+        self.field_provider.FIELD_SELECTED.register(self.highlight_active_field)
 
         def handle_draw(e: events.GenericEventArguments):
             if e.args['layerType'] == 'marker':
@@ -48,8 +49,12 @@ class leaflet_map:
                           e.args['layer']['_latlng']['lng'])
                 self.drawn_marker = self.m.marker(latlng=latlon)
                 if system.is_real:
-                    # TODO implement  a dialog for  a real system
-                    print("is real")
+                    with ui.dialog() as real_marker_dialog, ui.card():
+                        ui.label('You are currently working in a real system. What does the placed point represent?')
+                        ui.button('add point to selected object (row, obstacle)',
+                                  on_click=lambda: self.add_point_active_object(latlon, real_marker_dialog))
+                        ui.button('Close', on_click=real_marker_dialog.close)
+                    real_marker_dialog.open()
                 else:
                     with ui.dialog() as simulated_marker_dialog, ui.card():
                         ui.label('You are currently working in a simulation. What does the placed point represent?')
@@ -83,6 +88,7 @@ class leaflet_map:
 
     def add_point_active_object(self, latlon, dialog) -> None:
         dialog.close()
+        self.highlight_active_field()
         self.m.remove_layer(self.drawn_marker)
         if self.field_provider.active_object is not None and self.field_provider.active_object["object"] is not None:
             print(latlon)
@@ -96,7 +102,16 @@ class leaflet_map:
             self.m.remove_layer(layer)
         self.field_layers = []
         for field in self.field_provider.fields:
-            self.field_layers.append(self.m.generic_layer(name="polygon", args=[field.outline_wgs84]))
+            self.field_layers.append(self.m.generic_layer(
+                name="polygon", args=[field.outline_wgs84, {'color': '#6E93D6'}]))
+
+    def highlight_active_field(self) -> None:
+        for field in self.field_layers:
+            field.run_method(':setStyle', "{'color': '#6E93D6'}")
+
+        if self.field_provider.active_field is not None:
+            layer_index = self.field_provider.fields.index(self.field_provider.active_field)
+            self.field_layers[layer_index].run_method(':setStyle', "{color: '#53B689'}")
 
     def update_robot_position(self, pose: rosys.geometry.Pose) -> None:
         reference = self.gnss.get_reference()

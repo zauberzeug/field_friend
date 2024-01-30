@@ -44,7 +44,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.reference_lon: Optional[float] = None
 
         self.needs_backup = False
-        rosys.on_repeat(self.update, 1.0)
+        rosys.on_repeat(self.update, 3.0)  # TODO  change back to 1.0
         rosys.on_repeat(self.try_connection, 3.0)
 
     def backup(self) -> dict[str, Any]:
@@ -122,8 +122,8 @@ class GnssHardware(Gnss):
     async def update(self) -> None:
         await super().update()
         position = await self.get()
-        if position.pose is not None:
-            self.ROBOT_LOCATED.emit(position.pose)
+        if position is not None and position['pose'] is not None:
+            self.ROBOT_LOCATED.emit(position['pose'])
 
     async def get(self) -> dict:
         await super().get()
@@ -178,6 +178,7 @@ class GnssHardware(Gnss):
             return {'coordinates': None, 'pose': None}
         self.record = record
         if has_location and record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
+            print("location 4")
             if self.reference_lat is None or self.reference_lon is None:
                 self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
                 self.set_reference(record.latitude, record.longitude)
@@ -202,6 +203,9 @@ class GnssHardware(Gnss):
         # TODO  return coordinates and precision when quali is not perfect to display position on map with a buffer
         elif has_location and record.gps_qual == 5:
             print("5")
+            return {'coordinates': None, 'pose': None}
+        else:
+            print("bad positioning")
             return {'coordinates': None, 'pose': None}
 
 
