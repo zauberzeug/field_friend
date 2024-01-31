@@ -36,7 +36,7 @@ class leaflet_map:
             },
             'edit': False,
         }
-        self.m = ui.leaflet(center=(54.593578543, 8.94665825599984), zoom=13,
+         self.m = ui.leaflet(center=(51.983159, 7.434212), zoom=13,
                             draw_control=self.draw_control)
         self.field_layers: list[list] = []
         self.robot_marker = None
@@ -70,7 +70,7 @@ class leaflet_map:
                 for point in coordinates[0]:
                     point_list.append([point['lat'], point['lng']])
                 field = Field(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}',
-                              outline_wgs84=point_list)
+                              outline_wgs84=point_list, reference_lat=point_list[0][0], reference_lon=point_list[0][1])
                 self.field_provider.add_field(field)
 
         with self.m as m:
