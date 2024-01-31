@@ -36,8 +36,7 @@ class leaflet_map:
             },
             'edit': False,
         }
-         self.m = ui.leaflet(center=(51.983159, 7.434212), zoom=13,
-                            draw_control=self.draw_control)
+        self.m = ui.leaflet(center=(51.983159, 7.434212), zoom=13, draw_control=self.draw_control)
         self.field_layers: list[list] = []
         self.robot_marker = None
         self.drawn_marker = None
