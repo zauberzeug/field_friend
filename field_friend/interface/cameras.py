@@ -1,11 +1,15 @@
 import colorsys
+import io
 import logging
+import os
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
+from PIL import Image
 from rosys import background_tasks
 from rosys.geometry import Point
 from rosys.vision.detector import Autoupload
@@ -39,7 +43,7 @@ class camera:
         with self.camera_card.tight().style('width:640px'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
-        ui.timer(0.5, self.update_content)
+        ui.timer(0.2, self.update_content)
 
     def use_camera(self, cam: rosys.vision.CalibratableCamera) -> None:
         self.camera = cam
@@ -64,22 +68,25 @@ class camera:
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
                     .props('icon=straighten outline').tooltip('Calibrate camera')
+                # Add a button to save the last captured image
+                # ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
+
             with ui.row():
                 self.debug_position = ui.label()
 
     def update_content(self) -> None:
         cameras = list(self.camera_provider.cameras.values())
-        if not cameras:
-            self.camera = None
-            self.camera_card.clear()
-            with self.camera_card:
-                ui.label('no camera available').classes('text-center')
-                ui.image('assets/field_friend.webp').classes('w-full')
+        active_camera = next((camera for camera in cameras if camera.is_connected), None)
+        if not active_camera:
+            if self.camera:
+                self.camera = None
+                self.camera_card.clear()
+                with self.camera_card:
+                    ui.label('no camera available').classes('text-center')
+                    ui.image('assets/field_friend.webp').classes('w-full')
             return
-        if self.camera is None or self.camera not in cameras:
-            self.use_camera(cameras[0])
-            assert self.camera is not None
-
+        if self.camera is None or self.camera != active_camera:
+            self.use_camera(active_camera)
         if self.shrink_factor > 1:
             url = f'{self.camera.get_latest_image_url()}?shrink={self.shrink_factor}'
         else:
@@ -137,3 +144,22 @@ class camera:
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
         self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'
                                           for p, color in zip(image_points, colors_hex))
+
+    # async def save_last_image(self) -> None:
+    #     """Saves the last captured image to the .rosys folder."""
+    #     if self.camera and self.camera.latest_captured_image:
+    #         image = self.camera.latest_captured_image
+    #         self.log.info(f'Image captured at {image.size}')
+    #         img = Image.open(io.BytesIO(image.data))
+    #         # Resolves to the user's home directory  # modify the file name as needed
+    #         backup_path = Path('~/.rosys').expanduser()
+    #         save_path = backup_path / 'left_image.jpg'  # Modify the file name as needed
+    #         try:
+    #             # Use the save method of the image
+    #             img.save(save_path)
+    #             self.log.info(f'Image saved to {save_path}')
+    #         except Exception as e:
+    #             self.log.error(f'Error saving image: {e}')
+
+    #     else:
+    #         self.log.warning('No image available to save.')

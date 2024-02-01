@@ -371,14 +371,14 @@ fieldfriend_configurations = {
             'reset_pin': 15,
             'status_pin': 13,
         },
-        # 'bumper': {
-        #     'name': 'bumper',
-        #     'on_expander': True,
-        #     'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
-        # },
-        # 'status_control': {
-        #     'name': 'status_control',
-        # },
+        'bumper': {
+            'name': 'bumper',
+            'on_expander': True,
+            'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
+        },
+        'status_control': {
+            'name': 'status_control',
+        },
     },
 
 

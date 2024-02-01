@@ -11,6 +11,6 @@ touch = 'touch ~/field_friend/main.py'
 sync(
     Folder('.', f'{args.robot}:~/field_friend', on_change=touch),
     Folder('../rosys/rosys', f'{args.robot}:~/field_friend/rosys', on_change=touch),
-    Folder('../nicegui/nicegui', f'{args.robot}:~/field_friend/nicegui', on_change=touch),
-    # Folder('../lizard', f'{args.robot}:~/field_friend/lizard', on_change=touch),
+    # Folder('../nicegui/nicegui', f'{args.robot}:~/field_friend/nicegui', on_change=touch),
+    Folder('../lizard', f'{args.robot}:~/lizard', on_change=touch),
 )

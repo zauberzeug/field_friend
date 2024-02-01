@@ -1,3 +1,5 @@
+from .camera_configurations import configurations
+from .camera_configurator import CameraConfigurator
 from .circle_sight import CircleSight
 from .simulated_cam import SimulatedCam
 from .simulated_cam_provider import SimulatedCamProvider
@@ -10,4 +12,6 @@ __all__ = [
     'UsbCamProvider',
     'SimulatedCam',
     'SimulatedCamProvider',
+    'CameraConfigurator',
+    'configurations',
 ]

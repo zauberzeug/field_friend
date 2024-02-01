@@ -247,7 +247,7 @@ class calibration_dialog(ui.dialog):
                 ui.button('Apply', on_click=self.apply_calibration)
 
     async def edit(self, camera: Camera) -> bool:
-        self.log.info(camera.id)
+        self.log.info(f'editing camera calibration for: {camera.id}')
         self.image = camera.latest_captured_image
         if self.image is None:
             self.log.info('No image available')
@@ -258,6 +258,7 @@ class calibration_dialog(ui.dialog):
             for i, point in enumerate(self.points):
                 point.image_position = Point(x=image_points[i][0], y=image_points[i][1])
         self.calibration_image.source = camera.get_latest_image_url()
+        self.log.info(self.calibration_image.content)
         for point in self.points:
             if point.image_position is None:
                 point.image_position = Point(x=self.image.size.width / 2, y=self.image.size.height / 2)
