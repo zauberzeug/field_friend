@@ -241,7 +241,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         if 'imu' in self.config:
             imu = IMUHardware(robot_brain,
-                                   name=self.config['imu']['name'],
+                                   name=self.config['imu']['name'], roll_offset=self.config['imu']['roll_offset'],
+                                   pitch_offset=self.config['imu']['pitch_offset']
                                    )
         else:
             imu = None

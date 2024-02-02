@@ -14,4 +14,3 @@ from .status_drawer import status_drawer
 from .system_bar import system_bar
 from .test import test
 from .visualizer_object import visualizer_object
-from .calibrate import calibrate

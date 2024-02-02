@@ -69,11 +69,14 @@ fieldfriend_configurations = {
         },
         'imu': {
             'name': 'imu',
+            'roll_offset': -1,
+            'pitch_offset': -90,
         },
         'falling':{
-            'version': 'calibrated',
+            'version': 'active',
             'roll':30,
             'pitch':30,
+        
         },
     },
     'u2': {

@@ -11,7 +11,7 @@ from .field_object import field_object
 from .key_controls import KeyControls
 from .plant_object import plant_objects
 from .visualizer_object import visualizer_object
-from ..automations import rolling
+from ..falling_detection import RuturnToSafety
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -96,7 +96,6 @@ class operation:
                                     self.system.field_friend.imu, 'pitch').tooltip(
                                     'Set teh tilt for a simulated Robot')
                             ui.button(text='falling?',on_click=lambda :self.system.field_friend.imu.testemit(),)
-                            ui.button(text='pitched?',on_click=lambda :self.system.rolling.is_pitched(),)
 
                         @ui.refreshable
                         def show_field_selection() -> None:
@@ -193,3 +192,8 @@ class operation:
                 ui.checkbox(
                     'Space bar emergency stop').tooltip(
                     'Enable or disable the emergency stop on space bar').bind_value(key_controls, 'estop_on_space')
+                
+                
+                ui.button('self rescue',on_click= self.system.to_safety.rescue).props('color=orange').classes('py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'has_stopped',value=True)
+                ui.button('self rescue in progress').props('color=orange outline').classes('py-3 px-6 text-lg').bind_visibility(system.to_safety,'rescueing',value=True)
+        

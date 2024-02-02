@@ -10,7 +10,7 @@ from field_friend.automations import (CoinCollecting, DemoWeeding, FieldProvider
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import SimulatedCam, SimulatedCamProvider, UsbCamProvider
-from field_friend.falling_detection import FallingSimulation
+from field_friend.falling_detection import FallingSimulation,FallingHardware,RuturnToSafety
 
 
 class System:
@@ -24,6 +24,7 @@ class System:
             self.usb_camera_provider = UsbCamProvider()
             self.detector = rosys.vision.DetectorHardware(port=8004)
             # self.circle_sight = CircleSight()
+            self.falling_detection = FallingHardware(self.field_friend)
         else:
             self.field_friend = FieldFriendSimulation(version=version)
             self.usb_camera_provider = SimulatedCamProvider()
@@ -38,8 +39,8 @@ class System:
             # self.circle_sight = None
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
-        self.rolling = Rolling(self.field_friend.imu,self.field_friend)
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
+        self.to_safety = RuturnToSafety(self.steerer,self.falling_detection)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         if self.is_real:
             self.gnss = GnssHardware(self.odometer)

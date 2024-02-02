@@ -28,7 +28,6 @@ def header_bar(system: 'System', right_drawer: ui.right_drawer) -> None:
             ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
             ui.link('Path planner', '/path').classes('text-white text-lg !no-underline')
             ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
-            ui.link('Calibrate','/calibrate').classes('text-white text-lg !no-underline')
         rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
         with ui.button().props('icon=settings flat color=white'):
             with ui.menu().props(remove='no-parent-event'):
