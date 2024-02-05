@@ -1,21 +1,15 @@
 import json
 import logging
 import uuid
-import xml.etree.ElementTree as ET
-from typing import Optional, Union, Literal
-
-import geopandas as gpd
+from typing import Optional, Literal
 import rosys
 from nicegui import events, ui
-from nicegui.events import ValueChangeEventArguments
-from shapely.ops import transform
-
 from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
 
 from ..automations import Field, FieldObstacle, FieldProvider, Row
 from ..navigation import Gnss
 from .leaflet_map import leaflet_map
-from .local_file_picker import local_file_picker
+from .geodata_picker import geodata_picker
 from .operation import operation
 
 
@@ -28,7 +22,6 @@ class field_planner:
         self.odometer = odometer
         self.gnss = gnss
         self.leafet_map = leaflet_map
-
         self.coordinate_type = "WGS84"
         self.COORDINATE_TYPE_CHANGED = rosys.event.Event()
         "switch between displaying cartesian and wgs84 coordiantes."
@@ -40,7 +33,7 @@ class field_planner:
             with ui.card().style('width: 48%; max-width: 48%; max-height: 100%; height: 100%;'):
                 with ui.row():
                     self.show_coordinate_type_selection()
-                    ui.button('Upload Field', on_click=self.upload_field).tooltip(
+                    ui.button('Upload Field', on_click=lambda field_provider=self.field_provider: geodata_picker(field_provider)).tooltip(
                         'Upload a file with field boundaries. Supported file formates: KML, XML and Shape').classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
                     ui.button('Add field', on_click=self.add_field).tooltip('Add a new field').classes(
                         'ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
@@ -68,7 +61,6 @@ class field_planner:
         self.coordinate_type = e.value
         self.COORDINATE_TYPE_CHANGED.emit()
 
-# TODO when a field in the table is selected change the color in the map jump to it and add all obstacles and rows to the map
     def table_selected(self, selection):
         if len(selection.selection) > 0:
             if self.field_provider.active_field is not None and (selection.selection[0]['id'] == self.field_provider.active_field.id):
@@ -101,11 +93,18 @@ class field_planner:
                     'obstacles': f'{len(field.obstacles)}',
                     'rows': f'{len(field.rows)}'}
             rows.append(data)
-        field_table = ui.table(columns=columns, rows=rows, row_key='id',  selection='single',
-                               on_select=self.table_selected, pagination=4).style('width: 98%; max-width: 98%;')
+        self.field_table = ui.table(columns=columns, rows=rows, row_key='id',  selection='single',
+                                    on_select=self.table_selected, pagination=4).style('width: 98%; max-width: 98%;')
         columns[0]['classes'] = 'hidden'
         columns[0]['headerClasses'] = 'hidden'
-        field_table.update()
+        self.field_table.update()
+        if self.field_provider.active_field is not None:
+            active_field_data = {'id': self.field_provider.active_field.id,
+                                 'name': self.field_provider.active_field.name,
+                                 'boundary': f'{len(self.field_provider.active_field.outline_wgs84)} points',
+                                 'obstacles': f'{len(self.field_provider.active_field.obstacles)}',
+                                 'rows': f'{len(self.field_provider.active_field.rows)}'}
+            self.field_table.selected.append(active_field_data)
 
     @ui.refreshable
     def show_field_settings(self) -> None:
@@ -290,84 +289,40 @@ class field_planner:
         if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
             self.gnss.set_reference(field.reference_lat, field.reference_lon)
 
-    def add_point(self, field: Field, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
-        if self.gnss.device != 'simulation':
-            self.get_field_reference(field)
+    async def add_point(self, field: Field, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
         if point is not None:
             index = field.outline_wgs84.index(point)
             if new_point is None:
-                # TODO in allen Funktionen wäre es bestimmt sinnvoller die Koords direkt vom GNSS zu holen
-                # muss dann noch darauf gewaretet werden, dass das signal eine hohe genauigkeit hat und dann erst gespeichert wirdd
-                # damit dann noch feedback im UI
-                new_point = cartesian_to_wgs84([self.field_provider.active_field.reference_lat, self.field_provider.active_field.reference_lon], [
-                                               self.odometer.prediction.point.x, self.odometer.prediction.point.y])
+                positioning = await self.gnss.get()
+                if positioning is None or positioning['coordinates'] is None:
+                    rosys.notify("GNSS accuracy is to low.")
+                    return
+                new_point = positioning['coordinates']
             if index == 0:
                 field.reference_lat = new_point[0]
                 field.reference_lon = new_point[1]
             field.outline_wgs84[index] = new_point
         else:
-            point = cartesian_to_wgs84([self.field_provider.active_field.reference_lat, self.field_provider.active_field.reference_lon], [
-                self.odometer.prediction.point.x, self.odometer.prediction.point.y])
-            field.outline.append(point)
+            positioning = await self.gnss.get()
+            if positioning is None or positioning['coordinates'] is None:
+                rosys.notify("GNSS accuracy is to low.")
+                return
+            new_point = positioning['coordinates']
+            if len(self.field_provider.active_field.outline_wgs84) < 1:
+                self.field_provider.active_field.reference_lat = new_point[0]
+                self.field_provider.active_field.reference_lon = new_point[1]
+                self.gnss.reference_lat = new_point[0]
+                self.gnss.reference_lon = new_point[1]
+            field.outline_wgs84.append(new_point)
         self.field_provider.invalidate()
 
     def remove_point(self, field: Field, point: Optional[list] = None) -> None:
         if point is not None:
-            # FIXME: wenn der erste und der letzte Punkt wie in einem Polygon gleich sind,
-            # dann kann  es durch die suche nach dem ersten index zu problemen kommen, wenn der letzte punkt gelöscht werden soll
             index = field.outline_wgs84.index(point)
             del field.outline_wgs84[index]
         elif field.outline_wgs84 != []:
             del field.outline_wgs84[-1]
         self.field_provider.invalidate()
-
-    def swap_coordinates(self, lon, lat):
-        return lat, lon
-
-    def extract_coordinates_kml(self, kml_path):
-        gdf = gpd.read_file(kml_path, drivr="KML")
-        coordinates = []
-        for c in gdf["geometry"][0].coords:
-            lat = c[1]
-            lon = c[0]
-            coordinates.append([lat, lon])
-        return coordinates
-
-    def extract_coordinates_xml(self, xml_path):
-        tree = ET.parse(xml_path)
-        root = tree.getroot()
-        coordinates = []
-        for geo_data in root.findall('.//LSG'):
-            for point in geo_data.findall('.//PNT'):
-                lat = float(point.attrib['C'])
-                lon = float(point.attrib['D'])
-                coordinates.append([lat, lon])
-        return coordinates
-
-    async def upload_field(self) -> None:
-        result = await local_file_picker('~', multiple=True)
-        coordinates = []
-        if result is None:
-            rosys.notify("You can only upload the following file formates: .shp, .kml and .xml.")
-            return
-        elif result[0][-3:].casefold() == "shp":
-            gdf = gpd.read_file(result[0])
-            gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
-            feature = json.loads(gdf.to_json())
-            coordinates = feature["features"][0]["geometry"]["coordinates"][0]
-        elif result[0][-3:].casefold() == "kml":
-            coordinates = self.extract_coordinates_kml(result[0])
-        elif result[0][-3:].casefold() == "xml":
-            coordinates = self.extract_coordinates_xml(result[0])
-        else:
-            rosys.notify("You can only upload the following file formates: .shp, .kml and .xml.")
-            return
-        reference_point = coordinates[0]
-        new_id = str(uuid.uuid4())
-        field = Field(id=f'{new_id}', name=f'{new_id}', outline_wgs84=coordinates,
-                      reference_lat=reference_point[0], reference_lon=reference_point[1])
-        self.field_provider.add_field(field)
-        return
 
     def add_field(self) -> None:
         new_id = str(uuid.uuid4())
@@ -384,22 +339,28 @@ class field_planner:
         obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}', points_wgs84=[])
         self.field_provider.add_obstacle(field, obstacle)
 
-    def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
+    async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
         if self.gnss.device != 'simulation':
             self.get_field_reference(field)
         if point is not None:
             index = obstacle.points_wgs84.index(point)
             if new_point is None:
-                new_point = cartesian_to_wgs84([field.reference_lat, field.reference_lon], [
-                    self.odometer.prediction.point.x, self.odometer.prediction.point.y])
+                positioning = await self.gnss.get()
+                if positioning is None or positioning['coordinates'] is None:
+                    rosys.notify("GNSS accuracy is to low.")
+                    return
+                new_point = positioning['coordinates']
             obstacle.points_wgs84[index] = new_point
         else:
             if new_point is not None:
-                obstacle.points_wgs84.append(point)
+                obstacle.points_wgs84.append(new_point)
             else:
-                point = cartesian_to_wgs84([field.reference_lat, field.reference_lon], [
-                    self.odometer.prediction.point.x, self.odometer.prediction.point.y])
-                obstacle.points_wgs84.append(point)
+                positioning = await self.gnss.get()
+                if positioning is None or positioning['coordinates'] is None:
+                    rosys.notify("GNSS accuracy is to low.")
+                    return
+                new_point = positioning['coordinates']
+            obstacle.points_wgs84.append(new_point)
         self.field_provider.select_object(self.field_provider.active_object["object"].id, self.tab)
         self.field_provider.invalidate()
 
@@ -417,19 +378,25 @@ class field_planner:
         row = Row(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}', points_wgs84=[])
         self.field_provider.add_row(field, row)
 
-    def add_row_point(self, field: Field, row: Row, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
+    async def add_row_point(self, field: Field, row: Row, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
         if self.gnss.device != 'simulation':
             self.get_field_reference(field)
         if point is not None:
             index = row.points_wgs84.index(point)
             if new_point is None:
-                new_point = cartesian_to_wgs84([field.reference_lat, field.reference_lon], [
-                    self.odometer.prediction.point.x, self.odometer.prediction.point.y])
+                positioning = await self.gnss.get()
+                if positioning is None or positioning['coordinates'] is None:
+                    rosys.notify("GNSS accuracy is to low.")
+                    return
+                new_point = positioning['coordinates']
             row.points_wgs84[index] = new_point
         else:
             if new_point is None:
-                new_point = cartesian_to_wgs84([field.reference_lat, field.reference_lon], [
-                    self.odometer.prediction.point.x, self.odometer.prediction.point.y])
+                positioning = await self.gnss.get()
+                if positioning is None or positioning['coordinates'] is None:
+                    rosys.notify("GNSS accuracy is to low.")
+                    return
+                new_point = positioning['coordinates']
             row.points_wgs84.append(new_point)
         self.field_provider.select_object(self.field_provider.active_object["object"].id, self.tab)
         self.field_provider.invalidate()

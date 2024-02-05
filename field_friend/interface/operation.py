@@ -48,14 +48,6 @@ class operation:
                                       look_at_x=position.x, look_at_y=position.y)
                     return
 
-            with ui.scene(650, 500, on_click=handle_click) as scene:
-                field_friend_object(self.system.odometer, self.system.usb_camera_provider, self.system.field_friend)
-                rosys.driving.driver_object(self.system.driver)
-                plant_objects(self.system.plant_provider, self.system.big_weed_category_names +
-                              self.system.small_weed_category_names)
-                visualizer_object(self.system.automator, self.system.path_provider, self.system.mowing)
-                field_object(self.system.field_provider)
-                scene.move_camera(-0.5, -1, 2)
             with ui.row().classes('m-4'):
                 key_controls = KeyControls(self.system)
                 rosys.driving.joystick(self.system.steerer, size=50, color='#6E93D6').classes(

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional
+from typing import Optional, Dict, List, Union
 
 import numpy as np
 import rosys
@@ -43,7 +43,7 @@ class System:
             self.gnss = GnssHardware(self.odometer)
         else:
             self.gnss = GnssSimulation(self.field_friend.wheels)
-        self.gnss.ROBOT_LOCATED.register(self.odometer.handle_detection)
+        self.gnss.ROBOT_LOCATED.register(self.forward_pose_odometer)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.1
         self.driver.parameters.angular_speed_limit = 1.0
@@ -125,6 +125,9 @@ class System:
 
         self.steerer.STEERING_STARTED.register(pause)
         self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
+
+    def forward_pose_odometer(self, location: Dict[str, Union[int, List[float], rosys.geometry.Pose]]) -> None:
+        self.odometer.handle_detection(location['pose'])
 
     def _create_plant_locator(self, camera: rosys.vision.Camera) -> None:
         if camera == self.camera_selector.cameras['bottom_cam']:

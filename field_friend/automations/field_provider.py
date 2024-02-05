@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional, Literal, Union, TypedDict
-from field_friend.navigation.point_transformation import wgs84_to_cartesian
+from typing import Any, Literal, Optional, TypedDict, Union
+from functools import lru_cache
 import rosys
 from rosys.geometry import Point
+
+from field_friend.navigation.point_transformation import wgs84_to_cartesian
 
 from .plant import Plant
 
@@ -11,8 +13,9 @@ from .plant import Plant
 class FieldObstacle:
     id: str
     name: str
-    points_wgs84: list[Point] = field(default_factory=list)
+    points_wgs84: list[list] = field(default_factory=list)
 
+    @lru_cache(maxsize=None)
     def points(self, reference_point: list) -> list[Point]:
         if len(self.points_wgs84) > 0:
             cartesian_points = []
@@ -28,11 +31,11 @@ class FieldObstacle:
 class Row:
     id: str
     name: str
-    points_wgs84: list[Point] = field(default_factory=list)
+    points_wgs84: list[list] = field(default_factory=list)
     reverse: bool = False
     crops: list[Plant] = field(default_factory=list)
 
-    # FIXME hier muss irgendiwe die referenz des feldes hinkommen und das dynamisch. Andere Ansätze?
+    @lru_cache(maxsize=None)
     def points(self, reference_point: list) -> list[Point]:
         if len(self.points_wgs84) > 0:
             cartesian_points = []
@@ -90,7 +93,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         """The currently selected field has changed"""
 
         self.OBJECT_SELECTED = rosys.event.Event()
-        "a row or obstacle has been selected or deselected."
+        """a row or obstacle has been selected or deselected."""
 
         self.FIELDS_CHANGED = rosys.event.Event()
         """The dict of fields has changed."""

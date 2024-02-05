@@ -1,10 +1,11 @@
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Union
 import uuid
 import rosys.geometry
 from nicegui import events, ui, elements
 import rosys
+from .key_controls import KeyControls
 from ..automations import FieldProvider, Field
 from geographiclib.geodesic import Geodesic
 from copy import deepcopy
@@ -16,10 +17,12 @@ if TYPE_CHECKING:
 
 
 class leaflet_map:
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: 'System', draw_tools: bool) -> None:
         self.log = logging.getLogger('field_friend.leaflet_map')
         self.system = system
         self.field_provider = system.field_provider
+        self.key_controls = KeyControls(self.system)
+        self.draw_tools = draw_tools
         self.gnss = system.gnss
         self.draw_control = {
             'draw': {
@@ -37,8 +40,12 @@ class leaflet_map:
         else:
             if len(self.field_provider.active_field.outline_wgs84) > 0:
                 self.center_point = self.field_provider.active_field.outline_wgs84[0]
-        self.m = ui.leaflet(center=(self.center_point[0], self.center_point[1]),
-                            zoom=13, draw_control=self.draw_control)
+        if draw_tools:
+            self.m = ui.leaflet(center=(self.center_point[0], self.center_point[1]),
+                                zoom=13, draw_control=self.draw_control)
+        else:
+            self.m = ui.leaflet(center=(self.center_point[0], self.center_point[1]),
+                                zoom=13)
         self.field_layers: list[list] = []
         self.robot_marker = None
         self.drawn_marker = None
@@ -86,7 +93,7 @@ class leaflet_map:
     def set_simulated_reference(self, latlon, dialog):
         self.gnss.clear_reference()
         self.gnss.set_reference(latlon[0], latlon[1])
-        self.gnss.ROBOT_LOCATED.emit(rosys.geometry.Pose(
+        self.gnss.ROBOT_LOCATED.emit(0, None, rosys.geometry.Pose(
             x=0.000,
             y=0.000,
             yaw=0.0
@@ -141,11 +148,9 @@ class leaflet_map:
                                      field.outline_wgs84, {'color': '#6E93D6'}]))
         self.visualize_active_field()
 
-    def update_robot_position(self, pose: rosys.geometry.Pose) -> None:
-        reference = self.gnss.get_reference()
-        wgs84_coords = cartesian_to_wgs84(reference, [pose.x, pose.y])
+    def update_robot_position(self, location: Dict[str, Union[int, List[float], rosys.geometry.Pose]]) -> None:
         if not self.robot_marker:
-            self.robot_marker = self.m.marker(latlng=(wgs84_coords[0], wgs84_coords[1]))
+            self.robot_marker = self.m.marker(latlng=(location['coordinates'][0], location['coordinates'][1]))
         icon = 'L.icon({iconUrl: "assets/robot_position.svg", iconSize: [40,40], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
-        self.robot_marker.move(wgs84_coords[0], wgs84_coords[1])
+        self.robot_marker.move(location['coordinates'][0], location['coordinates'][1])

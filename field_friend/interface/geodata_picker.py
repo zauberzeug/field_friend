@@ -23,10 +23,10 @@ class geodata_picker(ui.dialog):
         self.field_provider = field_provider
         with self, ui.card():
             with ui.row():
-                ui.label("Choose a file containing a field boundary.").classes('text-xl w-96')
+                ui.label("Upload a file.").classes('text-xl w-80')
             with ui.row():
                 ui.label(
-                    "Only a single polygon will be processed. Supported file formates: .xml with ISO 11783, .shp, .kml ").classes('w-96')
+                    "Only a single polygon will be processed. Supported file formates: .xml with ISO 11783, .shp, .kml ").classes('w-80')
             with ui.row():
                 # TODO multiple false wäre  schöner. Wenn shp load aber nicht anders funktioniert dann bleibt das so
                 ui.upload(on_upload=self.restore_from_file, multiple=True)
