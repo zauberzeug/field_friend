@@ -51,6 +51,9 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
 
             # get the current voltage from the BMS
             voltage = self.bms.state.voltage
+            if not voltage:
+                self.duty_cycle = 0
+                return
 
             self.duty_cycle = self._calculate_duty_cycle(voltage)
             # get a 8 bit value for the duty cycle (0-255) no negative values
