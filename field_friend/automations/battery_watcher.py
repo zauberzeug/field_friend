@@ -24,7 +24,7 @@ class BatteryWatcher:
             self.was_charging = True
             return
         if not self.field_friend.bms.state.is_charging and self.was_charging:
-            self.log.info('releasing battery relay')
+            self.log.info('battery charging-state change detected...')
             await self.field_friend.battery_control.release_battery_relay()
             self.was_charging = False
 
