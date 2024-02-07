@@ -35,6 +35,7 @@ class leaflet_map:
             },
             'edit': False,
         }
+        self.center_point = [51.983159, 7.434212]
         if self.field_provider.active_field is None:
             self.center_point = [51.983159, 7.434212]
         else:
@@ -52,6 +53,7 @@ class leaflet_map:
         self.obstacle_layers: list = []
         self.row_layers: list = []
         self.update_layers()
+        self.visualize_active_field()
         self.field_provider.FIELDS_CHANGED.register(self.update_layers)
         self.field_provider.FIELD_SELECTED.register(self.visualize_active_field)
         self.field_provider.FIELDS_CHANGED.register(self.visualize_active_field)
@@ -88,15 +90,17 @@ class leaflet_map:
 
         with self.m as m:
             m.on('draw:created', handle_draw)
-        self.gnss.ROBOT_LOCATED.register(self.update_robot_position)
+        self.gnss.ROBOT_POSITION_LOCATED.register(self.update_robot_position)
 
     def set_simulated_reference(self, latlon, dialog):
         self.gnss.clear_reference()
         self.gnss.set_reference(latlon[0], latlon[1])
-        self.gnss.ROBOT_LOCATED.emit(0, None, rosys.geometry.Pose(
+        self.gnss.ROBOT_POSITION_LOCATED.emit()
+        self.gnss.ROBOT_POSE_LOCATED.emit(rosys.geometry.Pose(
             x=0.000,
             y=0.000,
-            yaw=0.0
+            yaw=0.0,
+            time=0
         ))
         dialog.close()
         self.m.remove_layer(self.drawn_marker)
@@ -129,7 +133,7 @@ class leaflet_map:
         self.row_layers = []
         if self.field_provider.active_field is not None:
             layer_index = self.field_provider.fields.index(self.field_provider.active_field)
-            self.field_layers[layer_index].run_method(':setStyle', "{color: '#999'}")
+            self.m.remove_layer(self.field_layers[layer_index])
             self.field_layers[layer_index] = self.m.generic_layer(
                 name="polygon", args=[self.field_provider.active_field.outline_wgs84, {'color': '#999'}])
             for obstacle in self.field_provider.active_field.obstacles:
@@ -146,11 +150,10 @@ class leaflet_map:
         for field in self.field_provider.fields:
             self.field_layers.append(self.m.generic_layer(name="polygon", args=[
                                      field.outline_wgs84, {'color': '#6E93D6'}]))
-        self.visualize_active_field()
 
-    def update_robot_position(self, location: Dict[str, Union[int, List[float], rosys.geometry.Pose]]) -> None:
+    def update_robot_position(self) -> None:
         if not self.robot_marker:
-            self.robot_marker = self.m.marker(latlng=(location['coordinates'][0], location['coordinates'][1]))
+            self.robot_marker = self.m.marker(latlng=(self.gnss.record.latitude, self.gnss.record.longitude))
         icon = 'L.icon({iconUrl: "assets/robot_position.svg", iconSize: [40,40], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
-        self.robot_marker.move(location['coordinates'][0], location['coordinates'][1])
+        self.robot_marker.move(self.gnss.record.latitude, self.gnss.record.longitude)

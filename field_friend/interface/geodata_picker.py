@@ -28,7 +28,7 @@ class geodata_picker(ui.dialog):
                 ui.label(
                     "Only a single polygon will be processed. Supported file formates: .xml with ISO 11783, .shp, .kml ").classes('w-80')
             with ui.row():
-                # TODO multiple false wäre  schöner. Wenn shp load aber nicht anders funktioniert dann bleibt das so
+                # TODO multiple=false wäre  schöner, kann aber für shp import notwendig sein
                 ui.upload(on_upload=self.restore_from_file, multiple=True)
             with ui.row().classes('w-full justify-end'):
                 ui.button('Cancel', on_click=self.close).props('outline')
@@ -58,7 +58,7 @@ class geodata_picker(ui.dialog):
         return coordinates
 
     def extract_coordinates_shp(self, event: events.UploadEventArguments) -> list:
-        # FIXME does not work. Problem might be that only loading the shp file causes the problem and the programm has no access to shx and dbf
+        # FIXME not working. maybe when uploading as zip file of all three shape files
         coordinates = []
         gdf = gpd.read_file(event.content)
         gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
@@ -70,7 +70,6 @@ class geodata_picker(ui.dialog):
         return lat, lon
 
     async def restore_from_file(self, e: events.UploadEventArguments) -> None:
-        print(e.name)
         self.close()
         coordinates = []
         if e is None or e.content is None:

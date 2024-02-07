@@ -34,8 +34,11 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         super().__init__()
         self.log = logging.getLogger('field_friend.gnss')
 
-        self.ROBOT_LOCATED = rosys.event.Event()
-        """the robot has been located (argument: pose)"""
+        self.ROBOT_POSE_LOCATED = rosys.event.Event()
+        """the robot has been located (argument: pose) with RTK-fixed"""
+
+        self.ROBOT_POSITION_LOCATED = rosys.event.Event()
+        """the robot has been located"""
 
         self.record = GNSSRecord()
         self.device = None
@@ -62,21 +65,16 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         pass
 
     @abstractmethod
-    async def get(self) -> dict:
+    async def try_connection(self) -> None:
         pass
 
     @abstractmethod
-    async def try_connection(self) -> None:
+    def set_reference(self, lat: float, lon: float) -> None:
         pass
 
     def clear_reference(self) -> None:
         self.reference_lat = None
         self.reference_lon = None
-        self.request_backup()
-
-    def set_reference(self, lat: float, lon: float) -> None:
-        self.reference_lat = lat
-        self.reference_lon = lon
         self.request_backup()
 
     def get_reference(self) -> Optional[tuple[float, float]]:
@@ -120,16 +118,9 @@ class GnssHardware(Gnss):
             self.device = None
 
     async def update(self) -> None:
-        await super().update()
-        position = await self.get()
-        if position is not None and position['pose'] is not None:
-            print('roboter located')
-            self.ROBOT_LOCATED.emit(position)
-
-    async def get(self) -> dict:
         await super().get()
         if self.ser is None:
-            return {'accuracy': None, 'coordinates': None, 'pose': None}
+            return
         record = GNSSRecord()
         has_location = False
         has_heading = False
@@ -137,7 +128,7 @@ class GnssHardware(Gnss):
             lines = await rosys.run.io_bound(self.ser.readlines)
             if not lines:
                 self.log.info('No data')
-                return {'accuracy': None, 'coordinates': None, 'pose': None}
+                return
             for line in lines:
                 if not line:
                     self.log.info('No data')
@@ -176,36 +167,40 @@ class GnssHardware(Gnss):
         except serial.SerialException as e:
             self.log.info(f'Device error: {e}')
             self.device = None
-            return {'accuracy': None, 'coordinates': None, 'pose': None}
+            return
         self.record = record
-        if self.reference_lat is None or self.reference_lon is None:
-            self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
-            self.set_reference(record.latitude, record.longitude)
-            return {'accuracy': None, 'coordinates': None, 'pose': None}
-        else:
-            cart_coords = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
-                record.latitude, record.longitude])
-            if record.gps_qual == 0:
-                return {'accuracy': 0, 'coordinates': None, 'pose': None}
-            if has_heading:
-                yaw = np.deg2rad(float(-record.heading))
+        if has_location:
+            if record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
+                if self.reference_lat is None or self.reference_lon is None:
+                    self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
+                    self.set_reference(record.latitude, record.longitude)
+                else:
+                    cartesian_coordinates = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
+                        record.latitude, record.longitude])
+                    if has_heading:
+                        yaw = np.deg2rad(float(-record.heading))
+                    else:
+                        yaw = self.odometer.get_pose(time=record.timestamp).yaw
+                    pose = rosys.geometry.Pose(
+                        x=cartesian_coordinates[0],
+                        y=cartesian_coordinates[1],
+                        yaw=yaw,
+                        time=record.timestamp,
+                    )
+                    distance = self.odometer.prediction.distance(pose)
+                    if distance > 1:
+                        self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
+                    self.ROBOT_POSE_LOCATED.emit(pose)
+                    self.ROBOT_POSITION_LOCATED.emit()
+            elif record.gps_qual == 0:
+                return
             else:
-                yaw = self.odometer.get_pose(time=record.timestamp).yaw
-            pose = rosys.geometry.Pose(
-                x=cart_coords[0],
-                y=cart_coords[1],
-                yaw=yaw,
-                time=record.timestamp,
-            )
-            distance = self.odometer.prediction.distance(pose)
-            if distance > 1:
-                self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
-            # TODO  return coordinates and precision when quali is not perfect to display position on map with a buffer
-            if has_location:  # 4 = RTK fixed, 5 = RTK float
-                return {'accuracy': record.gps_qual, 'coordinates': [record.latitude, record.longitude], 'pose': pose}
-            else:
-                rosys.notify("Robot could not be located.")
-                return {'accuracy': None, 'coordinates': None, 'pose': None}
+                self.ROBOT_POSITION_LOCATED.emit()
+
+    def set_reference(self, lat: float, lon: float) -> None:
+        self.reference_lat = lat
+        self.reference_lon = lon
+        self.request_backup()
 
 
 class PoseProvider(Protocol):
@@ -224,17 +219,26 @@ class GnssSimulation(Gnss):
     async def update(self) -> None:
         if self.device is None:
             return
-        location = await self.get()
-        self.ROBOT_LOCATED.emit(location)
+        pose = deepcopy(self.pose_provider.pose)
+        pose.time = rosys.time()
+        await rosys.sleep(0.5)
+        current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
+
+        self.record.timestamp = pose.time
+        self.record.latitude = current_position[0]
+        self.record.longitude = current_position[1]
+        self.record.mode = "simulation"  # TODO check for possible values and replace "simulation"
+        self.record.gps_qual = 8
+        self.ROBOT_POSITION_LOCATED.emit()
+        self.ROBOT_POSE_LOCATED.emit(pose)
 
     async def try_connection(self) -> None:
         self.device = 'simulation'
 
-    async def get(self) -> Dict[str, Union[int, List[float], rosys.geometry.Pose]]:
-        await super().get()
-        if self.device is None:
-            return {'accuracy': None, 'coordinates': None, 'pose': None}
-        pose = deepcopy(self.pose_provider.pose)
-        pose.time = rosys.time()
-        current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
-        return {'accuracy': 4, 'coordinates': current_position, 'pose': pose}
+    def set_reference(self, lat: float, lon: float) -> None:
+        self.reference_lat = lat
+        self.reference_lon = lon
+        self.record.latitude = lat
+        self.record.longitude = lon
+        self.ROBOT_POSITION_LOCATED.emit()
+        self.request_backup()
