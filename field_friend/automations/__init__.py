@@ -1,4 +1,5 @@
 
+from .battery_watcher import BatteryWatcher
 from .coin_collecting import CoinCollecting
 from .coverage_planer import CoveragePlanner
 from .demo_weeding import DemoWeeding
@@ -33,4 +34,6 @@ __all__ = [
     'find_sequence',
     'Weeding',
     'WeedingNew',
+    'BatteryWatcher',
+    'CoinCollecting',
 ]
