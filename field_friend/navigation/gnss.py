@@ -5,8 +5,8 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Optional, Protocol
-
+from typing import Any, Optional, Protocol, Dict, List, Union
+from field_friend.navigation.point_transformation import wgs84_to_cartesian, cartesian_to_wgs84
 import numpy as np
 import pynmea2
 import rosys
@@ -34,11 +34,11 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         super().__init__()
         self.log = logging.getLogger('field_friend.gnss')
 
-        self.ROBOT_LOCATED = rosys.event.Event()
-        """the robot has been located (argument: pose)"""
+        self.ROBOT_POSE_LOCATED = rosys.event.Event()
+        """the robot has been located (argument: pose) with RTK-fixed"""
 
-        self.REFERENCE_CLEARED = rosys.event.Event()
-        """the reference location has been set"""
+        self.ROBOT_POSITION_LOCATED = rosys.event.Event()
+        """the robot has been located"""
 
         self.record = GNSSRecord()
         self.device = None
@@ -47,7 +47,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.reference_lon: Optional[float] = None
 
         self.needs_backup = False
-
         rosys.on_repeat(self.update, 1.0)
         rosys.on_repeat(self.try_connection, 3.0)
 
@@ -69,15 +68,13 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
     async def try_connection(self) -> None:
         pass
 
+    @abstractmethod
+    def set_reference(self, lat: float, lon: float) -> None:
+        pass
+
     def clear_reference(self) -> None:
         self.reference_lat = None
         self.reference_lon = None
-        self.request_backup()
-        self.REFERENCE_CLEARED.emit()
-
-    def set_reference(self, lat: float, lon: float) -> None:
-        self.reference_lat = lat
-        self.reference_lon = lon
         self.request_backup()
 
     def get_reference(self) -> Optional[tuple[float, float]]:
@@ -121,7 +118,7 @@ class GnssHardware(Gnss):
             self.device = None
 
     async def update(self) -> None:
-        await super().update()
+        await super().get()
         if self.ser is None:
             return
         record = GNSSRecord()
@@ -172,28 +169,38 @@ class GnssHardware(Gnss):
             self.device = None
             return
         self.record = record
-        if has_location and record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
-            if self.reference_lat is None or self.reference_lon is None:
-                self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
-                self.set_reference(record.latitude, record.longitude)
-            else:
-                r = Geodesic.WGS84.Inverse(self.reference_lat, self.reference_lon, record.latitude, record.longitude)
-                s = r['s12']
-                a = -np.deg2rad(r['azi1'])
-                if has_heading:
-                    yaw = np.deg2rad(float(-record.heading))
+        if has_location:
+            if record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
+                if self.reference_lat is None or self.reference_lon is None:
+                    self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
+                    self.set_reference(record.latitude, record.longitude)
                 else:
-                    yaw = self.odometer.get_pose(time=record.timestamp).yaw
-                pose = rosys.geometry.Pose(
-                    x=s * np.cos(a),
-                    y=s * np.sin(a),
-                    yaw=yaw,
-                    time=record.timestamp,
-                )
-                distance = self.odometer.prediction.distance(pose)
-                if distance > 1:
-                    self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
-                self.ROBOT_LOCATED.emit(pose)
+                    cartesian_coordinates = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
+                        record.latitude, record.longitude])
+                    if has_heading:
+                        yaw = np.deg2rad(float(-record.heading))
+                    else:
+                        yaw = self.odometer.get_pose(time=record.timestamp).yaw
+                    pose = rosys.geometry.Pose(
+                        x=cartesian_coordinates[0],
+                        y=cartesian_coordinates[1],
+                        yaw=yaw,
+                        time=record.timestamp,
+                    )
+                    distance = self.odometer.prediction.distance(pose)
+                    if distance > 1:
+                        self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
+                    self.ROBOT_POSE_LOCATED.emit(pose)
+                    self.ROBOT_POSITION_LOCATED.emit()
+            elif record.gps_qual == 0:
+                return
+            else:
+                self.ROBOT_POSITION_LOCATED.emit()
+
+    def set_reference(self, lat: float, lon: float) -> None:
+        self.reference_lat = lat
+        self.reference_lon = lon
+        self.request_backup()
 
 
 class PoseProvider(Protocol):
@@ -215,7 +222,23 @@ class GnssSimulation(Gnss):
         pose = deepcopy(self.pose_provider.pose)
         pose.time = rosys.time()
         await rosys.sleep(0.5)
-        self.ROBOT_LOCATED.emit(pose)
+        current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
+
+        self.record.timestamp = pose.time
+        self.record.latitude = current_position[0]
+        self.record.longitude = current_position[1]
+        self.record.mode = "simulation"  # TODO check for possible values and replace "simulation"
+        self.record.gps_qual = 8
+        self.ROBOT_POSITION_LOCATED.emit()
+        self.ROBOT_POSE_LOCATED.emit(pose)
 
     async def try_connection(self) -> None:
         self.device = 'simulation'
+
+    def set_reference(self, lat: float, lon: float) -> None:
+        self.reference_lat = lat
+        self.reference_lon = lon
+        self.record.latitude = lat
+        self.record.longitude = lon
+        self.ROBOT_POSITION_LOCATED.emit()
+        self.request_backup()
