@@ -22,7 +22,7 @@ class field_planner:
         self.odometer = odometer
         self.gnss = gnss
         self.leafet_map = leaflet_map
-
+        self.field_provider.active_object = None
         self.coordinate_type = "WGS84"
         self.COORDINATE_TYPE_CHANGED = rosys.event.Event()
         "switch between displaying cartesian and wgs84 coordiantes."

@@ -114,11 +114,11 @@ class leaflet_map:
 
     def add_point_active_object(self, latlon, dialog) -> None:
         dialog.close()
-        self.visualize_active_field()
         self.m.remove_layer(self.drawn_marker)
         if self.field_provider.active_object is not None and self.field_provider.active_object["object"] is not None:
             self.field_provider.active_object["object"].points_wgs84.append([latlon[0], latlon[1]])
             self.field_provider.OBJECT_SELECTED.emit()
+            self.visualize_active_field()
         else:
             ui.notify("No object selected. Point could not be added to the void.")
 
