@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import rosys
@@ -17,7 +17,7 @@ class System:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'u4'  # insert here your field friend version
+        version = 'ff10'  # insert here your field friend version
         if self.is_real:
             self.field_friend = FieldFriendHardware(version=version)
             self.usb_camera_provider = UsbCamProvider()
