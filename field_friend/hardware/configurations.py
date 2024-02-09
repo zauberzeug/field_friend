@@ -524,10 +524,7 @@ fieldfriend_configurations = {
             'version': 'none',
         },
         'flashlight': {
-            'version': 'flashlight',
-            'name': 'flashlight',
-            'pin': 5,
-            'on_expander': True,
+            'version': 'none',
         },
         'estop': {
             'name': 'estop',
@@ -543,6 +540,15 @@ fieldfriend_configurations = {
         },
         'imu': {
             'name': 'imu',
+        },
+        'battery_control': {
+            'name': 'battery_control',
+            'on_expander': True,
+            'reset_pin': 15,
+            'status_pin': 13,
+        },
+        'status_control': {
+            'name': 'status_control',
         },
     },
 }
