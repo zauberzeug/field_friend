@@ -1,0 +1,37 @@
+version: "3.9"
+services:
+  rosys:
+    network_mode: host
+    restart: always
+    privileged: true
+
+  detector:
+    image: "zauberzeug/yolov5-detector:nlv0.8.8-35.4.1"
+    restart: always
+    ports:
+      - "8004:80"
+    hostname: ${ROBOT_ID}
+    environment:
+      - HOST=learning-loop.ai
+      - ORGANIZATION=zauberzeug
+      - PROJECT=coins
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ~/data_coins:/data
+
+  circle_sight:
+    image: "zauberzeug/yolov5-detector:nlv0.8.8-35.4.1"
+    restart: always
+    ports:
+      - "8005:80"
+    hostname: ${ROBOT_ID}
+    environment:
+      - HOST=learning-loop.ai
+      - ORGANIZATION=zauberzeug
+      - PROJECT=monitoring
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ~/data_monitoring:/data
+
+  autoheal:
+    restart: always

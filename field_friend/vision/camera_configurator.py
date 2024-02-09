@@ -47,6 +47,10 @@ class CameraConfigurator:
                     width=width - 2 * xoffset,
                     height=height - 2 * yoffset,
                 )
+            else:
+                camera.crop = None
             if 'rotation' in self.config:
                 camera.rotation = self.config['rotation']
+            else:
+                camera.rotation = 0
         self.camera_provider.request_backup()

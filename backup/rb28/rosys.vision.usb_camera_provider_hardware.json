@@ -1,0 +1,172 @@
+{
+    "cameras": {
+        "usb-3610000.xhci-2.3.3": {
+            "id": "usb-3610000.xhci-2.3.3",
+            "calibration": null,
+            "focal_length": null,
+            "name": "usb-3610000.xhci-2.3.3",
+            "active": true,
+            "detect": false,
+            "color": null,
+            "resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "auto_exposure": true,
+            "exposure": 0.004,
+            "rotation": "0",
+            "fps": 0,
+            "crop": {
+                "x": 350,
+                "y": 50,
+                "width": 1220,
+                "height": 980
+            }
+        },
+        "usb-3610000.xhci-2.2": {
+            "id": "usb-3610000.xhci-2.2",
+            "calibration": null,
+            "focal_length": null,
+            "name": "usb-3610000.xhci-2.2",
+            "active": true,
+            "detect": false,
+            "color": null,
+            "resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "auto_exposure": true,
+            "exposure": 0.004,
+            "rotation": "0",
+            "fps": 0,
+            "crop": {
+                "x": 350,
+                "y": 50,
+                "width": 1220,
+                "height": 980
+            }
+        },
+        "usb-3610000.xhci-2.1": {
+            "id": "usb-3610000.xhci-2.1",
+            "calibration": {
+                "intrinsics": {
+                    "matrix": [
+                        [
+                            1157.473529109666,
+                            0.0,
+                            580.0525934168115
+                        ],
+                        [
+                            0.0,
+                            1167.0159629503555,
+                            410.36270641252827
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    ],
+                    "distortion": [
+                        -0.5065025883379246,
+                        0.3303361912288518,
+                        0.020950577351852913,
+                        -0.007438163324290266,
+                        -0.18005933114311654
+                    ],
+                    "rotation": {
+                        "R": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ]
+                    },
+                    "size": {
+                        "width": 1220,
+                        "height": 980
+                    }
+                },
+                "extrinsics": {
+                    "rotation": {
+                        "R": [
+                            [
+                                -0.0070094993006101225,
+                                0.788214762762194,
+                                -0.6153603453938943
+                            ],
+                            [
+                                0.9999654038266914,
+                                0.002768968372399594,
+                                -0.007843721302712547
+                            ],
+                            [
+                                -0.004478623591765771,
+                                -0.6153940368397233,
+                                -0.788206902629527
+                            ]
+                        ]
+                    },
+                    "translation": [
+                        0.31703814705655425,
+                        0.012810240601676952,
+                        0.33641740909936224
+                    ]
+                }
+            },
+            "focal_length": 1830.0,
+            "name": "usb-3610000.xhci-2.1",
+            "active": true,
+            "detect": false,
+            "color": null,
+            "resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "auto_exposure": true,
+            "exposure": 0.004,
+            "rotation": "0",
+            "fps": 6,
+            "crop": {
+                "x": 350,
+                "y": 50,
+                "width": 1220,
+                "height": 980
+            }
+        },
+        "platform:tegra-camrtc-ca": {
+            "id": "platform:tegra-camrtc-ca",
+            "calibration": null,
+            "focal_length": null,
+            "name": "platform:tegra-camrtc-ca",
+            "active": true,
+            "detect": false,
+            "color": null,
+            "resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "auto_exposure": true,
+            "exposure": 0.004,
+            "rotation": "0",
+            "fps": null,
+            "crop": {
+                "x": 350,
+                "y": 50,
+                "width": 1220,
+                "height": 980
+            }
+        }
+    }
+}

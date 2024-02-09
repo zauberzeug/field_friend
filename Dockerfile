@@ -6,6 +6,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     sudo vim less ack-grep rsync wget curl cmake arp-scan iproute2 iw python3-pip libgeos-dev graphviz graphviz-dev v4l-utils psmisc sysstat \
     libgl1-mesa-glx ffmpeg libsm6 libxext6 \
     libcurl4-openssl-dev libssl-dev \
+    libgdal-dev \
     avahi-utils iputils-ping \
     jq
 
@@ -27,6 +28,8 @@ USER $USERNAME
 
 ENV PATH="/home/zauberzeug/.local/bin:${PATH}"
 
+ENV GDAL_CONFIG=gdal-config
+
 RUN python3 -m pip install --upgrade pip
 
 WORKDIR /app
@@ -39,6 +42,8 @@ RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install pillow
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
     python3 -m pip install pyudev
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
+    python3 -m pip install geopandas
 
 COPY requirements.txt ./
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 

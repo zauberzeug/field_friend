@@ -32,10 +32,50 @@ then
     exit
 fi
 
+os=`uname`
+case $os in
+    Linux)
+        # Check if on Jetson platform
+        if [ -f /etc/nv_tegra_release ]; then
+            # Extract the R number
+            r_number=$(grep -oP 'R\d+' /etc/nv_tegra_release)
+
+            case $r_number in
+                R35)
+                    # Jetson Orin
+                    compose_args="$compose_args -f docker-compose.yml -f docker-compose.jetson.orin.yml"
+                    ;;
+                R32)
+                    # Jetson Nano
+                    compose_args="$compose_args -f docker-compose.yml -f docker-compose.jetson.yml"
+                    ;;
+                *)
+                    echo "Unsupported Jetson version: $r_number"
+                    exit 1
+                    ;;
+            esac
+        fi
+
+        # Check if an Nvidia GPU is available
+        ( nvidia-smi > /dev/null 2>&1 ) && compose_args="$compose_args -f docker-compose.yml -f docker-compose.nvidia.yml"
+        ;;
+    Darwin)
+        compose_args="$compose_args -f docker-compose.yml -f docker-compose.mac.yml"
+        ;;
+    *)
+        echo "Unsupported OS: $os"
+        exit 1
+esac
+export DOCKER_BUILDKIT=1
+
 cmd=$1
 cmd_args=${@:2}
 set -x
 case $cmd in
+    b | build)
+        docker-compose $compose_args pull detector
+    	docker-compose $compose_args build --no-cache $cmd_args
+        ;;
     u | up)
         docker-compose $compose_args up -d $cmd_args
         ;;
@@ -44,7 +84,7 @@ case $cmd in
         ;;
     U | uppull)
         docker-compose $compose_args pull
-        docker-compose $compose_args up -d --build $cmd_args
+        docker-compose $compose_args up -d --build --force-recreate $cmd_args
         ;;
     d | down)
         docker-compose $compose_args down -d $cmd_args
