@@ -19,8 +19,9 @@ def startup() -> None:
         interface.header_bar(system, status_drawer)
         with ui.column().classes('w-full items-stretch'):
             with ui.row().style('flex-wrap:nowrap'):
-                leaflet_map_landing = interface.leaflet_map(system, False)
-                interface.operation(system)
+                with ui.column().classes('w-1/2'):
+                    leaflet_map_landing = interface.leaflet_map(system, False)
+                    interface.operation(system)
                 interface.camera(system.usb_camera_provider, system.automator,
                                  system.detector, system.puncher, version=system.field_friend.version)
             if dev:
