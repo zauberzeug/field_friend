@@ -7,7 +7,6 @@ from .field_provider import Field, FieldObstacle, FieldProvider, Row
 from .mowing import Mowing
 from .path_provider import Path, PathProvider
 from .path_recorder import PathRecorder
-from .plant import Plant
 from .plant_locator import DetectorError, PlantLocator
 from .plant_provider import PlantProvider
 from .puncher import Puncher
@@ -25,7 +24,6 @@ __all__ = [
     'Path',
     'PathProvider',
     'PathRecorder',
-    'Plant',
     'PlantLocator',
     'PlantProvider',
     'Puncher',
