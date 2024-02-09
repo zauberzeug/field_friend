@@ -120,7 +120,7 @@ class GnssHardware(Gnss):
             self.device = None
 
     async def update(self) -> None:
-        await super().get()
+        await super().update()
         if self.ser is None:
             return
         record = GNSSRecord()
