@@ -48,8 +48,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         if y_axis is not None:
             if not isinstance(y_axis, HPortalHardware):
                 lizard_code += f' {y_axis.name}.stop();'
-            else:
-                lizard_code += f'{y_axis.name}_off();'
+            # else:
+            #     lizard_code += f'{y_axis.name}_off();'
         if z_axis is not None:
             if not isinstance(z_axis, TornadoHardware):
                 lizard_code += f' {z_axis.name}.stop();'

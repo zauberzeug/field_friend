@@ -165,21 +165,21 @@ class Puncher:
                     return
                 await rosys.sleep(0.5)
 
-                # Looking down from above robot (in -z direction):
-                #
-                #       ^ x    ^ t
-                #       |      |
-                # y <---+      +---> s
-                assert self.field_friend.y_axis.MIN_X <= x <= self.field_friend.y_axis.MAX_X
-                assert self.field_friend.y_axis.MIN_Y <= y <= self.field_friend.y_axis.MAX_Y
+            # Looking down from above robot (in -z direction):
+            #
+            #       ^ x    ^ t
+            #       |      |
+            # y <---+      +---> s
+            assert self.field_friend.y_axis.MIN_X <= x <= self.field_friend.y_axis.MAX_X
+            assert self.field_friend.y_axis.MIN_Y <= y <= self.field_friend.y_axis.MAX_Y
 
-                await self.field_friend.y_axis.enable_h_motors()
-                await rosys.sleep(0.1)
+            await self.field_friend.y_axis.enable_h_motors()
+            await rosys.sleep(0.1)
 
-                # Offsets mapping local space (s,t) to world space (x,y)
-                s: float = 0.25 - (y - self.field_friend.y_axis.MIN_Y)  # y to s flips direction
-                t: float = x - self.field_friend.y_axis.MIN_X
+            # Offsets mapping local space (s,t) to world space (x,y)
+            s: float = y - self.field_friend.y_axis.MIN_Y
+            t: float = x - self.field_friend.y_axis.MIN_X
 
-                await self.field_friend.y_axis.move_to_cartesian(s, t, 4)
+            await self.field_friend.y_axis.move_to_cartesian(s, t, 100)
         except Exception as e:
             raise Exception('aiming failed') from e

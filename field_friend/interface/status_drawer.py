@@ -4,7 +4,7 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, Tornado, YAxis,
+from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, HPortal, Tornado, YAxis,
                         YAxisTornado, ZAxis, ZAxisV2)
 from ..navigation import Gnss
 
@@ -157,6 +157,16 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     'end r' if robot.y_axis.end_r else '',
                     f'{robot.y_axis.steps:.0f}',
                     f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
+                ]
+            elif isinstance(robot.y_axis, HPortal):
+                y_axis_flags = [
+                    'not referenced' if not robot.y_axis.is_referenced else '',
+                    'alarm' if robot.y_axis.has_fault else '',
+                    'idle'if not robot.y_axis.both_target_reached else 'moving',
+                    'ref s' if robot.y_axis.reference_s else '',
+                    'ref t' if robot.y_axis.reference_t else '',
+                    f's_position: {robot.y_axis.position[0]:.2f}m',
+                    f't_position: {robot.y_axis.position[1]:.2f}m',
                 ]
             else:
                 y_axis_flags = ['no y-axis']

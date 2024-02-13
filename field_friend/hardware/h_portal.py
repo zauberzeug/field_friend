@@ -8,12 +8,12 @@ from rosys.helpers import remove_indentation
 class HPortal(rosys.hardware.Module, abc.ABC):
     """The y axis module is a simple example for a representation of real or simulated robot hardware."""
 
-    MIN_X: float = 0.14865
-    MAX_X: float = MIN_X + 0.25
+    MIN_X: float = 0.10
+    MAX_X: float = MIN_X + 0.2
 
     # Reduced by 5mm on both sides
-    MIN_Y = -0.12350
-    MAX_Y = MIN_Y + 0.25
+    MIN_Y = -0.23
+    MAX_Y = MIN_Y + 0.46
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -40,6 +40,10 @@ class HPortal(rosys.hardware.Module, abc.ABC):
     def both_target_reached(self) -> bool:
         return self.left_target_reached and self.right_target_reached
 
+    @property
+    def position(self) -> tuple:
+        return self.h_steps_to_cartesian_m(self.left_position, self.right_position)
+
     @abc.abstractmethod
     async def stop(self) -> None:
         pass
@@ -59,6 +63,31 @@ class HPortal(rosys.hardware.Module, abc.ABC):
     @abc.abstractmethod
     async def disable_h_motors(self) -> None:
         pass
+
+        # assumes cartesian coordinates centered on bottom left corner (center = [0.1, 0.23])
+    # returns h-coordinates centered on center of h-portal
+    def cartesian_m_to_h_steps(self, s: float, t: float) -> tuple:
+        scaling_factor = 40000
+        bottom_left_offset_t = 0.1
+        bottom_left_offset_s = 0.23
+        s -= bottom_left_offset_s
+        t -= bottom_left_offset_t
+
+        right = (-s + t) * scaling_factor
+        left = (-s - t) * scaling_factor
+
+        return int(right), int(left)
+
+    # assumes h-coordinates are centered on h-portal center (bottom left = [0, 10000])
+    # returns cartesian coordinates centered on bottom left corner
+    def h_steps_to_cartesian_m(self, left: int, right: int) -> tuple:
+        scaling_denominator = 40000 * 2
+        bottom_left_offset_t = 0.1
+        bottom_left_offset_s = 0.23
+        s = (-left - right) / scaling_denominator + bottom_left_offset_s
+        t = (left - right) / scaling_denominator + bottom_left_offset_t
+
+        return s, t
 
 
 class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
@@ -84,6 +113,8 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
             {name}_ref_t = {expander.name + "." if refs_on_expander else ""}Input({ref_t_pin})
             {name}_ref_s = {expander.name + "." if refs_on_expander else ""}Input({ref_s_pin})
             bool {name}_is_referenced = false
+            bool {name}_ref_run_t = false
+            bool {name}_ref_run_s = false
             let {name}_brake_off do
                 {name}_left.set_ctrl_halt(false)
                 {name}_right.set_ctrl_halt(false)
@@ -108,8 +139,6 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
                 {name}_left.reset_fault()
                 {name}_right.reset_fault()
             end
-            bool {name}_ref_run_t = false
-            bool {name}_ref_run_s = false
 
             when {name}_ref_run_t and {name}_ref_t.level == 0 then {name}_brake_on(); end
             when {name}_ref_run_s and {name}_ref_s.level == 0 then {name}_brake_on(); end
@@ -130,7 +159,7 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
 
     async def stop(self) -> None:
         await super().stop()
-        await self.robot_brain.send(f'{self.name}_brake_on()')
+        await self.robot_brain.send(f'{self.name}_off()')
 
     async def enable_h_motors(self) -> None:
         await super().enable_h_motors()
@@ -149,12 +178,17 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
     async def move_to_async(self, left: int, right: int) -> None:
         await self.robot_brain.send(
             f'{self.name}_left.set_target_position({left});'
+        )
+        await rosys.sleep(0.1)
+        await self.robot_brain.send(
             f'{self.name}_right.set_target_position({right});'
+        )
+        await rosys.sleep(0.1)
+        await self.robot_brain.send(
             f'{self.name}_move_to_target();'
         )
 
     async def move_to(self, left: int, right: int) -> None:
-        await super().move_to()
         await self.move_to_async(left, right)
 
         # Give flags time to turn false first
@@ -162,32 +196,9 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
         while not self.both_target_reached:
             await rosys.sleep(0.2)
 
-    # assumes cartesian coordinates centered on bottom left corner (center = [0.125, 0.125])
-    # returns h-coordinates centered on center of h-portal
-    def cartesian_m_to_h_steps(self, s: float, t: float) -> tuple:
-        scaling_factor = 40000
-        bottom_left_offset = 0.125
-        s -= bottom_left_offset
-        t -= bottom_left_offset
-
-        right = (-s + t) * scaling_factor
-        left = (-s - t) * scaling_factor
-
-        return int(right), int(left)
-
-    # assumes h-coordinates are centered on h-portal center (bottom left = [0, 10000])
-    # returns cartesian coordinates centered on bottom left corner
-    def h_steps_to_cartesian_m(self, left: int, right: int) -> tuple:
-        scaling_denominator = 40000 * 2
-        bottom_left_offset = 0.125
-        s = (-left - right) / scaling_denominator + bottom_left_offset
-        t = (left - right) / scaling_denominator + bottom_left_offset
-
-        return s, t
-
     async def move_to_cartesian(self, s: float, t: float, speed: int):
-        assert 0.0 <= s <= 0.25
-        assert 0.0 <= t <= 0.25
+        assert 0.0 <= s <= 0.46
+        assert 0.0 <= t <= 0.2
 
         left, right = self.cartesian_m_to_h_steps(s, t)
         await self.enter_pp_mode(speed)
@@ -221,6 +232,7 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
 
         self.log.info("driving into t reference")
         await self.robot_brain.send(
+            f'{self.name}_ref_run_s = false;'
             f'{self.name}_ref_run_t = true;'
             f'{self.name}_left.enter_pv_mode(-1);'
             f'{self.name}_right.enter_pv_mode(1);'
@@ -235,15 +247,15 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
 
         await rosys.sleep(0.8)
         # Assume we're roughly 110 units (both motors) away from rail end
-        self.log.info("moving last step in t direction")
-        T_LAST_STEP: int = 110
-        left_base_local = self.left_position
-        right_base_local = self.right_position
-        await self.enter_pp_mode(4)
-        left_base_local -= T_LAST_STEP
-        right_base_local += T_LAST_STEP
-        await self.move_to_async(left_base_local, right_base_local)
-        await rosys.sleep(0.6)
+        # self.log.info("moving last step in t direction")
+        # T_LAST_STEP: int = 110
+        # left_base_local = self.left_position
+        # right_base_local = self.right_position
+        # await self.enter_pp_mode(4)
+        # left_base_local -= T_LAST_STEP
+        # right_base_local += T_LAST_STEP
+        # await self.move_to_async(left_base_local, right_base_local)
+        # await rosys.sleep(0.6)
 
         # If already in s reference, drive out first
         if self.reference_s:
@@ -279,7 +291,7 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
 
         # Drive out of both s and t reference
         self.log.info("drive out of both references")
-        T_STEP_OUT = 320
+        T_STEP_OUT = 50
         zero_point_left = left_base_local + T_STEP_OUT
         zero_point_right = right_base_local - T_STEP_OUT
         await self.enter_pp_mode(4)
@@ -324,7 +336,7 @@ class HPortalHardware(HPortal, rosys.hardware.ModuleHardware):
         self.right_fault = (words.pop(0) == 'true')
         self.is_referenced = (words.pop(0) == 'true')
 
-        if self.has_fault() and not self.previous_fault:
+        if self.has_fault and not self.previous_fault:
             self.previous_fault = True
             rosys.notify(f'{self.name} has fault', type='error')
 

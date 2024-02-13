@@ -51,10 +51,10 @@ class FieldFriend(rosys.hardware.Robot):
 
     async def stop(self) -> None:
         await self.wheels.stop()
-        if self.y_axis:
-            await self.y_axis.stop()
-        if self.z_axis:
-            await self.z_axis.stop()
+        # if self.y_axis:
+        #     await self.y_axis.stop()
+        # if self.z_axis:
+        #     await self.z_axis.stop()
 
     def can_reach(self, local_point: rosys.geometry.Point, second_tool: bool = False) -> bool:
         """Check if the given point is reachable by the tool.

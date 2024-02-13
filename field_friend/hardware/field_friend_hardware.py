@@ -8,6 +8,7 @@ from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_v2 import FlashlightHardwareV2
+from .h_portal import HPortalHardware
 from .imu import IMUHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware
@@ -128,6 +129,18 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           motor_on_expander=self.config['y_axis']['motor_on_expander'],
                                           end_stops_on_expander=self.config['y_axis']['end_stops_on_expander'],
                                           )
+        elif self.config['y_axis']['version'] == 'hportal':
+            y_axis = HPortalHardware(robot_brain,
+                                     expander=expander,
+                                     name=self.config['y_axis']['name'],
+                                     can=can,
+                                     left_node_id=self.config['y_axis']['left_node_id'],
+                                     right_node_id=self.config['y_axis']['right_node_id'],
+                                     ref_t_pin=self.config['y_axis']['ref_t_pin'],
+                                     ref_s_pin=self.config['y_axis']['ref_s_pin'],
+                                     sync_interval=self.config['y_axis']['sync_interval'],
+                                     refs_on_expander=self.config['y_axis']['refs_on_expander'],
+                                     )
         else:
             y_axis = None
         if self.config['z_axis']['version'] == 'z_axis':
