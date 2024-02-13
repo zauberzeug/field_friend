@@ -1,8 +1,23 @@
 import logging
+import uuid
+from dataclasses import dataclass
 
 import rosys
+from rosys.geometry import Point
 
-from .plant import Plant
+
+@dataclass(slots=True, kw_only=True)
+class Plant:
+    id: str = ...
+    type: str
+    position: Point
+    detection_time: float
+    confidence: float = 0.0
+
+    def __post_init__(self) -> None:
+        """Generate a unique ID if not already loaded from persistence"""
+        if self.id == ...:
+            self.id = str(uuid.uuid4())
 
 
 class PlantProvider:
@@ -23,15 +38,16 @@ class PlantProvider:
 
         rosys.on_repeat(self.prune, 10.0)
 
-    def prune(self, max_age: float = 100 * 60.0) -> None:
+    def prune(self, max_age: float = 10 * 60.0) -> None:
         self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - max_age]
         self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - max_age]
         self.PLANTS_CHANGED.emit()
 
     def add_weed(self, weed: Plant) -> None:
         for w in self.weeds:
-            if w.position.distance(weed.position) < 0.02 and w.type == weed.type:
+            if w.position.distance(weed.position) < 0.02 and w.type == weed.type and w.confidence < weed.confidence:
                 w.position = weed.position
+                self.PLANTS_CHANGED.emit()
                 return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()
@@ -47,8 +63,9 @@ class PlantProvider:
 
     def add_crop(self, crop: Plant) -> None:
         for c in self.crops:
-            if c.position.distance(crop.position) < 0.05 and c.type == crop.type:
+            if c.position.distance(crop.position) < 0.03 and c.type == crop.type and c.confidence < crop.confidence:
                 c.position = crop.position
+                self.PLANTS_CHANGED.emit()
                 return
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()

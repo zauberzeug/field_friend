@@ -35,9 +35,9 @@ class PlantLocator:
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
-        rosys.on_repeat(self.detect_plants, 0.001)  # as fast as possible, function will sleep if necessary
+        rosys.on_repeat(self._detect_plants, 0.001)  # as fast as possible, function will sleep if necessary
 
-    async def detect_plants(self) -> None:
+    async def _detect_plants(self) -> None:
         if self.is_paused:
             await asyncio.sleep(0.01)
             return
