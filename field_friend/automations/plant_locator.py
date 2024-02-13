@@ -20,17 +20,17 @@ class DetectorError(Exception):
 class PlantLocator:
 
     def __init__(self,
-                 camera: rosys.vision.Camera,
+                 camera_provider: rosys.vision.CameraProvider,
                  detector: rosys.vision.Detector,
                  plant_provider: PlantProvider,
                  odometer: rosys.driving.Odometer,
                  ) -> None:
         self.log = logging.getLogger('field_friend.plant_detection')
-        self.camera = camera
+        self.camera_provider = camera_provider
         self.detector = detector
         self.plant_provider = plant_provider
         self.odometer = odometer
-        self.is_paused = False
+        self.is_paused = True
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
@@ -42,10 +42,14 @@ class PlantLocator:
             await asyncio.sleep(0.01)
             return
         t = rosys.time()
-        if self.camera.calibration is None:
+        camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
+        if not camera:
+            rosys.notify('no camera connected')
+            raise DetectorError()
+        if camera.calibration is None:
             rosys.notify('camera has no calibration')
             raise DetectorError()
-        new_image = next((i for i in self.camera.images if not i.detections), None)
+        new_image = next((i for i in camera.images if not i.detections), None)
         if new_image is None:
             await asyncio.sleep(0.01)
             return
@@ -61,7 +65,7 @@ class PlantLocator:
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = self.camera.calibration.project_from_image(image_point)
+                floor_point = self.camera_provider.calibration.project_from_image(image_point)
                 if floor_point is None:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
@@ -71,7 +75,7 @@ class PlantLocator:
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info('crop found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = self.camera.calibration.project_from_image(image_point)
+                floor_point = self.camera_provider.calibration.project_from_image(image_point)
                 if floor_point is None:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
