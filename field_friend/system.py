@@ -1,12 +1,12 @@
 import logging
 import os
-from typing import Optional
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import rosys
 
-from field_friend.automations import (CoinCollecting, DemoWeeding, FieldProvider, Mowing, PathProvider, PathRecorder,
-                                      PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew)
+from field_friend.automations import (BatteryWatcher, CoinCollecting, DemoWeeding, FieldProvider, Mowing, PathProvider,
+                                      PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import SimulatedCam, SimulatedCamProvider, UsbCamProvider
@@ -48,7 +48,7 @@ class System:
             self.gnss = GnssHardware(self.odometer)
         else:
             self.gnss = GnssSimulation(self.field_friend.wheels)
-        self.gnss.ROBOT_LOCATED.register(self.odometer.handle_detection)
+        self.gnss.ROBOT_POSE_LOCATED.register(self.forward_pose_odometer)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.1
         self.driver.parameters.angular_speed_limit = 1.0
@@ -95,25 +95,8 @@ class System:
                             }
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
                                                     default_automation=self.coin_collecting.start)
-
-        if self.is_real:
-            if self.field_friend.battery_control is not None:
-                def check_if_charging():
-                    if self.automator.is_running:
-                        return
-                    if self.field_friend.bms.state.is_charging:
-                        self.was_charging = True
-                        return
-                    if not self.field_friend.bms.state.is_charging and self.was_charging:
-                        self.automator.start(self.field_friend.battery_control.release_battery_relay())
-                        self.was_charging = False
-
-                def relase_relais_on_startup():
-                    self.automator.start(self.field_friend.battery_control.release_battery_relay())
-
-                self.was_charging = False
-                rosys.on_repeat(check_if_charging, 0.5)
-                rosys.on_startup(relase_relais_on_startup)
+        if self.is_real and self.field_friend.battery_control:
+            self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
 
         async def stop():
             if self.automator.is_running:
@@ -130,6 +113,9 @@ class System:
 
         self.steerer.STEERING_STARTED.register(pause)
         self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
+
+    def forward_pose_odometer(self, pose: rosys.geometry.Pose) -> None:
+        self.odometer.handle_detection(pose)
 
     def _create_plant_locator(self, camera: rosys.vision.Camera) -> None:
         if camera == self.camera_selector.cameras['bottom_cam']:

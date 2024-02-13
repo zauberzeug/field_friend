@@ -21,7 +21,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self, *, version: str) -> None:
         if version not in fieldfriend_configurations:
-            raise NotImplementedError(f'Unknown FieldFriend version: {version}')
+            raise NotImplementedError(
+                f'Unknown FieldFriend version: {version}')
         self.config = fieldfriend_configurations[version]
         self.check_pins(self.config)
 
@@ -31,7 +32,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.WHEEL_DIAMETER = self.THOOTH_COUNT * self.PITCH / np.pi
         self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE = self.config['params']['wheel_distance']
-        if version in ['u1', 'ff3', 'u4']:
+        if version in ['u1', 'ff3', 'u4', 'ff10']:
             self.WORK_X = self.config['params']['work_x']
             self.DRILL_RADIUS = self.config['params']['drill_radius']
         elif version in ['u2', 'u3']:
