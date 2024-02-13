@@ -17,7 +17,7 @@ class System:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'ff10'  # insert here your field friend version
+        version = 'u3'  # insert here your field friend version
         if self.is_real:
             self.field_friend = FieldFriendHardware(version=version)
             self.usb_camera_provider = UsbCamProvider()
