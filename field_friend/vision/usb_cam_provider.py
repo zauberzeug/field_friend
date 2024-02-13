@@ -20,6 +20,8 @@ class UsbCamProvider(rosys.vision.CameraProvider[UsbCam], rosys.persistence.Pers
         rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
 
     def backup(self) -> dict:
+        for camera in self._cameras.values():
+            self.log.info(f'backing up camera: {camera.to_dict()}')
         return {
             'cameras': {camera.id: camera.to_dict() for camera in self._cameras.values()}
         }
