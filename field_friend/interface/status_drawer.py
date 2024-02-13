@@ -10,7 +10,7 @@ from ..navigation import Gnss
 
 
 def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer):
-    with ui.right_drawer(value=False).classes('bg-[#edf4fa]') as status_drawer, ui.column():
+    with ui.right_drawer().classes('bg-[#edf4fa]') as status_drawer, ui.column():
         ui.label('System status').classes('text-xl')
         ui.markdown('**Hardware:**')
 
@@ -127,7 +127,6 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
         with ui.row():
             ui.markdown('**imu:**').style('color: #6E93D6')
             imu_label = ui.label()
-        
 
         def update_status() -> None:
             bms_flags = [
@@ -232,7 +231,8 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             heading_label.text = f'{gnss.record.heading:.2f}° ' + direction_flag
             rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'
             odometry_label.text = str(odometer.prediction)
-            imu_label.text = ('yaw:'+str( robot.imu.yaw)+ '°, pitch:'+ str(robot.imu.pitch) + '°, roll:' + str(robot.imu.roll)+'°')
+            imu_label.text = ('y:'+str(round(robot.imu.yaw, 1)) + '°, p:' +
+                              str(round(robot.imu.pitch, 1)) + '°, r:' + str(round(robot.imu.roll, 1))+'°')
 
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer
