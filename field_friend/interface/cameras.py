@@ -1,20 +1,15 @@
 import colorsys
-import io
 import logging
-import os
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
-from PIL import Image
 from rosys import background_tasks
 from rosys.geometry import Point
-from rosys.vision.detector import Autoupload
 
-from ..automations import Puncher
+from ..automations import PlantLocator, Puncher
 from .calibration_dialog import calibration_dialog
 
 
@@ -24,6 +19,7 @@ class camera:
                  camera_provider: rosys.vision.CameraProvider,
                  automator: rosys.automation.Automator,
                  detector: rosys.vision.Detector,
+                 plant_locator: PlantLocator,
                  puncher: Optional[Puncher] = None,
                  *,
                  version: str,
@@ -33,6 +29,7 @@ class camera:
         self.camera_provider = camera_provider
         self.automator = automator
         self.detector = detector
+        self.plant_locator = plant_locator
         self.capture_images = ui.timer(7, lambda: background_tasks.create(self.capture_image()), active=False)
         self.punching_enabled = False
         self.puncher = puncher
@@ -62,8 +59,8 @@ class camera:
                 # self.depth = ui.number('depth', value=0.02, format='%.2f',
                 #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
                 self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
-                ui.checkbox('Capturing').bind_value_to(self.capture_images, 'active') \
-                    .tooltip('Record new images for the Learning Loop')
+                ui.checkbox('Detecting').bind_value(self.plant_locator, 'is_paused') \
+                    .tooltip('Activate plant detection')
                 self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
                     .tooltip('Show the mapping between camera and world coordinates')
                 ui.button('calibrate', on_click=self.calibrate) \
@@ -95,11 +92,6 @@ class camera:
         image = self.camera.latest_captured_image
         if image and image.detections:
             self.image_view.set_content(image.detections.to_svg())
-
-    async def capture_image(self) -> None:
-        if self.camera is None:
-            return
-        await self.detector.detect(self.camera.latest_captured_image, autoupload=Autoupload.ALL, tags=['capture'])
 
     def on_mouse_move(self, e: MouseEventArguments):
         if self.camera is None:
@@ -139,7 +131,7 @@ class camera:
             self.image_view.content = ''
             return
         world_points = np.array([[x, y, 0] for x in np.linspace(0, 0.3, 15) for y in np.linspace(-0.2, 0.2, 20)])
-        image_points = self.camera.calibration.project_array_to_image(world_points)
+        image_points = self.camera.calibration.project_to_image(world_points)
         colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
         self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'
