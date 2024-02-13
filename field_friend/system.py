@@ -6,13 +6,12 @@ import numpy as np
 import rosys
 
 from field_friend.automations import (CoinCollecting, DemoWeeding, FieldProvider, Mowing, PathProvider, PathRecorder,
-                                      PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew, Rolling)
+                                      PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import SimulatedCam, SimulatedCamProvider, UsbCamProvider
-from field_friend.falling_detection import FallingSimulation,FallingHardware,RuturnToSafety
+from field_friend.falling_detection import FallingSimulation, FallingHardware, RuturnToSafety
 from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
-
 
 
 class System:
@@ -43,7 +42,7 @@ class System:
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
-        self.to_safety = RuturnToSafety(self.steerer,self.falling_detection)
+        self.to_safety = RuturnToSafety(self.steerer, self.falling_detection)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         if self.is_real:
             self.gnss = GnssHardware(self.odometer)

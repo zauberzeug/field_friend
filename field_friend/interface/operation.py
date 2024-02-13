@@ -87,15 +87,21 @@ class operation:
                     with ui.row().classes('items-center'):
                         automation_controls(self.system.automator, can_start=ensure_start)
                         if not system.is_real:
-                            ui.number('Roll', format='%.2f', value=0, step=1, min=-180, max=180).props(
-                                    'dense outlined suffix=Deg').classes('w-24').bind_value(
-                                    self.system.field_friend.imu, 'roll').tooltip(
-                                    'Set teh roll for a simulated Robot')
-                            ui.number('Pitch', format='%.2f', value=0, step=1, min=-180, max=180).props(
-                                    'dense outlined suffix=Deg').classes('w-24').bind_value(
-                                    self.system.field_friend.imu, 'pitch').tooltip(
-                                    'Set teh tilt for a simulated Robot')
-                            ui.button(text='falling?',on_click=lambda :self.system.field_friend.imu.testemit(),)
+                            class RP:
+                                roll = 0
+                                pitch = 0
+                            rp = RP
+                            # TODO figure out the new Imu simulation
+                            ui.number('Roll', format='%.2f', value=0, step=1, min=-180, max=180).bind_value(rp, 'roll').props(
+                                'dense outlined suffix=Deg').classes('w-24').tooltip(
+                                'Set teh roll for a simulated Robot')
+                            ui.number('Pitch', format='%.2f', value=0, step=1, min=-180, max=180).bind_value(rp, 'pitch').props(
+                                'dense outlined suffix=Deg').classes('w-24').tooltip(
+                                'Set teh tilt for a simulated Robot')
+                            ui.button(text='update Imu values',
+                                      on_click=self.system.field_friend.imu.set_rotation(rosys.geometry.Rotation.from_euler(roll=rp.roll, pitch=rp.pitch, yaw=0)))
+                            ui.button(text='Imu emit Rotation',
+                                      on_click=lambda: self.system.field_friend.imu.emit_measurement(),)
 
                         @ui.refreshable
                         def show_field_selection() -> None:
@@ -192,8 +198,8 @@ class operation:
                 ui.checkbox(
                     'Space bar emergency stop').tooltip(
                     'Enable or disable the emergency stop on space bar').bind_value(key_controls, 'estop_on_space')
-                
-                
-                ui.button('self rescue',on_click= self.system.to_safety.rescue).props('color=orange').classes('py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'has_stopped',value=True)
-                ui.button('self rescue in progress').props('color=orange outline').classes('py-3 px-6 text-lg').bind_visibility(system.to_safety,'rescueing',value=True)
-        
+
+                ui.button('self rescue', on_click=self.system.to_safety.rescue).props('color=orange').classes(
+                    'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'has_stopped', value=True)
+                ui.button('self rescue in progress').props('color=orange outline').classes(
+                    'py-3 px-6 text-lg').bind_visibility(system.to_safety, 'rescueing', value=True)

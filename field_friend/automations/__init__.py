@@ -13,7 +13,6 @@ from .puncher import Puncher
 from .sequence import find_sequence
 from .weeding import Weeding
 from .weeding_new import WeedingNew
-from .rolling import Rolling
 
 __all__ = [
     'CoveragePlanner',
@@ -34,5 +33,4 @@ __all__ = [
     'find_sequence',
     'Weeding',
     'WeedingNew',
-    'Rolling',
 ]

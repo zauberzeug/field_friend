@@ -8,7 +8,6 @@ from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_v2 import FlashlightHardwareV2
-from .imu import IMUHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware
 from .tornado import TornadoHardware
@@ -240,10 +239,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             bumper = None
 
         if 'imu' in self.config:
-            imu = IMUHardware(robot_brain,
-                                   name=self.config['imu']['name'], roll_offset=self.config['imu']['roll_offset'],
-                                   pitch_offset=self.config['imu']['pitch_offset']
-                                   )
+            imu = rosys.hardware.ImuHardware(robot_brain=robot_brain,
+                                             name=self.config['imu']['name'], rotation_offset=rosys.geometry.Rotation.from_euler(roll=-self.config['imu']['roll_offset'],
+                                                                                                                                 pitch=-self.config['imu']['pitch_offset'], yaw=-0
+                                                                                                                                 ))
         else:
             imu = None
 
