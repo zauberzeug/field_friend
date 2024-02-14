@@ -1,11 +1,9 @@
 import asyncio
 import logging
-from typing import Optional
 
 import rosys
 
-from .plant import Plant
-from .plant_provider import PlantProvider
+from .plant_provider import Plant, PlantProvider
 
 WEED_CATEGORY_NAME = ['coin', 'weed']
 CROP_CATEGORY_NAME = ['coin_with_hole', 'crop']

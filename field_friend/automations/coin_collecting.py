@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import rosys
 from rosys.geometry import Point
 
-from .plant import Plant
+from .plant_provider import Plant
 
 if TYPE_CHECKING:
     from system import System

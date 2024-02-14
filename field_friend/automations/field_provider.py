@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
-from typing import Any, Literal, Optional, TypedDict, Union
 from functools import lru_cache
+from typing import Any, Literal, Optional, TypedDict, Union
+
 import rosys
 from rosys.geometry import Point
 
 from field_friend.navigation.point_transformation import wgs84_to_cartesian
 
-from .plant import Plant
+from .plant_provider import Plant
 
 
 @dataclass(slots=True, kw_only=True)

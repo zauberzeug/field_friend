@@ -10,9 +10,8 @@ from rosys.helpers import eliminate_pi, ramp
 from rosys.vision import Detector
 
 from ..hardware import FieldFriend
-from .plant import Plant
 from .plant_locator import DetectorError, PlantLocator
-from .plant_provider import PlantProvider
+from .plant_provider import Plant, PlantProvider
 from .puncher import Puncher
 
 CAMERA_UNCERTAINTY = 0.01
