@@ -67,6 +67,10 @@ class Field:
     rows: list[Row] = field(default_factory=list)
 
     @property
+    def reference(self) -> list:
+        return [self.reference_lat, self.reference_lon]
+
+    @property
     def outline(self) -> list[Point]:
         if len(self.outline_wgs84) > 0:
             cartesian_outline = []
@@ -128,6 +132,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.active_object = None
         self.OBJECT_SELECTED.emit()
         self.invalidate()
+
+    def set_reference(self, field: Field, point: list) -> None:
+        if field.reference_lat is None:
+            point[0]
+        if field.reference_lon is None:
+            point[1]
 
     def add_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         field.obstacles.append(obstacle)

@@ -206,10 +206,10 @@ class field_planner:
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
                         if self.coordinate_type == "cartesian":
                             points = self.field_provider.active_object['object'].points(
-                                [self.field_provider.active_field.reference_lat, self.field_provider.active_field.reference_lon])
+                                self.field_provider.active_field.reference)
                             for point in points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_object['object'].points_wgs84[self.field_provider.active_object['object'].points([self.field_provider.active_field.reference_lat, self.field_provider.active_field.reference_lon]).index(point)])).props(
+                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_object['object'].points_wgs84[self.field_provider.active_object['object'].points(self.field_provider.active_field.reference).index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
@@ -249,10 +249,10 @@ class field_planner:
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
                         if self.coordinate_type == "cartesian":
                             points = self.field_provider.active_object['object'].points(
-                                [self.field_provider.active_field.reference_lat, self.field_provider.active_field.reference_lon])
+                                self.field_provider.active_field.reference)
                             for point in points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_object['object'].points_wgs84[self.field_provider.active_object['object'].points([self.field_provider.active_field.reference_lat, self.field_provider.active_field.reference_lon]).index(point)])).props(
+                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_object['object'].points_wgs84[self.field_provider.active_object['object'].points(self.field_provider.active_field.reference).index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
@@ -321,8 +321,7 @@ class field_planner:
                 return
             new_point = positioning
             if len(self.field_provider.active_field.outline_wgs84) < 1:
-                self.field_provider.active_field.reference_lat = new_point[0]
-                self.field_provider.active_field.reference_lon = new_point[1]
+                self.field_provider.set_reference(self.field_provider.active_field, new_point)
                 self.gnss.set_reference(lat=new_point[0], lon=new_point[1])
             field.outline_wgs84.append(new_point)
         self.field_provider.invalidate()
