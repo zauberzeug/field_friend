@@ -1,6 +1,6 @@
 import numpy as np
 import rosys
-
+from pyquaternion import Quaternion
 from .chain_axis import ChainAxisHardware
 from .configurations import fieldfriend_configurations
 from .double_wheels import DoubleWheelsHardware
@@ -241,9 +241,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         if 'imu' in self.config:
             imu = rosys.hardware.ImuHardware(robot_brain=robot_brain,
-                                             name=self.config['imu']['name'], rotation_offset=rosys.geometry.Rotation.from_euler(-self.config['imu']['roll_offset'],
-                                                                                                                                 -self.config['imu']['pitch_offset'], 0
-                                                                                                                                 ))
+                                             name=self.config['imu']['name'], offset_quaternion=Quaternion(self.config['imu']['quaternion']))
         else:
             imu = None
 

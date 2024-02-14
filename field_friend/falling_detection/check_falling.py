@@ -34,35 +34,36 @@ class FallingHardware(Falling):
             self.field_friend.imu.NEW_MEASUREMENT.register(self.is_falling)
         super().__init__(field_friend=field_friend)
 
-    async def is_falling(self, rotation: Rotation) -> None:
-        roll = np.degrees(abs(rotation.roll))
-        pitch = np.degrees(abs(rotation.pitch))
+    async def is_falling(self, euler=tuple[float, float, float]) -> None:
+        roll, pitch, yaw = euler
+        roll = abs(roll)
+        pitch = abs(pitch)
         if self.rescue_in_progress_val:
             if (roll > self.roll_limit+5):
                 if not self.has_stopped:
-                    self.log.info(f'robot exeeds roll emgergency limit with {rotation.roll}')
+                    self.log.info(f'robot exeeds roll emgergency limit with {roll}')
                     rosys.notify('Robot exeeded roll emgergency limit, stopping', 'warning')
                     self.has_stopped = True
                     await self.field_friend.estop.set_soft_estop(True)
 
             if (pitch > self.pitch_limit+5):
                 if not self.has_stopped:
-                    self.log.info(f'robot exeeds pitch emergency limit with {rotation.roll}')
-                    rosys.notify('Robot exeeded roll emergency limit, stopping', 'warning')
+                    self.log.info(f'robot exeeds pitch emergency limit with {pitch}')
+                    rosys.notify('Robot exeeded pitch emergency limit, stopping', 'warning')
                     self.has_stopped = True
                     await self.field_friend.estop.set_soft_estop(True)
 
         else:
             if (roll > self.roll_limit):
                 if not self.has_stopped:
-                    self.log.info(f'robot exeeds roll limit with {rotation.roll}')
+                    self.log.info(f'robot exeeds roll limit with {roll}')
                     rosys.notify('Robot exeeded roll limit, stopping', 'warning')
                     self.has_stopped = True
                     await self.field_friend.estop.set_soft_estop(True)
 
             if (pitch > self.pitch_limit):
                 if not self.has_stopped:
-                    self.log.info(f'robot exeeds pitch limit with {rotation.pitch} of {self.pitch_limit}')
+                    self.log.info(f'robot exeeds pitch limit with {pitch}')
                     rosys.notify('Robot exeeded pitch limit, stopping', 'warning')
                     self.log.info(f'the limit is:{self.pitch_limit}')
                     self.has_stopped = True
