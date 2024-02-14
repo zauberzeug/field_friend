@@ -17,12 +17,26 @@ def startup() -> None:
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
-        with ui.column().classes('w-full items-stretch'):
-            with ui.row().style('flex-wrap:nowrap'):
-                leaflet_map_landing = interface.leaflet_map(system, False)
-                interface.operation(system)
-                interface.camera(system.usb_camera_provider, system.automator,
-                                 system.detector, system.puncher, version=system.field_friend.version)
+        interface.system_bar()
+        with ui.row().style('max-height:calc(100vh - 125px); height:calc(100vh - 150px); width: calc(100vw - 2rem); flex-wrap: nowrap'):
+            with ui.splitter(horizontal=False, reverse=False, value=35, limits=(10, 50)).classes('w-full h-full') as splitter:
+                with splitter.before:
+                    with ui.column().classes('h-full p-2').style('width: 100%;'):
+                        leaflet_map_landing = interface.leaflet_map(system, False)
+                        leaflet_map_landing.m.classes(
+                            'h-full w-full')
+                with splitter.after:
+                    with ui.row().classes('w-full h-full ml-2 m-2'):
+                        with ui.column().style('width: 55%; height: 100%; flex-wrap: nowrap'):
+                            interface.operation(system, leaflet_map_landing)
+                        with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
+                            with ui.card().classes('w-full h-full p-0'):
+                                with ui.scroll_area().classes('w-full h-full'):
+                                    with ui.card().classes('w-full'):
+                                        interface.camera(system.usb_camera_provider, system.automator, system.detector,
+                                                         system.puncher, version=system.field_friend.version)
+                with splitter.separator:
+                    ui.button(icon='drag_indicator').props('round')
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):
                     interface.development(system.field_friend)

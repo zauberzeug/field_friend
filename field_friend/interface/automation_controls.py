@@ -23,19 +23,19 @@ class automation_controls:
                 return
             automator.start()
         self.play_button = ui.button(on_click=start) \
-            .props('icon=play_arrow unelevated').tooltip('start automation')
+            .props('icon=play_arrow unelevated').tooltip('start automation').classes('py-3 px-6 text-lg')
         self.pause_button = ui.button(on_click=lambda: automator.pause(because='pause button was pressed')) \
-            .props('icon=pause outline').tooltip('pause automation')
+            .props('icon=pause outline').tooltip('pause automation').classes('py-3 px-6 text-lg')
 
         async def resume() -> None:
             automator.resume()
         self.resume_button = ui.button(on_click=resume) \
-            .props('icon=play_arrow outline').tooltip('resume automation')
+            .props('icon=play_arrow outline').tooltip('resume automation').classes('py-3 px-6 text-lg')
 
         async def stop() -> None:
             automator.stop(because='stop button was pressed')
         self.stop_button = ui.button(on_click=stop) \
-            .props('icon=stop outline').tooltip('stop automation')
+            .props('icon=stop outline').tooltip('stop automation').classes('py-3 px-6 text-lg')
 
         def refresh() -> None:
             self.play_button.visible = automator.is_stopped
