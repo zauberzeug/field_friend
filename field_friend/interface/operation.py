@@ -129,6 +129,11 @@ class operation:
                     ui.button('emergency reset', on_click=lambda: system.field_friend.estop.set_soft_estop(False)).props(
                         'color=red-700 outline').classes('py-3 px-6 text-lg').bind_visibility_from(system.field_friend.estop,
                                                                                                    'is_soft_estop_active', value=True)
+                ui.button('self rescue', on_click=self.system.to_safety.rescue).props('color=orange').classes(
+                    'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'has_stopped', value=True)
+                ui.button('self rescue in progress').props('color=orange outline').classes(
+                    'py-3 px-6 text-lg').bind_visibility(system.to_safety, 'rescueing', value=True)
+
                 ui.space()
                 with ui.row():
                     automation_controls(self.system.automator, can_start=self.ensure_start)

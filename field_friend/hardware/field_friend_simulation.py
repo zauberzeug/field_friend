@@ -1,4 +1,5 @@
 import rosys
+from pyquaternion import Quaternion
 
 from .chain_axis import ChainAxisSimulation
 from .configurations import fieldfriend_configurations
@@ -46,7 +47,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             flashlight = None
 
-        imu = rosys.hardware.ImuSimulation(rotation_offset=rosys.geometry.Rotation.zero())
+        imu = rosys.hardware.ImuSimulation(offset_quaternion=Quaternion(1, 0, 0, 0))
         estop = rosys.hardware.EStopSimulation()
         if 'bumper' in config:
             bumper = rosys.hardware.BumperSimulation(estop=estop)
