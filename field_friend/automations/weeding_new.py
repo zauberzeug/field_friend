@@ -10,8 +10,8 @@ from rosys.driving import PathSegment
 from rosys.geometry import Point, Point3d, Pose, Spline
 
 from .field_provider import Field, Row
-from .plant import Plant
 from .plant_locator import DetectorError
+from .plant_provider import Plant
 from .sequence import find_sequence
 
 if TYPE_CHECKING:

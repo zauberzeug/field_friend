@@ -1,20 +1,15 @@
 import colorsys
-import io
 import logging
-import os
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
-from PIL import Image
 from rosys import background_tasks
 from rosys.geometry import Point
-from rosys.vision.detector import Autoupload
 
-from ..automations import Puncher
+from ..automations import PlantLocator, Puncher
 from .calibration_dialog import calibration_dialog
 
 
@@ -24,6 +19,7 @@ class camera:
                  camera_provider: rosys.vision.CameraProvider,
                  automator: rosys.automation.Automator,
                  detector: rosys.vision.Detector,
+                 plant_locator: PlantLocator,
                  puncher: Optional[Puncher] = None,
                  *,
                  version: str,
@@ -33,6 +29,7 @@ class camera:
         self.camera_provider = camera_provider
         self.automator = automator
         self.detector = detector
+        self.plant_locator = plant_locator
         self.capture_images = ui.timer(7, lambda: background_tasks.create(self.capture_image()), active=False)
         self.punching_enabled = False
         self.puncher = puncher
@@ -40,7 +37,7 @@ class camera:
         self.image_view: Optional[ui.interactive_image] = None
         self.calibration_dialog = calibration_dialog(camera_provider, version=version)
         self.camera_card = ui.card()
-        with self.camera_card.tight().style('width:640px'):
+        with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
         ui.timer(0.2, self.update_content)
@@ -48,7 +45,27 @@ class camera:
     def use_camera(self, cam: rosys.vision.CalibratableCamera) -> None:
         self.camera = cam
         self.camera_card.clear()
-        with self.camera_card:
+        with self.camera_card.style('position: relative;'):
+            with ui.button(icon='menu').props('flat color=primary').style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
+                with ui.menu() as menu:
+                    with ui.menu_item():
+                        ui.checkbox('Punching').bind_value(self, 'punching_enabled').tooltip('Enable punching mode')
+                        # TODO je nach aktivem Anbaugerät muss hier ein anderer Wert auswählbar sein. Beim Tornado der angel beim Bohrer die Tiefe
+                        # self.depth = ui.number('depth', value=0.02, format='%.2f',
+                        #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
+                        self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
+                    with ui.menu_item():
+                        ui.checkbox('Capturing').bind_value_to(self.capture_images, 'active') \
+                            .tooltip('Record new images for the Learning Loop')
+                    with ui.menu_item():
+                        self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
+                            .tooltip('Show the mapping between camera and world coordinates')
+                    with ui.menu_item():
+                        ui.button('calibrate', on_click=self.calibrate) \
+                            .props('icon=straighten outline').tooltip('Calibrate camera')
+                    # TODO: ist das hier ein todo?: Add a button to save the last captured image
+                    # ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
+
             events = ['mousemove', 'mouseout', 'mouseup']
             self.image_view = ui.interactive_image(
                 '',
@@ -56,20 +73,6 @@ class camera:
                 on_mouse=self.on_mouse_move,
                 events=events
             ).classes('w-full')
-            with ui.row().classes('m-4 justify-end items-center'):
-                ui.checkbox('Punching').bind_value(self, 'punching_enabled') \
-                    .tooltip('Enable punching mode')
-                # self.depth = ui.number('depth', value=0.02, format='%.2f',
-                #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
-                self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
-                ui.checkbox('Capturing').bind_value_to(self.capture_images, 'active') \
-                    .tooltip('Record new images for the Learning Loop')
-                self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
-                    .tooltip('Show the mapping between camera and world coordinates')
-                ui.button('calibrate', on_click=self.calibrate) \
-                    .props('icon=straighten outline').tooltip('Calibrate camera')
-                # Add a button to save the last captured image
-                # ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
 
             with ui.row():
                 self.debug_position = ui.label()
@@ -95,11 +98,6 @@ class camera:
         image = self.camera.latest_captured_image
         if image and image.detections:
             self.image_view.set_content(image.detections.to_svg())
-
-    async def capture_image(self) -> None:
-        if self.camera is None:
-            return
-        await self.detector.detect(self.camera.latest_captured_image, autoupload=Autoupload.ALL, tags=['capture'])
 
     def on_mouse_move(self, e: MouseEventArguments):
         if self.camera is None:
@@ -139,7 +137,7 @@ class camera:
             self.image_view.content = ''
             return
         world_points = np.array([[x, y, 0] for x in np.linspace(0, 0.3, 15) for y in np.linspace(-0.2, 0.2, 20)])
-        image_points = self.camera.calibration.project_array_to_image(world_points)
+        image_points = self.camera.calibration.project_to_image(world_points)
         colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
         self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'

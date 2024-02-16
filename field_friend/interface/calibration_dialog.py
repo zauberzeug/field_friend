@@ -254,7 +254,7 @@ class calibration_dialog(ui.dialog):
             return False
         if camera.calibration:
             world_points = np.array([p.world_position.tuple for p in self.points])
-            image_points = camera.calibration.project_array_to_image(world_points=world_points)
+            image_points = camera.calibration.project_to_image(world_points=world_points)
             for i, point in enumerate(self.points):
                 point.image_position = Point(x=image_points[i][0], y=image_points[i][1])
         self.calibration_image.source = camera.get_latest_image_url()
@@ -303,5 +303,5 @@ class calibration_dialog(ui.dialog):
             ui.notify(str(e))
         else:
             ui.notify('Calibration applied')
-            self.camera_provider.needs_backup = True
+            self.camera_provider.request_backup()
             self.submit(True)

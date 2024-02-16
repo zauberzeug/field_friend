@@ -18,8 +18,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && usermod -a -G dialout $USERNAME \
     && usermod -a -G tty $USERNAME \
-    && groupadd --gid 999 gpio || true \
-    && usermod -a -G gpio $USERNAME \
+    # && groupadd --gid 999 gpio || true \
+    # && usermod -a -G gpio $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
@@ -48,6 +48,9 @@ RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
 COPY requirements.txt ./
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
     python3 -m pip install -r requirements.txt
+
+# for flashing esp32 as root
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip sudo pip install esptool 
 
 RUN mkdir -p /home/zauberzeug/.lizard # ensure dir is owned by zauberzeug
 WORKDIR /home/zauberzeug/.lizard

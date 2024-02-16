@@ -84,7 +84,7 @@ case $cmd in
         ;;
     U | uppull)
         docker-compose $compose_args pull
-        docker-compose $compose_args up -d --build --force-recreate $cmd_args
+        docker-compose $compose_args up -d --build $cmd_args
         ;;
     d | down)
         docker-compose $compose_args down -d $cmd_args
