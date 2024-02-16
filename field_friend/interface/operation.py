@@ -26,7 +26,7 @@ class operation:
         self.field = None
         self.key_controls = KeyControls(self.system)
         self.leaflet_map = leaflet_map
-
+        self.initial_value = None
         with ui.dialog() as self.dialog, ui.card():
             ui.label('Do you want to continue the old mowing automation?')
             with ui.row():
@@ -52,14 +52,14 @@ class operation:
                         if self.field_provider.fields is not None and len(self.field_provider.fields) > 0:
                             for field in self.system.field_provider.fields:
                                 field_selection_dict[field.id] = field.name
-                            initial_value = None if self.field_provider.active_field is None else self.field_provider.active_field.id
+                            self.initial_value = None if self.field_provider.active_field is None else self.field_provider.active_field.id
                         self.field_selection = None
 
                         @ui.refreshable
                         def show_field_selection() -> None:
                             self.field_selection = ui.select(
                                 field_selection_dict,
-                                with_input=True, on_change=self.set_field, label='Field', value=initial_value).tooltip(
+                                with_input=True, on_change=self.set_field, label='Field', value=self.initial_value).tooltip(
                                 'Select the field to work on').classes('w-24')
                         show_field_selection()
                         self.field_provider.FIELDS_CHANGED.register(show_field_selection.refresh)

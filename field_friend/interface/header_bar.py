@@ -24,9 +24,10 @@ class header_bar:
             else:
                 ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
 
-            with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto'):
-                ui.icon('report').props('size=md').classes('text-red-500').props('elevated')
-                ui.label('Emergency stop is pressed!').classes('text-red-500 text-3xl').props('elevated')
+            with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto bg-red-500 text-white p-2 rounded-md'):
+                ui.icon('report').props('size=md').classes('text-white').props('elevated')
+                ui.label('Emergency stop is pressed!').classes(
+                    'text-white text-3xl').props('elevated')
 
             with ui.row().bind_visibility_from(system.field_friend.estop, 'is_soft_estop_active').classes('mr-auto bg-red-500 rounded-md p-1'):
                 ui.icon('report').props('size=md').classes('text-white').props('elevated')
