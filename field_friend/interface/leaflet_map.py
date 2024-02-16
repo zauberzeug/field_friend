@@ -93,7 +93,8 @@ class leaflet_map:
         self.gnss.ROBOT_POSITION_LOCATED.register(self.update_robot_position)
 
     def set_simulated_reference(self, latlon, dialog):
-        self.gnss.clear_reference()
+        dialog.close()
+        self.m.remove_layer(self.drawn_marker)
         self.gnss.set_reference(latlon[0], latlon[1])
         self.gnss.ROBOT_POSITION_LOCATED.emit()
         self.gnss.ROBOT_POSE_LOCATED.emit(rosys.geometry.Pose(
@@ -102,8 +103,6 @@ class leaflet_map:
             yaw=0.0,
             time=0
         ))
-        dialog.close()
-        self.m.remove_layer(self.drawn_marker)
         ui.notify(f'Robot reference has been set to {latlon[0]}, {latlon[1]}')
 
     def abort_point_drawing(self, dialog) -> None:
@@ -123,25 +122,26 @@ class leaflet_map:
             ui.notify("No object selected. Point could not be added to the void.")
 
     def visualize_active_field(self) -> None:
-        for field in self.field_layers:
-            field.run_method(':setStyle', "{'color': '#6E93D6'}")
-        for layer in self.obstacle_layers:
-            self.m.remove_layer(layer)
-        self.obstacle_layers = []
-        for layer in self.row_layers:
-            self.m.remove_layer(layer)
-        self.row_layers = []
         if self.field_provider.active_field is not None:
-            layer_index = self.field_provider.fields.index(self.field_provider.active_field)
-            self.m.remove_layer(self.field_layers[layer_index])
-            self.field_layers[layer_index] = self.m.generic_layer(
-                name="polygon", args=[self.field_provider.active_field.outline_wgs84, {'color': '#999'}])
-            for obstacle in self.field_provider.active_field.obstacles:
-                self.obstacle_layers.append(self.m.generic_layer(
-                    name="polygon", args=[obstacle.points_wgs84, {'color': '#C10015'}]))
-            for row in self.field_provider.active_field.rows:
-                self.row_layers.append(self.m.generic_layer(
-                    name="polyline", args=[row.points_wgs84, {'color': '#F2C037'}]))
+            for field in self.field_layers:
+                field.run_method(':setStyle', "{'color': '#6E93D6'}")
+            for layer in self.obstacle_layers:
+                self.m.remove_layer(layer)
+            self.obstacle_layers = []
+            for layer in self.row_layers:
+                self.m.remove_layer(layer)
+            self.row_layers = []
+            if self.field_provider.active_field is not None:
+                layer_index = self.field_provider.fields.index(self.field_provider.active_field)
+                self.m.remove_layer(self.field_layers[layer_index])
+                self.field_layers[layer_index] = self.m.generic_layer(
+                    name="polygon", args=[self.field_provider.active_field.outline_wgs84, {'color': '#999'}])
+                for obstacle in self.field_provider.active_field.obstacles:
+                    self.obstacle_layers.append(self.m.generic_layer(
+                        name="polygon", args=[obstacle.points_wgs84, {'color': '#C10015'}]))
+                for row in self.field_provider.active_field.rows:
+                    self.row_layers.append(self.m.generic_layer(
+                        name="polyline", args=[row.points_wgs84, {'color': '#F2C037'}]))
 
     def update_layers(self) -> None:
         for layer in self.field_layers:
@@ -152,7 +152,7 @@ class leaflet_map:
                                      field.outline_wgs84, {'color': '#6E93D6'}]))
 
     def update_robot_position(self) -> None:
-        if not self.robot_marker:
+        if self.robot_marker is None:
             self.robot_marker = self.m.marker(latlng=(self.gnss.record.latitude, self.gnss.record.longitude))
         icon = 'L.icon({iconUrl: "assets/robot_position.svg", iconSize: [40,40], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Literal, Optional, TypedDict, Union
-
+from typing import Any, Literal, Optional, TypedDict, Union, List
+from shapely.geometry import Polygon
 import rosys
 from rosys.geometry import Point
 
@@ -181,10 +181,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
             self.active_object = None
         self.OBJECT_SELECTED.emit()
 
-    def is_polygon_check(polygon) -> bool:
-        # TODO add a function where you can check if the given geometry is a polygon (min. 3 points) or not
-        # also possible to put this into a file geometry_functions.py or something
-        return True
+    def is_polygon(self, field: Field) -> bool:
+        try:
+            polygon = Polygon(field.outline_wgs84)
+            return polygon.is_valid and polygon.geom_type == 'Polygon'
+        except:
+            return False
 
     def sort_rows(field: Field) -> None:
         return

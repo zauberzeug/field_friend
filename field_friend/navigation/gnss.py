@@ -158,6 +158,7 @@ class GnssHardware(Gnss):
                         record.latitude = msg.latitude
                         record.longitude = msg.longitude
                         record.mode = msg.mode_indicator
+                        # print(f'The GNSS message: {msg.mode_indicator}')
                         has_location = True
                     if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None) is not None:
                         # self.log.info(f'HDT: Heading: {msg.heading}')
@@ -218,6 +219,7 @@ class GnssSimulation(Gnss):
     def __init__(self, pose_provider: PoseProvider) -> None:
         super().__init__()
         self.pose_provider = pose_provider
+        rosys.on_startup(self.startup)
 
     async def update(self) -> None:
         if self.device is None:
@@ -245,3 +247,24 @@ class GnssSimulation(Gnss):
         self.record.longitude = lon
         self.ROBOT_POSITION_LOCATED.emit()
         self.request_backup()
+
+    def startup(self) -> None:
+        init_position = [51.983159, 7.434212]
+
+        self.reference_lat = init_position[0]
+        self.reference_lon = init_position[1]
+        init_pose = rosys.geometry.Pose(
+            x=0.000,
+            y=0.000,
+            yaw=0.0,
+            time=0
+        )
+        pose = deepcopy(init_pose)
+        pose.time = rosys.time()
+        self.record.timestamp = pose.time
+        self.record.latitude = init_position[0]
+        self.record.longitude = init_position[1]
+        self.record.mode = "simulation"  # TODO check for possible values and replace "simulation"
+        self.record.gps_qual = 8
+        self.ROBOT_POSITION_LOCATED.emit()
+        self.ROBOT_POSE_LOCATED.emit(pose)
