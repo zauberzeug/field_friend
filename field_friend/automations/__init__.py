@@ -10,8 +10,9 @@ from .path_recorder import PathRecorder
 from .plant_locator import DetectorError, PlantLocator
 from .plant_provider import Plant, PlantProvider
 from .puncher import Puncher
+from .refactored_weeding import Weeding
 from .sequence import find_sequence
-from .weeding import Weeding
+# from .weeding import Weeding
 from .weeding_new import WeedingNew
 
 __all__ = [
