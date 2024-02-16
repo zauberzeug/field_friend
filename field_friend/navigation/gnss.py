@@ -52,15 +52,22 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         rosys.on_repeat(self.update, 1.0)
         rosys.on_repeat(self.try_connection, 3.0)
 
-    def backup(self) -> dict[str, Any]:
+    def backup(self) -> dict:
         return {
-            'reference_lat': self.reference_lat,
-            'reference_lon': self.reference_lon,
+            'record': rosys.persistence.to_dict(self.record)
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.reference_lat = data.get('reference_lat')
-        self.reference_lon = data.get('reference_lon')
+        record = data.get('record')
+        self.record.timestamp = record["timestamp"]
+        self.record.latitude = record["latitude"]
+        self.record.longitude = record["longitude"]
+        self.record.mode = record["mode"]
+        self.record.gps_qual = record["gps_qual"]
+        self.record.altitude = record["altitude"]
+        self.record.separation = record["separation"]
+        self.record.heading = record["heading"]
+        self.record.speed_kmh = record["speed_kmh"]
 
     @abstractmethod
     async def update(self) -> None:
@@ -219,11 +226,14 @@ class GnssSimulation(Gnss):
     def __init__(self, pose_provider: PoseProvider) -> None:
         super().__init__()
         self.pose_provider = pose_provider
-        rosys.on_startup(self.startup)
 
     async def update(self) -> None:
         if self.device is None:
             return
+        if self.reference_lat is None:
+            self.reference_lat = 51.983159
+        if self.reference_lon is None:
+            self.reference_lon = 7.434212
         pose = deepcopy(self.pose_provider.pose)
         pose.time = rosys.time()
         await rosys.sleep(0.5)
@@ -247,24 +257,3 @@ class GnssSimulation(Gnss):
         self.record.longitude = lon
         self.ROBOT_POSITION_LOCATED.emit()
         self.request_backup()
-
-    def startup(self) -> None:
-        init_position = [51.983159, 7.434212]
-
-        self.reference_lat = init_position[0]
-        self.reference_lon = init_position[1]
-        init_pose = rosys.geometry.Pose(
-            x=0.000,
-            y=0.000,
-            yaw=0.0,
-            time=0
-        )
-        pose = deepcopy(init_pose)
-        pose.time = rosys.time()
-        self.record.timestamp = pose.time
-        self.record.latitude = init_position[0]
-        self.record.longitude = init_position[1]
-        self.record.mode = "simulation"  # TODO check for possible values and replace "simulation"
-        self.record.gps_qual = 8
-        self.ROBOT_POSITION_LOCATED.emit()
-        self.ROBOT_POSE_LOCATED.emit(pose)
