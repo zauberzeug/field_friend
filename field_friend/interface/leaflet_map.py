@@ -157,3 +157,12 @@ class leaflet_map:
         icon = 'L.icon({iconUrl: "assets/robot_position.svg", iconSize: [40,40], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
         self.robot_marker.move(self.gnss.record.latitude, self.gnss.record.longitude)
+
+    def change_basemap(self) -> None:
+        return
+        # TODO: add a button in leaflet map to change basemap layer and implement the functionality here
+
+        # this is the ESRI satellite  image as free satellite image
+        # Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        #     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        # })

@@ -37,7 +37,7 @@ class camera:
         self.image_view: Optional[ui.interactive_image] = None
         self.calibration_dialog = calibration_dialog(camera_provider, version=version)
         self.camera_card = ui.card()
-        with self.camera_card.tight().style('width:640px'):
+        with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
         ui.timer(0.2, self.update_content)
@@ -45,7 +45,27 @@ class camera:
     def use_camera(self, cam: rosys.vision.CalibratableCamera) -> None:
         self.camera = cam
         self.camera_card.clear()
-        with self.camera_card:
+        with self.camera_card.style('position: relative;'):
+            with ui.button(icon='menu').props('flat color=primary').style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
+                with ui.menu() as menu:
+                    with ui.menu_item():
+                        ui.checkbox('Punching').bind_value(self, 'punching_enabled').tooltip('Enable punching mode')
+                        # TODO je nach aktivem Anbaugerät muss hier ein anderer Wert auswählbar sein. Beim Tornado der angel beim Bohrer die Tiefe
+                        # self.depth = ui.number('depth', value=0.02, format='%.2f',
+                        #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
+                        self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
+                    with ui.menu_item():
+                        ui.checkbox('Capturing').bind_value_to(self.capture_images, 'active') \
+                            .tooltip('Record new images for the Learning Loop')
+                    with ui.menu_item():
+                        self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
+                            .tooltip('Show the mapping between camera and world coordinates')
+                    with ui.menu_item():
+                        ui.button('calibrate', on_click=self.calibrate) \
+                            .props('icon=straighten outline').tooltip('Calibrate camera')
+                    # TODO: ist das hier ein todo?: Add a button to save the last captured image
+                    # ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
+
             events = ['mousemove', 'mouseout', 'mouseup']
             self.image_view = ui.interactive_image(
                 '',
@@ -53,20 +73,6 @@ class camera:
                 on_mouse=self.on_mouse_move,
                 events=events
             ).classes('w-full')
-            with ui.row().classes('m-4 justify-end items-center'):
-                ui.checkbox('Punching').bind_value(self, 'punching_enabled') \
-                    .tooltip('Enable punching mode')
-                # self.depth = ui.number('depth', value=0.02, format='%.2f',
-                #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
-                self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
-                ui.checkbox('Detecting').bind_value(self.plant_locator, 'is_paused') \
-                    .tooltip('Activate plant detection')
-                self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
-                    .tooltip('Show the mapping between camera and world coordinates')
-                ui.button('calibrate', on_click=self.calibrate) \
-                    .props('icon=straighten outline').tooltip('Calibrate camera')
-                # Add a button to save the last captured image
-                # ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
 
             with ui.row():
                 self.debug_position = ui.label()
