@@ -49,4 +49,11 @@ configurations = {
             'yoffset': 150,
         },
     },
+    'ff10': {
+        'parameters': {
+            'width': 1920,
+            'height': 1080,
+            'auto_exposure': True,
+        },
+    },
 }

@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
-from typing import Any, Literal, Optional, TypedDict, Union
 from functools import lru_cache
+from typing import Any, Literal, Optional, TypedDict, Union
+
 import rosys
 from rosys.geometry import Point
 
 from field_friend.navigation.point_transformation import wgs84_to_cartesian
 
-from .plant import Plant
+from .plant_provider import Plant
 
 
 @dataclass(slots=True, kw_only=True)
@@ -64,6 +65,10 @@ class Field:
     visualized: bool = False
     obstacles: list[FieldObstacle] = field(default_factory=list)
     rows: list[Row] = field(default_factory=list)
+
+    @property
+    def reference(self) -> list:
+        return [self.reference_lat, self.reference_lon]
 
     @property
     def outline(self) -> list[Point]:
@@ -127,6 +132,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.active_object = None
         self.OBJECT_SELECTED.emit()
         self.invalidate()
+
+    def set_reference(self, field: Field, point: list) -> None:
+        if field.reference_lat is None:
+            point[0]
+        if field.reference_lon is None:
+            point[1]
 
     def add_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         field.obstacles.append(obstacle)

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import rosys
@@ -55,8 +55,11 @@ class System:
         self.puncher = Puncher(self.field_friend, self.driver)
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
         self.small_weed_category_names = ['weed', 'coin']
-        self.plant_locator: Optional[PlantLocator] = None
-        # self.usb_camera_provider.CAMERA_ADDED.register(self._create_plant_locator)
+        self.crop_category_names = ['sugar_beet', 'crop', 'coin_with_hole']
+        self.plant_locator = PlantLocator(self.usb_camera_provider, self.detector, self.plant_provider, self.odometer)
+        self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
+        self.plant_locator.crop_category_names = self.crop_category_names
+
         self.demo_weeding = DemoWeeding(self.field_friend, self.driver, self.detector,
                                         self.plant_provider, self.puncher, self.plant_locator)
         self.weeding = Weeding(self)
@@ -111,17 +114,6 @@ class System:
 
     def forward_pose_odometer(self, pose: rosys.geometry.Pose) -> None:
         self.odometer.handle_detection(pose)
-
-    def _create_plant_locator(self, camera: rosys.vision.Camera) -> None:
-        if camera == self.camera_selector.cameras['bottom_cam']:
-            self.log.info(f'create plant locator for {camera.id}')
-            self.plant_locator = PlantLocator(
-                camera, self.detector, self.plant_provider, self.odometer
-            )
-            self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
-            self.plant_locator.crop_category_names = ['sugar_beet', 'crop', 'coin_with_hole']
-            self.plant_locator.minimum_crop_confidence = 0.3
-            self.plant_locator.minimum_weed_confidence = 0.2
 
     def restart(self) -> None:
         os.utime('main.py')

@@ -5,14 +5,16 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Optional, Protocol, Dict, List, Union
-from field_friend.navigation.point_transformation import wgs84_to_cartesian, cartesian_to_wgs84
+from typing import Any, Dict, List, Optional, Protocol, Union
+
 import numpy as np
 import pynmea2
 import rosys
 import serial
 from geographiclib.geodesic import Geodesic
 from serial.tools import list_ports
+
+from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
 
 
 @dataclass
@@ -118,7 +120,7 @@ class GnssHardware(Gnss):
             self.device = None
 
     async def update(self) -> None:
-        await super().get()
+        await super().update()
         if self.ser is None:
             return
         record = GNSSRecord()
@@ -181,6 +183,7 @@ class GnssHardware(Gnss):
                         yaw = np.deg2rad(float(-record.heading))
                     else:
                         yaw = self.odometer.get_pose(time=record.timestamp).yaw
+                        # TODO: Better INS implementation if no heading provided by GNSS
                     pose = rosys.geometry.Pose(
                         x=cartesian_coordinates[0],
                         y=cartesian_coordinates[1],
