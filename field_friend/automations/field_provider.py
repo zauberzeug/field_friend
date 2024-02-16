@@ -169,3 +169,16 @@ class FieldProvider(rosys.persistence.PersistentModule):
         else:
             self.active_object = None
         self.OBJECT_SELECTED.emit()
+
+    def is_polygon_check(polygon) -> bool:
+        # TODO add a function where you can check if the given geometry is a polygon (min. 3 points) or not
+        # also possible to put this into a file geometry_functions.py or something
+        return True
+
+    def sort_rows(field: Field) -> None:
+        return
+        # TODO implement a fuction that takes a field and sorts all its rows depending on their geographic location
+        # if first_point[0]-last_point[0] > first_point[1]-last_point[1]:
+        #   do this
+        # else
+        #   do this

@@ -38,8 +38,6 @@ class operation:
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
                 with ui.column().classes('w-full'):
                     with ui.row().classes('items-center'):
-                        ui.label('Selected:').classes('text-l')
-
                         @ui.refreshable
                         def center_map_button() -> None:
                             if self.field_provider.active_field is not None and len(self.field_provider.active_field.outline_wgs84) > 0:
@@ -65,25 +63,6 @@ class operation:
                                 'Select the field to work on').classes('w-24')
                         show_field_selection()
                         self.field_provider.FIELDS_CHANGED.register(show_field_selection.refresh)
-
-                        self.row_selection = None
-
-                        @ui.refreshable
-                        def show_row_selection() -> None:
-                            row_selection_dict = {}
-                            if self.field_provider.active_field is not None and self.field_provider.active_field.rows is not None:
-                                for row in self.field_provider.active_field.rows:
-                                    row_selection_dict[row.id] = row.name
-                                initial_row_value = None if (
-                                    self.field_provider.active_object is None or self.field_provider.active_object['object_type'] != "Rows") else self.field_provider.active_object['object'].id
-                                self.row_selection = ui.select(
-                                    row_selection_dict,
-                                    label='Row', with_input=True, on_change=self.set_row, value=initial_row_value).tooltip(
-                                    'Select the row to weed').classes('w-24')
-                        show_row_selection()
-                        self.system.field_provider.FIELDS_CHANGED.register(show_row_selection.refresh)
-                        self.system.field_provider.OBJECT_SELECTED.register(show_row_selection.refresh)
-                        self.field_provider.FIELD_SELECTED.register(show_row_selection.refresh)
                     ui.separator()
                     with ui.row():
                         ui.label("Automation").classes('text-xl')
@@ -154,21 +133,14 @@ class operation:
                     automation_controls(self.system.automator, can_start=self.ensure_start)
 
     def set_field(self) -> None:
-        print(self.field_selection.value)
         for field in self.system.field_provider.fields:
             if field.id == self.field_selection.value:
                 self.field_provider.select_field(field)
+                if len(field.outline_wgs84) > 0:
+                    self.system.gnss.set_reference(field.outline_wgs84[0][0], field.outline_wgs84[0][1])
                 # TODO das hier noch auf das active field umbauen, damit auch diese werte im weeding auf das active field registriert sind
                 self.system.weeding.field = field
                 self.system.weeding_new.field = field
-
-    def set_row(self) -> None:
-        for row in self.field_provider.active_field.rows:
-            if row.id == self.row_selection.value:
-                self.field_provider.select_object(row.id, 'Rows')
-                # TODO das hier noch auf das active object umbauen, damit auch diese werte im weeding auf das active field registriert sind
-                self.system.weeding.row = row
-                self.system.weeding_new.start_row = row
 
     async def ensure_start(self) -> bool:
         self.log.info('Ensuring start of automation')
