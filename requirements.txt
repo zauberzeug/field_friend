@@ -4,5 +4,7 @@ prompt-toolkit # for lizard monitor
 pynmea2
 geopy
 shapely
+fiona
+geopandas
 rosys == 0.10.1
 nicegui == 1.4.15
