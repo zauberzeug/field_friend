@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import rosys
-from rosys import persistence
 from rosys.driving import PathSegment
 from rosys.geometry import Point, Pose, Spline
 
@@ -25,15 +24,15 @@ class Weeding:
         super().__init__()
         self.log = logging.getLogger('field_friend.weeding')
         self.system = system
-        self.with_field_planning = False
+        self.use_field_planning = False
 
         self.field: Optional[Field] = None
         self.start_row: Optional[Row] = None
         self.end_row: Optional[Row] = None
         self.tornado_angle: float = 110.0
 
-        self.ordered_rows: list = []
-        self.plan: Optional[list[list[PathSegment]]] = None
+        self.sorted_weeding_rows: list = []
+        self.weeding_plan: Optional[list[list[PathSegment]]] = None
         self.current_row: Optional[Row] = None
         self.current_segment: Optional[PathSegment] = None
         self.row_segment_completed: bool = False
@@ -44,7 +43,7 @@ class Weeding:
         self.log.info('starting weeding...')
         if not await self._check_hardware_ready():
             return
-        if self.with_field_planning and not await self._field_planning():
+        if self.use_field_planning and not await self._field_planning():
             return
         await self._weeding()
 
@@ -81,8 +80,8 @@ class Weeding:
             return False
         self.system.gnss.set_reference(self.field.reference_lat, self.field.reference_lon)
         # ToDo: implement check if robot in field
-        self.plan = self._make_plan()
-        if not self.plan:
+        self.weeding_plan = self._make_plan()
+        if not self.weeding_plan:
             self.log.error('No plan available')
             return False
 
@@ -129,7 +128,7 @@ class Weeding:
         for i, row_index in enumerate(sequence):
             splines = []
             row = rows[row_index]
-            self.ordered_rows.append(row)
+            self.sorted_weeding_rows.append(row)
             row_points = row.points(reference).copy()
             switch_first_row = False
             if i == 0:
@@ -155,17 +154,14 @@ class Weeding:
 
     async def _weeding(self):
         self.log.info('Starting driving...')
-        self.system.plant_locator.pause()
-        self.system.plant_provider.clear()
-        # if not self.system.is_real:
-        #     self.create_simulated_plants()
-        self.system.plant_locator.resume()
         await rosys.sleep(0.5)
         try:
-            if self.plan:
+            if self.weeding_plan:
                 await self._weed_with_plan()
+                self.log.info('Weeding with plan completed')
             else:
                 await self._weed_planless()
+                self.log.info('Planless weeding completed')
 
         except WorkflowException as e:
             self.log.error(f'WorkflowException: {e}')
@@ -175,23 +171,28 @@ class Weeding:
     async def _drive_to_start(self):
         self.log.info('Driving to start...')
         start_pose = self.system.odometer.prediction
-        end_pose = Pose(x=self.plan[0][0].spline.start.x, y=self.plan[0][0].spline.start.y,
-                        yaw=self.plan[0][0].spline.start.direction(self.plan[0][0].spline.end))
+        end_pose = Pose(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y,
+                        yaw=self.weeding_plan[0][0].spline.start.direction(self.weeding_plan[0][0].spline.end))
         start_spline = Spline.from_poses(start_pose, end_pose)
         await self.system.driver.drive_spline(start_spline)
 
     async def _weed_with_plan(self):
         await self._drive_to_start()
-        for i, path in enumerate(self.plan):
-            self.current_row = self.ordered_rows[i]
+        for i, path in enumerate(self.weeding_plan):
+            self.current_row = self.sorted_weeding_rows[i]
+            self.system.plant_locator.pause()
+            self.system.plant_provider.clear()
+            await self.system.puncher.clear_view()
+            await self.system.field_friend.flashlight.turn_on()
+            await rosys.sleep(3)
+            self.system.plant_locator.resume()
+            await rosys.sleep(0.5)
             for j, segment in enumerate(path):
                 self.current_segment = segment
-                self.log.info(f'Driving row {i + 1}/{len(self.plan)} and segment {j + 1}/{len(path)}...')
+                self.log.info(f'Driving row {i + 1}/{len(self.weeding_plan)} and segment {j + 1}/{len(path)}...')
                 self.row_segment_completed = False
-                # counter = 0  # for simulation
-                await self.system.puncher.clear_view()
-                await self.system.field_friend.flashlight.turn_on()
-                await rosys.sleep(3)
+                if not self.system.is_real:
+                    self._create_simulated_plants()
                 while not self.row_segment_completed:
                     self.log.info('while not row completed...')
                     await rosys.automation.parallelize(
@@ -205,15 +206,38 @@ class Weeding:
                         self.crops_to_handle = {}
                         self.weeds_to_handle = {}
 
-                await self.system.field_friend.flashlight.turn_off()
-                if i < len(self.plan) - 1:
-                    self.log.info('Driving to next row...')
-                    turn_path = self._generate_turn_path(self.current_segment.spline, self.plan[i + 1][0].spline)
-                    await self.system.driver.drive_path(turn_path)
+            await self.system.field_friend.flashlight.turn_off()
+            if i < len(self.weeding_plan) - 1:
+                self.log.info('Driving to next row...')
+                turn_path = self._generate_turn_path(self.current_segment.spline, self.weeding_plan[i + 1][0].spline)
+                await self.system.driver.drive_path(turn_path)
 
     async def _weed_planless(self):
-        pass
-        # ToDo: implement planless weeding
+        already_explored = False
+        while True:
+            self.system.plant_locator.pause()
+            self.system.plant_provider.clear()
+            if not self.system.is_real:
+                self._create_simulated_plants()
+            await self.system.puncher.clear_view()
+            await self.system.field_friend.flashlight.turn_on()
+            await rosys.sleep(3)
+            self.system.plant_locator.resume()
+            await rosys.sleep(0.5)
+            self._get_upcoming_crops()
+            while self.crops_to_handle or self.weeds_to_handle:
+                await self._handle_plants()
+                already_explored = False
+                await rosys.sleep(0.2)
+                self._get_upcoming_crops()
+            if not self.crops_to_handle and not already_explored:
+                self.log.info('No crops found, advancing a bit to ensure there are really no more crops')
+                target = self.system.odometer.prediction.transform(Point(x=0.15, y=0))
+                await self.system.driver.drive_to(target)
+                already_explored = True
+            else:
+                self.log.info('No more crops found')
+                break
 
     async def _drive_segment(self):
         self.log.info('Driving segment...')
@@ -237,7 +261,7 @@ class Weeding:
             # Correctly filter to get upcoming crops based on their .x position
             upcoming_crop_positions = {
                 c: pos for c, pos in relative_crop_positions.items()
-                if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS > pos.x and pos.x <= self.current_segment.end.x + 0.02
+                if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS > pos.x and pos.x <= self.current_segment.spline.end.x + 0.02
             }
         else:
             upcoming_crop_positions = {
@@ -258,7 +282,7 @@ class Weeding:
             # Filter to get upcoming weeds based on their .x position
             upcoming_weed_positions = {
                 w: pos for w, pos in relative_weed_positions.items()
-                if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS > pos.x and pos.x <= self.current_segment.end.x
+                if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS > pos.x and pos.x <= self.current_segment.spline.end.x
             }
         else:
             upcoming_weed_positions = {
@@ -335,5 +359,15 @@ class Weeding:
             if c.position.distance(crop.position) < 0.02 and c.type == crop.type and c.confidence < crop.confidence:
                 c.position = crop.position
                 return
-        if crop.confidence > 0.9:
+        if crop.confidence >= 0.9:
             self.current_row.crops.append(crop)
+
+    def _create_simulated_plants(self):
+        for i in range(1, 8):
+            self.system.plant_provider.add_crop(Plant(
+                id=str(i),
+                type='coin_with_hole',
+                position=Point(x=0.1 * i, y=pow(i*0.1, 5)),
+                detection_time=rosys.time(),
+                confidence=0.9,
+            ))
