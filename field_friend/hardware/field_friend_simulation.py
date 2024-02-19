@@ -19,6 +19,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         if version not in fieldfriend_configurations:
             raise ValueError(f'Unknown FieldFriend version: {version}')
         config = fieldfriend_configurations[version]
+        self.tool = config['params']['tool']
         wheels = rosys.hardware.WheelsSimulation()
         if config['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()
