@@ -186,6 +186,10 @@ class field_planner:
                             ui.button(icon='add', on_click=lambda field=self.field_provider.active_field: self.add_row(field)) \
                                 .props('color=primary outline').style("width: 100%")
 
+                        with ui.row().classes('items-center mt-3').style("width: 100%"):
+                            ui.button(
+                                "sort rows", on_click=lambda field=self.field_provider.active_field: self.field_provider.sort_rows(field))
+
     @ui.refreshable
     def show_object_settings(self) -> None:
         with ui.card().style('width: 24%; max-height: 100%; height: 100%;'):
