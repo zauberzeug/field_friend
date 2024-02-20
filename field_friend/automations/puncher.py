@@ -54,17 +54,21 @@ class Puncher:
         world_target = self.driver.odometer.prediction.transform(local_target)
         await self.driver.drive_to(world_target)
 
-    async def punch(self, y: float, depth: float = 0.01, angle: float = 180) -> None:
+    async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180) -> None:
+        self.log.info(f'Punching at {y} with depth {depth}...')
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
+            self.log.warning('no y or z axis')
             return
         try:
             if not self.field_friend.y_axis.is_referenced or not self.field_friend.z_axis.z_is_referenced:
                 rosys.notify('axis are not referenced, homing!', type='info')
+                self.log.info('axis are not referenced, homing!')
                 success = await self.try_home()
                 if not success:
                     rosys.notify('homing failed!', type='negative')
-                    return
+                    self.log.error('homing failed!')
+                    raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
             if isinstance(self.field_friend.y_axis, ChainAxis):
                 if not self.field_friend.y_axis.MIN_POSITION+self.field_friend.y_axis.WORK_OFFSET <= y <= self.field_friend.y_axis.MAX_POSITION-self.field_friend.y_axis.WORK_OFFSET:
