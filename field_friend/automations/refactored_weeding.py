@@ -36,8 +36,8 @@ class Weeding:
         self.current_row: Optional[Row] = None
         self.current_segment: Optional[PathSegment] = None
         self.row_segment_completed: bool = False
-        self.crops_to_handle: dict[Plant, Point] = {}
-        self.weeds_to_handle: dict[Plant, Point] = {}
+        self.crops_to_handle: dict[str, Point] = {}
+        self.weeds_to_handle: dict[str, Point] = {}
 
     async def start(self):
         self.log.info('starting weeding...')
@@ -224,12 +224,12 @@ class Weeding:
             await rosys.sleep(3)
             self.system.plant_locator.resume()
             await rosys.sleep(0.5)
-            self._get_upcoming_crops()
+            await self._get_upcoming_crops()
             while self.crops_to_handle or self.weeds_to_handle:
                 await self._handle_plants()
                 already_explored = False
                 await rosys.sleep(0.2)
-                self._get_upcoming_crops()
+                await self._get_upcoming_crops()
             if not self.crops_to_handle and not already_explored:
                 self.log.info('No crops found, advancing a bit to ensure there are really no more crops')
                 target = self.system.odometer.prediction.transform(Point(x=0.15, y=0))
@@ -254,11 +254,11 @@ class Weeding:
 
     async def _get_upcoming_crops(self):
         relative_crop_positions = {
-            c: self.system.odometer.prediction.relative_point(c.position)
+            c.id: self.system.odometer.prediction.relative_point(c.position)
             for c in self.system.plant_provider.crops
         }
         if self.current_segment:
-            # Correctly filter to get upcoming crops based on their .x position
+            # Correctly filter to get upcoming crops based on their x position
             upcoming_crop_positions = {
                 c: pos for c, pos in relative_crop_positions.items()
                 if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS > pos.x and pos.x <= self.current_segment.spline.end.x + 0.02
@@ -275,7 +275,7 @@ class Weeding:
         self.crops_to_handle = sorted_crops
 
         relative_weed_positions = {
-            w: self.system.odometer.prediction.relative_point(w.position)
+            w.id: self.system.odometer.prediction.relative_point(w.position)
             for w in self.system.plant_provider.weeds
         }
         if self.current_segment:
@@ -327,19 +327,22 @@ class Weeding:
     async def _tornado_workflow(self) -> None:
         self.log.info('Starting Tornado Workflow')
         while self.crops_to_handle:
+            self.log.info(f'Handling {self.crops_to_handle} crops...')
             try:
                 closest_crop_position = list(self.crops_to_handle.values())[0]
+                self.log.info(f'Closest crop position: {closest_crop_position}')
                 if closest_crop_position.x < 0.05:
                     # do not steer while advancing on a crop
                     target = self.system.odometer.prediction.transform(Point(x=closest_crop_position.x, y=0))
                     self.log.info('target next crop')
                     await self.system.driver.drive_to(target)
-                    await self.system.plant_locator.pause()
+                    self.log.info(f'Punching with {self.system.puncher} at {closest_crop_position.y}')
                     await self.system.puncher.punch(closest_crop_position.y, angle=self.tornado_angle)
                     await self._safe_crop_to_row(list(self.crops_to_handle.keys())[0])
+                    self.system.plant_locator.resume()
                 else:
                     self.log.info('follow line of crops')
-                    farthest_crop = list(self.crops_to_handle.keys())[-1]
+                    farthest_crop = list(self.crops_to_handle.values())[-1]
                     upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
                     yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
                     # only apply minimal yaw corrections to avoid oversteering
@@ -351,8 +354,12 @@ class Weeding:
             except Exception as e:
                 raise WorkflowException(f'Error while tornado Workflow: {e}') from e
 
-    async def _safe_crop_to_row(self, crop: Plant) -> None:
+    async def _safe_crop_to_row(self, crop_id: str) -> None:
         if self.current_row is None:
+            return
+        crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
+        if crop is None:
+            self.log.error(f'Crop with id {crop_id} not found')
             return
         self.log.info('Saving crop to row')
         for c in self.current_row.crops:
@@ -363,9 +370,10 @@ class Weeding:
             self.current_row.crops.append(crop)
 
     def _create_simulated_plants(self):
+        self.log.info('Creating simulated plants...')
         for i in range(1, 8):
             self.system.plant_provider.add_crop(Plant(
-                id=str(i),
+                id=f'simulated_crop_{i}',
                 type='coin_with_hole',
                 position=Point(x=0.1 * i, y=pow(i*0.1, 5)),
                 detection_time=rosys.time(),
