@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Dict, List, Optional, Union
 
 import numpy as np
 import rosys
@@ -60,10 +59,7 @@ class System:
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
 
-        self.demo_weeding = DemoWeeding(self.field_friend, self.driver, self.detector,
-                                        self.plant_provider, self.puncher, self.plant_locator)
         self.weeding = Weeding(self)
-        self.weeding_new = WeedingNew(self)
         self.coin_collecting = CoinCollecting(self)
         self.path_provider = PathProvider()
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
@@ -85,14 +81,13 @@ class System:
         self.mowing = Mowing(self.field_friend, self.field_provider, driver=self.driver,
                              path_planner=self.path_planner, gnss=self.gnss, robot_width=width)
 
-        self.automations = {'demo_weeding': self.demo_weeding.start,
-                            'mowing': self.mowing.start,
-                            'collecting': self.coin_collecting.start,
-                            'weeding': self.weeding.start,
-                            'weeding_new': self.weeding_new.start
-                            }
+        self.automations = {
+            'weeding': self.weeding.start,
+            'mowing': self.mowing.start,
+            'collecting (demo)': self.coin_collecting.start,
+        }
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
-                                                    default_automation=self.coin_collecting.start)
+                                                    default_automation=self.weeding.start)
         if self.is_real and self.field_friend.battery_control:
             self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
 
