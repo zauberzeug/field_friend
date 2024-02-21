@@ -17,7 +17,7 @@ class CoinCollecting():
 
     def __init__(self, system: 'System') -> None:
         super().__init__()
-        self.log = logging.getLogger('uckerbot.coin_collecting')
+        self.log = logging.getLogger('field_friend.coin_collecting')
         self.system = system
         self.work_x: float = 0.0
         self.front_x: float = 0.18
@@ -50,6 +50,7 @@ class CoinCollecting():
 
     async def _weeding(self) -> None:
         rosys.notify('Weeding started', 'positive')
+        self.log.info('Coin collecting started')
         already_explored = False
         try:
             while True:
@@ -58,7 +59,7 @@ class CoinCollecting():
                 if not self.system.is_real:
                     self.create_simulated_plants()
                 self.system.plant_locator.resume()
-                await rosys.sleep(0.5)
+                await rosys.sleep(10)
                 while upcoming_crop_positions := self.get_upcoming_crops():
                     try:
                         already_explored = False
@@ -86,7 +87,8 @@ class CoinCollecting():
                         self.log.exception('error while advancing on crop')
                         break
                 self.log.info('returning to start position')
-                await self.system.driver.drive_to(Point(x=0, y=0), backward=True)
+                if self.system.odometer.prediction.point.distance(Pointx=0, y=0) > 0.1:
+                    await self.system.driver.drive_to(Point(x=0, y=0), backward=True)
                 if not self.get_upcoming_crops() and not already_explored:
                     self.log.info('no crops found, advancing a bit to ensure there are really no more crops')
                     target = self.system.odometer.prediction.transform(Point(x=0.05, y=0))
