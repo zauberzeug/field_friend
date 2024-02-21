@@ -55,3 +55,27 @@ class FieldFriend(rosys.hardware.Robot):
             await self.y_axis.stop()
         if self.z_axis:
             await self.z_axis.stop()
+
+    def can_reach(self, local_point: rosys.geometry.Point, second_tool: bool = False) -> bool:
+        """Check if the given point is reachable by the tool.
+
+        The point is given in local coordinates, i.e. the origin is the center of the tool.
+        """
+        if self.version in ['ff3']:
+            return self.WORK_X - self.DRILL_RADIUS <= local_point.x <= self.WORK_X + self.DRILL_RADIUS \
+                and self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
+        elif self.version in ['u2', 'u3']:
+            if not second_tool:
+                work_x = self.WORK_X_CHOP
+                tool_radius = self.CHOP_RADIUS
+                return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
+                    and self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
+            else:
+                work_x = self.WORK_X_DRILL
+                tool_radius = self.DRILL_RADIUS
+                return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
+                    and self.y_axis.MIN_POSITION+self.y_axis.WORK_OFFSET <= local_point.y <= self.y_axis.MAX_POSITION-self.y_axis.WORK_OFFSET
+        elif self.version in ['u4']:
+            return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
+        else:
+            raise NotImplementedError(f'Version {self.version} not implemented')
