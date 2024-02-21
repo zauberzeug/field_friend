@@ -113,7 +113,7 @@ class Puncher:
             return
         try:
             await self.drive_to_punch(x)
-            await self.punch(y, depth, angle=angle)
+            await self.punch(y, depth=depth, angle=angle)
             # await self.clear_view()
         except Exception as e:
             raise Exception('drive and punch failed') from e
@@ -145,7 +145,7 @@ class Puncher:
             await self.field_friend.z_axis.turn_by(current_angle-angle)
             await rosys.sleep(3)
             current_angle = self.field_friend.z_axis.position_turn
-            await self.field_friend.z_axis.turn_by(current_angle+560)
+            await self.field_friend.z_axis.turn_by(current_angle+700)
             await rosys.sleep(3)
 
             await self.field_friend.z_axis.return_to_reference()
