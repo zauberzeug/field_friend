@@ -14,11 +14,12 @@ def startup() -> None:
 
     @ui.page('/')
     def page(dev: bool = False) -> None:
+        page_height = '70vh' if dev else 'calc(100vh - 150px)'
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
         interface.system_bar()
-        with ui.row().style('max-height:calc(100vh - 125px); height:calc(100vh - 150px); width: calc(100vw - 2rem); flex-wrap: nowrap'):
+        with ui.row().style(f'height:{page_height}; width: calc(100vw - 2rem); flex-wrap: nowrap;'):
             with ui.splitter(horizontal=False, reverse=False, value=35, limits=(10, 50)).classes('w-full h-full') as splitter:
                 with splitter.before:
                     with ui.column().classes('h-full p-2').style('width: 100%;'):
@@ -39,10 +40,17 @@ def startup() -> None:
                                         interface.robot_scene(system)
                 with splitter.separator:
                     ui.button(icon='drag_indicator').props('round')
-            if dev:
-                with ui.row().classes('items-stretch justify-items-stretch'):
-                    interface.development(system.field_friend)
-                    interface.hardware_control(system.field_friend, system.automator, system.puncher)
+        if dev:
+            # TODO das als function nach unten damit es hier und unter /field aufgerufen werden kann
+            with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
+                with ui.card().style('background-color: #3E63A6; width: 100%;'):
+                    with ui.row().style('width: 100%;'):
+                        with ui.column():
+                            ui.label("Development Tools").style('font-size: 1.5rem; color: white;')
+                            interface.development(system.field_friend)
+                            interface.hardware_control(system.field_friend, system.automator, system.puncher)
+                        with ui.card().style('width: 300px; height: 70vh; background-color: #3E63A6'):
+                            interface.status_dev_page(system.field_friend, system.gnss, system.odometer)
 
     @ui.page('/dev')
     def dev_page():

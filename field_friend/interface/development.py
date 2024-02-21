@@ -7,7 +7,7 @@ from ..hardware import FieldFriend, FieldFriendHardware
 
 
 def development(field_friend: FieldFriend) -> None:
-    with ui.card():
+    with ui.card().style('background-color: #3E63A6; color: white;'):
         if isinstance(field_friend, rosys.hardware.RobotHardware):
             with ui.row():
                 with ui.column():
