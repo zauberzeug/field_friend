@@ -3,7 +3,7 @@ from datetime import timedelta
 import psutil
 import rosys
 from nicegui import ui
-
+import numpy as np
 from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, Tornado, YAxis,
                         YAxisTornado, ZAxis, ZAxisV2)
 from ..navigation import Gnss
@@ -128,9 +128,6 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             ui.markdown('**imu:**').style('color: #6E93D6')
             imu_label = ui.label()
 
-        with ui.row():
-            quat_label = ui.label()
-
         def update_status() -> None:
             bms_flags = [
                 f'{robot.bms.state.short_string}',
@@ -234,9 +231,8 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             heading_label.text = f'{gnss.record.heading:.2f}° ' + direction_flag
             rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'
             odometry_label.text = str(odometer.prediction)
-            imu_label.text = ('y:'+str(round(robot.imu.yaw, 3)) + '°, p:' +
-                              str(round(robot.imu.pitch, 3)) + '°, r:' + str(round(robot.imu.roll, 3))+'°')
-            quat_label.text = f'q:{robot.imu.positional_quaternion}'
+            imu_label.text = ('y:'+str(round(np.degrees(robot.imu.yaw), 3)) + '°, p:' +
+                              str(round(np.degrees(robot.imu.pitch), 3)) + '°, r:' + str(round(np.degrees(robot.imu.roll), 3))+'°')
 
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer

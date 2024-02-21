@@ -241,7 +241,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         if 'imu' in self.config:
             imu = rosys.hardware.ImuHardware(robot_brain=robot_brain,
-                                             name=self.config['imu']['name'], offset_quaternion=Quaternion(self.config['imu']['quaternion']))
+                                             name=self.config['imu']['name'],offset_rotation = self.config['imu']['rotation'])
         else:
             imu = None
 

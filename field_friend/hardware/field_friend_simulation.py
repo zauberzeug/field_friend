@@ -47,7 +47,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             flashlight = None
 
-        imu = rosys.hardware.ImuSimulation(offset_quaternion=Quaternion(1, 0, 0, 0))
+        imu = rosys.hardware.ImuSimulation(offset_rotation=rosys.geometry.Rotation.zero)
         estop = rosys.hardware.EStopSimulation()
         if 'bumper' in config:
             bumper = rosys.hardware.BumperSimulation(estop=estop)

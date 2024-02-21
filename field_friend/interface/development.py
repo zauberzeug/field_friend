@@ -19,11 +19,9 @@ def development(field_friend: FieldFriend) -> None:
         else:
             rosys.simulation_ui()
             with ui.card():
-                w = ui.number(label='Quaternion w', value='0.0171122', step=0.01)
-                i = ui.number(label='Quaternion i', value='0.7635265', step=0.01)
-                j = ui.number(label='Quaternion j', value='-0.2304562', step=0.01)
-                k = ui.number(label='Quaternion k', value='0.6030128', step=0.01)
-                # field_friend.imu.set_quaternion(Quaternion(w.value, i.value, j.value, k.value))
-                ui.button(text='set IMU', on_click=field_friend.imu.set_quaternion(
-                    Quaternion(w.value, i.value, j.value, k.value)))
+                r = ui.number(label='roll', step=1)
+                p = ui.number(label='pitch', step=1)
+                y = ui.number(label='yaw', step=1)
+
+                ui.button(text='set IMU', on_click=field_friend.imu.simulate_measurement(rosys.geometry.Rotation.from_euler(roll=r,pitch=p,yaw=y)))
                 ui.button(text='imu emit', on_click=field_friend.imu.emit_measurement())
