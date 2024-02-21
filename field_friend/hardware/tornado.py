@@ -180,8 +180,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             f'{name}_ref_gear.level',
             f'{name}_ref_t.level',
             f'{name}_ref_b.level',
-            f'{name}_z.position',
-            f'{name}_turn.position',
+            f'{name}_z.position:3',
+            f'{name}_turn.position:3',
         ]
         super().__init__(
             min_position=min_position,
