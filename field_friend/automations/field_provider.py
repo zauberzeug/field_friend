@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Literal, Optional, TypedDict, Union, List
-from shapely.geometry import Polygon
+from typing import Any, List, Literal, Optional, TypedDict, Union
+
 import rosys
 from rosys.geometry import Point
+from shapely.geometry import Polygon
 
 from field_friend.navigation.point_transformation import wgs84_to_cartesian
 
@@ -16,7 +17,6 @@ class FieldObstacle:
     name: str
     points_wgs84: list[list] = field(default_factory=list)
 
-    @lru_cache(maxsize=None)
     def points(self, reference_point: list) -> list[Point]:
         if len(self.points_wgs84) > 0:
             cartesian_points = []
@@ -36,7 +36,6 @@ class Row:
     reverse: bool = False
     crops: list[Plant] = field(default_factory=list)
 
-    @lru_cache(maxsize=None)
     def points(self, reference_point: list) -> list[Point]:
         if len(self.points_wgs84) > 0:
             cartesian_points = []
@@ -135,9 +134,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def set_reference(self, field: Field, point: list) -> None:
         if field.reference_lat is None:
-            point[0]
+            field.reference_lat = point[0]
         if field.reference_lon is None:
-            point[1]
+            field.reference_lon = point[1]
+        self.invalidate()
 
     def add_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         field.obstacles.append(obstacle)
