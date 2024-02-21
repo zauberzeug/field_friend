@@ -86,7 +86,7 @@ class Puncher:
                 await self.field_friend.z_axis.return_to_reference()
             self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
         except Exception as e:
-            raise PuncherException('punching failed') from e
+            raise PuncherException(f'punching failed because: {e}') from e
         finally:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()
@@ -137,7 +137,7 @@ class Puncher:
                 success = await self.try_home()
                 if not success:
                     rosys.notify('homing failed!', type='negative')
-                    return
+                    raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
             await self.field_friend.z_axis.move_down_until_reference()
 
@@ -151,9 +151,9 @@ class Puncher:
             await self.field_friend.z_axis.return_to_reference()
             await rosys.sleep(0.5)
             if not await self.field_friend.z_axis.try_reference_turn():
-                raise Exception('tornado reference failed')
+                raise PuncherException('tornado reference failed')
         except Exception as e:
-            raise Exception('punching failed') from e
+            raise PuncherException(f'tornado drill failed because of: {e}') from e
         finally:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()
