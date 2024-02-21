@@ -6,6 +6,9 @@ import rosys
 from nicegui import events, ui
 
 from .field_friend_object import field_friend_object
+from .field_object import field_object
+from .plant_object import plant_objects
+from .visualizer_object import visualizer_object
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -23,6 +26,11 @@ class robot_scene:
             with ui.scene(200, 200, on_click=self.handle_click).classes('w-full') as self.scene:
                 field_friend_object(self.system.odometer, self.system.usb_camera_provider, self.system.field_friend)
                 rosys.driving.driver_object(self.system.driver)
+                plant_objects(self.system.plant_provider, self.system.big_weed_category_names +
+                              self.system.small_weed_category_names)
+                visualizer_object(self.system.automator, self.system.path_provider,
+                                  self.system.mowing, self.system.weeding)
+                field_object(self.system.field_provider)
                 self.scene.move_camera(-0.5, -1, 2)
 
     def handle_click(self, event: events.SceneClickEventArguments) -> None:

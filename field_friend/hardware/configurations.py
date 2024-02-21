@@ -7,6 +7,7 @@ fieldfriend_configurations = {
             'wheel_distance': 0.47,
             'work_x': 0.07,
             'drill_radius': 0.025,
+            'tool': 'none',
         },
         'robot_brain': {
             'flash_params': ['nand'],
@@ -81,6 +82,7 @@ fieldfriend_configurations = {
             'work_x_drill': 0.1675,
             'drill_radius': 0.025,
             'chop_radius': 0.07,
+            'tool': 'dual_mechanism',
         },
         'robot_brain': {
             'flash_params': ['nand']
@@ -177,6 +179,7 @@ fieldfriend_configurations = {
             'work_x_drill': 0.061,
             'drill_radius': 0.025,
             'chop_radius': 0.07,
+            'tool': 'dual_mechanism',
         },
         'robot_brain': {
             'flash_params': ['orin']
@@ -273,6 +276,7 @@ fieldfriend_configurations = {
             'wheel_distance': 0.47,
             'work_x': 0.0,
             'drill_radius': 0.025,
+            'tool': 'tornado',
         },
         'robot_brain': {
             'flash_params': ['orin']
@@ -390,6 +394,7 @@ fieldfriend_configurations = {
             'wheel_distance': 0.47,
             'work_x': 0.118,
             'drill_radius': 0.025,
+            'tool': 'none',
         },
         'robot_brain': {
             'flash_params': [],
@@ -481,6 +486,7 @@ fieldfriend_configurations = {
             'wheel_distance': 0.47,
             'work_x': 0.07,
             'drill_radius': 0.025,
+            'tool': 'none',
         },
         'robot_brain': {
             'flash_params': ['orin', 'v05'],

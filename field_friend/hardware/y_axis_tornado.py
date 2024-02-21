@@ -237,6 +237,7 @@ class YAxisSimulationTornado(YAxisTornado, rosys.hardware.ModuleSimulation):
             await super().move_to(position, speed)
         except RuntimeError as e:
             rosys.notify(e, type='negative')
+            self.log.error(f'could not move yaxis to {position} because of {e}')
             return
         self.target_steps = self.compute_steps(position)
         self.speed = speed if self.target_steps > self.steps else -speed

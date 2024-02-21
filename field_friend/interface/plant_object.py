@@ -23,9 +23,8 @@ class plant_objects(Group):
         for id, obj in rendered.items():
             if id not in in_world:
                 obj.delete()
-        with self.scene:
-            for id, plant in in_world.items():
-                if id not in rendered:
-                    Sphere(0.02).with_name(f'plant_{plant.type}:{id}') \
-                        .material('#ef1208' if plant.type in self.weed_category_names else '#11ede3') \
-                        .move(plant.position.x, plant.position.y, 0.02)
+        for id, plant in in_world.items():
+            if id not in rendered:
+                Sphere(0.02).with_name(f'plant_{plant.type}:{id}') \
+                    .material('#ef1208' if plant.type in self.weed_category_names else '#11ede3') \
+                    .move(plant.position.x, plant.position.y, 0.02)

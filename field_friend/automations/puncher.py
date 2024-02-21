@@ -7,6 +7,10 @@ from rosys.geometry import Point
 from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado
 
 
+class PuncherException(Exception):
+    pass
+
+
 class Puncher:
     def __init__(self, field_friend: FieldFriend, driver: Driver) -> None:
         self.field_friend = field_friend
@@ -28,7 +32,7 @@ class Puncher:
                 return False
             return True
         except Exception as e:
-            raise Exception('homing failed') from e
+            raise PuncherException('homing failed') from e
         finally:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()
@@ -44,33 +48,36 @@ class Puncher:
             work_x = self.field_friend.WORK_X_DRILL
         if local_target_x < work_x:
             self.log.info(f'Target: {local_target_x} is behind')
-            raise Exception('Target is behind')
+            raise PuncherException('target is behind')
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
         world_target = self.driver.odometer.prediction.transform(local_target)
         await self.driver.drive_to(world_target)
 
-    async def punch(self, y: float, depth: float = 0.01, angle: float = 180) -> None:
+    async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180) -> None:
+        self.log.info(f'Punching at {y} with depth {depth}...')
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
+            self.log.warning('no y or z axis')
             return
         try:
             if not self.field_friend.y_axis.is_referenced or not self.field_friend.z_axis.z_is_referenced:
                 rosys.notify('axis are not referenced, homing!', type='info')
+                self.log.info('axis are not referenced, homing!')
                 success = await self.try_home()
                 if not success:
                     rosys.notify('homing failed!', type='negative')
-                    return
+                    self.log.error('homing failed!')
+                    raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
             if isinstance(self.field_friend.y_axis, ChainAxis):
                 if not self.field_friend.y_axis.MIN_POSITION+self.field_friend.y_axis.WORK_OFFSET <= y <= self.field_friend.y_axis.MAX_POSITION-self.field_friend.y_axis.WORK_OFFSET:
                     rosys.notify('y position out of range', type='error')
-                    raise Exception('y position out of range')
+                    raise PuncherException('y position out of range')
             if isinstance(self.field_friend.z_axis, Tornado) and isinstance(self.field_friend.y_axis, YAxisTornado):
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='error')
-
-                    raise Exception('y position out of range')
+                    raise PuncherException('y position out of range')
                 await self.field_friend.y_axis.move_to(y)
                 await self.tornado_drill(angle=angle)
             else:
@@ -79,7 +86,7 @@ class Puncher:
                 await self.field_friend.z_axis.return_to_reference()
             self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
         except Exception as e:
-            raise Exception(f'punching failed: {e}') from e
+            raise PuncherException(f'punching failed because: {e}') from e
         finally:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()
@@ -130,7 +137,7 @@ class Puncher:
                 success = await self.try_home()
                 if not success:
                     rosys.notify('homing failed!', type='negative')
-                    return
+                    raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
             await self.field_friend.z_axis.move_down_until_reference()
 
@@ -144,9 +151,9 @@ class Puncher:
             await self.field_friend.z_axis.return_to_reference()
             await rosys.sleep(0.5)
             if not await self.field_friend.z_axis.try_reference_turn():
-                raise Exception('tornado reference failed')
+                raise PuncherException('tornado reference failed')
         except Exception as e:
-            raise Exception('punching failed') from e
+            raise PuncherException(f'tornado drill failed because of: {e}') from e
         finally:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()

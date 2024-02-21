@@ -43,7 +43,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.CHOP_RADIUS = self.config['params']['chop_radius']
         else:
             raise NotImplementedError(f'Unknown FieldFriend version: {version}')
-
+        self.tool = self.config['params']['tool']
         communication = rosys.hardware.SerialCommunication()
         robot_brain = rosys.hardware.RobotBrain(communication)
         # if communication.device_path == '/dev/ttyTHS0':
