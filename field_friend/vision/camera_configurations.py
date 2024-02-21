@@ -35,7 +35,7 @@ configurations = {
         },
         'crop': {
             'xoffset': 400,
-            'yoffset': 100,
+            'yoffset': 0,
         },
     },
     'ff3': {
