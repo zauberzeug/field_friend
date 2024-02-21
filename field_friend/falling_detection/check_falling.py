@@ -14,7 +14,7 @@ class Falling:
         self.rescue_in_progress_val = False
         self.rescue_stop = False
 
-    async def reset_emergency(self):
+    async def reset_emergency(self) -> None:
         self.has_stopped = False
         self.rescue_stop = False
         self.rescue_in_progress_val = False
