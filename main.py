@@ -67,9 +67,10 @@ def startup() -> None:
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
         interface.system_bar()
+        leaflet_map_path = interface.leaflet_map(system, False)
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                interface.operation(system)
+                interface.operation(system,leaflet_map_path)
                 interface.path_planner(system.path_provider, system.path_recorder, system.automator)
             if dev:
                 with ui.row().classes('items-stretch justify-items-stretch'):

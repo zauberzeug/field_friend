@@ -133,6 +133,10 @@ class operation:
                     'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'has_stopped', value=True)
                 ui.button('self rescue in progress').props('color=orange outline').classes(
                     'py-3 px-6 text-lg').bind_visibility(system.to_safety, 'rescueing', value=True)
+                ui.button('rescue attemt stopped, reset', on_click=system.falling_detection.reset_emergency).props('color=orange outline').classes(
+                    'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'rescue_stop',value = True)
+                ui.button('reset', on_click=system.falling_detection.reset).props('color=orange outline').classes(
+                    'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'has_stopped',value = True)
 
                 ui.space()
                 with ui.row():
