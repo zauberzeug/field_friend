@@ -53,4 +53,4 @@ class CameraConfigurator:
                 camera.rotation = self.config['rotation']
             else:
                 camera.rotation = 0
-        self.camera_provider.request_backup()
+        # self.camera_provider.request_backup()
