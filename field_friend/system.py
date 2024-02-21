@@ -87,9 +87,11 @@ class System:
             'collecting (demo)': self.coin_collecting.start,
         }
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
-                                                    default_automation=self.weeding.start)
-        if self.is_real and self.field_friend.battery_control:
-            self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
+                                                    default_automation=self.coin_collecting.start)
+        if self.is_real:
+            if self.field_friend.battery_control:
+                self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
+            rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
 
         async def stop():
             if self.automator.is_running:
