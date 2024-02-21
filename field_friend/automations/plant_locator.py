@@ -73,7 +73,7 @@ class PlantLocator:
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info('crop found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = self.camera_provider.calibration.project_from_image(image_point)
+                floor_point = camera.calibration.project_from_image(image_point)
                 if floor_point is None:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
