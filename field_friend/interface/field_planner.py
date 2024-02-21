@@ -1,15 +1,17 @@
 import json
 import logging
 import uuid
-from typing import Optional, Literal
+from typing import Literal, Optional
+
 import rosys
 from nicegui import events, ui
+
 from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
 
 from ..automations import Field, FieldObstacle, FieldProvider, Row
 from ..navigation import Gnss
-from .leaflet_map import leaflet_map
 from .geodata_picker import geodata_picker
+from .leaflet_map import leaflet_map
 from .operation import operation
 
 
@@ -308,8 +310,7 @@ class field_planner:
                     return
                 new_point = positioning
             if index == 0:
-                field.reference_lat = new_point[0]
-                field.reference_lon = new_point[1]
+                self.field_provider.set_reference(field, new_point)
             field.outline_wgs84[index] = new_point
         else:
             positioning = [self.gnss.record.latitude, self.gnss.record.longitude]
@@ -320,8 +321,8 @@ class field_planner:
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
-            if len(self.field_provider.active_field.outline_wgs84) < 1:
-                self.field_provider.set_reference(self.field_provider.active_field, new_point)
+            if len(field.outline_wgs84) < 1:
+                self.field_provider.set_reference(field, new_point)
                 self.gnss.set_reference(lat=new_point[0], lon=new_point[1])
             field.outline_wgs84.append(new_point)
         self.field_provider.invalidate()
