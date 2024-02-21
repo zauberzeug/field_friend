@@ -1,6 +1,5 @@
 import numpy as np
 import rosys
-from pyquaternion import Quaternion
 from .chain_axis import ChainAxisHardware
 from .configurations import fieldfriend_configurations
 from .double_wheels import DoubleWheelsHardware
