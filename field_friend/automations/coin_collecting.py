@@ -6,6 +6,7 @@ import rosys
 from rosys.geometry import Point
 
 from .plant_provider import Plant
+from .puncher import PuncherException
 
 if TYPE_CHECKING:
     from system import System
@@ -79,15 +80,20 @@ class CoinCollecting():
                             upcoming_world_position = self.system.odometer.prediction.transform(farthest)
                             yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
                             # only apply minimal yaw corrections to avoid oversteering
-                            yaw = self.system.odometer.prediction.yaw * 0.8 + yaw * 0.2
+                            yaw = self.system.odometer.prediction.yaw * 0.9 + yaw * 0.1
                             target = self.system.odometer.prediction.point.polar(0.03, yaw)
+                            self.log.info(f'targeting farthest crop: {farthest} with target: {target}')
                             await self.system.driver.drive_to(target)
                         await rosys.sleep(2)  # ensure we have a super accurate detection
-                    except:
-                        self.log.exception('error while advancing on crop')
+                    except PuncherException as e:
+                        self.log.error(f'PuncherException: {e}')
+                        continue
+                    except Exception as e:
+                        self.log.exception(f'error while advancing on crop: {e}')
                         break
                 self.log.info('returning to start position')
-                if self.system.odometer.prediction.point.distance(Pointx=0, y=0) > 0.1:
+                if self.system.odometer.prediction.point.distance(Point(x=0, y=0)) > 0.1:
+                    self.log.info('returning to start position')
                     await self.system.driver.drive_to(Point(x=0, y=0), backward=True)
                 if not self.get_upcoming_crops() and not already_explored:
                     self.log.info('no crops found, advancing a bit to ensure there are really no more crops')
