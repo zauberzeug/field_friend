@@ -231,8 +231,9 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             heading_label.text = f'{gnss.record.heading:.2f}° ' + direction_flag
             rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'
             odometry_label.text = str(odometer.prediction)
-            imu_label.text = ('y:'+str(round(np.degrees(robot.imu.yaw), 3)) + '°, p:' +
-                              str(round(np.degrees(robot.imu.pitch), 3)) + '°, r:' + str(round(np.degrees(robot.imu.roll), 3))+'°')
+            if robot.imu.roll is not None:
+                imu_label.text = ('y:'+str(round(np.degrees(robot.imu.yaw), 3)) + '°, p:' +
+                                  str(round(np.degrees(robot.imu.pitch), 3)) + '°, r:' + str(round(np.degrees(robot.imu.roll), 3))+'°')
 
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer
