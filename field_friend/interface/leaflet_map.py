@@ -47,6 +47,16 @@ class leaflet_map:
         else:
             self.m = ui.leaflet(center=(self.center_point[0], self.center_point[1]),
                                 zoom=13)
+
+        self.m.clear_layers()
+        self.m.tile_layer(
+            url_template=r'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            options={
+                'maxZoom': 21,
+                'attribution': '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            },
+        )
+
         self.field_layers: list[list] = []
         self.robot_marker = None
         self.drawn_marker = None
@@ -154,7 +164,7 @@ class leaflet_map:
     def update_robot_position(self) -> None:
         if self.robot_marker is None:
             self.robot_marker = self.m.marker(latlng=(self.gnss.record.latitude, self.gnss.record.longitude))
-        icon = 'L.icon({iconUrl: "assets/robot_position.svg", iconSize: [40,40], iconAnchor:[20,20]})'
+        icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
         self.robot_marker.move(self.gnss.record.latitude, self.gnss.record.longitude)
 

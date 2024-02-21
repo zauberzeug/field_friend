@@ -8,7 +8,7 @@ from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight,
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
-    with ui.card(), ui.row():
+    with ui.card().style('background-color: #3E63A6; color: white;'), ui.row():
         with ui.column().classes('items-stretch'):
             if isinstance(field_friend, FieldFriendHardware):
                 ui.markdown('**Robot Brain Control**')
@@ -143,7 +143,8 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                 if isinstance(field_friend.y_axis, ChainAxis):
                     ui.button('chop', on_click=lambda: automator.start(puncher.chop()))
                 if isinstance(field_friend.z_axis, Tornado):
-                    angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
+                    angle = ui.number('angle', value=180, format='%.0f', step=1,
+                                      min=0, max=180).style('background-color: white; padding: 0.5rem; border-radius: 5px;')
                 else:
                     depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=0.01, max=0.18)
                 with ui.row():
