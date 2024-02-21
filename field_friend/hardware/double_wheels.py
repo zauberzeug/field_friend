@@ -47,6 +47,10 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
 
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
+        if linear == 0.0:
+            linear = -0.0
+        if angular == 0.0:
+            angular = -0.0  # TODO: Temp fix
         await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
