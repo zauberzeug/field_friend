@@ -1,7 +1,6 @@
 from field_friend.hardware import FieldFriend
 import logging
 import rosys
-from rosys.geometry import Rotation
 import numpy as np
 
 
