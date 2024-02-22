@@ -33,7 +33,7 @@ class PlantLocator:
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
-        rosys.on_repeat(self._detect_plants, 0.001)  # as fast as possible, function will sleep if necessary
+        rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
 
     async def _detect_plants(self) -> None:
         if self.is_paused:
@@ -47,8 +47,8 @@ class PlantLocator:
         if camera.calibration is None:
             rosys.notify('camera has no calibration')
             raise DetectorError()
-        new_image = next((i for i in camera.images if not i.detections), None)
-        if new_image is None:
+        new_image = camera.latest_captured_image
+        if new_image is None or new_image.detections:
             await asyncio.sleep(0.01)
             return
         await self.detector.detect(new_image)
