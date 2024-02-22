@@ -34,8 +34,8 @@ configurations = {
             'auto_exposure': True,
         },
         'crop': {
-            'xoffset': 0,
-            'yoffset': 0,
+            'xoffset': 350,
+            'yoffset': 50,
         },
     },
     'ff3': {
