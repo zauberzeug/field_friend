@@ -227,13 +227,13 @@ class calibration_dialog(ui.dialog):
                 CalibrationPoint.create('h',  0.20,    0.10, 0.00),
                 CalibrationPoint.create('i',  0.20,    0.15, 0.00),
 
-                CalibrationPoint.create('j',  0.25,   -0.15, 0.00),
-                CalibrationPoint.create('k',  0.25,   -0.10, 0.00),
-                CalibrationPoint.create('l',  0.25,   -0.05, 0.00),
-                CalibrationPoint.create('m',  0.25,    0.00, 0.00),
-                CalibrationPoint.create('n',  0.25,    0.05, 0.00),
-                CalibrationPoint.create('o',  0.25,    0.10, 0.00),
-                CalibrationPoint.create('p',  0.25,    0.15, 0.00),
+                # CalibrationPoint.create('j',  0.25,   -0.15, 0.00),
+                # CalibrationPoint.create('k',  0.25,   -0.10, 0.00),
+                # CalibrationPoint.create('l',  0.25,   -0.05, 0.00),
+                # CalibrationPoint.create('m',  0.25,    0.00, 0.00),
+                # CalibrationPoint.create('n',  0.25,    0.05, 0.00),
+                # CalibrationPoint.create('o',  0.25,    0.10, 0.00),
+                # CalibrationPoint.create('p',  0.25,    0.15, 0.00),
             ]  # FOR U3
         else:
             raise ValueError(f'Unknown version: {version}')
