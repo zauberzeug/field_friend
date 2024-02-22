@@ -1,4 +1,5 @@
 
+from .automation_watcher import AutomationWatcher
 from .battery_watcher import BatteryWatcher
 from .coin_collecting import CoinCollecting
 from .coverage_planer import CoveragePlanner
