@@ -256,7 +256,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             self.status_control = None
 
-        safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels,
+        safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
                    z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
