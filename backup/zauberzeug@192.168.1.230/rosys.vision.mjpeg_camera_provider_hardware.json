@@ -1,0 +1,76 @@
+{
+    "cameras": {
+        "front": {
+            "id": "front",
+            "calibration": null,
+            "focal_length": null,
+            "name": "front",
+            "active": true,
+            "detect": false,
+            "url": "http://192.168.168.105/axis-cgi/mjpg/video.cgi?camera=3",
+            "authorized": true,
+            "color": null,
+            "resolution": {
+                "width": 704,
+                "height": 480
+            },
+            "rotation": "0",
+            "fps": null,
+            "crop": null
+        },
+        "right": {
+            "id": "right",
+            "calibration": null,
+            "focal_length": null,
+            "name": "right",
+            "active": true,
+            "detect": false,
+            "url": "http://192.168.168.105/axis-cgi/mjpg/video.cgi?camera=1",
+            "authorized": true,
+            "color": null,
+            "resolution": {
+                "width": 704,
+                "height": 480
+            },
+            "rotation": "0",
+            "fps": null,
+            "crop": null
+        },
+        "back": {
+            "id": "back",
+            "calibration": null,
+            "focal_length": null,
+            "name": "back",
+            "active": true,
+            "detect": false,
+            "url": "http://192.168.168.105/axis-cgi/mjpg/video.cgi?camera=2",
+            "authorized": true,
+            "color": null,
+            "resolution": {
+                "width": 704,
+                "height": 480
+            },
+            "rotation": "0",
+            "fps": null,
+            "crop": null
+        },
+        "left": {
+            "id": "left",
+            "calibration": null,
+            "focal_length": null,
+            "name": "left",
+            "active": true,
+            "detect": false,
+            "url": "http://192.168.168.105/axis-cgi/mjpg/video.cgi?camera=4",
+            "authorized": true,
+            "color": null,
+            "resolution": {
+                "width": 704,
+                "height": 480
+            },
+            "rotation": "0",
+            "fps": null,
+            "crop": null
+        }
+    }
+}
