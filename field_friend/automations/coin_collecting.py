@@ -57,14 +57,16 @@ class CoinCollecting():
             while True:
                 self.system.plant_locator.pause()
                 self.system.plant_provider.clear()
+                self.log.info(f'cleared crops at start {self.system.plant_provider.crops}')
                 if not self.system.is_real:
                     self.create_simulated_plants()
                 self.system.plant_locator.resume()
-                await rosys.sleep(10)
+                await rosys.sleep(2)
                 while upcoming_crop_positions := self.get_upcoming_crops():
                     try:
                         already_explored = False
                         closest = upcoming_crop_positions[0]
+                        self.log.info(f'all upcoming crops: {upcoming_crop_positions}')
                         if closest.x < 0.08:
                             # do not steer while advancing on a crop
                             target = self.system.odometer.prediction.transform(Point(x=closest.x, y=0))
@@ -81,7 +83,10 @@ class CoinCollecting():
                             upcoming_world_position = self.system.odometer.prediction.transform(farthest)
                             yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
                             # only apply minimal yaw corrections to avoid oversteering
-                            yaw = self.system.odometer.prediction.yaw * 0.9 + yaw * 0.1
+                            self.log.info(
+                                f' yaw before: {yaw} and prediction_yaw: {self.system.odometer.prediction.yaw}')
+                            yaw = self.system.odometer.prediction.yaw * 0.8 + yaw * 0.2
+                            self.log.info(f'yaw: {yaw}')
                             target = self.system.odometer.prediction.point.polar(0.03, yaw)
                             self.log.info(f'targeting farthest crop: {farthest} with target: {target}')
                             await self.system.driver.drive_to(target)
@@ -92,7 +97,6 @@ class CoinCollecting():
                     except Exception as e:
                         self.log.exception(f'error while advancing on crop: {e}')
                         break
-                self.log.info('returning to start position')
                 if self.system.odometer.prediction.point.distance(Point(x=0, y=0)) > 0.1:
                     self.log.info('returning to start position')
                     await self.system.driver.drive_to(Point(x=0, y=0), backward=True)
@@ -110,6 +114,8 @@ class CoinCollecting():
 
         param: backward: if True, crops behind the implement are returned
         """
+        for crop in self.system.plant_provider.crops:
+            self.log.info(f'crop: {crop.position} and {rosys.time() - crop.detection_time} seconds old')
         relative_crop_positions = [self.system.odometer.prediction.relative_point(c.position)
                                    for c in self.system.plant_provider.crops]
         upcoming = [c for c in relative_crop_positions if c.x >= self.work_x+0.05]
