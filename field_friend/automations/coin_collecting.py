@@ -71,8 +71,9 @@ class CoinCollecting():
                             self.log.info('target next crop')
                             await self.system.driver.drive_to(target)
                             await self._use_implement(closest)
-                            await self.system.driver.drive_to(self.system.odometer.prediction.transform(Point(x=0.03, y=0)))
+                            # await self.system.driver.drive_to(self.system.odometer.prediction.transform(Point(x=0.03, y=0)))
                             target = self.system.odometer.prediction.transform(Point(x=0.03, y=0))
+                            self.log.info(f'driving a bit forward after using implement: {target}')
                             await self.system.driver.drive_to(target)
                         else:
                             self.log.info('follow line of crops')
