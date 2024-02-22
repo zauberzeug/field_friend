@@ -45,8 +45,8 @@ class PlantProvider:
 
     def add_weed(self, weed: Plant) -> None:
         for w in self.weeds:
-            if w.position.distance(weed.position) < 0.02 and w.type == weed.type:
-                if w.confidence > weed.confidence:
+            if w.position.distance(weed.position) < 0.03 and w.type == weed.type:
+                if w.confidence >= weed.confidence:
                     return
                 w.position = weed.position
                 self.PLANTS_CHANGED.emit()
@@ -65,8 +65,8 @@ class PlantProvider:
 
     def add_crop(self, crop: Plant) -> None:
         for c in self.crops:
-            if c.position.distance(crop.position) < 0.05 and c.type == crop.type:
-                if c.confidence > crop.confidence:
+            if c.position.distance(crop.position) < 0.07 and c.type == crop.type:
+                if c.confidence >= crop.confidence:
                     return
                 c.position = crop.position
                 self.PLANTS_CHANGED.emit()
