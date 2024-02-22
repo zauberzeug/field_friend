@@ -38,6 +38,7 @@ class Falling:
                     rosys.notify('Robot exeeded roll emgergency limit, stopping', 'warning')
                     self.has_stopped = False
                     self.rescue_stop = True
+                    self.rescue_in_progress_val = False
                     await self.field_friend.estop.set_soft_estop(True)
 
             if (pitch > self.pitch_limit+5):
@@ -46,6 +47,7 @@ class Falling:
                     rosys.notify('Robot exeeded pitch emergency limit, stopping', 'warning')
                     self.has_stopped = False
                     self.rescue_stop = True
+                    self.rescue_in_progress_val = False
                     await self.field_friend.estop.set_soft_estop(True)
 
         else:
