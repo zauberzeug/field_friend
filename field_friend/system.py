@@ -4,8 +4,8 @@ import os
 import numpy as np
 import rosys
 
-from field_friend.automations import (BatteryWatcher, CoinCollecting, DemoWeeding, FieldProvider, Mowing, PathProvider,
-                                      PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding, WeedingNew)
+from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, Mowing,
+                                      PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
@@ -47,7 +47,7 @@ class System:
         self.driver.parameters.linear_speed_limit = 0.1
         self.driver.parameters.angular_speed_limit = 0.5
         self.driver.parameters.can_drive_backwards = True
-        self.driver.parameters.minimum_turning_radius = 0.2
+        self.driver.parameters.minimum_turning_radius = 0.05
         self.driver.parameters.hook_offset = 0.6
         self.driver.parameters.carrot_distance = 0.2
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
@@ -88,6 +88,8 @@ class System:
         }
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
                                                     default_automation=self.coin_collecting.start)
+        if self.field_friend.bumper is not None:
+            self.automation_watcher = AutomationWatcher(self.automator, self.odometer, self.field_friend.bumper)
         if self.is_real:
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
