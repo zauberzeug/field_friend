@@ -332,7 +332,7 @@ fieldfriend_configurations = {
         'z_axis': {
             'version': 'tornado',
             'name': 'tornado',
-            'min_position': -0.07,
+            'min_position': -0.068,
             'z_can_address': 0x500,
             'turn_can_address': 0x400,
             'm_per_tick': 0.025/12.52,
