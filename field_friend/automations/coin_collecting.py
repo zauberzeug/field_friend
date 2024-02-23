@@ -24,7 +24,7 @@ class CoinCollecting():
         self.front_x: float = 0.18
 
     async def start(self) -> None:
-        self.log.info('starting weeding')
+        self.log.info('starting coin collecting')
 
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active, aborting', 'negative')
@@ -50,7 +50,7 @@ class CoinCollecting():
         await self._weeding()
 
     async def _weeding(self) -> None:
-        rosys.notify('Weeding started', 'positive')
+        rosys.notify('Coin collecting started', 'positive')
         self.log.info('Coin collecting started')
         already_explored = False
         try:
