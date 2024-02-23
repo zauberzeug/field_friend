@@ -392,28 +392,27 @@ class Weeding:
         self.log.info('Starting Tornado Workflow..')
         try:
             closest_crop_position = list(self.crops_to_handle.values())[0]
-            if len(self.crops_to_handle) > 1:
-                second_closest_crop_position = list(self.crops_to_handle.values())[1]
-            self.log.info(f'Closest crop position: {closest_crop_position} {self.system.field_friend.WORK_X}')
+            self.log.info(f'Closest crop position: {closest_crop_position}')
             # fist check if the closest crop is in the working area
             if closest_crop_position.x < self.system.field_friend.WORK_X + 0.05:
-
+                self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
                 target = self.system.odometer.prediction.transform(Point(x=closest_crop_position.x, y=0))
-                self.log.info(f'target next crop at {closest_crop_position}')
                 await self.system.driver.drive_to(target)
                 if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position):
                     await self.system.puncher.punch(closest_crop_position.y, angle=self.tornado_angle)
-
-                distance_to_next_crop = closest_crop_position.distance(second_closest_crop_position)
-                if second_closest_crop_position and distance_to_next_crop < 0.15:
-                    # get the target of half the distance between the two crops
-                    target = self.system.odometer.prediction.transform(
-                        Point(x=closest_crop_position.x + distance_to_next_crop / 2, y=0))
-                    self.log.info(f'driving to position between two crops: {target}')
-                    await self.system.driver.drive_to(target)
-                    if not self.only_monitoring:
-                        await self.system.puncher.punch(target.y, angle=180)
+                if len(self.crops_to_handle) > 1:
+                    self.log.info('checking for second closest crop')
+                    second_closest_crop_position = list(self.crops_to_handle.values())[1]
+                    distance_to_next_crop = closest_crop_position.distance(second_closest_crop_position)
+                    if distance_to_next_crop > 0.15:
+                        # get the target of half the distance between the two crops
+                        self.log.info(f'driving to position between two crops: {target}')
+                        target = self.system.odometer.prediction.transform(
+                            Point(x=closest_crop_position.x + distance_to_next_crop / 2, y=0))
+                        await self.system.driver.drive_to(target)
+                        if not self.only_monitoring and self.system.field_friend.can_reach(target):
+                            await self.system.puncher.punch(target.y, angle=180)
                 self.system.plant_locator.resume()
             else:
                 self.log.info('follow line of crops')
