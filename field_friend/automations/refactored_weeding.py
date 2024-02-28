@@ -211,6 +211,7 @@ class Weeding:
     async def _weed_with_plan(self):
         await self._drive_to_start()
         for i, path in enumerate(self.weeding_plan):
+            self.system.driver.parameters.can_drive_backwards = False
             self.current_row = self.sorted_weeding_rows[i]
             self.system.plant_locator.pause()
             self.system.plant_provider.clear()
@@ -241,6 +242,7 @@ class Weeding:
             await self.system.field_friend.flashlight.turn_off()
             self.system.plant_locator.pause()
             if i < len(self.weeding_plan) - 1:
+                self.system.driver.parameters.can_drive_backwards = True
                 self.log.info('Driving to next row...')
                 turn_path = self.turn_paths[i]
                 await self.system.driver.drive_path(turn_path)
@@ -292,8 +294,9 @@ class Weeding:
     async def _get_upcoming_crops(self):
         relative_crop_positions = {
             c.id: self.system.odometer.prediction.relative_point(c.position)
-            for c in self.system.plant_provider.crops
+            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5
         }
+        # remove very distant crops (probably not row
         if self.current_segment:
             # Correctly filter to get upcoming crops based on their x position
             upcoming_crop_positions = {
@@ -343,9 +346,26 @@ class Weeding:
         for obstacle in self.field.obstacles:
             self.system.path_planner.obstacles[obstacle.id] = rosys.pathplanning.Obstacle(
                 id=obstacle.id, outline=obstacle.points)
+        for row in self.field.rows:
+            row_points = row.points([self.field.reference_lat, self.field.reference_lon])
+            # create a small polygon around the row to avoid the robot driving through the row
+            row_polygon = [
+                Point(x=row_points[0].x - 0.01, y=row_points[0].y - 0.01),
+                Point(x=row_points[0].x - 0.01, y=row_points[-1].y + 0.01),
+                Point(x=row_points[-1].x + 0.01, y=row_points[-1].y + 0.01),
+                Point(x=row_points[-1].x + 0.01, y=row_points[0].y - 0.01),
+            ]
+            self.system.path_planner.obstacles[f'row_{row.id}'] = rosys.pathplanning.Obstacle(
+                id=f'row_{row.id}', outline=row_polygon)
+
         area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
         self.system.path_planner.areas = {area.id: area}
         for i in range(len(self.weeding_plan) - 1):
+            # remove this rows from obstacles to allow starting in it an insert it afterwards again
+            start_row = self.sorted_weeding_rows[i]
+            end_row = self.sorted_weeding_rows[i + 1]
+            temp_removed_start_row = self.system.path_planner.obstacles.pop(f'row_{start_row.id}')
+            temp_removed_end_row = self.system.path_planner.obstacles.pop(f'row_{end_row.id}')
             start_pose = Pose(x=self.weeding_plan[i][-1].spline.end.x,
                               y=self.weeding_plan[i][-1].spline.end.y,
                               yaw=self.weeding_plan[i][-1].spline.start.direction(self.weeding_plan[i][-1].spline.end))
@@ -358,6 +378,8 @@ class Weeding:
             else:
                 self.log.error(f'No turn path found from row {i} to row {i + 1}')
                 return []
+            self.system.path_planner.obstacles[f'row_{start_row.id}'] = temp_removed_start_row
+            self.system.path_planner.obstacles[f'row_{end_row.id}'] = temp_removed_end_row
         return turn_paths
 
     # def _generate_turn_path(self, start_spline: Spline, end_spline: Spline) -> list[PathSegment]:
@@ -431,7 +453,8 @@ class Weeding:
                 # only apply minimal yaw corrections to avoid oversteering
                 yaw = self.system.odometer.prediction.yaw * 0.8 + yaw * 0.2
                 target = self.system.odometer.prediction.point.polar(0.03, yaw)
-                self.log.info(f'target next crop at {target}')
+
+                self.log.info(f'current position: {self.system.odometer.prediction} target next crop at {target}')
                 await self.system.driver.drive_to(target)
             await rosys.sleep(0.5)
             self.log.info('workflow completed')
@@ -447,7 +470,7 @@ class Weeding:
             self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
             return
         for c in self.current_row.crops:
-            if c.position.distance(crop.position) < 0.05 and c.type == crop.type:
+            if c.position.distance(crop.position) < 0.08 and c.type == crop.type:
                 if c.confidence >= crop.confidence:
                     return
                 self.log.info('Updating crop with higher confidence')

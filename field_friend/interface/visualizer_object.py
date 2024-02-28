@@ -33,7 +33,7 @@ class visualizer_object(Object3D):
                 [segment.spline.control1.x, segment.spline.control1.y, height],
                 [segment.spline.control2.x, segment.spline.control2.y, height],
                 [segment.spline.end.x, segment.spline.end.y, height],
-            ).material('#ff8800').with_name('path')
+            ).material(f'#{int(0xffffff * segment.spline.start.x / 10):06x}').with_name('path')
 
     def clear(self) -> None:
         self.update_path([])
