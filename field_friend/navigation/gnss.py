@@ -236,7 +236,6 @@ class GnssSimulation(Gnss):
             self.reference_lon = 7.434212
         pose = deepcopy(self.pose_provider.pose)
         pose.time = rosys.time()
-        await rosys.sleep(0.5)
         current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
 
         self.record.timestamp = pose.time
