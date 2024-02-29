@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import rosys
 from rosys.geometry import Point
+from rosys.helpers import eliminate_2pi
 
 from .plant_provider import Plant
 from .puncher import PuncherException
@@ -83,12 +84,8 @@ class CoinCollecting():
                             upcoming_world_position = self.system.odometer.prediction.transform(farthest)
                             yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
                             # only apply minimal yaw corrections to avoid oversteering
-                            self.log.info(
-                                f' yaw before: {yaw} and prediction_yaw: {self.system.odometer.prediction.yaw}')
-                            yaw = self.system.odometer.prediction.yaw * 0.8 + yaw * 0.2
-                            self.log.info(f'yaw: {yaw}')
+                            yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.8 + eliminate_2pi(yaw) * 0.2
                             target = self.system.odometer.prediction.point.polar(0.03, yaw)
-                            self.log.info(f'targeting farthest crop: {farthest} with target: {target}')
                             await self.system.driver.drive_to(target)
                         await rosys.sleep(2)  # ensure we have a super accurate detection
                     except PuncherException as e:

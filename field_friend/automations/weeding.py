@@ -5,6 +5,7 @@ import numpy as np
 import rosys
 from rosys.driving import PathSegment
 from rosys.geometry import Point, Pose, Spline
+from rosys.helpers import eliminate_2pi
 
 from ..hardware import ChainAxis
 from .field_provider import Field, Row
@@ -294,6 +295,7 @@ class Weeding:
                 self.log.info('Driving to next row...')
                 turn_path = self.turn_paths[i]
                 await self.system.driver.drive_path(turn_path)
+                await rosys.sleep(1)
 
     async def _weed_planless(self):
         already_explored = False
@@ -430,10 +432,10 @@ class Weeding:
                 upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
                 yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
                 # only apply minimal yaw corrections to avoid oversteering
-                yaw = self.system.odometer.prediction.yaw * 0.8 + yaw * 0.2
-                target = self.system.odometer.prediction.point.polar(0.05, yaw)
+                yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.8 + eliminate_2pi(yaw) * 0.2
+                target = self.system.odometer.prediction.point.polar(0.04, yaw)
 
-                self.log.info(f'current position: {self.system.odometer.prediction} target next crop at {target}')
+                self.log.info(f'current world position: {self.system.odometer.prediction} target next crop at {target}')
                 await self.system.driver.drive_to(target)
             await rosys.sleep(0.5)
             self.log.info('workflow completed')
