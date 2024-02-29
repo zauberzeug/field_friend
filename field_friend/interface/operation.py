@@ -85,16 +85,6 @@ class operation:
 
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='weeding'):
                         with ui.column():
-                            # mode = ui.toggle(
-                            #     ['Bohren', 'Hacken'],
-                            #     value='Bohren').bind_value(
-                            #     system.demo_weeding, 'mode').props('outline')
-                            # ui.number(
-                            #     'Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.18).props(
-                            #     'dense outlined suffix=m').classes('w-24').bind_value(
-                            #     self.system.weeding, 'drill_depth').tooltip(
-                            #     'Set the drill depth for the weeding automation').bind_visibility_from(
-                            #     mode, 'value', value='Bohren')
                             self.with_field_planning = ui.checkbox('Use field planning', value=True).bind_value(
                                 self.system.weeding, 'use_field_planning').tooltip('Set the weeding automation to use the field planning with GNSS')
 
