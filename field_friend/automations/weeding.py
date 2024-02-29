@@ -1,5 +1,4 @@
 import logging
-import random
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -33,6 +32,7 @@ class Weeding:
         self.start_row_id: Optional[str] = None
         self.end_row_id: Optional[str] = None
         self.tornado_angle: float = 110.0
+        self.minimum_turning_radius: float = 0.5
         self.only_monitoring: bool = False
 
         self.sorted_weeding_rows: list = []
@@ -134,16 +134,16 @@ class Weeding:
         distance_to_last_row = min([point.distance(robot_position) for point in rows[-1].points(reference)])
         if distance_to_first_row > distance_to_last_row:
             rows = list(reversed(rows))
-        minimum_turning_distance = 1  # 1 = no row needs to be skippen when turning
+        minimum_row_distance = 1  # 1 = no row needs to be skippen when turning
         if len(rows) > 1:
             rows_distance = rows[0].points(reference)[0].distance(rows[1].points(reference)[0])
-            if self.system.driver.parameters.minimum_turning_radius * 2 > rows_distance:
-                minimum_turning_distance = int(
-                    np.ceil(self.system.driver.parameters.minimum_turning_radius * 2 / rows_distance))
+            if self.minimum_turning_radius * 2 > rows_distance:
+                minimum_row_distance = int(
+                    np.ceil(self.minimum_turning_radius * 2 / rows_distance))
 
-        self.log.info(f'Minimum turning distance: {minimum_turning_distance}')
-        if minimum_turning_distance > 1:
-            sequence = find_sequence(len(rows), minimum_distance=minimum_turning_distance)
+        self.log.info(f'Minimum turning distance: {minimum_row_distance}')
+        if minimum_row_distance > 1:
+            sequence = find_sequence(len(rows), minimum_distance=minimum_row_distance)
             if not sequence:
                 self.log.warning('No sequence found')
                 return None
@@ -173,7 +173,7 @@ class Weeding:
                 self.log.info(f'Row {row.id} has beets, creating {row.crops} points')
                 # only take every tenth crop into account
                 for i, beet in enumerate(row.crops):
-                    if i % 10 == 0:
+                    if i % 10 == 0 and i != 0:
                         row_points.append(beet.position)
                 row_points = sorted(row_points, key=lambda point: point.distance(row_points[0]))
                 self.log.info(f'Row {row.id} has {len(row_points)} points')
@@ -258,6 +258,7 @@ class Weeding:
         await self._drive_to_start()
         for i, path in enumerate(self.weeding_plan):
             self.system.driver.parameters.can_drive_backwards = False
+            self.system.driver.parameters.minimum_turning_radius = 0.05
             self.current_row = self.sorted_weeding_rows[i]
             self.system.plant_locator.pause()
             self.system.plant_provider.clear()
@@ -289,6 +290,7 @@ class Weeding:
             self.system.plant_locator.pause()
             if i < len(self.weeding_plan) - 1:
                 self.system.driver.parameters.can_drive_backwards = True
+                self.system.driver.parameters.minimum_turning_radius = self.minimum_turning_radius
                 self.log.info('Driving to next row...')
                 turn_path = self.turn_paths[i]
                 await self.system.driver.drive_path(turn_path)
@@ -429,7 +431,7 @@ class Weeding:
                 yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
                 # only apply minimal yaw corrections to avoid oversteering
                 yaw = self.system.odometer.prediction.yaw * 0.8 + yaw * 0.2
-                target = self.system.odometer.prediction.point.polar(0.03, yaw)
+                target = self.system.odometer.prediction.point.polar(0.05, yaw)
 
                 self.log.info(f'current position: {self.system.odometer.prediction} target next crop at {target}')
                 await self.system.driver.drive_to(target)

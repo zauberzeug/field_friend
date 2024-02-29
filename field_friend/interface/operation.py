@@ -2,16 +2,11 @@
 import logging
 from typing import TYPE_CHECKING
 
-import rosys
-from nicegui import events, ui
+from nicegui import ui
 
 from .automation_controls import automation_controls
-from .field_friend_object import field_friend_object
-from .field_object import field_object
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
-from .plant_object import plant_objects
-from .visualizer_object import visualizer_object
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -91,6 +86,10 @@ class operation:
                             with ui.row().bind_visibility_from(self.with_field_planning, 'value', value=True):
                                 self.show_start_row()
                                 self.show_end_row()
+                                ui.number('Min. turning radius', format='%.2f', value=0.5, step=0.1, min=0.1, max=1.0).props(
+                                    'dense outlined suffix=m').classes('w-30').bind_value(
+                                    self.system.weeding, 'turning_radius').tooltip(
+                                    'Set the turning radius for the weeding automation')
                             with ui.row():
                                 ui.number('Tornado angle', format='%.0f', value=180, step=1, min=1, max=180).props(
                                     'dense outlined suffix=°').classes('w-24').bind_value(
