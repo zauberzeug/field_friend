@@ -1,5 +1,5 @@
 import numpy as np
-from nicegui.elements.scene_objects import Box, Curve, Cylinder, Extrusion, Group, Sphere
+from nicegui.elements.scene_objects import Box, Curve, Cylinder, Extrusion, Group
 from rosys.geometry import Spline
 
 from ..automations import FieldProvider
@@ -81,5 +81,3 @@ class field_object(Group):
                                                                                             z=0.0).rotate(0, -np.pi/8, 0).material('green').with_name(f'row_{row.id}_crop')
                     Extrusion([[0, 0], [0.03, -0.02], [0.1, 0], [0.03, 0.02], ], 0.01).move(x=crop.position.x, y=crop.position.y,
                                                                                             z=0.0).rotate(0, -np.pi/8, np.pi).material('green').with_name(f'row_{row.id}_crop')
-                    # Sphere(0.05).move(x=crop.position.x, y=crop.position.y,
-                    #                   z=0.01).material('green').with_name(f'row_{row.id}_crop')
