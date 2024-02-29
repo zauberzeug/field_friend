@@ -55,7 +55,7 @@ class robot_scene:
         if not self.locked_view:
             return
         position = self.system.odometer.prediction.point
-        relative_camera_position = self.system.odometer.prediction.transform(rosys.geometry.Point(x=0.1, y=0.5))
+        relative_camera_position = self.system.odometer.prediction.transform(rosys.geometry.Point(x=0.1, y=0.7))
 
         self.scene.move_camera(x=relative_camera_position.x, y=relative_camera_position.y,
                                look_at_x=position.x, look_at_y=position.y, duration=0.0)
