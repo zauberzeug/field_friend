@@ -25,7 +25,7 @@ class visualizer_object(Object3D):
         if self.weeding:
             self.weeding.PATH_PLANNED.register_ui(self.update_path)
 
-    def update_path(self, path: list[PathSegment], height: float = 0.6) -> None:
+    def update_path(self, path: list[PathSegment], height: float = 0.2) -> None:
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name == 'path']
         for segment in path:
             Curve(
@@ -33,7 +33,7 @@ class visualizer_object(Object3D):
                 [segment.spline.control1.x, segment.spline.control1.y, height],
                 [segment.spline.control2.x, segment.spline.control2.y, height],
                 [segment.spline.end.x, segment.spline.end.y, height],
-            ).material(f'#{int(0xffffff * segment.spline.start.x / 10):06x}').with_name('path')
+            ).material('#00ff00').with_name('path')
 
     def clear(self) -> None:
         self.update_path([])

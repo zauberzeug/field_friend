@@ -33,19 +33,19 @@ class robot_scene:
                 field_object(self.system.field_provider)
                 self.scene.move_camera(-0.5, -1, 2)
 
+        ui.timer(rosys.config.ui_update_interval, self.update)
+
     def handle_click(self, event: events.SceneClickEventArguments) -> None:
         if event.click_type == 'dblclick':
-            position = self.system.odometer.prediction.point
-            if self.scene_look:
-                self.scene_look = False
-                height = 10
-                x = position.x-0.5
-                y = position.y-0.5
-            else:
-                self.scene_look = True
-                height = 2
-                x = position.x + 0.8
-                y = position.y - 0.8
-            self.scene.move_camera(x=x, y=y, z=height,
-                                   look_at_x=position.x, look_at_y=position.y)
-            return
+            self.scene_look = not self.scene_look
+
+    def update(self) -> None:
+        position = self.system.odometer.prediction.point
+        if self.scene_look:
+            height = 10.0
+        else:
+            height = 1.1
+        y = position.polar(0.8, self.system.odometer.prediction.yaw_deg-90).y
+        x = position.polar(0.1, self.system.odometer.prediction.yaw_deg+20).x
+        self.scene.move_camera(x=x, y=y, z=height,
+                               look_at_x=position.x, look_at_y=position.y, duration=0.0)
