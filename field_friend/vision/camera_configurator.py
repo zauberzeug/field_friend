@@ -36,6 +36,28 @@ class CameraConfigurator:
                             camera.set_parameters({parameter: value})
                             parameters_changed = True
 
+                if 'crop' in self.config:
+                    xoffset = self.config['crop']['xoffset']
+                    yoffset = self.config['crop']['yoffset']
+                    width = self.config['parameters']['width']
+                    height = self.config['parameters']['height']
+                    crop_rectangle = rosys.geometry.Rectangle(
+                        x=xoffset,
+                        y=yoffset,
+                        width=width - 2 * xoffset,
+                        height=height - 2 * yoffset,
+                    )
+                    if camera.crop != crop_rectangle:
+                        camera.crop = crop_rectangle
+                        parameters_changed = True
+                else:
+                    camera.crop = None
+                if 'rotation' in self.config:
+                    if camera.rotation != self.config['rotation']:
+                        camera.rotation = self.config['rotation']
+                else:
+                    camera.rotation = 0
+
             elif isinstance(camera, SimulatedCam):
                 if camera.resolution.width != self.config['parameters']['width'] or camera.resolution.height != self.config['parameters']['height']:
                     camera.resolution = rosys.vision.ImageSize(
@@ -44,27 +66,6 @@ class CameraConfigurator:
                     )
                     parameters_changed = True
 
-            if 'crop' in self.config:
-                xoffset = self.config['crop']['xoffset']
-                yoffset = self.config['crop']['yoffset']
-                width = self.config['parameters']['width']
-                height = self.config['parameters']['height']
-                crop_rectangle = rosys.geometry.Rectangle(
-                    x=xoffset,
-                    y=yoffset,
-                    width=width - 2 * xoffset,
-                    height=height - 2 * yoffset,
-                )
-                if camera.crop != crop_rectangle:
-                    camera.crop = crop_rectangle
-                    parameters_changed = True
-            else:
-                camera.crop = None
-            if 'rotation' in self.config:
-                if camera.rotation != self.config['rotation']:
-                    camera.rotation = self.config['rotation']
-            else:
-                camera.rotation = 0
             if parameters_changed:
                 self.log.info(f'Updated camera {camera.id} parameters, requesting backup...')
                 self.camera_provider.request_backup()
