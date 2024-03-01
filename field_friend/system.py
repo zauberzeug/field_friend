@@ -42,7 +42,7 @@ class System:
             self.gnss = GnssHardware(self.odometer)
         else:
             self.gnss = GnssSimulation(self.field_friend.wheels)
-        self.gnss.ROBOT_POSE_LOCATED.register(self.forward_pose_odometer)
+        self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.1
         self.driver.parameters.angular_speed_limit = 0.5
@@ -58,12 +58,8 @@ class System:
         self.plant_locator = PlantLocator(self.usb_camera_provider, self.detector, self.plant_provider, self.odometer)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
-
-        self.weeding = Weeding(self)
-        self.coin_collecting = CoinCollecting(self)
-        self.path_provider = PathProvider()
-        self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
         self.field_provider = FieldProvider()
+        self.path_provider = PathProvider()
 
         width = 0.64
         length = 0.78
@@ -78,8 +74,12 @@ class System:
             ],
             height=height)
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
+
+        self.weeding = Weeding(self)
+        self.coin_collecting = CoinCollecting(self)
         self.mowing = Mowing(self.field_friend, self.field_provider, driver=self.driver,
                              path_planner=self.path_planner, gnss=self.gnss, robot_width=width)
+        self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
 
         self.automations = {
             'weeding': self.weeding.start,
@@ -94,25 +94,6 @@ class System:
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
-
-        async def stop():
-            if self.automator.is_running:
-                if self.field_friend.estop.is_soft_estop_active:
-                    self.automator.pause(because='soft estop active')
-                else:
-                    self.automator.pause(because='emergency stop triggered')
-            await self.field_friend.stop()
-
-        def pause():
-            if self.automator.is_running:
-                if self.path_recorder.state != 'recording':
-                    self.automator.pause(because='steering started')
-
-        self.steerer.STEERING_STARTED.register(pause)
-        self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
-
-    def forward_pose_odometer(self, pose: rosys.geometry.Pose) -> None:
-        self.odometer.handle_detection(pose)
 
     def restart(self) -> None:
         os.utime('main.py')
