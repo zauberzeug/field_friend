@@ -31,6 +31,10 @@ class CoinCollecting():
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return
+        if self.system.field_friend.tool != 'tornado':
+            rosys.notify('Tool is not tornado, aborting', 'negative')
+            self.log.error('Tool is not tornado, aborting')
+            return
         if self.system.field_friend.y_axis.alarm:
             rosys.notify('Y-Axis is in alarm, aborting', 'negative')
             self.log.error('Y-Axis is in alarm, aborting')
