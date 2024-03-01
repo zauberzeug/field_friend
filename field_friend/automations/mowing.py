@@ -10,6 +10,7 @@ from shapely.geometry import LineString
 
 from ..hardware import FieldFriend
 from ..navigation import Gnss
+from .automation_watcher import AutomationWatcher
 from .coverage_planer import CoveragePlanner
 from .field_provider import Field, FieldProvider
 from .sequence import find_sequence
@@ -18,7 +19,7 @@ from .sequence import find_sequence
 class Mowing(rosys.persistence.PersistentModule):
 
     def __init__(self, field_friend: FieldFriend, field_provider: FieldProvider, driver: rosys.driving.Driver,
-                 path_planner: rosys.pathplanning.PathPlanner, gnss: Gnss, *, robot_width: float) -> None:
+                 path_planner: rosys.pathplanning.PathPlanner, gnss: Gnss, automation_watcher: AutomationWatcher, *, robot_width: float) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.path_recorder')
         self.field_friend = field_friend
@@ -26,6 +27,7 @@ class Mowing(rosys.persistence.PersistentModule):
         self.driver = driver
         self.path_planner = path_planner
         self.gnss = gnss
+        self.automation_watcher = automation_watcher
         self.coverage_planner = CoveragePlanner(self)
 
         self.padding: float = 1.0
@@ -167,6 +169,8 @@ class Mowing(rosys.persistence.PersistentModule):
         else:
             first_path = paths[0]
         await self.driver.drive_to(first_path[0].spline.start)
+        self.automation_watcher.start_field_watch(self.field.outline)
+        self.automation_watcher.gnss_watch_active = True
         for path in paths:
             if self.continue_mowing and path != self.current_path:
                 continue
@@ -202,6 +206,8 @@ class Mowing(rosys.persistence.PersistentModule):
         self.current_path = None
         self.current_path_segment = None
         self.invalidate()
+        self.automation_watcher.stop_field_watch()
+        self.automation_watcher.gnss_watch_active = False
 
     def _make_plan(self, lanes: list[LineString]) -> list[Spline]:
         self.log.info(f'converting {len(lanes)} lanes into splines and finding sequence')
