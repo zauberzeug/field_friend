@@ -257,7 +257,7 @@ class Weeding:
 
     async def _weed_with_plan(self):
         await self._drive_to_start()
-        self.system.automation_watcher.start_field_watch()
+        self.system.automation_watcher.start_field_watch(self.field.outline)
         self.system.automation_watcher.gnss_watch_active = True
         for i, path in enumerate(self.weeding_plan):
             self.system.driver.parameters.can_drive_backwards = False

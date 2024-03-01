@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING, Optional
 
 import rosys
 from rosys.geometry import Pose
-from shapely.geometry import Polygon
+from shapely.geometry import Point as ShapelyPoint
+from shapely.geometry import Polygon as ShapelyPolygon
 
 if TYPE_CHECKING:
     from system import System
@@ -29,7 +30,7 @@ class AutomationWatcher:
         self.incidence_time: float = 0.0
         self.incidence_pose: Pose = Pose()
         self.resume_delay: float = DEFAULT_RESUME_DELAY
-        self.field_polygong: Optional[Polygon] = None
+        self.field_polygong: Optional[ShapelyPolygon] = None
 
         self.bumper_watch_active: bool = True
         self.gnss_watch_active: bool = False
@@ -48,8 +49,13 @@ class AutomationWatcher:
 
     def pause(self, reason: str) -> None:
         # dont pause automator if steering is active and path_recorder is recording
-        if reason.startswith('steering') and self.path_recorder.state == 'recording':
-            return
+        if reason.startswith('steering'):
+            if self.path_recorder.state == 'recording':
+                return
+            else:
+                self.log.info(f'pausing automation because {reason}')
+                self.automator.pause(because=f'{reason})')
+                return
         if reason.startswith('GNSS') and not self.gnss_watch_active:
             return
         if reason.startswith('Bumper') and not self.bumper_watch_active:
@@ -94,7 +100,7 @@ class AutomationWatcher:
                 self.resume_delay = DEFAULT_RESUME_DELAY
 
     def start_field_watch(self, field_boundaries: list[rosys.geometry.Point]) -> None:
-        self.field_polygong = Polygon([(point.x, point.y) for point in field_boundaries])
+        self.field_polygong = ShapelyPolygon([(point.x, point.y) for point in field_boundaries])
         self.field_watch_active = True
 
     def stop_field_watch(self) -> None:
@@ -104,8 +110,9 @@ class AutomationWatcher:
     def check_field_bounds(self) -> None:
         if not self.field_watch_active or not self.field_polygong:
             return
-        position = deepcopy(self.odometer.prediction.point)
+        position = ShapelyPoint(self.odometer.prediction.x, self.odometer.prediction.y)
         if not self.field_polygong.contains(position):
             self.log.warning('robot is outside of field boundaries')
-            self.stop('robot is outside of field boundaries')
-            self.field_watch_active = False
+            if self.automator.is_running:
+                self.stop('robot is outside of field boundaries')
+                self.field_watch_active = False
