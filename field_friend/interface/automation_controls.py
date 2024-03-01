@@ -16,38 +16,27 @@ class automation_controls:
             self, automator: Automator, *, can_start: Optional[Callable[[],
                                                                         Union[bool, Awaitable[bool]]]] = None,) -> None:
         async def start() -> None:
-            if inspect.iscoroutinefunction(can_start):
-                if not await can_start():
+            if callable(can_start):
+                # Directly handle both synchronous and asynchronous can_start
+                proceed = can_start() if not isinstance(can_start(), Awaitable) else await can_start()
+                if not proceed:
                     return
-            elif can_start is not None and not can_start():
-                return
             automator.start()
-        self.play_button = ui.button(on_click=start) \
-            .props('icon=play_arrow unelevated').tooltip('start automation').classes('py-3 px-6 text-lg')
-        self.pause_button = ui.button(on_click=lambda: automator.pause(because='pause button was pressed')) \
-            .props('icon=pause outline').tooltip('pause automation').classes('py-3 px-6 text-lg')
-
-        async def resume() -> None:
-            automator.resume()
-        self.resume_button = ui.button(on_click=resume) \
-            .props('icon=play_arrow outline').tooltip('resume automation').classes('py-3 px-6 text-lg')
-
-        async def stop() -> None:
-            automator.stop(because='stop button was pressed')
-        self.stop_button = ui.button(on_click=stop) \
-            .props('icon=stop outline').tooltip('stop automation').classes('py-3 px-6 text-lg')
+        play_button = ui.button(on_click=start) \
+            .props('icon=play_arrow unelevated').tooltip('start automation')
+        pause_button = ui.button(on_click=lambda: automator.pause(because='pause button was pressed')) \
+            .props('icon=pause outline').tooltip('pause automation')
+        resume_button = ui.button(on_click=automator.resume) \
+            .props('icon=play_arrow outline').tooltip('resume automation')
+        stop_button = ui.button(on_click=lambda: automator.stop(because='stop button was pressed')) \
+            .props('icon=stop outline').tooltip('stop automation')
 
         def refresh() -> None:
-            self.play_button.visible = automator.is_stopped
-            self.pause_button.visible = automator.is_running
-            self.resume_button.visible = automator.is_paused
-            self._disable(self.play_button, automator.default_automation is None or not automator.enabled)
-            self._disable(self.stop_button, automator.is_stopped)
+            play_button.visible = automator.is_stopped
+            pause_button.visible = automator.is_running
+            resume_button.visible = automator.is_paused
+            play_button.enabled = automator.default_automation is not None and automator.enabled
+            resume_button.enabled = automator.enabled
+            stop_button.enabled = not automator.is_stopped
 
         ui.timer(config.ui_update_interval, refresh)
-
-    def _disable(self, button: ui.button, should_disable: bool) -> None:
-        if should_disable:
-            button.props('disable')
-        else:
-            button.props(remove='disable')
