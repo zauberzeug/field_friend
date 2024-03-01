@@ -257,6 +257,8 @@ class Weeding:
 
     async def _weed_with_plan(self):
         await self._drive_to_start()
+        self.system.automation_watcher.start_field_watch()
+        self.system.automation_watcher.gnss_watch_active = True
         for i, path in enumerate(self.weeding_plan):
             self.system.driver.parameters.can_drive_backwards = False
             self.system.driver.parameters.minimum_turning_radius = 0.05
@@ -296,6 +298,9 @@ class Weeding:
                 turn_path = self.turn_paths[i]
                 await self.system.driver.drive_path(turn_path)
                 await rosys.sleep(1)
+
+        self.system.automation_watcher.stop_field_watch()
+        self.system.automation_watcher.gnss_watch_active = False
 
     async def _weed_planless(self):
         already_explored = False

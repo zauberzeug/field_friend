@@ -93,9 +93,13 @@ class AutomationWatcher:
                 self.log.info('resetting resume_delay')
                 self.resume_delay = DEFAULT_RESUME_DELAY
 
-    def start_gnss_watch(self, field_boundaries: list[rosys.geometry.Point]) -> None:
+    def start_field_watch(self, field_boundaries: list[rosys.geometry.Point]) -> None:
         self.field_polygong = Polygon([(point.x, point.y) for point in field_boundaries])
         self.field_watch_active = True
+
+    def stop_field_watch(self) -> None:
+        self.field_watch_active = False
+        self.field_polygong = None
 
     def check_field_bounds(self) -> None:
         if not self.field_watch_active or not self.field_polygong:
