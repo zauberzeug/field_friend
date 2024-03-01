@@ -393,6 +393,8 @@ class Weeding:
 
         if self.system.field_friend.tool == 'tornado' and self.crops_to_handle:
             await self._tornado_workflow()
+        elif self.system.field_friend.tool == 'none':
+            await self._monitor_workflow()
 
         # ToDo: implement workflow of other tools
 
@@ -441,6 +443,34 @@ class Weeding:
             self.log.info('workflow completed')
         except Exception as e:
             raise WorkflowException(f'Error while tornado Workflow: {e}') from e
+
+    async def _monitor_workflow(self) -> None:
+        self.log.info('Starting Monitoring Workflow...')
+        try:
+            closest_crop_position = list(self.crops_to_handle.values())[0]
+            self.log.info(f'Closest crop position: {closest_crop_position}')
+            # fist check if the closest crop is in the working area
+            if closest_crop_position.x < 0.05:
+                self.log.info(f'target next crop at {closest_crop_position}')
+                # do not steer while advancing on a crop
+                target = self.system.odometer.prediction.transform(Point(x=closest_crop_position.x, y=0))
+                await self.system.driver.drive_to(target)
+                self.system.plant_locator.resume()
+            else:
+                self.log.info('follow line of crops')
+                farthest_crop = list(self.crops_to_handle.values())[-1]
+                self.log.info(f'Farthest crop: {farthest_crop}')
+                upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
+                yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
+                # only apply minimal yaw corrections to avoid oversteering
+                yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.8 + eliminate_2pi(yaw) * 0.2
+                target = self.system.odometer.prediction.point.polar(0.04, yaw)
+                self.log.info(f'current world position: {self.system.odometer.prediction} target next crop at {target}')
+                await self.system.driver.drive_to(target)
+            await rosys.sleep(0.5)
+            self.log.info('workflow completed')
+        except Exception as e:
+            raise WorkflowException(f'Error while Monitoring Workflow: {e}') from e
 
     def _safe_crop_to_row(self, crop_id: str) -> None:
         if self.current_row is None:
