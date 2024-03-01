@@ -42,17 +42,11 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.ROBOT_POSITION_LOCATED = rosys.event.Event()
         """the robot has been located"""
 
-        self.RTK_FIX_GAINED = rosys.event.Event()
-        """the robot has gained RTK fix"""
-
         self.RTK_FIX_LOST = rosys.event.Event()
         """the robot lost RTK fix"""
 
         self.GNSS_CONNECTION_LOST = rosys.event.Event()
         """the GNSS connection was lost"""
-
-        self.GNSS_CONNECTION_GAINED = rosys.event.Event()
-        """the GNSS connection was gained"""
 
         self.record = GNSSRecord()
         self.device = None
@@ -190,15 +184,9 @@ class GnssHardware(Gnss):
             self.log.info(f'Device error: {e}')
             self.device = None
             return
-        if self.record.gps_qual == 0 and record.gps_qual > 0:
-            self.log.info('GNSS gained')
-            self.GNSS_CONNECTION_GAINED.emit()
         if self.record.gps_qual > 0 and record.gps_qual == 0:
             self.log.info('GNSS lost')
             self.GNSS_CONNECTION_LOST.emit()
-        if self.record.gps_qual != 4 and record.gps_qual == 4:
-            self.log.info('GNSS RTK fix gained')
-            self.RTK_FIX_GAINED.emit()
         if self.record.gps_qual == 4 and record.gps_qual != 4:
             self.log.info('GNSS RTK fix lost')
             self.RTK_FIX_LOST.emit()
