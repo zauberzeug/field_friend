@@ -19,7 +19,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
     def __init__(self,  version: str) -> None:
         if version not in fieldfriend_configurations:
             raise ValueError(f'Unknown FieldFriend version: {version}')
-        config = fieldfriend_configurations[version]
+        config: dict[str, dict] = fieldfriend_configurations[version]
         self.MOTOR_GEAR_RATIO = config['params']['motor_gear_ratio']
         self.THOOTH_COUNT = config['params']['thooth_count']
         self.PITCH = config['params']['pitch']
