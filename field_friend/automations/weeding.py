@@ -59,6 +59,10 @@ class Weeding:
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return False
+        if self.system.field_friend.tool == 'none':
+            rosys.notify('This field friend has no tool, only monitoring', 'info')
+            self.log.info('This field friend has no tool, only monitoring')
+            return True
         if self.system.field_friend.y_axis.alarm:
             rosys.notify('Y-Axis is in alarm, aborting', 'negative')
             self.log.error('Y-Axis is in alarm, aborting')
@@ -87,7 +91,6 @@ class Weeding:
             self.log.error('Field reference is not available')
             return False
         self.system.gnss.set_reference(self.field.reference_lat, self.field.reference_lon)
-        # ToDo: implement check if robot in field
         self.weeding_plan = self._make_plan()
         if not self.weeding_plan:
             self.log.error('No plan available')
