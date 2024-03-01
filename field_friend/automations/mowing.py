@@ -1,6 +1,6 @@
 
 import logging
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import rosys
@@ -8,26 +8,25 @@ from rosys.geometry import Pose, Spline
 from rosys.helpers import angle
 from shapely.geometry import LineString
 
-from ..hardware import FieldFriend
-from ..navigation import Gnss
-from .automation_watcher import AutomationWatcher
 from .coverage_planer import CoveragePlanner
-from .field_provider import Field, FieldProvider
+from .field_provider import Field
 from .sequence import find_sequence
+
+if TYPE_CHECKING:
+    from system import System
 
 
 class Mowing(rosys.persistence.PersistentModule):
 
-    def __init__(self, field_friend: FieldFriend, field_provider: FieldProvider, driver: rosys.driving.Driver,
-                 path_planner: rosys.pathplanning.PathPlanner, gnss: Gnss, automation_watcher: AutomationWatcher, *, robot_width: float) -> None:
+    def __init__(self, system: 'System', *, robot_width: float) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.path_recorder')
-        self.field_friend = field_friend
-        self.field_provider = field_provider
-        self.driver = driver
-        self.path_planner = path_planner
-        self.gnss = gnss
-        self.automation_watcher = automation_watcher
+        self.field_friend = system.field_friend
+        self.field_provider = system.field_provider
+        self.driver = system.driver
+        self.path_planner = system.path_planner
+        self.gnss = system.gnss
+        self.system = system
         self.coverage_planner = CoveragePlanner(self)
 
         self.padding: float = 1.0
@@ -81,20 +80,15 @@ class Mowing(rosys.persistence.PersistentModule):
         if self.gnss.device is None:
             rosys.notify('No GNSS device found', 'negative')
             return
-        if self.field is None and self.field_provider.fields:
-            self.field = self.field_provider.fields[0]
-        if self.gnss.device != 'simulation':
-            if self.field.reference_lat is None or self.field.reference_lon is None:
-                rosys.notify('Field has no reference location set', 'negative')
-                return
-            self.gnss.set_reference(self.field.reference_lat, self.field.reference_lon)
-            distance = self.gnss.calculate_distance(self.gnss.record.latitude, self.gnss.record.longitude)
-            if not distance or distance > 50:
-                rosys.notify('Distance to reference location is too large', 'negative')
-                return
-        if len(self.field.outline) < 3:
-            rosys.notify('No field is defined', 'negative')
+        self.field = self.system.field_provider.active_field
+        if self.field is None:
+            self.log.error('Field is not available')
+            rosys.notify('No field selected', 'negative')
             return
+        if not self.field.reference_lat or not self.field.reference_lon:
+            self.log.error('Field reference is not available')
+            return
+        self.system.gnss.set_reference(self.field.reference_lat, self.field.reference_lon)
         if self.padding < self.robot_width+self.lane_distance:
             self.padding = self.robot_width+self.lane_distance
         await self._mowing()
@@ -169,8 +163,8 @@ class Mowing(rosys.persistence.PersistentModule):
         else:
             first_path = paths[0]
         await self.driver.drive_to(first_path[0].spline.start)
-        self.automation_watcher.start_field_watch(self.field.outline)
-        self.automation_watcher.gnss_watch_active = True
+        self.system.automation_watcher.start_field_watch(self.field.outline)
+        self.system.automation_watcher.gnss_watch_active = True
         for path in paths:
             if self.continue_mowing and path != self.current_path:
                 continue
@@ -206,8 +200,8 @@ class Mowing(rosys.persistence.PersistentModule):
         self.current_path = None
         self.current_path_segment = None
         self.invalidate()
-        self.automation_watcher.stop_field_watch()
-        self.automation_watcher.gnss_watch_active = False
+        self.system.automation_watcher.stop_field_watch()
+        self.system.automation_watcher.gnss_watch_active = False
 
     def _make_plan(self, lanes: list[LineString]) -> list[Spline]:
         self.log.info(f'converting {len(lanes)} lanes into splines and finding sequence')
@@ -218,7 +212,7 @@ class Mowing(rosys.persistence.PersistentModule):
         self.log.info(f'minimum distance: {minimum_distance}')
         if minimum_distance > 1:
             sequence = find_sequence(len(lanes), minimum_distance=minimum_distance)
-            if sequence == []:  # ToDO: handle missing sequence better
+            if not sequence:  # ToDO: handle missing sequence better
                 self.log.warning('!!!no valid sequence found!!!')
                 sequence = list(range(len(lanes)))
         else:
@@ -241,25 +235,25 @@ class Mowing(rosys.persistence.PersistentModule):
 
     def _generate_turn_splines(self, lanes: list[rosys.geometry.Spline]) -> list[rosys.geometry.Spline]:
         splines = []
-        for i in range(len(lanes)):
-            splines.append(lanes[i])
+        for i, lane in enumerate(lanes):
+            splines.append(lane)
             if i != len(lanes) - 1:
-                lane_angle = angle(lanes[i].yaw(1), lanes[i + 1].yaw(0))
+                lane_angle = angle(lane.yaw(1), lanes[i + 1].yaw(0))
                 if lane_angle < np.pi / 4 and lane_angle > -np.pi / 4:
                     self.log.info(f'no turn needed at spline {np.pi/2} {lane_angle}')
                     continue
 
-                middle_point = lanes[i].end.polar(
-                    self.turning_radius, lanes[i].pose(1).yaw).polar(
-                    self.turning_radius, lanes[i].end.direction(lanes[i + 1].start))
+                middle_point = lane.end.polar(
+                    self.turning_radius, lane.pose(1).yaw).polar(
+                    self.turning_radius, lane.end.direction(lanes[i + 1].start))
                 middle_pose = Pose(x=middle_point.x, y=middle_point.y,
-                                   yaw=lanes[i].end.direction(
+                                   yaw=lane.end.direction(
                                        lanes[i+1].start))
                 first_turn_spline = rosys.geometry.Spline.from_poses(
                     Pose(
-                        x=lanes[i].end.x, y=lanes[i].end.y,
-                        yaw=lanes[i].start.direction(
-                            lanes[i].end)),
+                        x=lane.end.x, y=lane.end.y,
+                        yaw=lane.start.direction(
+                            lane.end)),
                     middle_pose)
                 splines.append(first_turn_spline)
                 second_turn_spline = rosys.geometry.Spline.from_poses(
