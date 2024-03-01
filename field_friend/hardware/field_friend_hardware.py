@@ -33,17 +33,17 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.WHEEL_DIAMETER = self.THOOTH_COUNT * self.PITCH / np.pi
         self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE = self.config['params']['wheel_distance']
-        if version in ['u1', 'ff3', 'u4', 'ff10']:
+        self.tool = self.config['params']['tool']
+        if self.tool in ['tornado', 'weed_screw', 'none']:
             self.WORK_X = self.config['params']['work_x']
             self.DRILL_RADIUS = self.config['params']['drill_radius']
-        elif version in ['u2', 'u3']:
+        elif self.tool in ['double_mechanism']:
             self.WORK_X_CHOP = self.config['params']['work_x_chop']
             self.WORK_X_DRILL = self.config['params']['work_x_drill']
             self.DRILL_RADIUS = self.config['params']['drill_radius']
             self.CHOP_RADIUS = self.config['params']['chop_radius']
         else:
             raise NotImplementedError(f'Unknown FieldFriend version: {version}')
-        self.tool = self.config['params']['tool']
         communication = rosys.hardware.SerialCommunication()
         robot_brain = rosys.hardware.RobotBrain(communication)
         # if communication.device_path == '/dev/ttyTHS0':
