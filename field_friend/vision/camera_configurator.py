@@ -66,4 +66,5 @@ class CameraConfigurator:
             else:
                 camera.rotation = 0
             if parameters_changed:
+                self.log.info(f'Updated camera {camera.id} parameters, requesting backup...')
                 self.camera_provider.request_backup()
