@@ -1,3 +1,4 @@
+import logging
 import random
 
 import rosys
@@ -9,6 +10,7 @@ class SimulatedCamProvider(rosys.vision.CameraProvider[SimulatedCam], rosys.pers
 
     def __init__(self, simulate_failing: bool = False) -> None:
         super().__init__()
+        self.log = logging.getLogger('field_friend.simulated_cam_provider')
 
         self.simulate_device_failure = simulate_failing
 
@@ -18,7 +20,10 @@ class SimulatedCamProvider(rosys.vision.CameraProvider[SimulatedCam], rosys.pers
         cameras = {}
         for camera in self._cameras.values():
             cameras[camera.id] = camera.to_dict()
-        return {}
+            self.log.info(f'backing up camera: {camera.to_dict()}')
+        return {
+            'cameras': {camera.id: camera.to_dict() for camera in self._cameras.values()}
+        }
 
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():

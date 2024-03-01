@@ -183,7 +183,7 @@ class calibration_dialog(ui.dialog):
                 CalibrationPoint.create('v',  0.30,    0.10, 0.00),
                 CalibrationPoint.create('w',  0.30,    0.15, 0.00),
             ]
-        elif version in ['u3', 'u4', 'ff10']:
+        elif version in ['u3', 'u4', 'ff10', 'ff11']:
             self.points = [
                 CalibrationPoint.create('A',  0.00,  -0.15, 0.00),
                 CalibrationPoint.create('B',  0.00,  -0.10, 0.00),

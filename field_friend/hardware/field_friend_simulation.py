@@ -26,17 +26,17 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         self.WHEEL_DIAMETER = self.THOOTH_COUNT * self.PITCH / np.pi
         self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE = config['params']['wheel_distance']
-        if version in ['u1', 'ff3', 'u4', 'ff10']:
+        self.tool = config['params']['tool']
+        if self.tool in ['tornado', 'weed_screw', 'none']:
             self.WORK_X = config['params']['work_x']
             self.DRILL_RADIUS = config['params']['drill_radius']
-        elif version in ['u2', 'u3']:
+        elif self.tool in ['double_mechanism']:
             self.WORK_X_CHOP = config['params']['work_x_chop']
             self.WORK_X_DRILL = config['params']['work_x_drill']
             self.DRILL_RADIUS = config['params']['drill_radius']
             self.CHOP_RADIUS = config['params']['chop_radius']
         else:
-            raise NotImplementedError(f'Unknown FieldFriend version: {version}')
-        self.tool = config['params']['tool']
+            raise NotImplementedError(f'Unknown FieldFriend tool: {self.tool}')
         wheels = rosys.hardware.WheelsSimulation()
         if config['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()

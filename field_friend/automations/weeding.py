@@ -59,6 +59,10 @@ class Weeding:
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return False
+        if self.system.field_friend.tool == 'none':
+            rosys.notify('This field friend has no tool, only monitoring', 'info')
+            self.log.info('This field friend has no tool, only monitoring')
+            return True
         if self.system.field_friend.y_axis.alarm:
             rosys.notify('Y-Axis is in alarm, aborting', 'negative')
             self.log.error('Y-Axis is in alarm, aborting')
@@ -87,7 +91,6 @@ class Weeding:
             self.log.error('Field reference is not available')
             return False
         self.system.gnss.set_reference(self.field.reference_lat, self.field.reference_lon)
-        # ToDo: implement check if robot in field
         self.weeding_plan = self._make_plan()
         if not self.weeding_plan:
             self.log.error('No plan available')
@@ -220,7 +223,7 @@ class Weeding:
             end_pose = Pose(x=self.weeding_plan[i + 1][0].spline.start.x,
                             y=self.weeding_plan[i + 1][0].spline.start.y,
                             yaw=self.weeding_plan[i + 1][0].spline.start.direction(self.weeding_plan[i + 1][0].spline.end))
-            turn_path = await self.system.path_planner.search(start=start_pose, goal=end_pose, timeout=10)
+            turn_path = await self.system.path_planner.search(start=start_pose, goal=end_pose, timeout=30)
             if turn_path:
                 turn_paths.append(turn_path)
             else:
@@ -265,7 +268,8 @@ class Weeding:
             self.current_row = self.sorted_weeding_rows[i]
             self.system.plant_locator.pause()
             self.system.plant_provider.clear()
-            await self.system.puncher.clear_view()
+            if self.system.field_friend.tool != 'none':
+                await self.system.puncher.clear_view()
             await self.system.field_friend.flashlight.turn_on()
             await rosys.sleep(3)
             self.system.plant_locator.resume()
@@ -310,7 +314,8 @@ class Weeding:
             if not self.system.is_real:
                 self.system.detector.simulated_objects = []
                 self._create_simulated_plants()
-            await self.system.puncher.clear_view()
+            if self.system.field_friend.tool != 'none':
+                await self.system.puncher.clear_view()
             await self.system.field_friend.flashlight.turn_on()
             await rosys.sleep(3)
             self.system.plant_locator.resume()
@@ -398,6 +403,8 @@ class Weeding:
 
         if self.system.field_friend.tool == 'tornado' and self.crops_to_handle:
             await self._tornado_workflow()
+        elif self.system.field_friend.tool == 'none':
+            await self._monitor_workflow()
 
         # ToDo: implement workflow of other tools
 
@@ -447,9 +454,36 @@ class Weeding:
         except Exception as e:
             raise WorkflowException(f'Error while tornado Workflow: {e}') from e
 
+    async def _monitor_workflow(self) -> None:
+        self.log.info('Starting Monitoring Workflow...')
+        try:
+            closest_crop_position = list(self.crops_to_handle.values())[0]
+            self.log.info(f'Closest crop position: {closest_crop_position}')
+            # fist check if the closest crop is in the working area
+            if closest_crop_position.x < 0.05:
+                self.log.info(f'target next crop at {closest_crop_position}')
+                # do not steer while advancing on a crop
+                target = self.system.odometer.prediction.transform(Point(x=closest_crop_position.x, y=0))
+                await self.system.driver.drive_to(target)
+                self.system.plant_locator.resume()
+            else:
+                self.log.info('follow line of crops')
+                farthest_crop = list(self.crops_to_handle.values())[-1]
+                self.log.info(f'Farthest crop: {farthest_crop}')
+                upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
+                yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
+                # only apply minimal yaw corrections to avoid oversteering
+                yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.8 + eliminate_2pi(yaw) * 0.2
+                target = self.system.odometer.prediction.point.polar(0.04, yaw)
+                self.log.info(f'current world position: {self.system.odometer.prediction} target next crop at {target}')
+                await self.system.driver.drive_to(target)
+            await rosys.sleep(0.5)
+            self.log.info('workflow completed')
+        except Exception as e:
+            raise WorkflowException(f'Error while Monitoring Workflow: {e}') from e
+
     def _safe_crop_to_row(self, crop_id: str) -> None:
         if self.current_row is None:
-            self.log.error('Error in crop saving: No current row available')
             return
         crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
         if crop is None:
