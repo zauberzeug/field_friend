@@ -89,6 +89,9 @@ class System:
                                                     default_automation=self.coin_collecting.start)
 
         self.automation_watcher = AutomationWatcher(self)
+        if self.field_friend.bumper:
+            self.automation_watcher.bumper_watch_active = True
+
         if self.is_real:
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
