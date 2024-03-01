@@ -223,7 +223,7 @@ class Weeding:
             end_pose = Pose(x=self.weeding_plan[i + 1][0].spline.start.x,
                             y=self.weeding_plan[i + 1][0].spline.start.y,
                             yaw=self.weeding_plan[i + 1][0].spline.start.direction(self.weeding_plan[i + 1][0].spline.end))
-            turn_path = await self.system.path_planner.search(start=start_pose, goal=end_pose, timeout=10)
+            turn_path = await self.system.path_planner.search(start=start_pose, goal=end_pose, timeout=30)
             if turn_path:
                 turn_paths.append(turn_path)
             else:
@@ -266,7 +266,8 @@ class Weeding:
             self.current_row = self.sorted_weeding_rows[i]
             self.system.plant_locator.pause()
             self.system.plant_provider.clear()
-            await self.system.puncher.clear_view()
+            if self.system.field_friend.tool != 'none':
+                await self.system.puncher.clear_view()
             await self.system.field_friend.flashlight.turn_on()
             await rosys.sleep(3)
             self.system.plant_locator.resume()
@@ -308,7 +309,8 @@ class Weeding:
             if not self.system.is_real:
                 self.system.detector.simulated_objects = []
                 self._create_simulated_plants()
-            await self.system.puncher.clear_view()
+            if self.system.field_friend.tool != 'none':
+                await self.system.puncher.clear_view()
             await self.system.field_friend.flashlight.turn_on()
             await rosys.sleep(3)
             self.system.plant_locator.resume()
@@ -477,7 +479,6 @@ class Weeding:
 
     def _safe_crop_to_row(self, crop_id: str) -> None:
         if self.current_row is None:
-            self.log.error('Error in crop saving: No current row available')
             return
         crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
         if crop is None:
