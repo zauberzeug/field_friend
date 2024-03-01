@@ -88,8 +88,8 @@ class System:
         }
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
                                                     default_automation=self.coin_collecting.start)
-        if self.field_friend.bumper is not None:
-            self.automation_watcher = AutomationWatcher(self.automator, self.odometer, self.field_friend.bumper)
+
+        self.automation_watcher = AutomationWatcher(self)
         if self.is_real:
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
