@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
-
+from field_friend.system import System
 from .manual_steerer_dialog import manual_steerer_dialog
-
+from ..hardware import FieldFriend
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -38,6 +38,7 @@ class header_bar:
                 ui.link('Path planner', '/path').classes('text-white text-lg !no-underline')
                 ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
             rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
+            self._show_battery(system.field_friend)
             ui.button('Manual Steering', on_click=lambda system=system: manual_steerer_dialog(system)).tooltip(
                 'Open the manual steering window to move the robot with a joystick.')
             with ui.button().props('icon=settings flat color=white'):
@@ -47,6 +48,7 @@ class header_bar:
                             .props('flat align=left').classes('w-full')
                         rosys.persistence.import_button(after_import=system.restart) \
                             .props('flat align=left').classes('w-full')
+                        ui.switch('dev-mode')
                     ui.menu_item('Restart RoSys', on_click=system.restart)
                     if system.is_real:
                         ui.menu_item('Restart Lizard', on_click=system.field_friend.robot_brain.restart)
@@ -66,3 +68,21 @@ class header_bar:
                 ui.button(on_click=handle_toggle).props(f'icon={self.drawer_icon} flat color=white')
             change_drawer_icon()
             self.STATUS_DRAWER_TOGGLED.register(change_drawer_icon.refresh)
+
+    def _show_battery(self, robot: FieldFriend) -> ui.row:
+        with ui.row().classes('items-center gap-1') as row:
+            ui.icon('battery_charging_full', size='sm').bind_visibility_from(robot.bms.state, 'is_charging')
+            ui.icon('', size='sm').bind_name_from(robot.bms.state, 'percentage', lambda p: (
+                'battery_unknown' if p is None else
+                'battery_0_bar' if p < 5 else
+                'battery_1_bar' if p < 20 else
+                'battery_2_bar' if p < 35 else
+                'battery_3_bar' if p < 50 else
+                'battery_4_bar' if p < 65 else
+                'battery_5_bar' if p < 80 else
+                'battery_6_bar' if p < 95 else
+                'battery_full'
+            )).bind_visibility_from(robot.bms.state, 'is_charging', lambda c: not c)
+            ui.label().bind_text_from(robot.bms.state, 'percentage',
+                                      lambda p: f'{p:.0f}%' if p is not None else '?')
+        return row
