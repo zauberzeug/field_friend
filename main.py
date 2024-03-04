@@ -41,16 +41,8 @@ def startup() -> None:
                 with splitter.separator:
                     ui.button(icon='drag_indicator').props('round')
         if dev:
-            # TODO das als function nach unten damit es hier und unter /field aufgerufen werden kann
             with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
-                with ui.card().style('background-color: #3E63A6; width: 100%;'):
-                    with ui.row().style('width: 100%;'):
-                        with ui.column():
-                            ui.label("Development Tools").style('font-size: 1.5rem; color: white;')
-                            interface.development(system.field_friend)
-                            interface.hardware_control(system.field_friend, system.automator, system.puncher)
-                        with ui.card().style('width: 300px; height: 70vh; background-color: #3E63A6'):
-                            interface.status_dev_page(system.field_friend, system.gnss, system.odometer)
+                interface.dev_tools(system)
 
     @ui.page('/dev')
     def dev_page():
@@ -68,6 +60,9 @@ def startup() -> None:
                 leaflet_map_field.m.style('height: 100%; max-height:100%;')
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height: 60%; max-height:60%;'):
                 interface.field_planner(system.field_provider, system.odometer, system.gnss, leaflet_map_field)
+        if dev:
+            with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
+                interface.dev_tools(system)
 
     @ui.page('/path')
     def path_page(dev: bool = True):
@@ -84,9 +79,8 @@ def startup() -> None:
                 interface.operation(system, leaflet_map_path)
                 interface.path_planner(system.path_provider, system.path_recorder, system.automator)
             if dev:
-                with ui.row().classes('items-stretch justify-items-stretch'):
-                    interface.development(system.field_friend)
-                    interface.hardware_control(system.field_friend, system.automator, system.puncher)
+                with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
+                    interface.dev_tools(system)
 
     @ui.page('/test')
     def test_page():

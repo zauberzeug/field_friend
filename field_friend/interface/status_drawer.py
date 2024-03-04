@@ -51,23 +51,23 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     ui.icon('report').props('size=md').classes('text-yellow')
                     ui.label('Bumper triggered, warning!').classes('text-orange mt-1')
 
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Robot:**').style('color: #6E93D6')
-            if isinstance(robot, FieldFriendHardware):
-                ui.label('real hardware')
-            else:
-                ui.label('simulated hardware')
+        # with ui.row().classes('place-items-center'):
+        #     ui.markdown('**Robot:**').style('color: #6E93D6')
+        #     if isinstance(robot, FieldFriendHardware):
+        #         ui.label('real hardware')
+        #     else:
+        #         ui.label('simulated hardware')
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Status Control:**').style('color: #6E93D6')
                 status_control_label = ui.label()
 
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Battery:**').style('color: #6E93D6')
-            bms_label = ui.label()
-            if hasattr(robot, 'battery_control'):
-                battery_control_label = ui.label('')
+        # with ui.row().classes('place-items-center'):
+        #     ui.markdown('**Battery:**').style('color: #6E93D6')
+        #     bms_label = ui.label()
+        #     if hasattr(robot, 'battery_control'):
+        #         battery_control_label = ui.label('')
 
         with ui.row().classes('place-items-center'):
             ui.markdown('**Y-Axis:**').style('color: #6E93D6')
@@ -86,24 +86,24 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 ui.markdown('**Bumper:**').style('color: #6E93D6')
                 bumper_label = ui.label()
 
-        ui.markdown('**Robot Brain**').style('color: #6E93D6').classes('w-full text-center')
-        ui.separator()
+        # ui.markdown('**Robot Brain**').style('color: #6E93D6').classes('w-full text-center')
+        # ui.separator()
 
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Uptime:**').style('color: #6E93D6')
-            uptime_label = ui.label()
+        # with ui.row().classes('place-items-center'):
+        #     ui.markdown('**Uptime:**').style('color: #6E93D6')
+        #     uptime_label = ui.label()
 
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**CPU:**').style('color: #6E93D6')
-            cpu_label = ui.label()
+        # with ui.row().classes('place-items-center'):
+        #     ui.markdown('**CPU:**').style('color: #6E93D6')
+        #     cpu_label = ui.label()
 
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**RAM:**').style('color: #6E93D6')
-            ram_label = ui.label()
+        # with ui.row().classes('place-items-center'):
+        #     ui.markdown('**RAM:**').style('color: #6E93D6')
+        #     ram_label = ui.label()
 
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Temperature:**').style('color: #6E93D6')
-            temperature_label = ui.label()
+        # with ui.row().classes('place-items-center'):
+        #     ui.markdown('**Temperature:**').style('color: #6E93D6')
+        #     temperature_label = ui.label()
 
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
@@ -193,9 +193,10 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
 
             else:
                 z_axis_flags = ['no z-axis']
-            bms_label.text = ', '.join(flag for flag in bms_flags if flag)
-            if hasattr(robot, 'battery_control') and robot.battery_control is not None:
-                battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
+            # TODO: löschen falls Battery im  status drawer rausfliegt
+            # bms_label.text = ', '.join(flag for flag in bms_flags if flag)
+            # if hasattr(robot, 'battery_control') and robot.battery_control is not None:
+            #     battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
 
             y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
             z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
@@ -204,16 +205,18 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             if isinstance(robot.bumper, rosys.hardware.Bumper):
                 bumper_label.text = ', '.join(robot.bumper.active_bumpers)
 
-            uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
-            cpu_label.text = f'{psutil.cpu_percent():.0f}%'
-            ram_label.text = f'{psutil.virtual_memory().percent:.0f}%'
+            # TODO: zu löschen, falls Robobrain hier rausfliegt
+            # uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
+            # cpu_label.text = f'{psutil.cpu_percent():.0f}%'
+            # ram_label.text = f'{psutil.virtual_memory().percent:.0f}%'
 
             def get_jetson_cpu_temperature():
                 with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
                     temp = f.read().strip()
                 return float(temp) / 1000.0  # Convert from milli°C to °C
-            if isinstance(robot, FieldFriendHardware):
-                temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
+            # TODO: löschen, falls
+            # if isinstance(robot, FieldFriendHardware):
+                # temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
