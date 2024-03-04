@@ -22,12 +22,6 @@ class operation:
         self.key_controls = KeyControls(self.system)
         self.leaflet_map = leaflet_map
         self.initial_value = None
-        with ui.dialog() as self.dialog, ui.card():
-            ui.label('Do you want to continue the old mowing automation?')
-            with ui.row():
-                ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
-                ui.button('No', on_click=lambda: self.dialog.submit('No'))
-                ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
         with ui.card().tight().classes('w-full h-full'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
@@ -123,6 +117,13 @@ class operation:
                 ui.space()
                 with ui.row():
                     automation_controls(self.system.automator, can_start=self.ensure_start)
+        with ui.dialog() as self.dialog, ui.card():
+            ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row}"}?').classes(
+                'text-lg')
+            with ui.row():
+                ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
+                ui.button('No', on_click=lambda: self.dialog.submit('No'))
+                ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
     @ui.refreshable
     def show_start_row(self) -> None:
@@ -156,13 +157,34 @@ class operation:
 
     async def ensure_start(self) -> bool:
         self.log.info('Ensuring start of automation')
-        if not self.automations_toggle.value == 'mowing' or self.system.mowing.current_path is None:
+        if self.automations_toggle.value == 'mowing':
+            return await self.ensure_mowing_start()
+        elif self.automations_toggle.value == 'weeding':
+            return await self.ensure_weeding_start()
+        return True
+
+    async def ensure_mowing_start(self) -> bool:
+        self.log.info('Ensuring start of automation')
+        if not self.automations_toggle.value == 'mowing' or self.system.mowing.current_path_segment is None:
             return True
         result = await self.dialog
         if result == 'Yes':
             self.system.mowing.continue_mowing = True
         elif result == 'No':
             self.system.mowing.continue_mowing = False
+        elif result == 'Cancel':
+            return False
+        return True
+
+    async def ensure_weeding_start(self) -> bool:
+        self.log.info('Ensuring start of automation')
+        if not self.automations_toggle.value == 'weeding' or self.system.weeding.current_segment is None:
+            return True
+        result = await self.dialog
+        if result == 'Yes':
+            self.system.weeding.continue_canceled_weeding = True
+        elif result == 'No':
+            self.system.weeding.continue_canceled_weeding = False
         elif result == 'Cancel':
             return False
         return True

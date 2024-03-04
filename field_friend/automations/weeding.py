@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import rosys
@@ -20,8 +20,9 @@ class WorkflowException(Exception):
     pass
 
 
-class Weeding:
+class Weeding(rosys.persistence.PersistentModule):
     def __init__(self, system: 'System') -> None:
+        super().__init__()
         self.PATH_PLANNED = rosys.event.Event()
         '''Event that is emitted when the path is planed. The event contains the path as a list of PathSegments.'''
 
@@ -35,6 +36,7 @@ class Weeding:
         self.tornado_angle: float = 110.0
         self.minimum_turning_radius: float = 0.5
         self.only_monitoring: bool = False
+        self.continue_canceled_weeding: bool = False
 
         self.sorted_weeding_rows: list = []
         self.weeding_plan: Optional[list[list[PathSegment]]] = None
@@ -45,19 +47,64 @@ class Weeding:
         self.crops_to_handle: dict[str, Point] = {}
         self.weeds_to_handle: dict[str, Point] = {}
 
+    def backup(self) -> dict:
+        return {
+            'use_field_planning': self.use_field_planning,
+            'start_row_id': self.start_row_id,
+            'end_row_id': self.end_row_id,
+            'tornado_angle': self.tornado_angle,
+            'minimum_turning_radius': self.minimum_turning_radius,
+            'only_monitoring': self.only_monitoring,
+            'sorted_weeding_rows': self.sorted_weeding_rows,
+            'weeding_plan': [[rosys.persistence.to_dict(segment) for segment in row] for row in self.weeding_plan] if self.weeding_plan else [],
+            'turn_paths': [rosys.persistence.to_dict(segment) for segment in self.turn_paths],
+            'current_row': rosys.persistence.to_dict(self.current_row) if self.current_row else None,
+            'current_segment': rosys.persistence.to_dict(self.current_segment) if self.current_segment else None,
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.use_field_planning = data.get('use_field_planning', False)
+        self.start_row_id = data.get('start_row_id')
+        self.end_row_id = data.get('end_row_id')
+        self.tornado_angle = data.get('tornado_angle', 110.0)
+        self.minimum_turning_radius = data.get('minimum_turning_radius', 0.5)
+        self.only_monitoring = data.get('only_monitoring', False)
+        self.sorted_weeding_rows = data.get('sorted_weeding_rows', [])
+        self.weeding_plan = [
+            [rosys.persistence.from_dict(PathSegment, segment_data)
+             for segment_data in row_data] for row_data in data.get('weeding_plan', [])
+        ]
+        self.turn_paths = [rosys.persistence.from_dict(PathSegment, segment_data)
+                           for segment_data in data.get('turn_paths', [])]
+        self.current_row = rosys.persistence.from_dict(
+            Row, data.get('current_row')) if data.get('current_row') else None
+        self.current_segment = rosys.persistence.from_dict(PathSegment, data.get(
+            'current_segment')) if data.get('current_segment') else None
+
+    def invalidate(self) -> None:
+        self.request_backup()
+
     async def start(self):
         self.log.info('starting weeding...')
         if not await self._check_hardware_ready():
             return
-        if self.use_field_planning and not await self._field_planning():
-            rosys.notify('Field planning failed', 'negative')
-            return
+        if not self.continue_canceled_weeding:
+            if self.use_field_planning and not await self._field_planning():
+                rosys.notify('Field planning failed', 'negative')
+                return
         await self._weeding()
 
     async def _check_hardware_ready(self) -> bool:
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
+            return False
+        camera = next((camera for camera in self.system.usb_camera_provider.cameras.values() if camera.is_connected), None)
+        if not camera:
+            rosys.notify('no camera connected')
+            return False
+        if camera.calibration is None:
+            rosys.notify('camera has no calibration')
             return False
         if self.system.field_friend.tool == 'none':
             rosys.notify('This field friend has no tool, only monitoring', 'info')
@@ -105,6 +152,7 @@ class Weeding:
         paths = [path_segment for path in self.weeding_plan for path_segment in path]
         turn_paths = [path_segment for path in self.turn_paths for path_segment in path]
         self.PATH_PLANNED.emit(paths + turn_paths)
+        self.invalidate()
         return True
 
     def _make_plan(self) -> Optional[list[rosys.driving.PathSegment]]:
@@ -259,10 +307,18 @@ class Weeding:
         await self.system.driver.drive_spline(start_spline)
 
     async def _weed_with_plan(self):
-        await self._drive_to_start()
+        if self.continue_canceled_weeding:
+            start_pose = self.system.odometer.prediction
+            end_pose = self.current_segment.spline.start
+            start_spline = Spline.from_poses(start_pose, end_pose)
+            await self.system.driver.drive_spline(start_spline)
+        else:
+            await self._drive_to_start()
         self.system.automation_watcher.start_field_watch(self.field.outline)
         self.system.automation_watcher.gnss_watch_active = True
         for i, path in enumerate(self.weeding_plan):
+            if self.continue_canceled_weeding and self.current_row != self.sorted_weeding_rows[i]:
+                continue
             self.system.driver.parameters.can_drive_backwards = False
             self.system.driver.parameters.minimum_turning_radius = 0.05
             self.current_row = self.sorted_weeding_rows[i]
@@ -275,7 +331,12 @@ class Weeding:
             self.system.plant_locator.resume()
             await rosys.sleep(3)
             for j, segment in enumerate(path):
+                if self.continue_canceled_weeding and self.current_segment != segment:
+                    continue
+                else:
+                    self.continue_canceled_weeding = False
                 self.current_segment = segment
+                self.invalidate()
                 if not self.system.is_real:
                     self._create_simulated_plants()
                 self.log.info(f'Driving row {i + 1}/{len(self.weeding_plan)} and segment {j + 1}/{len(path)}...')
@@ -305,6 +366,11 @@ class Weeding:
 
         self.system.automation_watcher.stop_field_watch()
         self.system.automation_watcher.gnss_watch_active = False
+        self.sorted_weeding_rows = []
+        self.weeding_plan = None
+        self.turn_paths = []
+        self.current_row = None
+        self.current_segment = None
 
     async def _weed_planless(self):
         already_explored = False
