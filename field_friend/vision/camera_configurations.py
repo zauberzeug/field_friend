@@ -34,8 +34,8 @@ configurations = {
             'auto_exposure': True,
         },
         'crop': {
-            'xoffset': 400,
-            'yoffset': 100,
+            'xoffset': 350,
+            'yoffset': 50,
         },
     },
     'ff3': {
@@ -54,6 +54,17 @@ configurations = {
             'width': 1920,
             'height': 1080,
             'auto_exposure': True,
+        },
+    },
+    'ff11': {
+        'parameters': {
+            'width': 1920,
+            'height': 1080,
+            'auto_exposure': True,
+        },
+        'crop': {
+            'xoffset': 350,
+            'yoffset': 50,
         },
     },
 }

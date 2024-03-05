@@ -1,9 +1,13 @@
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Literal, Optional, TypedDict, Union
+from statistics import mean
+from typing import Any, List, Literal, Optional, TypedDict, Union
 
+import geopandas as gpd
 import rosys
+from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
+from shapely.geometry import LineString
 
 from field_friend.navigation.point_transformation import wgs84_to_cartesian
 
@@ -16,7 +20,6 @@ class FieldObstacle:
     name: str
     points_wgs84: list[list] = field(default_factory=list)
 
-    @lru_cache(maxsize=None)
     def points(self, reference_point: list) -> list[Point]:
         if len(self.points_wgs84) > 0:
             cartesian_points = []
@@ -36,7 +39,6 @@ class Row:
     reverse: bool = False
     crops: list[Plant] = field(default_factory=list)
 
-    @lru_cache(maxsize=None)
     def points(self, reference_point: list) -> list[Point]:
         if len(self.points_wgs84) > 0:
             cartesian_points = []
@@ -53,6 +55,9 @@ class Row:
             name=self.name,
             points_wgs84=list(reversed(self.points_wgs84)),
         )
+
+    def clear_crops(self):
+        self.crops.clear()
 
 
 @dataclass(slots=True, kw_only=True)
@@ -135,9 +140,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def set_reference(self, field: Field, point: list) -> None:
         if field.reference_lat is None:
-            point[0]
+            field.reference_lat = point[0]
         if field.reference_lon is None:
-            point[1]
+            field.reference_lon = point[1]
+        self.invalidate()
 
     def add_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         field.obstacles.append(obstacle)
@@ -181,15 +187,48 @@ class FieldProvider(rosys.persistence.PersistentModule):
             self.active_object = None
         self.OBJECT_SELECTED.emit()
 
-    def is_polygon_check(polygon) -> bool:
-        # TODO add a function where you can check if the given geometry is a polygon (min. 3 points) or not
-        # also possible to put this into a file geometry_functions.py or something
-        return True
+    def is_polygon(self, field: Field) -> bool:
+        try:
+            polygon = Polygon(field.outline_wgs84)
+            return polygon.is_valid and polygon.geom_type == 'Polygon'
+        except:
+            return False
 
-    def sort_rows(field: Field) -> None:
-        return
-        # TODO implement a fuction that takes a field and sorts all its rows depending on their geographic location
-        # if first_point[0]-last_point[0] > first_point[1]-last_point[1]:
-        #   do this
-        # else
-        #   do this
+    # TODO currently the function does only sort even fields where rows have the same length
+    # the function need to be extended for more special cases
+
+    def sort_rows(self, field: Field) -> None:
+        def get_centroid(row: Row) -> Point:
+            polyline = LineString(row.points_wgs84)
+            return polyline.centroid
+
+        reference_centroid = get_centroid(field.rows[0])
+
+        def get_distance(row: Row, direction: str):
+            row_centroid = get_centroid(row)
+            distance = Geodesic.WGS84.Inverse(reference_centroid.x, reference_centroid.y,
+                                              row_centroid.x, row_centroid.y)["s12"]
+            if direction == "x" and reference_centroid.x > row_centroid.x:
+                distance *= -1
+            elif direction == "y" and reference_centroid.y > row_centroid.y:
+                distance *= -1
+            print(f'{row.name} has a dist of {distance}')
+
+            return distance
+
+        field_index = self.fields.index(field)
+        rows_axis = []
+
+        for row in field.rows:
+            direction = Geodesic.WGS84.Inverse(
+                row.points_wgs84[0][0], row.points_wgs84[0][1], row.points_wgs84[-1][0], row.points_wgs84[-1][1])['azi1']
+            if direction < 0:
+                direction = Geodesic.WGS84.Inverse(
+                    row.points_wgs84[-1][0], row.points_wgs84[-1][1], row.points_wgs84[0][0], row.points_wgs84[0][1])['azi1']
+            rows_axis.append(direction)
+        sort_axis = mean(rows_axis)  # mean direction of all rows
+
+        direction = "x" if abs(reference_centroid.x - field.rows[-1].points_wgs84[0][0]) > abs(
+            reference_centroid.y - field.rows[-1].points_wgs84[0][1]) else "y"
+        self.fields[field_index].rows = sorted(field.rows, key=lambda row: get_distance(row, direction=direction))
+        self.FIELDS_CHANGED.emit()

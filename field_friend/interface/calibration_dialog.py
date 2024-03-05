@@ -183,7 +183,7 @@ class calibration_dialog(ui.dialog):
                 CalibrationPoint.create('v',  0.30,    0.10, 0.00),
                 CalibrationPoint.create('w',  0.30,    0.15, 0.00),
             ]
-        elif version in ['u3', 'u4', 'ff10']:
+        elif version in ['u3', 'u4', 'ff10', 'ff11']:
             self.points = [
                 CalibrationPoint.create('A',  0.00,  -0.15, 0.00),
                 CalibrationPoint.create('B',  0.00,  -0.10, 0.00),
@@ -227,13 +227,13 @@ class calibration_dialog(ui.dialog):
                 CalibrationPoint.create('h',  0.20,    0.10, 0.00),
                 CalibrationPoint.create('i',  0.20,    0.15, 0.00),
 
-                CalibrationPoint.create('j',  0.25,   -0.15, 0.00),
-                CalibrationPoint.create('k',  0.25,   -0.10, 0.00),
-                CalibrationPoint.create('l',  0.25,   -0.05, 0.00),
-                CalibrationPoint.create('m',  0.25,    0.00, 0.00),
-                CalibrationPoint.create('n',  0.25,    0.05, 0.00),
-                CalibrationPoint.create('o',  0.25,    0.10, 0.00),
-                CalibrationPoint.create('p',  0.25,    0.15, 0.00),
+                # CalibrationPoint.create('j',  0.25,   -0.15, 0.00),
+                # CalibrationPoint.create('k',  0.25,   -0.10, 0.00),
+                # CalibrationPoint.create('l',  0.25,   -0.05, 0.00),
+                # CalibrationPoint.create('m',  0.25,    0.00, 0.00),
+                # CalibrationPoint.create('n',  0.25,    0.05, 0.00),
+                # CalibrationPoint.create('o',  0.25,    0.10, 0.00),
+                # CalibrationPoint.create('p',  0.25,    0.15, 0.00),
             ]  # FOR U3
         else:
             raise ValueError(f'Unknown version: {version}')
@@ -254,7 +254,7 @@ class calibration_dialog(ui.dialog):
             return False
         if camera.calibration:
             world_points = np.array([p.world_position.tuple for p in self.points])
-            image_points = camera.calibration.project_to_image(world_points=world_points)
+            image_points = camera.calibration.project_to_image(world_coordinates=world_points)
             for i, point in enumerate(self.points):
                 point.image_position = Point(x=image_points[i][0], y=image_points[i][1])
         self.calibration_image.source = camera.get_latest_image_url()

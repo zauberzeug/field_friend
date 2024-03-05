@@ -1,15 +1,17 @@
 import json
 import logging
 import uuid
-from typing import Optional, Literal
+from typing import Literal, Optional
+
 import rosys
 from nicegui import events, ui
+
 from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
 
 from ..automations import Field, FieldObstacle, FieldProvider, Row
 from ..navigation import Gnss
-from .leaflet_map import leaflet_map
 from .geodata_picker import geodata_picker
+from .leaflet_map import leaflet_map
 from .operation import operation
 
 
@@ -186,6 +188,10 @@ class field_planner:
                             ui.button(icon='add', on_click=lambda field=self.field_provider.active_field: self.add_row(field)) \
                                 .props('color=primary outline').style("width: 100%")
 
+                        with ui.row().classes('items-center mt-3').style("width: 100%"):
+                            ui.button(
+                                "sort rows", on_click=lambda field=self.field_provider.active_field: self.field_provider.sort_rows(field))
+
     @ui.refreshable
     def show_object_settings(self) -> None:
         with ui.card().style('width: 24%; max-height: 100%; height: 100%;'):
@@ -244,6 +250,8 @@ class field_planner:
                                 'icon=expand_more color=primary fab-mini flat').classes('ml-auto').style("display:block; margin-top:auto; margin-bottom: auto; margin-left: 0; margin-right: 0;")
                         ui.input(value=self.field_provider.active_object['object'].name).on('blur', self.field_provider.invalidate).bind_value(
                             self.field_provider.active_object['object'], 'name').classes('w-32')
+                        ui.button(on_click=self.field_provider.active_object['object'].clear_crops).props(
+                            'icon=sym_o_compost color=warning fab-mini flat').classes('ml-auto').style("display:block; margin-top:auto; margin-bottom: auto;").tooltip('Clear all row crops')
                         ui.button(on_click=lambda row=self.field_provider.active_object['object']: self.field_provider.remove_row(self.field_provider.active_field, row)).props(
                             'icon=delete color=warning fab-mini flat').classes('ml-auto').style("display:block; margin-top:auto; margin-bottom: auto;").tooltip('Delete Row')
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
@@ -308,8 +316,7 @@ class field_planner:
                     return
                 new_point = positioning
             if index == 0:
-                field.reference_lat = new_point[0]
-                field.reference_lon = new_point[1]
+                self.field_provider.set_reference(field, new_point)
             field.outline_wgs84[index] = new_point
         else:
             positioning = [self.gnss.record.latitude, self.gnss.record.longitude]
@@ -320,8 +327,8 @@ class field_planner:
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
-            if len(self.field_provider.active_field.outline_wgs84) < 1:
-                self.field_provider.set_reference(self.field_provider.active_field, new_point)
+            if len(field.outline_wgs84) < 1:
+                self.field_provider.set_reference(field, new_point)
                 self.gnss.set_reference(lat=new_point[0], lon=new_point[1])
             field.outline_wgs84.append(new_point)
         self.field_provider.invalidate()

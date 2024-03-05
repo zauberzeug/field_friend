@@ -45,7 +45,7 @@ class Tornado(rosys.hardware.Module, abc.ABC):
         if not self.z_is_referenced:
             raise RuntimeError('zaxis is not referenced, reference first')
         if not self.min_position <= position:
-            raise RuntimeError('zaxis depth is out of range')
+            raise RuntimeError(f'zaxis depth is out of range, min: {self.min_position}, given: {position}')
 
     @abc.abstractmethod
     async def move_down_until_reference(self) -> None:
@@ -180,8 +180,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             f'{name}_ref_gear.level',
             f'{name}_ref_t.level',
             f'{name}_ref_b.level',
-            f'{name}_z.position',
-            f'{name}_turn.position',
+            f'{name}_z.position:3',
+            f'{name}_turn.position:3',
         ]
         super().__init__(
             min_position=min_position,

@@ -5,7 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Protocol, Union
+from typing import Any, Optional, Protocol
 
 import numpy as np
 import pynmea2
@@ -42,6 +42,12 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.ROBOT_POSITION_LOCATED = rosys.event.Event()
         """the robot has been located"""
 
+        self.RTK_FIX_LOST = rosys.event.Event()
+        """the robot lost RTK fix"""
+
+        self.GNSS_CONNECTION_LOST = rosys.event.Event()
+        """the GNSS connection was lost"""
+
         self.record = GNSSRecord()
         self.device = None
         self.ser = None
@@ -52,15 +58,22 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         rosys.on_repeat(self.update, 1.0)
         rosys.on_repeat(self.try_connection, 3.0)
 
-    def backup(self) -> dict[str, Any]:
+    def backup(self) -> dict:
         return {
-            'reference_lat': self.reference_lat,
-            'reference_lon': self.reference_lon,
+            'record': rosys.persistence.to_dict(self.record)
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.reference_lat = data.get('reference_lat')
-        self.reference_lon = data.get('reference_lon')
+        record = data.get('record')
+        self.record.timestamp = record["timestamp"]
+        self.record.latitude = record["latitude"]
+        self.record.longitude = record["longitude"]
+        self.record.mode = record["mode"]
+        self.record.gps_qual = record["gps_qual"]
+        self.record.altitude = record["altitude"]
+        self.record.separation = record["separation"]
+        self.record.heading = record["heading"]
+        self.record.speed_kmh = record["speed_kmh"]
 
     @abstractmethod
     async def update(self) -> None:
@@ -158,6 +171,7 @@ class GnssHardware(Gnss):
                         record.latitude = msg.latitude
                         record.longitude = msg.longitude
                         record.mode = msg.mode_indicator
+                        # print(f'The GNSS message: {msg.mode_indicator}')
                         has_location = True
                     if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None) is not None:
                         # self.log.info(f'HDT: Heading: {msg.heading}')
@@ -170,6 +184,12 @@ class GnssHardware(Gnss):
             self.log.info(f'Device error: {e}')
             self.device = None
             return
+        if self.record.gps_qual > 0 and record.gps_qual == 0:
+            self.log.info('GNSS lost')
+            self.GNSS_CONNECTION_LOST.emit()
+        if self.record.gps_qual == 4 and record.gps_qual != 4:
+            self.log.info('GNSS RTK fix lost')
+            self.RTK_FIX_LOST.emit()
         self.record = record
         if has_location:
             if record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
@@ -222,9 +242,12 @@ class GnssSimulation(Gnss):
     async def update(self) -> None:
         if self.device is None:
             return
+        if self.reference_lat is None:
+            self.reference_lat = 51.983159
+        if self.reference_lon is None:
+            self.reference_lon = 7.434212
         pose = deepcopy(self.pose_provider.pose)
         pose.time = rosys.time()
-        await rosys.sleep(0.5)
         current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
 
         self.record.timestamp = pose.time

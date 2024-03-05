@@ -2,17 +2,12 @@
 import logging
 from typing import TYPE_CHECKING
 
-import rosys
-from nicegui import events, ui
+from nicegui import ui
 
+from ..falling_detection import RuturnToSafety
 from .automation_controls import automation_controls
-from .field_friend_object import field_friend_object
-from .field_object import field_object
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
-from .plant_object import plant_objects
-from .visualizer_object import visualizer_object
-from ..falling_detection import RuturnToSafety
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -28,12 +23,6 @@ class operation:
         self.key_controls = KeyControls(self.system)
         self.leaflet_map = leaflet_map
         self.initial_value = None
-        with ui.dialog() as self.dialog, ui.card():
-            ui.label('Do you want to continue the old mowing automation?')
-            with ui.row():
-                ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
-                ui.button('No', on_click=lambda: self.dialog.submit('No'))
-                ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
         with ui.card().tight().classes('w-full h-full'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
@@ -74,45 +63,42 @@ class operation:
                             self.system.automator, 'default_automation', forward=lambda key: self.system.automations[key],
                             backward=lambda automation: next(
                                 key for key, value in self.system.automations.items() if value == automation)).classes('w-full border pl-2').style('border: 2px solid #6E93D6; border-radius: 5px; background-color: #EEF4FA')
+
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='mowing'):
                         with ui.row():
-                            ui.number('padding', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
+                            ui.number('Padding', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
                                 'w-24').bind_value(system.mowing, 'padding').tooltip('Set the padding for the mowing automation')
-                            ui.number('lane distance', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
+                            ui.number('Lane distance', value=0.5, step=0.1, min=0.0, format='%.1f').props('dense outlined suffix=m').classes(
                                 'w-24').bind_value(system.mowing, 'lane_distance').tooltip('Set the lane distance for the system. automation')
-                            ui.number('number of outer lanes', value=3, step=1, min=3, format='%.0f').props('dense outlined').classes(
-                                'w-24').bind_value(system.mowing, 'number_of_outer_lanes').tooltip('Set the number of outer lanes for the mowing automation')
-
-                    with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='demo_weeding'):
-                        if system.field_friend.z_axis:
-                            ui.number('Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.18).props('dense outlined suffix=m').classes(
-                                'w-24').bind_value(system.demo_weeding, 'drill_depth').tooltip('Set the drill depth for the weeding automation')
-                            ui.label('press PLAY to start weeding with the set drill depth')
-                        else:
-                            ui.label('This Field Friend has no weeding tool available')
+                            ui.number('Number of outer lanes', value=3, step=1, min=3, format='%.0f').props('dense outlined').classes(
+                                'w-28').bind_value(system.mowing, 'number_of_outer_lanes').tooltip('Set the number of outer lanes for the mowing automation')
+                            ui.number('Min. turning radius', format='%.2f', value=0.5, step=0.1, min=0.1, max=1.0).props(
+                                'dense outlined suffix=m').classes('w-32').bind_value(
+                                self.system.mowing, 'turning_radius').tooltip(
+                                'Set the turning radius for the mowing automation')
 
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='weeding'):
-                        with ui.row():
-                            mode = ui.toggle(
-                                ['Bohren', 'Hacken'],
-                                value='Bohren').bind_value(
-                                system.demo_weeding, 'mode').props('outline')
-                            ui.number(
-                                'Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.18).props(
-                                'dense outlined suffix=m').classes('w-24').bind_value(
-                                self.system.weeding, 'drill_depth').tooltip(
-                                'Set the drill depth for the weeding automation').bind_visibility_from(
-                                mode, 'value', value='Bohren')
+                        with ui.column():
+                            self.with_field_planning = ui.checkbox('Use field planning', value=True).bind_value(
+                                self.system.weeding, 'use_field_planning').tooltip('Set the weeding automation to use the field planning with GNSS')
 
-                    with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='Continuous weeding'):
-                        with ui.row():
-                            ui.number(
-                                'Drill depth', format='%.2f', value=0.05, step=0.01, min=0.01, max=0.18).props(
-                                'dense outlined suffix=m').classes('w-24').bind_value(
-                                self.system.weeding_new, 'drill_depth').tooltip(
-                                'Set the drill depth for the weeding automation')
+                            with ui.row().bind_visibility_from(self.with_field_planning, 'value', value=True):
+                                self.show_start_row()
+                                self.show_end_row()
+                                ui.number('Min. turning radius', format='%.2f', value=0.5, step=0.1, min=0.1, max=1.0).props(
+                                    'dense outlined suffix=m').classes('w-30').bind_value(
+                                    self.system.weeding, 'turning_radius').tooltip(
+                                    'Set the turning radius for the weeding automation')
+                            with ui.row():
+                                ui.number('Tornado angle', format='%.0f', value=180, step=1, min=1, max=180).props(
+                                    'dense outlined suffix=°').classes('w-24').bind_value(
+                                    self.system.weeding, 'tornado_angle').tooltip(
+                                    'Set the angle for the tornado drill')
+                                ui.checkbox('Only monitoring').bind_value(
+                                    self.system.weeding, 'only_monitoring').tooltip(
+                                    'Set the weeding automation to only monitor the field')
 
-                    with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='collecting'):
+                    with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='collecting (demo)'):
                         with ui.row():
                             ui.number(
                                 'Drill angle', format='%.0f', value=100, step=1, min=1, max=180).props(
@@ -141,6 +127,31 @@ class operation:
                 ui.space()
                 with ui.row():
                     automation_controls(self.system.automator, can_start=self.ensure_start)
+        with ui.dialog() as self.dialog, ui.card():
+            ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row}"}?').classes(
+                'text-lg')
+            with ui.row():
+                ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
+                ui.button('No', on_click=lambda: self.dialog.submit('No'))
+                ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
+
+    @ui.refreshable
+    def show_start_row(self) -> None:
+        if self.field_provider.active_field is not None:
+            ui.select({row.id: row.name for row in self.field_provider.active_field.rows}, label='Start row').bind_value(self.system.weeding, 'start_row_id').classes(
+                'w-24').tooltip('Select the row to start on')
+        else:
+            ui.select([None], label='Start row').bind_value(self.system.weeding, 'start_row').classes(
+                'w-24').tooltip('Select the row to start on')
+
+    @ui.refreshable
+    def show_end_row(self) -> None:
+        if self.field_provider.active_field is not None:
+            ui.select({row.id: row.name for row in self.field_provider.active_field.rows}, label='End row').bind_value(self.system.weeding, 'end_row_id').classes(
+                'w-24').tooltip('Select the row to end on')
+        else:
+            ui.select([None], label='End row').bind_value(self.system.weeding, 'end_row').classes(
+                'w-24').tooltip('Select the row to end on')
 
     def set_field(self) -> None:
         for field in self.system.field_provider.fields:
@@ -150,17 +161,40 @@ class operation:
                     self.system.gnss.set_reference(field.outline_wgs84[0][0], field.outline_wgs84[0][1])
                 # TODO das hier noch auf das active field umbauen, damit auch diese werte im weeding auf das active field registriert sind
                 self.system.weeding.field = field
-                self.system.weeding_new.field = field
+                self.system.mowing.field = field
+                self.show_start_row.refresh()
+                self.show_end_row.refresh()
 
     async def ensure_start(self) -> bool:
         self.log.info('Ensuring start of automation')
-        if not self.automations_toggle.value == 'mowing' or self.system.mowing.current_path is None:
+        if self.automations_toggle.value == 'mowing':
+            return await self.ensure_mowing_start()
+        elif self.automations_toggle.value == 'weeding':
+            return await self.ensure_weeding_start()
+        return True
+
+    async def ensure_mowing_start(self) -> bool:
+        self.log.info('Ensuring start of automation')
+        if not self.automations_toggle.value == 'mowing' or self.system.mowing.current_path_segment is None:
             return True
         result = await self.dialog
         if result == 'Yes':
             self.system.mowing.continue_mowing = True
         elif result == 'No':
             self.system.mowing.continue_mowing = False
+        elif result == 'Cancel':
+            return False
+        return True
+
+    async def ensure_weeding_start(self) -> bool:
+        self.log.info('Ensuring start of automation')
+        if not self.automations_toggle.value == 'weeding' or self.system.weeding.current_segment is None:
+            return True
+        result = await self.dialog
+        if result == 'Yes':
+            self.system.weeding.continue_canceled_weeding = True
+        elif result == 'No':
+            self.system.weeding.continue_canceled_weeding = False
         elif result == 'Cancel':
             return False
         return True

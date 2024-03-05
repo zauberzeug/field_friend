@@ -38,6 +38,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  wheels: rosys.hardware.WheelsHardware,
                  estop: rosys.hardware.EStop,
+                 bumper: Union[rosys.hardware.BumperHardware, None] = None,
                  y_axis: Union[YAxisHardware, ChainAxisHardware, YAxisHardwareTornado, None] = None,
                  z_axis: Union[ZAxisHardware, ZAxisHardwareV2, TornadoHardware, None] = None,
                  flashlight: Union[FlashlightHardware, FlashlightHardwareV2, FlashlightPWMHardware, None],
@@ -61,6 +62,10 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         lizard_code += 'end\n'
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
+        if isinstance(bumper, rosys.hardware.BumperHardware):
+            lizard_code += 'when ' + \
+                ' or '.join(f'{bumper.name}_{pin}.level == 1' for pin in bumper.pins) + \
+                f' then {wheels.name}.speed(0, 0); end\n'
         if isinstance(y_axis, ChainAxisHardware):
             lizard_code += f'when {y_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); end\n'
         if (isinstance(z_axis, ZAxisHardware) or isinstance(z_axis, ZAxisHardwareV2)) and y_axis is not None:

@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-import numpy as np
 import psutil
 import rosys
 from nicegui import ui
@@ -10,10 +9,10 @@ from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightP
 from ..navigation import Gnss
 
 
-def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer):
-    with ui.right_drawer(value=False).classes('bg-[#edf4fa]') as status_drawer, ui.column():
+def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer):
+    with ui.scroll_area().style('width: 100%; height: 100%; color: white;'):
         ui.label('System Status').classes('text-xl')
-        ui.markdown('**Hardware**').style('color: #6E93D6').classes('w-full text-center')
+        ui.markdown('**Hardware**').style('color: #6E93D6;').classes('w-full text-center')
         ui.separator()
 
         with ui.row().bind_visibility_from(robot.estop, 'active'):
@@ -53,7 +52,7 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     ui.label('Bumper triggered, warning!').classes('text-orange mt-1')
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Robot:**').style('color: #6E93D6')
+            ui.markdown('**Robot:**').style('color: #EDF4FB')
             if isinstance(robot, FieldFriendHardware):
                 ui.label('real hardware')
             else:
@@ -61,77 +60,73 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
-                ui.markdown('**Status Control:**').style('color: #6E93D6')
+                ui.markdown('**Status Control:**').style('color: #EDF4FB')
                 status_control_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Battery:**').style('color: #6E93D6')
+            ui.markdown('**Battery:**').style('color: #EDF4FB')
             bms_label = ui.label()
             if hasattr(robot, 'battery_control'):
                 battery_control_label = ui.label('')
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Y-Axis:**').style('color: #6E93D6')
+            ui.markdown('**Y-Axis:**').style('color: #EDF4FB')
             y_axis_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Z-Axis:**').style('color: #6E93D6')
+            ui.markdown('**Z-Axis:**').style('color: #EDF4FB')
             z_axis_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Flashlight:**').style('color: #6E93D6')
+            ui.markdown('**Flashlight:**').style('color: #EDF4FB')
             flashlight_label = ui.label()
 
         if hasattr(robot, 'bumper') and robot.bumper is not None:
             with ui.row().classes('place-items-center'):
-                ui.markdown('**Bumper:**').style('color: #6E93D6')
+                ui.markdown('**Bumper:**').style('color: #EDF4FB')
                 bumper_label = ui.label()
 
-        ui.markdown('**Robot Brain**').style('color: #6E93D6').classes('w-full text-center')
+        ui.markdown('**Robot Brain**').style('color: #6E93D6;').classes('w-full text-center')
         ui.separator()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Uptime:**').style('color: #6E93D6')
+            ui.markdown('**Uptime:**').style('color: #EDF4FB')
             uptime_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**CPU:**').style('color: #6E93D6')
+            ui.markdown('**CPU:**').style('color: #EDF4FB')
             cpu_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**RAM:**').style('color: #6E93D6')
+            ui.markdown('**RAM:**').style('color: #EDF4FB')
             ram_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Temperature:**').style('color: #6E93D6')
+            ui.markdown('**Temperature:**').style('color: #EDF4FB')
             temperature_label = ui.label()
 
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**GNSS-Device:**').style('color: #6E93D6')
+            ui.markdown('**GNSS-Device:**').style('color: #EDF4FB')
             gnss_device_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Reference position:**').style('color: #6E93D6')
+            ui.markdown('**Reference position:**').style('color: #EDF4FB')
             reference_position_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Position:**').style('color: #6E93D6')
+            ui.markdown('**Position:**').style('color: #EDF4FB')
             gnss_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Heading:**').style('color: #6E93D6')
+            ui.markdown('**Heading:**').style('color: #EDF4FB')
             heading_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**RTK-Fix:**').style('color: #6E93D6')
+            ui.markdown('**RTK-Fix:**').style('color: #EDF4FB')
             rtk_fix_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**odometry:**').style('color: #6E93D6')
+            ui.markdown('**odometry:**').style('color: #EDF4FB')
             odometry_label = ui.label()
-
-        with ui.row():
-            ui.markdown('**imu:**').style('color: #6E93D6')
-            imu_label = ui.label()
 
         def update_status() -> None:
             bms_flags = [
@@ -195,6 +190,7 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.z_is_referenced else '',
                     f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.turn_is_referenced else '',
                 ]
+
             else:
                 z_axis_flags = ['no z-axis']
             bms_label.text = ', '.join(flag for flag in bms_flags if flag)
@@ -236,9 +232,6 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
             heading_label.text = f'{gnss.record.heading:.2f}° ' + direction_flag
             rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'
             odometry_label.text = str(odometer.prediction)
-            if robot.imu.roll is not None:
-                imu_label.text = ('y:'+str(round(np.degrees(robot.imu.yaw), 3)) + '°, p:' +
-                                  str(round(np.degrees(robot.imu.pitch), 3)) + '°, r:' + str(round(np.degrees(robot.imu.roll), 3))+'°')
 
         ui.timer(rosys.config.ui_update_interval, update_status)
-    return status_drawer
+    return status_dev_page
