@@ -32,18 +32,18 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
             {name}.duty = 20
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
-        rosys.on_repeat(self._set_duty_cycle, 1.0)
+        rosys.on_repeat(self._set_duty_cycle, 10.0)
 
     async def turn_on(self) -> None:
         await super().turn_on()
         await self.robot_brain.send(
-            f'{self.name}.on();'
+            f'{self.name}.on()'
         )
 
     async def turn_off(self) -> None:
         await super().turn_off()
         await self.robot_brain.send(
-            f'{self.name}.off();'
+            f'{self.name}.off()'
         )
 
     async def _set_duty_cycle(self) -> None:
