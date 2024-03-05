@@ -25,6 +25,7 @@ class AutomationWatcher:
         self.gnss = system.gnss
         self.steerer = system.steerer
         self.path_recorder = system.path_recorder
+        self.imu = system.field_friend.imu
 
         self.try_resume_active: bool = False
         self.incidence_time: float = 0.0
@@ -35,9 +36,11 @@ class AutomationWatcher:
         self.bumper_watch_active: bool = False
         self.gnss_watch_active: bool = False
         self.field_watch_active: bool = False
+        self.tilt_watch_active: bool = False
 
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
+        rosys.on_repeat(self.check_tilting, 0.5)
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(
                 lambda name: self.pause(f'Bumper {name} was triggered'))
@@ -117,3 +120,23 @@ class AutomationWatcher:
             if self.automator.is_running:
                 self.stop('robot is outside of field boundaries')
                 self.field_watch_active = False
+
+    def start_tilt_watch(self) -> None:
+        self.tilt_watch_active = True
+
+    def stop_tilt_watch(self) -> None:
+        self.tilt_watch_active = False
+
+    def check_tilting(self) -> None:
+        if not self.imu.euler or not self.tilt_watch_active:
+            return
+        if not self.field_friend.ROLL_LIMIT or not self.field_friend.PITCH_LIMIT:
+            return
+        roll, pitch, yaw = self.imu.euler
+        if (roll > self.field_friend.ROLL_LIMIT):
+            self.log.info(f'robot exeeds roll limit with {roll}')
+            self.stop(f'exeedet roll limit with {roll}')
+
+        if (pitch > self.field_friend.PITCH_LIMIT):
+            self.log.info(f'robot exeeds pitch limit with {pitch}')
+            self.stop(f'exeedet pitch limit with {pitch}')

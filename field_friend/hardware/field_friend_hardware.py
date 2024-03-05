@@ -43,6 +43,13 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.CHOP_RADIUS = config['params']['chop_radius']
         else:
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
+        tilting_detection = config['params']['tilting_detection']
+        if tilting_detection in ['active']:
+            self.ROLL_LIMIT = config['params']['roll_limit']
+            self.PITCH_LIMIT = config['params']['roll_limit']
+        else:
+            self.ROLL_LIMIT = None
+            self.PITCH_LIMIT = None
         communication = rosys.hardware.SerialCommunication()
         robot_brain = rosys.hardware.RobotBrain(communication)
         # if communication.device_path == '/dev/ttyTHS0':
@@ -239,13 +246,14 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             bumper = None
 
-        if 'imu' in self.config:
+        if 'imu' in config:
+            offset = config['imu']['offset']
             imu = rosys.hardware.ImuHardware(robot_brain=robot_brain,
-                                             name=self.config['imu']['name'],
+                                             name=config['imu']['name'],
                                              offset_rotation=rosys.geometry.Rotation.from_euler(
-                                                 np.radians(self.config['imu']['roll_offset']),
-                                                 np.radians(self.config['imu']['pitch_offset']),
-                                                 np.radians(self.config['imu']['yaw_offset'])))
+                                                 offset['roll'],
+                                                 offset['pitch'],
+                                                 offset['yaw']))
         else:
             imu = None
 

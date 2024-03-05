@@ -1,7 +1,9 @@
-from field_friend.hardware import FieldFriend
 import logging
-import rosys
+
 import numpy as np
+import rosys
+
+from field_friend.hardware import FieldFriend
 
 
 class Falling:
@@ -73,10 +75,9 @@ class FallingHardware(Falling):
         self.field_friend = field_friend
         self.roll_limit: float
         self.pitch_limit: float
-        if self.field_friend.config['params']['falling_detection'] == 'active':
-            self.roll_limit = self.field_friend.config['params']['roll_limit']
-            self.pitch_limit = self.field_friend.config['params']['pitch_limit']
-            self.field_friend.imu.NEW_MEASUREMENT.register(self.is_falling)
+        if not field_friend.ROLL_LIMIT or not field_friend.PITCH_LIMIT:
+            return
+        self.field_friend.imu.NEW_MEASUREMENT.register(self.is_falling)
         super().__init__(field_friend=field_friend)
 
 

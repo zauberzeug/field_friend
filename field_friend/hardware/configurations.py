@@ -7,9 +7,9 @@ fieldfriend_configurations = {
             'wheel_distance': 0.47,
             'work_x': 0.07,
             'drill_radius': 0.025,
-            'falling_detection': 'active',
-            'roll_limit': 30,
-            'pitch_limit': 30,
+            'tilting_detection': 'active',
+            'roll_limit': 0.523599,
+            'pitch_limit': 0.523599,
         },
         'robot_brain': {
             'flash_params': ['nand'],
@@ -72,9 +72,7 @@ fieldfriend_configurations = {
         },
         'imu': {
             'name': 'imu',
-            'roll_offset': -90.05,
-            'pitch_offset': 1.418,
-            'yaw_offset': -1.474,
+            'offset': {'roll': -1.571669, 'pitch': 0.024748769, 'yaw': -0.025673793},
         },
 
     },
