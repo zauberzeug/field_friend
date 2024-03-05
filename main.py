@@ -88,6 +88,12 @@ def startup() -> None:
                     interface.development(system.field_friend)
                     interface.hardware_control(system.field_friend, system.automator, system.puncher)
 
+    @ui.page('/septentrio')
+    def septentrio_page():
+        ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
+        interface.system_bar()
+        ui.html('<iframe src="https://10.42.0.127:443" style="width:100%; height:90vh;" frameborder="0"></iframe>')
+
     @ui.page('/test')
     def test_page():
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
