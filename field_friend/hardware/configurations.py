@@ -613,7 +613,7 @@ fieldfriend_configurations = {
         'flashlight': {
             'version': 'flashlight_pwm',
             'name': 'flashlight',
-            'pin': 2,
+            'pin': 5,
             'on_expander': True,
             'rated_voltage': 23.0,
         },
