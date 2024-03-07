@@ -1,8 +1,9 @@
 import numpy as np
 import rosys
 
+import config.config_selection as config_selector
+
 from .chain_axis import ChainAxisHardware
-from .configurations import fieldfriend_configurations
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
@@ -21,10 +22,7 @@ from .z_axis_v2 import ZAxisHardwareV2
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self, *, version: str) -> None:
-        if version not in fieldfriend_configurations:
-            raise NotImplementedError(
-                f'Unknown FieldFriend version: {version}')
-        config: dict[str, dict] = fieldfriend_configurations[version]
+        config: dict[str, dict] = config_selector.import_config()
         self.check_pins(config)
 
         self.MOTOR_GEAR_RATIO = config['params']['motor_gear_ratio']

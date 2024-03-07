@@ -1,8 +1,9 @@
 import numpy as np
 import rosys
 
+# change the config to the config of simulated Robot
+from ...config.config_rb28 import fieldfriend_configuration
 from .chain_axis import ChainAxisSimulation
-from .configurations import fieldfriend_configurations
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_v2 import FlashlightSimulationV2
@@ -17,9 +18,8 @@ from .z_axis_v2 import ZAxisSimulationV2
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
     def __init__(self,  version: str) -> None:
-        if version not in fieldfriend_configurations:
-            raise ValueError(f'Unknown FieldFriend version: {version}')
-        config: dict[str, dict] = fieldfriend_configurations[version]
+        config: dict[str, dict] = fieldfriend_configuration
+
         self.MOTOR_GEAR_RATIO = config['params']['motor_gear_ratio']
         self.THOOTH_COUNT = config['params']['thooth_count']
         self.PITCH = config['params']['pitch']
