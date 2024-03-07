@@ -1,3 +1,4 @@
+from .calibration import DOT_DISTANCE, Contour, Dot, Network
 from .camera_configurations import configurations
 from .camera_configurator import CameraConfigurator
 from .circle_sight import CircleSight
@@ -14,4 +15,8 @@ __all__ = [
     'SimulatedCamProvider',
     'CameraConfigurator',
     'configurations',
+    'Contour',
+    'Dot',
+    'Network',
+    'DOT_DISTANCE',
 ]
