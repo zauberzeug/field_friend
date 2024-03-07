@@ -1,19 +1,19 @@
-# this is ff11
+# this is FF10XL
 fieldfriend_configuration = {
     'params': {
         'motor_gear_ratio': 12.52,
         'thooth_count': 17,
         'pitch': 0.041,
         'wheel_distance': 0.47,
-        'work_x': 0.0,
+        'work_x': 0.07,
         'drill_radius': 0.025,
         'tool': 'none',
     },
     'robot_brain': {
-        'flash_params': ['orin', 'v05']
+        'flash_params': ['orin', 'v05'],
     },
     'bluetooth': {
-        'name': 'fieldfriend-ff11',
+        'name': 'Feldfreund-ff10XL',
     },
     'serial': {
         'name': 'serial',
@@ -45,17 +45,13 @@ fieldfriend_configuration = {
         'is_right_reversed': False,
     },
     'y_axis': {
-        'version': 'none'
+        'version': 'none',
     },
     'z_axis': {
         'version': 'none',
     },
     'flashlight': {
-        'version': 'flashlight_pwm',
-        'name': 'flashlight',
-        'pin': 5,
-        'on_expander': True,
-        'rated_voltage': 23.0,
+        'version': 'none',
     },
     'estop': {
         'name': 'estop',
@@ -67,7 +63,10 @@ fieldfriend_configuration = {
         'rx_pin': 26,
         'tx_pin': 27,
         'baud': 9600,
-        'num': 2,
+        'num': 1,
+    },
+    'imu': {
+        'name': 'imu',
     },
     'battery_control': {
         'name': 'battery_control',
@@ -75,12 +74,7 @@ fieldfriend_configuration = {
         'reset_pin': 15,
         'status_pin': 13,
     },
-    'bumper': {
-        'name': 'bumper',
-        'on_expander': True,
-        'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
-    },
     'status_control': {
         'name': 'status_control',
     },
-}
+},
