@@ -6,7 +6,6 @@ import numpy as np
 import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
-from rosys import background_tasks
 from rosys.geometry import Point
 
 from ..automations import PlantLocator, Puncher
@@ -22,7 +21,6 @@ class camera:
                  plant_locator: PlantLocator,
                  puncher: Optional[Puncher] = None,
                  *,
-                 version: str,
                  shrink_factor: int = 1) -> None:
         self.log = logging.getLogger('field_friend.camera_card')
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
@@ -30,12 +28,11 @@ class camera:
         self.automator = automator
         self.detector = detector
         self.plant_locator = plant_locator
-        self.capture_images = ui.timer(7, lambda: background_tasks.create(self.capture_image()), active=False)
         self.punching_enabled = False
         self.puncher = puncher
         self.shrink_factor = shrink_factor
         self.image_view: Optional[ui.interactive_image] = None
-        self.calibration_dialog = calibration_dialog(camera_provider, version=version)
+        self.calibration_dialog = calibration_dialog(camera_provider)
         self.camera_card = ui.card()
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
@@ -55,8 +52,9 @@ class camera:
                         #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
                         self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
                     with ui.menu_item():
-                        ui.checkbox('Capturing').bind_value_to(self.capture_images, 'active') \
-                            .tooltip('Record new images for the Learning Loop')
+                        ui.checkbox('Detecting Plants').bind_value(self.plant_locator, 'is_paused',
+                                                                   backward=lambda x: not x, forward=lambda x: not x) \
+                            .tooltip('Pause plant locator')
                     with ui.menu_item():
                         self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
                             .tooltip('Show the mapping between camera and world coordinates')
@@ -136,7 +134,10 @@ class camera:
         if not event.value:
             self.image_view.content = ''
             return
-        world_points = np.array([[x, y, 0] for x in np.linspace(0, 0.3, 15) for y in np.linspace(-0.2, 0.2, 20)])
+        if self.camera.calibration is None:
+            rosys.notify('No calibration, calibrate camera first', 'error')
+            return
+        world_points = np.array([[x, y, 0] for x in np.linspace(-0.3, 0.3, 15) for y in np.linspace(-0.25, 0.25, 20)])
         image_points = self.camera.calibration.project_to_image(world_points)
         colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
