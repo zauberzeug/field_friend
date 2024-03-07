@@ -2,9 +2,12 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
+
 from field_friend.system import System
-from .manual_steerer_dialog import manual_steerer_dialog
+
 from ..hardware import FieldFriend
+from .manual_steerer_dialog import manual_steerer_dialog
+
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -34,25 +37,13 @@ class header_bar:
                 ui.label('Software ESTOP is active!').classes('text-white text-3xl').props('elevated')
 
             with ui.row():
-                ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
-                ui.link('Path planner', '/path').classes('text-white text-lg !no-underline')
+                ui.link('Field Planner', '/field').classes('text-white text-lg !no-underline')
+                ui.link('Path Planner', '/path').classes('text-white text-lg !no-underline')
                 ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
-            rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
-            self._show_battery(system.field_friend)
             ui.button('Manual Steering', on_click=lambda system=system: manual_steerer_dialog(system)).tooltip(
                 'Open the manual steering window to move the robot with a joystick.')
-            with ui.button().props('icon=settings flat color=white'):
-                with ui.menu().props(remove='no-parent-event'):
-                    with ui.column().classes('gap-0'):
-                        rosys.persistence.export_button() \
-                            .props('flat align=left').classes('w-full')
-                        rosys.persistence.import_button(after_import=system.restart) \
-                            .props('flat align=left').classes('w-full')
-                        ui.switch('dev-mode')
-                    ui.menu_item('Restart RoSys', on_click=system.restart)
-                    if system.is_real:
-                        ui.menu_item('Restart Lizard', on_click=system.field_friend.robot_brain.restart)
-                    ui.menu_item('Clear GNSS reference', on_click=system.gnss.clear_reference)
+            rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
+            self._show_battery(system.field_friend)
 
             def handle_toggle() -> None:
                 right_drawer.toggle()

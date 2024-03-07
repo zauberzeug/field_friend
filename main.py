@@ -14,9 +14,9 @@ def startup() -> None:
 
     @ui.page('/')
     def page(dev: bool = False) -> None:
-        page_height = '70vh' if dev else 'calc(100vh - 150px)'
+        page_height = '50vh' if dev else 'calc(100vh - 150px)'
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
-        status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
+        status_drawer = interface.status_drawer(system, system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
         interface.system_bar()
         with ui.row().style(f'height:{page_height}; width: calc(100vw - 2rem); flex-wrap: nowrap;'):
@@ -28,10 +28,10 @@ def startup() -> None:
                             'h-full w-full')
                 with splitter.after:
                     with ui.row().classes('h-full ml-2 m-2').style('width: calc(100% - 1rem)'):
-                        with ui.column().style('width: 55%; height: 100%; flex-wrap: nowrap'):
+                        with ui.column().style('width: 55%; height: 100%; flex-wrap: nowrap;'):
                             interface.operation(system, leaflet_map_landing)
                         with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
-                            with ui.card().classes('w-full h-full p-0'):
+                            with ui.card().classes('w-full h-full p-0').style('margin-bottom: 10px;'):
                                 with ui.scroll_area().classes('w-full h-full'):
                                     with ui.card().classes('w-full'):
                                         interface.camera(system.usb_camera_provider, system.automator, system.detector, system.plant_locator,
@@ -49,7 +49,7 @@ def startup() -> None:
         page(dev=True)
 
     @ui.page('/field')
-    def field_page(dev: bool = True):
+    def field_page():
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
@@ -60,12 +60,9 @@ def startup() -> None:
                 leaflet_map_field.m.style('height: 100%; max-height:100%;')
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height: 60%; max-height:60%;'):
                 interface.field_planner(system.field_provider, system.odometer, system.gnss, leaflet_map_field)
-        if dev:
-            with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
-                interface.dev_tools(system)
 
     @ui.page('/path')
-    def path_page(dev: bool = True):
+    def path_page():
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
         interface.header_bar(system, status_drawer)
@@ -78,9 +75,6 @@ def startup() -> None:
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
                 interface.operation(system, leaflet_map_path)
                 interface.path_planner(system.path_provider, system.path_recorder, system.automator)
-            if dev:
-                with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
-                    interface.dev_tools(system)
 
     @ui.page('/test')
     def test_page():
@@ -95,6 +89,8 @@ def startup() -> None:
     @app.get('/status')
     def status():
         return {'status': 'ok'}
+
+    interface.kpi_page(system)
 
 
 app.on_startup(startup)

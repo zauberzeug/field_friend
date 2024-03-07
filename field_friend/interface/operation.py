@@ -34,7 +34,7 @@ class operation:
                 ui.button('No', on_click=lambda: self.dialog.submit('No'))
                 ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
-        with ui.card().tight().classes('w-full h-full'):
+        with ui.card().tight().classes('w-full').style('margin-bottom: 10px; min-height: 100%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
                 with ui.column().classes('w-full'):
                     with ui.row().classes('items-center'):
