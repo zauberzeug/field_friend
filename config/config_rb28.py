@@ -1,4 +1,4 @@
-# rb28
+# this is u4
 fieldfriend_configuration = {
     'params': {
         'motor_gear_ratio': 12.52,
