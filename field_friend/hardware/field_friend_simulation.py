@@ -2,7 +2,8 @@ import numpy as np
 import rosys
 
 # change the config to the config of simulated Robot
-from ...config.config_rb28 import fieldfriend_configuration
+from config.config_rb28 import fieldfriend_configuration
+
 from .chain_axis import ChainAxisSimulation
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
