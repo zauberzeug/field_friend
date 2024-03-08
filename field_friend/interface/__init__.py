@@ -1,5 +1,5 @@
 from .automation_controls import automation_controls
-from .cameras import camera
+from .camera_card import camera_card
 from .development import development
 from .field_friend_object import field_friend_object
 from .field_object import field_object
@@ -8,6 +8,7 @@ from .hardware_control import hardware_control
 from .header_bar import header_bar
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
+from .monitoring import monitoring
 from .operation import operation
 from .path_planner import path_planner
 from .plant_object import plant_objects

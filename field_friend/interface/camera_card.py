@@ -13,7 +13,7 @@ from ..hardware import FieldFriend, FlashlightPWM
 from .calibration_dialog import calibration_dialog
 
 
-class camera:
+class camera_card:
 
     def __init__(self,
                  camera_provider: rosys.vision.CameraProvider,
