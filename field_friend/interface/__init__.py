@@ -8,6 +8,7 @@ from .field_planner import field_planner
 from .hardware_control import hardware_control
 from .header_bar import header_bar
 from .key_controls import KeyControls
+from .kpi_page import kpi_page
 from .leaflet_map import leaflet_map
 from .operation import operation
 from .path_planner import path_planner

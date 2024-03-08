@@ -1,5 +1,4 @@
 import logging
-import random
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -195,8 +194,10 @@ class Weeding:
                 self.log.info('Planless weeding completed')
 
         except WorkflowException as e:
+            self.system.kpi_logger.increment_on_rising_edge('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
         finally:
+            self.system.kpi_logger.increment('weeding_completed')
             await self.system.field_friend.stop()
             self.system.plant_locator.pause()
 
@@ -242,6 +243,7 @@ class Weeding:
             self.system.plant_locator.pause()
             if i < len(self.weeding_plan) - 1:
                 self.log.info('Driving to next row...')
+                self.system.kpi_logger.increment('rows_weeded')
                 turn_path = self.turn_paths[i-1]
                 await self.system.driver.drive_path(turn_path)
 
@@ -426,6 +428,7 @@ class Weeding:
                 target = self.system.odometer.prediction.point.polar(0.03, yaw)
                 await self.system.driver.drive_to(target)
             await rosys.sleep(0.5)
+            self.system.kpi_logger.increment('punches')
             self.log.info('workflow completed')
         except Exception as e:
             raise WorkflowException(f'Error while tornado Workflow: {e}') from e
