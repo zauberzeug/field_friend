@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import rosys
 
@@ -22,12 +24,16 @@ from .z_axis_v2 import ZAxisHardwareV2
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self) -> None:
+        self.log = logging.getLogger('field_friend.field_friend_hardware')
         config_hardware = config_selector.import_config(module='hardware')
         config_robotbrain = config_selector.import_config(module='robotbrain')
         config_params = config_selector.import_config(module='params')
         self.check_pins(config_hardware)
         self.check_pins(config_params)
         self.check_pins(config_robotbrain)
+        self.log.info(f'{config_hardware}')
+        self.log.info(f'{config_params}')
+        self.log.info(f'{config_robotbrain}')
         self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
         self.THOOTH_COUNT = config_params['thooth_count']
         self.PITCH = config_params['pitch']
