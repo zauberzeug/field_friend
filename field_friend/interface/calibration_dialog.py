@@ -43,6 +43,8 @@ class calibration_dialog(ui.dialog):
                         This will turn the point orange.
                     
                     2. Use arrow keys to shift the entire grid to the correct origin.
+                            
+                        (0,0,0) point should be on the marked center of the calibration plate
 
                     3. Click "Calibrate" to run the image calibration. 
                             
