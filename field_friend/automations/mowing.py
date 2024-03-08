@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 import numpy as np
 import rosys
+from rosys.analysis import KpiLogger
 from rosys.geometry import Pose, Spline
 from rosys.helpers import angle
 from shapely.geometry import LineString
@@ -18,7 +19,7 @@ from .sequence import find_sequence
 class Mowing(rosys.persistence.PersistentModule):
 
     def __init__(self, field_friend: FieldFriend, field_provider: FieldProvider, driver: rosys.driving.Driver,
-                 path_planner: rosys.pathplanning.PathPlanner, gnss: Gnss, *, robot_width: float) -> None:
+                 path_planner: rosys.pathplanning.PathPlanner, gnss: Gnss, *, robot_width: float, kpi_logger: KpiLogger) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.path_recorder')
         self.field_friend = field_friend
@@ -27,6 +28,7 @@ class Mowing(rosys.persistence.PersistentModule):
         self.path_planner = path_planner
         self.gnss = gnss
         self.coverage_planner = CoveragePlanner(self)
+        self.kpi_logger = kpi_logger
 
         self.padding: float = 1.0
         self.lane_distance: float = 0.5
@@ -116,10 +118,12 @@ class Mowing(rosys.persistence.PersistentModule):
                         raise Exception('No paths to drive')
                 self.MOWING_STARTED.emit([path_segment for path in self.paths for path_segment in path])
                 await self._drive_mowing_paths(self.paths)
+                self.kpi_logger.increment('mowing_completed')
                 rosys.notify('Mowing finished', 'positive')
                 # break TODO: only for demo
             except Exception as e:
                 self.log.exception(e)
+                self.kpi_logger.increment_on_rising_edge('automation_stopped', True)
                 rosys.notify(f'Mowing failed because of {e}', 'negative')
                 break
 
