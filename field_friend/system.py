@@ -16,14 +16,13 @@ class System:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'u4'  # insert here your field friend version
+        version = 'ff11'  # insert here your field friend version
         if self.is_real:
             self.field_friend = FieldFriendHardware(version=version)
             self.usb_camera_provider = UsbCamProvider()
-            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider()
+            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
-            # self.circle_sight = CircleSight()
         else:
             self.field_friend = FieldFriendSimulation(version=version)
             self.usb_camera_provider = SimulatedCamProvider()
@@ -33,27 +32,7 @@ class System:
                                                                                roll=np.deg2rad(360-150),
                                                                                pitch=np.deg2rad(0),
                                                                                yaw=np.deg2rad(90)))
-            self.mjpeg_camera_provider = SimulatedCamProvider()
-            self.mjpeg_camera_provider.remove_all_cameras()
-            self.mjpeg_camera_provider.add_camera(SimulatedCam.create_calibrated(id='front', x=0.4, z=0.4,
-                                                                                 roll=np.deg2rad(360-150),
-                                                                                 pitch=np.deg2rad(0),
-                                                                                 yaw=np.deg2rad(90)))
-            self.mjpeg_camera_provider.add_camera(SimulatedCam.create_calibrated(id='right', x=0.4, z=0.4,
-                                                                                 roll=np.deg2rad(360-150),
-                                                                                 pitch=np.deg2rad(0),
-                                                                                 yaw=np.deg2rad(90)))
-            self.mjpeg_camera_provider.add_camera(SimulatedCam.create_calibrated(id='back', x=0.4, z=0.4,
-                                                                                 roll=np.deg2rad(360-150),
-                                                                                 pitch=np.deg2rad(0),
-                                                                                 yaw=np.deg2rad(90)))
-            self.mjpeg_camera_provider.add_camera(SimulatedCam.create_calibrated(id='left', x=0.4, z=0.4,
-                                                                                 roll=np.deg2rad(360-150),
-                                                                                 pitch=np.deg2rad(0),
-                                                                                 yaw=np.deg2rad(90)))
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
-            self.monitoring_detector = rosys.vision.DetectorSimulation(self.mjpeg_camera_provider)
-            # self.circle_sight = None
         self.camera_configurator = CameraConfigurator(self.usb_camera_provider, version)
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
