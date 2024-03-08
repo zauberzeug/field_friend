@@ -118,7 +118,7 @@ class Mowing(rosys.persistence.PersistentModule):
                 # break TODO: only for demo
             except Exception as e:
                 self.log.exception(e)
-                self.kpi_logger.increment_on_rising_edge('automation_stopped', True)
+                self.kpi_logger.increment('automation_stopped')
                 rosys.notify(f'Mowing failed because of {e}', 'negative')
                 break
 
