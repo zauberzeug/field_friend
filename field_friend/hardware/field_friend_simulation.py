@@ -18,7 +18,7 @@ from .z_axis_v2 import ZAxisSimulationV2
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
-    def __init__(self,  version: str) -> None:
+    def __init__(self) -> None:
         config: dict[str, dict] = fieldfriend_configuration
 
         self.MOTOR_GEAR_RATIO = config['params']['motor_gear_ratio']
@@ -77,8 +77,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [wheels, y_axis, z_axis, flashlight, bumper, bms, estop, safety]
         active_modules = [module for module in modules if module is not None]
-        super().__init__(version=version,
-                         tool=tool,
+        super().__init__(tool=tool,
                          wheels=wheels,
                          flashlight=flashlight,
                          y_axis=y_axis,

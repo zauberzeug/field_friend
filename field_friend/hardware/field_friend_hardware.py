@@ -21,7 +21,7 @@ from .z_axis_v2 import ZAxisHardwareV2
 
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
-    def __init__(self, *, version: str) -> None:
+    def __init__(self, *) -> None:
         config: dict[str, dict] = config_selector.import_config()
         self.check_pins(config)
 
@@ -259,8 +259,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
                    z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
-        super().__init__(version=version,
-                         tool=tool,
+        super().__init__(tool=tool,
                          wheels=wheels,
                          y_axis=y_axis,
                          z_axis=z_axis,

@@ -18,12 +18,12 @@ class System:
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         version = 'ff11'  # insert here your field friend version
         if self.is_real:
-            self.field_friend = FieldFriendHardware(version=version)
+            self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = UsbCamProvider()
             self.detector = rosys.vision.DetectorHardware(port=8004)
             # self.circle_sight = CircleSight()
         else:
-            self.field_friend = FieldFriendSimulation(version=version)
+            self.field_friend = FieldFriendSimulation()
             self.usb_camera_provider = SimulatedCamProvider()
             self.usb_camera_provider.remove_all_cameras()
             self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
