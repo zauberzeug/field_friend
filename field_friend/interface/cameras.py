@@ -9,6 +9,7 @@ from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point
 
 from ..automations import PlantLocator, Puncher
+from ..hardware import FieldFriend, FlashlightPWM
 from .calibration_dialog import calibration_dialog
 
 
@@ -19,6 +20,7 @@ class camera:
                  automator: rosys.automation.Automator,
                  detector: rosys.vision.Detector,
                  plant_locator: PlantLocator,
+                 field_friend: FieldFriend,
                  puncher: Optional[Puncher] = None,
                  *,
                  shrink_factor: int = 1) -> None:
@@ -30,6 +32,7 @@ class camera:
         self.plant_locator = plant_locator
         self.punching_enabled = False
         self.puncher = puncher
+        self.field_friend = field_friend
         self.shrink_factor = shrink_factor
         self.image_view: Optional[ui.interactive_image] = None
         self.calibration_dialog = calibration_dialog(camera_provider)
@@ -43,6 +46,22 @@ class camera:
         self.camera = cam
         self.camera_card.clear()
         with self.camera_card.style('position: relative;'):
+            if self.field_friend.flashlight and isinstance(self.field_friend.flashlight, FlashlightPWM):
+                self.flashlight_toggled = False
+
+                async def toggle_flashlight():
+                    self.flashlight_toggled = not self.flashlight_toggled
+                    flashlight_button.props(
+                        f'flat color={"primary" if not self.flashlight_toggled else "grey"} icon={"flashlight_on" if not self.flashlight_toggled else "flashlight_off"}')
+                    if self.flashlight_toggled:
+                        await self.field_friend.flashlight.turn_on()
+                        rosys.notify('Flashlight turned on')
+                    else:
+                        await self.field_friend.flashlight.turn_off()
+                        rosys.notify('Flashlight turned off')
+                flashlight_button = ui.button(icon='flashlight_on', on_click=toggle_flashlight).props('flat color=primary').style(
+                    'position: absolute; left: 1px; top: 1px; z-index: 500;').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+
             with ui.button(icon='menu').props('flat color=primary').style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
                 with ui.menu() as menu:
                     with ui.menu_item():
