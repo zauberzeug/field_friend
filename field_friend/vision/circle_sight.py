@@ -4,22 +4,12 @@ from nicegui import ui
 
 class CircleSight:
 
-    SHRINK = 2
-
-    def __init__(self):
-        self.mjpg_camera_provider = rosys.vision.MJpegCameraProviderHardware()
-        rosys.background_tasks.create(self.create_cameras())
+    def __init__(self, mjpg_camera_provider: rosys.vision.MjpegCameraProvider, detector: rosys.vision.DetectorHardware, *, shrink_factor: int = 1) -> None:
         self.sights: dict[str, ui.interactive_image] = {}
-        self.detector = rosys.vision.DetectorHardware(port=8005)
+        self.mjpg_camera_provider = mjpg_camera_provider
+        self.detector = detector
         self.person_count = 0
-
-    async def create_cameras(self):
-        self.mjpg_camera_provider.cameras.clear()
-        base_url = 'http://192.168.168.105/axis-cgi/mjpg/video.cgi?camera='
-        await self.mjpg_camera_provider.create_camera('front', base_url + '3')
-        await self.mjpg_camera_provider.create_camera('right', base_url + '1')
-        await self.mjpg_camera_provider.create_camera('back', base_url + '2')
-        await self.mjpg_camera_provider.create_camera('left', base_url + '4')
+        self.shrink_factor = shrink_factor
 
     def user_interface(self):
         for camera in self.mjpg_camera_provider.cameras.values():
@@ -31,8 +21,11 @@ class CircleSight:
                 image = camera.latest_captured_image
                 if not image:
                     continue
-                source = self.mjpg_camera_provider.get_image_url(image)
-                self.sights[camera.id].set_source(f'{source}?shrink={self.SHRINK}')
+                if self.shrink_factor > 1:
+                    source = f'{camera.get_latest_image_url()}?shrink={self.shrink_factor}'
+                else:
+                    source = camera.get_latest_image_url()
+                self.sights[camera.id].set_source(f'{source}?shrink={self.shrink_factor}')
                 await self.detector.detect(image, tags=[camera.id], autoupload=rosys.vision.Autoupload.DISABLED)
                 if image.detections:
                     person_count += len([p for p in image.detections.points
@@ -46,5 +39,5 @@ class CircleSight:
         for point in detections.points:
             if point.category_name != 'person' or point.confidence < 0.4:
                 continue
-            svg += f'<circle cx="{point.x / self.SHRINK}" cy="{point.y / self.SHRINK}" r="8" fill="red" />'
+            svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="red" />'
         return svg
