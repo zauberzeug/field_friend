@@ -34,8 +34,8 @@ def startup() -> None:
                             with ui.card().classes('w-full h-full p-0'):
                                 with ui.scroll_area().classes('w-full h-full'):
                                     with ui.card().classes('w-full'):
-                                        interface.camera(system.usb_camera_provider, system.automator, system.detector, system.plant_locator,
-                                                         system.puncher, version=system.field_friend.version)
+                                        interface.camera(system.usb_camera_provider, system.automator, system.detector, system.plant_locator, system.field_friend,
+                                                         system.puncher)
                                     with ui.card().classes('w-full'):
                                         interface.robot_scene(system)
                 with splitter.separator:
