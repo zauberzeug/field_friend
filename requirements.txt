@@ -6,5 +6,5 @@ geopy
 shapely
 fiona
 geopandas
-rosys == 0.10.1
-nicegui == 1.4.15
+rosys == 0.10.2
+nicegui == 1.4.17

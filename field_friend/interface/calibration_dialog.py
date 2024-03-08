@@ -1,305 +1,195 @@
 from __future__ import annotations
 
+import io
 import logging
-from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
-from nicegui import ui
-from nicegui.events import MouseEventArguments
-from rosys.geometry import Point, Point3d
-from rosys.vision import Calibration, Camera, CameraProvider, ImageSize
+from nicegui import events, ui
+from PIL import Image
+from rosys.geometry import Point3d
+from rosys.vision import Calibration, Camera, CameraProvider
 
-
-@dataclass
-class CalibrationPoint:
-    name: str
-    world_position: Point3d
-    image_position: Optional[Point] = None
-
-    @staticmethod
-    def create(name: str, x: float, y: float, z: float) -> 'CalibrationPoint':
-        """Create a calibration point with the given name and world position."""
-        return CalibrationPoint(name=name, world_position=Point3d(x=x, y=y, z=z))
-
-    def svg_position(self, image_size: ImageSize) -> str:
-        p = self.map_image_position(image_size)
-        content = f'<line x1="{p.x}" y1="{p.y}" x2="{p.x - 14}" y2="{p.y}" stroke="red" stroke-width="1" />'
-        content += f'<line x1="{p.x}" y1="{p.y}" x2="{p.x + 14}" y2="{p.y}" stroke="red" stroke-width="1" />'
-        content += f'<line x1="{p.x}" y1="{p.y}" x2="{p.x}" y2="{p.y - 14}" stroke="red" stroke-width="1" />'
-        content += f'<line x1="{p.x}" y1="{p.y}" x2="{p.x}" y2="{p.y + 14}" stroke="red" stroke-width="1" />'
-        return content
-
-    def svg_text(self, image_size: ImageSize) -> str:
-        p = self.map_image_position(image_size)
-        return f'<text x="{p.x - 15}" y="{p.y + 15}" stroke="red" fill="red" font-size="10">{self.name}</text>'
-
-    def map_image_position(self, image_size: ImageSize) -> Point:
-        return Point(x=min(max(self.image_position.x, 20), image_size.width - 20),
-                     y=min(max(self.image_position.y, 20), image_size.height - 20))
+from ..vision import DOT_DISTANCE, Dot, Network, SimulatedCam
 
 
 class calibration_dialog(ui.dialog):
 
-    def __init__(self, camera_provider: CameraProvider, version: str) -> None:
+    def __init__(self, camera_provider: CameraProvider) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.calibration')
+
         self.camera_provider = camera_provider
-        if version == 'u1':
-            self.points = [
-                CalibrationPoint.create('A',  0.00,  0.10, 0.00),
-                CalibrationPoint.create('B',  0.00,  0.00, 0.00),
-                CalibrationPoint.create('B*', 0.00,  0.00, 0.048),
-                CalibrationPoint.create('C',  0.00, -0.10, 0.00),
-
-                CalibrationPoint.create('D',  0.10,  0.10, 0.00),
-                CalibrationPoint.create('E',  0.10,  0.00, 0.00),
-                CalibrationPoint.create('F',  0.10, -0.10, 0.00),
-
-                CalibrationPoint.create('G',  0.20,  0.10, 0.00),
-                CalibrationPoint.create('H',  0.20,  0.00, 0.00),
-                CalibrationPoint.create('H*',  0.20,  0.00, 0.048),
-                CalibrationPoint.create('I',  0.20, -0.10, 0.00),
-            ]  # for u1
-        elif version == 'u2':
-            self.points = [
-                CalibrationPoint.create('A',  0.00,  -0.15, 0.00),
-                CalibrationPoint.create('B',  0.00,  -0.10, 0.00),
-                CalibrationPoint.create('C',  0.00,  -0.05, 0.00),
-                CalibrationPoint.create('D',  0.00,   0.00, 0.00),
-                CalibrationPoint.create('E',  0.00,   0.05, 0.00),
-                CalibrationPoint.create('F',  0.00,   0.10, 0.00),
-                CalibrationPoint.create('G',  0.00,   0.15, 0.00),
-
-                CalibrationPoint.create('H',  0.05,   -0.15, 0.00),
-                CalibrationPoint.create('I',  0.05,   -0.10, 0.00),
-                CalibrationPoint.create('J',  0.05,   -0.05, 0.00),
-                CalibrationPoint.create('K',  0.05,    0.00, 0.00),
-                CalibrationPoint.create('K*',  0.05,    0.00, 0.054),
-                CalibrationPoint.create('L',  0.05,    0.05, 0.00),
-                CalibrationPoint.create('M',  0.05,    0.10, 0.00),
-                CalibrationPoint.create('N',  0.05,    0.15, 0.00),
-
-                CalibrationPoint.create('O',  0.10,   -0.15, 0.00),
-                CalibrationPoint.create('P',  0.10,   -0.10, 0.00),
-                CalibrationPoint.create('Q',  0.10,   -0.05, 0.00),
-                CalibrationPoint.create('R',  0.10,    0.00, 0.00),
-                CalibrationPoint.create('S',  0.10,    0.05, 0.00),
-                CalibrationPoint.create('T',  0.10,    0.10, 0.00),
-                CalibrationPoint.create('U',  0.10,    0.15, 0.00),
-
-                CalibrationPoint.create('V',  0.15,   -0.15, 0.00),
-                CalibrationPoint.create('W',  0.15,   -0.10, 0.00),
-                CalibrationPoint.create('X',  0.15,   -0.05, 0.00),
-                CalibrationPoint.create('Y',  0.15,    0.00, 0.00),
-                CalibrationPoint.create('Z',  0.15,    0.05, 0.00),
-                CalibrationPoint.create('a',  0.15,    0.10, 0.00),
-                CalibrationPoint.create('b',  0.15,    0.15, 0.00),
-
-                CalibrationPoint.create('c',  0.20,   -0.15, 0.00),
-                CalibrationPoint.create('d',  0.20,   -0.10, 0.00),
-                CalibrationPoint.create('e',  0.20,   -0.05, 0.00),
-                CalibrationPoint.create('f',  0.20,    0.00, 0.00),
-                CalibrationPoint.create('f*',  0.20,    0.00, 0.067),
-                CalibrationPoint.create('g',  0.20,    0.05, 0.00),
-                CalibrationPoint.create('h',  0.20,    0.10, 0.00),
-                CalibrationPoint.create('i',  0.20,    0.15, 0.00),
-
-                CalibrationPoint.create('j',  0.25,   -0.15, 0.00),
-                CalibrationPoint.create('k',  0.25,   -0.10, 0.00),
-                CalibrationPoint.create('l',  0.25,   -0.05, 0.00),
-                CalibrationPoint.create('m',  0.25,    0.00, 0.00),
-                CalibrationPoint.create('n',  0.25,    0.05, 0.00),
-                CalibrationPoint.create('o',  0.25,    0.10, 0.00),
-                CalibrationPoint.create('p',  0.25,    0.15, 0.00),
-
-                CalibrationPoint.create('q',  0.30,   -0.15, 0.00),
-                CalibrationPoint.create('r',  0.30,   -0.10, 0.00),
-                CalibrationPoint.create('s',  0.30,   -0.05, 0.00),
-                CalibrationPoint.create('t',  0.30,    0.00, 0.00),
-                CalibrationPoint.create('t*',  0.30,    0.00, 0.051),
-                CalibrationPoint.create('u',  0.30,    0.05, 0.00),
-                CalibrationPoint.create('v',  0.30,    0.10, 0.00),
-                CalibrationPoint.create('w',  0.30,    0.15, 0.00),
-            ]  # for u2
-        elif version == 'ff3':
-            self.points = [
-                CalibrationPoint.create('A',  0.00,  -0.15, 0.00),
-                CalibrationPoint.create('B',  0.00,  -0.10, 0.00),
-                CalibrationPoint.create('C',  0.00,  -0.05, 0.00),
-                CalibrationPoint.create('D',  0.00,   0.00, 0.00),
-                CalibrationPoint.create('E',  0.00,   0.05, 0.00),
-                CalibrationPoint.create('F',  0.00,   0.10, 0.00),
-                CalibrationPoint.create('G',  0.00,   0.15, 0.00),
-
-                CalibrationPoint.create('H',  0.05,   -0.15, 0.00),
-                CalibrationPoint.create('I',  0.05,   -0.10, 0.00),
-                CalibrationPoint.create('J',  0.05,   -0.05, 0.00),
-                CalibrationPoint.create('K',  0.05,    0.00, 0.00),
-                CalibrationPoint.create('K*',  0.05,    0.00, 0.051),
-                CalibrationPoint.create('L',  0.05,    0.05, 0.00),
-                CalibrationPoint.create('M',  0.05,    0.10, 0.00),
-                CalibrationPoint.create('N',  0.05,    0.15, 0.00),
-
-                CalibrationPoint.create('O',  0.10,   -0.15, 0.00),
-                CalibrationPoint.create('P',  0.10,   -0.10, 0.00),
-                CalibrationPoint.create('Q',  0.10,   -0.05, 0.00),
-                CalibrationPoint.create('R',  0.10,    0.00, 0.00),
-                CalibrationPoint.create('S',  0.10,    0.05, 0.00),
-                CalibrationPoint.create('T',  0.10,    0.10, 0.00),
-                CalibrationPoint.create('U',  0.10,    0.15, 0.00),
-
-                CalibrationPoint.create('V',  0.15,   -0.15, 0.00),
-                CalibrationPoint.create('W',  0.15,   -0.10, 0.00),
-                CalibrationPoint.create('X',  0.15,   -0.05, 0.00),
-                CalibrationPoint.create('Y',  0.15,    0.00, 0.00),
-                CalibrationPoint.create('Z',  0.15,    0.05, 0.00),
-                CalibrationPoint.create('a',  0.15,    0.10, 0.00),
-                CalibrationPoint.create('b',  0.15,    0.15, 0.00),
-
-                CalibrationPoint.create('c',  0.20,   -0.15, 0.00),
-                CalibrationPoint.create('d',  0.20,   -0.10, 0.00),
-                CalibrationPoint.create('e',  0.20,   -0.05, 0.00),
-                CalibrationPoint.create('f',  0.20,    0.00, 0.00),
-                CalibrationPoint.create('f*',  0.20,    0.00, 0.029),
-                CalibrationPoint.create('g',  0.20,    0.05, 0.00),
-                CalibrationPoint.create('h',  0.20,    0.10, 0.00),
-                CalibrationPoint.create('i',  0.20,    0.15, 0.00),
-
-                CalibrationPoint.create('j',  0.25,   -0.15, 0.00),
-                CalibrationPoint.create('k',  0.25,   -0.10, 0.00),
-                CalibrationPoint.create('l',  0.25,   -0.05, 0.00),
-                CalibrationPoint.create('m',  0.25,    0.00, 0.00),
-                CalibrationPoint.create('n',  0.25,    0.05, 0.00),
-                CalibrationPoint.create('o',  0.25,    0.10, 0.00),
-                CalibrationPoint.create('p',  0.25,    0.15, 0.00),
-
-                CalibrationPoint.create('q',  0.30,   -0.15, 0.00),
-                CalibrationPoint.create('r',  0.30,   -0.10, 0.00),
-                CalibrationPoint.create('s',  0.30,   -0.05, 0.00),
-                CalibrationPoint.create('t',  0.30,    0.00, 0.00),
-                CalibrationPoint.create('t*',  0.30,    0.00, 0.048),
-                CalibrationPoint.create('u',  0.30,    0.05, 0.00),
-                CalibrationPoint.create('v',  0.30,    0.10, 0.00),
-                CalibrationPoint.create('w',  0.30,    0.15, 0.00),
-            ]
-        elif version in ['u3', 'u4', 'ff10']:
-            self.points = [
-                CalibrationPoint.create('A',  0.00,  -0.15, 0.00),
-                CalibrationPoint.create('B',  0.00,  -0.10, 0.00),
-                CalibrationPoint.create('C',  0.00,  -0.05, 0.00),
-                CalibrationPoint.create('D',  0.00,   0.00, 0.00),
-                CalibrationPoint.create('E',  0.00,   0.05, 0.00),
-                CalibrationPoint.create('F',  0.00,   0.10, 0.00),
-                CalibrationPoint.create('G',  0.00,   0.15, 0.00),
-
-                CalibrationPoint.create('H',  0.05,   -0.15, 0.00),
-                CalibrationPoint.create('I',  0.05,   -0.10, 0.00),
-                CalibrationPoint.create('J',  0.05,   -0.05, 0.00),
-                CalibrationPoint.create('K',  0.05,    0.00, 0.00),
-                CalibrationPoint.create('K*',  0.05,    0.00, 0.051),
-                CalibrationPoint.create('L',  0.05,    0.05, 0.00),
-                CalibrationPoint.create('M',  0.05,    0.10, 0.00),
-                CalibrationPoint.create('N',  0.05,    0.15, 0.00),
-
-                CalibrationPoint.create('O',  0.10,   -0.15, 0.00),
-                CalibrationPoint.create('P',  0.10,   -0.10, 0.00),
-                CalibrationPoint.create('Q',  0.10,   -0.05, 0.00),
-                CalibrationPoint.create('R',  0.10,    0.00, 0.00),
-                CalibrationPoint.create('S',  0.10,    0.05, 0.00),
-                CalibrationPoint.create('T',  0.10,    0.10, 0.00),
-                CalibrationPoint.create('U',  0.10,    0.15, 0.00),
-
-                CalibrationPoint.create('V',  0.15,   -0.15, 0.00),
-                CalibrationPoint.create('W',  0.15,   -0.10, 0.00),
-                CalibrationPoint.create('X',  0.15,   -0.05, 0.00),
-                CalibrationPoint.create('Y',  0.15,    0.00, 0.00),
-                CalibrationPoint.create('Z',  0.15,    0.05, 0.00),
-                CalibrationPoint.create('a',  0.15,    0.10, 0.00),
-                CalibrationPoint.create('b',  0.15,    0.15, 0.00),
-
-                CalibrationPoint.create('c',  0.20,   -0.15, 0.00),
-                CalibrationPoint.create('d',  0.20,   -0.10, 0.00),
-                CalibrationPoint.create('e',  0.20,   -0.05, 0.00),
-                CalibrationPoint.create('f',  0.20,    0.00, 0.00),
-                CalibrationPoint.create('f*',  0.20,    0.00, 0.029),
-                CalibrationPoint.create('g',  0.20,    0.05, 0.00),
-                CalibrationPoint.create('h',  0.20,    0.10, 0.00),
-                CalibrationPoint.create('i',  0.20,    0.15, 0.00),
-
-                # CalibrationPoint.create('j',  0.25,   -0.15, 0.00),
-                # CalibrationPoint.create('k',  0.25,   -0.10, 0.00),
-                # CalibrationPoint.create('l',  0.25,   -0.05, 0.00),
-                # CalibrationPoint.create('m',  0.25,    0.00, 0.00),
-                # CalibrationPoint.create('n',  0.25,    0.05, 0.00),
-                # CalibrationPoint.create('o',  0.25,    0.10, 0.00),
-                # CalibrationPoint.create('p',  0.25,    0.15, 0.00),
-            ]  # FOR U3
-        else:
-            raise ValueError(f'Unknown version: {version}')
-        self.active_point: Optional[CalibrationPoint] = None
-        with self, ui.card().tight().style('max-width: 2000px'):
-            self.calibration_image = ui.interactive_image(on_mouse=self.on_mouse_move,
+        self.network: Network | None = None
+        self.calibration: Calibration | None = None
+        self.mouse_x: float = 0
+        self.mouse_y: float = 0
+        self.moving_dot: Dot | None = None
+        self.camera: Camera | None = None
+        with self, ui.card().tight().style('max-width: 1000px'):
+            ui.keyboard(self.handle_key)
+            self.calibration_image = ui.interactive_image(on_mouse=self.handle_mouse,
                                                           events=['mousemove', 'mousedown', 'mouseup'],
-                                                          cross=False).style('width: 1920px')
-            with ui.row().classes('m-4 justify-end items-baseline'):
-                self.focal_length_input = ui.number('Focal length')
-                ui.button('Apply', on_click=self.apply_calibration)
+                                                          cross=True)
+            with ui.dialog() as help_dialog, ui.card():
+                ui.markdown('''
+                    1. Drag points to lock them to their corresponding contours.
+                    
+                        You can lock a point without a contour by pressing "Enter". 
+                        
+                        This will turn the point green.
+                    
+                        You can unlock a point by pressing "Delete" or "Backspace". 
+                            
+                        This will turn the point orange.
+                    
+                    2. Use arrow keys to shift the entire grid to the correct origin.
+                            
+                        (0,0,0) point should be on the marked center of the calibration plate
+
+                    3. Click "Calibrate" to run the image calibration. 
+                            
+                        Red dots will appear at the projected positions of the grid points.
+                            
+                    4. Click "Apply Calibration" to save the calibration to the camera.
+                ''')
+
+            with ui.row().classes('p-4 w-full items-center'):
+                self.focal_length_input = ui.number('Focal length', value=1830, step=10).classes('w-24')
+                ui.button('Calibrate', icon='straighten', on_click=lambda: self.set_calibration(
+                    self.network.calibrate(self.focal_length_input.value))).props('outline')
+                ui.button('Help', icon='sym_o_help', on_click=help_dialog.open).props('outline')
+                ui.space()
+                ui.button('Cancel', on_click=self.close).props('color=warning outline')
+                ui.button('Apply Calibration', on_click=self.apply_calibration)
 
     async def edit(self, camera: Camera) -> bool:
         self.log.info(f'editing camera calibration for: {camera.id}')
-        self.image = camera.latest_captured_image
-        if self.image is None:
-            self.log.info('No image available')
-            return False
-        if camera.calibration:
-            world_points = np.array([p.world_position.tuple for p in self.points])
-            image_points = camera.calibration.project_to_image(world_coordinates=world_points)
-            for i, point in enumerate(self.points):
-                point.image_position = Point(x=image_points[i][0], y=image_points[i][1])
-        self.calibration_image.source = camera.get_latest_image_url()
-        self.log.info(self.calibration_image.content)
-        for point in self.points:
-            if point.image_position is None:
-                point.image_position = Point(x=self.image.size.width / 2, y=self.image.size.height / 2)
-        self.draw_points()
+        self.camera = camera
+        if not isinstance(camera, SimulatedCam):
+            image = camera.latest_captured_image
+            if image is None:
+                self.log.warning('No image available')
+                return False
+            if camera.calibration:
+                self.calibration = camera.calibration
+            self.calibration_image.source = camera.get_latest_image_url()
+            img = Image.open(io.BytesIO(image.data))
+        else:
+            img = Image.open('assets/image.jpg')
+            image = ui.image(img)
+            self.calibration_image.source = image.source
         if camera.focal_length is None:
             camera.focal_length = 1830
-        self.focal_length_input.value = camera.focal_length
+        self.focal_length_input.bind_value(camera, 'focal_length')
+        self.network = Network.from_img(np.array(img))
+        self.render()
         self.open()
         return (await self) or False
 
-    def draw_points(self) -> None:
-        svg = ''
-        for point in self.points:
-            svg += point.svg_position(self.image.size)
-            if not any(p.image_position.distance(point.image_position) < 20 for p in self.points if p != point):
-                svg += point.svg_text(self.image.size)
-        self.calibration_image.content = svg
+    def render(self) -> None:
+        if not self.network:
+            return
+        content = ''
 
-    def on_mouse_move(self, e: MouseEventArguments) -> None:
-        if e.type == 'mouseup':
-            self.active_point = None
-            self.draw_points()
+        for contour in self.network.contours:
+            points = ','.join(f'{p[0][0]} {p[0][1]}' for p in contour.points)
+            content += f'<polygon points="{points}" stroke="#00ff00" fill="none" stroke-width="2" />'
+
+        dots = self.network.dots
+        for i, j, k in dots:
+            for di, dj, dk in [
+                (1, 0, 0),
+                (0, 1, 0),
+                (0, 0, 1),
+                (0.5, 0.5, 0.5),
+                (-0.5, 0.5, 0.5),
+                (0.5, -0.5, 0.5),
+                (-0.5, -0.5, 0.5),
+            ]:
+                if (i + di, j + dj, k + dk) in dots:
+                    dot0 = dots[(i, j, k)]
+                    dot1 = dots[(i + di, j + dj, k + dk)]
+                    content += f'<line x1="{dot0.x}" y1="{dot0.y}" x2="{dot1.x}" y2="{dot1.y}" stroke="white" />'
+
+        for (i, j, k), dot in dots.items():
+            color = '#00ff00' if dot.is_refined else '#ff8800'
+            radius = '8' if (i, j, k) == (0, 0, 0) else '5'
+            content += f'<circle cx="{dot.x}" cy="{dot.y}" r="{radius}" fill="{color}" />'
+
+            if not dot.is_refined:
+                continue
+            if (i, j, k) == (0, 0, 0):  # This is the center point
+                # Use a different, more visible color for the center point text and increase font size
+                text_color = '#ff0000'  # Bright red for visibility
+                font_size = '18'  # Larger font size for better readability
+                content += f'<text x="{dot.x+10}" y="{dot.y+10}" dominant-baseline="hanging" fill="{text_color}" font-size="{font_size}">({i}, {j}, {k})</text>'
+            else:
+                # Existing logic for other points
+                color = '#000' if dot.is_refined else '#666'  # Keep existing color logic for other points
+                content += f'<text x="{dot.x+10}" y="{dot.y+10}" dominant-baseline="hanging" fill="{color}">({i}, {j}, {k})</text>'
+
+            if not self.calibration:
+                continue
+
+            world_point = Point3d(x=i * DOT_DISTANCE, y=j * DOT_DISTANCE, z=k * DOT_DISTANCE)
+            image_point = self.calibration.project_to_image(world_point)
+            content += f'<circle cx="{image_point.x}" cy="{image_point.y}" r="5" fill="red" />'
+
+        self.calibration_image.content = content
+
+    def handle_mouse(self, e: events.MouseEventArguments) -> None:
+        self.mouse_x = e.image_x
+        self.mouse_y = e.image_y
         if e.type == 'mousedown':
-            self.active_point = self.closest_point(e.image_x, e.image_y)
-        if e.type == 'mousemove' and self.active_point:
-            self.active_point.image_position.x = e.image_x
-            self.active_point.image_position.y = e.image_y
-            self.draw_points()
+            self.moving_dot = self.find_dot(e.image_x, e.image_y)
+        if e.type in {'mousedown', 'mousemove'}:
+            if self.moving_dot:
+                self.moving_dot.x = e.image_x
+                self.moving_dot.y = e.image_y
+                self.render()
+        if e.type == 'mouseup':
+            if self.moving_dot is not None:
+                self.network.try_refine(self.moving_dot)
+                self.network.auto_grow()
+                self.render()
+            self.moving_dot = None
 
-    def closest_point(self, x: float, y: float) -> CalibrationPoint:
-        return sorted(self.points, key=lambda p: p.map_image_position(self.image.size).distance(Point(x=x, y=y)))[0]
+    def handle_key(self, e: events.KeyEventArguments) -> None:
+        if not e.action.keydown:
+            return
+        if e.key.delete or e.key.backspace:
+            dot = self.find_dot(self.mouse_x, self.mouse_y)
+            if dot:
+                dot.is_refined = False
+                self.render()
+        if e.key.enter:
+            dot = self.find_dot(self.mouse_x, self.mouse_y)
+            if dot:
+                dot.is_refined = True
+                self.network.auto_grow()
+                self.render()
+        if (e.key.arrow_up or e.key.arrow_down or e.key.arrow_left or e.key.arrow_right):
+            self.network.shift(di=-1 if e.key.arrow_up else 1 if e.key.arrow_down else 0,
+                               dj=-1 if e.key.arrow_left else 1 if e.key.arrow_right else 0)
+            self.render()
+
+    def find_dot(self, x: float, y: float) -> Dot | None:
+        distances = {key: np.sqrt((dot.x - x)**2 + (dot.y - y)**2) for key, dot in self.network.dots.items()}
+        if not distances or min(distances.values()) > 100:
+            return None
+        return self.network.dots[min(distances, key=distances.get)]  # type: ignore
+
+    def set_calibration(self, calibration: Calibration | None) -> None:
+        self.calibration = calibration
+        self.render()
 
     def apply_calibration(self) -> None:
-        camera = self.camera_provider.cameras[self.image.camera_id]
+        if not self.camera:
+            return
         try:
-            camera.calibration = Calibration.from_points(world_points=[p.world_position for p in self.points],
-                                                         image_points=[p.image_position for p in self.points],
-                                                         image_size=self.image.size,
-                                                         f0=self.focal_length_input.value)
+            self.camera.calibration = self.calibration
         except Exception as e:
-            camera.calibration = None
+            self.camera.calibration = None
             ui.notify(str(e))
         else:
             ui.notify('Calibration applied')

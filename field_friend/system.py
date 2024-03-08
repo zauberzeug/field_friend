@@ -39,14 +39,13 @@ class System:
             # self.circle_sight = None
         self.camera_configurator = CameraConfigurator(self.usb_camera_provider, self.version)
         self.plant_provider = PlantProvider()
-        self.field_provider = FieldProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         if self.is_real:
             self.gnss = GnssHardware(self.odometer)
         else:
             self.gnss = GnssSimulation(self.field_friend.wheels)
-        self.gnss.ROBOT_POSE_LOCATED.register(self.forward_pose_odometer)
+        self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.1
         self.driver.parameters.angular_speed_limit = 0.5
@@ -77,10 +76,7 @@ class System:
         rosys.on_repeat(watch_robot, 1.0)
         # TODO außerdem loggen wenn etwas in den Automationen passiert (überlegen wo dann genau geloggt wird)
 
-        self.weeding = Weeding(self)
-        self.coin_collecting = CoinCollecting(self)
         self.path_provider = PathProvider()
-        self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
         self.field_provider = FieldProvider()
         width = 0.64
         length = 0.78
@@ -95,8 +91,11 @@ class System:
             ],
             height=height)
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
-        self.mowing = Mowing(self.field_friend, self.field_provider, driver=self.driver,
-                             path_planner=self.path_planner, gnss=self.gnss, robot_width=width, kpi_logger=self.kpi_logger)
+
+        self.weeding = Weeding(self)
+        self.coin_collecting = CoinCollecting(self)
+        self.mowing = Mowing(self, robot_width=width)
+        self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
 
         self.automations = {
             'weeding': self.weeding.start,
@@ -106,31 +105,14 @@ class System:
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
                                                     default_automation=self.coin_collecting.start)
         self.info = Info(self)
-        if self.field_friend.bumper is not None:
-            self.automation_watcher = AutomationWatcher(self.automator, self.odometer, self.field_friend.bumper)
+        self.automation_watcher = AutomationWatcher(self)
+        if self.field_friend.bumper:
+            self.automation_watcher.bumper_watch_active = True
+
         if self.is_real:
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
-
-        async def stop():
-            if self.automator.is_running:
-                if self.field_friend.estop.is_soft_estop_active:
-                    self.automator.pause(because='soft estop active')
-                else:
-                    self.automator.pause(because='emergency stop triggered')
-            await self.field_friend.stop()
-
-        def pause():
-            if self.automator.is_running:
-                if self.path_recorder.state != 'recording':
-                    self.automator.pause(because='steering started')
-
-        self.steerer.STEERING_STARTED.register(pause)
-        self.field_friend.estop.ESTOP_TRIGGERED.register(stop)
-
-    def forward_pose_odometer(self, pose: rosys.geometry.Pose) -> None:
-        self.odometer.handle_detection(pose)
 
     def restart(self) -> None:
         os.utime('main.py')

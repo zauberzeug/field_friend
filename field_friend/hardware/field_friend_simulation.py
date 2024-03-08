@@ -19,24 +19,24 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
     def __init__(self,  version: str) -> None:
         if version not in fieldfriend_configurations:
             raise ValueError(f'Unknown FieldFriend version: {version}')
-        config = fieldfriend_configurations[version]
+        config: dict[str, dict] = fieldfriend_configurations[version]
         self.MOTOR_GEAR_RATIO = config['params']['motor_gear_ratio']
         self.THOOTH_COUNT = config['params']['thooth_count']
         self.PITCH = config['params']['pitch']
         self.WHEEL_DIAMETER = self.THOOTH_COUNT * self.PITCH / np.pi
         self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE = config['params']['wheel_distance']
-        if version in ['u1', 'ff3', 'u4', 'ff10']:
+        tool = config['params']['tool']
+        if tool in ['tornado', 'weed_screw', 'none']:
             self.WORK_X = config['params']['work_x']
             self.DRILL_RADIUS = config['params']['drill_radius']
-        elif version in ['u2', 'u3']:
+        elif tool in ['double_mechanism']:
             self.WORK_X_CHOP = config['params']['work_x_chop']
             self.WORK_X_DRILL = config['params']['work_x_drill']
             self.DRILL_RADIUS = config['params']['drill_radius']
             self.CHOP_RADIUS = config['params']['chop_radius']
         else:
-            raise NotImplementedError(f'Unknown FieldFriend version: {version}')
-        self.tool = config['params']['tool']
+            raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
         wheels = rosys.hardware.WheelsSimulation()
         if config['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()
@@ -77,6 +77,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         modules = [wheels, y_axis, z_axis, flashlight, bumper, bms, estop, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(version=version,
+                         tool=tool,
                          wheels=wheels,
                          flashlight=flashlight,
                          y_axis=y_axis,

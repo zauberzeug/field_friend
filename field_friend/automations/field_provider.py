@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 from functools import lru_cache
+from statistics import mean
 from typing import Any, List, Literal, Optional, TypedDict, Union
 
-import rosys
-from rosys.geometry import Point
 import geopandas as gpd
+import rosys
 from geographiclib.geodesic import Geodesic
+from rosys.geometry import Point
 from shapely.geometry import LineString
-from statistics import mean
 
 from field_friend.navigation.point_transformation import wgs84_to_cartesian
 
@@ -55,6 +55,9 @@ class Row:
             name=self.name,
             points_wgs84=list(reversed(self.points_wgs84)),
         )
+
+    def clear_crops(self):
+        self.crops.clear()
 
 
 @dataclass(slots=True, kw_only=True)

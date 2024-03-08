@@ -5,7 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Protocol, Union
+from typing import Any, Optional, Protocol
 
 import numpy as np
 import pynmea2
@@ -41,6 +41,12 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
 
         self.ROBOT_POSITION_LOCATED = rosys.event.Event()
         """the robot has been located"""
+
+        self.RTK_FIX_LOST = rosys.event.Event()
+        """the robot lost RTK fix"""
+
+        self.GNSS_CONNECTION_LOST = rosys.event.Event()
+        """the GNSS connection was lost"""
 
         self.record = GNSSRecord()
         self.device = None
@@ -178,6 +184,12 @@ class GnssHardware(Gnss):
             self.log.info(f'Device error: {e}')
             self.device = None
             return
+        if self.record.gps_qual > 0 and record.gps_qual == 0:
+            self.log.info('GNSS lost')
+            self.GNSS_CONNECTION_LOST.emit()
+        if self.record.gps_qual == 4 and record.gps_qual != 4:
+            self.log.info('GNSS RTK fix lost')
+            self.RTK_FIX_LOST.emit()
         self.record = record
         if has_location:
             if record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
@@ -236,7 +248,6 @@ class GnssSimulation(Gnss):
             self.reference_lon = 7.434212
         pose = deepcopy(self.pose_provider.pose)
         pose.time = rosys.time()
-        await rosys.sleep(0.5)
         current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
 
         self.record.timestamp = pose.time
