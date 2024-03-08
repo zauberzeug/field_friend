@@ -20,7 +20,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && usermod -a -G tty $USERNAME \
     # && groupadd --gid 999 gpio || true \
     # && usermod -a -G gpio $USERNAME \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL, NOPASSWD: /usr/sbin/arp-scan > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
 
