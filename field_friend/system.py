@@ -33,7 +33,7 @@ class System:
                                                                                yaw=np.deg2rad(90)))
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             # self.circle_sight = None
-        self.camera_configurator = CameraConfigurator(self.usb_camera_provider, version)
+        self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)

@@ -22,7 +22,6 @@ class camera:
                  plant_locator: PlantLocator,
                  puncher: Optional[Puncher] = None,
                  *,
-                 version: str,
                  shrink_factor: int = 1) -> None:
         self.log = logging.getLogger('field_friend.camera_card')
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
@@ -35,7 +34,7 @@ class camera:
         self.puncher = puncher
         self.shrink_factor = shrink_factor
         self.image_view: Optional[ui.interactive_image] = None
-        self.calibration_dialog = calibration_dialog(camera_provider, version=version)
+        self.calibration_dialog = calibration_dialog(camera_provider)
         self.camera_card = ui.card()
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')

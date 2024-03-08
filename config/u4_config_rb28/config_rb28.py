@@ -1,5 +1,5 @@
 # this is u4
-fieldfriend_configuration = {
+configuration = {
     'params': {
         'motor_gear_ratio': 12.52,
         'thooth_count': 17,

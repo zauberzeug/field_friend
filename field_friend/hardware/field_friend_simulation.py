@@ -2,7 +2,7 @@ import numpy as np
 import rosys
 
 # change the config to the config of simulated Robot
-from config.config_rb28 import fieldfriend_configuration
+from config.u4_config_rb28.config_rb28 import configuration
 
 from .chain_axis import ChainAxisSimulation
 from .field_friend import FieldFriend
@@ -19,7 +19,7 @@ from .z_axis_v2 import ZAxisSimulationV2
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
     def __init__(self) -> None:
-        config: dict[str, dict] = fieldfriend_configuration
+        config: dict[str, dict] = configuration
 
         self.MOTOR_GEAR_RATIO = config['params']['motor_gear_ratio']
         self.THOOTH_COUNT = config['params']['thooth_count']
