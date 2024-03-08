@@ -90,7 +90,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             ui.markdown('**Z-Axis:**').style('color: #6E93D6')
             z_axis_label = ui.label()
 
-        ui.markdown('**KPI**').style('color: #6E93D6').classes('w-full text-center')
+        ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
         with ui.row().classes('place-items-center'):
@@ -98,20 +98,22 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             # gnss_device_label = ui.label()
         with ui.row().classes('place-items-center'):
             ui.markdown('**Time on Field:**').style('color: #6E93D6')
-            # reference_position_label = ui.label()
-            ui.markdown('**Distance:**').style('color: #6E93D6')
-            # reference_position_label = ui.label()
-            ui.markdown('**Processed Rows:**').style('color: #6E93D6')
-            # reference_position_label = ui.label()
+            kpi_fieldtime_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Plants Detected:**').style('color: #6E93D6')
-            # gnss_label = ui.label()
+            ui.markdown('**Distance:**').style('color: #6E93D6')
+            kpi_distance_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Processed Rows:**').style('color: #6E93D6')
+            kpi_rows_weeded_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Crops Detected:**').style('color: #6E93D6')
+            kpi_crops_detected_label = ui.label()
         with ui.row().classes('place-items-center'):
             ui.markdown('**Weeds Detected:**').style('color: #6E93D6')
-            # heading_label = ui.label()
+            kpi_weeds_detected_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Punshes:**').style('color: #6E93D6')
-            # rtk_fix_label = ui.label()
+            ui.markdown('**Punches:**').style('color: #6E93D6')
+            kpi_punches_label = ui.label()
 
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
@@ -222,6 +224,14 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 'W' if gnss.record.heading <= 293 else \
                 'NW' if gnss.record.heading <= 338 else \
                 'N'
+
+            kpi_fieldtime_label.text = 'placeholder'
+            kpi_distance_label.text = 'placeholder'
+            kpi_weeds_detected_label.text = 'placeholder'
+            kpi_crops_detected_label.text = 'placeholder'
+            kpi_rows_weeded_label.text = 'placeholder'
+            kpi_punches_label.text = 'placeholder'
+
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
             reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'
             gnss_label.text = f'lat: {gnss.record.latitude:.6f}, lon: {gnss.record.longitude:.6f}'
