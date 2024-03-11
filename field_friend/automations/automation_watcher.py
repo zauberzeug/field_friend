@@ -132,11 +132,11 @@ class AutomationWatcher:
             return
         if not self.field_friend.ROLL_LIMIT or not self.field_friend.PITCH_LIMIT:
             return
-        roll, pitch, yaw = self.imu.euler
-        if (roll > self.field_friend.ROLL_LIMIT):
+        roll, pitch, _yaw = self.imu.euler
+        if (abs(roll) > self.field_friend.ROLL_LIMIT):
             self.log.info(f'robot exeeds roll limit with {roll}')
             self.stop(f'exeedet roll limit with {roll}')
 
-        if (pitch > self.field_friend.PITCH_LIMIT):
+        if (abs(pitch) > self.field_friend.PITCH_LIMIT):
             self.log.info(f'robot exeeds pitch limit with {pitch}')
             self.stop(f'exeedet pitch limit with {pitch}')
