@@ -101,6 +101,8 @@ class Network:
     def try_grow(self) -> bool:
         for i, j, k in list(self.dots):
             for di, dj, dk in [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0)]:
+                if di != 0 and not -5 <= i + di <= 5:
+                    continue
                 if dj != 0 and not -3 <= j + dj <= 3:
                     continue
                 if self._try_step((i - di, j - dj, k - dk), (i, j, k), (i + di, j + dj, k + dk), straight=True):
@@ -141,7 +143,7 @@ class Network:
             new_dot = Dot(x=self.dots[source2].x - dxy / dij * (target[1] - source2[1]),
                           y=self.dots[source2].y - dxy / dij * (0.7 * (target[0] - source2[0]) +
                                                                 0.7 * (target[2] - source2[2])))
-        self.try_refine(new_dot, tolerance=10)
+        self.try_refine(new_dot, tolerance=8)
         self.dots[target] = new_dot
         return True
 

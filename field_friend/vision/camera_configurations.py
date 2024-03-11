@@ -63,8 +63,8 @@ configurations = {
             'auto_exposure': True,
         },
         'crop': {
-            'xoffset': 0,
-            'yoffset': 0,
+            'xoffset': 180,
+            'yoffset': 240,
         },
     },
 }
