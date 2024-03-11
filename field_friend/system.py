@@ -76,12 +76,15 @@ class System:
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
 
         self.weeding = Weeding(self)
+        self.monitoring = Weeding(self)
+        self.monitoring.use_monitor_workflow = True
         self.coin_collecting = CoinCollecting(self)
         self.mowing = Mowing(self, robot_width=width)
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
 
         self.automations = {
             'weeding': self.weeding.start,
+            'monitoring': self.monitoring.start,
             'mowing': self.mowing.start,
             'collecting (demo)': self.coin_collecting.start,
         }
