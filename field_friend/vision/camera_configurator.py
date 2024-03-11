@@ -5,17 +5,20 @@ import rosys
 
 import config.config_selection as config_selector
 
-from .camera_configurations import configurations
 from .simulated_cam import SimulatedCam
 from .usb_cam import UsbCam
 
 
 class CameraConfigurator:
     def __init__(self,
-                 camera_provider: rosys.vision.CameraProvider):
+                 camera_provider: rosys.vision.CameraProvider,
+                 robot_id=None):
         self.log = logging.getLogger('field_friend.camera_configurator')
         self.camera_provider = camera_provider
-        self.config = config_selector.import_config(module='camera')
+        if not robot_id:
+            self.config = config_selector.import_config(module='camera')
+        else:
+            self.config = config_selector.import_config_simulation(module='camera', robot_id=robot_id)
         rosys.on_repeat(self.update_camera_config, 10)
 
     async def update_camera_config(self):

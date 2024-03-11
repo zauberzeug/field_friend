@@ -19,9 +19,6 @@ class header_bar:
         with ui.header().classes('items-center'):
             with ui.link(target='/'):
                 ui.image('assets/zz_logo.png').tailwind.width('12')
-            # if system.field_friend.version in ['u1', 'u2']:
-            #    ui.link('UCKERBOT', '/').classes('text-2xl text-white !no-underline mr-auto')
-            # else:
                 ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
 
             with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto bg-red-500 text-white p-2 rounded-md'):

@@ -16,14 +16,15 @@ class System:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'u4'  # insert here your field friend version
+        version = 'rb28'  # insert here your field friend version
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = UsbCamProvider()
             self.detector = rosys.vision.DetectorHardware(port=8004)
             # self.circle_sight = CircleSight()
+            self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
-            self.field_friend = FieldFriendSimulation()
+            self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
             self.usb_camera_provider.remove_all_cameras()
             self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
@@ -32,8 +33,9 @@ class System:
                                                                                pitch=np.deg2rad(0),
                                                                                yaw=np.deg2rad(90)))
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
+            self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
             # self.circle_sight = None
-        self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
+
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)

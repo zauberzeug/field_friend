@@ -3,6 +3,16 @@ import importlib
 import os
 
 
+def construct_config_path_simulation(module: str, robot_id: str):
+    try:
+        hostname = robot_id
+        folder_path = find_matching_config_folders(hostname)
+        return f"{folder_path}.{module}"
+    except FileNotFoundError:
+        print(f"Error: The file {folder_path} was not found. The config filename cant be constructed.")
+        return None
+
+
 def construct_config_path(module: str):
     file_path = '/mnt/host_hostname'
     try:
@@ -13,6 +23,16 @@ def construct_config_path(module: str):
     except FileNotFoundError:
         print(f"Error: The file {file_path} was not found. The config filename cant be constructed.")
         return None
+
+
+def import_config_simulation(module: str, robot_id: str):
+    attribute_name = "configuration"
+    path = construct_config_path_simulation(module, robot_id)
+    module = importlib.import_module(path)
+    attribute = getattr(module, attribute_name, None)
+    if attribute is None:
+        raise ImportError(f"Could not find {attribute_name} in {path}")
+    return attribute
 
 
 def import_config(module: str) -> dict:
