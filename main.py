@@ -88,15 +88,15 @@ def startup() -> None:
                     interface.development(system.field_friend)
                     interface.hardware_control(system.field_friend, system.automator, system.puncher)
 
-    @ui.page('/test')
-    def test_page():
-        status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
-        interface.header_bar(system, status_drawer)
-        interface.system_bar()
-        with ui.column().classes('w-full items-stretch'):
-            with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                interface.test(system.field_friend, system.steerer, system.odometer, system.automator, system.driver,
-                               system.usb_camera_provider)
+    # @ui.page('/test')
+    # def test_page():
+    #     status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
+    #     interface.header_bar(system, status_drawer)
+    #     interface.system_bar()
+    #     with ui.column().classes('w-full items-stretch'):
+    #         with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
+    #             interface.test(system.field_friend, system.steerer, system.odometer, system.automator, system.driver,
+    #                            system.usb_camera_provider)
 
     @app.get('/status')
     def status():
