@@ -605,8 +605,8 @@ fieldfriend_configurations = {
             'left_front_can_address': 0x100,
             'right_back_can_address': 0x200,
             'right_front_can_address': 0x300,
-            'is_left_reversed': False,
-            'is_right_reversed': True,
+            'is_left_reversed': True,
+            'is_right_reversed': False,
         },
         'y_axis': {
             'version': 'none'
@@ -617,7 +617,7 @@ fieldfriend_configurations = {
         'flashlight': {
             'version': 'flashlight_pwm',
             'name': 'flashlight',
-            'pin': 2,
+            'pin': 5,
             'on_expander': True,
             'rated_voltage': 23.0,
         },
