@@ -34,8 +34,8 @@ def startup() -> None:
                             with ui.card().classes('w-full h-full p-0'):
                                 with ui.scroll_area().classes('w-full h-full'):
                                     with ui.card().classes('w-full'):
-                                        interface.camera(system.usb_camera_provider, system.automator, system.detector, system.plant_locator, system.field_friend,
-                                                         system.puncher)
+                                        interface.camera_card(system.usb_camera_provider, system.automator, system.detector, system.plant_locator, system.field_friend,
+                                                              system.puncher)
                                     with ui.card().classes('w-full'):
                                         interface.robot_scene(system)
                 with splitter.separator:
@@ -87,6 +87,18 @@ def startup() -> None:
                 with ui.row().classes('items-stretch justify-items-stretch'):
                     interface.development(system.field_friend)
                     interface.hardware_control(system.field_friend, system.automator, system.puncher)
+
+    @ui.page('/monitor')
+    def monitor():
+        # ui.query('body').classes('bg-black text-white')
+        # ui.query('.nicegui-content').classes('p-0 h-screen')
+        ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
+        status_drawer = interface.status_drawer(system.field_friend, system.gnss, system.odometer)
+        interface.header_bar(system, status_drawer)
+        interface.system_bar()
+        if system.is_real:
+            interface.monitoring(system.usb_camera_provider, system.mjpeg_camera_provider,
+                                 system.detector, system.monitoring_detector, system.plant_locator, system.automator, system.field_friend, system)
 
     # @ui.page('/test')
     # def test_page():

@@ -20,8 +20,9 @@ class System:
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = UsbCamProvider()
+            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
-            # self.circle_sight = CircleSight()
+            self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
             version = 'rb28'  # insert here your field friend version to be simulated
