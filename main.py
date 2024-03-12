@@ -98,7 +98,7 @@ def startup() -> None:
         interface.system_bar()
         if system.is_real:
             interface.monitoring(system.usb_camera_provider, system.mjpeg_camera_provider,
-                                 system.detector, system.monitoring_detector, system.plant_locator)
+                                 system.detector, system.monitoring_detector, system.plant_locator, system.automator, system.field_friend, system)
 
     # @ui.page('/test')
     # def test_page():
