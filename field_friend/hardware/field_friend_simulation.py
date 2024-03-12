@@ -1,6 +1,5 @@
 import numpy as np
 import rosys
-
 from .chain_axis import ChainAxisSimulation
 from .configurations import fieldfriend_configurations
 from .field_friend import FieldFriend
@@ -67,6 +66,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             flashlight = None
 
+        imu = rosys.hardware.ImuSimulation(offset_rotation=rosys.geometry.Rotation.from_euler(0, 0, 0))
         estop = rosys.hardware.EStopSimulation()
         if 'bumper' in config:
             bumper = rosys.hardware.BumperSimulation(estop=estop)
@@ -86,4 +86,5 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                          bumper=bumper,
                          bms=bms,
                          safety=safety,
+                         imu=imu,
                          modules=active_modules)

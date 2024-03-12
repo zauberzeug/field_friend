@@ -6,6 +6,7 @@ import rosys
 
 from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, Mowing,
                                       PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
+from field_friend.falling_detection import FallingHardware, FallingSimulation, RuturnToSafety
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
@@ -22,9 +23,11 @@ class System:
             self.usb_camera_provider = UsbCamProvider()
             self.detector = rosys.vision.DetectorHardware(port=8004)
             # self.circle_sight = CircleSight()
+            self.falling_detection = FallingHardware(self.field_friend)
         else:
             self.field_friend = FieldFriendSimulation(version=version)
             self.usb_camera_provider = SimulatedCamProvider()
+            self.falling_detection = FallingSimulation(self.field_friend)
             self.usb_camera_provider.remove_all_cameras()
             self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
                                                                                x=0.4, z=0.4,
@@ -37,6 +40,7 @@ class System:
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
+        self.to_safety = RuturnToSafety(self.steerer, self.falling_detection)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         if self.is_real:
             self.gnss = GnssHardware(self.odometer)

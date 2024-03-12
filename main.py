@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import app, ui
+from rosys.hardware import imu
 
 import field_friend.log_configuration as log_configuration
 from field_friend import interface
@@ -11,6 +12,7 @@ app.add_static_files('/assets', 'assets')
 
 def startup() -> None:
     system = System()
+    # i = imu()
 
     @ui.page('/')
     def page(dev: bool = False) -> None:

@@ -8,7 +8,6 @@ from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_v2 import FlashlightHardwareV2
-from .imu import IMUHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware
 from .tornado import TornadoHardware
@@ -44,6 +43,13 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.CHOP_RADIUS = config['params']['chop_radius']
         else:
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
+        tilting_detection = config['params']['tilting_detection']
+        if tilting_detection in ['active']:
+            self.ROLL_LIMIT = config['params']['roll_limit']
+            self.PITCH_LIMIT = config['params']['roll_limit']
+        else:
+            self.ROLL_LIMIT = None
+            self.PITCH_LIMIT = None
         communication = rosys.hardware.SerialCommunication()
         robot_brain = rosys.hardware.RobotBrain(communication)
         # if communication.device_path == '/dev/ttyTHS0':
@@ -241,11 +247,15 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             bumper = None
 
         if 'imu' in config:
-            self.imu = IMUHardware(robot_brain,
-                                   name=config['imu']['name'],
-                                   )
+            offset = config['imu']['offset']
+            imu = rosys.hardware.ImuHardware(robot_brain=robot_brain,
+                                             name=config['imu']['name'],
+                                             offset_rotation=rosys.geometry.Rotation.from_euler(
+                                                 offset['roll'],
+                                                 offset['pitch'],
+                                                 offset['yaw']))
         else:
-            self.imu = None
+            imu = None
 
         if 'status_control' in config:
             self.status_control = StatusControlHardware(robot_brain,
@@ -259,7 +269,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
+                   z_axis, flashlight, bms, estop, self.battery_control, bumper, imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(version=version,
                          tool=tool,
@@ -269,6 +279,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          estop=estop,
                          bumper=bumper,
                          bms=bms,
+                         imu=imu,
                          safety=safety,
                          flashlight=flashlight,
                          modules=active_modules,
