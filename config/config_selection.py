@@ -28,8 +28,8 @@ def construct_config_path(module: str):
 def import_config_simulation(module: str, robot_id: str):
     attribute_name = "configuration"
     path = construct_config_path_simulation(module, robot_id)
-    module = importlib.import_module(path)
-    attribute = getattr(module, attribute_name, None)
+    imported_module = importlib.import_module(path)
+    attribute = getattr(imported_module, attribute_name, None)
     if attribute is None:
         raise ImportError(f"Could not find {attribute_name} in {path}")
     return attribute
@@ -38,8 +38,8 @@ def import_config_simulation(module: str, robot_id: str):
 def import_config(module: str) -> dict:
     attribute_name = "configuration"
     path = construct_config_path(module)
-    module = importlib.import_module(path)
-    attribute = getattr(module, attribute_name, None)
+    imported_module = importlib.import_module(path)
+    attribute = getattr(imported_module, attribute_name, None)
     if attribute is None:
         raise ImportError(f"Could not find {attribute_name} in {path}")
     return attribute
