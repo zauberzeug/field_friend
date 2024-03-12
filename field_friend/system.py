@@ -16,7 +16,6 @@ class System:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'rb28'  # insert here your field friend version
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = UsbCamProvider()
@@ -24,6 +23,7 @@ class System:
             # self.circle_sight = CircleSight()
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
+            version = 'rb28'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
             self.usb_camera_provider.remove_all_cameras()

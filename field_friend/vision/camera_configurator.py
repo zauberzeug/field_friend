@@ -12,7 +12,7 @@ from .usb_cam import UsbCam
 class CameraConfigurator:
     def __init__(self,
                  camera_provider: rosys.vision.CameraProvider,
-                 robot_id=None):
+                 robot_id: str | None = None):
         self.log = logging.getLogger('field_friend.camera_configurator')
         self.camera_provider = camera_provider
         if not robot_id:
