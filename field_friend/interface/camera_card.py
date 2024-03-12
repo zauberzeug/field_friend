@@ -90,7 +90,6 @@ class camera_card:
                 on_mouse=self.on_mouse_move,
                 events=events
             ).classes('w-full')
-
             with ui.row():
                 self.debug_position = ui.label()
 

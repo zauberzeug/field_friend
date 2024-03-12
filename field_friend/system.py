@@ -16,15 +16,17 @@ class System:
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        version = 'ff11'  # insert here your field friend version
+
         if self.is_real:
-            self.field_friend = FieldFriendHardware(version=version)
+            self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = UsbCamProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
+            self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
-            self.field_friend = FieldFriendSimulation(version=version)
+            version = 'rb28'  # insert here your field friend version to be simulated
+            self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
             self.usb_camera_provider.remove_all_cameras()
             self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
@@ -33,7 +35,9 @@ class System:
                                                                                pitch=np.deg2rad(0),
                                                                                yaw=np.deg2rad(90)))
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
-        self.camera_configurator = CameraConfigurator(self.usb_camera_provider, version)
+            self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
+            # self.circle_sight = None
+
         self.plant_provider = PlantProvider()
         self.field_provider = FieldProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
@@ -76,12 +80,15 @@ class System:
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
 
         self.weeding = Weeding(self)
+        self.monitoring = Weeding(self)
+        self.monitoring.use_monitor_workflow = True
         self.coin_collecting = CoinCollecting(self)
         self.mowing = Mowing(self, robot_width=width)
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
 
         self.automations = {
             'weeding': self.weeding.start,
+            'monitoring': self.monitoring.start,
             'mowing': self.mowing.start,
             'collecting (demo)': self.coin_collecting.start,
         }

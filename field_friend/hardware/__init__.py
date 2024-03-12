@@ -1,5 +1,4 @@
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
-from .configurations import fieldfriend_configurations
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
 from .field_friend_hardware import FieldFriendHardware

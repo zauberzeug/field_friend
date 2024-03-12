@@ -124,14 +124,12 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_turn.limits({self.turn_speed_limit}, {self.current_limit})
             {name}_z.reversed = {'true' if is_z_reversed else 'false'}
             {name}_turn.reversed = {'true' if is_turn_reversed else 'false'}
-
             {name}_end_top = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_top_pin})
             {name}_end_bottom = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_bottom_pin})
             {name}_ref_motor = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_motor_pin})
             {name}_ref_gear = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_gear_pin})
             {name}_ref_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_t_pin})
             {name}_ref_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_b_pin})
-
             bool {name}_z_is_referencing = false;
             bool {name}_end_top_enabled = true;
             bool {name}_end_bottom_enabled = true;
@@ -146,7 +144,6 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             when {name}_end_bottom_enabled and {name}_end_bottom.level == 0 then
                 {name}_z.speed(0);
             end 
-
             bool {name}_turn_is_referencing = false;
             bool {name}_ref_motor_enabled = false;
             bool {name}_ref_gear_enabled = false;
@@ -154,24 +151,18 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                 {name}_turn.speed(0);
                 {name}_ref_motor_enabled = false;
             end
-
             when {name}_ref_gear_enabled and {name}_turn_is_referencing and {name}_ref_gear.level == 1 then
                 {name}_turn.speed(0);
                 {name}_ref_gear_enabled = false;
             end
-
             bool {name}_ref_t_enabled = false;
             bool {name}_ref_b_enabled = false;
-
             when {name}_ref_t_enabled and {name}_ref_t.level == 1 then
                 en3.off();
             end
-
             when {name}_ref_b_enabled and {name}_ref_b.level == 1 then
                 {name}_z.speed(0);
             end
-
-
         ''')
         core_message_fields = [
             f'{name}_end_top.level',

@@ -60,7 +60,6 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         elif isinstance(flashlight, FlashlightPWMHardware):
             lizard_code += f' {flashlight.name}.off();'
         lizard_code += 'end\n'
-        lizard_code += 'when en3.level == 0 then stop(); end\n'
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
