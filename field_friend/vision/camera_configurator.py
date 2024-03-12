@@ -3,7 +3,8 @@ import logging
 
 import rosys
 
-from .camera_configurations import configurations
+import config.config_selection as config_selector
+
 from .simulated_cam import SimulatedCam
 from .usb_cam import UsbCam
 
@@ -11,11 +12,13 @@ from .usb_cam import UsbCam
 class CameraConfigurator:
     def __init__(self,
                  camera_provider: rosys.vision.CameraProvider,
-                 field_friend_version: str):
+                 robot_id: str | None = None):
         self.log = logging.getLogger('field_friend.camera_configurator')
         self.camera_provider = camera_provider
-        self.version = field_friend_version
-        self.config = configurations[self.version]
+        if not robot_id:
+            self.config = config_selector.import_config(module='camera')
+        else:
+            self.config = config_selector.import_config_simulation(module='camera', robot_id=robot_id)
         rosys.on_repeat(self.update_camera_config, 10)
 
     async def update_camera_config(self):
@@ -25,7 +28,7 @@ class CameraConfigurator:
                 continue
             parameters_changed = False
             if isinstance(camera, UsbCam):
-                if self.version == 'u1':
+                if 'u1' in list(self.config.keys()):
                     # camera.set_parameters(self.config['parameters'])
                     # Camera bug on u1 after setting the new parameters remove line and restart system
                     pass

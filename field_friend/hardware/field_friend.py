@@ -27,7 +27,6 @@ class FieldFriend(rosys.hardware.Robot):
 
     def __init__(
             self, *,
-            version: str,
             tool: str,
             wheels: rosys.hardware.Wheels,
             flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, None],
@@ -39,7 +38,6 @@ class FieldFriend(rosys.hardware.Robot):
             safety: Safety,
             **kwargs) -> None:
         super().__init__(**kwargs)
-        self.version = version
         self.tool = tool
         self.wheels = wheels
         self.flashlight = flashlight
@@ -66,7 +64,7 @@ class FieldFriend(rosys.hardware.Robot):
         if self.tool in ['weed_screw']:
             return self.WORK_X - self.DRILL_RADIUS <= local_point.x <= self.WORK_X + self.DRILL_RADIUS \
                 and self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
-        elif self.version in ['double_mechanism']:
+        elif self.tool in ['double_mechanism']:
             if not second_tool:
                 work_x = self.WORK_X_CHOP
                 tool_radius = self.CHOP_RADIUS
@@ -77,7 +75,7 @@ class FieldFriend(rosys.hardware.Robot):
                 tool_radius = self.DRILL_RADIUS
                 return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
                     and self.y_axis.MIN_POSITION+self.y_axis.WORK_OFFSET <= local_point.y <= self.y_axis.MAX_POSITION-self.y_axis.WORK_OFFSET
-        elif self.version in ['tornado']:
+        elif self.tool in ['tornado']:
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         else:
             raise NotImplementedError(f'Tool {self.tool} is not implemented for reachability check')

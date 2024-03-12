@@ -42,9 +42,9 @@ class Puncher:
             rosys.notify('no y or z axis', 'negative')
             return
         self.log.info(f'Driving to punch at {local_target_x}...')
-        if self.field_friend.version in ['ff3', 'u4']:
+        if self.field_friend.tool in ['tornado', 'weed_screw', 'none']:
             work_x = self.field_friend.WORK_X
-        elif self.field_friend.version in ['u2', 'u3']:
+        elif self.field_friend.tool in ['dual_mechanism']:
             work_x = self.field_friend.WORK_X_DRILL
         if local_target_x < work_x:
             self.log.info(f'Target: {local_target_x} is behind')

@@ -1,5 +1,6 @@
 configurations = {
     'u1': {
+        'u1': 'version',
         'parameters': {
             'width': 1920,
             'height': 1080,
