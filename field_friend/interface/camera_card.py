@@ -65,7 +65,8 @@ class camera_card:
             with ui.button(icon='menu').props('flat color=primary').style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
                 with ui.menu() as menu:
                     with ui.menu_item():
-                        ui.checkbox('Punching').bind_value(self, 'punching_enabled').tooltip('Enable punching mode')
+                        ui.checkbox('Punching').bind_value(self, 'punching_enabled').tooltip(
+                            'Enable punching mode').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                         # TODO je nach aktivem Anbaugerät muss hier ein anderer Wert auswählbar sein. Beim Tornado der angel beim Bohrer die Tiefe
                         # self.depth = ui.number('depth', value=0.02, format='%.2f',
                         #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
@@ -73,7 +74,7 @@ class camera_card:
                     with ui.menu_item():
                         ui.checkbox('Detecting Plants').bind_value(self.plant_locator, 'is_paused',
                                                                    backward=lambda x: not x, forward=lambda x: not x) \
-                            .tooltip('Pause plant locator')
+                            .tooltip('Pause plant locator').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                     with ui.menu_item():
                         self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
                             .tooltip('Show the mapping between camera and world coordinates')
