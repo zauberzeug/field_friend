@@ -48,6 +48,8 @@ class FieldFriend(rosys.hardware.Robot):
         self.bms = bms
         self.safety = safety
         rosys.on_shutdown(self.stop)
+        if self.estop:
+            self.estop.ESTOP_TRIGGERED.register(self.stop)
 
     async def stop(self) -> None:
         await self.wheels.stop()
