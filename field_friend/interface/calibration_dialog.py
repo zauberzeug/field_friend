@@ -60,7 +60,7 @@ class calibration_dialog(ui.dialog):
                 ui.button('Help', icon='sym_o_help', on_click=help_dialog.open).props('outline')
                 ui.space()
                 ui.button('Cancel', on_click=self.close).props('color=warning outline')
-                ui.button('Apply Calibration', on_click=self.apply_calibration)
+                ui.button('Apply Calibration', on_click=self.apply_calibration).bind_enabled(self, 'calibration')
 
     async def edit(self, camera: Camera) -> bool:
         self.log.info(f'editing camera calibration for: {camera.id}')
@@ -187,6 +187,8 @@ class calibration_dialog(ui.dialog):
         if not self.camera:
             return
         try:
+            if not self.calibration:
+                raise ValueError('No calibration created')
             self.camera.calibration = self.calibration
         except Exception as e:
             self.camera.calibration = None

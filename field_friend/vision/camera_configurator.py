@@ -40,16 +40,27 @@ class CameraConfigurator:
                             parameters_changed = True
 
                 if 'crop' in self.config:
-                    xoffset = self.config['crop']['xoffset']
-                    yoffset = self.config['crop']['yoffset']
-                    width = self.config['parameters']['width']
-                    height = self.config['parameters']['height']
+                    # Fetch new cropping parameters
+                    left = self.config['crop']['left']
+                    right = self.config['crop']['right']
+                    up = self.config['crop']['up']
+                    down = self.config['crop']['down']
+
+                    # Calculate the new width and height after cropping
+                    total_width = self.config['parameters']['width']
+                    total_height = self.config['parameters']['height']
+                    new_width = total_width - (left + right)
+                    new_height = total_height - (up + down)
+
+                    # Create the new crop rectangle
                     crop_rectangle = rosys.geometry.Rectangle(
-                        x=xoffset,
-                        y=yoffset,
-                        width=width - 2 * xoffset,
-                        height=height - 2 * yoffset,
+                        x=left,
+                        y=up,
+                        width=new_width,
+                        height=new_height,
                     )
+
+                    # Update the camera crop if necessary
                     if camera.crop != crop_rectangle:
                         camera.crop = crop_rectangle
                         parameters_changed = True

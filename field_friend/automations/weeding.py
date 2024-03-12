@@ -29,13 +29,14 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.weeding')
         self.system = system
 
-        self.use_field_planning = False
+        self.use_field_planning = True
         self.field: Optional[Field] = None
         self.start_row_id: Optional[str] = None
         self.end_row_id: Optional[str] = None
         self.tornado_angle: float = 110.0
         self.minimum_turning_radius: float = 0.5
         self.only_monitoring: bool = False
+        self.use_monitor_workflow: bool = False
         self.continue_canceled_weeding: bool = False
 
         self.sorted_weeding_rows: list = []
@@ -467,9 +468,9 @@ class Weeding(rosys.persistence.PersistentModule):
         for crop_id in self.crops_to_handle:
             self._safe_crop_to_row(crop_id)
 
-        if self.system.field_friend.tool == 'tornado' and self.crops_to_handle:
+        if self.system.field_friend.tool == 'tornado' and self.crops_to_handle and not self.use_monitor_workflow:
             await self._tornado_workflow()
-        elif self.system.field_friend.tool == 'none':
+        elif self.system.field_friend.tool == 'none' or self.use_monitor_workflow:
             await self._monitor_workflow()
 
         # ToDo: implement workflow of other tools
