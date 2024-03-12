@@ -4,6 +4,9 @@ configuration = {'parameters': {
     'auto_exposure': True,
 },
     'crop': {
-    'xoffset': 0,
-    'yoffset': 0,
-}}
+    'left': 80,
+    'right': 30,
+    'up': 180,
+    'down': 0,
+}
+}

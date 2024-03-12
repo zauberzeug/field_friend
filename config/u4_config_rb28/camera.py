@@ -5,7 +5,9 @@ configuration = {
         'auto_exposure': True,
     },
     'crop': {
-        'xoffset': 350,
-        'yoffset': 50,
+        'left': 350,
+        'right': 350,
+        'up': 50,
+        'down': 50,
     },
 }
