@@ -97,6 +97,19 @@ class operation:
                                     self.system.weeding, 'only_monitoring').tooltip(
                                     'Set the weeding automation to only monitor the field')
 
+                    with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='monitoring'):
+                        with ui.column():
+                            self.with_field_planning_monitor = ui.checkbox('Use field planning', value=True).bind_value(
+                                self.system.monitoring, 'use_field_planning').tooltip('Set the monitoring automation to use the field planning with GNSS')
+
+                            with ui.row().bind_visibility_from(self.with_field_planning_monitor, 'value', value=True):
+                                self.show_start_row()
+                                self.show_end_row()
+                                ui.number('Min. turning radius', format='%.2f', value=0.5, step=0.1, min=0.1, max=1.0).props(
+                                    'dense outlined suffix=m').classes('w-30').bind_value(
+                                    self.system.monitoring, 'turning_radius').tooltip(
+                                    'Set the turning radius for the monitoring automation')
+
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='collecting (demo)'):
                         with ui.row():
                             ui.number(
