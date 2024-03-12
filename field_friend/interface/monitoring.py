@@ -21,7 +21,9 @@ class monitoring:
         self.plant_locator = plant_locator
         self.person_count = 0
         self.shrink_factor = shrink_factor
+        self.sights: dict[str, ui.interactive_image] = {}
 
+        self.circle_sights = ui.row().classes('w-full items-stretch gap-0')
         with ui.row().classes('w-full grow gap-0'):
             column_classes = 'grow items-center mt-[200px]'
             text_style = 'font-size: 30em; line-height: 80%;'
@@ -32,23 +34,21 @@ class monitoring:
             with ui.column().classes(column_classes):
                 self.weeds_count_label = ui.label().style(text_style)
                 self.weeds_label = ui.label('Beikraut').classes('text-2xl text-bold')
-        with ui.row().classes('w-full items-stretch gap-0') as self.circle_sight:
-            self.sights: dict[str, ui.interactive_image] = {}
 
-        # ui.timer(0.5, self.update_monitor_content)
+        ui.timer(0.5, self.update_monitor_content)
         # ui.timer(1, self.update_bottom_view)
 
     async def update_monitor_content(self):
-        for camera in self.mjpg_camera_provider.cameras.values():
-            if camera.id not in self.sights:
-                self.sights[camera.id] = ui.interactive_image().classes('grow')
+        with self.circle_sights:
+            for camera in self.mjpg_camera_provider.cameras.values():
+                if not camera.id in self.sights.keys():
+                    self.sights[camera.id] = ui.interactive_image().classes('grow')
         person_count = 0
         for camera in self.mjpg_camera_provider.cameras.values():
             image = camera.latest_captured_image
             if not image:
                 continue
-            source = f'{camera.get_latest_image_url()}?shrink={self.shrink_factor}'
-            self.sights[camera.id].set_source(f'{source}?shrink={self.shrink_factor}')
+            self.sights[camera.id].set_source(camera.get_latest_image_url())
             await self.monitoring_detector.detect(image, tags=[camera.id], autoupload=rosys.vision.Autoupload.DISABLED)
             if image.detections:
                 person_count += len([p for p in image.detections.points
@@ -86,17 +86,21 @@ class monitoring:
         svg = ''
         cross_size = 20
         for point in detections.points:
-            if point.category_name == 'person' and point.confidence > 0.4:
+            if point.category_name == 'person' and point.confidence > 0.3:
                 svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="red" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Person</text>'
             elif point.category_name in self.plant_locator.crop_category_names and point.confidence > self.plant_locator.minimum_crop_confidence:
                 svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
             elif point.category_name in self.plant_locator.weed_category_names and point.confidence > self.plant_locator.minimum_weed_confidence:
                 svg += f'''
                         <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="red" stroke-width="8" 
                             transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
                         <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="red" stroke-width="8" 
                             transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
+                        <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Weed</text>
                 '''
             else:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="blue" />'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="yellow" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">{point.category_name}</text>'
         return svg
