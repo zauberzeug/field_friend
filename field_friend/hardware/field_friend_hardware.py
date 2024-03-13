@@ -31,9 +31,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.check_pins(config_hardware)
         self.check_pins(config_params)
         self.check_pins(config_robotbrain)
-        self.log.info(f'{config_hardware}')
-        self.log.info(f'{config_params}')
-        self.log.info(f'{config_robotbrain}')
         self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
         self.THOOTH_COUNT = config_params['thooth_count']
         self.PITCH = config_params['pitch']
