@@ -76,9 +76,10 @@ class Network:
         contour0_index = np.argmin(distances)
         contour0 = network.contours[contour0_index]
         remaining_contours = [c for i, c in enumerate(network.contours) if i != contour0_index]
-        if remaining_contours:
-            contour1 = remaining_contours[np.argmin(
-                [np.linalg.norm(np.array([cx, cy]) - np.array([c.x, c.y])) for c in remaining_contours])]
+        if not remaining_contours:
+            raise ValueError('No remaining contours to create network')
+        contour1 = remaining_contours[np.argmin(
+            [np.linalg.norm(np.array([cx, cy]) - np.array([c.x, c.y])) for c in remaining_contours])]
 
         dist = np.sqrt((contour0.x - contour1.x)**2 + (contour0.y - contour1.y)**2)
         for i in [0, 1]:
