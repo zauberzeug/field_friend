@@ -2,8 +2,8 @@ import rosys
 from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
-from ..automations import Puncher
-from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightV2, Tornado,
+from ...automations import Puncher
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightV2, Tornado,
                         YAxis, YAxisTornado, ZAxis, ZAxisV2)
 
 

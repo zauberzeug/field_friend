@@ -5,7 +5,7 @@ from nicegui import ui
 
 from field_friend.system import System
 
-from ..hardware import FieldFriend
+from ...hardware import FieldFriend
 from .manual_steerer_dialog import manual_steerer_dialog
 
 if TYPE_CHECKING:

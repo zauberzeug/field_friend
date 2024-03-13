@@ -2,8 +2,6 @@ import asyncio
 import logging
 
 import rosys
-from rosys.analysis import KpiLogger
-
 from .plant_provider import Plant, PlantProvider
 
 WEED_CATEGORY_NAME = ['coin', 'weed']
@@ -23,12 +21,10 @@ class PlantLocator:
                  detector: rosys.vision.Detector,
                  plant_provider: PlantProvider,
                  odometer: rosys.driving.Odometer,
-                 kpi_logger: KpiLogger,
                  ) -> None:
         self.log = logging.getLogger('field_friend.plant_detection')
         self.camera_provider = camera_provider
         self.detector = detector
-        self.kpi_logger = kpi_logger
         self.plant_provider = plant_provider
         self.odometer = odometer
         self.is_paused = True
@@ -73,7 +69,6 @@ class PlantLocator:
                 world_point = self.odometer.prediction.transform(floor_point.projection())
                 weed = Plant(position=world_point, type=d.category_name, detection_time=rosys.time())
                 self.plant_provider.add_weed(weed)
-                self.kpi_logger.increment('weeds_detected')
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info('crop found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
@@ -85,7 +80,6 @@ class PlantLocator:
                 crop = Plant(position=world_point, type=d.category_name,
                              detection_time=rosys.time(), confidence=d.confidence)
                 self.plant_provider.add_crop(crop)
-                self.kpi_logger.increment('crops_detected')
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
             # else:

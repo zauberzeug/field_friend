@@ -1,6 +1,4 @@
 import logging
-from typing import TYPE_CHECKING
-
 import rosys
 from nicegui import events, ui
 
@@ -9,6 +7,7 @@ from .field_object import field_object
 from .plant_object import plant_objects
 from .visualizer_object import visualizer_object
 
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from field_friend.system import System
 

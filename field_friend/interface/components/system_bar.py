@@ -1,5 +1,4 @@
 from datetime import timedelta
-
 import psutil
 import rosys
 from nicegui import ui

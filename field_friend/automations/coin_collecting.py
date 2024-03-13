@@ -21,7 +21,7 @@ class CoinCollecting():
         super().__init__()
         self.log = logging.getLogger('field_friend.coin_collecting')
         self.system = system
-        self.kpi_logger = system.kpi_logger
+        self.kpi_provider = system.kpi_provider
         self.work_x: float = 0.0
         self.front_x: float = 0.18
 
@@ -98,7 +98,7 @@ class CoinCollecting():
                         continue
                     except Exception as e:
                         self.log.exception(f'error while advancing on crop: {e}')
-                        self.kpi_logger.increment('automation_stopped')
+                        self.kpi_provider.increment('automation_stopped')
                         break
                 if self.system.odometer.prediction.point.distance(Point(x=0, y=0)) > 0.1:
                     self.log.info('returning to start position')
@@ -109,7 +109,7 @@ class CoinCollecting():
                     await self.system.driver.drive_to(target)
                     already_explored = True  # avoid infinite loop if there are no crops
         finally:
-            self.kpi_logger.increment('coin_collecting_completed')
+            self.kpi_provider.increment('coin_collecting_completed')
             await rosys.sleep(0.1)
             await self.system.field_friend.stop()
 

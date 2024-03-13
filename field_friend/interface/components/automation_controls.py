@@ -1,4 +1,3 @@
-import inspect
 from typing import Awaitable, Callable, Optional, Union
 
 from nicegui import ui

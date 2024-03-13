@@ -8,7 +8,7 @@ from nicegui.version import __version__ as nicegui_version
 from rosys.version import __version__ as rosys_version
 
 if TYPE_CHECKING:
-    from ..system import System
+    from ...system import System
 
 MUTEX_PATH = Path('.livesync_mutex')
 

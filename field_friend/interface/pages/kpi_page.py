@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 
 from rosys.analysis import KpiChart
 from rosys.analysis import kpi_page as rosys_kpi_page
 
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class kpi_page(rosys_kpi_page):
 
     def __init__(self, system: 'System') -> None:
-        super().__init__(system.kpi_logger)
+        super().__init__(system.kpi_provider)
 
     @property
     def language(self) -> str:

@@ -3,16 +3,14 @@ import os
 
 import numpy as np
 import rosys
-from rosys.analysis import KpiLogger
 
-from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, Mowing,
-                                      PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
-from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
-from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
-
-from .interface.info import Info
+from .automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider, Mowing,
+                          PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
+from .hardware import FieldFriendHardware, FieldFriendSimulation
+from .interface.components.info import Info
 from .kpi_generator import generate_kpis
+from .navigation import GnssHardware, GnssSimulation
+from .vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
 
 
 class System:
@@ -54,22 +52,22 @@ class System:
         self.driver.parameters.hook_offset = 0.6
         self.driver.parameters.carrot_distance = 0.2
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
-        self.puncher = Puncher(self.field_friend, self.driver)
 
-        self.kpi_logger = KpiLogger()
+        self.kpi_provider = KpiProvider(self.plant_provider)
         if not (self.is_real):
-            generate_kpis(self.kpi_logger)
+            generate_kpis(self.kpi_provider)
 
         def watch_robot() -> None:
-            self.kpi_logger.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
-            self.kpi_logger.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
+            self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
+            self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
             # TODO add more things to watch after
 
+        self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
         self.small_weed_category_names = ['weed', 'coin']
         self.crop_category_names = ['sugar_beet', 'crop', 'coin_with_hole']
         self.plant_locator = PlantLocator(self.usb_camera_provider, self.detector,
-                                          self.plant_provider, self.odometer, self.kpi_logger)
+                                          self.plant_provider, self.odometer)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
 

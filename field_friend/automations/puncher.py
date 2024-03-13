@@ -3,7 +3,7 @@ import logging
 import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
-
+from .kpi_provider import KpiProvider
 from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado
 
 
@@ -12,9 +12,10 @@ class PuncherException(Exception):
 
 
 class Puncher:
-    def __init__(self, field_friend: FieldFriend, driver: Driver) -> None:
+    def __init__(self, field_friend: FieldFriend, driver: Driver, kpi_provider: KpiProvider) -> None:
         self.field_friend = field_friend
         self.driver = driver
+        self.kpi_provider = kpi_provider
         self.log = logging.getLogger('field_friend.puncher')
 
     async def try_home(self) -> bool:
@@ -85,6 +86,7 @@ class Puncher:
                 await self.field_friend.z_axis.move_to(depth)
                 await self.field_friend.z_axis.return_to_reference()
             self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
+            self.kpi_provider.increment_weeding_kpi('punches')
         except Exception as e:
             raise PuncherException(f'punching failed because: {e}') from e
         finally:

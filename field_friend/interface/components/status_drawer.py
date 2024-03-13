@@ -1,12 +1,10 @@
-from datetime import timedelta
-from typing import TYPE_CHECKING
-
 import rosys
 from nicegui import ui
 
-from ..hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, Tornado, YAxis, YAxisTornado, ZAxis, ZAxisV2
-from ..navigation import Gnss
+from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, Tornado, YAxis, YAxisTornado, ZAxis, ZAxisV2
+from ...navigation import Gnss
 
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -94,8 +92,11 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
         ui.separator()
 
         with ui.row().classes('place-items-center'):
+            ui.markdown('**Current Field:**').style('color: #6E93D6')
+            current_field_label = ui.label()
+        with ui.row().classes('place-items-center'):
             ui.markdown('**Current Row:**').style('color: #6E93D6')
-            # gnss_device_label = ui.label()
+            current_row_label = ui.label()
         with ui.row().classes('place-items-center'):
             ui.markdown('**Time on Field:**').style('color: #6E93D6')
             kpi_fieldtime_label = ui.label()
@@ -225,12 +226,18 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 'NW' if gnss.record.heading <= 338 else \
                 'N'
 
-            kpi_fieldtime_label.text = 'placeholder'
-            kpi_distance_label.text = 'placeholder'
-            kpi_weeds_detected_label.text = 'placeholder'
-            kpi_crops_detected_label.text = 'placeholder'
-            kpi_rows_weeded_label.text = 'placeholder'
-            kpi_punches_label.text = 'placeholder'
+            if system.field_provider.active_field is not None:
+                current_field_label.text = system.field_provider.active_field.name
+            if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
+                current_row_label.text = system.field_provider.active_object['object'].name
+
+            kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
+            kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
+
+            kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
+            kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+            kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
+            kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
 
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
             reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'

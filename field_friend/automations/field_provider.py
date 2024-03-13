@@ -1,13 +1,11 @@
 from dataclasses import dataclass, field
-from functools import lru_cache
 from statistics import mean
-from typing import Any, List, Literal, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
-import geopandas as gpd
 import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 
 from field_friend.navigation.point_transformation import wgs84_to_cartesian
 

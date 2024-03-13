@@ -1,9 +1,7 @@
 import rosys
 from nicegui import ui
-from rosys.automation import Automator
 
-from ..automations import Puncher
-from ..hardware import FieldFriend, FieldFriendHardware
+from ...hardware import FieldFriend
 
 
 def development(field_friend: FieldFriend) -> None:

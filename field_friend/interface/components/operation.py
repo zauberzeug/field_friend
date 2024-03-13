@@ -1,13 +1,12 @@
 
 import logging
-from typing import TYPE_CHECKING
-
 from nicegui import ui
 
 from .automation_controls import automation_controls
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
 
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from field_friend.system import System
 
