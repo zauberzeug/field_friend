@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
-from ..components import camera, dev_tools, header_bar, leaflet_map, operation, robot_scene, status_drawer, system_bar
+from ..components import camera, leaflet_map, operation, robot_scene
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -10,20 +10,18 @@ if TYPE_CHECKING:
 
 class main_page():
 
-    def __init__(self, system: 'System', dev: bool = False) -> None:
+    def __init__(self, page_wrapper, system: 'System', dev: bool = False) -> None:
         self.system = system
         self.dev = dev
 
         @ui.page('/')
         def page() -> None:
+            page_wrapper()
             self.content()
 
     def content(self) -> None:
         page_height = '50vh' if self.dev else 'calc(100vh - 150px)'
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
-        drawer = status_drawer(self.system, self.system.field_friend, self.system.gnss, self.system.odometer)
-        header_bar(self.system, drawer)
-        system_bar()
         with ui.row().style(f'height:{page_height}; width: calc(100vw - 2rem); flex-wrap: nowrap;'):
             with ui.splitter(horizontal=False, reverse=False, value=35, limits=(10, 50)).classes('w-full h-full') as splitter:
                 with splitter.before:
@@ -45,6 +43,3 @@ class main_page():
                                         robot_scene(self.system)
                 with splitter.separator:
                     ui.button(icon='drag_indicator').props('round')
-        if self.dev:
-            with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
-                dev_tools(self.system)

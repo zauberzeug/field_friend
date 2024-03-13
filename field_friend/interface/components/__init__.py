@@ -1,6 +1,5 @@
 from .automation_controls import automation_controls
 from .cameras import camera
-from .dev_tools import dev_tools
 from .development import development
 from .field_friend_object import field_friend_object
 from .field_object import field_object
@@ -14,13 +13,8 @@ from .operation import operation
 from .path_planner import path_planner
 from .plant_object import plant_objects
 from .robot_scene import robot_scene
-from .status_dev_page import status_dev_page
+from .status_dev import status_dev_page
 from .status_drawer import status_drawer
 from .system_bar import system_bar
 from .test import test
 from .visualizer_object import visualizer_object
-
-__all__ = [
-    'Info',
-    'KeyControl',
-]

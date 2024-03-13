@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
-from ..components import header_bar, status_drawer, system_bar, test
+from ..components import test
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -10,14 +10,16 @@ if TYPE_CHECKING:
 
 class test_page():
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, page_wrapper, system: 'System') -> None:
+        self.system = system
 
         @ui.page('/test')
-        def test_page():
-            drawer = status_drawer(system, system.field_friend, system.gnss, system.odometer)
-            header_bar(system, drawer)
-            system_bar()
-            with ui.column().classes('w-full items-stretch'):
-                with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                    test(system.field_friend, system.steerer, system.odometer, system.automator, system.driver,
-                         system.usb_camera_provider)
+        def page() -> None:
+            page_wrapper()
+            self.content()
+
+    def content(self):
+        with ui.column().classes('w-full items-stretch'):
+            with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
+                test(self.system.field_friend, self.system.steerer, self.system.odometer, self.system.automator, self.system.driver,
+                     self.system.usb_camera_provider)

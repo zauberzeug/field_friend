@@ -1,15 +1,16 @@
 from datetime import timedelta
+
 import psutil
 import rosys
 from nicegui import ui
 
-from ...automations import KpiProvider
+from ...automations import KpiProvider, FieldProvider
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, Tornado, YAxis,
-                        YAxisTornado, ZAxis, ZAxisV2)
+                         YAxisTornado, ZAxis, ZAxisV2)
 from ...navigation import Gnss
 
 
-def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer, kpi_provider: KpiProvider):
+def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer, kpi_provider: KpiProvider, automator: rosys.automation.Automator, field_provider: FieldProvider ):
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Hardware**').style('color: #6E93D6;').classes('w-full text-center')
         ui.separator()
@@ -109,30 +110,34 @@ def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odom
         ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Current Field:**').style('color: #EDF4FB')
-            current_field_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Current Row:**').style('color: #EDF4FB')
-            current_row_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Time on Field:**').style('color: #EDF4FB')
-            kpi_fieldtime_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Distance:**').style('color: #EDF4FB')
-            kpi_distance_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Processed Rows:**').style('color: #EDF4FB')
-            kpi_rows_weeded_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Crops Detected:**').style('color: #EDF4FB')
-            kpi_crops_detected_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
-            kpi_weeds_detected_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Punches:**').style('color: #EDF4FB')
-            kpi_punches_label = ui.label()
+        if automator.is_running:
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Current Field:**').style('color: #EDF4FB')
+                current_field_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Current Row:**').style('color: #EDF4FB')
+                current_row_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Time on Field:**').style('color: #EDF4FB')
+                kpi_fieldtime_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Distance:**').style('color: #EDF4FB')
+                kpi_distance_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Processed Rows:**').style('color: #EDF4FB')
+                kpi_rows_weeded_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Crops Detected:**').style('color: #EDF4FB')
+                kpi_crops_detected_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
+                kpi_weeds_detected_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Punches:**').style('color: #EDF4FB')
+                kpi_punches_label = ui.label()
+        else:
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**No automation running.**').style('color: #EDF4FB')
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
@@ -256,15 +261,20 @@ def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odom
             'NW' if gnss.record.heading <= 338 else \
             'N'
 
-        kpi_fieldtime_label.text = kpi_provider.current_weeding_kpis.time
-        kpi_distance_label.text = kpi_provider.current_weeding_kpis.distance
-        # TODO if there is a current automation then load this or that
-        # this is a mowing automation
-        # this is a weeding automation
-        kpi_weeds_detected_label.text = kpi_provider.current_weeding_kpis.weeds_detected
-        kpi_crops_detected_label.text = kpi_provider.current_weeding_kpis.crops_detected
-        kpi_rows_weeded_label.text = kpi_provider.current_weeding_kpis.rows_weeded
-        kpi_punches_label.text = kpi_provider.current_weeding_kpis.punches
+        if automator.is_running:
+            if field_provider.active_field is not None:
+                current_field_label.text = field_provider.active_field.name
+            if field_provider.active_object is not None and field_provider.active_object['object'] is not None:
+                current_row_label.text = field_provider.active_object['object'].name
+            kpi_fieldtime_label.text = kpi_provider.current_weeding_kpis.time
+            kpi_distance_label.text = kpi_provider.current_weeding_kpis.distance
+            # TODO if there is a current automation then load this or that
+            # this is a mowing automation
+            # this is a weeding automation
+            kpi_weeds_detected_label.text = kpi_provider.current_weeding_kpis.weeds_detected
+            kpi_crops_detected_label.text = kpi_provider.current_weeding_kpis.crops_detected
+            kpi_rows_weeded_label.text = kpi_provider.current_weeding_kpis.rows_weeded
+            kpi_punches_label.text = kpi_provider.current_weeding_kpis.punches
 
         gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
         reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'
