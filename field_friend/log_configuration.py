@@ -79,7 +79,7 @@ def configure():
             },
             'rosys.communication': {
                 'handlers': ['communicationfile'],
-                'level': 'DEBUG',
+                'level': 'INFO',
                 'propagate': False,
             },
             'asyncio': {
