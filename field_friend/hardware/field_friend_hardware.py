@@ -31,9 +31,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.check_pins(config_hardware)
         self.check_pins(config_params)
         self.check_pins(config_robotbrain)
-        self.log.info(f'{config_hardware}')
-        self.log.info(f'{config_params}')
-        self.log.info(f'{config_robotbrain}')
         self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
         self.THOOTH_COUNT = config_params['thooth_count']
         self.PITCH = config_params['pitch']
@@ -57,16 +54,16 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         #     robot_brain.lizard_firmware.flash_params = ['xavier']
         robot_brain.lizard_firmware.flash_params += config_robotbrain['robot_brain']['flash_params']
         bluetooth = rosys.hardware.BluetoothHardware(robot_brain,
-                                                     name=config_robotbrain['bluetooth']['name'],
+                                                     name=config_hardware['bluetooth']['name'],
                                                      )
         serial = rosys.hardware.SerialHardware(robot_brain)
         expander = rosys.hardware.ExpanderHardware(robot_brain, serial=serial)
         can = rosys.hardware.CanHardware(robot_brain,
-                                         expander=expander if config_robotbrain['can']['on_expander'] else None,
-                                         name=config_robotbrain['can']['name'],
-                                         rx_pin=config_robotbrain['can']['rx_pin'],
-                                         tx_pin=config_robotbrain['can']['tx_pin'],
-                                         baud=config_robotbrain['can']['baud'],
+                                         expander=expander if config_hardware['can']['on_expander'] else None,
+                                         name=config_hardware['can']['name'],
+                                         rx_pin=config_hardware['can']['rx_pin'],
+                                         tx_pin=config_hardware['can']['tx_pin'],
+                                         baud=config_hardware['can']['baud'],
                                          )
         if config_hardware['wheels']['version'] == 'wheels':
             wheels = rosys.hardware.WheelsHardware(robot_brain,

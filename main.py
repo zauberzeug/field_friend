@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import app, ui
+from rosys.analysis import logging_page
 
 import field_friend.log_configuration as log_configuration
 from field_friend import interface
@@ -113,6 +114,8 @@ def startup() -> None:
     @app.get('/status')
     def status():
         return {'status': 'ok'}
+
+    logging_page(['field_friend', 'rosys'])
 
 
 app.on_startup(startup)
