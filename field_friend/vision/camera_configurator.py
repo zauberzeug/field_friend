@@ -67,8 +67,10 @@ class CameraConfigurator:
                 else:
                     camera.crop = None
                 if 'rotation' in self.config:
-                    if camera.rotation != self.config['rotation']:
-                        camera.rotation = self.config['rotation']
+                    if camera.rotation_angle != self.config['rotation']:
+                        camera.rotation_angle += self.config['rotation']
+                        parameters_changed = True
+                        self.log.info(f'camera rotation: {camera.rotation}; {camera.rotation_angle}')
                 else:
                     camera.rotation = 0
 
