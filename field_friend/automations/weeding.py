@@ -107,7 +107,9 @@ class Weeding(rosys.persistence.PersistentModule):
         if camera.calibration is None:
             rosys.notify('camera has no calibration')
             return False
-        if self.system.field_friend.tool == 'none' and not self.use_monitor_workflow:
+        if self.use_monitor_workflow:
+            return True
+        if self.system.field_friend.tool == 'none':
             rosys.notify('This field friend has no tool, only monitoring', 'info')
             self.log.info('This field friend has no tool, only monitoring')
             return True
@@ -120,7 +122,7 @@ class Weeding(rosys.persistence.PersistentModule):
                 rosys.notify('ChainAxis is not in top ref', 'negative')
                 self.log.error('ChainAxis is not in top ref')
                 return False
-        if not await self.system.puncher.try_home() and not self.use_monitor_workflow:
+        if not await self.system.puncher.try_home():
             rosys.notify('Puncher homing failed, aborting', 'error')
             self.log.error('Puncher homing failed, aborting')
             return False
