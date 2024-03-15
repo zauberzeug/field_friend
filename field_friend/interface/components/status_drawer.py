@@ -81,6 +81,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             ui.markdown('**Flashlight:**').style('color: #6E93D6')
             flashlight_label = ui.label()
 
+        # TODO die Achsen Informationen an dieser Stelle vereinfachen und nur eine Nachricht für beide falls bei einem etwas nicht stimmt
         with ui.row().classes('place-items-center'):
             ui.markdown('**Y-Axis:**').style('color: #6E93D6')
             y_axis_label = ui.label()
@@ -94,28 +95,32 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
         if automator.is_running:
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Current Field:**').style('color: #6E93D6')
-                current_field_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Current Row:**').style('color: #6E93D6')
-                current_row_label = ui.label()
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Time on Field:**').style('color: #6E93D6')
                 kpi_fieldtime_label = ui.label()
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Distance:**').style('color: #6E93D6')
                 kpi_distance_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Processed Rows:**').style('color: #6E93D6')
-                kpi_rows_weeded_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Crops Detected:**').style('color: #6E93D6')
-                kpi_crops_detected_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Weeds Detected:**').style('color: #6E93D6')
-                kpi_weeds_detected_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Punches:**').style('color: #6E93D6')
-                kpi_punches_label = ui.label()
+                current_field_label = ui.label()
+            current_automation = next(key for key, value in system.automations.items()
+                                      if value == system.automator.default_automation)
+            if current_automation == 'weeding' or 'monitoring':
+                with ui.row().classes('place-items-center'):
+                    ui.markdown('**Current Row:**').style('color: #6E93D6')
+                    current_row_label = ui.label()
+                with ui.row().classes('place-items-center'):
+                    ui.markdown('**Processed Rows:**').style('color: #6E93D6')
+                    kpi_rows_weeded_label = ui.label()
+                with ui.row().classes('place-items-center'):
+                    ui.markdown('**Crops Detected:**').style('color: #6E93D6')
+                    kpi_crops_detected_label = ui.label()
+                with ui.row().classes('place-items-center'):
+                    ui.markdown('**Weeds Detected:**').style('color: #6E93D6')
+                    kpi_weeds_detected_label = ui.label()
+                if current_automation == 'weeding':
+                    with ui.row().classes('place-items-center'):
+                        ui.markdown('**Punches:**').style('color: #6E93D6')
+                        kpi_punches_label = ui.label()
         else:
             with ui.row().classes('place-items-center'):
                 ui.markdown('**No automation running**').style('color: #6E93D6')
@@ -229,19 +234,22 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 'NW' if gnss.record.heading <= 338 else \
                 'N'
 
-
             if automator.is_running:
                 if system.field_provider.active_field is not None:
                     current_field_label.text = system.field_provider.active_field.name
-                if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
-                    current_row_label.text = system.field_provider.active_object['object'].name
                 kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
                 kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
 
-                kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
-                kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
-                kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
-                kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
+                current_automation = next(key for key, value in system.automations.items()
+                                          if value == system.automator.default_automation)
+                if current_automation == 'weeding' or current_automation == 'monitoring':
+                    if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
+                        current_row_label.text = system.field_provider.active_object['object'].name
+                    kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
+                    kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+                    kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
+                    if current_automation == 'weeding':
+                        kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
 
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
             reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'

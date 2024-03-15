@@ -115,7 +115,8 @@ class operation:
                                                                                                    'is_soft_estop_active', value=True)
                 ui.space()
                 with ui.row():
-                    automation_controls(self.system.automator, can_start=self.ensure_start)
+                    automation_controls(self.system.kpi_provider, self.system.automations,
+                                        self.system.automator, can_start=self.ensure_start)
         with ui.dialog() as self.dialog, ui.card():
             ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row}"}?').classes(
                 'text-lg')
@@ -163,7 +164,8 @@ class operation:
         return True
 
     async def ensure_mowing_start(self) -> bool:
-        self.log.info('Ensuring start of automation')
+        self.log.info('Ensuring start of mowing automation')
+        # FIXME hier die Abfrage wird in Zeile 159 doch schon abgefragt
         if not self.automations_toggle.value == 'mowing' or self.system.mowing.current_path_segment is None:
             return True
         result = await self.dialog
@@ -176,7 +178,8 @@ class operation:
         return True
 
     async def ensure_weeding_start(self) -> bool:
-        self.log.info('Ensuring start of automation')
+        self.log.info('Ensuring start of weeding automation')
+        # FIXME siehe Zeile 167
         if not self.automations_toggle.value == 'weeding' or self.system.weeding.current_segment is None:
             return True
         result = await self.dialog

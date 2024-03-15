@@ -25,5 +25,4 @@ def development(system: 'System') -> None:
                     else:
                         rosys.simulation_ui()
                 hardware_control(system.field_friend, system.automator, system.puncher)
-                status_dev_page(system.field_friend, system.gnss, system.odometer,
-                                system.kpi_provider, system.automator, system.field_provider)
+                status_dev_page(system.field_friend, system)

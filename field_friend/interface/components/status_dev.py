@@ -1,16 +1,20 @@
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 import psutil
 import rosys
 from nicegui import ui
 
-from ...automations import KpiProvider, FieldProvider
+from ...automations import FieldProvider, KpiProvider
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, Tornado, YAxis,
                          YAxisTornado, ZAxis, ZAxisV2)
 from ...navigation import Gnss
 
+if TYPE_CHECKING:
+    from field_friend.system import System
 
-def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer, kpi_provider: KpiProvider, automator: rosys.automation.Automator, field_provider: FieldProvider ):
+
+def status_dev_page(robot: FieldFriend, system: 'System'):
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Hardware**').style('color: #6E93D6;').classes('w-full text-center')
         ui.separator()
@@ -78,6 +82,10 @@ def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odom
             z_axis_label = ui.label()
 
         with ui.row().classes('place-items-center'):
+            ui.markdown('**Z-Axis:**').style('color: #EDF4FB')
+            axis_label = ui.label()
+
+        with ui.row().classes('place-items-center'):
             ui.markdown('**Flashlight:**').style('color: #EDF4FB')
             flashlight_label = ui.label()
 
@@ -110,7 +118,7 @@ def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odom
         ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
-        if automator.is_running:
+        if system.automator.is_running:
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Current Field:**').style('color: #EDF4FB')
                 current_field_label = ui.label()
@@ -231,12 +239,19 @@ def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odom
         if hasattr(robot, 'battery_control') and robot.battery_control is not None:
             battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
 
+        # TODO only one general label for the axis feedback
         y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
         z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
+        axis_label.text = f'Y-Axis is {y_axis_label.text} and Z-Axis is {z_axis_label.text}'
+
         if isinstance(robot.flashlight, FlashlightPWMHardware):
             flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
+        else:
+            flashlight_label.text = 'simulated'
         if isinstance(robot.bumper, rosys.hardware.Bumper):
             bumper_label.text = ', '.join(robot.bumper.active_bumpers)
+        else:
+            bumper_label.text = 'simulated'
 
         uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
         cpu_label.text = f'{psutil.cpu_percent():.0f}%'
@@ -251,37 +266,39 @@ def status_dev_page(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odom
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-        direction_flag = 'N' if gnss.record.heading <= 23 else \
-            'NE' if gnss.record.heading <= 68 else \
-            'E' if gnss.record.heading <= 113 else \
-            'SE' if gnss.record.heading <= 158 else \
-            'S' if gnss.record.heading <= 203 else \
-            'SW' if gnss.record.heading <= 248 else \
-            'W' if gnss.record.heading <= 293 else \
-            'NW' if gnss.record.heading <= 338 else \
+        direction_flag = 'N' if system.gnss.record.heading <= 23 else \
+            'NE' if system.gnss.record.heading <= 68 else \
+            'E' if system.gnss.record.heading <= 113 else \
+            'SE' if system.gnss.record.heading <= 158 else \
+            'S' if system.gnss.record.heading <= 203 else \
+            'SW' if system.gnss.record.heading <= 248 else \
+            'W' if system.gnss.record.heading <= 293 else \
+            'NW' if system.gnss.record.heading <= 338 else \
             'N'
 
-        if automator.is_running:
-            if field_provider.active_field is not None:
-                current_field_label.text = field_provider.active_field.name
-            if field_provider.active_object is not None and field_provider.active_object['object'] is not None:
-                current_row_label.text = field_provider.active_object['object'].name
-            kpi_fieldtime_label.text = kpi_provider.current_weeding_kpis.time
-            kpi_distance_label.text = kpi_provider.current_weeding_kpis.distance
-            # TODO if there is a current automation then load this or that
-            # this is a mowing automation
-            # this is a weeding automation
-            kpi_weeds_detected_label.text = kpi_provider.current_weeding_kpis.weeds_detected
-            kpi_crops_detected_label.text = kpi_provider.current_weeding_kpis.crops_detected
-            kpi_rows_weeded_label.text = kpi_provider.current_weeding_kpis.rows_weeded
-            kpi_punches_label.text = kpi_provider.current_weeding_kpis.punches
+        if system.automator.is_running:
+            if system.field_provider.active_field is not None:
+                current_field_label.text = system.field_provider.active_field.name
+            kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
+            kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
 
-        gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
-        reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'
-        gnss_label.text = f'lat: {gnss.record.latitude:.6f}, lon: {gnss.record.longitude:.6f}'
-        heading_label.text = f'{gnss.record.heading:.2f}° ' + direction_flag
-        rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'
-        odometry_label.text = str(odometer.prediction)
+            current_automation = next(key for key, value in system.automations.items()
+                                      if value == system.automator.default_automation)
+            if current_automation == 'weeding' or current_automation == 'monitoring':
+                if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
+                    current_row_label.text = system.field_provider.active_object['object'].name
+                kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
+                kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+                kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
+                if current_automation == 'weeding':
+                    kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
+
+        gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
+        reference_position_label.text = 'No reference' if system.gnss.reference_lat is None else 'Set'
+        gnss_label.text = f'lat: {system.gnss.record.latitude:.6f}, lon: {system.gnss.record.longitude:.6f}'
+        heading_label.text = f'{system.gnss.record.heading:.2f}° ' + direction_flag
+        rtk_fix_label.text = f'gps_qual: {system.gnss.record.gps_qual}, mode: {system.gnss.record.mode}'
+        odometry_label.text = str(system.odometer.prediction)
 
     ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page
