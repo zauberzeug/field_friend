@@ -1,12 +1,13 @@
 
 import logging
+from typing import TYPE_CHECKING
+
 from nicegui import ui
 
 from .automation_controls import automation_controls
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -115,8 +116,7 @@ class operation:
                                                                                                    'is_soft_estop_active', value=True)
                 ui.space()
                 with ui.row():
-                    automation_controls(self.system.kpi_provider, self.system.automations,
-                                        self.system.automator, can_start=self.ensure_start)
+                    automation_controls(self.system, can_start=self.ensure_start)
         with ui.dialog() as self.dialog, ui.card():
             ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row}"}?').classes(
                 'text-lg')
