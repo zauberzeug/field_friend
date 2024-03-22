@@ -7,11 +7,13 @@ import config.config_selection as config_selector
 from .chain_axis import ChainAxisSimulation
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
+from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
 from .flashlight_v2 import FlashlightSimulationV2
 from .safety import SafetySimulation
 from .tornado import TornadoSimulation
 from .y_axis import YAxisSimulation
 from .y_axis_tornado import YAxisSimulationTornado
+from .y_axis_tornado_v2_canopen import YAxisSimulationTornadoV2
 from .z_axis import ZAxisSimulation
 from .z_axis_v2 import ZAxisSimulationV2
 
@@ -19,9 +21,7 @@ from .z_axis_v2 import ZAxisSimulationV2
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
     def __init__(self, robot_id) -> None:
-        robot_id = robot_id  # robot to be simulated
         config_hardware = config_selector.import_config_simulation(module='hardware', robot_id=robot_id)
-        config_robotbrain = config_selector.import_config_simulation(module='robotbrain', robot_id=robot_id)
         config_params = config_selector.import_config_simulation(module='params', robot_id=robot_id)
         self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
         self.THOOTH_COUNT = config_params['thooth_count']
@@ -47,6 +47,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             y_axis = YAxisSimulation()
         elif config_hardware['y_axis']['version'] == 'y_axis_tornado':
             y_axis = YAxisSimulationTornado()
+        elif config_hardware['y_axis']['version'] == 'y_axis_tornado_v2':
+            y_axis = YAxisSimulationTornadoV2()
         else:
             y_axis = None
 
@@ -67,6 +69,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             flashlight = FlashlightSimulationV2()
         elif config_hardware['flashlight']['version'] == 'flashlight_pwm':
             flashlight = FlashlightSimulationV2()
+        elif config_hardware['flashlight']['version'] == 'flashlight_pwm_v2':
+            flashlight = FlashlightPWMSimulationV2()
         else:
             flashlight = None
 
