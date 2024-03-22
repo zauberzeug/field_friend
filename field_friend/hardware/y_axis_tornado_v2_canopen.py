@@ -263,7 +263,7 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
             self.is_referenced = False
         self.target_reached = words.pop(0) == 'true'
         self.steps = int(words.pop(0))
-        self.fault = (words.pop(0) == 'true')
+        self.fault = words.pop(0) == 'true'
         if self.fault:
             self.is_referenced = False
 
