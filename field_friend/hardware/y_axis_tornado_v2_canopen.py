@@ -315,6 +315,9 @@ class YAxisSimulationTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleSimulation):
         self.is_referenced = True
         return True
 
+    async def reset_fault(self) -> None:
+        self.fault = False
+
     async def step(self, dt: float) -> None:
         await super().step(dt)
         self.steps += int(dt * self.speed)

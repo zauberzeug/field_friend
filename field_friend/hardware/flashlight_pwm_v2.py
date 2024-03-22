@@ -60,6 +60,7 @@ class FlashlightPWMSimulationV2(FlashlightPWMV2, rosys.hardware.ModuleSimulation
     def __init__(self, *,
                  name: str = 'flashlight') -> None:
         self.name = name
+        self.duty_cycle = 1
         super().__init__()
 
     async def turn_on(self) -> None:
