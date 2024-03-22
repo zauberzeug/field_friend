@@ -132,12 +132,12 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
             self.log.error(f'could not move yaxis to {position} because of {error}')
             raise Exception(f'could not move yaxis to {position} because of {error}')
         steps = self.compute_steps(position)
+        await self.enable_motor()
         await self.enter_pp_mode(speed)
         await self.robot_brain.send(
             f'{self.name}_motor.set_target_position({steps});'
             f'{self.name}_motor.commit_target_position();'
         )
-
         # Give flags time to turn false first
         await rosys.sleep(0.2)
         if not await self.check_target_reached_or_fault():
