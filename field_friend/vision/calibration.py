@@ -84,7 +84,7 @@ class Network:
         dist = np.sqrt((contour0.x - contour1.x)**2 + (contour0.y - contour1.y)**2)
         for i in [0, 1]:
             for j in [0, 1]:
-                dot = Dot(x=contour0.x - j * dist, y=contour0.y - i * dist)
+                dot = Dot(x=contour0.x + j * dist, y=contour0.y + i * dist)
                 network.try_refine(dot, tolerance=50)
                 network.dots[(i, j, 0)] = dot
         network.auto_grow()
@@ -146,8 +146,8 @@ class Network:
                           (self.dots[source2].y - self.dots[source1].y)**2)
             dij = np.sqrt((source2[0] - source1[0])**2 +
                           (source2[1] - source1[1])**2)
-            new_dot = Dot(x=self.dots[source2].x - dxy / dij * (target[1] - source2[1]),
-                          y=self.dots[source2].y - dxy / dij * (0.7 * (target[0] - source2[0]) +
+            new_dot = Dot(x=self.dots[source2].x + dxy / dij * (target[1] - source2[1]),
+                          y=self.dots[source2].y + dxy / dij * (0.7 * (target[0] - source2[0]) +
                                                                 0.7 * (target[2] - source2[2])))
         self.try_refine(new_dot, tolerance=9)
         self.dots[target] = new_dot
