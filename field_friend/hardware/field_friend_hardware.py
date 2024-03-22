@@ -31,8 +31,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         config_robotbrain = config_selector.import_config(module='robotbrain')
         config_params = config_selector.import_config(module='params')
         self.check_pins(config_hardware)
-        self.check_pins(config_params)
-        self.check_pins(config_robotbrain)
         self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
         self.THOOTH_COUNT = config_params['thooth_count']
         self.PITCH = config_params['pitch']
@@ -52,8 +50,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
         communication = rosys.hardware.SerialCommunication()
         robot_brain = rosys.hardware.RobotBrain(communication)
-        # if communication.device_path == '/dev/ttyTHS0':
-        #     robot_brain.lizard_firmware.flash_params = ['xavier']
         robot_brain.lizard_firmware.flash_params += config_robotbrain['robot_brain']['flash_params']
         bluetooth = rosys.hardware.BluetoothHardware(robot_brain,
                                                      name=config_hardware['bluetooth']['name'],
