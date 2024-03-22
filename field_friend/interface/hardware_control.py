@@ -3,8 +3,8 @@ from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
 from ..automations import Puncher
-from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightV2, Tornado,
-                        YAxis, YAxisTornado, ZAxis, ZAxisV2)
+from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
+                        FlashlightV2, Tornado, YAxis, YAxisTornado, YAxisTornadoV2, ZAxis, ZAxisV2)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -45,7 +45,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.switch(
                         'On for 10s', on_change=toggle_flashlight).bind_value_from(
                         field_friend.flashlight, 'is_active')
-                elif isinstance(field_friend.flashlight, FlashlightV2) or isinstance(field_friend.flashlight, FlashlightPWM):
+                elif isinstance(field_friend.flashlight, FlashlightV2) or isinstance(field_friend.flashlight, FlashlightPWM) or isinstance(field_friend.flashlight, FlashlightPWMV2):
                     async def toggle_flashlight(e: ValueChangeEventArguments) -> None:
                         if e.value:
                             await field_friend.flashlight.turn_on()
@@ -55,6 +55,10 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                             rosys.notify('Flashlight turned off')
 
                 ui.switch('Turn On/Off', on_change=toggle_flashlight)
+
+                if isinstance(field_friend.flashlight, FlashlightPWMV2):
+                    ui.slider(min=0, max=1, step=0.01, on_change=field_friend.flashlight.set_duty_cycle).bind_value(
+                        field_friend.flashlight, 'duty_cycle')
 
         if field_friend.y_axis is not None:
             if isinstance(field_friend.y_axis, YAxis):
@@ -89,6 +93,11 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                 with ui.column():
                     ui.markdown('**Y-Axis**')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
+            elif isinstance(field_friend.y_axis, YAxisTornadoV2):
+                with ui.column():
+                    ui.markdown('**Y-Axis**')
+                    ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
+                    ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.y_axis.reset_fault()))
 
         if field_friend.z_axis is not None:
             if isinstance(field_friend.z_axis, ZAxis) or isinstance(field_friend.z_axis, ZAxisV2):
