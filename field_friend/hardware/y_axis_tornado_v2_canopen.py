@@ -82,7 +82,8 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
         self.name = name
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            master = CanOpenMaster(can)
+            master = CanOpenMaster({can})
+            master.sync_interval = 5
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can}, {can_address})
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
@@ -140,6 +141,7 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
         # Give flags time to turn false first
         await rosys.sleep(0.2)
         if not await self.check_target_reached_or_fault():
+            self.log.error(f'could not move yaxis to {position} because of fault')
             raise Exception(f'could not move yaxis to {position} because of fault')
 
     async def enable_motor(self) -> None:
