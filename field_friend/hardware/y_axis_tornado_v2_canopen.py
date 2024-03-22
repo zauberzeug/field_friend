@@ -90,7 +90,6 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
             bool {name}_end_l_enabled = true;
             bool {name}_end_r_enabled = true;
             bool {name}_is_referencing = false;
-
             when {name}_end_r_enabled and {name}_end_r.level == 0:
                 {name}_motor.set_ctrl_halt(true);
             end
@@ -100,7 +99,6 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
             when {name}_end_l_enabled and {name}_end_l.level == 0:
                 {name}_motor.set_ctrl_halt(true);
             end 
-
         ''')
         core_message_fields = [
             f'{name}_end_l.level',
