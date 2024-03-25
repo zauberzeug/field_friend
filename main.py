@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import os
+
+from dotenv import load_dotenv
 from nicegui import app, ui
 from rosys.analysis import logging_page
 
@@ -8,6 +11,8 @@ from field_friend.system import System
 
 logger = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
+
+load_dotenv('.env')
 
 
 def startup() -> None:
@@ -120,4 +125,10 @@ def startup() -> None:
 
 app.on_startup(startup)
 
-ui.run(title='Field Friend', port=80, favicon='assets/favicon.ico')
+ui.run(
+    title='Feldfreund',
+    port=80,
+    favicon='assets/favicon.ico',
+    reconnect_timeout=10,
+    on_air=os.environ.get('ON_AIR_TOKEN'),
+)
