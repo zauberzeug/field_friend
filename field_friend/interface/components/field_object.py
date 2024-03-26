@@ -12,7 +12,7 @@ class field_object(Group):
 
         self.field_provider = field_provider
         self.update()
-        self.field_provider.FIELDS_CHANGED.register_ui(self.update)
+        self.field_provider.FIELD_SELECTED.register(self.update)
 
     def create_fence(self, start, end):
         height = 0.12
@@ -43,7 +43,8 @@ class field_object(Group):
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('obstacle_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
-        for field in self.field_provider.fields:
+        if self.field_provider.active_field:
+            field = self.field_provider.active_field
             outline = [[point.x, point.y] for point in field.outline]
             if len(outline) > 1:  # Make sure there are at least two points to form a segment
                 for i in range(len(outline)):
@@ -52,7 +53,7 @@ class field_object(Group):
                     self.create_fence(start, end)
 
             if not field.reference_lat or not field.reference_lon:
-                continue
+                return
             reference = [field.reference_lat, field.reference_lon]
 
             for obstacle in field.obstacles:

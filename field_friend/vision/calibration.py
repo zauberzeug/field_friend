@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Self, Sequence
 
@@ -66,19 +67,24 @@ class Network:
         contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         contours = [c for c in contours if 100 < cv2.contourArea(c) < 2000]
         contours = [c for c in contours if cv2.arcLength(c, True) / cv2.contourArea(c) < 0.5]
-        network = cls([Contour(points=points) for points in contours if Contour(points=points).is_ellipse()],
-                      ImageSize(width=img.shape[1], height=img.shape[0]))
 
+        network = cls([Contour(points=points) for points in contours if Contour(points=points).is_ellipse(shape_threshold=0.1)],
+                      ImageSize(width=img.shape[1], height=img.shape[0]))
         cx, cy = img.shape[1] // 2, img.shape[0] // 2
-        contour0 = network.contours[np.argmin([np.sqrt((cx - c.x)**2 + (cy - c.y)**2)
-                                               for c in network.contours])]
-        contour1 = network.contours[np.argmin([np.sqrt((cx - c.x)**2 + (cy - c.y)**2 * 10)
-                                               for c in network.contours
-                                               if id(c) != id(contour0)])]
+
+        distances = [np.linalg.norm(np.array([cx, cy]) - np.array([c.x, c.y])) for c in network.contours]
+        contour0_index = np.argmin(distances)
+        contour0 = network.contours[contour0_index]
+        remaining_contours = [c for i, c in enumerate(network.contours) if i != contour0_index]
+        if not remaining_contours:
+            raise ValueError('No remaining contours to create network')
+        contour1 = remaining_contours[np.argmin(
+            [np.linalg.norm(np.array([cx, cy]) - np.array([c.x, c.y])) for c in remaining_contours])]
+
         dist = np.sqrt((contour0.x - contour1.x)**2 + (contour0.y - contour1.y)**2)
         for i in [0, 1]:
             for j in [0, 1]:
-                dot = Dot(x=contour0.x - j * dist, y=contour0.y - i * dist)
+                dot = Dot(x=contour0.x + j * dist, y=contour0.y + i * dist)
                 network.try_refine(dot, tolerance=50)
                 network.dots[(i, j, 0)] = dot
         network.auto_grow()
@@ -101,6 +107,8 @@ class Network:
     def try_grow(self) -> bool:
         for i, j, k in list(self.dots):
             for di, dj, dk in [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0)]:
+                if di != 0 and not -7 <= i + di <= 7:
+                    continue
                 if dj != 0 and not -3 <= j + dj <= 3:
                     continue
                 if self._try_step((i - di, j - dj, k - dk), (i, j, k), (i + di, j + dj, k + dk), straight=True):
@@ -138,10 +146,10 @@ class Network:
                           (self.dots[source2].y - self.dots[source1].y)**2)
             dij = np.sqrt((source2[0] - source1[0])**2 +
                           (source2[1] - source1[1])**2)
-            new_dot = Dot(x=self.dots[source2].x - dxy / dij * (target[1] - source2[1]),
-                          y=self.dots[source2].y - dxy / dij * (0.7 * (target[0] - source2[0]) +
+            new_dot = Dot(x=self.dots[source2].x + dxy / dij * (target[1] - source2[1]),
+                          y=self.dots[source2].y + dxy / dij * (0.7 * (target[0] - source2[0]) +
                                                                 0.7 * (target[2] - source2[2])))
-        self.try_refine(new_dot, tolerance=10)
+        self.try_refine(new_dot, tolerance=9)
         self.dots[target] = new_dot
         return True
 

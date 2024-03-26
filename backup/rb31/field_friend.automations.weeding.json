@@ -1,0 +1,13 @@
+{
+    "use_field_planning": false,
+    "start_row_id": null,
+    "end_row_id": null,
+    "tornado_angle": 110.0,
+    "minimum_turning_radius": 0.5,
+    "only_monitoring": false,
+    "sorted_weeding_rows": [],
+    "weeding_plan": [],
+    "turn_paths": [],
+    "current_row": null,
+    "current_segment": null
+}

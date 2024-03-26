@@ -30,13 +30,14 @@ class Weeding(rosys.persistence.PersistentModule):
         self.system = system
         self.kpi_provider = system.kpi_provider
 
-        self.use_field_planning = False
+        self.use_field_planning = True
         self.field: Optional[Field] = None
         self.start_row_id: Optional[str] = None
         self.end_row_id: Optional[str] = None
         self.tornado_angle: float = 110.0
         self.minimum_turning_radius: float = 0.5
         self.only_monitoring: bool = False
+        self.use_monitor_workflow: bool = False
         self.continue_canceled_weeding: bool = False
 
         self.sorted_weeding_rows: list = []
@@ -107,6 +108,8 @@ class Weeding(rosys.persistence.PersistentModule):
         if camera.calibration is None:
             rosys.notify('camera has no calibration')
             return False
+        if self.use_monitor_workflow:
+            return True
         if self.system.field_friend.tool == 'none':
             rosys.notify('This field friend has no tool, only monitoring', 'info')
             self.log.info('This field friend has no tool, only monitoring')
@@ -470,9 +473,9 @@ class Weeding(rosys.persistence.PersistentModule):
         for crop_id in self.crops_to_handle:
             self._safe_crop_to_row(crop_id)
 
-        if self.system.field_friend.tool == 'tornado' and self.crops_to_handle:
+        if self.system.field_friend.tool == 'tornado' and self.crops_to_handle and not self.use_monitor_workflow:
             await self._tornado_workflow()
-        elif self.system.field_friend.tool == 'none':
+        elif self.system.field_friend.tool == 'none' or self.use_monitor_workflow:
             await self._monitor_workflow()
 
         # ToDo: implement workflow of other tools

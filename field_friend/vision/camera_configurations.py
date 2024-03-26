@@ -1,5 +1,6 @@
 configurations = {
     'u1': {
+        'u1': 'version',
         'parameters': {
             'width': 1920,
             'height': 1080,
@@ -12,8 +13,10 @@ configurations = {
             'auto_exposure': True,
         },
         'crop': {
-            'xoffset': 420,
-            'yoffset': 150,
+            'left': 420,
+            'right': 420,
+            'up': 150,
+            'down': 150,
         },
     },
     'u3': {
@@ -23,8 +26,10 @@ configurations = {
             'auto_exposure': True,
         },
         'crop': {
-            'xoffset': 400,
-            'yoffset': 100,
+            'left': 400,
+            'right': 400,
+            'up': 100,
+            'down': 100,
         },
     },
     'u4': {
@@ -34,8 +39,10 @@ configurations = {
             'auto_exposure': True,
         },
         'crop': {
-            'xoffset': 350,
-            'yoffset': 50,
+            'left': 350,
+            'right': 350,
+            'up': 50,
+            'down': 50,
         },
     },
     'ff3': {
@@ -45,8 +52,10 @@ configurations = {
             'auto_exposure': True,
         },
         'crop': {
-            'xoffset': 420,
-            'yoffset': 150,
+            'left': 420,
+            'right': 420,
+            'up': 150,
+            'down': 150,
         },
     },
     'ff10': {
@@ -63,8 +72,10 @@ configurations = {
             'auto_exposure': True,
         },
         'crop': {
-            'xoffset': 0,
-            'yoffset': 0,
+            'left': 80,
+            'right': 30,
+            'up': 180,
+            'down': 0,
         },
     },
 }

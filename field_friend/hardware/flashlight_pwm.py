@@ -29,7 +29,7 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
         self.duty_cycle: float = 0.1
         lizard_code = remove_indentation(f'''
             {name} = {expander.name + "." if expander else ""}PwmOutput({pin})
-            {name}.duty = 20
+            {name}.duty = 204
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
         rosys.on_repeat(self._set_duty_cycle, 60.0)
@@ -59,9 +59,9 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
             # get a 8 bit value for the duty cycle (0-255) no negative values
             duty = int(self.duty_cycle * 255)
 
-            await self.robot_brain.send(
-                f'{self.name}.duty={duty};'
-            )
+            # await self.robot_brain.send(
+            #     f'{self.name}.duty={duty};'
+            # )
 
     def _calculate_duty_cycle(self, voltage: float) -> float:
         # Using the formula provided: Duty Cycle = (20 W) / (V * (0.1864 * V - 3.4409))

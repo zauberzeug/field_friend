@@ -81,14 +81,9 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             ui.markdown('**Flashlight:**').style('color: #6E93D6')
             flashlight_label = ui.label()
 
-        # TODO die Achsen Informationen an dieser Stelle vereinfachen und nur eine Nachricht für beide falls bei einem etwas nicht stimmt
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Y-Axis:**').style('color: #6E93D6')
-            y_axis_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Z-Axis:**').style('color: #6E93D6')
-            z_axis_label = ui.label()
+            ui.markdown('**Axis:**').style('color: #EDF4FB')
+            axis_label = ui.label()
 
         ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
@@ -213,8 +208,10 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             else:
                 z_axis_flags = ['no z-axis']
 
-            y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
-            z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
+            y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
+            z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
+            axis_label.text = f'Y-Axis:{y_axis_text}, Z-Axis: {z_axis_text}'
+            
             if isinstance(robot.flashlight, FlashlightPWMHardware):
                 flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
             else:

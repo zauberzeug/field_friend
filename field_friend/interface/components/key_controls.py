@@ -59,13 +59,13 @@ class KeyControls(rosys.driving.keyboard_control):
             else:
                 self.automator.start()
 
-        if e.key == ' ' and e.action.keydown:
-            background_tasks.create(self.field_friend.stop())
-            if not self.estop_on_space:
-                return
-            if not self.field_friend.estop.is_soft_estop_active:
-                background_tasks.create(self.field_friend.estop.set_soft_estop(True))
-                rosys.notify('ESTOP activated')
-            else:
-                background_tasks.create(self.field_friend.estop.set_soft_estop(False))
-                rosys.notify('ESTOP released')
+        # if e.key == ' ' and e.action.keydown:
+        #     background_tasks.create(self.field_friend.stop())
+        #     if not self.estop_on_space:
+        #         return
+        #     if not self.field_friend.estop.is_soft_estop_active:
+        #         background_tasks.create(self.field_friend.estop.set_soft_estop(True))
+        #         rosys.notify('ESTOP activated')
+        #     else:
+        #         background_tasks.create(self.field_friend.estop.set_soft_estop(False))
+        #         rosys.notify('ESTOP released')

@@ -74,15 +74,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 battery_control_label = ui.label('')
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Y-Axis:**').style('color: #EDF4FB')
-            y_axis_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Z-Axis:**').style('color: #EDF4FB')
-            z_axis_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Z-Axis:**').style('color: #EDF4FB')
+            ui.markdown('**Axis:**').style('color: #EDF4FB')
             axis_label = ui.label()
 
         with ui.row().classes('place-items-center'):
@@ -239,10 +231,9 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         if hasattr(robot, 'battery_control') and robot.battery_control is not None:
             battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
 
-        # TODO only one general label for the axis feedback
-        y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
-        z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
-        axis_label.text = f'Y-Axis is {y_axis_label.text} and Z-Axis is {z_axis_label.text}'
+        y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
+        z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
+        axis_label.text = f'Y-Axis:{y_axis_text}, Z-Axis: {z_axis_text}'
 
         if isinstance(robot.flashlight, FlashlightPWMHardware):
             flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'

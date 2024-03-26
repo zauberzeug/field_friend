@@ -22,8 +22,8 @@ class Info:
         with ui.dialog() as dialog, ui.card():
             ui.label('Versions').classes('text-xl font-semibold')
             with ui.grid(columns=2):
-                ui.label('Fieldfriend:')
-                ui.label(self.system.version)
+                # ui.label('Fieldfriend:')
+                # ui.label(self.system.version)
                 ui.label('RoSys:')
                 ui.label(rosys_version)
                 ui.label('NiceGUI:')

@@ -22,10 +22,7 @@ class header_bar:
         with ui.header().classes('items-center'):
             with ui.link(target='/'):
                 ui.image('assets/zz_logo.png').tailwind.width('12')
-            if system.field_friend.version in ['u1', 'u2']:
-                ui.link('UCKERBOT', '/').classes('text-2xl text-white !no-underline mr-auto')
-            else:
-                ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
+            ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
 
             with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto bg-red-500 text-white p-2 rounded-md'):
                 ui.icon('report').props('size=md').classes('text-white').props('elevated')
@@ -37,12 +34,14 @@ class header_bar:
                 ui.label('Software ESTOP is active!').classes('text-white text-3xl').props('elevated')
 
             with ui.row():
-                ui.link('Field Planner', '/field').classes('text-white text-lg !no-underline')
-                ui.link('Path Planner', '/path').classes('text-white text-lg !no-underline')
+                ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
+                ui.link('Path planner', '/path').classes('text-white text-lg !no-underline')
+                ui.link('Circle Sight', '/monitor').classes('text-white text-lg !no-underline')
                 ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
+
+            rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
             ui.button('Manual Steering', on_click=lambda system=system: manual_steerer_dialog(system)).tooltip(
                 'Open the manual steering window to move the robot with a joystick.')
-            rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
             self._show_battery(system.field_friend)
 
             def handle_toggle() -> None:

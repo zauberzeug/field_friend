@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import app, ui
+from rosys.analysis import logging_page
 
 import field_friend.log_configuration as log_configuration
 from field_friend import interface
@@ -31,12 +32,15 @@ def startup() -> None:
     interface.pages.test_page(page_wrapper, system)
     # /kpis
     interface.pages.kpi_page(page_wrapper, system)
-
+    # /monitor
+    interface.pages.monitor_page(page_wrapper, system)
     # /status
 
     @app.get('/status')
     def status():
         return {'status': 'ok'}
+
+    logging_page(['field_friend', 'rosys'])
 
 
 app.on_startup(startup)

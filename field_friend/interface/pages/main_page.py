@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
-from ..components import camera, leaflet_map, operation, robot_scene
+from ..components import camera_card, leaflet_map, operation, robot_scene
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -37,8 +37,8 @@ class main_page():
                             with ui.card().classes('w-full h-full p-0').style('margin-bottom: 10px;'):
                                 with ui.scroll_area().classes('w-full h-full'):
                                     with ui.card().classes('w-full'):
-                                        camera(self.system.usb_camera_provider, self.system.automator, self.system.detector, self.system.plant_locator, self.system.field_friend,
-                                               self.system.puncher)
+                                        camera_card(self.system.usb_camera_provider, self.system.automator, self.system.detector, self.system.plant_locator, self.system.field_friend,
+                                                    self.system.puncher)
                                     with ui.card().classes('w-full'):
                                         robot_scene(self.system)
                 with splitter.separator:

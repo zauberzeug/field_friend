@@ -4,7 +4,7 @@ import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
 from .kpi_provider import KpiProvider
-from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado
+from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado, YAxisTornadoV2
 
 
 class PuncherException(Exception):
@@ -43,9 +43,9 @@ class Puncher:
             rosys.notify('no y or z axis', 'negative')
             return
         self.log.info(f'Driving to punch at {local_target_x}...')
-        if self.field_friend.version in ['ff3', 'u4']:
+        if self.field_friend.tool in ['tornado', 'weed_screw', 'none']:
             work_x = self.field_friend.WORK_X
-        elif self.field_friend.version in ['u2', 'u3']:
+        elif self.field_friend.tool in ['dual_mechanism']:
             work_x = self.field_friend.WORK_X_DRILL
         if local_target_x < work_x:
             self.log.info(f'Target: {local_target_x} is behind')
@@ -75,7 +75,7 @@ class Puncher:
                 if not self.field_friend.y_axis.MIN_POSITION+self.field_friend.y_axis.WORK_OFFSET <= y <= self.field_friend.y_axis.MAX_POSITION-self.field_friend.y_axis.WORK_OFFSET:
                     rosys.notify('y position out of range', type='error')
                     raise PuncherException('y position out of range')
-            if isinstance(self.field_friend.z_axis, Tornado) and isinstance(self.field_friend.y_axis, YAxisTornado):
+            if isinstance(self.field_friend.z_axis, Tornado) and (isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisTornadoV2)):
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='error')
                     raise PuncherException('y position out of range')
@@ -101,7 +101,7 @@ class Puncher:
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
-        if isinstance(self.field_friend.y_axis, YAxisTornado):
+        if isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisTornadoV2):
             y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         elif isinstance(self.field_friend.y_axis, YAxis):
