@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import events, ui
 
-from ..automations import PlantLocator
-from ..hardware import FieldFriend, FlashlightPWM
+from ...automations import PlantLocator
+from ...hardware import FieldFriend, FlashlightPWM
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:

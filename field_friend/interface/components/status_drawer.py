@@ -1,17 +1,35 @@
-from datetime import timedelta
+from typing import TYPE_CHECKING
 
-import psutil
 import rosys
 from nicegui import ui
 
-from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, Tornado, YAxis,
-                        YAxisTornado, ZAxis, ZAxisV2)
-from ..navigation import Gnss
+from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, Tornado, YAxis, YAxisTornado, ZAxis, ZAxisV2
+from ...navigation import Gnss
+
+if TYPE_CHECKING:
+    from field_friend.system import System
 
 
-def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer):
+def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer, automator: rosys.automation.Automator):
     with ui.right_drawer(value=False).classes('bg-[#edf4fa]') as status_drawer, ui.column():
+        with ui.row().classes('w-full place-content-end'):
+            info_dialog = system.info.create_dialog()
+            ui.button(on_click=info_dialog.open).props('icon=info flat dense').style('color: #6E93D6;')
+            with ui.button().props('icon=settings flat').style('color: #6E93D6'):
+                with ui.menu().props(remove='no-parent-event'):
+                    with ui.column().classes('gap-0'):
+                        rosys.persistence.export_button() \
+                            .props('flat align=left').classes('w-full')
+                        rosys.persistence.import_button(after_import=system.restart) \
+                            .props('flat align=left').classes('w-full')
+                    ui.separator()
+                    ui.menu_item('Restart RoSys', on_click=system.restart)
+                    if system.is_real:
+                        ui.menu_item('Restart Lizard', on_click=system.field_friend.robot_brain.restart)
+                    ui.menu_item('Clear GNSS reference', on_click=system.gnss.clear_reference)
+
         ui.label('System Status').classes('text-xl')
+
         ui.markdown('**Hardware**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
@@ -50,13 +68,9 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 with ui.row().bind_visibility_from(robot.bumper, 'active_bumpers'):
                     ui.icon('report').props('size=md').classes('text-yellow')
                     ui.label('Bumper triggered, warning!').classes('text-orange mt-1')
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Robot:**').style('color: #6E93D6')
-            if isinstance(robot, FieldFriendHardware):
-                ui.label('real hardware')
-            else:
-                ui.label('simulated hardware')
+                    with ui.row().classes('place-items-center'):
+                        ui.markdown('**Bumper:**').style('color: #6E93D6')
+                        bumper_label = ui.label()
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
@@ -64,47 +78,47 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 status_control_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Battery:**').style('color: #6E93D6')
-            bms_label = ui.label()
-            if hasattr(robot, 'battery_control'):
-                battery_control_label = ui.label('')
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Y-Axis:**').style('color: #6E93D6')
-            y_axis_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Z-Axis:**').style('color: #6E93D6')
-            z_axis_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
             ui.markdown('**Flashlight:**').style('color: #6E93D6')
             flashlight_label = ui.label()
 
-        if hasattr(robot, 'bumper') and robot.bumper is not None:
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Bumper:**').style('color: #6E93D6')
-                bumper_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Axis:**').style('color: #6E93D6')
+            axis_label = ui.label()
 
-        ui.markdown('**Robot Brain**').style('color: #6E93D6').classes('w-full text-center')
+        ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Uptime:**').style('color: #6E93D6')
-            uptime_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**CPU:**').style('color: #6E93D6')
-            cpu_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**RAM:**').style('color: #6E93D6')
-            ram_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Temperature:**').style('color: #6E93D6')
-            temperature_label = ui.label()
-
+        if automator.is_running:
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Current Field:**').style('color: #6E93D6')
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Time on Field:**').style('color: #6E93D6')
+                kpi_fieldtime_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Distance:**').style('color: #6E93D6')
+                kpi_distance_label = ui.label()
+                current_field_label = ui.label()
+            current_automation = next(key for key, value in system.automations.items()
+                                      if value == system.automator.default_automation)
+            if current_automation == 'weeding' or 'monitoring':
+                with ui.row().classes('place-items-center'):
+                    ui.markdown('**Current Row:**').style('color: #6E93D6')
+                    current_row_label = ui.label()
+                with ui.row().classes('place-items-center'):
+                    ui.markdown('**Processed Rows:**').style('color: #6E93D6')
+                    kpi_rows_weeded_label = ui.label()
+                with ui.row().classes('place-items-center'):
+                    ui.markdown('**Crops Detected:**').style('color: #6E93D6')
+                    kpi_crops_detected_label = ui.label()
+                with ui.row().classes('place-items-center'):
+                    ui.markdown('**Weeds Detected:**').style('color: #6E93D6')
+                    kpi_weeds_detected_label = ui.label()
+                if current_automation == 'weeding':
+                    with ui.row().classes('place-items-center'):
+                        ui.markdown('**Punches:**').style('color: #6E93D6')
+                        kpi_punches_label = ui.label()
+        else:
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**No automation running**').style('color: #6E93D6')
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
@@ -193,27 +207,17 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
 
             else:
                 z_axis_flags = ['no z-axis']
-            bms_label.text = ', '.join(flag for flag in bms_flags if flag)
-            if hasattr(robot, 'battery_control') and robot.battery_control is not None:
-                battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
 
-            y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
-            z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
+            y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
+            z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
+            axis_label.text = f'Y-Axis:{y_axis_text}, Z-Axis: {z_axis_text}'
+
             if isinstance(robot.flashlight, FlashlightPWMHardware):
                 flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
+            else:
+                flashlight_label.text = 'simulated'
             if isinstance(robot.bumper, rosys.hardware.Bumper):
                 bumper_label.text = ', '.join(robot.bumper.active_bumpers)
-
-            uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
-            cpu_label.text = f'{psutil.cpu_percent():.0f}%'
-            ram_label.text = f'{psutil.virtual_memory().percent:.0f}%'
-
-            def get_jetson_cpu_temperature():
-                with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
-                    temp = f.read().strip()
-                return float(temp) / 1000.0  # Convert from milli°C to °C
-            if isinstance(robot, FieldFriendHardware):
-                temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
@@ -226,6 +230,24 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                 'W' if gnss.record.heading <= 293 else \
                 'NW' if gnss.record.heading <= 338 else \
                 'N'
+
+            if automator.is_running:
+                if system.field_provider.active_field is not None:
+                    current_field_label.text = system.field_provider.active_field.name
+                kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
+                kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
+
+                current_automation = next(key for key, value in system.automations.items()
+                                          if value == system.automator.default_automation)
+                if current_automation == 'weeding' or current_automation == 'monitoring':
+                    if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
+                        current_row_label.text = system.field_provider.active_object['object'].name
+                    kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
+                    kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+                    kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
+                    if current_automation == 'weeding':
+                        kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
+
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
             reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'
             gnss_label.text = f'lat: {gnss.record.latitude:.6f}, lon: {gnss.record.longitude:.6f}'

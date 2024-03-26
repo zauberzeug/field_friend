@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 import rosys
-
 from .plant_provider import Plant, PlantProvider
 
 WEED_CATEGORY_NAME = ['coin', 'weed']

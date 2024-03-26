@@ -2,9 +2,9 @@ import rosys
 from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
-from ..automations import Puncher
-from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                        FlashlightV2, Tornado, YAxis, YAxisTornado, YAxisTornadoV2, ZAxis, ZAxisV2)
+from ...automations import Puncher
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
+                         FlashlightV2, Tornado, YAxis, YAxisTornado, YAxisTornadoV2, ZAxis, ZAxisV2)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:

@@ -5,7 +5,7 @@ from nicegui.elements.scene_objects import Curve
 from rosys.automation import Automator
 from rosys.driving import PathSegment
 
-from ..automations import Mowing, PathProvider, Weeding
+from ...automations import Mowing, PathProvider, Weeding
 
 
 class visualizer_object(Object3D):

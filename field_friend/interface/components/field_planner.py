@@ -8,8 +8,8 @@ from nicegui import events, ui
 
 from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
 
-from ..automations import Field, FieldObstacle, FieldProvider, Row
-from ..navigation import Gnss
+from ...automations import Field, FieldObstacle, FieldProvider, Row
+from ...navigation import Gnss
 from .geodata_picker import geodata_picker
 from .leaflet_map import leaflet_map
 from .operation import operation

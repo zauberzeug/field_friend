@@ -33,8 +33,8 @@ class PlantProvider:
         self.ADDED_NEW_WEED = rosys.event.Event()
         """A new weed has been added."""
 
-        self.ADDED_NEW_BEET = rosys.event.Event()
-        """A new beet has been added."""
+        self.ADDED_NEW_CROP = rosys.event.Event()
+        """A new crop has been added."""
 
         rosys.on_repeat(self.prune, 10.0)
 
@@ -73,7 +73,7 @@ class PlantProvider:
                 return
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
-        self.ADDED_NEW_BEET.emit()
+        self.ADDED_NEW_CROP.emit()
 
     def remove_crop(self, crop: Plant) -> None:
         self.crops[:] = [c for c in self.crops if c.id != crop.id]

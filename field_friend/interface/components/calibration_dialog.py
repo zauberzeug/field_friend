@@ -9,7 +9,7 @@ from PIL import Image
 from rosys.geometry import Point3d
 from rosys.vision import Calibration, Camera, CameraProvider
 
-from ..vision import DOT_DISTANCE, Dot, Network, SimulatedCam
+from ...vision import DOT_DISTANCE, Dot, Network, SimulatedCam
 
 
 class calibration_dialog(ui.dialog):

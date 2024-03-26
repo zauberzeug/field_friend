@@ -12,7 +12,7 @@ import rosys
 from nicegui import events, ui
 from shapely.ops import transform
 
-from ..automations import Field, FieldProvider
+from ...automations import Field, FieldProvider
 
 # Enable fiona driver
 fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default

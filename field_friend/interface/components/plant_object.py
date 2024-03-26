@@ -1,9 +1,7 @@
 import logging
-
 from nicegui.elements.scene_objects import Group, Sphere
 
-from ..automations import PlantProvider
-
+from ...automations import PlantProvider
 
 class plant_objects(Group):
 

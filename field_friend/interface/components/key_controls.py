@@ -4,7 +4,7 @@ import rosys
 from nicegui.events import KeyEventArguments
 from rosys import background_tasks
 
-from ..hardware import YAxis
+from ...hardware import YAxis
 
 if TYPE_CHECKING:
     from field_friend.system import System
