@@ -9,15 +9,18 @@ configuration = {
         'is_left_reversed': True,
         'is_right_reversed': False,
     },
+    # 'y_axis': {
+    #     'version': 'none',
+    # },
     'y_axis': {
         'version': 'y_axis_tornado_v2',
         'name': 'yaxis',
         'can_address': 0x60,
         'max_speed': 2000,
-        'min_position': -0.068,
-        'max_position': 0.068,
-        'axis_offset': 0.075,
-        'steps_per_m': 18_518.52,
+        'min_position': -0.075,
+        'max_position': 0.065,
+        'axis_offset': 0.08,
+        'steps_per_m': 1_481_481.48,  # 4000steps/turn motor; 1/20 gear; 0.054m/u
         'end_r_pin': 19,
         'end_l_pin': 21,
         'motor_on_expander': False,
@@ -30,7 +33,7 @@ configuration = {
     'z_axis': {
         'version': 'tornado',
         'name': 'tornado',
-        'min_position': -0.068,
+        'min_position': -0.08,
         'z_can_address': 0x500,
         'turn_can_address': 0x400,
         'm_per_tick': 0.025/12.52,
@@ -44,7 +47,7 @@ configuration = {
         'end_stops_on_expander': True,
         'is_z_reversed': True,
         'is_turn_reversed': True,
-        'speed_limit': 1.0,
+        'speed_limit': 0.2,
         'turn_speed_limit': 1.0,
         'current_limit': 30,
     },
@@ -102,5 +105,6 @@ configuration = {
         'rx_pin': 32,
         'tx_pin': 33,
         'baud': 1_000_000,
-    }
+    },
+    'small_safety': True,
 }
