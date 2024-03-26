@@ -36,15 +36,11 @@ class FlashlightPWMHardwareV2(FlashlightPWMV2, rosys.hardware.ModuleHardware):
 
     async def turn_on(self) -> None:
         await super().turn_on()
-        await self.robot_brain.send(
-            f'{self.name}.on()'
-        )
+        await self.robot_brain.send(f'{self.name}.on()')
 
     async def turn_off(self) -> None:
         await super().turn_off()
-        await self.robot_brain.send(
-            f'{self.name}.off()'
-        )
+        await self.robot_brain.send(f'{self.name}.off()')
 
     async def set_duty_cycle(self) -> None:
         # get a 8 bit value for the duty cycle (0-255) no negative values
