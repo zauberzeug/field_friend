@@ -150,13 +150,14 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             when {name}_ref_gear_enabled and {name}_is_referencing and {name}_ref_gear.level == 1 then
                 {name}_turn.speed(0);
             end
-            bool {name}_knive_refs_enabled = false;
-            when {name}_knive_refs_enabled and {name}_ref_t.level == 1 then
-                en3.off();
-                {name}_ref_t_enabled = false;
+            bool {name}_knive_ground_enabled = false;
+            bool {name}_knive_stop_enabled = false;
+            when {name}_knive_ground_enabled and {name}_ref_b.level == 1 then
+                {name}_z.off();
             end
-            when {name}_knive_refs_enabled and {name}_ref_b.level == 1 then
-                {name}_z.speed(0);
+            when {name}_knive_stop_enabled and {name}_ref_t.level == 1 then
+                en3.off();
+                {name}_knive_stop_enabled = false;
             end
         ''')
         core_message_fields = [
@@ -198,12 +199,15 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             raise Exception(e)
         try:
             self.log.info('moving z axis down')
-            await self.robot_brain.send(f'{self.name}_knive_refs_enabled = true;')
+            await self.robot_brain.send(
+                f'{self.name}_knive_stop_enabled = true;'
+                f'{self.name}_knive_ground_enabled = true;'
+            )
             await rosys.sleep(0.5)
             await self.robot_brain.send(
                 f'{self.name}_z.position({self.min_position});'
             )
-            await rosys.sleep(2)
+            await rosys.sleep(0.5)
             while self.ref_b and not self.ref_t:
                 if self.min_position - 0.005 <= self.position_z <= self.min_position + 0.005:
                     self.log.info('minimum position reached')
@@ -225,7 +229,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.log.info('finalizing moving z axis down')
             await self.robot_brain.send(
                 f'{self.name}_z.speed(0);'
-                f'{self.name}_knive_refs_enabled = false;'
+                f'{self.name}_knive_stop_enabled = false;'
+                f'{self.name}_knive_ground_enabled = false;'
             )
 
     async def turn_by(self, angle: float) -> None:
