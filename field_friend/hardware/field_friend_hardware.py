@@ -145,6 +145,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                             end_r_pin=config_hardware['y_axis']['end_r_pin'],
                                             motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
                                             end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
+                                            reversed_direction=config_hardware['y_axis']['reversed_direction'],
                                             )
         else:
             y_axis = None
