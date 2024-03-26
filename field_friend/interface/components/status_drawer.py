@@ -82,7 +82,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             flashlight_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Axis:**').style('color: #EDF4FB')
+            ui.markdown('**Axis:**').style('color: #6E93D6')
             axis_label = ui.label()
 
         ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
@@ -211,7 +211,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
             z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
             axis_label.text = f'Y-Axis:{y_axis_text}, Z-Axis: {z_axis_text}'
-            
+
             if isinstance(robot.flashlight, FlashlightPWMHardware):
                 flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
             else:

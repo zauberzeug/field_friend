@@ -196,6 +196,15 @@ class FieldProvider(rosys.persistence.PersistentModule):
     # the function need to be extended for more special cases
 
     def sort_rows(self, field: Field) -> None:
+        if len(field.rows) <= 1:
+            rosys.notify(f'There are not enough rows that can be sorted.', type='warning')
+            return
+
+        for row in field.rows:
+            if len(row.points_wgs84) < 1:
+                rosys.notify(f'Row {row.name} has to few points. Sorting not possible.', type='warning')
+                return
+
         def get_centroid(row: Row) -> Point:
             polyline = LineString(row.points_wgs84)
             return polyline.centroid
