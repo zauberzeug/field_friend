@@ -14,6 +14,7 @@ from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
 from .imu import IMUHardware
 from .safety import SafetyHardware
+from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
 from .tornado import TornadoHardware
 from .y_axis import YAxisHardware
@@ -281,9 +282,12 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                         )
         else:
             self.status_control = None
-
-        safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
-                                y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
+        if 'small_safety' in config_hardware:
+            safety = SmallSafetyHardware(robot_brain, wheels=wheels, estop=estop, bumper=bumper,
+                                         y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
+        else:
+            safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
+                                    y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
                    z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
