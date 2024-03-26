@@ -8,7 +8,7 @@ from rosys.helpers import remove_indentation
 class YAxisTornadoV2(rosys.hardware.Module, abc.ABC):
     """The y axis module is a simple example for a representation of real or simulated robot hardware."""
 
-    def __init__(self, max_speed, min_position, max_position, axis_offset, steps_per_m, **kwargs) -> None:
+    def __init__(self, max_speed, min_position, max_position, axis_offset, steps_per_m, reversed_direction, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.max_speed: int = max_speed
@@ -16,6 +16,7 @@ class YAxisTornadoV2(rosys.hardware.Module, abc.ABC):
         self.max_position: float = max_position
         self.axis_offset: float = axis_offset
         self.steps_per_m: float = steps_per_m
+        self.reversed_direction: bool = reversed_direction
 
         self.steps: int = 0
         self.fault: bool = False
@@ -51,10 +52,10 @@ class YAxisTornadoV2(rosys.hardware.Module, abc.ABC):
 
         The position is given in meters.
         """
-        return int((position - self.axis_offset) * self.steps_per_m)
+        return int((position - self.axis_offset) * self.steps_per_m) * (-1 if self.reversed_direction else 1)
 
     def compute_position(self, steps: int) -> float:
-        return steps / self.steps_per_m + self.axis_offset
+        return steps / self.steps_per_m + self.axis_offset * (-1 if self.reversed_direction else 1)
 
     @property
     def position(self) -> float:
@@ -65,38 +66,39 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
     """The y axis hardware module is a simple example for a representation of real robot hardware."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 name: str = 'yaxis_tornado',
+                 name: str = 'yaxis',
                  can: rosys.hardware.CanHardware,
                  expander: Optional[rosys.hardware.ExpanderHardware],
                  can_address: int = 0x60,
-                 max_speed: int = 4,
+                 max_speed: int = 2000,
                  min_position: float = -0.068,
                  max_position: float = 0.068,
                  axis_offset: float = 0.075,
-                 steps_per_m: float = 40_000,
+                 steps_per_m: float = 18_518.52,
                  end_r_pin: int = 19,
                  end_l_pin: int = 21,
                  motor_on_expander: bool = False,
                  end_stops_on_expander: bool = True,
+                 reversed_direction: bool = False,
                  ) -> None:
         self.name = name
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            master = CanOpenMaster({can})
+            master = CanOpenMaster({can.name})
+            {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
             master.sync_interval = 5
-            {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can}, {can_address})
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
             bool {name}_end_l_enabled = true;
             bool {name}_end_r_enabled = true;
             bool {name}_is_referencing = false;
-            when {name}_end_r_enabled and {name}_end_r.level == 0:
+            when {name}_end_r_enabled and {name}_end_r.level == 0 then
                 {name}_motor.set_ctrl_halt(true);
             end
-            when {name}_is_referencing and !{name}_end_r_enabled and {name}_end_r.level == 1:
+            when !{name}_end_r_enabled and {name}_is_referencing and {name}_end_r.level == 1 then
                 {name}_motor.set_ctrl_halt(true);
             end
-            when {name}_end_l_enabled and {name}_end_l.level == 0:
+            when {name}_end_l_enabled and {name}_end_l.level == 0 then
                 {name}_motor.set_ctrl_halt(true);
             end 
         ''')
@@ -113,6 +115,7 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
             max_position=max_position,
             axis_offset=axis_offset,
             steps_per_m=steps_per_m,
+            reversed_direction=reversed_direction,
             robot_brain=robot_brain,
             lizard_code=lizard_code,
             core_message_fields=core_message_fields)
@@ -161,7 +164,7 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
 
     async def reset_fault(self) -> None:
         await self.robot_brain.send(f'{self.name}_motor.reset_fault();')
-        await rosys.sleep(0.5)
+        await rosys.sleep(1)
         if self.fault:
             self.log.error('could not reset yaxis fault')
             raise Exception('could not reset yaxis fault')
@@ -177,75 +180,86 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
                 f'{self.name}_end_r_enabled = true;'
                 f'{self.name}_end_l_enabled = true;'
             )
+            await rosys.sleep(1)
 
             # if in end l stop, move out
             if self.end_l:
                 self.log.info('already in end_l moving out of end_l stop')
                 await self.robot_brain.send(f'{self.name}_end_l_enabled = false;')
-                await rosys.sleep(0.2)
+                await rosys.sleep(1)
+                velocity = -40 * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
-                    f'{self.name}_motor.enter_pv_mode(-4);'
+                    f'{self.name}_motor.enter_pv_mode({velocity});'
                     f'{self.name}_motor.set_ctrl_halt(false);'
                 )
                 while self.end_l:
                     await rosys.sleep(0.2)
                 await self.robot_brain.send(f'{self.name}_motor.set_ctrl_halt(true);')
+            await rosys.sleep(0.5)
 
             # move to end r stop if not already there
             if not self.end_r:
                 self.log.info('moving to end_r stop')
                 await self.robot_brain.send(f'{self.name}_end_r_enabled = true;')
-                await rosys.sleep(0.2)
+                await rosys.sleep(1)
+                velocity = -40 * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
-                    f'{self.name}_motor.enter_pv_mode(-2);'
+                    f'{self.name}_motor.enter_pv_mode({velocity});'
                     f'{self.name}_motor.set_ctrl_halt(false);'
                 )
                 while not self.end_r:
                     await rosys.sleep(0.2)
+            await rosys.sleep(0.5)
 
             # move out of end r stop
             self.log.info('moving out of end_r stop')
             await self.robot_brain.send(f'{self.name}_end_r_enabled = false;')
-            await rosys.sleep(0.2)
+            await rosys.sleep(1)
+            velocity = 40 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}_motor.enter_pv_mode(4);'
+                f'{self.name}_motor.enter_pv_mode({velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
             )
             while self.end_r:
                 await rosys.sleep(0.2)
+            await rosys.sleep(0.5)
 
-            await rosys.sleep(1)
             # move slowly to end r stop
             self.log.info('moving slowly to end_r stop')
             await self.robot_brain.send(f'{self.name}_end_r_enabled = true;')
-            await rosys.sleep(0.2)
+            await rosys.sleep(1)
+            slow_velocity = -20 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}_motor.enter_pv_mode(-1);'
+                f'{self.name}_motor.enter_pv_mode({slow_velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
             )
             while not self.end_r:
                 await rosys.sleep(0.2)
+            await rosys.sleep(0.5)
 
             # move slowly out of end r stop
             self.log.info('moving slowly out of end_r stop')
             await self.robot_brain.send(f'{self.name}_end_r_enabled = false;')
-            await rosys.sleep(0.2)
+            await rosys.sleep(1)
+            slow_velocity = 20 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}_motor.enter_pv_mode(1);'
+                f'{self.name}_motor.enter_pv_mode({slow_velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
             )
             while self.end_r:
                 await rosys.sleep(0.2)
+            await rosys.sleep(0.5)
 
             # save position
-            await rosys.sleep(0.5)
+            await rosys.sleep(3)
             await self.robot_brain.send(f'{self.name}_motor.position_offset = {self.steps};')
-            await rosys.sleep(0.5)
+            await rosys.sleep(1)
             await self.robot_brain.send(
                 f'{self.name}_is_referencing = false;'
                 f'{self.name}_end_l_enabled = true;'
                 f'{self.name}_end_r_enabled = true;'
             )
+            self.log.info('yaxis referenced')
             self.is_referenced = True
             return True
         except Exception as error:
@@ -253,14 +267,19 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
             return False
         finally:
             await self.stop()
+            await self.robot_brain.send(
+                f'{self.name}_is_referencing = false;'
+                f'{self.name}_end_l_enabled = true;'
+                f'{self.name}_end_r_enabled = true;'
+            )
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         self.end_l = int(words.pop(0)) == 0
         self.end_r = int(words.pop(0)) == 0
         if self.end_l or self.end_r:
             self.is_referenced = False
-        self.target_reached = words.pop(0) == 'true'
         self.steps = int(words.pop(0))
+        self.target_reached = words.pop(0) == 'true'
         self.fault = words.pop(0) == 'true'
         if self.fault:
             self.is_referenced = False
@@ -276,6 +295,7 @@ class YAxisSimulationTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleSimulation):
                  max_position: float = 0.12,
                  axis_offset: float = 0.123,
                  steps_per_m: float = 666.67 * 1000,
+                 reversed_direction: bool = False,
                  ) -> None:
         self.speed: int = 0
         self.target_steps: Optional[int] = None
@@ -285,6 +305,7 @@ class YAxisSimulationTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleSimulation):
             max_position=max_position,
             axis_offset=axis_offset,
             steps_per_m=steps_per_m,
+            reversed_direction=reversed_direction,
         )
 
     async def stop(self) -> None:
