@@ -19,8 +19,8 @@ class YAxisTornadoV2(rosys.hardware.Module, abc.ABC):
         self.reversed_direction: bool = reversed_direction
 
         self.steps: int = 0
-        self.fault: bool = False
-        self.target_reached: bool = False
+        self.alarm: bool = False
+        self.idle: bool = False
 
         self.is_referenced: bool = False
 
@@ -132,25 +132,22 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
         steps = self.compute_steps(position)
         self.log.info(f'moving to steps: {steps}')
         await self.enable_motor()
-        await rosys.sleep(0.2)
         await self.enter_pp_mode(speed)
-        await rosys.sleep(0.2)
+        await rosys.sleep(0.1)
         await self.robot_brain.send(
             f'{self.name}_motor.set_target_position({steps});'
             f'{self.name}_motor.commit_target_position();'
         )
         # Give flags time to turn false first
-        await rosys.sleep(0.5)
-        while not self.target_reached and not self.fault:
-            await rosys.sleep(0.2)
+        await rosys.sleep(0.2)
+        while not self.idle and not self.alarm:
             await self.enter_pp_mode(speed)
-            await rosys.sleep(0.2)
             await self.robot_brain.send(
                 f'{self.name}_motor.set_target_position({steps});'
                 f'{self.name}_motor.commit_target_position();'
             )
-            await rosys.sleep(0.5)
-        if self.fault:
+            await rosys.sleep(0.4)
+        if self.alarm:
             self.log.error(f'could not move yaxis to {position} because of fault')
             raise Exception(f'could not move yaxis to {position} because of fault')
         self.log.info(f'yaxis moved to {position}')
@@ -166,9 +163,9 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.name}_motor.enter_pp_mode({velocity});')
 
     async def check_target_reached_or_fault(self) -> bool:
-        while not self.target_reached and not self.fault:
+        while not self.idle and not self.alarm:
             await rosys.sleep(0.2)
-        if self.fault:
+        if self.alarm:
             self.log.error('yaxis fault')
             return False
         return True
@@ -176,7 +173,7 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
     async def reset_fault(self) -> None:
         await self.robot_brain.send(f'{self.name}_motor.reset_fault();')
         await rosys.sleep(1)
-        if self.fault:
+        if self.alarm:
             self.log.error('could not reset yaxis fault')
             raise Exception('could not reset yaxis fault')
 
@@ -262,9 +259,8 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.5)
 
             # save position
-            await rosys.sleep(0.5)
             await self.robot_brain.send(f'{self.name}_motor.position_offset = {self.steps};')
-            await rosys.sleep(0.5)
+            await rosys.sleep(0.2)
             await self.robot_brain.send(
                 f'{self.name}_is_referencing = false;'
                 f'{self.name}_ends_enabled = true;'
@@ -290,9 +286,9 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
         if self.end_l or self.end_r:
             self.is_referenced = False
         self.steps = int(words.pop(0))
-        self.target_reached = words.pop(0) == 'true'
-        self.fault = words.pop(0) == 'true'
-        if self.fault:
+        self.idle = words.pop(0) == 'true'
+        self.alarm = words.pop(0) == 'true'
+        if self.alarm:
             self.is_referenced = False
 
 
@@ -346,12 +342,12 @@ class YAxisSimulationTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleSimulation):
         return True
 
     async def reset_fault(self) -> None:
-        self.fault = False
+        self.alarm = False
 
     async def step(self, dt: float) -> None:
         await super().step(dt)
         self.steps += int(dt * self.speed)
-        self.target_reached = self.speed == 0
+        self.idle = self.speed == 0
         if self.target_steps is not None:
             if (self.speed > 0) == (self.steps > self.target_steps):
                 self.steps = self.target_steps
