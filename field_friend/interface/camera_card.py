@@ -9,7 +9,7 @@ from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point
 
 from ..automations import PlantLocator, Puncher
-from ..hardware import FieldFriend, FlashlightPWM
+from ..hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2
 from .calibration_dialog import calibration_dialog
 
 
@@ -46,7 +46,7 @@ class camera_card:
         self.camera = cam
         self.camera_card.clear()
         with self.camera_card.style('position: relative;'):
-            if self.field_friend.flashlight and isinstance(self.field_friend.flashlight, FlashlightPWM):
+            if self.field_friend.flashlight and (isinstance(self.field_friend.flashlight, FlashlightPWM) or isinstance(self.field_friend.flashlight, FlashlightPWMV2)):
                 self.flashlight_toggled = False
 
                 async def toggle_flashlight():
@@ -146,6 +146,7 @@ class camera_card:
         result = await self.calibration_dialog.edit(self.camera)
         if result:
             self.show_mapping_checkbox.value = True
+            self.camera_provider.request_backup()
 
     def show_mapping(self, event: ValueChangeEventArguments) -> None:
         if self.camera is None or self.image_view is None:
