@@ -4,8 +4,8 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, Tornado, YAxis,
-                        YAxisTornado, ZAxis, ZAxisV2)
+from ..hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
+                        Tornado, YAxis, YAxisTornado, YAxisTornadoV2, ZAxis, ZAxisV2)
 from ..navigation import Gnss
 
 
@@ -162,6 +162,16 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
                     f'{robot.y_axis.steps:.0f}',
                     f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
                 ]
+            elif isinstance(robot.y_axis, YAxisTornadoV2):
+                y_axis_flags = [
+                    'not referenced' if not robot.y_axis.is_referenced else '',
+                    'alarm' if robot.y_axis.alarm else '',
+                    'idle' if robot.y_axis.idle else 'moving',
+                    'end l' if robot.y_axis.end_l else '',
+                    'end r' if robot.y_axis.end_r else '',
+                    f'{robot.y_axis.steps:.0f}',
+                    f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
+                ]
             else:
                 y_axis_flags = ['no y-axis']
             if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
@@ -199,7 +209,7 @@ def status_drawer(robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odomet
 
             y_axis_label.text = ', '.join(flag for flag in y_axis_flags if flag)
             z_axis_label.text = ', '.join(flag for flag in z_axis_flags if flag)
-            if isinstance(robot.flashlight, FlashlightPWMHardware):
+            if isinstance(robot.flashlight, FlashlightPWMHardware) or isinstance(robot.flashlight, FlashlightPWMHardwareV2):
                 flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
             if isinstance(robot.bumper, rosys.hardware.Bumper):
                 bumper_label.text = ', '.join(robot.bumper.active_bumpers)
