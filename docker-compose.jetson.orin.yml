@@ -13,8 +13,8 @@ services:
     hostname: ${ROBOT_ID}
     environment:
       - HOST=learning-loop.ai
-      - ORGANIZATION=zauberzeug
-      - PROJECT=coins
+      - ORGANIZATION=zuckerruebe
+      - PROJECT=uckerbots
       - NVIDIA_VISIBLE_DEVICES=all
     volumes:
       - ~/data_coins:/data
