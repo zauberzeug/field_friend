@@ -342,21 +342,21 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await self.robot_brain.send(f'{self.name}_ref_gear_enabled = true;')
             await rosys.sleep(1)
             await self.robot_brain.send(
-                f'{self.name}_turn.speed({0.1*self.speed_limit});'
+                f'{self.name}_turn.speed({0.18*self.speed_limit});'
             )
             await rosys.sleep(0.2)
             while not self.ref_gear:
-                await self.robot_brain.send(f'{self.name}_turn.speed({0.1*self.speed_limit});')
+                await self.robot_brain.send(f'{self.name}_turn.speed({0.18*self.speed_limit});')
                 await rosys.sleep(0.1)
             await self.robot_brain.send(f'{self.name}_turn.speed(0);')
 
             # drive to motor ref
             await self.robot_brain.send(f'{self.name}_ref_motor_enabled = true;')
             await rosys.sleep(1)
-            await self.robot_brain.send(f'{self.name}_turn.move({-0.1*self.speed_limit});')
+            await self.robot_brain.send(f'{self.name}_turn.move({-0.18*self.speed_limit});')
             await rosys.sleep(0.2)
             while not self.ref_motor:
-                await self.robot_brain.send(f'{self.name}_turn.speed({-0.1*self.speed_limit});')
+                await self.robot_brain.send(f'{self.name}_turn.speed({-0.18*self.speed_limit});')
                 await rosys.sleep(0.1)
             await self.robot_brain.send(f'{self.name}_turn.speed(0);')
 
