@@ -8,7 +8,7 @@ from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCol
                                       PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
+from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
 
 
 class System:
@@ -19,7 +19,7 @@ class System:
 
         if self.is_real:
             self.field_friend = FieldFriendHardware()
-            self.usb_camera_provider = UsbCamProvider()
+            self.usb_camera_provider = CalibratableUsbCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)

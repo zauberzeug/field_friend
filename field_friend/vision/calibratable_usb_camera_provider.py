@@ -4,17 +4,17 @@ import shutil
 import rosys
 from rosys.vision.usb_camera.usb_camera_scanner import scan_for_connected_devices
 
-from . import UsbCam
+from . import CalibratableUsbCamera
 
 SCAN_INTERVAL = 10
 
 
-class UsbCamProvider(rosys.vision.CameraProvider[UsbCam], rosys.persistence.PersistentModule):
+class CalibratableUsbCameraProvider(rosys.vision.CameraProvider[CalibratableUsbCamera], rosys.persistence.PersistentModule):
 
     def __init__(self) -> None:
         super().__init__()
 
-        self.log = logging.getLogger('field_friend.usb_cam_provider')
+        self.log = logging.getLogger('field_friend.calibratable_usb_camera_provider')
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
@@ -28,7 +28,7 @@ class UsbCamProvider(rosys.vision.CameraProvider[UsbCam], rosys.persistence.Pers
 
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
-            self.add_camera(UsbCam.from_dict(camera_data))
+            self.add_camera(CalibratableUsbCamera.from_dict(camera_data))
 
     @staticmethod
     async def scan_for_cameras() -> set[str]:
@@ -38,7 +38,7 @@ class UsbCamProvider(rosys.vision.CameraProvider[UsbCam], rosys.persistence.Pers
         camera_uids = await self.scan_for_cameras()
         for uid in camera_uids:
             if uid not in self._cameras:
-                self.add_camera(UsbCam(id=uid))
+                self.add_camera(CalibratableUsbCamera(id=uid))
             await self._cameras[uid].connect()
 
     async def shutdown(self) -> None:

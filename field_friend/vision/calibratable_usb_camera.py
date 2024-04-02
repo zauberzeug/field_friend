@@ -4,7 +4,7 @@ import rosys
 from rosys import persistence
 
 
-class UsbCam(rosys.vision.CalibratableCamera, rosys.vision.UsbCamera):
+class CalibratableUsbCamera(rosys.vision.CalibratableCamera, rosys.vision.UsbCamera):
 
     def __init__(self,
                  *,

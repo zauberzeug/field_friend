@@ -5,8 +5,8 @@ import rosys
 
 import config.config_selection as config_selector
 
+from .calibratable_usb_camera import CalibratableUsbCamera
 from .simulated_cam import SimulatedCam
-from .usb_cam import UsbCam
 
 
 class CameraConfigurator:
@@ -34,7 +34,7 @@ class CameraConfigurator:
             await rosys.sleep(1)
         self.log.info(f'camera: {camera.id} is active')
         parameters_changed = False
-        if isinstance(camera, UsbCam):
+        if isinstance(camera, CalibratableUsbCamera):
             if 'u1' in list(self.config.keys()):
                 # camera.set_parameters(self.config['parameters'])
                 # !Camera bug on u1 after setting the new parameters remove line and restart system
