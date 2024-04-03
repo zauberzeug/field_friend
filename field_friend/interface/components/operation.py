@@ -114,7 +114,7 @@ class operation:
                         with ui.row():
                             ui.number(
                                 'Drill angle', format='%.0f', value=100, step=1, min=1, max=180).props(
-                                'dense outlined suffix=m').classes('w-24').bind_value(
+                                'dense outlined suffix=°').classes('w-24').bind_value(
                                 self.system.coin_collecting, 'angle').tooltip(
                                 'Set the drill depth for the weeding automation')
                             ui.checkbox('with drilling', value=True).bind_value(
