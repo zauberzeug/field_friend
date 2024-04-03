@@ -40,6 +40,7 @@ def startup() -> None:
     def status():
         return {'status': 'ok'}
 
+    # /logging
     logging_page(['field_friend', 'rosys'])
 
 

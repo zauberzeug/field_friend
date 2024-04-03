@@ -11,6 +11,14 @@ from .plant_provider import PlantProvider
 class KPIs:
     distance: int = 0
     time: int = 0
+    bumps: int = 0
+    low_battery: int = 0
+    can_failure: int = 0
+    automation_stopped: int = 0
+    e_stop_triggered:  int = 0
+    soft_e_stop_triggered:  int = 0
+    imu_rolling_detected: int = 0
+    gnss_connection_lost: int = 0
 
 
 @dataclass(slots=True, kw_only=True)

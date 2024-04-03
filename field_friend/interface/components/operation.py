@@ -178,8 +178,7 @@ class operation:
 
     async def ensure_mowing_start(self) -> bool:
         self.log.info('Ensuring start of mowing automation')
-        # FIXME hier die Abfrage wird in Zeile 159 doch schon abgefragt
-        if not self.automations_toggle.value == 'mowing' or self.system.mowing.current_path_segment is None:
+        if self.system.mowing.current_path_segment is None:
             return True
         result = await self.dialog
         if result == 'Yes':
@@ -192,8 +191,7 @@ class operation:
 
     async def ensure_weeding_start(self) -> bool:
         self.log.info('Ensuring start of weeding automation')
-        # FIXME siehe Zeile 167
-        if not self.automations_toggle.value == 'weeding' or self.system.weeding.current_segment is None:
+        if self.system.weeding.current_segment is None:
             return True
         result = await self.dialog
         if result == 'Yes':
