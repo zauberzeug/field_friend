@@ -98,6 +98,12 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.markdown('**Y-Axis**')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
                     ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.y_axis.reset_fault()))
+                    ui.button('Move to min', on_click=lambda: automator.start(
+                        field_friend.y_axis.move_to(field_friend.y_axis.min_position)))
+                    ui.button('Move to middle', on_click=lambda: automator.start(
+                        field_friend.y_axis.move_to(0)))
+                    ui.button('Move to max', on_click=lambda: automator.start(
+                        field_friend.y_axis.move_to(field_friend.y_axis.max_position)))
 
         if field_friend.z_axis is not None:
             if isinstance(field_friend.z_axis, ZAxis) or isinstance(field_friend.z_axis, ZAxisV2):

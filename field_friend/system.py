@@ -4,13 +4,13 @@ import os
 import numpy as np
 import rosys
 
-from .automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider, Mowing,
-                          PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
-from .hardware import FieldFriendHardware, FieldFriendSimulation
+from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider, Mowing,
+                                      PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
+from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
+from field_friend.navigation import GnssHardware, GnssSimulation
+from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
-from .navigation import GnssHardware, GnssSimulation
-from .vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
 
 
 class System:
@@ -21,7 +21,7 @@ class System:
 
         if self.is_real:
             self.field_friend = FieldFriendHardware()
-            self.usb_camera_provider = UsbCamProvider()
+            self.usb_camera_provider = CalibratableUsbCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)

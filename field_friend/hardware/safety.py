@@ -63,22 +63,26 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f' {flashlight.name}.on();'
         elif isinstance(flashlight, FlashlightHardwareV2):
             lizard_code += f' {flashlight.name}_front.off(); {flashlight.name}_back.off();'
-        elif isinstance(flashlight, FlashlightPWMHardware) or isinstance(flashlight, FlashlightPWMHardwareV2):
-            lizard_code += f' {flashlight.name}.off();'
+        # elif isinstance(flashlight, FlashlightPWMHardware) or isinstance(flashlight, FlashlightPWMHardwareV2):
+        #     lizard_code += f' {flashlight.name}.off();'
         lizard_code += 'end\n'
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
             lizard_code += 'when ' + \
                 ' or '.join(f'{bumper.name}_{pin}.level == 1' for pin in bumper.pins) + \
-                f' then {wheels.name}.speed(0, 0); end\n'
+                f' then {wheels.name}.off(); end\n'
         if isinstance(y_axis, ChainAxisHardware):
             lizard_code += f'when {y_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); end\n'
         if (isinstance(z_axis, ZAxisHardware) or isinstance(z_axis, ZAxisHardwareV2)) and y_axis is not None:
-            lizard_code += f'when {z_axis.name}_ref_t.level == {1 if not z_axis.ccw else -1} then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
+            lizard_code += f'when {z_axis.name}_ref_t.level == {1 if not z_axis.ccw else -1} then {wheels.name}.speed(0, 0); end\n'
         if isinstance(z_axis, TornadoHardware):
-            lizard_code += f'when {z_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
-            lizard_code += f'when {z_axis.name}_end_bottom.level == 0 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
+            if isinstance(y_axis, YAxisHardwareTornado):
+                lizard_code += f'when {z_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
+                lizard_code += f'when {z_axis.name}_end_bottom.level == 0 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
+            elif isinstance(y_axis, YAxisHardwareTornadoV2):
+                lizard_code += f'when {z_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}_motor.set_ctrl_enable(false); end\n'
+                lizard_code += f'when {z_axis.name}_end_bottom.level == 0 then {wheels.name}.speed(0, 0); {y_axis.name}_motor.set_ctrl_enable(false); end\n'
 
         lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
         lizard_code += 'when core.last_message_age > 20000 then stop(); end\n'

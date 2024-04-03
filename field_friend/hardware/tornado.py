@@ -130,38 +130,34 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_ref_gear = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_gear_pin})
             {name}_ref_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_t_pin})
             {name}_ref_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_b_pin})
-            bool {name}_z_is_referencing = false;
+            bool {name}_is_referencing = false;
             bool {name}_end_top_enabled = true;
             bool {name}_end_bottom_enabled = true;
-            when {name}_end_top_enabled and {name}_z_is_referencing and {name}_end_top.level == 0 then
+            when {name}_end_top_enabled and {name}_is_referencing and {name}_end_top.level == 0 then
                 {name}_z.speed(0);
-                {name}_end_top_enabled = false;
             end
-            when !{name}_end_top_enabled and {name}_z_is_referencing and {name}_end_top.level == 1 then 
+            when !{name}_end_top_enabled and {name}_is_referencing and {name}_end_top.level == 1 then 
                 {name}_z.speed(0); 
-                {name}_end_top_enabled = true;
             end
             when {name}_end_bottom_enabled and {name}_end_bottom.level == 0 then
                 {name}_z.speed(0);
             end 
-            bool {name}_turn_is_referencing = false;
             bool {name}_ref_motor_enabled = false;
             bool {name}_ref_gear_enabled = false;
-            when {name}_ref_motor_enabled and {name}_turn_is_referencing and {name}_ref_motor.level == 0 then
+            when {name}_ref_motor_enabled and {name}_is_referencing and {name}_ref_motor.level == 0 then
                 {name}_turn.speed(0);
-                {name}_ref_motor_enabled = false;
             end
-            when {name}_ref_gear_enabled and {name}_turn_is_referencing and {name}_ref_gear.level == 1 then
+            when {name}_ref_gear_enabled and {name}_is_referencing and {name}_ref_gear.level == 1 then
                 {name}_turn.speed(0);
-                {name}_ref_gear_enabled = false;
             end
-            bool {name}_ref_t_enabled = false;
-            bool {name}_ref_b_enabled = false;
-            when {name}_ref_t_enabled and {name}_ref_t.level == 1 then
+            bool {name}_knive_ground_enabled = false;
+            bool {name}_knive_stop_enabled = false;
+            when {name}_knive_ground_enabled and {name}_ref_b.level == 1 then
+                {name}_z.off();
+            end
+            when {name}_knive_stop_enabled and {name}_ref_t.level == 1 then
                 en3.off();
-            end
-            when {name}_ref_b_enabled and {name}_ref_b.level == 1 then
-                {name}_z.speed(0);
+                {name}_knive_stop_enabled = false;
             end
         ''')
         core_message_fields = [
@@ -204,14 +200,14 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         try:
             self.log.info('moving z axis down')
             await self.robot_brain.send(
-                f'{self.name}_ref_t_enabled = true;'
-                f'{self.name}_ref_b_enabled = true;'
+                f'{self.name}_knive_stop_enabled = true;'
+                f'{self.name}_knive_ground_enabled = true;'
             )
-            await rosys.sleep(0.2)
+            await rosys.sleep(0.5)
             await self.robot_brain.send(
                 f'{self.name}_z.position({self.min_position});'
             )
-            await rosys.sleep(2)
+            await rosys.sleep(0.5)
             while self.ref_b and not self.ref_t:
                 if self.min_position - 0.005 <= self.position_z <= self.min_position + 0.005:
                     self.log.info('minimum position reached')
@@ -233,8 +229,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.log.info('finalizing moving z axis down')
             await self.robot_brain.send(
                 f'{self.name}_z.speed(0);'
-                f'{self.name}_ref_b_enabled = false;'
-                f'{self.name}_ref_t_enabled = false;'
+                f'{self.name}_knive_stop_enabled = false;'
+                f'{self.name}_knive_ground_enabled = false;'
             )
 
     async def turn_by(self, angle: float) -> None:
@@ -251,23 +247,11 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.log.info('referencing tornado z position')
 
             await self.robot_brain.send(
-                f'{self.name}_z_is_referencing = true;'
+                f'{self.name}_is_referencing = true;'
+                f'{self.name}_end_top_enabled = true;'
+                f'{self.name}_end_bottom_enabled = true;'
             )
-            await rosys.sleep(0.5)
-
-            # if already in end_top_stop disable and move down
-            if self.end_top:
-                self.log.info('already in end_top, moving out of end top stop')
-                await self.robot_brain.send(
-                    f'{self.name}_end_top_enabled = false;'
-                    f'{self.name}_end_bottom_enabled = true;'
-                    f'{self.name}_z.speed({-0.005*self.speed_limit});'
-                )
-                await rosys.sleep(0.2)
-                while self.end_top:
-                    await self.robot_brain.send(f'{self.name}_z.speed({-0.005*self.speed_limit});')
-                    await rosys.sleep(0.2)
-                await self.robot_brain.send(f'{self.name}_z.speed(0);')
+            await rosys.sleep(1)
 
             # if in end bottom_stop disable end_stop
             if self.end_bottom:
@@ -275,22 +259,24 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                 await self.robot_brain.send(f'{self.name}_end_bottom_enabled = false;')
 
             # move up until end top
-            self.log.info('moving up until end top')
-            await self.robot_brain.send(
-                f'{self.name}_end_top_enabled = true;'
-                f'{self.name}_z.speed({0.005*self.speed_limit});'
-            )
-            await rosys.sleep(0.2)
-            while not self.end_top:
-                await self.robot_brain.send(f'{self.name}_z.speed({0.005*self.speed_limit});')
+            if not self.end_top:
+                self.log.info('moving up until end top')
+                await self.robot_brain.send(f'{self.name}_end_top_enabled = true;')
+                await rosys.sleep(1)
+                await self.robot_brain.send(
+                    f'{self.name}_z.speed({0.005*self.speed_limit});'
+                )
                 await rosys.sleep(0.2)
-            await self.robot_brain.send(f'{self.name}_z.speed(0);')
+                while not self.end_top:
+                    await self.robot_brain.send(f'{self.name}_z.speed({0.005*self.speed_limit});')
+                    await rosys.sleep(0.2)
+                await self.robot_brain.send(f'{self.name}_z.speed(0);')
 
             # move out of end top
             self.log.info('moving out of end top')
-            await self.robot_brain.send(
-                f'{self.name}_z.speed({-0.005*self.speed_limit});'
-            )
+            await self.robot_brain.send(f'{self.name}_end_top_enabled = false;')
+            await rosys.sleep(1)
+            await self.robot_brain.send(f'{self.name}_z.speed({-0.005*self.speed_limit});')
             await rosys.sleep(0.2)
             while self.end_top:
                 await self.robot_brain.send(f'{self.name}_z.speed({-0.005*self.speed_limit});')
@@ -299,9 +285,9 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
 
             # move slowly to end top
             self.log.info('moving slowly to end top')
-            await self.robot_brain.send(
-                f'{self.name}_z.speed({0.001*self.speed_limit});'
-            )
+            await self.robot_brain.send(f'{self.name}_end_top_enabled = true;')
+            await rosys.sleep(1)
+            await self.robot_brain.send(f'{self.name}_z.speed({0.001*self.speed_limit});')
             await rosys.sleep(0.2)
             while not self.end_top:
                 await self.robot_brain.send(f'{self.name}_z.speed({0.001*self.speed_limit});')
@@ -310,9 +296,9 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
 
             # move slowly out of end top
             self.log.info('moving slowly out of end top')
-            await self.robot_brain.send(
-                f'{self.name}_z.speed({-0.001*self.speed_limit});'
-            )
+            await self.robot_brain.send(f'{self.name}_end_top_enabled = false;')
+            await rosys.sleep(1)
+            await self.robot_brain.send(f'{self.name}_z.speed({-0.001*self.speed_limit});')
             await rosys.sleep(0.2)
             while self.end_top:
                 await self.robot_brain.send(f'{self.name}_z.speed({-0.001*self.speed_limit});')
@@ -321,9 +307,10 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
 
             # set as zero position
             self.log.info('setting as zero position')
+            await rosys.sleep(1)
             await self.robot_brain.send(
                 f'{self.name}_z.zero();'
-                f'{self.name}_z_is_referencing = false;'
+                f'{self.name}_is_referencing = false;'
             )
             self.log.info('referencing tornado z position done')
             self.z_is_referenced = True
@@ -333,7 +320,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             return False
         finally:
             await self.robot_brain.send(
-                f'{self.name}_z_is_referencing = false;'
+                f'{self.name}_is_referencing = false;'
                 f'{self.name}_end_top_enabled = true;'
                 f'{self.name}_end_bottom_enabled = true;'
             )
@@ -345,36 +332,40 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.log.info('referencing tornado turn position')
 
             await self.robot_brain.send(
-                f'{self.name}_turn_is_referencing = true;'
+                f'{self.name}_is_referencing = true;'
+                f'{self.name}_ref_motor_enabled = false;'
+                f'{self.name}_ref_gear_enabled = false;'
             )
             await rosys.sleep(0.5)
 
             # drive to gear ref
+            await self.robot_brain.send(f'{self.name}_ref_gear_enabled = true;')
+            await rosys.sleep(1)
             await self.robot_brain.send(
-                f'{self.name}_ref_gear_enabled = true;'
-                f'{self.name}_turn.speed({0.1*self.speed_limit});'
+                f'{self.name}_turn.speed({0.18*self.speed_limit});'
             )
             await rosys.sleep(0.2)
             while not self.ref_gear:
-                await self.robot_brain.send(f'{self.name}_turn.speed({0.1*self.speed_limit});')
+                await self.robot_brain.send(f'{self.name}_turn.speed({0.18*self.speed_limit});')
                 await rosys.sleep(0.1)
             await self.robot_brain.send(f'{self.name}_turn.speed(0);')
 
             # drive to motor ref
-            await self.robot_brain.send(
-                f'{self.name}_ref_motor_enabled = true;'
-                f'{self.name}_turn.move({-0.1*self.speed_limit});'
-            )
+            await self.robot_brain.send(f'{self.name}_ref_motor_enabled = true;')
+            await rosys.sleep(1)
+            await self.robot_brain.send(f'{self.name}_turn.move({-0.18*self.speed_limit});')
             await rosys.sleep(0.2)
             while not self.ref_motor:
-                await self.robot_brain.send(f'{self.name}_turn.speed({-0.1*self.speed_limit});')
+                await self.robot_brain.send(f'{self.name}_turn.speed({-0.18*self.speed_limit});')
                 await rosys.sleep(0.1)
             await self.robot_brain.send(f'{self.name}_turn.speed(0);')
 
             # set as zero position
+            self.log.info('setting as zero position')
+            await rosys.sleep(1)
             await self.robot_brain.send(
                 f'{self.name}_turn.zero();'
-                f'{self.name}_turn_is_referencing = false;'
+                f'{self.name}_is_referencing = false;'
             )
             await rosys.sleep(0.2)
             self.log.info('referencing tornado turn position done')
@@ -385,7 +376,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             return False
         finally:
             await self.robot_brain.send(
-                f'{self.name}_turn_is_referencing = false;'
+                f'{self.name}_is_referencing = false;'
                 f'{self.name}_ref_motor_enabled = false;'
                 f'{self.name}_ref_gear_enabled = false;'
             )

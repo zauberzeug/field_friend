@@ -94,7 +94,7 @@ def configure():
             },
             project: {
                 'handlers': ['console', 'debugfile'],
-                'level': 'DEBUG',
+                'level': 'INFO',
                 'propagate': False,
             },
         },

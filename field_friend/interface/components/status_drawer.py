@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, Tornado, YAxis, YAxisTornado, ZAxis, ZAxisV2
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
+                         Tornado, YAxis, YAxisTornado, YAxisTornadoV2, ZAxis, ZAxisV2)
 from ...navigation import Gnss
 
 if TYPE_CHECKING:
@@ -176,6 +177,16 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     f'{robot.y_axis.steps:.0f}',
                     f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
                 ]
+            elif isinstance(robot.y_axis, YAxisTornadoV2):
+                y_axis_flags = [
+                    'not referenced' if not robot.y_axis.is_referenced else '',
+                    'alarm' if robot.y_axis.alarm else '',
+                    'idle' if robot.y_axis.idle else 'moving',
+                    'end l' if robot.y_axis.end_l else '',
+                    'end r' if robot.y_axis.end_r else '',
+                    f'{robot.y_axis.steps:.0f}',
+                    f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
+                ]
             else:
                 y_axis_flags = ['no y-axis']
             if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
@@ -212,7 +223,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
             axis_label.text = f'Y-Axis:{y_axis_text}, Z-Axis: {z_axis_text}'
 
-            if isinstance(robot.flashlight, FlashlightPWMHardware):
+            if isinstance(robot.flashlight, FlashlightPWMHardware) or isinstance(robot.flashlight, FlashlightPWMHardwareV2):
                 flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
             else:
                 flashlight_label.text = 'simulated'

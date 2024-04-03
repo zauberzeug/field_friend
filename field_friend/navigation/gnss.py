@@ -142,11 +142,11 @@ class GnssHardware(Gnss):
         try:
             lines = await rosys.run.io_bound(self.ser.readlines)
             if not lines:
-                self.log.info('No data')
+                self.log.debug('No data')
                 return
             for line in lines:
                 if not line:
-                    self.log.info('No data')
+                    self.log.debug('No data')
                     continue
                 try:
                     msg = await rosys.run.cpu_bound(pynmea2.parse, line.decode())
