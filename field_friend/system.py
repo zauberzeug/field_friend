@@ -8,7 +8,7 @@ from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCol
                                       PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, UsbCamProvider
+from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, CalibratableUsbCameraProvider
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
