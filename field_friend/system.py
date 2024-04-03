@@ -4,11 +4,13 @@ import os
 import numpy as np
 import rosys
 
-from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, Mowing,
+from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider, Mowing,
                                       PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, CalibratableUsbCameraProvider
+from .interface.components.info import Info
+from .kpi_generator import generate_kpis
 
 
 class System:
@@ -37,9 +39,7 @@ class System:
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
             # self.circle_sight = None
-
         self.plant_provider = PlantProvider()
-        self.field_provider = FieldProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         if self.is_real:
@@ -55,16 +55,28 @@ class System:
         self.driver.parameters.hook_offset = 0.6
         self.driver.parameters.carrot_distance = 0.2
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
-        self.puncher = Puncher(self.field_friend, self.driver)
+
+        self.kpi_provider = KpiProvider(self.plant_provider)
+        if not (self.is_real):
+            generate_kpis(self.kpi_provider)
+
+        def watch_robot() -> None:
+            self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
+            self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
+
+        self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
         self.small_weed_category_names = ['weed', 'coin']
         self.crop_category_names = ['sugar_beet', 'crop', 'coin_with_hole']
-        self.plant_locator = PlantLocator(self.usb_camera_provider, self.detector, self.plant_provider, self.odometer)
+        self.plant_locator = PlantLocator(self.usb_camera_provider, self.detector,
+                                          self.plant_provider, self.odometer)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
-        self.field_provider = FieldProvider()
-        self.path_provider = PathProvider()
 
+        rosys.on_repeat(watch_robot, 1.0)
+
+        self.path_provider = PathProvider()
+        self.field_provider = FieldProvider()
         width = 0.64
         length = 0.78
         offset = 0.36
@@ -94,7 +106,7 @@ class System:
         }
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
                                                     default_automation=self.coin_collecting.start)
-
+        self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True

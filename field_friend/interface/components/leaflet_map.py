@@ -6,10 +6,7 @@ import rosys.geometry
 from nicegui import events, ui, elements
 import rosys
 from .key_controls import KeyControls
-from ..automations import FieldProvider, Field
-from geographiclib.geodesic import Geodesic
-from copy import deepcopy
-from field_friend.navigation.point_transformation import wgs84_to_cartesian, cartesian_to_wgs84
+from ...automations import Field
 import numpy as np
 
 if TYPE_CHECKING:

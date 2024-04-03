@@ -2,7 +2,7 @@ import numpy as np
 from nicegui.elements.scene_objects import Box, Curve, Cylinder, Extrusion, Group
 from rosys.geometry import Spline
 
-from ..automations import FieldProvider
+from ...automations import FieldProvider
 
 
 class field_object(Group):

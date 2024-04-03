@@ -8,8 +8,8 @@ from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point
 
-from ..automations import PlantLocator, Puncher
-from ..hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2
+from ...automations import PlantLocator, Puncher
+from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2
 from .calibration_dialog import calibration_dialog
 
 

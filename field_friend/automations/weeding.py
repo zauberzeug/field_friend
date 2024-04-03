@@ -28,6 +28,7 @@ class Weeding(rosys.persistence.PersistentModule):
 
         self.log = logging.getLogger('field_friend.weeding')
         self.system = system
+        self.kpi_provider = system.kpi_provider
 
         self.use_field_planning = True
         self.field: Optional[Field] = None
@@ -296,8 +297,10 @@ class Weeding(rosys.persistence.PersistentModule):
                 self.log.info('Planless weeding completed')
 
         except WorkflowException as e:
+            self.kpi_provider.increment('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
         finally:
+            self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.system.field_friend.stop()
             self.system.plant_locator.pause()
 

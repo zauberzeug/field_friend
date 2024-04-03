@@ -23,7 +23,7 @@ class operation:
         self.leaflet_map = leaflet_map
         self.initial_value = None
 
-        with ui.card().tight().classes('w-full h-full'):
+        with ui.card().tight().classes('w-full').style('margin-bottom: 10px; min-height: 100%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
                 with ui.column().classes('w-full'):
                     with ui.row().classes('items-center'):
@@ -129,7 +129,7 @@ class operation:
                                                                                                    'is_soft_estop_active', value=True)
                 ui.space()
                 with ui.row():
-                    automation_controls(self.system.automator, can_start=self.ensure_start)
+                    automation_controls(self.system, can_start=self.ensure_start)
         with ui.dialog() as self.dialog, ui.card():
             ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row}"}?').classes(
                 'text-lg')
@@ -177,8 +177,8 @@ class operation:
         return True
 
     async def ensure_mowing_start(self) -> bool:
-        self.log.info('Ensuring start of automation')
-        if not self.automations_toggle.value == 'mowing' or self.system.mowing.current_path_segment is None:
+        self.log.info('Ensuring start of mowing automation')
+        if self.system.mowing.current_path_segment is None:
             return True
         result = await self.dialog
         if result == 'Yes':
@@ -190,8 +190,8 @@ class operation:
         return True
 
     async def ensure_weeding_start(self) -> bool:
-        self.log.info('Ensuring start of automation')
-        if not self.automations_toggle.value == 'weeding' or self.system.weeding.current_segment is None:
+        self.log.info('Ensuring start of weeding automation')
+        if self.system.weeding.current_segment is None:
             return True
         result = await self.dialog
         if result == 'Yes':
