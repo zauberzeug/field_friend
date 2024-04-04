@@ -55,7 +55,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.reference_lon: Optional[float] = None
 
         self.needs_backup = False
-        rosys.on_repeat(self.update, 1.0)
+        rosys.on_repeat(self.update, 0.1)
         rosys.on_repeat(self.try_connection, 3.0)
 
     def backup(self) -> dict:
@@ -109,6 +109,11 @@ class GnssHardware(Gnss):
         super().__init__()
         self.odometer = odometer
 
+    def __del__(self) -> None:
+        if self.ser and self.ser.isOpen():
+            self.ser.close()
+            self.log.debug('closed gnss serial connection')
+
     async def try_connection(self) -> None:
         await super().try_connection()
         if self.device is not None:
@@ -127,10 +132,21 @@ class GnssHardware(Gnss):
 
         self.log.info(f'Connecting to GNSS device "{self.device}"')
         try:
-            self.ser = serial.Serial(self.device, baudrate=115200, timeout=0.5)
+            self.ser = serial.Serial(self.device, baudrate=115200)
         except serial.SerialException as e:
             self.log.error(f'Could not connect to GNSS device: {e}')
             self.device = None
+
+    async def _read(self) -> Optional[str]:
+        if not self.ser.isOpen():
+            self.log.debug('GNSS device not open')
+            return None
+        line = self.ser.read_until(b'\r\n')
+        if not line:
+            self.log.debug('No data')
+            return None
+        line = line.decode()
+        return line
 
     async def update(self) -> None:
         await super().update()
@@ -139,20 +155,21 @@ class GnssHardware(Gnss):
         record = GNSSRecord()
         has_location = False
         has_heading = False
+        types_needed = {'GGA', 'GNS', 'HDT'}
+        types_seen = set()
         try:
-            lines = await rosys.run.io_bound(self.ser.readlines)
-            if not lines:
-                self.log.debug('No data')
-                return
-            for line in lines:
+            while types_needed != types_seen:
+                line = await self._read()
                 if not line:
-                    self.log.debug('No data')
-                    continue
+                    self.log.debug('No data received')
+                    return
                 try:
-                    msg = await rosys.run.cpu_bound(pynmea2.parse, line.decode())
+                    msg = await rosys.run.cpu_bound(pynmea2.parse, line)
                     if not hasattr(msg, 'sentence_type'):
                         self.log.info(f'No sentence type: {msg}')
                         continue
+                    if msg.sentence_type in types_needed:
+                        types_seen.add(msg.sentence_type)
                     if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
                         # self.log.info(f'GGA: gps_qual: {msg.gps_qual}, lat:{msg.latitude} and long:{msg.longitude}')
                         record.gps_qual = msg.gps_qual
