@@ -104,6 +104,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
 
 class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
+    TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
 
     def __init__(self, odometer: rosys.driving.Odometer) -> None:
         super().__init__()
@@ -155,10 +156,10 @@ class GnssHardware(Gnss):
         record = GNSSRecord()
         has_location = False
         has_heading = False
-        types_needed = {'GGA', 'GNS', 'HDT'}
+
         types_seen = set()
         try:
-            while types_needed != types_seen:
+            while self.TYPES_NEEDED != types_seen:
                 line = await self._read()
                 if not line:
                     self.log.debug('No data received')
@@ -168,7 +169,7 @@ class GnssHardware(Gnss):
                     if not hasattr(msg, 'sentence_type'):
                         self.log.info(f'No sentence type: {msg}')
                         continue
-                    if msg.sentence_type in types_needed:
+                    if msg.sentence_type in self.TYPES_NEEDED:
                         types_seen.add(msg.sentence_type)
                     if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
                         # self.log.info(f'GGA: gps_qual: {msg.gps_qual}, lat:{msg.latitude} and long:{msg.longitude}')
