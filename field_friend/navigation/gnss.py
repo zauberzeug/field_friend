@@ -55,7 +55,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.reference_lon: Optional[float] = None
 
         self.needs_backup = False
-        rosys.on_repeat(self.update, 0.05)
+        rosys.on_repeat(self.update, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
 
     def backup(self) -> dict:
