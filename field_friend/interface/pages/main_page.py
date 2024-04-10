@@ -10,17 +10,16 @@ if TYPE_CHECKING:
 
 class main_page():
 
-    def __init__(self, page_wrapper, system: 'System', dev: bool = False) -> None:
+    def __init__(self, page_wrapper, system: 'System') -> None:
         self.system = system
-        self.dev = dev
 
         @ui.page('/')
         def page() -> None:
             page_wrapper()
-            self.content()
+            self.content(devmode=False)
 
-    def content(self) -> None:
-        page_height = '50vh' if self.dev else 'calc(100vh - 150px)'
+    def content(self, devmode) -> None:
+        page_height = '50vh' if devmode else 'calc(100vh - 150px)'
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         with ui.row().style(f'height:{page_height}; width: calc(100vw - 2rem); flex-wrap: nowrap;'):
             with ui.splitter(horizontal=False, reverse=False, value=35, limits=(10, 50)).classes('w-full h-full') as splitter:
