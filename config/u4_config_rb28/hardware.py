@@ -28,7 +28,7 @@ configuration = {
     'z_axis': {
         'version': 'tornado',
         'name': 'tornado',
-        'min_position': -0.068,
+        'min_position': -0.09,
         'z_can_address': 0x500,
         'turn_can_address': 0x400,
         'm_per_tick': 0.025/12.52,
@@ -42,8 +42,8 @@ configuration = {
         'end_stops_on_expander': True,
         'is_z_reversed': True,
         'is_turn_reversed': True,
-        'speed_limit': 1.0,
-        'turn_speed_limit': 1.0,
+        'speed_limit': 1.5,
+        'turn_speed_limit': 1.3,
         'current_limit': 30,
     },
     'flashlight': {

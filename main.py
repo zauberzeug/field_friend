@@ -21,7 +21,7 @@ def startup() -> None:
         system_bar()
 
     # /
-    interface.pages.main_page(page_wrapper, system, dev=False)
+    interface.pages.main_page(page_wrapper, system)
     # /field
     interface.pages.field_planner_page(page_wrapper, system)
     # /path

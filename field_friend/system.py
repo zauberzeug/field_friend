@@ -4,11 +4,12 @@ import os
 import numpy as np
 import rosys
 
-from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider, Mowing,
-                                      PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
+from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider,
+                                      Mowing, PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, CalibratableUsbCameraProvider
+from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -22,7 +23,8 @@ class System:
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = CalibratableUsbCameraProvider()
-            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
+            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(
+                username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
@@ -61,8 +63,10 @@ class System:
             generate_kpis(self.kpi_provider)
 
         def watch_robot() -> None:
-            self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
-            self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
+            if self.field_friend.bumper:
+                self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
+            if self.field_friend.bms:
+                self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']

@@ -3,8 +3,9 @@ import logging
 import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
-from .kpi_provider import KpiProvider
+
 from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado, YAxisTornadoV2
+from .kpi_provider import KpiProvider
 
 
 class PuncherException(Exception):
@@ -52,7 +53,7 @@ class Puncher:
             raise PuncherException('target is behind')
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
-        world_target = self.driver.odometer.prediction.transform(local_target)
+        world_target = self.driver.prediction.transform(local_target)
         await self.driver.drive_to(world_target)
 
     async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180) -> None:

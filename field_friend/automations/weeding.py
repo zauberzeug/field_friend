@@ -303,6 +303,8 @@ class Weeding(rosys.persistence.PersistentModule):
             self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.system.field_friend.stop()
             self.system.plant_locator.pause()
+            self.system.automation_watcher.stop_field_watch()
+            self.system.automation_watcher.gnss_watch_active = False
 
     async def _drive_to_start(self):
         self.log.info('Driving to start...')
