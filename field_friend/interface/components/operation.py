@@ -131,7 +131,7 @@ class operation:
                 with ui.row():
                     automation_controls(self.system, can_start=self.ensure_start)
         with ui.dialog() as self.dialog, ui.card():
-            ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row}"}?').classes(
+            ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row.name}"}?').classes(
                 'text-lg')
             with ui.row():
                 ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
