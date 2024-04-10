@@ -1,4 +1,5 @@
 import json
+import math
 import uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -6,13 +7,14 @@ from typing import Optional
 
 import fiona
 import geopandas as gpd
-import rosys
-from nicegui import events, ui
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon, mapping
 from shapely.ops import transform
 
-from ...automations import Field, FieldProvider, Row
+import rosys
+from nicegui import events, ui
+
+from ...automations import Field, FieldObstacle, FieldProvider, Row
 
 # Enable fiona driver
 fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
@@ -28,7 +30,7 @@ class geodata_picker(ui.dialog):
         self.safety_distance = 2.7
         self.working_width = 2.7
         self.headland_tracks = 1
-        self.ab_line = 1
+        self.ab_line = 2
 
         with self, ui.card():
             with ui.row():
@@ -83,7 +85,7 @@ class geodata_picker(ui.dialog):
         extracted_points = list(zip(x_coordinate, y_coordinate))
         for point in extracted_points:
             coordinates.append([point[1], point[0]])
-        return coordinates
+        return [coordinates]
 
     def extract_coordinates_xml(self, event: events.UploadEventArguments) -> list:
         coordinates = []
@@ -94,17 +96,15 @@ class geodata_picker(ui.dialog):
                 lat = float(point.attrib['C'])
                 lon = float(point.attrib['D'])
                 coordinates.append([lat, lon])
-        return coordinates
+        return [coordinates]
 
     def extract_coordinates_shp(self, event: events.UploadEventArguments) -> Optional[list]:
         coordinates = []
-        print(event.content)
         try:
             gdf = gpd.read_file(event.content)
-            print(gdf)
             gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
             feature = json.loads(gdf.to_json())
-            coordinates = feature["features"][0]["geometry"]["coordinates"][0]
+            coordinates = feature["features"][0]["geometry"]["coordinates"]
             return coordinates
         except:
             rosys.notify("The .zip file does not contain a shape file.", type='warning')
@@ -112,6 +112,91 @@ class geodata_picker(ui.dialog):
 
     def swap_coordinates(self, lon, lat):
         return lat, lon
+
+    def get_rows(self, coordinate_list):
+        lines = []
+        if not self.is_farmdroid:
+            return []
+        if self.safety_distance + (self.working_width / 2) < 2.7:
+            rosys.notify(
+                'The distance between the outer headland track and the field boundary is too small. Please check the specified values.')
+            return lines
+        buffer_width = self.safety_distance + (self.headland_tracks * self.working_width)
+        field_border_polygon = Polygon(coordinate_list)
+        field_border_gdf = gpd.GeoDataFrame(index=[0], crs='epsg:4326', geometry=[field_border_polygon])
+        field_border_gdf_meter = field_border_gdf.to_crs(epsg=3395)
+        buffered_field_meter = field_border_gdf_meter.buffer(distance=-buffer_width, cap_style=3, resolution=26)
+        buffered_field = buffered_field_meter.to_crs(epsg=4326)
+        buffered_coordinates = mapping(buffered_field)['features'][0]['geometry']['coordinates'][0]
+        buffered_coordinates_meter = mapping(buffered_field_meter)['features'][0]['geometry']['coordinates'][0]
+
+        working_area_meter = field_border_gdf_meter.buffer(-self.safety_distance,
+                                                           join_style='mitre', mitre_limit=math.inf)
+        working_area = working_area_meter.to_crs(epsg=4326)
+        working_area_coordinates = mapping(working_area)['features'][0]['geometry']['coordinates'][0]
+
+        # teste ob das buffern nach innen funktioniert indem wir ein neues feld anlegen it dem buffer
+        test_id = str(uuid.uuid4())
+        field_test = Field(id=f'{test_id}', name=f'{test_id}', outline_wgs84=working_area_coordinates,
+                           reference_lat=working_area_coordinates[0][0], reference_lon=working_area_coordinates[0][1])
+        self.field_provider.add_field(field_test)
+
+        # AB Linie finden
+        if self.ab_line == 1:
+            ab_line = LineString([(buffered_coordinates[0][0], buffered_coordinates[0][1]),
+                                  (buffered_coordinates[1][0], buffered_coordinates[1][1])])
+            ab_line_meter = LineString([(buffered_coordinates_meter[0][0], buffered_coordinates_meter[0][1]),
+                                        (buffered_coordinates_meter[1][0], buffered_coordinates_meter[1][1])])
+        if self.ab_line == 2:
+            if buffered_coordinates[0][0] == buffered_coordinates[-1][0] and buffered_coordinates[0][1] == buffered_coordinates[-1][1]:
+                ab_line = LineString([(buffered_coordinates[0][0], buffered_coordinates[0][1]),
+                                      (buffered_coordinates[-2][0], buffered_coordinates[-2][1])])
+                ab_line_meter = LineString([(buffered_coordinates_meter[0][0], buffered_coordinates_meter[0][1]),
+                                            (buffered_coordinates_meter[-2][0], buffered_coordinates_meter[-2][1])])
+            else:
+                ab_line = LineString([(buffered_coordinates[0][0], buffered_coordinates[0][1]),
+                                      (buffered_coordinates[-1][0], buffered_coordinates[-1][1])])
+                ab_line_meter = LineString([(buffered_coordinates_meter[0][0], buffered_coordinates_meter[0][1]),
+                                            (buffered_coordinates_meter[-1][0], buffered_coordinates_meter[-1][1])])
+        # Über Arbeitsbreite die Reihen berechnen
+        row_spacing = self.working_width / 5
+
+        direction_check = offset_curve(ab_line_meter, -row_spacing)
+        if buffered_field_meter[0].contains(direction_check) or buffered_field_meter[0].intersects(direction_check):
+            row_spacing = -row_spacing
+        lines_meter = []
+        line_inside = True
+        lines.append(ab_line)
+        lines_meter.append(ab_line_meter)
+        while line_inside:
+            line_meter = offset_curve(lines_meter[-1], row_spacing)
+            if buffered_field_meter[0].contains(line_meter) or buffered_field_meter[0].intersects(line_meter):
+                lines_meter.append(line_meter)
+                line_gdf_meter = gpd.GeoDataFrame(index=[0], crs='epsg:3395', geometry=[line_meter])
+                line_gdf = line_gdf_meter.to_crs(epsg=4326)
+                lines.append(line_gdf['geometry'][0])
+            else:
+                line_inside = False
+        # TODO hier müssen an sich die Linien noch so verlängert werden oder gekürzt in beide richtungen dass sie mit dem boundary geschnitten werden
+
+        rows = []
+        for line in lines:
+            point_list = list(mapping(line)['coordinates'])
+            for index, point in enumerate(point_list):
+                point_list[index] = list(point)
+            row_id = str(uuid.uuid4())
+            new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=point_list)
+            rows.append(new_row)
+        return rows
+
+    def get_obstacles(self, polygon_list):
+        obstacle_list = []
+        for polygon in polygon_list[1:]:
+            row_id = str(uuid.uuid4())
+            print(f'check this out {polygon}')
+            new_obstacle = FieldObstacle(id=f'{row_id}', name=f'{row_id}', points_wgs84=polygon)
+            obstacle_list.append(new_obstacle)
+        return obstacle_list
 
     async def restore_from_file(self, e: events.UploadEventArguments) -> None:
         self.close()
@@ -131,98 +216,16 @@ class geodata_picker(ui.dialog):
         if coordinates is None:
             rosys.notify("An error occurred while importing the file.", type='negative')
             return
-        lines = []
-        if self.is_farmdroid:
-            if self.safety_distance + (self.working_width / 2) < 2.7:
-                rosys.notify(
-                    'The distance between the outer headland track and the field boundary is too small. Please check the specified values.')
-                return
-            buffer_width = self.safety_distance + (self.headland_tracks * self.working_width)
-            field_border_polygon = Polygon(coordinates)
-            field_border_gdf = gpd.GeoDataFrame(index=[0], crs='epsg:4326', geometry=[field_border_polygon])
-            field_border_gdf_meter = field_border_gdf.to_crs(epsg=3395)
-            buffered_field_meter = field_border_gdf_meter.buffer(distance=-buffer_width, cap_style=3, resolution=26)
-            buffered_field = buffered_field_meter.to_crs(epsg=4326)
-            buffered_coordinates = mapping(buffered_field)['features'][0]['geometry']['coordinates'][0]
-            buffered_coordinates_meter = mapping(buffered_field_meter)['features'][0]['geometry']['coordinates'][0]
+        rows = self.get_rows(coordinates[0])
+        obstacles = []
+        if len(coordinates) > 1:
+            obstacles = self.get_obstacles(coordinates)
 
-            # TODO die gebufferte Feldgrenze wird nocht nicht ganz richtig berechnet
-
-            # TODO benutze dafür die shapely funktion buffer
-            # join style mitre
-            # mitre limit = math.inf
-            # und die distanz dann nefativ
-
-            def headlands(field, safety_distance, working_width, headland_count):
-                working_area = field.buffer(-safety_distance, join_style='mitre', mitre_limit=math.inf)
-
-                headlands = []
-                for i in range(headland_count):
-                    headlands.append(working_area.buffer(-working_width * (0.5 + i),
-                                     join_style='mitre', mitre_limit=math.inf))
-
-                return headlands
-
-            # Die headlands wären dann polygone, wovon die Außenkante das Vorgewende wäre.
-            # Die Start- und Stop-Punkte der Vorgewendespuren wären dann auf dem straight-skeleton platziert.
-
-            # teste ob das buffern nach innen funktioniert indem wir ein neues feld anlegen it dem buffer
-            # test_id = str(uuid.uuid4())
-            # field_test = Field(id=f'{test_id}', name=f'{test_id}', outline_wgs84=buffered_coordinates,
-            #                    reference_lat=buffered_coordinates[0][0], reference_lon=buffered_coordinates[0][1])
-            # self.field_provider.add_field(field_test)
-
-            # AB Linie finden
-            if self.ab_line == 1:
-                ab_line = LineString([(buffered_coordinates[0][0], buffered_coordinates[0][1]),
-                                      (buffered_coordinates[1][0], buffered_coordinates[1][1])])
-                ab_line_meter = LineString([(buffered_coordinates_meter[0][0], buffered_coordinates_meter[0][1]),
-                                            (buffered_coordinates_meter[1][0], buffered_coordinates_meter[1][1])])
-            if self.ab_line == 2:
-                ab_line = LineString([(buffered_coordinates[0][0], buffered_coordinates[0][1]),
-                                      (buffered_coordinates[-1][0], buffered_coordinates[-1][1])])
-            # Über Arbeitsbreite die Reihen berechnen
-            row_spacing = self.working_width / 5
-
-            right_check = offset_curve(ab_line_meter, -row_spacing)
-            print(buffered_field_meter[0])
-            if buffered_field_meter[0].contains(right_check) or buffered_field_meter[0].intersects(right_check):
-                row_spacing = -row_spacing
-            lines_meter = []
-            line_inside = True
-            lines.append(ab_line)
-            lines_meter.append(ab_line_meter)
-            counter = 0
-            while line_inside:
-                line_meter = offset_curve(lines_meter[-1], row_spacing)
-                if buffered_field_meter[0].contains(line_meter) or buffered_field_meter[0].intersects(line_meter):
-                    print('this is true')
-                    lines_meter.append(line_meter)
-                    line_gdf_meter = gpd.GeoDataFrame(index=[0], crs='epsg:3395', geometry=[line_meter])
-                    line_gdf = line_gdf_meter.to_crs(epsg=4326)
-                    lines.append(line_gdf['geometry'][0])
-                    counter += 1
-                else:
-                    print(f'false')
-                    line_inside = False
-            print(counter)
-            # TODO hier müssen an sich die Linien noch so verlängert werden oder gekürzt in beide richtungen dass sie mit dem boundary geschnitten werden
-
-        if len(coordinates) > 2 and coordinates[0] == coordinates[-1]:
+        if len(coordinates) > 2 and coordinates[0][0] == coordinates[0][-1]:
             coordinates.pop()  # the last point is the same as the first point
-        reference_point = coordinates[0]
-
-        rows = []
-        for line in lines:
-            point_list = list(mapping(line)['coordinates'])
-            for index, point in enumerate(point_list):
-                point_list[index] = list(point)
-            row_id = str(uuid.uuid4())
-            new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=point_list)
-            rows.append(new_row)
-
-        new_id = str(uuid.uuid4())
-        field = Field(id=f'{new_id}', name=f'{new_id}', outline_wgs84=coordinates,
-                      reference_lat=reference_point[0], reference_lon=reference_point[1], rows=rows)
+        reference_point = coordinates[0][0]
+        field_id = str(uuid.uuid4())
+        field = Field(id=f'{field_id}', name=f'{field_id}', outline_wgs84=coordinates[0],
+                      reference_lat=reference_point[0], reference_lon=reference_point[1], rows=rows, obstacles=obstacles)
         self.field_provider.add_field(field)
         return
