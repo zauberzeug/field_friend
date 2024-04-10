@@ -110,6 +110,10 @@ class GnssHardware(Gnss):
         super().__init__()
         self.odometer = odometer
 
+    def __del__(self) -> None:
+        if self.ser is not None:
+            self.ser.close()
+
     async def try_connection(self) -> None:
         await super().try_connection()
         if self.device is not None:
