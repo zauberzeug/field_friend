@@ -12,7 +12,7 @@ from shapely import offset_curve
 from shapely.geometry import LineString, Polygon, mapping
 from shapely.ops import transform
 
-from ..automations import Field, FieldProvider, Row
+from ...automations import Field, FieldProvider, Row
 
 # Enable fiona driver
 fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
@@ -147,6 +147,24 @@ class geodata_picker(ui.dialog):
             buffered_coordinates_meter = mapping(buffered_field_meter)['features'][0]['geometry']['coordinates'][0]
 
             # TODO die gebufferte Feldgrenze wird nocht nicht ganz richtig berechnet
+
+            # TODO benutze dafür die shapely funktion buffer
+            # join style mitre
+            # mitre limit = math.inf
+            # und die distanz dann nefativ
+
+            def headlands(field, safety_distance, working_width, headland_count):
+                working_area = field.buffer(-safety_distance, join_style='mitre', mitre_limit=math.inf)
+
+                headlands = []
+                for i in range(headland_count):
+                    headlands.append(working_area.buffer(-working_width * (0.5 + i),
+                                     join_style='mitre', mitre_limit=math.inf))
+
+                return headlands
+
+            # Die headlands wären dann polygone, wovon die Außenkante das Vorgewende wäre.
+            # Die Start- und Stop-Punkte der Vorgewendespuren wären dann auf dem straight-skeleton platziert.
 
             # teste ob das buffern nach innen funktioniert indem wir ein neues feld anlegen it dem buffer
             # test_id = str(uuid.uuid4())
