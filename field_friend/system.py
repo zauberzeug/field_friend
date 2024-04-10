@@ -53,7 +53,7 @@ class System:
         self.driver.parameters.linear_speed_limit = 0.1
         self.driver.parameters.angular_speed_limit = 0.5
         self.driver.parameters.can_drive_backwards = True
-        self.driver.parameters.minimum_turning_radius = 0.05
+        self.driver.parameters.minimum_turning_radius = 0.02
         self.driver.parameters.hook_offset = 0.6
         self.driver.parameters.carrot_distance = 0.2
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
