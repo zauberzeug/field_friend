@@ -29,7 +29,7 @@ class robot_scene:
             self.lock_view_button = ui.button(icon='sym_o_visibility_lock', on_click=toggle_lock).props('flat color=primary').style(
                 'position: absolute; left: 1px; top: 1px; z-index: 500;').tooltip('Lock view to robot')
 
-            with ui.scene(200, 200, on_click=self.handle_click, grid=False).classes('w-full') as self.scene:
+            with ui.scene(200, 200, on_click=self.handle_click, grid=True, on_drag_end=self.handle_drag).classes('w-full') as self.scene:
                 field_friend_object(self.system.odometer, self.system.usb_camera_provider, self.system.field_friend)
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system.plant_provider, self.system.big_weed_category_names +
@@ -40,6 +40,19 @@ class robot_scene:
                 self.scene.move_camera(-0.5, -1, 2)
 
         ui.timer(rosys.config.ui_update_interval, self.update)
+
+    def handle_drag(self, e: events.SceneDragEventArguments):
+        for objects in self.scene.objects.values():
+            if objects.name == e.object_name:
+                objects.move(e.x, e.y, 0.02)
+                break
+
+        for plant in self.system.plant_provider.weeds + self.system.plant_provider.crops:
+            check_id = f'plant_{plant.type}:{plant.id}'
+            if check_id == e.object_name:
+                plant.position.x = e.x
+                plant.position.y = e.y
+                break
 
     def handle_click(self, event: events.SceneClickEventArguments) -> None:
         if event.click_type == 'dblclick':
