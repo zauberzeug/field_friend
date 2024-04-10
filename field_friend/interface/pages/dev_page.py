@@ -17,8 +17,8 @@ class dev_page():
         @ui.page('/dev')
         def page() -> None:
             page_wrapper()
-            main_pg = main_page(page_wrapper, system, dev=True)
-            main_pg.content()
+            main_pg = main_page(page_wrapper, system)
+            main_pg.content(devmode=True)
             self.content()
 
     def content(self) -> None:
