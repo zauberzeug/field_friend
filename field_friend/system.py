@@ -63,8 +63,10 @@ class System:
             generate_kpis(self.kpi_provider)
 
         def watch_robot() -> None:
-            self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
-            self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
+            if self.field_friend.bumper:
+                self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
+            if self.field_friend.bms:
+                self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
