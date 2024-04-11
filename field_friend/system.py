@@ -4,11 +4,13 @@ import os
 import numpy as np
 import rosys
 
-from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider, Mowing,
-                                      PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
+from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, FollowMe,
+                                      KpiProvider, Mowing, PathProvider, PathRecorder, PlantLocator, PlantProvider,
+                                      Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import CameraConfigurator, SimulatedCam, SimulatedCamProvider, CalibratableUsbCameraProvider
+from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -95,6 +97,7 @@ class System:
         self.monitoring = Weeding(self)
         self.monitoring.use_monitor_workflow = True
         self.coin_collecting = CoinCollecting(self)
+        self.followme = FollowMe(self)
         self.mowing = Mowing(self, robot_width=width)
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
 
@@ -103,9 +106,11 @@ class System:
             'monitoring': self.monitoring.start,
             'mowing': self.mowing.start,
             'collecting (demo)': self.coin_collecting.start,
+            'followme': self.followme.start
         }
+        # TODO: change default_automation back to self.coin_collecting.start
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
-                                                    default_automation=self.coin_collecting.start)
+                                                    default_automation=self.followme.start)
         self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)
         if self.field_friend.bumper:
