@@ -142,6 +142,20 @@ class operation:
                                 'dense outlined suffix=rad/s').classes('w-28').bind_value(self.system.followme, 'angular_speed').tooltip('Rotation speed when in TURN state')
                             ui.number('Min Confidence', format='%.1f', step=0.1, min=0.0, max=1.0).props(
                                 'dense outlined').classes('w-28').bind_value(self.system.followme, 'confidence').tooltip('TODO: confidence')
+                        with ui.grid(columns=4):
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme, 'state',
+                                                                       lambda state: f'State: {state}'.replace('FollowState.', ''))
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme,
+                                                                       'target', lambda target: f'Target: ({target.x:.1f}, {target.y:.1f})' if target is not None else 'Target: None')
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme,
+                                                                       'distance', lambda distance: f'Distance: {distance:.1f}px')
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme,
+                                                                       'distance_y', lambda distance_y: f'Distance_Y: {distance_y:.1f}px')
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme,
+                                                                       'pixel_percentage_yaw', lambda yaw: f'Yaw: {yaw:.2f}')
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme,
+                                                                       'n_feet', lambda n_feet: f'n_Feet: {n_feet}')
+
             ui.space()
             with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
                 with ui.column():
