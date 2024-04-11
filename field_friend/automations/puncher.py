@@ -130,7 +130,7 @@ class Puncher:
             await self.field_friend.y_axis.move_dw_to_r_ref()
         await self.field_friend.y_axis.stop()
 
-    async def tornado_drill(self, angle: float = 180) -> None:
+    async def tornado_drill(self, angle: float = 180, turns: float = 2) -> None:
         self.log.info(f'Drilling with tornado at {angle}...')
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise Exception('tornado drill is only available for tornado axis')
@@ -144,11 +144,9 @@ class Puncher:
                 await rosys.sleep(0.5)
             await self.field_friend.z_axis.move_down_until_reference()
 
-            current_angle = self.field_friend.z_axis.position_turn
-            await self.field_friend.z_axis.turn_by(current_angle-angle)
+            await self.field_friend.z_axis.turn_knives_to(angle)
             await rosys.sleep(3)
-            current_angle = self.field_friend.z_axis.position_turn
-            await self.field_friend.z_axis.turn_by(current_angle+700)
+            await self.field_friend.z_axis.turn_by(turns)
             await rosys.sleep(3)
 
             await self.field_friend.z_axis.return_to_reference()
