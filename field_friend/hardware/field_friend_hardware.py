@@ -199,6 +199,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      speed_limit=config_hardware['z_axis']['speed_limit'],
                                      turn_speed_limit=config_hardware['z_axis']['turn_speed_limit'],
                                      current_limit=config_hardware['z_axis']['current_limit'],
+                                     z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
+                                     turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
                                      )
         else:
             z_axis = None

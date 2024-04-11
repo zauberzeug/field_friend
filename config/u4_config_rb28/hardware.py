@@ -45,6 +45,8 @@ configuration = {
         'speed_limit': 1.5,
         'turn_speed_limit': 1.3,
         'current_limit': 30,
+        'z_reference_speed': 0.0075,
+        'turn_reference_speed': 0.25,
     },
     'flashlight': {
         'version': 'flashlight_pwm',
