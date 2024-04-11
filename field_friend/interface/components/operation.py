@@ -119,6 +119,29 @@ class operation:
                                 'Set the drill depth for the weeding automation')
                             ui.checkbox('with drilling', value=True).bind_value(
                                 self.system.coin_collecting, 'with_drilling')
+
+                    with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='followme'):
+                        with ui.grid(columns=4):
+                            ui.number('Ignore y-Distance', step=1, min=0, max=1080, format='%d').props('dense outlined suffix=px').classes(
+                                'w-28').bind_value(self.system.followme, 'max_y_distance').tooltip('Points with a y-distance greater than this value will be ignored')
+                            ui.number('First Matching Distance', step=1, min=0, format='%d').props('dense outlined suffix=px').classes(
+                                'w-28').bind_value(self.system.followme, 'max_first_matching_distance').tooltip('Maximum allowed distance from the bottom center of the image')
+                            ui.number('Matching Distance', step=1, min=0, format='%d').props('dense outlined suffix=px').classes(
+                                'w-28').bind_value(self.system.followme, 'max_matching_distance').tooltip('Maximum allowed distance from the last known target position')
+                            ui.number('Projection Factor', step=0.1, min=0.0, max=1.0, format='%.1f').props('dense outlined').classes(
+                                'w-28').bind_value(self.system.followme, 'projection_factor').tooltip('Scales the contribution of the y-distance to the total distance')
+                            ui.number('Stop Distance', step=1, min=0.0, format='%d').props('dense outlined suffix=px').classes(
+                                'w-28').bind_value(self.system.followme, 'stop_distance').tooltip('How close the robot should move to the target')
+                            ui.number('Min Yaw', step=0.05, min=0.0, max=1.0, format='%.2f').props('dense outlined').classes(
+                                'w-28').bind_value(self.system.followme, 'yaw_min').tooltip('TODO: yaw_min')
+                            ui.number('Max Yaw', step=0.05, min=0.0, max=1.0, format='%.2f').props('dense outlined').classes(
+                                'w-28').bind_value(self.system.followme, 'yaw_max').tooltip('TODO: yaw_max')
+                            ui.number('Speed', format='%.2f', step=0.1, min=0.1, max=3.0).props(
+                                'dense outlined suffix=m/s').classes('w-28').bind_value(self.system.followme, 'linear_speed').tooltip('Speed when in DRIVE state')
+                            ui.number('Turn Speed', format='%.2f', step=0.1, min=0.1, max=3.0).props(
+                                'dense outlined suffix=rad/s').classes('w-28').bind_value(self.system.followme, 'angular_speed').tooltip('Rotation speed when in TURN state')
+                            ui.number('Min Confidence', format='%.1f', step=0.1, min=0.0, max=1.0).props(
+                                'dense outlined').classes('w-28').bind_value(self.system.followme, 'confidence').tooltip('TODO: confidence')
             ui.space()
             with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
                 with ui.column():
