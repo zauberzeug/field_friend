@@ -125,6 +125,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def remove_field(self, field: Field) -> None:
         self.fields.remove(field)
         self.active_field = None
+        self.FIELD_SELECTED.emit()
         self.active_object = None
         self.OBJECT_SELECTED.emit()
         self.invalidate()
@@ -132,6 +133,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def clear_fields(self) -> None:
         self.fields.clear()
         self.active_field = None
+        self.FIELD_SELECTED.emit()
         self.active_object = None
         self.OBJECT_SELECTED.emit()
         self.invalidate()
