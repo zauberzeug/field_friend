@@ -75,9 +75,9 @@ class geodata_picker(ui.dialog):
 
     def set_ab_line(self, value) -> None:
         if value:
-            self.ab_line = 1
-        else:
             self.ab_line = 2
+        else:
+            self.ab_line = 1
 
     def set_safety_distance(self, value) -> None:
         self.safety_distance = value
