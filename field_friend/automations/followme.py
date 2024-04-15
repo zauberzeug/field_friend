@@ -69,8 +69,9 @@ class FollowMe(rosys.persistence.PersistentModule):
         self.seconds_since_update: float = 0.0
 
         self.pitch_below_horizon: float = 40.0
-        self.image_width: int = 1920
-        self.image_height: int = 1080
+        # TODO: get resolution from camera
+        self.image_width: int = 720
+        self.image_height: int = 480
         self.image_center: Point = Point(x=self.image_width/2.0, y=self.image_height/2.0)
 
         if system.is_real:
