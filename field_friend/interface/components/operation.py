@@ -142,6 +142,7 @@ class operation:
                                 'dense outlined suffix=rad/s').classes('w-28').bind_value(self.system.followme, 'angular_speed').tooltip('Rotation speed when in TURN state')
                             ui.number('Min Confidence', format='%.1f', step=0.1, min=0.0, max=1.0).props(
                                 'dense outlined').classes('w-28').bind_value(self.system.followme, 'confidence').tooltip('TODO: confidence')
+                            ui.checkbox('Drive').bind_value(self.system.followme, 'drive').tooltip('TODO: drive')
                         with ui.grid(columns=4):
                             ui.label().classes('w-1/4').bind_text_from(self.system.followme, 'state',
                                                                        lambda state: f'State: {state}'.replace('FollowState.', ''))
@@ -155,6 +156,8 @@ class operation:
                                                                        'pixel_percentage_yaw', lambda yaw: f'Yaw: {yaw:.2f}')
                             ui.label().classes('w-1/4').bind_text_from(self.system.followme,
                                                                        'n_feet', lambda n_feet: f'n_Feet: {n_feet}')
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme,
+                                                                       'seconds_since_update', lambda seconds_since_update: f'Last Update: {seconds_since_update:.1f}s')
 
             ui.space()
             with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
@@ -168,7 +171,7 @@ class operation:
                 with ui.row():
                     automation_controls(self.system, can_start=self.ensure_start)
         with ui.dialog() as self.dialog, ui.card():
-            ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row}"}?').classes(
+            ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row.name}"}?').classes(
                 'text-lg')
             with ui.row():
                 ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))

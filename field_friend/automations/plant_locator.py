@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import rosys
+
 from .plant_provider import Plant, PlantProvider
 
 WEED_CATEGORY_NAME = ['coin', 'weed']
@@ -41,10 +42,8 @@ class PlantLocator:
         t = rosys.time()
         camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
         if not camera:
-            rosys.notify('no camera connected')
             raise DetectorError()
         if camera.calibration is None:
-            rosys.notify('camera has no calibration')
             raise DetectorError()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:

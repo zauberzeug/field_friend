@@ -1,7 +1,9 @@
+import asyncio
 from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
+from rosys.system.wifi_button_ import has_internet
 
 from field_friend.system import System
 
@@ -39,10 +41,11 @@ class header_bar:
                 ui.link('Circle Sight', '/monitor').classes('text-white text-lg !no-underline')
                 ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
 
-            rosys.system.wifi_button().tooltip('add wifi connection').props('elevated')
             ui.button('Manual Steering', on_click=lambda system=system: manual_steerer_dialog(system)).tooltip(
                 'Open the manual steering window to move the robot with a joystick.')
+            self.internet_status = ui.icon('sym_o_wifi', size='sm')
             self._show_battery(system.field_friend)
+            ui.timer(5, callback=self._update_internet_status)
 
             def handle_toggle() -> None:
                 right_drawer.toggle()
@@ -76,3 +79,11 @@ class header_bar:
             ui.label().bind_text_from(robot.bms.state, 'percentage',
                                       lambda p: f'{p:.0f}%' if p is not None else '?')
         return row
+
+    async def _update_internet_status(self) -> None:
+        if await asyncio.get_event_loop().run_in_executor(None, has_internet):
+            self.internet_status.name = 'sym_o_wifi'
+            self.internet_status.props('color=green')
+        else:
+            self.internet_status.name = 'sym_o_wifi_off'
+            self.internet_status.props('color=red')

@@ -55,7 +55,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.reference_lon: Optional[float] = None
 
         self.needs_backup = False
-        rosys.on_repeat(self.update, 0.05)
+        rosys.on_repeat(self.update, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
 
     def backup(self) -> dict:
@@ -109,6 +109,10 @@ class GnssHardware(Gnss):
     def __init__(self, odometer: rosys.driving.Odometer) -> None:
         super().__init__()
         self.odometer = odometer
+
+    def __del__(self) -> None:
+        if self.ser is not None:
+            self.ser.close()
 
     async def try_connection(self) -> None:
         await super().try_connection()
