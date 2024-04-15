@@ -1,7 +1,7 @@
 import logging
 import math
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import rosys
@@ -165,11 +165,19 @@ class FollowMe(rosys.persistence.PersistentModule):
         self.target = None
         try:
             while True:
+                current_time = rosys.time()
+                self.seconds_since_update = current_time - self.last_update
+                # TODO: stop if too long
                 image_points = await self.detect()
+                if image_points is None:
+                    await rosys.sleep(0.1)
+                    continue
+                self.last_update = current_time
                 self.n_feet = len(image_points)
                 if self.n_feet == 0:
                     await rosys.sleep(0.1)
                     continue
+
                 if self.target is None:
                     self.state = FollowState.STARTUP
 
@@ -256,14 +264,14 @@ class FollowMe(rosys.persistence.PersistentModule):
             await self.system.field_friend.stop()
         self.request_backup()
 
-    async def detect_real(self, confidence=0.0) -> list[Point]:
+    async def detect_real(self, confidence=0.0) -> Optional[list[Point]]:
         for camera in self.system.mjpeg_camera_provider.cameras.values():
             if self.camera_id in camera.id:
                 self.camera = camera
                 break
         image = self.camera.latest_captured_image
         if image.detections:
-            return []
+            return None
         await self.system.monitoring_detector.detect(image, tags=[self.camera.id], autoupload=rosys.vision.Autoupload.FILTERED)
         if image.detections:
             return [p for p in image.detections.points if p.category_name == 'person' and p.confidence > confidence]
@@ -291,7 +299,7 @@ class FollowMe(rosys.persistence.PersistentModule):
             image_points.append(image_point)
         return image_points
 
-    async def detect(self) -> list[Point]:
+    async def detect(self) -> Optional[list[Point]]:
         if self.system.is_real:
             return await self.detect_real(self.confidence)
         return self.detect_simulated()

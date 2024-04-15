@@ -156,6 +156,8 @@ class operation:
                                                                        'pixel_percentage_yaw', lambda yaw: f'Yaw: {yaw:.2f}')
                             ui.label().classes('w-1/4').bind_text_from(self.system.followme,
                                                                        'n_feet', lambda n_feet: f'n_Feet: {n_feet}')
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme,
+                                                                       'seconds_since_update', lambda seconds_since_update: f'Last Update: {seconds_since_update:.1f}s')
 
             ui.space()
             with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
