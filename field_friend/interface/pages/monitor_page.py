@@ -25,4 +25,4 @@ class monitor_page():
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         if self.system.is_real:
             monitoring(self.system.usb_camera_provider, self.system.mjpeg_camera_provider,
-                       self.system.detector, self.system.monitoring_detector, self.system.plant_locator, self.system.automator, self.system.field_friend, self.system)
+                       self.system.plant_locator, self.system.person_locator, self.system.automator, self.system.field_friend, self.system)

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import events, ui
 
-from ...automations import PlantLocator
+from ...automations import PersonLocator, PlantLocator
 from ...hardware import FieldFriend, FlashlightPWM
 from .key_controls import KeyControls
 
@@ -24,9 +24,8 @@ class monitoring:
     def __init__(self,
                  usb_camera_provider: rosys.vision.CameraProvider,
                  mjpeg_camera_provider: rosys.vision.CameraProvider,
-                 detector: rosys.vision.Detector,
-                 monitoring_detector: rosys.vision.Detector,
                  plant_locator: PlantLocator,
+                 person_locator: PersonLocator,
                  automator: rosys.automation.Automator,
                  field_friend: FieldFriend,
                  system: 'System',
@@ -35,10 +34,9 @@ class monitoring:
         self.log = logging.getLogger('field_friend.monitoring')
         self.usb_camera_provider = usb_camera_provider
         self.mjpg_camera_provider = mjpeg_camera_provider
-        self.detector = detector
-        self.monitoring_detector = monitoring_detector
         self.monitoring_active = False
         self.plant_locator = plant_locator
+        self.person_locator = person_locator
         self.automator = automator
         self.field_friend = field_friend
         self.system = system
@@ -69,8 +67,8 @@ class monitoring:
                     ui.label('Animal count:').classes('text-2xl text-bold').bind_text_from(self,
                                                                                            'animal_count', backward=lambda x: f'Animal count: {x}')
                     ui.space()
-                    ui.switch('Person detection').bind_value(
-                        self, 'monitoring_active').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                    ui.switch('Person detection').bind_value(self.person_locator, 'is_paused', forward=lambda x: not x,
+                                                             backward=lambda x: not x).bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                     ui.switch('Plant detection').bind_value(self.plant_locator, 'is_paused', forward=lambda x: not x,
                                                             backward=lambda x: not x).bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
 
@@ -135,18 +133,16 @@ class monitoring:
         person_count = 0
         animal_count = 0
         for camera in self.mjpg_camera_provider.cameras.values():
-            image = camera.latest_captured_image
+            image = camera.latest_captured_image if self.person_locator.is_paused else camera.latest_detected_image
             if not image:
                 continue
             self.sights[camera.id].set_source(camera.get_latest_image_url())
-            if self.monitoring_active:
-                await self.monitoring_detector.detect(image, tags=[camera.id], autoupload=rosys.vision.Autoupload.DISABLED)
-                if image.detections:
-                    person_count += len([p for p in image.detections.points
-                                        if p.category_name == 'person' and p.confidence > 0.4])
-                    animal_count += len([p for p in image.detections.points
-                                        if ('bird' in p.category_name or 'animal' in p.category_name) and p.confidence > 0.4])
-                    self.sights[camera.id].set_content(self.to_svg(image.detections))
+            if image.detections:
+                person_count += len([p for p in image.detections.points
+                                    if p.category_name == 'person' and p.confidence > 0.4])
+                animal_count += len([p for p in image.detections.points
+                                    if ('bird' in p.category_name or 'animal' in p.category_name) and p.confidence > 0.4])
+                self.sights[camera.id].set_content(self.to_svg(image.detections))
         self.person_count = person_count
         self.animal_count = animal_count
 

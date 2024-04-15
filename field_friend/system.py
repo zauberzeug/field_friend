@@ -5,8 +5,8 @@ import numpy as np
 import rosys
 
 from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, FollowMe,
-                                      KpiProvider, Mowing, PathProvider, PathRecorder, PlantLocator, PlantProvider,
-                                      Puncher, Weeding)
+                                      KpiProvider, Mowing, PathProvider, PathRecorder, PersonLocator, PlantLocator,
+                                      PlantProvider, Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation import GnssHardware, GnssSimulation
 from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
@@ -29,6 +29,7 @@ class System:
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
+            self.person_locator = PersonLocator(self.mjpeg_camera_provider, self.monitoring_detector)
         else:
             version = 'rb28'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)

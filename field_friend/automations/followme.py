@@ -163,6 +163,7 @@ class FollowMe(rosys.persistence.PersistentModule):
         rosys.notify('FollowMe started', 'positive')
         self.log.info('FollowMe started')
         self.target = None
+        self.system.person_locator.is_paused = False
         try:
             while True:
                 current_time = rosys.time()
@@ -263,16 +264,14 @@ class FollowMe(rosys.persistence.PersistentModule):
             self.kpi_provider.increment('followme_completed')
             await rosys.sleep(0.1)
             await self.system.field_friend.stop()
+            self.system.person_locator.is_paused = True
 
     async def detect_real(self, confidence=0.0) -> Optional[list[Point]]:
         for camera in self.system.mjpeg_camera_provider.cameras.values():
             if self.camera_id in camera.id:
                 self.camera = camera
                 break
-        image = self.camera.latest_captured_image
-        if image.detections:
-            return None
-        await self.system.monitoring_detector.detect(image, tags=[self.camera.id], autoupload=rosys.vision.Autoupload.FILTERED)
+        image = self.camera.latest_detected_image
         if image.detections:
             return [p for p in image.detections.points if p.category_name == 'person' and p.confidence > confidence]
         return []
