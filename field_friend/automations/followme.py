@@ -173,19 +173,20 @@ class FollowMe(rosys.persistence.PersistentModule):
             while True:
                 current_time = rosys.time()
                 self.seconds_since_update = current_time - self.last_update
-                # TODO: stop if too long
+                if self.seconds_since_update > self.target_timeout or self.target is None:
+                    await self.system.driver.wheels.stop()
+                    self.state = FollowState.STARTUP
+                    self.target = None
+
                 image_points = await self.detect()
                 if image_points is None:
                     await rosys.sleep(0.1)
                     continue
-                self.last_update = current_time
                 self.n_feet = len(image_points)
                 if self.n_feet == 0:
                     await rosys.sleep(0.1)
                     continue
-
-                if self.target is None:
-                    self.state = FollowState.STARTUP
+                self.last_update = current_time
 
                 if self.state == FollowState.STARTUP:
                     await self.system.driver.wheels.stop()
