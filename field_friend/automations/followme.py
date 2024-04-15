@@ -272,7 +272,7 @@ class FollowMe(rosys.persistence.PersistentModule):
                 self.camera = camera
                 break
         image = self.camera.latest_detected_image
-        if image.detections:
+        if image and image.detections:
             return [p for p in image.detections.points if p.category_name == 'person' and p.confidence > confidence]
         return []
 
