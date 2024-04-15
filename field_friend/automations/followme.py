@@ -259,10 +259,10 @@ class FollowMe(rosys.persistence.PersistentModule):
                     continue
                 break
         finally:
+            self.request_backup()
             self.kpi_provider.increment('followme_completed')
             await rosys.sleep(0.1)
             await self.system.field_friend.stop()
-        self.request_backup()
 
     async def detect_real(self, confidence=0.0) -> Optional[list[Point]]:
         for camera in self.system.mjpeg_camera_provider.cameras.values():
