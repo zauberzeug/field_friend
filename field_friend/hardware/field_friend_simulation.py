@@ -4,6 +4,7 @@ import rosys
 # change the config to the config of simulated Robot
 import config.config_selection as config_selector
 
+from .bumper_magic import BumperMagicSimulation
 from .chain_axis import ChainAxisSimulation
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
@@ -79,9 +80,13 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             bumper = rosys.hardware.BumperSimulation(estop=estop)
         else:
             bumper = None
+        if 'bumper_magic' in config_hardware:
+            bumper_magic = BumperMagicSimulation()
+        else:
+            bumper_magic = None
         bms = rosys.hardware.BmsSimulation()
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
-        modules = [wheels, y_axis, z_axis, flashlight, bumper, bms, estop, safety]
+        modules = [wheels, y_axis, z_axis, flashlight, bumper, bumper_magic, bms, estop, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(tool=tool,
                          wheels=wheels,
@@ -90,6 +95,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                          z_axis=z_axis,
                          estop=estop,
                          bumper=bumper,
+                         bumper_magic=bumper_magic,
                          bms=bms,
                          safety=safety,
                          modules=active_modules)

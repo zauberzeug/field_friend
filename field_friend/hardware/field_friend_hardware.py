@@ -5,6 +5,7 @@ import rosys
 
 import config.config_selection as config_selector
 
+from .bumper_magic import BumperMagicHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
@@ -267,6 +268,12 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             bumper = None
 
+        if 'bumper_magic' in config_hardware:
+            bumper_magic = BumperMagicHardware(robot_brain,
+                                               bumper_front_name='bumper_front_top',
+                                               )
+        else:
+            bumper_magic = None
         if 'imu' in config_hardware:
             self.imu = IMUHardware(robot_brain,
                                    name=config_hardware['imu']['name'],
@@ -288,8 +295,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
                                     y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
+
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
+                   z_axis, flashlight, bms, estop, self.battery_control, bumper, bumper_magic, self.imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(tool=tool,
                          wheels=wheels,
@@ -299,6 +307,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          bumper=bumper,
                          bms=bms,
                          safety=safety,
+                         bumper_magic=bumper_magic,
                          flashlight=flashlight,
                          modules=active_modules,
                          robot_brain=robot_brain)

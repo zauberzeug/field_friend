@@ -1,3 +1,4 @@
+from .bumper_magic import BumperMagic, BumperMagicHardware, BumperMagicSimulation
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend

@@ -102,6 +102,14 @@ class System:
         self.monitoring.use_monitor_workflow = True
         self.coin_collecting = CoinCollecting(self)
         self.followme = FollowMe(self)
+
+        def enable_followme(active: bool) -> None:
+            if active:
+                self.automator.start(self.followme.start())
+            elif self.automator.is_running:
+                self.automator.stop(because='followme disabled')
+        if self.field_friend.bumper_magic:
+            self.field_friend.bumper_magic.BUMPER_MAGIC_CHANGED.register(enable_followme)
         self.mowing = Mowing(self, robot_width=width)
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
 

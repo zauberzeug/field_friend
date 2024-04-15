@@ -3,6 +3,7 @@ from typing import Union
 import numpy as np
 import rosys
 
+from .bumper_magic import BumperMagic
 from .chain_axis import ChainAxis
 from .flashlight import Flashlight
 from .flashlight_pwm import FlashlightPWM
@@ -37,6 +38,7 @@ class FieldFriend(rosys.hardware.Robot):
             bumper: Union[rosys.hardware.Bumper, None],
             bms: Union[rosys.hardware.Bms, None],
             safety: Safety,
+            bumper_magic: Union[BumperMagic, None],
             **kwargs) -> None:
         super().__init__(**kwargs)
         self.tool = tool
@@ -48,6 +50,7 @@ class FieldFriend(rosys.hardware.Robot):
         self.bumper = bumper
         self.bms = bms
         self.safety = safety
+        self.bumper_magic = bumper_magic
         rosys.on_shutdown(self.stop)
         if self.estop:
             self.estop.ESTOP_TRIGGERED.register(self.stop)
