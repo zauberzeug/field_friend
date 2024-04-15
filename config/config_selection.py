@@ -4,6 +4,7 @@ import os
 
 
 def construct_config_path_simulation(module: str, robot_id: str):
+    """Construct the path to the configuration file for the given module and robot_id. Used to simulate the given robot_id."""
     try:
         hostname = robot_id
         folder_path = find_matching_config_folders(hostname)
@@ -14,6 +15,7 @@ def construct_config_path_simulation(module: str, robot_id: str):
 
 
 def construct_config_path(module: str):
+    """Construct the path to the configuration file for the given module. Used to run the code on the robot."""
     file_path = '/mnt/host_hostname'
     try:
         with open(file_path, 'r') as file:
@@ -26,6 +28,7 @@ def construct_config_path(module: str):
 
 
 def import_config_simulation(module: str, robot_id: str):
+    """Import the configuration file for the given module and robot_id. Used to simulate the given robot_id."""
     attribute_name = "configuration"
     path = construct_config_path_simulation(module, robot_id)
     imported_module = importlib.import_module(path)
@@ -36,6 +39,7 @@ def import_config_simulation(module: str, robot_id: str):
 
 
 def import_config(module: str) -> dict:
+    """Import the configuration file for the given module. Used to run the code on the robot."""
     attribute_name = "configuration"
     path = construct_config_path(module)
     imported_module = importlib.import_module(path)
@@ -46,6 +50,7 @@ def import_config(module: str) -> dict:
 
 
 def find_matching_config_folders(hostname):
+    """Find the folder that contains the configuration files for the given hostname."""
     # Construct the pattern to match against
     pattern = f"config/*_config_{hostname}"
     # List all paths in the top folder that match the pattern
