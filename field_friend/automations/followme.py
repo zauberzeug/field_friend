@@ -68,7 +68,7 @@ class FollowMe(rosys.persistence.PersistentModule):
         self.last_update: float = rosys.time()
         self.seconds_since_update: float = 0.0
 
-        self.pitch_below_horizon: float = 40.0
+        self.pitch_below_horizon: float = 25.0
         # TODO: get resolution from camera
         self.image_width: int = 720
         self.image_height: int = 480
