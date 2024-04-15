@@ -1,7 +1,7 @@
 import logging
 import math
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
@@ -39,45 +39,45 @@ class FollowState(Enum):
     DRIVE = 3
 
 
-class FollowMe():
-
+class FollowMe(rosys.persistence.PersistentModule):
     def __init__(self, system: 'System') -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.follow_me')
         self.system = system
         self.kpi_provider = system.kpi_provider
 
-        self.stop_distance = 350.0
-        self.max_y_distance = 880.0
-        self.max_matching_distance = 800.0
-        self.max_first_matching_distance = 650.0
-        self.yaw_min = 0.05
-        self.yaw_max = 0.4
-        self.linear_speed = 0.3
-        self.angular_speed = 0.1
-        self.projection_factor = 1.0
-        self.confidence = 0.1
-        self.drive = True
+        self.stop_distance: float = 1000.0
+        self.max_y_distance: float = 2000.0
+        self.max_matching_distance: float = 1200.0
+        self.max_first_matching_distance: float = 1200.0
+        self.yaw_min: float = 0.05
+        self.yaw_max: float = 0.4
+        self.linear_speed: float = 0.1
+        self.angular_speed: float = 0.05
+        self.projection_factor: float = 1.0
+        self.confidence: float = 0.1
+        self.target_timeout: float = 2.0
+        self.drive: bool = True
 
-        self.state = FollowState.STARTUP
-        self.distance = 0.0
-        self.distance_y = 0.0
-        self.pixel_percentage_yaw = 0.0
-        self.n_feet = 0
+        self.state: FollowState = FollowState.STARTUP
+        self.distance: float = 0.0
+        self.distance_y: float = 0.0
+        self.pixel_percentage_yaw: float = 0.0
+        self.n_feet: int = 0
+        self.target: Optional[str] = None
+        self.last_update: float = rosys.time()
+        self.seconds_since_update: float = 0.0
 
-        self.target = None
-        self.pitch_below_horizon = 40.0
-        self.image_width = 1920
-        self.image_height = 1080
-        self.image_center = Point(x=self.image_width/2.0, y=self.image_height/2.0)
+        self.pitch_below_horizon: float = 40.0
+        self.image_width: int = 1920
+        self.image_height: int = 1080
+        self.image_center: Point = Point(x=self.image_width/2.0, y=self.image_height/2.0)
 
         if system.is_real:
             self.camera_id = '-3'
         else:
             self.camera_id = 'front_cam'
             self.camera = SimulatedCam(id=self.camera_id)
-            self.image_width = 1920
-            self.image_height = 1080
             self.camera.calibration = get_calibration(
                 x=0.4, y=0.0, yaw=0.0, pitch_below_horizon=self.pitch_below_horizon, image_width=self.image_width, image_height=self.image_height)
             self.system.usb_camera_provider.add_camera(self.camera)
@@ -118,6 +118,36 @@ class FollowMe():
                 detection_time=rosys.time(),
                 confidence=0.9,
             ))
+
+    def backup(self) -> dict:
+        return {
+            'stop_distance': self.stop_distance,
+            'max_y_distance': self.max_y_distance,
+            'max_matching_distance': self.max_matching_distance,
+            'max_first_matching_distance': self.max_first_matching_distance,
+            'yaw_min': self.yaw_min,
+            'yaw_max': self.yaw_max,
+            'linear_speed': self.linear_speed,
+            'angular_speed': self.angular_speed,
+            'projection_factor': self.projection_factor,
+            'confidence': self.confidence,
+            'target_timeout': self.target_timeout,
+            'drive': self.drive
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.stop_distance = data.get('stop_distance', 1000.0)
+        self.max_y_distance = data.get('max_y_distance', 2000.0)
+        self.max_matching_distance = data.get('max_matching_distance', 1200.0)
+        self.max_first_matching_distance = data.get('max_first_matching_distance', 1200.0)
+        self.yaw_min = data.get('yaw_min', 0.1)
+        self.yaw_max = data.get('yaw_max', 0.4)
+        self.linear_speed = data.get('linear_speed', 0.1)
+        self.angular_speed = data.get('angular_speed', 0.05)
+        self.projection_factor = data.get('projection_factor', 1.0)
+        self.confidence = data.get('confidence', 0.1)
+        self.target_timeout = data.get('target_timeout', 2.0)
+        self.drive = data.get('drive', True)
 
     async def start(self) -> None:
         self.log.info('starting FollowMe')
@@ -224,6 +254,7 @@ class FollowMe():
             self.kpi_provider.increment('followme_completed')
             await rosys.sleep(0.1)
             await self.system.field_friend.stop()
+        self.request_backup()
 
     async def detect_real(self, confidence=0.0) -> list[Point]:
         for camera in self.system.mjpeg_camera_provider.cameras.values():
