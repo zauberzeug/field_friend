@@ -57,6 +57,7 @@ class FollowMe():
         self.angular_speed = 0.1
         self.projection_factor = 1.0
         self.confidence = 0.1
+        self.drive = True
 
         self.state = FollowState.STARTUP
         self.distance = 0.0
@@ -196,7 +197,8 @@ class FollowMe():
                     angular_speed = math.copysign(1, self.pixel_percentage_yaw) * self.angular_speed
                     # TODO: linear velocity when turning
                     # TODO: lower speed when approaching target
-                    await self.system.driver.wheels.drive(0.01, angular_speed)
+                    if self.drive:
+                        await self.system.driver.wheels.drive(0.01, angular_speed)
                     await rosys.sleep(0.1)
                     continue
 
@@ -213,7 +215,8 @@ class FollowMe():
 
                     # TODO: lower speed when approaching target
                     angular_speed = self.pixel_percentage_yaw if pixel_percentage_yaw_abs > self.yaw_min else 0
-                    await self.system.driver.wheels.drive(self.linear_speed, angular_speed)
+                    if self.drive:
+                        await self.system.driver.wheels.drive(self.linear_speed, angular_speed)
                     await rosys.sleep(0.1)
                     continue
                 break
