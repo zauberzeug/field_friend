@@ -157,6 +157,9 @@ class FollowMe(rosys.persistence.PersistentModule):
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return
+        self.state = FollowState.STARTUP
+        await self.system.driver.wheels.stop()
+        self.target = None
         self.system.odometer.reset()
         await self._follow_pixel()
 
