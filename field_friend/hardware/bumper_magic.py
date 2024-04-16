@@ -26,12 +26,11 @@ class BumperMagicHardware(BumperMagic, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             int bump_code = 0
             int first_bump_time = 0
-            when bump_code == 4 and {bumper_front_name}.change > 0 then bump_code = 0; end
-            when bump_code == 3 and {bumper_front_name}.change  > 0 then bump_code = 4; end
-            when bump_code == 2 and {bumper_front_name}.change  > 0 then bump_code = 3; end
-            when bump_code == 1 and {bumper_front_name}.change  > 0 then bump_code = 2; end
-            when bump_code == 0 and {bumper_front_name}.change  > 0 then bump_code = 1; first_bump_time = core.millis; end
-            when bump_code != 4 and core.millis - first_bump_time > 5000 then bump_code = 0; end
+            when bump_code == 3 and {bumper_front_name}.change > 0 then bump_code = 0; end
+            when bump_code == 2 and {bumper_front_name}.change > 0 then bump_code = 3; end
+            when bump_code == 1 and {bumper_front_name}.change > 0 then bump_code = 2; end
+            when bump_code == 0 and {bumper_front_name}.change > 0 then bump_code = 1; first_bump_time = core.millis; end
+            when bump_code != 3 and core.millis - first_bump_time > 5000 then bump_code = 0; end
         ''')
         core_message_fields = ['bump_code']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
