@@ -142,6 +142,8 @@ class operation:
                                 'dense outlined suffix=rad/s').classes('w-28').bind_value(self.system.followme, 'angular_speed').tooltip('Rotation speed when in TURN state')
                             ui.number('Min Confidence', format='%.1f', step=0.1, min=0.0, max=1.0).props(
                                 'dense outlined').classes('w-28').bind_value(self.system.followme, 'confidence').tooltip('TODO: confidence')
+                            ui.number('Timeout', format='%.1f', step=0.5, min=0.0).props(
+                                'dense outlined suffix=s').classes('w-28').bind_value(self.system.followme, 'target_timeout').tooltip('Go into Startup state after receiving no target update for this time')
                             ui.checkbox('Drive').bind_value(self.system.followme, 'drive').tooltip('TODO: drive')
                         with ui.grid(columns=4):
                             ui.label().classes('w-1/4').bind_text_from(self.system.followme, 'state',

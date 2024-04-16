@@ -68,9 +68,10 @@ class FollowMe(rosys.persistence.PersistentModule):
         self.last_update: float = rosys.time()
         self.seconds_since_update: float = 0.0
 
-        self.pitch_below_horizon: float = 40.0
-        self.image_width: int = 1920
-        self.image_height: int = 1080
+        self.pitch_below_horizon: float = 25.0
+        # TODO: get resolution from camera
+        self.image_width: int = 720
+        self.image_height: int = 480
         self.image_center: Point = Point(x=self.image_width/2.0, y=self.image_height/2.0)
 
         if system.is_real:
@@ -156,6 +157,9 @@ class FollowMe(rosys.persistence.PersistentModule):
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return
+        self.state = FollowState.STARTUP
+        await self.system.driver.wheels.stop()
+        self.target = None
         self.system.odometer.reset()
         await self._follow_pixel()
 
@@ -163,24 +167,26 @@ class FollowMe(rosys.persistence.PersistentModule):
         rosys.notify('FollowMe started', 'positive')
         self.log.info('FollowMe started')
         self.target = None
-        self.system.person_locator.is_paused = False
+        if self.system.is_real:
+            self.system.person_locator.is_paused = False
         try:
             while True:
                 current_time = rosys.time()
                 self.seconds_since_update = current_time - self.last_update
-                # TODO: stop if too long
+                if self.seconds_since_update > self.target_timeout or self.target is None:
+                    await self.system.driver.wheels.stop()
+                    self.state = FollowState.STARTUP
+                    self.target = None
+
                 image_points = await self.detect()
                 if image_points is None:
                     await rosys.sleep(0.1)
                     continue
-                self.last_update = current_time
                 self.n_feet = len(image_points)
                 if self.n_feet == 0:
                     await rosys.sleep(0.1)
                     continue
-
-                if self.target is None:
-                    self.state = FollowState.STARTUP
+                self.last_update = current_time
 
                 if self.state == FollowState.STARTUP:
                     await self.system.driver.wheels.stop()
@@ -264,7 +270,8 @@ class FollowMe(rosys.persistence.PersistentModule):
             self.kpi_provider.increment('followme_completed')
             await rosys.sleep(0.1)
             await self.system.field_friend.stop()
-            self.system.person_locator.is_paused = True
+            if self.system.is_real:
+                self.system.person_locator.is_paused = True
 
     async def detect_real(self, confidence=0.0) -> Optional[list[Point]]:
         for camera in self.system.mjpeg_camera_provider.cameras.values():
