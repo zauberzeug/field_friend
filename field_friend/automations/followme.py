@@ -217,6 +217,9 @@ class FollowMe(rosys.persistence.PersistentModule):
                     continue
                 self.target = image_points[target_index]
 
+                self.distance = calc_weighted_pixel_distance(point_1=Point(
+                    x=self.image_center.x, y=self.image_height), point_2=self.target, projection_factor=self.projection_factor)
+
                 self.pixel_percentage_yaw = (self.image_center.x - self.target.x) / self.image_center.x
                 pixel_percentage_yaw_abs = abs(self.pixel_percentage_yaw)
                 self.distance_y = self.image_height - self.target.y
