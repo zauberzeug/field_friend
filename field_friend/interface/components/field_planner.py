@@ -4,7 +4,6 @@ import uuid
 from typing import Literal, Optional
 
 import rosys
-from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
 from nicegui import events, ui
 
 from ...automations import Field, FieldObstacle, FieldProvider, Row

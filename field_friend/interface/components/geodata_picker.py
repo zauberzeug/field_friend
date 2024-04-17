@@ -7,14 +7,16 @@ from typing import Optional
 
 import fiona
 import geopandas as gpd
-from shapely import offset_curve
-from shapely.geometry import LinearRing, LineString, Polygon, mapping
+from shapely import difference, offset_curve
+from shapely.geometry import (GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, Point, Polygon,
+                              mapping)
 from shapely.ops import transform
 
 import rosys
 from nicegui import events, ui
 
 from ...automations import Field, FieldObstacle, FieldProvider, Row
+from ...navigation.point_transformation import cartesian_to_wgs84
 
 # Enable fiona driver
 fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
@@ -123,33 +125,34 @@ class geodata_picker(ui.dialog):
     def swap_coordinates(self, lon, lat):
         return lat, lon
 
-    def getExtrapoledLine(self, p1, p2):
+    def get_extrapoled_line(self, p1, p2) -> LineString:
         'Creates a line with two points extrapoled in both direction'
         EXTRAPOL_RATIO = 10
         a = [p1[0]+EXTRAPOL_RATIO*(p1[0]-p2[0]), p1[1]+EXTRAPOL_RATIO*(p1[1]-p2[1])]
         b = [p2[0]+EXTRAPOL_RATIO*(p2[0]-p1[0]), p2[1]+EXTRAPOL_RATIO*(p2[1]-p1[1])]
         return LineString([a, b])
 
-    def get_rows(self, coordinate_list):
-        lines = []
+    def get_rows(self, field: Field) -> list:
         if not self.is_farmdroid:
             return []
         if self.safety_distance + (self.working_width / 2) < 2.7:
             rosys.notify(
                 'The distance between the outer headland track and the field boundary is too small. Please check the specified values.')
-            return lines
+            return []
+        lines = []
+        outline = []
+        for point in field.outline:
+            outline.append([point.x, point.y])
+        outline_polygon = Polygon(outline)
         buffer_width = self.safety_distance + (self.headland_tracks * self.working_width)
         row_spacing = self.working_width / 5
-
-        field_border_gdf = gpd.GeoDataFrame(index=[0], crs='epsg:4326', geometry=[Polygon(coordinate_list)])
-        field_border_gdf_meter = field_border_gdf.to_crs(epsg=3395)
-
-        working_area_meter = field_border_gdf_meter.buffer(-buffer_width, join_style='mitre', mitre_limit=math.inf)
-        working_area = working_area_meter.to_crs(epsg=4326)
-        working_area_coordinates = mapping(working_area)['features'][0]['geometry']['coordinates'][0]
-        working_area_coordinates_meter = mapping(working_area_meter)['features'][0]['geometry']['coordinates'][0]
-
-        # AB Linie finden
+        working_area_meter = outline_polygon.buffer(-buffer_width, join_style='mitre', mitre_limit=math.inf)
+        field.working_area = working_area_meter.area
+        working_area_coordinates_meter = mapping(working_area_meter)['coordinates'][0]
+        working_area_coordinates = []
+        for point in working_area_coordinates_meter:
+            transformed_point = cartesian_to_wgs84([field.reference_lat, field.reference_lon], [-point[1], point[0]])
+            working_area_coordinates.append([transformed_point[0], transformed_point[1]])
         if self.ab_line == 1:
             ab_line = LineString([(working_area_coordinates[0][0], working_area_coordinates[0][1]),
                                   (working_area_coordinates[1][0], working_area_coordinates[1][1])])
@@ -168,7 +171,7 @@ class geodata_picker(ui.dialog):
                                             (working_area_coordinates_meter[-1][0], working_area_coordinates_meter[-1][1])])
 
         direction_check = offset_curve(ab_line_meter, -row_spacing)
-        if working_area_meter[0].contains(direction_check) or working_area_meter[0].intersects(direction_check):
+        if working_area_meter.contains(direction_check) or working_area_meter.intersects(direction_check):
             row_spacing = -row_spacing
         lines_meter = []
         lines_meter.append(ab_line_meter)
@@ -176,11 +179,14 @@ class geodata_picker(ui.dialog):
         line_inside = True
         while line_inside:
             line_meter = offset_curve(lines_meter[-1], row_spacing)
-            if working_area_meter[0].contains(line_meter) or working_area_meter[0].intersects(line_meter):
+            if working_area_meter.contains(line_meter) or working_area_meter.intersects(line_meter):
                 lines_meter.append(line_meter)
-                line_gdf_meter = gpd.GeoDataFrame(index=[0], crs='epsg:3395', geometry=[line_meter])
-                line_gdf = line_gdf_meter.to_crs(epsg=4326)
-                lines.append(line_gdf['geometry'][0])
+                line = []
+                for point in mapping(line_meter)["coordinates"]:
+                    point_wgs84 = cartesian_to_wgs84([field.reference_lat, field.reference_lon], [-point[1], point[0]])
+                    line.append(point_wgs84)
+                linestring = LineString([(line[0][0], line[0][1]), (line[1][0], line[1][1])])
+                lines.append(linestring)
             else:
                 line_inside = False
         working_area_ring = LinearRing(working_area_coordinates)
@@ -189,14 +195,57 @@ class geodata_picker(ui.dialog):
             point_list = list(mapping(line)['coordinates'])
             for index, point in enumerate(point_list):
                 point_list[index] = list(point)
-            extrapolated_line = self.getExtrapoledLine(point_list[0], point_list[1])
-            intersect_multipoint = working_area_ring.intersection(extrapolated_line)
-            intersection_list = []
-            for point in list(mapping(intersect_multipoint)['coordinates']):
-                intersection_list.append([point[0], point[1]])
-            row_id = str(uuid.uuid4())
-            new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=intersection_list)
-            rows.append(new_row)
+            extrapolated_line = self.get_extrapoled_line(point_list[0], point_list[1])
+            intersection_geometry = working_area_ring.intersection(extrapolated_line)
+            if isinstance(intersection_geometry, MultiPoint):
+                intersection_list = []
+                # TODO hier noch Fälle beachten, bei denen die Linie den Umring in mehr als zwei getrennten Punkten/Segmenten schneidet
+                for point in list(mapping(intersection_geometry)['coordinates']):
+                    intersection_list.append([point[0], point[1]])
+                divided_lines = []
+                for obstacle in field.obstacles:
+                    divided_lines.append(difference(LineString(intersection_list), Polygon(obstacle.points_wgs84)))
+                if any(isinstance(x, MultiLineString) for x in divided_lines):
+                    for segment in divided_lines:
+                        if isinstance(segment, MultiLineString):
+                            for line in mapping(segment)['coordinates']:
+                                row_coordinates = []
+                                for point in line:
+                                    row_coordinates.append([point[0], point[1]])
+                                row_id = str(uuid.uuid4())
+                                new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=row_coordinates)
+                                rows.append(new_row)
+                else:
+                    row_id = str(uuid.uuid4())
+                    new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=intersection_list)
+                    rows.append(new_row)
+            elif isinstance(intersection_geometry, GeometryCollection):
+                for geometry in mapping(intersection_geometry)['geometries']:
+                    if geometry == LineString or geometry == MultiPoint:
+                        intersection_list = []
+                        # TODO hier noch Fälle beachten, bei denen die Linie den Umring in mehr als zwei getrennten Punkten/Segmenten schneidet
+                        for point in list(mapping(geometry)['coordinates']):
+                            intersection_list.append([point[0], point[1]])
+                        divided_lines = []
+                        for obstacle in field.obstacles:
+                            divided_lines.append(difference(LineString(intersection_list),
+                                                 Polygon(obstacle.points_wgs84)))
+                        if any(isinstance(x, MultiLineString) for x in divided_lines):
+                            for segment in divided_lines:
+                                if isinstance(segment, MultiLineString):
+                                    for line in mapping(segment)['coordinates']:
+                                        row_coordinates = []
+                                        for point in line:
+                                            row_coordinates.append([point[0], point[1]])
+                                        row_id = str(uuid.uuid4())
+                                        new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=row_coordinates)
+                                        rows.append(new_row)
+                        else:
+                            row_id = str(uuid.uuid4())
+                            new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=intersection_list)
+                            rows.append(new_row)
+                    # elif type(geometry) == Point:
+                    #     intersection_list.append([geometry[0], geometry[1]])
         return rows
 
     def get_obstacles(self, polygon_list):
@@ -225,18 +274,21 @@ class geodata_picker(ui.dialog):
         if coordinates is None:
             rosys.notify("An error occurred while importing the file.", type='negative')
             return
-
-        rows = self.get_rows(coordinates[0])
-
-        obstacles = []
-        if len(coordinates) > 1:
-            obstacles = self.get_obstacles(coordinates)
-
-        if len(coordinates[0]) > 2 and coordinates[0][0] == coordinates[0][-1]:
-            coordinates[0].pop()  # the last point is the same as the first point
         reference_point = coordinates[0][0]
         field_id = str(uuid.uuid4())
         field = Field(id=f'{field_id}', name=f'{field_id}', outline_wgs84=coordinates[0],
-                      reference_lat=reference_point[0], reference_lon=reference_point[1], rows=rows, obstacles=obstacles)
+                      reference_lat=reference_point[0], reference_lon=reference_point[1])
+        obstacles = []
+        if len(coordinates) > 1:
+            obstacles = self.get_obstacles(coordinates)
+        field.obstacles = obstacles
+        rows = self.get_rows(field)
+        field.rows = rows
+        outline = []
+        for point in field.outline:
+            outline.append([point.x, point.y])
+        field.area = Polygon(outline).area
+        if len(coordinates[0]) > 2 and coordinates[0][0] == coordinates[0][-1]:
+            coordinates[0].pop()  # the last point is the same as the first point
         self.field_provider.add_field(field)
         return

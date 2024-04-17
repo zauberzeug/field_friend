@@ -115,6 +115,12 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 ui.markdown('**Current Field:**').style('color: #EDF4FB')
                 current_field_label = ui.label()
             with ui.row().classes('place-items-center'):
+                ui.markdown('**Field Size:**').style('color: #6E93D6')
+                current_field_area_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Working Area Size:**').style('color: #6E93D6')
+                current_field_working_area_label = ui.label()
+            with ui.row().classes('place-items-center'):
                 ui.markdown('**Current Row:**').style('color: #EDF4FB')
                 current_row_label = ui.label()
             with ui.row().classes('place-items-center'):
@@ -270,6 +276,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         if system.automator.is_running:
             if system.field_provider.active_field is not None:
                 current_field_label.text = system.field_provider.active_field.name
+                current_field_area_label.text = system.field_provider.active_field.area
+                current_field_working_area_label.text = system.field_provider.active_field.working_area
             kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
             kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
 

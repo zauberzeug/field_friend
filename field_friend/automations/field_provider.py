@@ -68,6 +68,8 @@ class Field:
     visualized: bool = False
     obstacles: list[FieldObstacle] = field(default_factory=list)
     rows: list[Row] = field(default_factory=list)
+    area: Optional[float] = None
+    working_area: Optional[float] = None
 
     @property
     def reference(self) -> list:
