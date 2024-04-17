@@ -30,15 +30,24 @@ class Weeding(rosys.persistence.PersistentModule):
         self.system = system
         self.kpi_provider = system.kpi_provider
 
+        # default settings
+        self.continue_canceled_weeding: bool = False
+        self.use_monitor_workflow: bool = False
+
+        # field settings
         self.use_field_planning = True
         self.field: Optional[Field] = None
         self.start_row_id: Optional[str] = None
         self.end_row_id: Optional[str] = None
-        self.tornado_angle: float = 110.0
         self.minimum_turning_radius: float = 0.5
+
+        # workflow settings
         self.only_monitoring: bool = False
-        self.use_monitor_workflow: bool = False
-        self.continue_canceled_weeding: bool = False
+
+        # tool settings
+        self.tornado_angle: float = 110.0
+
+        # driver settings
 
         self.sorted_weeding_rows: list = []
         self.weeding_plan: Optional[list[list[PathSegment]]] = None
@@ -79,9 +88,9 @@ class Weeding(rosys.persistence.PersistentModule):
         self.turn_paths = [rosys.persistence.from_dict(PathSegment, segment_data)
                            for segment_data in data.get('turn_paths', [])]
         self.current_row = rosys.persistence.from_dict(
-            Row, data.get('current_row')) if data.get('current_row') else None
-        self.current_segment = rosys.persistence.from_dict(PathSegment, data.get(
-            'current_segment')) if data.get('current_segment') else None
+            Row, data['current_row']) if data['current_row'] else None
+        self.current_segment = rosys.persistence.from_dict(PathSegment, data[
+            'current_segment']) if data['current_segment'] else None
 
     def invalidate(self) -> None:
         self.request_backup()
@@ -124,7 +133,7 @@ class Weeding(rosys.persistence.PersistentModule):
                 self.log.error('ChainAxis is not in top ref')
                 return False
         if not await self.system.puncher.try_home():
-            rosys.notify('Puncher homing failed, aborting', 'error')
+            rosys.notify('Puncher homing failed, aborting', 'negative')
             self.log.error('Puncher homing failed, aborting')
             return False
         return True
@@ -154,12 +163,11 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log.info(
             f'Planned path: {[path_segment for path in self.weeding_plan for path_segment in path] + self.turn_paths}')
         paths = [path_segment for path in self.weeding_plan for path_segment in path]
-        turn_paths = [path_segment for path in self.turn_paths for path_segment in path]
-        self.PATH_PLANNED.emit(paths + turn_paths)
+        self.PATH_PLANNED.emit(paths + self.turn_paths)
         self.invalidate()
         return True
 
-    def _make_plan(self) -> Optional[list[rosys.driving.PathSegment]]:
+    def _make_plan(self) -> Optional[list[list[rosys.driving.PathSegment]]]:
         self.log.info('Making plan...')
         if self.field is None:
             self.log.warning('No field available')
@@ -248,7 +256,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.system.path_planner.obstacles.clear()
         for obstacle in self.field.obstacles:
             self.system.path_planner.obstacles[obstacle.id] = rosys.pathplanning.Obstacle(
-                id=obstacle.id, outline=obstacle.points)
+                id=obstacle.id, outline=obstacle.points([self.field.reference_lat, self.field.reference_lon]))
         for row in self.field.rows:
             row_points = row.points([self.field.reference_lat, self.field.reference_lon])
             # create a small polygon around the row to avoid the robot driving through the row
@@ -303,6 +311,8 @@ class Weeding(rosys.persistence.PersistentModule):
             self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.system.field_friend.stop()
             self.system.plant_locator.pause()
+            self.system.automation_watcher.stop_field_watch()
+            self.system.automation_watcher.gnss_watch_active = False
 
     async def _drive_to_start(self):
         self.log.info('Driving to start...')
@@ -315,7 +325,8 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _weed_with_plan(self):
         if self.continue_canceled_weeding:
             start_pose = self.system.odometer.prediction
-            end_pose = self.current_segment.spline.start
+            end_pose = Pose(x=self.current_segment.spline.start.x, y=self.current_segment.spline.start.y,
+                            yaw=self.current_segment.spline.start.direction(self.current_segment.spline.end))
             start_spline = Spline.from_poses(start_pose, end_pose)
             await self.system.driver.drive_spline(start_spline)
         else:
@@ -326,7 +337,7 @@ class Weeding(rosys.persistence.PersistentModule):
             if self.continue_canceled_weeding and self.current_row != self.sorted_weeding_rows[i]:
                 continue
             self.system.driver.parameters.can_drive_backwards = False
-            self.system.driver.parameters.minimum_turning_radius = 0.05
+            self.system.driver.parameters.minimum_turning_radius = 0.02
             self.current_row = self.sorted_weeding_rows[i]
             self.system.plant_locator.pause()
             self.system.plant_provider.clear()
@@ -364,7 +375,6 @@ class Weeding(rosys.persistence.PersistentModule):
             self.system.plant_locator.pause()
             if i < len(self.weeding_plan) - 1:
                 self.system.driver.parameters.can_drive_backwards = True
-                self.system.driver.parameters.minimum_turning_radius = self.minimum_turning_radius
                 self.log.info('Driving to next row...')
                 turn_path = self.turn_paths[i]
                 await self.system.driver.drive_path(turn_path)

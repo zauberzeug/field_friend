@@ -88,7 +88,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
         ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
-        if automator.is_running:
+        with ui.column().bind_visibility_from(system.automator, 'is_running'):
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Current Field:**').style('color: #6E93D6')
                 current_field_label = ui.label()
@@ -104,28 +104,25 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Distance:**').style('color: #6E93D6')
                 kpi_distance_label = ui.label()
-            current_automation = next(key for key, value in system.automations.items()
-                                      if value == system.automator.default_automation)
-            if current_automation == 'weeding' or 'monitoring':
-                with ui.row().classes('place-items-center'):
-                    ui.markdown('**Current Row:**').style('color: #6E93D6')
-                    current_row_label = ui.label()
-                with ui.row().classes('place-items-center'):
-                    ui.markdown('**Processed Rows:**').style('color: #6E93D6')
-                    kpi_rows_weeded_label = ui.label()
-                with ui.row().classes('place-items-center'):
-                    ui.markdown('**Crops Detected:**').style('color: #6E93D6')
-                    kpi_crops_detected_label = ui.label()
-                with ui.row().classes('place-items-center'):
-                    ui.markdown('**Weeds Detected:**').style('color: #6E93D6')
-                    kpi_weeds_detected_label = ui.label()
-                if current_automation == 'weeding':
-                    with ui.row().classes('place-items-center'):
-                        ui.markdown('**Punches:**').style('color: #6E93D6')
-                        kpi_punches_label = ui.label()
-        else:
+            current_field_label = ui.label()
             with ui.row().classes('place-items-center'):
-                ui.markdown('**No automation running**').style('color: #6E93D6')
+                ui.markdown('**Current Row:**').style('color: #6E93D6')
+                current_row_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Processed Rows:**').style('color: #6E93D6')
+                kpi_rows_weeded_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Crops Detected:**').style('color: #6E93D6')
+                kpi_crops_detected_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Weeds Detected:**').style('color: #6E93D6')
+                kpi_weeds_detected_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Punches:**').style('color: #6E93D6')
+                kpi_punches_label = ui.label()
+
+        with ui.row().classes('place-items-center').bind_visibility_from(system.automator, 'is_running', backward=lambda x: not x):
+            ui.markdown('**No automation running**').style('color: #6E93D6')
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
@@ -251,10 +248,8 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             if automator.is_running:
                 if system.field_provider.active_field is not None:
                     current_field_label.text = system.field_provider.active_field.name
-                    current_field_area_label.text = system.field_provider.active_field.area
-                    current_field_working_area_label.text = system.field_provider.active_field.working_area
-                kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
-                kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
+                kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time}s'
+                kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance}m'
 
                 current_automation = next(key for key, value in system.automations.items()
                                           if value == system.automator.default_automation)
