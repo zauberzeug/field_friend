@@ -110,34 +110,30 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
-        if system.automator.is_running:
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Current Field:**').style('color: #EDF4FB')
-                current_field_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Current Row:**').style('color: #EDF4FB')
-                current_row_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Time on Field:**').style('color: #EDF4FB')
-                kpi_fieldtime_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Distance:**').style('color: #EDF4FB')
-                kpi_distance_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Processed Rows:**').style('color: #EDF4FB')
-                kpi_rows_weeded_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Crops Detected:**').style('color: #EDF4FB')
-                kpi_crops_detected_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
-                kpi_weeds_detected_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Punches:**').style('color: #EDF4FB')
-                kpi_punches_label = ui.label()
-        else:
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**No automation running.**').style('color: #EDF4FB')
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Current Field:**').style('color: #EDF4FB')
+            current_field_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Current Row:**').style('color: #EDF4FB')
+            current_row_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Time on Field:**').style('color: #EDF4FB')
+            kpi_fieldtime_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Distance:**').style('color: #EDF4FB')
+            kpi_distance_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Processed Rows:**').style('color: #EDF4FB')
+            kpi_rows_weeded_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Crops Detected:**').style('color: #EDF4FB')
+            kpi_crops_detected_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
+            kpi_weeds_detected_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Punches:**').style('color: #EDF4FB')
+            kpi_punches_label = ui.label()
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
@@ -270,6 +266,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         if system.automator.is_running:
             if system.field_provider.active_field is not None:
                 current_field_label.text = system.field_provider.active_field.name
+
             kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
             kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
 
@@ -291,5 +288,5 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         rtk_fix_label.text = f'gps_qual: {system.gnss.record.gps_qual}, mode: {system.gnss.record.mode}'
         odometry_label.text = str(system.odometer.prediction)
 
-    ui.timer(rosys.config.ui_update_interval, update_status)
+    # ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page
