@@ -155,6 +155,8 @@ class operation:
                             ui.label().classes('w-1/4').bind_text_from(self.system.followme,
                                                                        'distance_y', lambda distance_y: f'Distance_Y: {distance_y:.1f}px')
                             ui.label().classes('w-1/4').bind_text_from(self.system.followme,
+                                                                       'match_distance', lambda match_distance: f'Match Distance: {match_distance:.1f}px')
+                            ui.label().classes('w-1/4').bind_text_from(self.system.followme,
                                                                        'pixel_percentage_yaw', lambda yaw: f'Yaw: {yaw:.2f}')
                             ui.label().classes('w-1/4').bind_text_from(self.system.followme,
                                                                        'n_feet', lambda n_feet: f'n_Feet: {n_feet}')

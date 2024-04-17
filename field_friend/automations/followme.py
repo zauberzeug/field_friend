@@ -62,6 +62,7 @@ class FollowMe(rosys.persistence.PersistentModule):
         self.state: FollowState = FollowState.STARTUP
         self.distance: float = 0.0
         self.distance_y: float = 0.0
+        self.match_distance: float = 0.0
         self.pixel_percentage_yaw: float = 0.0
         self.n_feet: int = 0
         self.target: Optional[str] = None
@@ -211,6 +212,7 @@ class FollowMe(rosys.persistence.PersistentModule):
                     point_1=image_point, point_2=self.target, projection_factor=self.projection_factor) for image_point in image_points])
                 target_index = np.argmin(distances)
 
+                self.match_distance = distances[target_index]
                 if distances[target_index] > self.max_matching_distance:
                     self.state = FollowState.STARTUP
                     await rosys.sleep(0.1)
