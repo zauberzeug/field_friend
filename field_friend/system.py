@@ -103,13 +103,41 @@ class System:
         self.coin_collecting = CoinCollecting(self)
         self.followme = FollowMe(self)
 
-        def enable_followme(active: bool) -> None:
-            if active:
+        # FIXME bumper_magic hardware not working in lizard
+        # def enable_followme(active: bool) -> None:
+        #     if active:
+        #         self.automator.start(self.followme.start())
+        #     elif self.automator.is_running:
+        #         self.automator.stop(because='followme disabled')
+        # if self.field_friend.bumper_magic:
+        #     self.field_friend.bumper_magic.BUMPER_MAGIC_CHANGED.register(enable_followme)
+
+        self.bump_code: int = 0
+        self.first_bump_time: float = 0.0
+        self.follow_me_running: bool = False
+
+        def enable_followme(name: str) -> None:
+            print(f'bumped: {name} bump_code: {self.bump_code}')
+            if self.bump_code == 4 and name == 'back' and self.follow_me_running:
+                self.automator.stop(because='bumper back triggered')
+                self.follow_me_running = False
+                self.bump_code = 0
+            if self.bump_code == 3 and name == 'front_top':
+                self.bump_code = 4
                 self.automator.start(self.followme.start())
-            elif self.automator.is_running:
-                self.automator.stop(because='followme disabled')
-        if self.field_friend.bumper_magic:
-            self.field_friend.bumper_magic.BUMPER_MAGIC_CHANGED.register(enable_followme)
+                self.follow_me_running = True
+            if self.bump_code == 2 and name == 'front_top':
+                self.bump_code = 3
+            if self.bump_code == 1 and name == 'front_top':
+                self.bump_code = 2
+            if self.bump_code == 0 and name == 'front_top':
+                self.bump_code = 1
+                self.first_bump_time = rosys.time()
+            if self.bump_code != 4 and rosys.time() - self.first_bump_time > 5:
+                self.bump_code = 0
+        if self.field_friend.bumper:
+            self.field_friend.bumper.BUMPER_TRIGGERED.register(enable_followme)
+
         self.mowing = Mowing(self, robot_width=width)
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
 

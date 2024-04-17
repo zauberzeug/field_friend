@@ -71,6 +71,7 @@ configuration = {
         'reset_pin': 15,
         'status_pin': 13,
     },
+    # 'bumper_magic': True,
     'bumper': {
         'name': 'bumper',
         'on_expander': True,
