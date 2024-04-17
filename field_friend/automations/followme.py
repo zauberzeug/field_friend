@@ -20,7 +20,7 @@ TORNADO_ANGLE = 110.0
 
 
 def calc_weighted_pixel_distance(point_1: Point, point_2: Point, projection_factor: float = 1.0) -> float:
-    return math.sqrt((point_1.x - point_2.x)**2 + (projection_factor * (point_1.y - point_2.y))**2)
+    return math.sqrt((projection_factor * (point_1.x - point_2.x))**2 + (point_1.y - point_2.y)**2)
 
 
 def get_calibration(x: float, y: float, yaw: float, pitch_below_horizon: float, image_width: int = 800, image_height: int = 600):
@@ -54,7 +54,7 @@ class FollowMe(rosys.persistence.PersistentModule):
         self.yaw_max: float = 0.4
         self.linear_speed: float = 0.1
         self.angular_speed: float = 0.05
-        self.projection_factor: float = 1.0
+        self.projection_factor: float = 0.24
         self.confidence: float = 0.1
         self.target_timeout: float = 2.0
         self.drive: bool = True

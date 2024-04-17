@@ -128,7 +128,7 @@ class operation:
                                 'w-28').bind_value(self.system.followme, 'max_first_matching_distance').tooltip('Maximum allowed distance from the bottom center of the image')
                             ui.number('Matching Distance', step=1, min=0, format='%d').props('dense outlined suffix=px').classes(
                                 'w-28').bind_value(self.system.followme, 'max_matching_distance').tooltip('Maximum allowed distance from the last known target position')
-                            ui.number('Projection Factor', step=0.1, min=0.0, max=1.0, format='%.1f').props('dense outlined').classes(
+                            ui.number('Projection Factor', step=0.05, min=0.0, max=1.0, format='%.2f').props('dense outlined').classes(
                                 'w-28').bind_value(self.system.followme, 'projection_factor').tooltip('Scales the contribution of the y-distance to the total distance')
                             ui.number('Stop Distance', step=1, min=0.0, format='%d').props('dense outlined suffix=px').classes(
                                 'w-28').bind_value(self.system.followme, 'stop_distance').tooltip('How close the robot should move to the target')
