@@ -142,7 +142,7 @@ class GnssHardware(Gnss):
         if not self.ser.isOpen():
             self.log.debug('GNSS device not open')
             return None
-        line = self.ser.read_until(b'\r\n')
+        line = await rosys.run.io_bound(self.ser.read_until, b'\r\n')
         if not line:
             self.log.debug('No data')
             return None
