@@ -46,17 +46,17 @@ class FollowMe(rosys.persistence.PersistentModule):
         self.system = system
         self.kpi_provider = system.kpi_provider
 
-        self.stop_distance: float = 1000.0
-        self.max_y_distance: float = 2000.0
-        self.max_matching_distance: float = 1200.0
-        self.max_first_matching_distance: float = 1200.0
+        self.stop_distance: float = 200.0
+        self.max_y_distance: float = 500.0
+        self.max_matching_distance: float = 200.0
+        self.max_first_matching_distance: float = 220.0
         self.yaw_min: float = 0.05
         self.yaw_max: float = 0.4
-        self.linear_speed: float = 0.1
-        self.angular_speed: float = 0.05
+        self.linear_speed: float = 0.2
+        self.angular_speed: float = 0.2
         self.projection_factor: float = 0.24
         self.confidence: float = 0.1
-        self.target_timeout: float = 2.0
+        self.target_timeout: float = 6.0
         self.drive: bool = True
 
         self.state: FollowState = FollowState.STARTUP
