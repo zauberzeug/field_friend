@@ -5,7 +5,7 @@ import rosys
 from rosys.helpers import remove_indentation
 
 
-class YAxisTornadoV2(rosys.hardware.Module, abc.ABC):
+class YAxisCanOpen(rosys.hardware.Module, abc.ABC):
     """The y axis module is a simple example for a representation of real or simulated robot hardware."""
 
     def __init__(self, max_speed, min_position, max_position, axis_offset, steps_per_m, reversed_direction, **kwargs) -> None:
@@ -63,7 +63,7 @@ class YAxisTornadoV2(rosys.hardware.Module, abc.ABC):
         return self.compute_position(self.steps)
 
 
-class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
+class YAxisCanOpenHardware(YAxisCanOpen, rosys.hardware.ModuleHardware):
     """The y axis hardware module is a simple example for a representation of real robot hardware."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
@@ -292,7 +292,7 @@ class YAxisHardwareTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleHardware):
             self.is_referenced = False
 
 
-class YAxisSimulationTornadoV2(YAxisTornadoV2, rosys.hardware.ModuleSimulation):
+class YAxisCanOpenSimulation(YAxisCanOpen, rosys.hardware.ModuleSimulation):
     '''The y axis simulation module is a simple example for a representation of simulated robot hardware.
     '''
 

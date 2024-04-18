@@ -4,7 +4,7 @@ import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
 
-from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado, YAxisTornadoV2
+from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisCanOpen, YAxisTornado
 from .kpi_provider import KpiProvider
 
 
@@ -76,7 +76,7 @@ class Puncher:
                 if not self.field_friend.y_axis.MIN_POSITION+self.field_friend.y_axis.WORK_OFFSET <= y <= self.field_friend.y_axis.MAX_POSITION-self.field_friend.y_axis.WORK_OFFSET:
                     rosys.notify('y position out of range', type='error')
                     raise PuncherException('y position out of range')
-            if isinstance(self.field_friend.z_axis, Tornado) and (isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisTornadoV2)):
+            if isinstance(self.field_friend.z_axis, Tornado) and (isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisCanOpen)):
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='error')
                     raise PuncherException('y position out of range')
@@ -102,7 +102,7 @@ class Puncher:
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
-        if isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisTornadoV2):
+        if isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisCanOpen):
             y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         elif isinstance(self.field_friend.y_axis, YAxis):

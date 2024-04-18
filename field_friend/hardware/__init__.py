@@ -13,7 +13,7 @@ from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
+from .y_axis_canopen import YAxisCanOpen, YAxisCanOpenHardware, YAxisCanOpenSimulation
 from .y_axis_tornado import YAxisHardwareTornado, YAxisSimulationTornado, YAxisTornado
-from .y_axis_tornado_v2_canopen import YAxisHardwareTornadoV2, YAxisSimulationTornadoV2, YAxisTornadoV2
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
 from .z_axis_v2 import ZAxisHardwareV2, ZAxisSimulationV2, ZAxisV2

@@ -4,7 +4,7 @@ from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, Tornado, YAxis, YAxisTornado, YAxisTornadoV2, ZAxis, ZAxisV2)
+                         FlashlightV2, Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisV2)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -93,7 +93,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                 with ui.column():
                     ui.markdown('**Y-Axis**')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
-            elif isinstance(field_friend.y_axis, YAxisTornadoV2):
+            elif isinstance(field_friend.y_axis, YAxisCanOpen):
                 with ui.column():
                     ui.markdown('**Y-Axis**')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))

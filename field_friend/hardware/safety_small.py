@@ -11,8 +11,8 @@ from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, Flashli
 from .safety import Safety
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
+from .y_axis_canopen import YAxisCanOpen, YAxisCanOpenHardware, YAxisCanOpenSimulation
 from .y_axis_tornado import YAxisHardwareTornado, YAxisSimulationTornado, YAxisTornado
-from .y_axis_tornado_v2_canopen import YAxisHardwareTornadoV2, YAxisSimulationTornadoV2, YAxisTornadoV2
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
 from .z_axis_v2 import ZAxisHardwareV2, ZAxisSimulationV2, ZAxisV2
 
@@ -25,7 +25,7 @@ class SmallSafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  estop: rosys.hardware.EStop,
                  bumper: Union[rosys.hardware.BumperHardware, None] = None,
                  y_axis: Union[YAxisHardware, ChainAxisHardware,
-                               YAxisHardwareTornado, YAxisHardwareTornadoV2, None] = None,
+                               YAxisHardwareTornado, YAxisCanOpenHardware, None] = None,
                  z_axis: Union[ZAxisHardware, ZAxisHardwareV2, TornadoHardware, None] = None,
                  flashlight: Union[FlashlightHardware, FlashlightHardwareV2, FlashlightPWMHardware, FlashlightPWMHardwareV2, None],
                  ) -> None:

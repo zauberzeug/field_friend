@@ -12,8 +12,8 @@ from .flashlight_v2 import FlashlightSimulationV2
 from .safety import SafetySimulation
 from .tornado import TornadoSimulation
 from .y_axis import YAxisSimulation
+from .y_axis_canopen import YAxisCanOpenSimulation
 from .y_axis_tornado import YAxisSimulationTornado
-from .y_axis_tornado_v2_canopen import YAxisSimulationTornadoV2
 from .z_axis import ZAxisSimulation
 from .z_axis_v2 import ZAxisSimulationV2
 
@@ -48,7 +48,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         elif config_hardware['y_axis']['version'] == 'y_axis_tornado':
             y_axis = YAxisSimulationTornado()
         elif config_hardware['y_axis']['version'] == 'y_axis_tornado_v2':
-            y_axis = YAxisSimulationTornadoV2()
+            y_axis = YAxisCanOpenSimulation()
         else:
             y_axis = None
 

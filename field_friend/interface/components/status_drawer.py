@@ -4,7 +4,7 @@ import rosys
 from nicegui import ui
 
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
-                         Tornado, YAxis, YAxisTornado, YAxisTornadoV2, ZAxis, ZAxisV2)
+                         Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisV2)
 from ...navigation import Gnss
 
 if TYPE_CHECKING:
@@ -173,7 +173,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     f'{robot.y_axis.steps:.0f}',
                     f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
                 ]
-            elif isinstance(robot.y_axis, YAxisTornadoV2):
+            elif isinstance(robot.y_axis, YAxisCanOpen):
                 y_axis_flags = [
                     'not referenced' if not robot.y_axis.is_referenced else '',
                     'alarm' if robot.y_axis.alarm else '',
