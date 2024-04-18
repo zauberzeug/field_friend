@@ -10,10 +10,36 @@ configuration = {
         'is_right_reversed': True,
     },
     'y_axis': {
-        'version': 'none'
+        'version': 'y_axis_canopen',
+        'name': 'yaxis',
+        'can_address': 0x60,
+        'max_speed': 2000,
+        'reference_speed': 40,
+        'min_position': -0.075,
+        'max_position': 0.065,
+        'axis_offset': 0.08,
+        'steps_per_m': 1_481_481.48,  # 4000steps/turn motor; 1/20 gear; 0.054m/u
+        'end_r_pin': 19,
+        'end_l_pin': 21,
+        'motor_on_expander': False,
+        'end_stops_on_expander': True,
+        'reversed_direction': False,
     },
     'z_axis': {
-        'version': 'none',
+        'version': 'z_axis_canopen',
+        'name': 'zaxis',
+        'can_address': 0x50,
+        'max_speed': 2000,
+        'reference_speed': 40,
+        'min_position': -0.15,
+        'max_position': 0.0,
+        'axis_offset': 0.0,
+        'steps_per_m': 1_481_481.48,  # 4000steps/turn motor; 1/20 gear; 0.054m/u
+        'end_t_pin': 19,
+        'end_b_pin': 21,
+        'motor_on_expander': False,
+        'end_stops_on_expander': True,
+        'reversed_direction': False,
     },
     'flashlight': {
         'version': 'flashlight_pwm_v2',
