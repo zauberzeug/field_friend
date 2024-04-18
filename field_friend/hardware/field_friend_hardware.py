@@ -21,6 +21,7 @@ from .y_axis import YAxisHardware
 from .y_axis_canopen import YAxisCanOpenHardware
 from .y_axis_tornado import YAxisHardwareTornado
 from .z_axis import ZAxisHardware
+from .z_axis_canopen import ZAxisCanOpenHardware
 from .z_axis_v2 import ZAxisHardwareV2
 
 
@@ -138,6 +139,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           expander=expander,
                                           name=config_hardware['y_axis']['name'],
                                           max_speed=config_hardware['y_axis']['max_speed'],
+                                          reference_speed=config_hardware['y_axis']['reference_speed'],
                                           min_position=config_hardware['y_axis']['min_position'],
                                           max_position=config_hardware['y_axis']['max_position'],
                                           axis_offset=config_hardware['y_axis']['axis_offset'],
@@ -200,6 +202,23 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      turn_speed_limit=config_hardware['z_axis']['turn_speed_limit'],
                                      current_limit=config_hardware['z_axis']['current_limit'],
                                      )
+        elif config_hardware['z_axis']['version'] == 'z_axis_canopen':
+            z_axis = ZAxisCanOpenHardware(robot_brain,
+                                          can=can,
+                                          can_address=config_hardware['z_axis']['can_address'],
+                                          expander=expander,
+                                          name=config_hardware['z_axis']['name'],
+                                          max_speed=config_hardware['z_axis']['max_speed'],
+                                          reference_speed=config_hardware['z_axis']['reference_speed'],
+                                          min_position=config_hardware['z_axis']['min_position'],
+                                          max_position=config_hardware['z_axis']['max_position'],
+                                          axis_offset=config_hardware['z_axis']['axis_offset'],
+                                          steps_per_m=config_hardware['z_axis']['steps_per_m'],
+                                          end_t_pin=config_hardware['z_axis']['end_t_pin'],
+                                          end_b_pin=config_hardware['z_axis']['end_b_pin'],
+                                          motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
+                                          end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
+                                          reversed_direction=config_hardware['z_axis']['reversed_direction'],)
         else:
             z_axis = None
         estop = rosys.hardware.EStopHardware(robot_brain,

@@ -8,10 +8,11 @@ from rosys.helpers import remove_indentation
 class ZAxisCanOpen(rosys.hardware.Module, abc.ABC):
     """The z axis module is a simple example for a representation of real or simulated robot hardware."""
 
-    def __init__(self, max_speed, min_position, max_position, axis_offset, steps_per_m, reversed_direction, **kwargs) -> None:
+    def __init__(self, max_speed, reference_speed, min_position, max_position, axis_offset, steps_per_m, reversed_direction, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.max_speed: int = max_speed
+        self.reference_speed: int = reference_speed
         self.min_position: float = min_position
         self.max_position: float = max_position
         self.axis_offset: float = axis_offset
@@ -64,7 +65,7 @@ class ZAxisCanOpen(rosys.hardware.Module, abc.ABC):
 
 
 class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
-    """The y axis hardware module is a simple example for a representation of real robot hardware."""
+    """The z axis hardware module is a simple example for a representation of real robot hardware."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'zaxis',
@@ -72,6 +73,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
                  expander: Optional[rosys.hardware.ExpanderHardware],
                  can_address: int = 0x60,
                  max_speed: int = 2000,
+                 reference_speed: int = 40,
                  min_position: float = -0.068,
                  max_position: float = 0.068,
                  axis_offset: float = 0.075,
@@ -108,6 +110,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
         ]
         super().__init__(
             max_speed=max_speed,
+            reference_speed=reference_speed,
             min_position=min_position,
             max_position=max_position,
             axis_offset=axis_offset,
@@ -195,7 +198,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
                 self.log.info('already in end_b moving out of end_b stop')
                 await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
                 await rosys.sleep(1)
-                velocity = -40 * (-1 if self.reversed_direction else 1)
+                velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
                     f'{self.name}_motor.enter_pv_mode({velocity});'
                     f'{self.name}_motor.set_ctrl_halt(false);'
@@ -210,7 +213,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
                 self.log.info('moving to end_t stop')
                 await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
                 await rosys.sleep(1)
-                velocity = -40 * (-1 if self.reversed_direction else 1)
+                velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
                     f'{self.name}_motor.enter_pv_mode({velocity});'
                     f'{self.name}_motor.set_ctrl_halt(false);'
@@ -223,7 +226,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('moving out of end_t stop')
             await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
             await rosys.sleep(1)
-            velocity = 40 * (-1 if self.reversed_direction else 1)
+            velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
@@ -236,7 +239,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly to end_t stop')
             await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
             await rosys.sleep(1)
-            slow_velocity = -20 * (-1 if self.reversed_direction else 1)
+            slow_velocity = -0.5 * self.reference_speed * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
@@ -249,7 +252,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly out of end_t stop')
             await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
             await rosys.sleep(1)
-            slow_velocity = 20 * (-1 if self.reversed_direction else 1)
+            slow_velocity = 0.5 * self.reference_speed * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
@@ -293,11 +296,12 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
 
 
 class ZAxisCanOpenSimulation(ZAxisCanOpen, rosys.hardware.ModuleSimulation):
-    '''The y axis simulation module is a simple example for a representation of simulated robot hardware.
+    '''The z axis simulation module is a simple example for a representation of simulated robot hardware.
     '''
 
     def __init__(self,
                  max_speed: int = 80_000,
+                 reference_speed: int = 40,
                  min_position: float = -0.12,
                  max_position: float = 0.12,
                  axis_offset: float = 0.123,
@@ -308,6 +312,7 @@ class ZAxisCanOpenSimulation(ZAxisCanOpen, rosys.hardware.ModuleSimulation):
         self.target_steps: Optional[int] = None
         super().__init__(
             max_speed=max_speed,
+            reference_speed=reference_speed,
             min_position=min_position,
             max_position=max_position,
             axis_offset=axis_offset,
