@@ -63,6 +63,12 @@ class ZAxisCanOpen(rosys.hardware.Module, abc.ABC):
     def position(self) -> float:
         return self.compute_position(self.steps)
 
+    async def return_to_reference(self) -> bool:
+        try:
+            await self.move_to(0)
+        except RuntimeError as e:
+            rosys.notify(e, type='negative')
+
 
 class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
     """The z axis hardware module is a simple example for a representation of real robot hardware."""
