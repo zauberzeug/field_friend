@@ -16,4 +16,5 @@ from .y_axis import YAxis, YAxisHardware, YAxisSimulation
 from .y_axis_canopen import YAxisCanOpen, YAxisCanOpenHardware, YAxisCanOpenSimulation
 from .y_axis_tornado import YAxisHardwareTornado, YAxisSimulationTornado, YAxisTornado
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
+from .z_axis_canopen import ZAxisCanOpen, ZAxisCanOpenHardware, ZAxisCanOpenSimulation
 from .z_axis_v2 import ZAxisHardwareV2, ZAxisSimulationV2, ZAxisV2
