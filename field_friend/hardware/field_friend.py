@@ -66,7 +66,7 @@ class FieldFriend(rosys.hardware.Robot):
         """
         if self.tool in ['weed_screw']:
             return self.WORK_X - self.DRILL_RADIUS <= local_point.x <= self.WORK_X + self.DRILL_RADIUS \
-                and self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
+                and self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         elif self.tool in ['double_mechanism']:
             if not second_tool:
                 work_x = self.WORK_X_CHOP
