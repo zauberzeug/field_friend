@@ -33,9 +33,9 @@ class FieldFriend(rosys.hardware.Robot):
             flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, None],
             y_axis: Union[YAxis, ChainAxis, YAxisTornado, YAxisCanOpen, None],
             z_axis: Union[ZAxis, ZAxisV2, Tornado, None],
-            estop: Union[rosys.hardware.EStop, None],
+            estop: rosys.hardware.EStop,
             bumper: Union[rosys.hardware.Bumper, None],
-            bms: Union[rosys.hardware.Bms, None],
+            bms: rosys.hardware.Bms,
             safety: Safety,
             **kwargs) -> None:
         super().__init__(**kwargs)
