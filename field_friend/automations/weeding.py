@@ -661,7 +661,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         id=str(i),
                         type='weed',
                         position=first_point.polar(0.20*i, first_point.direction(last_point)
-                                                   ).polar(0.02*j, first_point.direction(last_point) + 1.57),
+                                                   ).polar(0.04*j, first_point.direction(last_point) + 1.57),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
