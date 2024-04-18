@@ -48,7 +48,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             y_axis = YAxisSimulation()
         elif config_hardware['y_axis']['version'] == 'y_axis_tornado':
             y_axis = YAxisSimulationTornado()
-        elif config_hardware['y_axis']['version'] == 'y_axis_tornado_v2':
+        elif config_hardware['y_axis']['version'] == 'y_axis_canopen':
             y_axis = YAxisCanOpenSimulation()
         else:
             y_axis = None

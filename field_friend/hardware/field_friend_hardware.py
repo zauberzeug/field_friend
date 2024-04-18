@@ -132,7 +132,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
                                           end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
                                           )
-        elif config_hardware['y_axis']['version'] == 'y_axis_tornado_v2':
+        elif config_hardware['y_axis']['version'] == 'y_axis_canopen':
             y_axis = YAxisCanOpenHardware(robot_brain,
                                           can=can,
                                           can_address=config_hardware['y_axis']['can_address'],
