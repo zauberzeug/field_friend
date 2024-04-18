@@ -13,10 +13,11 @@ configuration = {
     #     'version': 'none',
     # },
     'y_axis': {
-        'version': 'y_axis_tornado_v2',
+        'version': 'y_axis_canopen',
         'name': 'yaxis',
         'can_address': 0x60,
         'max_speed': 2000,
+        'reference_speed': 40,
         'min_position': -0.075,
         'max_position': 0.065,
         'axis_offset': 0.08,
