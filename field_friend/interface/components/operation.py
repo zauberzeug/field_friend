@@ -179,6 +179,7 @@ class operation:
     async def ensure_mowing_start(self) -> bool:
         self.log.info('Ensuring start of mowing automation')
         if self.system.mowing.current_path_segment is None:
+            self.system.mowing.continue_mowing = False
             return True
         self.dialog_label.text = 'Do you want to continue the canceled mowing automation?'
         result = await self.dialog
@@ -193,6 +194,7 @@ class operation:
     async def ensure_weeding_start(self) -> bool:
         self.log.info('Ensuring start of weeding automation')
         if not self.system.weeding.current_row or not self.system.weeding.current_segment:
+            self.system.weeding.continue_canceled_weeding = False
             return True
         self.dialog_label.text = f'Do you want to continue the canceled weeding automation on row {self.system.weeding.current_row.name}?'
         result = await self.dialog
