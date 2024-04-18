@@ -74,9 +74,9 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
                  can_address: int = 0x60,
                  max_speed: int = 2000,
                  reference_speed: int = 40,
-                 min_position: float = -0.068,
-                 max_position: float = 0.068,
-                 axis_offset: float = 0.075,
+                 min_position: float = -0.15,
+                 max_position: float = 0.0,
+                 axis_offset: float = 0.0,
                  steps_per_m: float = 1_481_481.48,  # 4000steps/turn motor; 1/20 gear; 0.054m/u
                  end_t_pin: int = 19,
                  end_b_pin: int = 21,
