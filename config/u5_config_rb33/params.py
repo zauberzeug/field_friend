@@ -5,5 +5,5 @@ configuration = {
     'wheel_distance': 0.47,
     'work_x': 0.0,
     'drill_radius': 0.025,
-    'tool': 'none'
+    'tool': 'weed_screw',
 }
