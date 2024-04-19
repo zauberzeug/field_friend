@@ -92,7 +92,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.reference_lon = None
         self.request_backup()
 
-    def get_reference(self) -> Optional[tuple[float, float]]:
+    def get_reference(self) -> tuple[Optional[float], Optional[float]]:
         return self.reference_lat, self.reference_lon
 
     def calculate_distance(self, lat: float, lon: float) -> Optional[float]:
@@ -167,8 +167,8 @@ class GnssHardware(Gnss):
                 try:
                     msg = await rosys.run.cpu_bound(pynmea2.parse, line)
                     if not hasattr(msg, 'sentence_type'):
-                        self.log.info(f'No sentence type: {msg}')
-                        return
+                        self.log.debug(f'No sentence type: {msg}')
+                        break
                     if msg.sentence_type in self.TYPES_NEEDED:
                         types_seen.add(msg.sentence_type)
                     if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
