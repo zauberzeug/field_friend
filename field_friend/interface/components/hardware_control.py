@@ -4,7 +4,7 @@ from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisV2)
+                         FlashlightV2, Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisCanOpen, ZAxisV2)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -149,6 +149,15 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         field_friend.z_axis.return_to_reference()))
                     ui.button('down until reference', on_click=lambda: automator.start(
                         field_friend.z_axis.move_down_until_reference()))
+            elif isinstance(field_friend.z_axis, ZAxisCanOpen):
+                with ui.column():
+                    ui.markdown('**Z-Axis**')
+                    ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
+                    ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.z_axis.reset_fault()))
+                    ui.button('Move to min', on_click=lambda: automator.start(
+                        field_friend.z_axis.move_to(field_friend.z_axis.min_position)))
+                    ui.button('Return to reference', on_click=lambda: automator.start(
+                        field_friend.z_axis.return_to_reference()))
 
         if field_friend.z_axis is not None and field_friend.y_axis is not None:
             with ui.column():
@@ -165,19 +174,25 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                 with ui.row():
                     if isinstance(field_friend.y_axis, ChainAxis):
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.MAX_POSITION-field_friend.y_axis.WORK_OFFSET, depth.value)))
-                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth.value)))
+                            puncher.punch(field_friend.y_axis.MAX_POSITION-field_friend.y_axis.WORK_OFFSET, depth=depth.value)))
+                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.MIN_POSITION+field_friend.y_axis.WORK_OFFSET, depth.value)))
+                            puncher.punch(field_friend.y_axis.MIN_POSITION+field_friend.y_axis.WORK_OFFSET, depth=depth.value)))
                     elif isinstance(field_friend.y_axis, YAxis):
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.MAX_POSITION, depth.value)))
-                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth.value)))
+                            puncher.punch(field_friend.y_axis.MAX_POSITION, depth=depth.value)))
+                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.MIN_POSITION, depth.value)))
+                            puncher.punch(field_friend.y_axis.MIN_POSITION, depth=depth.value)))
                     elif isinstance(field_friend.y_axis, YAxisTornado):
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.min_position, angle=angle.value)))
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, angle=angle.value)))
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.max_position, angle=angle.value)))
+                    elif isinstance(field_friend.y_axis, YAxisCanOpen):
+                        ui.button(on_click=lambda: automator.start(
+                            puncher.punch(field_friend.y_axis.max_position, depth=depth.value)))
+                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
+                        ui.button(on_click=lambda: automator.start(
+                            puncher.punch(field_friend.y_axis.min_position, depth=depth.value)))
