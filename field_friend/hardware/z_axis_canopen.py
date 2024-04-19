@@ -93,9 +93,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
         self.name = name
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            master = CanOpenMaster({can.name})
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
-            master.sync_interval = 5
             {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
             bool {name}_ends_enabled = true;
@@ -204,7 +202,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
                 self.log.info('already in end_b moving out of end_b stop')
                 await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
                 await rosys.sleep(1)
-                velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
+                velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
                     f'{self.name}_motor.enter_pv_mode({velocity});'
                     f'{self.name}_motor.set_ctrl_halt(false);'
@@ -219,7 +217,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
                 self.log.info('moving to end_t stop')
                 await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
                 await rosys.sleep(1)
-                velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
+                velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
                     f'{self.name}_motor.enter_pv_mode({velocity});'
                     f'{self.name}_motor.set_ctrl_halt(false);'
@@ -232,7 +230,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('moving out of end_t stop')
             await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
             await rosys.sleep(1)
-            velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
+            velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
@@ -245,7 +243,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly to end_t stop')
             await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
             await rosys.sleep(1)
-            slow_velocity = -0.5 * self.reference_speed * (-1 if self.reversed_direction else 1)
+            slow_velocity = 25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
@@ -258,7 +256,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly out of end_t stop')
             await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
             await rosys.sleep(1)
-            slow_velocity = 0.5 * self.reference_speed * (-1 if self.reversed_direction else 1)
+            slow_velocity = -25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
