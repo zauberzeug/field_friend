@@ -28,7 +28,7 @@ services:
     environment:
       - HOST=learning-loop.ai
       - ORGANIZATION=zauberzeug
-      - PROJECT=monitoring
+      - PROJECT=monitoring_feet
       - NVIDIA_VISIBLE_DEVICES=all
     volumes:
       - ~/data_monitoring:/data
