@@ -230,7 +230,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             axis_label.text = f'Y-AXIS: {y_axis_text} | Z-AXIS: {z_axis_text}'
 
             if isinstance(robot.flashlight, FlashlightPWMHardware) or isinstance(robot.flashlight, FlashlightPWMHardwareV2):
-                flashlight_label.text = f'{"On" if robot.flashlight.is_active else "Off"} at {"{robot.flashlight.duty_cycle * 100:.0f}" if robot.flashlight.is_active else ""}%'
+                flashlight_label.text = f'{"On" if robot.flashlight.is_active else "Off"}  {f"at {robot.flashlight.duty_cycle * 100:.0f}%" if robot.flashlight.is_active else ""}'
             else:
                 flashlight_label.text = 'simulated'
             if isinstance(robot.bumper, rosys.hardware.Bumper):
