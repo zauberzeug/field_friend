@@ -77,7 +77,7 @@ class YAxisCanOpenHardware(YAxisCanOpen, rosys.hardware.ModuleHardware):
                  min_position: float = -0.068,
                  max_position: float = 0.068,
                  axis_offset: float = 0.075,
-                 steps_per_m: float = 1_481_481.48,  # 4000steps/turn motor; 1/20 gear; 0.054m/u
+                 steps_per_m: float = 1_481_481.48,  # [steps/turn] / ([gear] * [m/turn])
                  end_r_pin: int = 19,
                  end_l_pin: int = 21,
                  motor_on_expander: bool = False,
@@ -196,7 +196,10 @@ class YAxisCanOpenHardware(YAxisCanOpen, rosys.hardware.ModuleHardware):
             # if in end l stop, move out
             if self.end_l:
                 self.log.info('already in end_l moving out of end_l stop')
-                await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
+                await self.robot_brain.send(
+                    f'{self.name}_ends_enabled = false;'
+                    f'{self.name}_is_referencing = false;'
+                )
                 await rosys.sleep(1)
                 velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
@@ -211,7 +214,10 @@ class YAxisCanOpenHardware(YAxisCanOpen, rosys.hardware.ModuleHardware):
             # move to end r stop if not already there
             if not self.end_r:
                 self.log.info('moving to end_r stop')
-                await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
+                await self.robot_brain.send(
+                    f'{self.name}_ends_enabled = true;'
+                    f'{self.name}_is_referencing = true;'
+                )
                 await rosys.sleep(1)
                 velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
@@ -239,7 +245,7 @@ class YAxisCanOpenHardware(YAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly to end_r stop')
             await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
             await rosys.sleep(1)
-            slow_velocity = -0.5 * self.reference_speed * (-1 if self.reversed_direction else 1)
+            slow_velocity = -25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
@@ -252,7 +258,7 @@ class YAxisCanOpenHardware(YAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly out of end_r stop')
             await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
             await rosys.sleep(1)
-            slow_velocity = 0.5 * self.reference_speed * (-1 if self.reversed_direction else 1)
+            slow_velocity = 25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
                 f'{self.name}_motor.set_ctrl_halt(false);'
