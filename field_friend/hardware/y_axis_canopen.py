@@ -277,7 +277,6 @@ class YAxisCanOpenHardware(YAxisCanOpen, rosys.hardware.ModuleHardware):
             self.log.info('yaxis referenced')
             self.is_referenced = True
             self.log.info(f'actual position: {self.position}, and steps: {self.steps}')
-            await self.move_to(0)
             return True
         except Exception as error:
             self.log.error(f'could not reference yaxis because of {error}')
