@@ -170,7 +170,8 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     angle = ui.number('angle', value=180, format='%.0f', step=1,
                                       min=0, max=180).style('background-color: white; padding: 0.5rem; border-radius: 5px;')
                 else:
-                    depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=0.01, max=0.18)
+                    depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=0.01, max=0.18).style(
+                        'background-color: white; padding: 0.5rem; border-radius: 5px;')
                 with ui.row():
                     if isinstance(field_friend.y_axis, ChainAxis):
                         ui.button(on_click=lambda: automator.start(
