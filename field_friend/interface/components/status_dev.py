@@ -288,5 +288,5 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         rtk_fix_label.text = f'gps_qual: {system.gnss.record.gps_qual}, mode: {system.gnss.record.mode}'
         odometry_label.text = str(system.odometer.prediction)
 
-    # ui.timer(rosys.config.ui_update_interval, update_status)
+    ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page
