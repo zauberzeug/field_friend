@@ -175,7 +175,7 @@ class operation:
                 with ui.row():
                     automation_controls(self.system, can_start=self.ensure_start)
         with ui.dialog() as self.dialog, ui.card():
-            ui.label(f'Do you want to continue the canceled {"mowing"  if self.automations_toggle.value == "mowing" else f"weeding on {self.system.weeding.current_row.name}" if self.system.weeding.current_row else ""} ?').classes(
+            self.dialog_label = ui.label(f'Do you want to continue the canceled automation').classes(
                 'text-lg')
             with ui.row():
                 ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
@@ -224,6 +224,7 @@ class operation:
         self.log.info('Ensuring start of mowing automation')
         if self.system.mowing.current_path_segment is None:
             return True
+        self.dialog_label.text = 'Do you want to continue the canceled mowing automation?'
         result = await self.dialog
         if result == 'Yes':
             self.system.mowing.continue_mowing = True
@@ -235,8 +236,9 @@ class operation:
 
     async def ensure_weeding_start(self) -> bool:
         self.log.info('Ensuring start of weeding automation')
-        if self.system.weeding.current_segment is None:
+        if not self.system.weeding.current_row or not self.system.weeding.current_segment:
             return True
+        self.dialog_label.text = f'Do you want to continue the canceled weeding automation on row {self.system.weeding.current_row.name}?'
         result = await self.dialog
         if result == 'Yes':
             self.system.weeding.continue_canceled_weeding = True

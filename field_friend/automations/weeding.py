@@ -325,7 +325,8 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _weed_with_plan(self):
         if self.continue_canceled_weeding:
             start_pose = self.system.odometer.prediction
-            end_pose = self.current_segment.spline.start
+            end_pose = Pose(x=self.current_segment.spline.start.x, y=self.current_segment.spline.start.y,
+                            yaw=self.current_segment.spline.start.direction(self.current_segment.spline.end))
             start_spline = Spline.from_poses(start_pose, end_pose)
             await self.system.driver.drive_spline(start_spline)
         else:
