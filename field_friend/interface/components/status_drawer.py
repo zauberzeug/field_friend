@@ -73,6 +73,10 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                         ui.markdown('**Bumper:**').style('color: #6E93D6')
                         bumper_label = ui.label()
 
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Tool:**').style('color: #6E93D6')
+            ui.label(robot.tool)
+
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Status Control:**').style('color: #6E93D6')
@@ -140,10 +144,6 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             odometry_label = ui.label()
 
         def update_status() -> None:
-            bms_flags = [
-                f'{robot.bms.state.short_string}',
-                'charging' if robot.bms.state.is_charging else ''
-            ]
             if isinstance(robot.y_axis, ChainAxis):
                 y_axis_flags = [
                     'not referenced' if not robot.y_axis.is_referenced else '',

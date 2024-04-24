@@ -60,6 +60,10 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             else:
                 ui.label('simulated hardware')
 
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Tool:**').style('color: #EDF4FB')
+            ui.label(robot.tool)
+
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Status Control:**').style('color: #EDF4FB')
