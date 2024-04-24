@@ -514,7 +514,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         await self.system.driver.drive_to(target)
                         self.log.info(f'target between two crops at {target}')
                         if not self.only_monitoring:
-                            # punch in the middle position with closed knives
+                            # punch in the middle position with closed knifes
                             await self.system.puncher.punch(0, angle=180)
 
                 self.system.plant_locator.resume()

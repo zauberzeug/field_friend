@@ -144,7 +144,7 @@ class Puncher:
                 await rosys.sleep(0.5)
             await self.field_friend.z_axis.move_down_until_reference()
 
-            await self.field_friend.z_axis.turn_knives_to(angle)
+            await self.field_friend.z_axis.turn_knifes_to(angle)
             await rosys.sleep(3)
             await self.field_friend.z_axis.turn_by(turns)
             await rosys.sleep(3)
