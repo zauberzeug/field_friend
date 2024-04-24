@@ -52,14 +52,14 @@ class camera_card:
                 async def toggle_flashlight():
                     self.flashlight_toggled = not self.flashlight_toggled
                     flashlight_button.props(
-                        f'flat color={"primary" if not self.flashlight_toggled else "grey"} icon={"flashlight_on" if not self.flashlight_toggled else "flashlight_off"}')
+                        f'flat color={"grey" if not self.flashlight_toggled else "primary"} icon={"flashlight_off" if not self.flashlight_toggled else "flashlight_on"}')
                     if self.flashlight_toggled:
                         await self.field_friend.flashlight.turn_on()
                         rosys.notify('Flashlight turned on')
                     else:
                         await self.field_friend.flashlight.turn_off()
                         rosys.notify('Flashlight turned off')
-                flashlight_button = ui.button(icon='flashlight_on', on_click=toggle_flashlight).props('flat color=primary').style(
+                flashlight_button = ui.button(icon='flashlight_off', on_click=toggle_flashlight).props('flat color=grey').style(
                     'position: absolute; left: 1px; top: 1px; z-index: 500;').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
 
             with ui.button(icon='menu').props('flat color=primary').style('position: absolute; right: 1px; top: 1px; z-index: 500;'):

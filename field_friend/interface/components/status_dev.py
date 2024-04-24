@@ -5,10 +5,8 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ...automations import FieldProvider, KpiProvider
-from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, Tornado, YAxis,
-                         YAxisTornado, ZAxis, ZAxisV2)
-from ...navigation import Gnss
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
+                         Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisCanOpen, ZAxisV2)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -110,34 +108,30 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
-        if system.automator.is_running:
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Current Field:**').style('color: #EDF4FB')
-                current_field_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Current Row:**').style('color: #EDF4FB')
-                current_row_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Time on Field:**').style('color: #EDF4FB')
-                kpi_fieldtime_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Distance:**').style('color: #EDF4FB')
-                kpi_distance_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Processed Rows:**').style('color: #EDF4FB')
-                kpi_rows_weeded_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Crops Detected:**').style('color: #EDF4FB')
-                kpi_crops_detected_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
-                kpi_weeds_detected_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Punches:**').style('color: #EDF4FB')
-                kpi_punches_label = ui.label()
-        else:
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**No automation running.**').style('color: #EDF4FB')
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Current Field:**').style('color: #EDF4FB')
+            current_field_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Current Row:**').style('color: #EDF4FB')
+            current_row_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Time on Field:**').style('color: #EDF4FB')
+            kpi_fieldtime_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Distance:**').style('color: #EDF4FB')
+            kpi_distance_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Processed Rows:**').style('color: #EDF4FB')
+            kpi_rows_weeded_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Crops Detected:**').style('color: #EDF4FB')
+            kpi_crops_detected_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
+            kpi_weeds_detected_label = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Punches:**').style('color: #EDF4FB')
+            kpi_punches_label = ui.label()
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
@@ -196,6 +190,16 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 f'{robot.y_axis.steps:.0f}',
                 f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
             ]
+        elif isinstance(robot.y_axis, YAxisCanOpen):
+            y_axis_flags = [
+                'not referenced' if not robot.y_axis.is_referenced else '',
+                'alarm' if robot.y_axis.alarm else '',
+                'idle'if robot.y_axis.idle else 'moving',
+                'end l' if robot.y_axis.end_l else '',
+                'end r' if robot.y_axis.end_r else '',
+                f'{robot.y_axis.steps:.0f}',
+                f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
+            ]
         else:
             y_axis_flags = ['no y-axis']
         if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
@@ -224,7 +228,16 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.z_is_referenced else '',
                 f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.turn_is_referenced else '',
             ]
-
+        elif isinstance(robot.z_axis, ZAxisCanOpen):
+            z_axis_flags = [
+                '' if robot.z_axis.is_referenced else 'not referenced',
+                'alarm' if robot.z_axis.alarm else '',
+                'idle' if robot.z_axis.idle else 'moving',
+                'end_t' if robot.z_axis.end_t else '',
+                'end_b' if robot.z_axis.end_b else '',
+                f'{robot.z_axis.steps}',
+                f'{robot.z_axis.position:.2f}m' if robot.z_axis.is_referenced else '',
+            ]
         else:
             z_axis_flags = ['no z-axis']
         bms_label.text = ', '.join(flag for flag in bms_flags if flag)
@@ -237,6 +250,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
 
         if isinstance(robot.flashlight, FlashlightPWMHardware):
             flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
+        elif isinstance(robot.flashlight, FlashlightPWMHardwareV2):
+            flashlight_label.text = f'{"ON" if robot.flashlight.is_active else "OFF"}  {f"at {robot.flashlight.duty_cycle * 100:.0f}%" if robot.flashlight.is_active else ""}'
         else:
             flashlight_label.text = 'simulated'
         if isinstance(robot.bumper, rosys.hardware.Bumper):

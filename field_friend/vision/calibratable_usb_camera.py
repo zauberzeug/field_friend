@@ -1,11 +1,7 @@
 from typing import Any, Optional, Self
 
 import rosys
-from icecream import ic
 from rosys import persistence
-from rosys.vision.image import Image, ImageSize
-from rosys.vision.image_processing import process_jpeg_image, process_ndarray_image, to_bytes
-from rosys.vision.image_rotation import ImageRotation
 
 
 class CalibratableUsbCamera(rosys.vision.CalibratableCamera, rosys.vision.UsbCamera):
