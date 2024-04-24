@@ -49,8 +49,8 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         """the GNSS connection was lost"""
 
         self.record = GNSSRecord()
-        self.device = None
-        self.ser = None
+        self.device: str | None = None
+        self.ser: serial.Serial | None = None
         self.reference_lat: Optional[float] = None
         self.reference_lon: Optional[float] = None
 
@@ -65,6 +65,9 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
 
     def restore(self, data: dict[str, Any]) -> None:
         record = data.get('record')
+        if not isinstance(record, dict):
+            self.log.error('No record data found')
+            return
         self.record.timestamp = record["timestamp"]
         self.record.latitude = record["latitude"]
         self.record.longitude = record["longitude"]
@@ -139,6 +142,9 @@ class GnssHardware(Gnss):
         self.log.info(f'Connected to GNSS device "{self.device}"')
 
     async def _read(self) -> Optional[str]:
+        if self.ser is None:
+            self.log.debug('GNSS device not connected')
+            return None
         if not self.ser.isOpen():
             self.log.debug('GNSS device not open')
             return None
@@ -157,7 +163,7 @@ class GnssHardware(Gnss):
         has_location = False
         has_heading = False
 
-        types_seen = set()
+        types_seen: set[str] = set()
         try:
             while self.TYPES_NEEDED != types_seen:
                 line = await self._read()

@@ -4,6 +4,7 @@ from typing import Union
 import rosys
 
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
+from .double_wheels import DoubleWheelsHardware
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
 from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
@@ -39,7 +40,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
     """This module implements safety hardware."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 wheels: rosys.hardware.WheelsHardware,
+                 wheels: Union[rosys.hardware.WheelsHardware, DoubleWheelsHardware],
                  estop: rosys.hardware.EStopHardware,
                  bumper: Union[rosys.hardware.BumperHardware, None] = None,
                  y_axis: Union[YAxisHardware, ChainAxisHardware,
@@ -78,7 +79,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         if isinstance(y_axis, ChainAxisHardware):
             lizard_code += f'when {y_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); end\n'
         if (isinstance(z_axis, ZAxisHardware) or isinstance(z_axis, ZAxisHardwareV2)) and y_axis is not None:
-            lizard_code += f'when {z_axis.name}_ref_t.level == {1 if not z_axis.ccw else -1} then {wheels.name}.speed(0, 0); end\n'
+            lizard_code += f'when {z_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); end\n'
         if isinstance(z_axis, TornadoHardware):
             if isinstance(y_axis, YAxisHardwareTornado):
                 lizard_code += f'when {z_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'

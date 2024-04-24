@@ -1,32 +1,32 @@
-import abc
 from typing import Union
 
 import rosys
 
-from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
-from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
-from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
-from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
-from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
+from .chain_axis import ChainAxisHardware
+from .double_wheels import DoubleWheelsHardware
+from .flashlight import FlashlightHardware
+from .flashlight_pwm import FlashlightPWMHardware
+from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
+from .flashlight_v2 import FlashlightHardwareV2
 from .safety import Safety
-from .tornado import Tornado, TornadoHardware, TornadoSimulation
-from .y_axis import YAxis, YAxisHardware, YAxisSimulation
-from .y_axis_canopen import YAxisCanOpen, YAxisCanOpenHardware, YAxisCanOpenSimulation
-from .y_axis_tornado import YAxisHardwareTornado, YAxisSimulationTornado, YAxisTornado
-from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
-from .z_axis_v2 import ZAxisHardwareV2, ZAxisSimulationV2, ZAxisV2
+from .tornado import TornadoHardware
+from .y_axis import YAxisHardware
+from .y_axis_canopen import YAxisCanOpenHardware
+from .y_axis_tornado import YAxisHardwareTornado
+from .z_axis import ZAxisHardware
+from .z_axis_canopen import ZAxisCanOpenHardware
+from .z_axis_v2 import ZAxisHardwareV2
 
 
 class SmallSafetyHardware(Safety, rosys.hardware.ModuleHardware):
     """This module implements safety hardware."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 wheels: rosys.hardware.WheelsHardware,
-                 estop: rosys.hardware.EStop,
-                 bumper: Union[rosys.hardware.BumperHardware, None] = None,
+                 wheels: Union[rosys.hardware.WheelsHardware, DoubleWheelsHardware],
+                 estop: rosys.hardware.EStopHardware,
                  y_axis: Union[YAxisHardware, ChainAxisHardware,
                                YAxisHardwareTornado, YAxisCanOpenHardware, None] = None,
-                 z_axis: Union[ZAxisHardware, ZAxisHardwareV2, TornadoHardware, None] = None,
+                 z_axis: Union[ZAxisHardware, ZAxisHardwareV2, TornadoHardware, ZAxisCanOpenHardware, None] = None,
                  flashlight: Union[FlashlightHardware, FlashlightHardwareV2, FlashlightPWMHardware, FlashlightPWMHardwareV2, None],
                  ) -> None:
 
