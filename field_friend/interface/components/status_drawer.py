@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
-                         Tornado, YAxis, YAxisTornado, YAxisTornadoV2, ZAxis, ZAxisV2)
+from ...hardware import (ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado, YAxis,
+                         YAxisCanOpen, YAxisTornado, ZAxis, ZAxisCanOpen, ZAxisV2)
 from ...navigation import Gnss
 
 if TYPE_CHECKING:
@@ -173,7 +173,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     f'{robot.y_axis.steps:.0f}',
                     f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
                 ]
-            elif isinstance(robot.y_axis, YAxisTornadoV2):
+            elif isinstance(robot.y_axis, YAxisCanOpen):
                 y_axis_flags = [
                     'not referenced' if not robot.y_axis.is_referenced else '',
                     'alarm' if robot.y_axis.alarm else '',
@@ -211,16 +211,26 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.z_is_referenced else '',
                     f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.turn_is_referenced else '',
                 ]
+            elif isinstance(robot.z_axis, ZAxisCanOpen):
+                z_axis_flags = [
+                    '' if robot.z_axis.is_referenced else 'not referenced',
+                    'alarm' if robot.z_axis.alarm else '',
+                    'idle' if robot.z_axis.idle else 'moving',
+                    'end top' if robot.z_axis.end_t else '',
+                    'end bottom' if robot.z_axis.end_b else '',
+                    f'{robot.z_axis.steps}',
+                    f'{robot.z_axis.position:.2f}m' if robot.z_axis.is_referenced else '',
+                ]
 
             else:
                 z_axis_flags = ['no z-axis']
 
             y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
             z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
-            axis_label.text = f'Y-Axis:{y_axis_text}, Z-Axis: {z_axis_text}'
+            axis_label.text = f'Y-AXIS: {y_axis_text} | Z-AXIS: {z_axis_text}'
 
             if isinstance(robot.flashlight, FlashlightPWMHardware) or isinstance(robot.flashlight, FlashlightPWMHardwareV2):
-                flashlight_label.text = f'{robot.flashlight.duty_cycle * 100:.0f}%'
+                flashlight_label.text = f'{"On" if robot.flashlight.is_active else "Off"}  {f"at {robot.flashlight.duty_cycle * 100:.0f}%" if robot.flashlight.is_active else ""}'
             else:
                 flashlight_label.text = 'simulated'
             if isinstance(robot.bumper, rosys.hardware.Bumper):

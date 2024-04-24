@@ -10,8 +10,8 @@ from .flashlight_v2 import FlashlightV2
 from .safety import Safety
 from .tornado import Tornado
 from .y_axis import YAxis
+from .y_axis_canopen import YAxisCanOpen
 from .y_axis_tornado import YAxisTornado
-from .y_axis_tornado_v2_canopen import YAxisTornadoV2
 from .z_axis import ZAxis
 from .z_axis_v2 import ZAxisV2
 
@@ -31,11 +31,11 @@ class FieldFriend(rosys.hardware.Robot):
             tool: str,
             wheels: rosys.hardware.Wheels,
             flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, None],
-            y_axis: Union[YAxis, ChainAxis, YAxisTornado, YAxisTornadoV2, None],
+            y_axis: Union[YAxis, ChainAxis, YAxisTornado, YAxisCanOpen, None],
             z_axis: Union[ZAxis, ZAxisV2, Tornado, None],
-            estop: Union[rosys.hardware.EStop, None],
+            estop: rosys.hardware.EStop,
             bumper: Union[rosys.hardware.Bumper, None],
-            bms: Union[rosys.hardware.Bms, None],
+            bms: rosys.hardware.Bms,
             safety: Safety,
             **kwargs) -> None:
         super().__init__(**kwargs)
@@ -66,7 +66,7 @@ class FieldFriend(rosys.hardware.Robot):
         """
         if self.tool in ['weed_screw']:
             return self.WORK_X - self.DRILL_RADIUS <= local_point.x <= self.WORK_X + self.DRILL_RADIUS \
-                and self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
+                and self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         elif self.tool in ['double_mechanism']:
             if not second_tool:
                 work_x = self.WORK_X_CHOP

@@ -5,9 +5,9 @@ configuration = {'parameters': {
     'fps': 10,
 },
     'crop': {
-    'left': 80,
-    'right': 30,
-    'up': 180,
+    'left': 0,
+    'right': 0,
+    'up': 0,
     'down': 0,
 }
 }

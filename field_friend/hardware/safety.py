@@ -10,9 +10,10 @@ from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis import YAxis, YAxisHardware, YAxisSimulation
+from .y_axis_canopen import YAxisCanOpen, YAxisCanOpenHardware, YAxisCanOpenSimulation
 from .y_axis_tornado import YAxisHardwareTornado, YAxisSimulationTornado, YAxisTornado
-from .y_axis_tornado_v2_canopen import YAxisHardwareTornadoV2, YAxisSimulationTornadoV2, YAxisTornadoV2
 from .z_axis import ZAxis, ZAxisHardware, ZAxisSimulation
+from .z_axis_canopen import ZAxisCanOpen, ZAxisCanOpenHardware, ZAxisCanOpenSimulation
 from .z_axis_v2 import ZAxisHardwareV2, ZAxisSimulationV2, ZAxisV2
 
 
@@ -22,8 +23,8 @@ class Safety(rosys.hardware.Module, abc.ABC):
     def __init__(self, *,
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[YAxis, ChainAxis, YAxisTornado, YAxisTornadoV2, None] = None,
-                 z_axis: Union[ZAxis, ZAxisV2, Tornado, None] = None,
+                 y_axis: Union[YAxis, ChainAxis, YAxisTornado, YAxisCanOpen, None] = None,
+                 z_axis: Union[ZAxis, ZAxisV2, Tornado, ZAxisCanOpen, None] = None,
                  flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, FlashlightPWMV2, None] = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
@@ -39,26 +40,28 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  wheels: rosys.hardware.WheelsHardware,
-                 estop: rosys.hardware.EStop,
+                 estop: rosys.hardware.EStopHardware,
                  bumper: Union[rosys.hardware.BumperHardware, None] = None,
                  y_axis: Union[YAxisHardware, ChainAxisHardware,
-                               YAxisHardwareTornado, YAxisHardwareTornadoV2, None] = None,
-                 z_axis: Union[ZAxisHardware, ZAxisHardwareV2, TornadoHardware, None] = None,
+                               YAxisHardwareTornado, YAxisCanOpenHardware, None] = None,
+                 z_axis: Union[ZAxisHardware, ZAxisHardwareV2, TornadoHardware, ZAxisCanOpenHardware, None] = None,
                  flashlight: Union[FlashlightHardware, FlashlightHardwareV2, FlashlightPWMHardware, FlashlightPWMHardwareV2, None],
                  ) -> None:
 
         lizard_code = f'let stop do {wheels.name}.speed(0, 0);'
         if y_axis is not None:
-            if isinstance(y_axis, YAxisHardwareTornadoV2):
+            if isinstance(y_axis, YAxisCanOpenHardware):
                 lizard_code += f'{y_axis.name}_motor.set_ctrl_enable(false);'
             else:
                 lizard_code += f' {y_axis.name}.stop();'
         if z_axis is not None:
-            if not isinstance(z_axis, TornadoHardware):
-                lizard_code += f' {z_axis.name}.stop();'
-            else:
+            if isinstance(z_axis, ZAxisCanOpenHardware):
+                lizard_code += f'{z_axis.name}_motor.set_ctrl_enable(false);'
+            elif isinstance(z_axis, TornadoHardware):
                 lizard_code += f'{z_axis.name}_z.speed(0);'
                 lizard_code += f'{z_axis.name}_turn.speed(0);'
+            else:
+                lizard_code += f' {z_axis.name}.stop();'
         if isinstance(flashlight, FlashlightHardware):
             lizard_code += f' {flashlight.name}.on();'
         elif isinstance(flashlight, FlashlightHardwareV2):
@@ -80,7 +83,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             if isinstance(y_axis, YAxisHardwareTornado):
                 lizard_code += f'when {z_axis.name}_ref_knife_stop.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
                 lizard_code += f'when {z_axis.name}_end_bottom.level == 0 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
-            elif isinstance(y_axis, YAxisHardwareTornadoV2):
+            elif isinstance(y_axis, YAxisCanOpenHardware):
                 lizard_code += f'when {z_axis.name}_ref_knife_stop.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}_motor.set_ctrl_enable(false); end\n'
                 lizard_code += f'when {z_axis.name}_end_bottom.level == 0 then {wheels.name}.speed(0, 0); {y_axis.name}_motor.set_ctrl_enable(false); end\n'
 
@@ -103,14 +106,15 @@ class SafetySimulation(Safety, rosys.hardware.ModuleSimulation):
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
                  y_axis: Union[YAxisSimulation, ChainAxisSimulation,
-                               YAxisSimulationTornado, YAxisSimulationTornadoV2, None] = None,
-                 z_axis: Union[ZAxisSimulation, ZAxisSimulationV2, TornadoSimulation, None] = None,
+                               YAxisSimulationTornado, YAxisCanOpenSimulation, None] = None,
+                 z_axis: Union[ZAxisSimulation, ZAxisSimulationV2,
+                               TornadoSimulation, ZAxisCanOpenSimulation, None] = None,
                  flashlight: Union[FlashlightSimulation, FlashlightSimulationV2, FlashlightPWMSimulation, FlashlightPWMSimulationV2, None]) -> None:
         super().__init__(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
     async def step(self, dt: float) -> None:
         if self.estop.active:
-            self.wheels.stop()
+            await self.wheels.stop()
             if self.y_axis is not None:
                 await self.y_axis.stop()
             if self.z_axis is not None:

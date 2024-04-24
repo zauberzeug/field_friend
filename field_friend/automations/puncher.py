@@ -4,7 +4,7 @@ import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
 
-from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisTornado, YAxisTornadoV2
+from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisCanOpen, ZAxisV2
 from .kpi_provider import KpiProvider
 
 
@@ -63,7 +63,7 @@ class Puncher:
             self.log.warning('no y or z axis')
             return
         try:
-            if not self.field_friend.y_axis.is_referenced or not self.field_friend.z_axis.z_is_referenced:
+            if not self.field_friend.y_axis.is_referenced or not self.field_friend.z_axis.is_referenced:
                 rosys.notify('axis are not referenced, homing!', type='info')
                 self.log.info('axis are not referenced, homing!')
                 success = await self.try_home()
@@ -74,15 +74,21 @@ class Puncher:
                 await rosys.sleep(0.5)
             if isinstance(self.field_friend.y_axis, ChainAxis):
                 if not self.field_friend.y_axis.MIN_POSITION+self.field_friend.y_axis.WORK_OFFSET <= y <= self.field_friend.y_axis.MAX_POSITION-self.field_friend.y_axis.WORK_OFFSET:
-                    rosys.notify('y position out of range', type='error')
+                    rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
-            if isinstance(self.field_friend.z_axis, Tornado) and (isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisTornadoV2)):
+            if isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisCanOpen):
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
-                    rosys.notify('y position out of range', type='error')
+                    rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
+
+            if isinstance(self.field_friend.z_axis, Tornado):
                 await self.field_friend.y_axis.move_to(y)
                 await self.tornado_drill(angle=angle, turns=turns)
-            else:
+            elif isinstance(self.field_friend.z_axis, ZAxisCanOpen):
+                await self.field_friend.y_axis.move_to(y)
+                await self.field_friend.z_axis.move_to(-depth)
+                await self.field_friend.z_axis.return_to_reference()
+            elif isinstance(self.field_friend.z_axis, ZAxisV2) or isinstance(self.field_friend.z_axis, ZAxis):
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(depth)
                 await self.field_friend.z_axis.return_to_reference()
@@ -102,7 +108,7 @@ class Puncher:
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
-        if isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisTornadoV2):
+        if isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisCanOpen):
             y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         elif isinstance(self.field_friend.y_axis, YAxis):
@@ -119,11 +125,11 @@ class Puncher:
             await self.punch(y, depth=depth, angle=angle, turns=turns)
             # await self.clear_view()
         except Exception as e:
-            raise Exception('drive and punch failed') from e
+            raise PuncherException('drive and punch failed') from e
 
     async def chop(self) -> None:
         if not isinstance(self.field_friend.y_axis, ChainAxis):
-            raise Exception('chop is only available for chain axis')
+            raise PuncherException('chop is only available for chain axis')
         if self.field_friend.y_axis.position <= 0:
             await self.field_friend.y_axis.move_dw_to_l_ref()
         else:
@@ -133,7 +139,7 @@ class Puncher:
     async def tornado_drill(self, angle: float = 180, turns: float = 2) -> None:
         self.log.info(f'Drilling with tornado at {angle}...')
         if not isinstance(self.field_friend.z_axis, Tornado):
-            raise Exception('tornado drill is only available for tornado axis')
+            raise PuncherException('tornado drill is only available for tornado axis')
         try:
             if not self.field_friend.z_axis.is_referenced:
                 rosys.notify('axis are not referenced, homing!', type='info')
