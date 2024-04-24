@@ -25,7 +25,7 @@ class Puncher:
             return False
         try:
             if self.field_friend.estop.active:
-                rosys.notify('Estop active, relaese first', 'error')
+                rosys.notify('Estop active, relaese first', 'negative')
                 return False
             if not await self.field_friend.z_axis.try_reference():
                 return False
@@ -56,7 +56,7 @@ class Puncher:
         world_target = self.driver.prediction.transform(local_target)
         await self.driver.drive_to(world_target)
 
-    async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180) -> None:
+    async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180, turns: float = 2.0) -> None:
         self.log.info(f'Punching at {y} with depth {depth}...')
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
@@ -81,7 +81,7 @@ class Puncher:
                     rosys.notify('y position out of range', type='error')
                     raise PuncherException('y position out of range')
                 await self.field_friend.y_axis.move_to(y)
-                await self.tornado_drill(angle=angle)
+                await self.tornado_drill(angle=angle, turns=turns)
             else:
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(depth)
@@ -110,13 +110,13 @@ class Puncher:
             await self.field_friend.y_axis.move_to(y)
         await self.field_friend.y_axis.stop()
 
-    async def drive_and_punch(self, x: float, y: float, depth: float = 0.05, angle: float = 180) -> None:
+    async def drive_and_punch(self, x: float, y: float, depth: float = 0.05, angle: float = 180, turns: float = 2.0) -> None:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             return
         try:
             await self.drive_to_punch(x)
-            await self.punch(y, depth=depth, angle=angle)
+            await self.punch(y, depth=depth, angle=angle, turns=turns)
             # await self.clear_view()
         except Exception as e:
             raise Exception('drive and punch failed') from e
