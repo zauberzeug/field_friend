@@ -78,10 +78,10 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f'when {z_axis.name}_ref_t.level == {1 if not z_axis.ccw else -1} then {wheels.name}.speed(0, 0); end\n'
         if isinstance(z_axis, TornadoHardware):
             if isinstance(y_axis, YAxisHardwareTornado):
-                lizard_code += f'when {z_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
+                lizard_code += f'when {z_axis.name}_ref_knife_stop.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
                 lizard_code += f'when {z_axis.name}_end_bottom.level == 0 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
             elif isinstance(y_axis, YAxisHardwareTornadoV2):
-                lizard_code += f'when {z_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}_motor.set_ctrl_enable(false); end\n'
+                lizard_code += f'when {z_axis.name}_ref_knife_stop.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}_motor.set_ctrl_enable(false); end\n'
                 lizard_code += f'when {z_axis.name}_end_bottom.level == 0 then {wheels.name}.speed(0, 0); {y_axis.name}_motor.set_ctrl_enable(false); end\n'
 
         lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
