@@ -253,7 +253,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
 
     async def turn_knives_to(self, angle: float) -> None:
         try:
-            await super().turn_by(angle)
+            await super().turn_knives_to(angle)
         except RuntimeError as e:
             raise Exception(e)
         target_angle = angle - self.last_angle
