@@ -40,12 +40,12 @@ class CoinCollecting():
             rosys.notify('Y-Axis is in alarm, aborting', 'negative')
             self.log.error('Y-Axis is in alarm, aborting')
             return
-        if self.system.field_friend.z_axis.ref_t:
-            rosys.notify('Tornado is in top ref', 'negative')
-            self.log.error('Tornado is in top ref')
+        if self.system.field_friend.z_axis.ref_knive_stop:
+            rosys.notify('Tornado is in knive stop ref', 'negative')
+            self.log.error('Tornado is in knive stop ref')
             return
         if not await self.system.puncher.try_home():
-            rosys.notify('Puncher homing failed, aborting', 'error')
+            rosys.notify('Puncher homing failed, aborting', 'negative')
             self.log.error('Puncher homing failed, aborting')
         self.work_x = self.system.field_friend.WORK_X
         self.system.odometer.reset()
