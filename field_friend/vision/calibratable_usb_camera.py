@@ -2,9 +2,6 @@ from typing import Any, Optional, Self
 
 import rosys
 from rosys import persistence
-from rosys.vision.image import Image, ImageSize
-from rosys.vision.image_processing import process_jpeg_image, process_ndarray_image, to_bytes
-from rosys.vision.image_rotation import ImageRotation
 
 
 class CalibratableUsbCamera(rosys.vision.CalibratableCamera, rosys.vision.UsbCamera):
@@ -34,31 +31,3 @@ class CalibratableUsbCamera(rosys.vision.CalibratableCamera, rosys.vision.UsbCam
             'calibration': persistence.to_dict(self.calibration),
         }
         return base_dict | {name: param.value for name, param in self._parameters.items()}
-
-    async def capture_image(self) -> None:
-        if not self.is_connected:
-            return None
-
-        assert self.device is not None
-        capture_success, captured_image = self.device.capture.read()
-        image_is_MJPG = 'MJPG' in self.device.video_formats
-
-        if not capture_success:
-            await self.disconnect()
-            return
-
-        if captured_image is None:
-            return
-
-        if image_is_MJPG:
-            bytes_ = await rosys.run.io_bound(to_bytes, captured_image)
-            if self.crop or self.rotation != ImageRotation.NONE:
-                bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
-        else:
-            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, captured_image, self.rotation, self.crop)
-
-        image_size = ImageSize(width=captured_image.shape[1], height=captured_image.shape[0])
-        final_image_resolution = self._resolution_after_transform(image_size)
-
-        image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=bytes_)
-        self._add_image(image)
