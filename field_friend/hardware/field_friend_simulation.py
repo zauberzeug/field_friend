@@ -42,6 +42,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
         wheels = rosys.hardware.WheelsSimulation()
+
+        y_axis: YAxisSimulation | ChainAxisSimulation | YAxisSimulationTornado | YAxisCanOpenSimulation | None
         if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()
         elif config_hardware['y_axis']['version'] == 'y_axis':
@@ -53,6 +55,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             y_axis = None
 
+        z_axis: ZAxisSimulation | ZAxisSimulationV2 | TornadoSimulation | ZAxisCanOpenSimulation | None
         if config_hardware['z_axis']['version'] == 'z_axis':
             z_axis = ZAxisSimulation()
         elif config_hardware['z_axis']['version'] == 'z_axis_v2':
@@ -66,6 +69,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             z_axis = ZAxisCanOpenSimulation()
         else:
             z_axis = None
+
+        flashlight: FlashlightSimulation | FlashlightSimulationV2 | FlashlightPWMSimulationV2 | None
         if config_hardware['flashlight']['version'] == 'flashlight':
             flashlight = FlashlightSimulation()
         elif config_hardware['flashlight']['version'] == 'flashlight_v2':
@@ -78,6 +83,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             flashlight = None
 
         estop = rosys.hardware.EStopSimulation()
+
+        bumper: rosys.hardware.BumperSimulation | None
         if 'bumper' in config_hardware:
             bumper = rosys.hardware.BumperSimulation(estop=estop)
         else:

@@ -29,25 +29,25 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self) -> None:
         self.log = logging.getLogger('field_friend.field_friend_hardware')
-        config_hardware = config_selector.import_config(module='hardware')
-        config_robotbrain = config_selector.import_config(module='robotbrain')
-        config_params = config_selector.import_config(module='params')
+        config_hardware: dict = config_selector.import_config(module='hardware')
+        config_robotbrain: dict = config_selector.import_config(module='robotbrain')
+        config_params: dict = config_selector.import_config(module='params')
         self.check_pins(config_hardware)
-        self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
-        self.THOOTH_COUNT = config_params['thooth_count']
-        self.PITCH = config_params['pitch']
-        self.WHEEL_DIAMETER = self.THOOTH_COUNT * self.PITCH / np.pi
-        self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
-        self.WHEEL_DISTANCE = config_params['wheel_distance']
-        tool = config_params['tool']
+        self.MOTOR_GEAR_RATIO: float = config_params['motor_gear_ratio']
+        self.THOOTH_COUNT: int = config_params['thooth_count']
+        self.PITCH: float = config_params['pitch']
+        self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH / np.pi
+        self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
+        self.WHEEL_DISTANCE: float = config_params['wheel_distance']
+        tool: str = config_params['tool']
         if tool in ['tornado', 'weed_screw', 'none']:
-            self.WORK_X = config_params['work_x']
-            self.DRILL_RADIUS = config_params['drill_radius']
+            self.WORK_X: float = config_params['work_x']
+            self.DRILL_RADIUS: float = config_params['drill_radius']
         elif tool in ['dual_mechanism']:
-            self.WORK_X_CHOP = config_params['work_x_chop']
-            self.WORK_X_DRILL = config_params['work_x_drill']
+            self.WORK_X_CHOP: float = config_params['work_x_chop']
+            self.WORK_X_DRILL: float = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']
-            self.CHOP_RADIUS = config_params['chop_radius']
+            self.CHOP_RADIUS: float = config_params['chop_radius']
         else:
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
         communication = rosys.hardware.SerialCommunication()
@@ -65,6 +65,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                          tx_pin=config_hardware['can']['tx_pin'],
                                          baud=config_hardware['can']['baud'],
                                          )
+        wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware
         if config_hardware['wheels']['version'] == 'wheels':
             wheels = rosys.hardware.WheelsHardware(robot_brain,
                                                    can=can,
@@ -92,6 +93,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
 
+        y_axis: YAxisHardware | ChainAxisHardware | YAxisHardwareTornado | YAxisCanOpenHardware | None
         if config_hardware['y_axis']['version'] == 'y_axis':
             y_axis = YAxisHardware(robot_brain,
                                    expander=expander,
@@ -152,6 +154,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           )
         else:
             y_axis = None
+
+        z_axis: ZAxisHardware | ZAxisHardwareV2 | TornadoHardware | ZAxisCanOpenHardware | None
         if config_hardware['z_axis']['version'] == 'z_axis':
             z_axis = ZAxisHardware(robot_brain,
                                    expander=expander,
@@ -221,6 +225,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           reversed_direction=config_hardware['z_axis']['reversed_direction'],)
         else:
             z_axis = None
+
         estop = rosys.hardware.EStopHardware(robot_brain,
                                              name=config_hardware['estop']['name'],
                                              pins=config_hardware['estop']['pins'],
@@ -234,6 +239,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                          baud=config_hardware['bms']['baud'],
                                          num=config_hardware['bms']['num'],
                                          )
+        self.battery_control: rosys.hardware.BatteryControlHardware | None
         if 'battery_control' in config_hardware:
             self.battery_control = rosys.hardware.BatteryControlHardware(
                 robot_brain, expander=expander if config_hardware['battery_control']['on_expander'] else None,
@@ -244,6 +250,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             self.battery_control = None
 
+        flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None
         if config_hardware['flashlight']['version'] == 'flashlight':
             flashlight = FlashlightHardware(robot_brain,
                                             expander=expander if config_hardware['flashlight']['on_expander'] else None,
@@ -276,6 +283,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             flashlight = None
 
+        bumper: rosys.hardware.BumperHardware | None
         if 'bumper' in config_hardware:
             bumper = rosys.hardware.BumperHardware(robot_brain,
                                                    expander=expander if config_hardware['bumper']['on_expander'] else None,
@@ -286,6 +294,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             bumper = None
 
+        self.imu: IMUHardware | None
         if 'imu' in config_hardware:
             self.imu = IMUHardware(robot_brain,
                                    name=config_hardware['imu']['name'],
@@ -293,6 +302,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             self.imu = None
 
+        self.status_control: StatusControlHardware | None
         if 'status_control' in config_hardware:
             self.status_control = StatusControlHardware(robot_brain,
                                                         expander=expander,
@@ -301,12 +311,15 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                         )
         else:
             self.status_control = None
+
+        safety: SafetyHardware | SmallSafetyHardware
         if 'small_safety' in config_hardware:
-            safety = SmallSafetyHardware(robot_brain, wheels=wheels, estop=estop, bumper=bumper,
+            safety = SmallSafetyHardware(robot_brain, wheels=wheels, estop=estop,
                                          y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         else:
             safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
                                     y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
+
         modules = [bluetooth, can, wheels, serial, expander, y_axis,
                    z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]

@@ -63,11 +63,11 @@ class ZAxisCanOpen(rosys.hardware.Module, abc.ABC):
     def position(self) -> float:
         return self.compute_position(self.steps)
 
-    async def return_to_reference(self) -> bool:
+    async def return_to_reference(self) -> None:
         try:
             await self.move_to(0)
         except RuntimeError as e:
-            rosys.notify(e, type='negative')
+            self.log.error(f'could not return zaxis to reference because of {e}')
 
 
 class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
@@ -135,7 +135,7 @@ class ZAxisCanOpenHardware(ZAxisCanOpen, rosys.hardware.ModuleHardware):
             await super().move_to(position, speed)
         except RuntimeError as error:
             self.log.error(f'could not move zaxis to {position} because of {error}')
-            raise Exception(f'could not move zaxis to {position} because of {error}')
+            raise Exception(f'could not move zaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
         self.log.info(f'moving to steps: {steps}')
         await self.enable_motor()
@@ -335,7 +335,7 @@ class ZAxisCanOpenSimulation(ZAxisCanOpen, rosys.hardware.ModuleSimulation):
         try:
             await super().move_to(position, speed)
         except RuntimeError as e:
-            rosys.notify(e, type='negative')
+            rosys.notify(f'could not move zaxis to {position}', type='negative')
             self.log.error(f'could not move zaxis to {position} because of {e}')
             return
         self.target_steps = self.compute_steps(position)
