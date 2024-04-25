@@ -1,4 +1,3 @@
-import abc
 from typing import Optional
 
 import rosys
@@ -15,7 +14,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
                  expander: Optional[rosys.hardware.ExpanderHardware],
                  max_speed: float = 60_000,
                  reference_speed: float = 20_000,
-                 min_position: float = 0.197,
+                 min_position: float = -0.197,
                  max_position: float = 0.00,
                  axis_offset: float = 0.0,
                  steps_per_m: float = 1600 * 1000,
@@ -32,7 +31,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
         self.expander = expander
 
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
+            {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
             {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
@@ -41,8 +40,8 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
         core_message_fields = [
             f'{name}_end_t.level',
             f'{name}_end_b.level',
-            f'{name}.idle',
-            f'{name}.position',
+            f'{name}_motor.idle',
+            f'{name}_motor.position',
             f'{name}_alarm.level',
         ]
         super().__init__(
@@ -137,7 +136,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             # save position
             await rosys.sleep(0.5)
             await self.robot_brain.send(
-                f'{self.name}.position = 0;'
+                f'{self.name}_motor.position = 0;'
             )
             await rosys.sleep(0.5)
             self.log.info('zaxis referenced')
