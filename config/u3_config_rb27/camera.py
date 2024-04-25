@@ -5,9 +5,10 @@ configuration = {
         'auto_exposure': True,
     },
     'crop': {
-        'left': 400,
-        'right': 400,
-        'up': 100,
-        'down': 100,
-    }
+        'left': 220,
+        'right': 500,
+        'up': 0,
+        'down': 0,
+    },
+    'rotation': 90
 }
