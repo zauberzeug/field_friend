@@ -6,7 +6,7 @@ import rosys
 from nicegui import ui
 
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
-                         Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisCanOpen, ZAxisV2)
+                         Tornado, YAxis, ZAxis)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -26,10 +26,10 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.label('Software ESTOP is active!').classes('text-red mt-1')
 
         with ui.row().bind_visibility_from(robot.estop, 'active', value=False):
-            if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
-                with ui.row().bind_visibility_from(robot.z_axis, 'ref_t', value=False):
+            if isinstance(robot.z_axis, ZAxis):
+                with ui.row().bind_visibility_from(robot.z_axis, 'end_t'):
                     ui.icon('report').props('size=md').classes('text-red')
-                    ui.label('Z-axis not in top position!').classes('text-red mt-1')
+                    ui.label('Z-axis in end top position, error!').classes('text-red mt-1')
 
                 with ui.row().bind_visibility_from(robot.z_axis, 'end_b'):
                     ui.icon('report').props('size=md').classes('text-red')
@@ -179,26 +179,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 'not referenced' if not robot.y_axis.is_referenced else '',
                 'alarm' if robot.y_axis.alarm else '',
                 'idle'if robot.y_axis.idle else 'moving',
-                'ref l' if robot.y_axis.end_l else '',
-                'ref r' if robot.y_axis.end_r else '',
-                f'{robot.y_axis.steps:.0f}',
-                f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
-            ]
-        elif isinstance(robot.y_axis, YAxisTornado):
-            y_axis_flags = [
-                'not referenced' if not robot.y_axis.is_referenced else '',
-                'alarm' if robot.y_axis.alarm else '',
-                'idle'if robot.y_axis.idle else 'moving',
-                'end l' if robot.y_axis.end_l else '',
-                'end r' if robot.y_axis.end_r else '',
-                f'{robot.y_axis.steps:.0f}',
-                f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
-            ]
-        elif isinstance(robot.y_axis, YAxisCanOpen):
-            y_axis_flags = [
-                'not referenced' if not robot.y_axis.is_referenced else '',
-                'alarm' if robot.y_axis.alarm else '',
-                'idle'if robot.y_axis.idle else 'moving',
                 'end l' if robot.y_axis.end_l else '',
                 'end r' if robot.y_axis.end_r else '',
                 f'{robot.y_axis.steps:.0f}',
@@ -206,17 +186,15 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ]
         else:
             y_axis_flags = ['no y-axis']
-        if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
+        if isinstance(robot.z_axis, ZAxis):
             z_axis_flags = [
                 '' if robot.z_axis.is_referenced else 'not referenced',
                 'alarm' if robot.z_axis.alarm else '',
                 'idle' if robot.z_axis.idle else 'moving',
-                'ref stop enabled' if robot.z_axis.is_ref_enabled else '',
-                'end disabled' if not robot.z_axis.is_end_b_enabled else '',
-                'ref_t active' if robot.z_axis.ref_t else '',
+                'ref_t active' if robot.z_axis.end_t else '',
                 'end_b active' if robot.z_axis.end_b else '',
                 f'{robot.z_axis.steps}',
-                f'{robot.z_axis.depth:.2f}m' if robot.z_axis.is_referenced else '',
+                f'{robot.z_axis.position:.2f}m' if robot.z_axis.is_referenced else '',
             ]
         elif isinstance(robot.z_axis, Tornado):
             z_axis_flags = [
@@ -231,16 +209,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 'ref_b' if robot.z_axis.ref_b else '',
                 f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.z_is_referenced else '',
                 f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.turn_is_referenced else '',
-            ]
-        elif isinstance(robot.z_axis, ZAxisCanOpen):
-            z_axis_flags = [
-                '' if robot.z_axis.is_referenced else 'not referenced',
-                'alarm' if robot.z_axis.alarm else '',
-                'idle' if robot.z_axis.idle else 'moving',
-                'end_t' if robot.z_axis.end_t else '',
-                'end_b' if robot.z_axis.end_b else '',
-                f'{robot.z_axis.steps}',
-                f'{robot.z_axis.position:.2f}m' if robot.z_axis.is_referenced else '',
             ]
         else:
             z_axis_flags = ['no z-axis']

@@ -75,7 +75,7 @@ configuration = {
         'name': 'status_control',
     },
     'bluetooth': {
-        'name': 'uckerbot-u5',
+        'name': 'uckerbot-u6',
     },
     'serial': {
         'name': 'serial',

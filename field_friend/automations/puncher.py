@@ -4,7 +4,7 @@ import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
 
-from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisCanOpen, ZAxisV2
+from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, ZAxis
 from .kpi_provider import KpiProvider
 
 
@@ -50,11 +50,10 @@ class Puncher:
             work_x = self.field_friend.WORK_X_DRILL
         if local_target_x < work_x:
             self.log.info(f'Target: {local_target_x} is behind')
-            raise PuncherException('target is behind')
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
         world_target = self.driver.prediction.transform(local_target)
-        await self.driver.drive_to(world_target)
+        await self.driver.drive_to(world_target, backward=axis_distance < 0)
 
     async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180) -> None:
         self.log.info(f'Punching at {y} with depth {depth}...')
@@ -76,7 +75,7 @@ class Puncher:
                 if not self.field_friend.y_axis.MIN_POSITION+self.field_friend.y_axis.WORK_OFFSET <= y <= self.field_friend.y_axis.MAX_POSITION-self.field_friend.y_axis.WORK_OFFSET:
                     rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
-            if isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisCanOpen):
+            elif isinstance(self.field_friend.y_axis, YAxis):
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
@@ -84,13 +83,9 @@ class Puncher:
             if isinstance(self.field_friend.z_axis, Tornado):
                 await self.field_friend.y_axis.move_to(y)
                 await self.tornado_drill(angle=angle)
-            elif isinstance(self.field_friend.z_axis, ZAxisCanOpen):
+            elif isinstance(self.field_friend.z_axis, ZAxis):
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(-depth)
-                await self.field_friend.z_axis.return_to_reference()
-            elif isinstance(self.field_friend.z_axis, ZAxisV2) or isinstance(self.field_friend.z_axis, ZAxis):
-                await self.field_friend.y_axis.move_to(y)
-                await self.field_friend.z_axis.move_to(depth)
                 await self.field_friend.z_axis.return_to_reference()
             self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
             self.kpi_provider.increment_weeding_kpi('punches')
@@ -108,12 +103,9 @@ class Puncher:
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
-        if isinstance(self.field_friend.y_axis, YAxisTornado) or isinstance(self.field_friend.y_axis, YAxisCanOpen):
+        elif isinstance(self.field_friend.y_axis, YAxis):
             y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
-        elif isinstance(self.field_friend.y_axis, YAxis):
-            y = self.field_friend.y_axis.MIN_POSITION if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.MAX_POSITION
-            await self.field_friend.y_axis.move_to(y)
         await self.field_friend.y_axis.stop()
 
     async def drive_and_punch(self, x: float, y: float, depth: float = 0.05, angle: float = 180) -> None:
@@ -123,7 +115,7 @@ class Puncher:
         try:
             await self.drive_to_punch(x)
             await self.punch(y, depth=depth, angle=angle)
-            # await self.clear_view()
+            await self.clear_view()
         except Exception as e:
             raise PuncherException('drive and punch failed') from e
 

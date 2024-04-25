@@ -11,7 +11,7 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
     # STEPS_PER_REV = 1600
     CIRCUMFERENCE = 51.85 * 2 * np.pi / 1000
     # STEPS_PER_M: float = STEPS_PER_REV * GEAR / CIRCUMFERENCE
-    DEFAULT_SPEED: float = 20000  # TODO: make configurable (U2=40000, U3 = 20000)
+    DEFAULT_SPEED: int = 20000  # TODO: make configurable (U2=40000, U3 = 20000)
     MIN_POSITION = -0.14235
     MAX_POSITION = 0.14235
     CHAIN_RADIUS = 0.05185
@@ -71,7 +71,9 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
         return self.compute_position(self.steps)
 
     @abc.abstractmethod
-    async def move_to(self, position: float, speed: int) -> None:
+    async def move_to(self, position: float, speed: int | None = None) -> None:
+        if speed is None:
+            speed = self.DEFAULT_SPEED
         if not self.is_referenced:
             raise RuntimeError('yaxis is not referenced, reference first')
         if not self.MIN_POSITION + self.WORK_OFFSET <= position <= self.MAX_POSITION - self.WORK_OFFSET:
@@ -138,7 +140,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {name} = {expander.name + "." if motor_on_expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander else ""}Input({alarm_pin})
-            {name}_ref_t = {expander.name + "." if end_stops_on_expander == True else ""}Input({ref_t_pin})
+            {name}_ref_t = {expander.name + "." if end_stops_on_expander else ""}Input({ref_t_pin})
 
             bool {name}_ref_r_is_referencing = false
             bool {name}_ref_l_is_referencing = false
@@ -427,7 +429,9 @@ class ChainAxisSimulation(ChainAxis, rosys.hardware.ModuleSimulation):
         self.speed = 0
         self.target_steps = None
 
-    async def move_to(self, position: float, speed: int = ChainAxis.DEFAULT_SPEED) -> None:
+    async def move_to(self, position: float, speed: int | None = None) -> None:
+        if speed is None:
+            speed = self.DEFAULT_SPEED
         try:
             await super().move_to(position, speed)
         except RuntimeError as e:

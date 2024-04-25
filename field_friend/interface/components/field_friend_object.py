@@ -35,8 +35,8 @@ class field_friend_object(robot_object):
     def update(self) -> None:
         super().update()
         if isinstance(self.robot.y_axis, YAxis):
-            self.tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position, z=-self.robot.z_axis.depth)
-            if self.robot.y_axis.position > self.robot.y_axis.MAX_POSITION or self.robot.y_axis.position < self.robot.y_axis.MIN_POSITION:
+            self.tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position, z=self.robot.z_axis.position)
+            if self.robot.y_axis.position > self.robot.y_axis.max_position or self.robot.y_axis.position < self.robot.y_axis.min_position:
                 self.tool.material('red')
             else:
                 self.tool.material('#4488ff')
@@ -44,7 +44,7 @@ class field_friend_object(robot_object):
             if self.robot.y_axis.MIN_POSITION <= self.robot.y_axis.position <= self.robot.y_axis.MAX_POSITION:
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.position)
                 self.second_tool.move(x=self.robot.WORK_X_DRILL, y=self.robot.y_axis.position,
-                                      z=-self.robot.z_axis.depth)
+                                      z=self.robot.z_axis.position)
             elif self.robot.y_axis.position > self.robot.y_axis.MAX_POSITION:
                 difference = self.robot.y_axis.position - self.robot.y_axis.MAX_POSITION
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.MAX_POSITION - difference)

@@ -22,7 +22,7 @@ class CameraConfigurator:
         rosys.on_startup(self.update_camera_config)
 
     async def update_camera_config(self):
-        await rosys.sleep(5)
+        await rosys.sleep(15)
         self.log.info(f'updating camera config')
         camera = None
         start_time = rosys.time()
