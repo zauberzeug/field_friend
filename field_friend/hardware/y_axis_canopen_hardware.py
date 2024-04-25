@@ -91,7 +91,7 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
                 f'{self.name}_motor.set_target_position({steps});'
                 f'{self.name}_motor.commit_target_position();'
             )
-            await rosys.sleep(0.4)
+            await rosys.sleep(0.2)
         if self.alarm:
             self.log.error(f'could not move yaxis to {position} because of fault')
             raise Exception(f'could not move yaxis to {position} because of fault')
