@@ -4,7 +4,7 @@ from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisCanOpen, ZAxisV2)
+                         FlashlightV2, Tornado, YAxis, ZAxis)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -64,20 +64,13 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
             if isinstance(field_friend.y_axis, YAxis):
                 with ui.column():
                     ui.markdown('**Y-Axis**')
-
-                    async def toggle_end_stops(e: ValueChangeEventArguments) -> None:
-                        if e.value == field_friend.y_axis.end_stops_enabled:
-                            return
-                        if e.value:
-                            await field_friend.y_axis.enable_end_stops(True)
-                            rosys.notify('Y-Axis end stops enabled')
-                        else:
-                            await field_friend.y_axis.enable_end_stops(False)
-                            rosys.notify('Y-Axis end stops disabled')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
-                    ui.switch(
-                        'Enable end stops', on_change=toggle_end_stops).bind_value_from(
-                        field_friend.y_axis, 'end_stops_enabled').disable()
+                    ui.button('Move to min', on_click=lambda: automator.start(
+                        field_friend.y_axis.move_to(field_friend.y_axis.min_position)))
+                    ui.button('Move to middle', on_click=lambda: automator.start(
+                        field_friend.y_axis.move_to(0)))
+                    ui.button('Move to max', on_click=lambda: automator.start(
+                        field_friend.y_axis.move_to(field_friend.y_axis.max_position)))
             elif isinstance(field_friend.y_axis, ChainAxis):
                 with ui.column():
                     ui.markdown('**Chain-Axis**')
@@ -89,55 +82,16 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         field_friend.y_axis.return_to_l_ref()))
                     ui.button('chop to left', on_click=lambda: automator.start(field_friend.y_axis.move_dw_to_l_ref()))
                     ui.button('chop to right', on_click=lambda: automator.start(field_friend.y_axis.move_dw_to_r_ref()))
-            elif isinstance(field_friend.y_axis, YAxisTornado):
-                with ui.column():
-                    ui.markdown('**Y-Axis**')
-                    ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
-            elif isinstance(field_friend.y_axis, YAxisCanOpen):
-                with ui.column():
-                    ui.markdown('**Y-Axis**')
-                    ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
-                    ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.y_axis.reset_fault()))
-                    ui.button('Move to min', on_click=lambda: automator.start(
-                        field_friend.y_axis.move_to(field_friend.y_axis.min_position)))
-                    ui.button('Move to middle', on_click=lambda: automator.start(
-                        field_friend.y_axis.move_to(0)))
-                    ui.button('Move to max', on_click=lambda: automator.start(
-                        field_friend.y_axis.move_to(field_friend.y_axis.max_position)))
 
         if field_friend.z_axis is not None:
-            if isinstance(field_friend.z_axis, ZAxis) or isinstance(field_friend.z_axis, ZAxisV2):
+            if isinstance(field_friend.z_axis, ZAxis):
                 with ui.column():
                     ui.markdown('**Z-Axis**')
-
-                    async def toggle_z_ref(e: ValueChangeEventArguments) -> None:
-                        if e.value == field_friend.z_axis.is_ref_enabled:
-                            return
-                        if e.value:
-                            await field_friend.z_axis.enable_ref(True)
-                            rosys.notify('Z-Axis ref enabled')
-                        else:
-                            await field_friend.z_axis.enable_ref(False)
-                            rosys.notify('Z-Axis ref disabled')
-
-                    async def toggle_end_b(e: ValueChangeEventArguments) -> None:
-                        if e.value == field_friend.z_axis.is_end_b_enabled:
-                            return
-                        if e.value:
-                            await field_friend.z_axis.enable_end_stop(True)
-                            rosys.notify('Z-Axis end_b enabled')
-                        else:
-                            await field_friend.z_axis.enable_end_stop(False)
-                            rosys.notify('Z-Axis end_b disabled')
-
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
                     ui.button('Return to reference', on_click=lambda: automator.start(
                         field_friend.z_axis.return_to_reference()))
-                    ui.switch('Enable ref stop', on_change=toggle_z_ref).bind_value_from(
-                        field_friend.z_axis, 'is_ref_enabled').disable()
-                    ui.switch(
-                        'Enable end stop', on_change=toggle_end_b).bind_value_from(
-                        field_friend.z_axis, 'is_end_b_enabled').disable()
+                    ui.button('Move to min', on_click=lambda: automator.start(
+                        field_friend.z_axis.move_to(field_friend.z_axis.min_position)))
             elif isinstance(field_friend.z_axis, Tornado):
                 with ui.column():
                     ui.markdown('**Z-Axis**')
@@ -149,15 +103,6 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         field_friend.z_axis.return_to_reference()))
                     ui.button('down until reference', on_click=lambda: automator.start(
                         field_friend.z_axis.move_down_until_reference()))
-            elif isinstance(field_friend.z_axis, ZAxisCanOpen):
-                with ui.column():
-                    ui.markdown('**Z-Axis**')
-                    ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
-                    ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.z_axis.reset_fault()))
-                    ui.button('Move to min', on_click=lambda: automator.start(
-                        field_friend.z_axis.move_to(field_friend.z_axis.min_position)))
-                    ui.button('Return to reference', on_click=lambda: automator.start(
-                        field_friend.z_axis.return_to_reference()))
 
         if field_friend.z_axis is not None and field_friend.y_axis is not None:
             with ui.column():
@@ -179,19 +124,13 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.MIN_POSITION+field_friend.y_axis.WORK_OFFSET, depth=depth.value)))
-                    elif isinstance(field_friend.y_axis, YAxis):
-                        ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.MAX_POSITION, depth=depth.value)))
-                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
-                        ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.MIN_POSITION, depth=depth.value)))
-                    elif isinstance(field_friend.y_axis, YAxisTornado):
+                    elif isinstance(field_friend.y_axis, YAxis) and isinstance(field_friend.z_axis, Tornado):
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.min_position, angle=angle.value)))
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, angle=angle.value)))
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.max_position, angle=angle.value)))
-                    elif isinstance(field_friend.y_axis, YAxisCanOpen):
+                    elif isinstance(field_friend.y_axis, YAxis) and isinstance(field_friend.z_axis, ZAxis):
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.max_position, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
