@@ -53,7 +53,7 @@ class Puncher:
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
         world_target = self.driver.prediction.transform(local_target)
-        await self.driver.drive_to(world_target)
+        await self.driver.drive_to(world_target, backward=axis_distance < 0)
 
     async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180) -> None:
         self.log.info(f'Punching at {y} with depth {depth}...')
