@@ -43,7 +43,15 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()
         elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen']:
-            y_axis = YAxisSimulation()
+            y_axis = YAxisSimulation(
+                max_speed=config_hardware['y_axis']['max_speed'],
+                reference_speed=config_hardware['y_axis']['reference_speed'],
+                min_position=config_hardware['y_axis']['min_position'],
+                max_position=config_hardware['y_axis']['max_position'],
+                axis_offset=config_hardware['y_axis']['axis_offset'],
+                steps_per_m=config_hardware['y_axis']['steps_per_m'],
+                reversed_direction=config_hardware['y_axis']['reversed_direction']
+            )
         elif config_hardware['y_axis']['version'] == 'none':
             y_axis = None
         else:
@@ -51,7 +59,16 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
         z_axis: ZAxisSimulation | TornadoSimulation | None
         if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen']:
-            z_axis = ZAxisSimulation()
+            z_axis = ZAxisSimulation(
+                max_speed=config_hardware['z_axis']['max_speed'],
+                reference_speed=config_hardware['z_axis']['reference_speed'],
+                min_position=config_hardware['z_axis']['min_position'],
+                max_position=config_hardware['z_axis']['max_position'],
+                axis_offset=config_hardware['z_axis']['axis_offset'],
+                steps_per_m=config_hardware['z_axis']['steps_per_m'],
+                reversed_direction=config_hardware['z_axis']['reversed_direction']
+            )
+
         elif config_hardware['z_axis']['version'] == 'tornado':
             z_axis = TornadoSimulation(min_position=config_hardware['z_axis']['min_position'],
                                        m_per_tick=config_hardware['z_axis']['m_per_tick'],
