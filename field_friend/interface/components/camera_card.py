@@ -69,7 +69,7 @@ class camera_card:
                             'Enable punching mode').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                         if isinstance(self.field_friend.z_axis, ZAxis):
                             self.depth = ui.number('depth', value=0.02, format='%.2f',
-                                                   step=0.01, min=self.field_friend.z_axis.min_position, max=self.field_friend.z_axis.max_position).classes('w-16').bind_visibility_from(self, 'punching_enabled')
+                                                   step=0.01, min=self.field_friend.z_axis.max_position, max=-self.field_friend.z_axis.min_position).classes('w-16').bind_visibility_from(self, 'punching_enabled')
                         elif isinstance(self.field_friend.z_axis, Tornado):
                             self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180).classes(
                                 'w-16').bind_visibility_from(self, 'punching_enabled')
