@@ -9,7 +9,7 @@ from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point
 
 from ...automations import PlantLocator, Puncher
-from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2
+from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
 from .calibration_dialog import calibration_dialog
 
 
@@ -67,10 +67,12 @@ class camera_card:
                     with ui.menu_item():
                         ui.checkbox('Punching').bind_value(self, 'punching_enabled').tooltip(
                             'Enable punching mode').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
-                        # TODO je nach aktivem Anbaugerät muss hier ein anderer Wert auswählbar sein. Beim Tornado der angel beim Bohrer die Tiefe
-                        # self.depth = ui.number('depth', value=0.02, format='%.2f',
-                        #                        step=0.01, min=0.01, max=0.18).classes('w-16').bind_visibility_from(self, 'punching_enabled')
-                        self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180)
+                        if isinstance(self.field_friend.z_axis, ZAxis):
+                            self.depth = ui.number('depth', value=0.02, format='%.2f',
+                                                   step=0.01, min=self.field_friend.z_axis.min_position, max=self.field_friend.z_axis.max_position).classes('w-16').bind_visibility_from(self, 'punching_enabled')
+                        elif isinstance(self.field_friend.z_axis, Tornado):
+                            self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180).classes(
+                                'w-16').bind_visibility_from(self, 'punching_enabled')
                     with ui.menu_item():
                         ui.checkbox('Detecting Plants').bind_value(self.plant_locator, 'is_paused',
                                                                    backward=lambda x: not x, forward=lambda x: not x) \
@@ -136,9 +138,11 @@ class camera_card:
                 self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
                 if self.puncher is not None and self.punching_enabled:
                     self.log.info(f'punching {point3d}')
-                    # self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
-                    self.automator.start(self.puncher.drive_and_punch(
-                        point3d.x, point3d.y, depth=0.05, angle=self.angle.value))
+                    if isinstance(self.field_friend.z_axis, ZAxis):
+                        self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
+                    elif isinstance(self.field_friend.z_axis, Tornado):
+                        self.automator.start(self.puncher.drive_and_punch(
+                            point3d.x, point3d.y, angle=self.angle.value))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
