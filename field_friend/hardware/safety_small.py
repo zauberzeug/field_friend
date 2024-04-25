@@ -10,12 +10,10 @@ from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
 from .safety import Safety
 from .tornado import TornadoHardware
-from .y_axis import YAxisHardware
-from .y_axis_canopen import YAxisCanOpenHardware
-from .y_axis_tornado import YAxisHardwareTornado
-from .z_axis import ZAxisHardware
-from .z_axis_canopen import ZAxisCanOpenHardware
-from .z_axis_v2 import ZAxisHardwareV2
+from .y_axis_canopen_hardware import YAxisCanOpenHardware
+from .y_axis_stepper_hardware import YAxisStepperHardware
+from .z_axis_canopen_hardware import ZAxisCanOpenHardware
+from .z_axis_stepper_hardware import ZAxisStepperHardware
 
 
 class SmallSafetyHardware(Safety, rosys.hardware.ModuleHardware):
@@ -24,9 +22,9 @@ class SmallSafetyHardware(Safety, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  wheels: Union[rosys.hardware.WheelsHardware, DoubleWheelsHardware],
                  estop: rosys.hardware.EStopHardware,
-                 y_axis: Union[YAxisHardware, ChainAxisHardware,
-                               YAxisHardwareTornado, YAxisCanOpenHardware, None] = None,
-                 z_axis: Union[ZAxisHardware, ZAxisHardwareV2, TornadoHardware, ZAxisCanOpenHardware, None] = None,
+                 y_axis: Union[ChainAxisHardware,
+                               YAxisStepperHardware, YAxisCanOpenHardware, None] = None,
+                 z_axis: Union[TornadoHardware, ZAxisCanOpenHardware, ZAxisStepperHardware, None] = None,
                  flashlight: Union[FlashlightHardware, FlashlightHardwareV2, FlashlightPWMHardware, FlashlightPWMHardwareV2, None],
                  ) -> None:
 
