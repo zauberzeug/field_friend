@@ -17,12 +17,10 @@ from .safety import SafetyHardware
 from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
 from .tornado import TornadoHardware
-from .y_axis import YAxisHardware
-from .y_axis_canopen import YAxisCanOpenHardware
-from .y_axis_tornado import YAxisHardwareTornado
-from .z_axis import ZAxisHardware
-from .z_axis_canopen import ZAxisCanOpenHardware
-from .z_axis_v2 import ZAxisHardwareV2
+from .y_axis_canopen_hardware import YAxisCanOpenHardware
+from .y_axis_stepper_hardware import YAxisStepperHardware
+from .z_axis_canopen_hardware import ZAxisCanOpenHardware
+from .z_axis_stepper_hardware import ZAxisStepperHardware
 
 
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
@@ -50,6 +48,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.CHOP_RADIUS: float = config_params['chop_radius']
         else:
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
+
         communication = rosys.hardware.SerialCommunication()
         robot_brain = rosys.hardware.RobotBrain(communication)
         robot_brain.lizard_firmware.flash_params += config_robotbrain['robot_brain']['flash_params']
@@ -93,20 +92,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
 
-        y_axis: YAxisHardware | ChainAxisHardware | YAxisHardwareTornado | YAxisCanOpenHardware | None
-        if config_hardware['y_axis']['version'] == 'y_axis':
-            y_axis = YAxisHardware(robot_brain,
-                                   expander=expander,
-                                   name=config_hardware['y_axis']['name'],
-                                   step_pin=config_hardware['y_axis']['step_pin'],
-                                   dir_pin=config_hardware['y_axis']['dir_pin'],
-                                   alarm_pin=config_hardware['y_axis']['alarm_pin'],
-                                   end_l_pin=config_hardware['y_axis']['end_l_pin'],
-                                   end_r_pin=config_hardware['y_axis']['end_r_pin'],
-                                   motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
-                                   end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
-                                   )
-        elif config_hardware['y_axis']['version'] == 'chain_axis':
+        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | None
+        if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisHardware(robot_brain,
                                        expander=expander,
                                        name=config_hardware['y_axis']['name'],
@@ -117,11 +104,12 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                        motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
                                        end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
                                        )
-        elif config_hardware['y_axis']['version'] == 'y_axis_tornado':
-            y_axis = YAxisHardwareTornado(robot_brain,
+        elif config_hardware['y_axis']['version'] == 'y_axis_stepper':
+            y_axis = YAxisStepperHardware(robot_brain,
                                           expander=expander,
                                           name=config_hardware['y_axis']['name'],
                                           max_speed=config_hardware['y_axis']['max_speed'],
+                                          reference_speed=config_hardware['y_axis']['reference_speed'],
                                           min_position=config_hardware['y_axis']['min_position'],
                                           max_position=config_hardware['y_axis']['max_position'],
                                           axis_offset=config_hardware['y_axis']['axis_offset'],
@@ -133,6 +121,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           end_l_pin=config_hardware['y_axis']['end_l_pin'],
                                           motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
                                           end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
+                                          reversed_direction=config_hardware['y_axis']['reversed_direction'],
                                           )
         elif config_hardware['y_axis']['version'] == 'y_axis_canopen':
             y_axis = YAxisCanOpenHardware(robot_brain,
@@ -152,37 +141,31 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
                                           reversed_direction=config_hardware['y_axis']['reversed_direction'],
                                           )
-        else:
+        elif config_hardware['y_axis']['version'] == 'none':
             y_axis = None
+        else:
+            raise NotImplementedError(f'Unknown y_axis version: {config_hardware["y_axis"]["version"]}')
 
-        z_axis: ZAxisHardware | ZAxisHardwareV2 | TornadoHardware | ZAxisCanOpenHardware | None
-        if config_hardware['z_axis']['version'] == 'z_axis':
-            z_axis = ZAxisHardware(robot_brain,
-                                   expander=expander,
-                                   name=config_hardware['z_axis']['name'],
-                                   step_pin=config_hardware['z_axis']['step_pin'],
-                                   dir_pin=config_hardware['z_axis']['dir_pin'],
-                                   alarm_pin=config_hardware['z_axis']['alarm_pin'],
-                                   ref_t_pin=config_hardware['z_axis']['ref_t_pin'],
-                                   end_b_pin=config_hardware['z_axis']['end_b_pin'],
-                                   motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
-                                   end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
-                                   )
-        elif config_hardware['z_axis']['version'] == 'z_axis_v2':
-            z_axis = ZAxisHardwareV2(robot_brain,
-                                     expander=expander,
-                                     name=config_hardware['z_axis']['name'],
-                                     step_pin=config_hardware['z_axis']['step_pin'],
-                                     dir_pin=config_hardware['z_axis']['dir_pin'],
-                                     alarm_pin=config_hardware['z_axis']['alarm_pin'],
-                                     ref_t_pin=config_hardware['z_axis']['ref_t_pin'],
-                                     end_b_pin=config_hardware['z_axis']['end_b_pin'],
-                                     motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
-                                     end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
-                                     ref_t_inverted=config_hardware['z_axis']['ref_t_inverted'],
-                                     end_b_inverted=config_hardware['z_axis']['end_b_inverted'],
-                                     ccw=config_hardware['z_axis']['ccw'],
-                                     )
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | None
+        if config_hardware['z_axis']['version'] == 'z_axis_stepper':
+            z_axis = ZAxisStepperHardware(robot_brain,
+                                          expander=expander,
+                                          name=config_hardware['z_axis']['name'],
+                                          max_speed=config_hardware['z_axis']['max_speed'],
+                                          reference_speed=config_hardware['z_axis']['reference_speed'],
+                                          min_position=config_hardware['z_axis']['min_position'],
+                                          max_position=config_hardware['z_axis']['max_position'],
+                                          axis_offset=config_hardware['z_axis']['axis_offset'],
+                                          steps_per_m=config_hardware['z_axis']['steps_per_m'],
+                                          step_pin=config_hardware['z_axis']['step_pin'],
+                                          dir_pin=config_hardware['z_axis']['dir_pin'],
+                                          alarm_pin=config_hardware['z_axis']['alarm_pin'],
+                                          end_t_pin=config_hardware['z_axis']['end_t_pin'],
+                                          end_b_pin=config_hardware['z_axis']['end_b_pin'],
+                                          motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
+                                          end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
+                                          reversed_direction=config_hardware['z_axis']['reversed_direction'],
+                                          )
         elif config_hardware['z_axis']['version'] == 'tornado':
             z_axis = TornadoHardware(robot_brain,
                                      expander=expander,
@@ -223,8 +206,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
                                           end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
                                           reversed_direction=config_hardware['z_axis']['reversed_direction'],)
-        else:
+        elif config_hardware['z_axis']['version'] == 'none':
             z_axis = None
+        else:
+            raise NotImplementedError(f'Unknown z_axis version: {config_hardware["z_axis"]["version"]}')
 
         estop = rosys.hardware.EStopHardware(robot_brain,
                                              name=config_hardware['estop']['name'],
@@ -280,8 +265,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                  front_pin=config_hardware['flashlight']['front_pin'],
                                                  back_pin=config_hardware['flashlight']['back_pin'],
                                                  )
-        else:
+        elif config_hardware['flashlight']['version'] == 'none':
             flashlight = None
+        else:
+            raise NotImplementedError(f'Unknown Flashlight version: {config_hardware["flashlight"]["version"]}')
 
         bumper: rosys.hardware.BumperHardware | None
         if 'bumper' in config_hardware:
