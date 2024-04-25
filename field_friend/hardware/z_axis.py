@@ -39,17 +39,15 @@ class ZAxis(rosys.hardware.Module, abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def move_to(self, position: float, speed: int) -> None:
+    async def move_to(self, position: float, speed: int | None = None) -> None:
+        if speed is None:
+            speed = self.max_speed
         if not self.is_referenced:
             raise RuntimeError('zaxis is not referenced, reference first')
         if speed > self.max_speed:
             raise RuntimeError('zaxis speed is too high')
         if not self.min_position <= position <= self.max_position:
             raise RuntimeError('zaxis depth is out of range')
-
-    @abc.abstractmethod
-    async def move(self, speed: int) -> None:
-        pass
 
     @abc.abstractmethod
     async def try_reference(self) -> bool:
@@ -106,8 +104,8 @@ class ZAxisSimulation(ZAxis, rosys.hardware.ModuleSimulation):
         self.speed = 0
         self.target_steps = None
 
-    async def move_to(self, position: float, speed: int = 0) -> None:
-        if speed == 0:
+    async def move_to(self, position: float, speed: int | None = None) -> None:
+        if speed is None:
             speed = self.max_speed
         try:
             await super().move_to(position, speed)
@@ -115,7 +113,7 @@ class ZAxisSimulation(ZAxis, rosys.hardware.ModuleSimulation):
             self.log.error(f'could not move zaxis to {position} because of {e}')
             return
         self.target_steps = self.compute_steps(position)
-        self.speed = speed if self.target_steps > self.steps else -speed
+        self.speed = speed if self.target_steps > self.steps else speed * -1
         while self.target_steps is not None:
             await rosys.sleep(0.2)
 
