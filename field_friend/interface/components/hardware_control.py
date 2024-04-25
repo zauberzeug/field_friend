@@ -113,9 +113,9 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.button('chop', on_click=lambda: automator.start(puncher.chop()))
                 if isinstance(field_friend.z_axis, Tornado):
                     angle = ui.number('angle', value=180, format='%.0f', step=1,
-                                      min=0, max=180).style('background-color: white; padding: 0.5rem; border-radius: 5px;')
+                                      min=0, max=180).classes('w-24').style('background-color: white; padding: 0.5rem; border-radius: 5px;')
                 else:
-                    depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=0.01, max=0.18).style(
+                    depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=field_friend.z_axis.max_position, max=field_friend.z_axis.min_position*-1).classes('w-24').style(
                         'background-color: white; padding: 0.5rem; border-radius: 5px;')
                 with ui.row():
                     if isinstance(field_friend.y_axis, ChainAxis):
