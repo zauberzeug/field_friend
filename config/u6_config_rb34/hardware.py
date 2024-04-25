@@ -43,7 +43,7 @@ configuration = {
     'bumper': {
         'name': 'bumper',
         'on_expander': True,
-        'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
+        'pins': {'front_top': 35, 'front_bottom': 18, 'back': 21},
     },
     'status_control': {
         'name': 'status_control',
