@@ -10,9 +10,10 @@ configuration = {
         'is_right_reversed': True,
     },
     'y_axis': {
-        'version': 'y_axis_tornado',
+        'version': 'y_axis_stepper',
         'name': 'y_axis',
         'max_speed': 60_000,
+        'reference_speed': 20_000,
         'min_position': -0.068,
         'max_position': 0.068,
         'axis_offset': 0.075,
@@ -24,6 +25,7 @@ configuration = {
         'end_l_pin': 21,
         'motor_on_expander': False,
         'end_stops_on_expander': True,
+        'reversed_direction': False,
     },
     'z_axis': {
         'version': 'tornado',

@@ -9,9 +9,6 @@ configuration = {
         'is_left_reversed': True,
         'is_right_reversed': False,
     },
-    # 'y_axis': {
-    #     'version': 'none',
-    # },
     'y_axis': {
         'version': 'y_axis_canopen',
         'name': 'yaxis',
@@ -28,9 +25,6 @@ configuration = {
         'end_stops_on_expander': True,
         'reversed_direction': False,
     },
-    # 'z_axis': {
-    #     'version': 'none',
-    # },
     'z_axis': {
         'version': 'tornado',
         'name': 'tornado',
