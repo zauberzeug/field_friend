@@ -35,7 +35,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
             {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
-            {name} = MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
+            {name} =  {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
         ''')
         core_message_fields = [
             f'{name}_end_t.level',
