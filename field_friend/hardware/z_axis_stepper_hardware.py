@@ -119,7 +119,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
 
             # move slowly to end t stop
             self.log.info('moving slowly to end t stop')
-            velocity = round(self.reference_speed/2) * (1 if self.reversed_direction else -1)
+            velocity = round(self.reference_speed/2) * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(f'{self.name}.speed({velocity});')
             while not self.end_t:
                 await rosys.sleep(0.2)
@@ -127,7 +127,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
 
             # move slowly out of end t stop
             self.log.info('moving slowly out of end t stop')
-            velocity = round(self.reference_speed/2) * (-1 if self.reversed_direction else 1)
+            velocity = round(self.reference_speed/2) * (1 if self.reversed_direction else -1)
             await self.robot_brain.send(f'{self.name}.speed({velocity});')
             while self.end_t:
                 await rosys.sleep(0.2)
