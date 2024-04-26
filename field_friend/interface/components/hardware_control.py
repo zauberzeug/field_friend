@@ -4,7 +4,7 @@ from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, Tornado, YAxis, ZAxis)
+                         FlashlightV2, Tornado, YAxis, YAxisCanOpenHardware, ZAxis, ZAxisCanOpenHardware)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -71,6 +71,8 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         field_friend.y_axis.move_to(0)))
                     ui.button('Move to max', on_click=lambda: automator.start(
                         field_friend.y_axis.move_to(field_friend.y_axis.max_position)))
+                    if isinstance(field_friend.y_axis, YAxisCanOpenHardware):
+                        ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.y_axis.reset_fault()))
             elif isinstance(field_friend.y_axis, ChainAxis):
                 with ui.column():
                     ui.markdown('**Chain-Axis**')
@@ -92,6 +94,8 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         field_friend.z_axis.return_to_reference()))
                     ui.button('Move to min', on_click=lambda: automator.start(
                         field_friend.z_axis.move_to(field_friend.z_axis.min_position)))
+                    if isinstance(field_friend.z_axis, ZAxisCanOpenHardware):
+                        ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.z_axis.reset_fault()))
             elif isinstance(field_friend.z_axis, Tornado):
                 with ui.column():
                     ui.markdown('**Z-Axis**')
