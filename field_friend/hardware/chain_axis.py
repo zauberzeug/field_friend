@@ -289,7 +289,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
 
         await rosys.sleep(0.5)
 
-    async def reference_left(self) -> bool:
+    async def reference_left(self, first_time: bool = True) -> bool:
         self.log.info('moving to ref_l...')
         await self.robot_brain.send(
             f'{self.name}_ref_r_is_referencing = false;'
@@ -317,12 +317,21 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             f'{self.name}_ref_l_is_referencing = false;'
             f'{self.name}.position({self.steps + self.REF_OFFSET}, {self.DEFAULT_SPEED / 10}, 40000);'
         )
+        await rosys.sleep(0.2)
+        if not await self.check_idle_or_alarm():
+            raise Exception('chain_axis fault detected')
 
         # save position
         await rosys.sleep(0.5)
-        self.steps_to_end = self.steps
-        self.log.info(f'steps_to_end: {self.steps_to_end}')
-
+        if first_time is True:
+            self.steps_to_end = self.steps
+            self.log.info(f'steps_to_end: {self.steps_to_end}')
+        else:
+            self.log.info('setting steps_to_end position')
+            await self.robot_brain.send(
+                f'{self.name}.position = {self.steps_to_end};'
+            )
+        await rosys.sleep(0.5)
         await self.robot_brain.send(
             f'{self.name}_ref_t_stop_enabled = false;'
         )
@@ -363,7 +372,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
             raise Exception('chain_axis fault detected')
-        await self.reference_left()
+        await self.reference_left(first_time=False)
 
     async def move_dw_to_r_ref(self) -> None:
         try:
