@@ -228,8 +228,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             flashlight_label.text = 'simulated'
         if isinstance(robot.bumper, rosys.hardware.Bumper):
             bumper_label.text = ', '.join(robot.bumper.active_bumpers)
-        else:
-            bumper_label.text = 'simulated'
 
         uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
         cpu_label.text = f'{psutil.cpu_percent():.0f}%'
