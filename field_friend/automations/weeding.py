@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from random import randint
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -477,7 +478,7 @@ class Weeding(rosys.persistence.PersistentModule):
             # Filter to get upcoming weeds based on their .x position
             upcoming_weed_positions = {
                 w: pos for w, pos in relative_weed_positions.items()
-                if self.system.field_friend.WORK_X < pos.x <= self.current_segment.spline.end.x
+                if self.system.field_friend.WORK_X < pos.x <= self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x
             }
         else:
             upcoming_weed_positions = {
@@ -564,6 +565,7 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _weed_screw_workflow(self) -> None:
         self.log.info('Starting Weed Screw Workflow...')
         try:
+            starting_position = deepcopy(self.system.odometer.prediction)
             self._keep_crops_safe()
             weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items(
             ) if position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE and self.system.field_friend.can_reach(position)}
@@ -571,10 +573,14 @@ class Weeding(rosys.persistence.PersistentModule):
                 self.log.info(f'Weeds in range {len(weeds_in_range)}')
                 while weeds_in_range:
                     next_weed_position = list(weeds_in_range.values())[0]
+                    weed_world_position = starting_position.transform(next_weed_position)
+                    corrected_relative_weed_position = self.system.odometer.prediction.relative_point(
+                        weed_world_position)
                     self.log.info(f'Targeting weed at {next_weed_position}')
-                    await self.system.puncher.drive_and_punch(
-                        next_weed_position.x, next_weed_position.y, depth=self.weed_screw_depth)
-                    punched_weeds = [weed_id for weed_id, position in self.weeds_to_handle.items(
+                    if not self.only_monitoring:
+                        await self.system.puncher.drive_and_punch(
+                            corrected_relative_weed_position.x, corrected_relative_weed_position.y, depth=self.weed_screw_depth, backwards_allowed=False)
+                    punched_weeds = [weed_id for weed_id, position in weeds_in_range.items(
                     ) if position.distance(next_weed_position) <= self.system.field_friend.DRILL_RADIUS]
                     for weed_id in punched_weeds:
                         self.system.plant_provider.remove_weed(weed_id)
@@ -594,22 +600,28 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log.info('Starting dual mechanism workflow...')
         try:
             moved = False
+            starting_position = deepcopy(self.system.odometer.prediction)
             if self.crops_to_handle:
                 next_crop_position = list(self.crops_to_handle.values())[0]
                 # first: check if weeds near crop
                 self._keep_crops_safe()
-                weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if next_crop_position.x - (self.system.field_friend.DRILL_RADIUS)
-                                  < position.x < next_crop_position.x + self.system.field_friend.DRILL_RADIUS and self.system.field_friend.can_reach(position)}
+                weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if next_crop_position.x - self.system.field_friend.DRILL_RADIUS*2
+                                  < position.x < next_crop_position.x + self.system.field_friend.DRILL_RADIUS*2 and self.system.field_friend.can_reach(position)}
+                self.log.info(f'weed_position in range: {weeds_in_range.items()}')
                 if weeds_in_range:
-                    self.log.info('Weeds in range for drilling')
+                    self.log.info(f' {len(weeds_in_range)} Weeds in range for drilling')
                     while weeds_in_range:
                         next_weed_position = list(weeds_in_range.values())[0]
-                        self.log.info(f'Targeting weed at {next_weed_position}')
+                        self.log.info(f'Next weed position: {next_weed_position}')
+                        weed_world_position = starting_position.transform(next_weed_position)
+                        corrected_relative_weed_position = self.system.odometer.prediction.relative_point(
+                            weed_world_position)
+                        self.log.info(f'corrected relative weed position: {corrected_relative_weed_position}')
                         moved = True
                         await self.system.puncher.drive_and_punch(
-                            next_weed_position.x, next_weed_position.y, depth=self.weed_screw_depth)
-                        punched_weeds = [weed_id for weed_id, position in self.weeds_to_handle.items(
-                        ) if position.distance(next_weed_position) <= self.system.field_friend.DRILL_RADIUS]
+                            corrected_relative_weed_position.x, next_weed_position.y, depth=self.weed_screw_depth)
+                        punched_weeds = [weed_id for weed_id, position in weeds_in_range.items(
+                        ) if position.distance(next_weed_position) < self.system.field_friend.DRILL_RADIUS]
                         for weed_id in punched_weeds:
                             self.system.plant_provider.remove_weed(weed_id)
                             if weed_id in weeds_in_range:
@@ -620,7 +632,11 @@ class Weeding(rosys.persistence.PersistentModule):
                     self.system.field_friend.DRILL_RADIUS) and self.system.field_friend.can_reach(position, second_tool=True)}
                 if weeds_in_range:
                     self.log.info('Weeds in range for chopping before crop')
-                    target_position = next_crop_position.x - self.system.field_friend.DRILL_RADIUS - self.system.field_friend.CHOP_RADIUS
+                    crop_world_position = starting_position.transform(next_crop_position)
+                    corrected_relative_crop_position = self.system.odometer.prediction.relative_point(
+                        crop_world_position)
+                    target_position = corrected_relative_crop_position.x - \
+                        self.system.field_friend.DRILL_RADIUS - self.system.field_friend.CHOP_RADIUS
                     axis_distance = target_position - self.system.field_friend.WORK_X_CHOP
                     local_target = Point(x=axis_distance, y=0)
                     world_target = self.system.driver.prediction.transform(local_target)
@@ -628,29 +644,14 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.driver.drive_to(world_target)
                     await self.system.puncher.chop()
                     choped_weeds = [weed_id for weed_id, position in self.weeds_to_handle.items(
-                    ) if target_position - self.system.field_friend.CHOP_RADIUS < position.x < target_position + self.system.field_friend.CHOP_RADIUS]
-                    for weed_id in choped_weeds:
-                        self.system.plant_provider.remove_weed(weed_id)
-                # third: check if weed after crop
-                weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if position.x > next_crop_position.x + (
-                    self.system.field_friend.DRILL_RADIUS) and self.system.field_friend.can_reach(position, second_tool=True)}
-                if weeds_in_range:
-                    self.log.info('Weeds in range for chopping after crop')
-                    target_position = next_crop_position.x + self.system.field_friend.DRILL_RADIUS + self.system.field_friend.CHOP_RADIUS
-                    axis_distance = target_position - self.system.field_friend.WORK_X_CHOP
-                    local_target = Point(x=axis_distance, y=0)
-                    world_target = self.system.driver.prediction.transform(local_target)
-                    moved = True
-                    await self.system.driver.drive_to(world_target)
-                    await self.system.puncher.chop()
-                    choped_weeds = [weed_id for weed_id, position in self.weeds_to_handle.items(
-                    ) if target_position - self.system.field_friend.CHOP_RADIUS < position.x < target_position + self.system.field_friend.CHOP_RADIUS]
+                    ) if target_position - self.system.field_friend.CHOP_RADIUS < self.system.odometer.prediction.relative_point(starting_position.transform(position)).x < target_position + self.system.field_friend.CHOP_RADIUS]
                     for weed_id in choped_weeds:
                         self.system.plant_provider.remove_weed(weed_id)
                 if not moved:
                     await self._follow_line_of_crops()
                     moved = True
             elif self.weeds_to_handle:
+                self.log.info('No crops in range, checking for weeds...')
                 next_weed_position = list(self.weeds_to_handle.values())[0]
                 axis_distance = next_weed_position.x - self.system.field_friend.WORK_X_CHOP+self.system.field_friend.CHOP_RADIUS
                 local_target = Point(x=axis_distance, y=0)
@@ -725,25 +726,17 @@ class Weeding(rosys.persistence.PersistentModule):
                 self.system.plant_provider.add_crop(Plant(
                     id=str(i),
                     type='beet',
-                    position=first_point.polar(0.20*i, first_point.direction(last_point)),
+                    position=self.system.odometer.prediction.point.polar(
+                        0.20*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                     detection_time=rosys.time(),
                     confidence=0.9,
                 ))
-                for j in range(0, 2):
+                for j in range(1, 7):
                     self.system.plant_provider.add_weed(Plant(
-                        id=str(i),
+                        id=f'{i}_{j}',
                         type='weed',
-                        position=first_point.polar(0.20*i, first_point.direction(last_point)
-                                                   ).polar(0.04*j, first_point.direction(last_point) + 1.57),
-                        detection_time=rosys.time(),
-                        confidence=0.9,
-                    ))
-                for j in range(0, 2):
-                    self.system.plant_provider.add_weed(Plant(
-                        id=str(i),
-                        type='weed',
-                        position=first_point.polar(0.20*i, first_point.direction(last_point)
-                                                   ).polar(0.02*j, first_point.direction(last_point) - 1.57),
+                        position=self.system.odometer.prediction.point.polar(
+                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
