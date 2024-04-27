@@ -30,9 +30,9 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         if tool in ['tornado', 'weed_screw', 'none']:
             self.WORK_X = config_params['work_x']
             self.DRILL_RADIUS = config_params['drill_radius']
-        elif tool in ['double_mechanism']:
+        elif tool in ['dual_mechanism']:
             self.WORK_X_CHOP = config_params['work_x_chop']
-            self.WORK_X_DRILL = config_params['work_x_drill']
+            self.WORK_X = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS = config_params['chop_radius']
         else:
@@ -44,13 +44,9 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             y_axis = ChainAxisSimulation()
         elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen']:
             y_axis = YAxisSimulation(
-                max_speed=config_hardware['y_axis']['max_speed'],
-                reference_speed=config_hardware['y_axis']['reference_speed'],
                 min_position=config_hardware['y_axis']['min_position'],
                 max_position=config_hardware['y_axis']['max_position'],
                 axis_offset=config_hardware['y_axis']['axis_offset'],
-                steps_per_m=config_hardware['y_axis']['steps_per_m'],
-                reversed_direction=config_hardware['y_axis']['reversed_direction']
             )
         elif config_hardware['y_axis']['version'] == 'none':
             y_axis = None
@@ -60,13 +56,9 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         z_axis: ZAxisSimulation | TornadoSimulation | None
         if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen']:
             z_axis = ZAxisSimulation(
-                max_speed=config_hardware['z_axis']['max_speed'],
-                reference_speed=config_hardware['z_axis']['reference_speed'],
                 min_position=config_hardware['z_axis']['min_position'],
                 max_position=config_hardware['z_axis']['max_position'],
                 axis_offset=config_hardware['z_axis']['axis_offset'],
-                steps_per_m=config_hardware['z_axis']['steps_per_m'],
-                reversed_direction=config_hardware['z_axis']['reversed_direction']
             )
 
         elif config_hardware['z_axis']['version'] == 'tornado':
