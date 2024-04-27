@@ -35,9 +35,9 @@ markdown_extensions:
   - footnotes
 plugins:
   - search
-  # - gen-files:
-  #     scripts:
-  #       - docs/generate_reference.py
+  - gen-files:
+      scripts:
+        - docs/generate_reference.py
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index
