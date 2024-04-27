@@ -21,7 +21,6 @@ class FieldFriend(rosys.hardware.Robot):
     DRILL_RADIUS = 0.025
     CHOP_RADIUS = 0.07
     WORK_X_CHOP = 0.04
-    WORK_X_DRILL = 0.175
 
     def __init__(
             self, *,
