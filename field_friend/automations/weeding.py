@@ -56,6 +56,10 @@ class Weeding(rosys.persistence.PersistentModule):
 
         # driver settings
 
+        self.state: str = 'idle'
+        self.start_time: Optional[float] = None
+        self.last_pose: Optional[Pose] = None
+        self.drived_distance: float = 0.0
         self.sorted_weeding_rows: list = []
         self.weeding_plan: Optional[list[list[PathSegment]]] = None
         self.turn_paths: list[list[PathSegment]] = []
@@ -64,7 +68,26 @@ class Weeding(rosys.persistence.PersistentModule):
         self.row_segment_completed: bool = False
         self.crops_to_handle: dict[str, Point] = {}
         self.weeds_to_handle: dict[str, Point] = {}
-        self.last_chop_position = None
+
+        rosys.on_repeat(self._update_time_and_distance, 0.1)
+
+    def _update_time_and_distance(self):
+        if self.state == 'idle':
+            return
+        if self.start_time is None:
+            self.start_time = rosys.time()
+        if self.last_pose is None:
+            self.last_pose = self.system.odometer.prediction
+            self.drived_distance = 0.0
+        self.drived_distance += self.system.odometer.prediction.distance(self.last_pose)
+        if self.drived_distance > 1:
+            self.kpi_provider.increment_weeding_kpi('distance')
+            self.drived_distance -= 1
+        self.last_pose = self.system.odometer.prediction
+        passed_time = rosys.time() - self.start_time
+        if passed_time > 1:
+            self.kpi_provider.increment_weeding_kpi('time')
+            self.start_time = rosys.time()
 
     def backup(self) -> dict:
         return {
@@ -305,7 +328,9 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _weeding(self):
         self.log.info('Starting driving...')
         await rosys.sleep(0.5)
+        self.state = 'running'
         try:
+
             if self.weeding_plan:
                 await self._weed_with_plan()
                 self.log.info('Weeding with plan completed')
@@ -314,7 +339,7 @@ class Weeding(rosys.persistence.PersistentModule):
                 self.log.info('Planless weeding completed')
 
         except WorkflowException as e:
-            self.kpi_provider.increment('automation_stopped')
+            self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
         finally:
             self.kpi_provider.increment_weeding_kpi('weeding_completed')
@@ -586,6 +611,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         self.system.plant_provider.remove_weed(weed_id)
                         if weed_id in weeds_in_range:
                             del weeds_in_range[weed_id]
+                        self.kpi_provider.increment_weeding_kpi('weeds_removed')
 
             elif self.crops_to_handle:
                 await self._follow_line_of_crops()
@@ -627,6 +653,7 @@ class Weeding(rosys.persistence.PersistentModule):
                             self.system.plant_provider.remove_weed(weed_id)
                             if weed_id in weeds_in_range:
                                 del weeds_in_range[weed_id]
+                            self.kpi_provider.increment_weeding_kpi('weeds_removed')
                     await self.system.puncher.clear_view()
                 # second: check if weed before crop
                 weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if position.x < next_crop_position.x - (
@@ -650,6 +677,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         ) if target_position - self.system.field_friend.CHOP_RADIUS < self.system.odometer.prediction.relative_point(starting_position.transform(position)).x < target_position + self.system.field_friend.CHOP_RADIUS]
                         for weed_id in choped_weeds:
                             self.system.plant_provider.remove_weed(weed_id)
+                            self.kpi_provider.increment_weeding_kpi('weeds_removed')
                     else:
                         self.log.warning(f'Weed position {next_weed_position} is behind field friend')
                 if not moved:
@@ -675,6 +703,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         ) if axis_distance - self.system.field_friend.CHOP_RADIUS < self.system.odometer.prediction.relative_point(starting_position.transform(position)).x < axis_distance + self.system.field_friend.CHOP_RADIUS]
                         for weed_id in choped_weeds:
                             self.system.plant_provider.remove_weed(weed_id)
+                            self.kpi_provider.increment_weeding_kpi('weeds_removed')
                     else:
                         self.log.warning(f'Weed position {next_weed_position} is behind field friend')
             if not moved:
