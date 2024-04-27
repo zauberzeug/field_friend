@@ -1,4 +1,3 @@
-rosys
 mkdocs
 mkdocs-material
 mdx-include

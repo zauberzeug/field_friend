@@ -25,14 +25,14 @@ def extract_events(filepath: str) -> dict[str, str]:
 
 for path in sorted(Path('.').rglob('__init__.py')):
     identifier = str(path.parent).replace('/', '.')
-    if identifier in ['field_friend']:
+    if identifier in ['field_friend',]:
         continue
 
     try:
         module = importlib.import_module(identifier)
     except Exception:
-        logging.exception(f'Failed to import {identifier}')
-        sys.exit(1)
+        logging.warning(f'Failed to import {identifier}')
+        continue
 
     doc_path = path.parent.with_suffix('.md')
     found_something = False
