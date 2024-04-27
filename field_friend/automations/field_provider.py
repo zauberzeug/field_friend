@@ -84,6 +84,20 @@ class Field:
         else:
             return []
 
+    @property
+    def area(self) -> float:
+        if len(self.outline_wgs84) > 0:
+            polygon = Polygon(self.outline_wgs84)
+            return polygon.area
+        else:
+            return 0.0
+
+    def worked_area(self, worked_rows: int) -> float:
+        worked_area = 0.0
+        if self.area > 0:
+            worked_area = worked_rows * self.area / len(self.rows)
+        return worked_area
+
 
 class Active_object(TypedDict):
     object_type: Literal["Obstacles", "Rows", "Outline"]
