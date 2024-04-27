@@ -30,7 +30,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         if tool in ['tornado', 'weed_screw', 'none']:
             self.WORK_X = config_params['work_x']
             self.DRILL_RADIUS = config_params['drill_radius']
-        elif tool in ['double_mechanism']:
+        elif tool in ['dual_mechanism']:
             self.WORK_X_CHOP = config_params['work_x_chop']
             self.WORK_X = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']

@@ -63,7 +63,7 @@ class FieldFriend(rosys.hardware.Robot):
         """
         if self.tool in ['weed_screw', 'tornado'] and isinstance(self.y_axis, YAxis):
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
-        elif self.tool in ['double_mechanism'] and isinstance(self.y_axis, ChainAxis):
+        elif self.tool in ['dual_mechanism'] and isinstance(self.y_axis, ChainAxis):
             if second_tool:
                 return self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
             else:
