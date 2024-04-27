@@ -86,8 +86,8 @@ class Field:
 
     @property
     def area(self) -> float:
-        if len(self.outline_wgs84) > 0:
-            polygon = Polygon(self.outline_wgs84)
+        if len(self.outline) > 0:
+            polygon = Polygon([(p.x, p.y) for p in self.outline])
             return polygon.area
         else:
             return 0.0

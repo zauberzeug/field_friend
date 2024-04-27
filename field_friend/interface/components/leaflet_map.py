@@ -1,13 +1,15 @@
 
 import logging
-from typing import TYPE_CHECKING, Dict, List, Union
 import uuid
-import rosys.geometry
-from nicegui import events, ui, elements
-import rosys
-from .key_controls import KeyControls
-from ...automations import Field
+from typing import TYPE_CHECKING, Dict, List, Union
+
 import numpy as np
+import rosys
+import rosys.geometry
+from nicegui import elements, events, ui
+
+from ...automations import Field
+from .key_controls import KeyControls
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -91,7 +93,7 @@ class leaflet_map:
                 point_list = []
                 for point in coordinates[0]:
                     point_list.append([point['lat'], point['lng']])
-                field = Field(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}',
+                field = Field(id=f'{str(uuid.uuid4())}', name=f'field_{len(self.field_provider.fields)+1}',
                               outline_wgs84=point_list, reference_lat=point_list[0][0], reference_lon=point_list[0][1])
                 self.field_provider.add_field(field)
 
