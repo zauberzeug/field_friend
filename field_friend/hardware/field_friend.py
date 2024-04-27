@@ -76,6 +76,6 @@ class FieldFriend(rosys.hardware.Robot):
                 work_x = self.WORK_X_DRILL
                 tool_radius = self.DRILL_RADIUS
                 return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
-                    and self.y_axis.MIN_POSITION+self.y_axis.WORK_OFFSET <= local_point.y <= self.y_axis.MAX_POSITION-self.y_axis.WORK_OFFSET
+                    and self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         else:
             raise NotImplementedError(f'Tool {self.tool} is not implemented for reachability check')

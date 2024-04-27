@@ -124,10 +124,10 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                 with ui.row():
                     if isinstance(field_friend.y_axis, ChainAxis):
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.MAX_POSITION-field_friend.y_axis.WORK_OFFSET, depth=depth.value)))
+                            puncher.punch(field_friend.y_axis.min_position, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.MIN_POSITION+field_friend.y_axis.WORK_OFFSET, depth=depth.value)))
+                            puncher.punch(field_friend.y_axis.max_position, depth=depth.value)))
                     elif isinstance(field_friend.y_axis, YAxis) and isinstance(field_friend.z_axis, Tornado):
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.min_position, angle=angle.value)))

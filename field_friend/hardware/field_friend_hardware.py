@@ -97,6 +97,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             y_axis = ChainAxisHardware(robot_brain,
                                        expander=expander,
                                        name=config_hardware['y_axis']['name'],
+                                       min_position=config_hardware['y_axis']['min_position'],
+                                       max_position=config_hardware['y_axis']['max_position'],
                                        step_pin=config_hardware['y_axis']['step_pin'],
                                        dir_pin=config_hardware['y_axis']['dir_pin'],
                                        alarm_pin=config_hardware['y_axis']['alarm_pin'],

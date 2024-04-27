@@ -72,7 +72,7 @@ class Puncher:
                     raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
             if isinstance(self.field_friend.y_axis, ChainAxis):
-                if not self.field_friend.y_axis.MIN_POSITION+self.field_friend.y_axis.WORK_OFFSET <= y <= self.field_friend.y_axis.MAX_POSITION-self.field_friend.y_axis.WORK_OFFSET:
+                if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
             elif isinstance(self.field_friend.y_axis, YAxis):

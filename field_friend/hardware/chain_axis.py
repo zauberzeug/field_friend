@@ -16,13 +16,14 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
     MAX_POSITION = 0.14235
     CHAIN_RADIUS = 0.05185
     RADIUS_STEPS = 8400  # TODO: make configurable (U2=16000, U3 = 8400)
-    WORK_OFFSET = 0.04
     REF_OFFSET = 1500
     POSITION_OFFSET = CHAIN_RADIUS / RADIUS_STEPS * REF_OFFSET
     TOP_DOWN_FACTOR = 1.0589
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, min_position: float = -0.10, max_position: float = 0.10, **kwargs) -> None:
         super().__init__(**kwargs)
+        self.min_position = min_position
+        self.max_position = max_position
 
         self.steps: int = 0
         self.alarm: bool = False
@@ -76,7 +77,7 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
             speed = self.DEFAULT_SPEED
         if not self.is_referenced:
             raise RuntimeError('yaxis is not referenced, reference first')
-        if not self.MIN_POSITION + self.WORK_OFFSET <= position <= self.MAX_POSITION - self.WORK_OFFSET:
+        if not self.min_position <= position <= self.max_position:
             raise RuntimeError(f'target yaxis {position} is out of range')
         if not self.ref_t:
             raise RuntimeError('yaxis is not at top reference, move to top reference first')
@@ -128,6 +129,8 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'chain_axis',
                  expander: Optional[rosys.hardware.ExpanderHardware],
+                 min_position: float = -0.10,
+                 max_position: float = 0.10,
                  step_pin: int = 5,
                  dir_pin: int = 4,
                  alarm_pin: int = 13,
@@ -196,7 +199,8 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             f'{name}_alarm.level',
             f'{name}_ref_t.level',
         ]
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+        super().__init__(min_position=min_position, max_position=max_position, robot_brain=robot_brain,
+                         lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
         await super().stop()
