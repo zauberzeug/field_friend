@@ -21,6 +21,9 @@ class WorkflowException(Exception):
 
 
 class Weeding(rosys.persistence.PersistentModule):
+    WORKING_DISTANCE = 0.06
+    DRIVE_DISTANCE = 0.04
+
     def __init__(self, system: 'System') -> None:
         super().__init__()
         self.PATH_PLANNED = rosys.event.Event()
@@ -59,6 +62,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.row_segment_completed: bool = False
         self.crops_to_handle: dict[str, Point] = {}
         self.weeds_to_handle: dict[str, Point] = {}
+        self.last_chop_position = None
 
     def backup(self) -> dict:
         return {
@@ -208,16 +212,15 @@ class Weeding(rosys.persistence.PersistentModule):
                 minimum_row_distance = int(
                     np.ceil(self.minimum_turning_radius * 2 / rows_distance))
 
-        self.log.info(f'Minimum turning distance: {minimum_row_distance}')
+        self.log.info(f'Minimum row distance: {minimum_row_distance}')
         if minimum_row_distance > 1:
             sequence = find_sequence(len(rows), minimum_distance=minimum_row_distance)
             if not sequence:
                 self.log.warning('No sequence found')
-                return None
-                # sequence = list(range(len(rows)))
+                sequence = list(range(len(rows)))
         else:
             sequence = list(range(len(rows)))
-        self.log.info(f'Sequence: {sequence}')
+        self.log.info(f'Row sequence: {sequence}')
 
         paths = []
         switch_first_row = False
@@ -406,12 +409,12 @@ class Weeding(rosys.persistence.PersistentModule):
             await rosys.sleep(2)
             self.system.plant_locator.resume()
             await rosys.sleep(0.5)
-            await self._get_upcoming_crops()
+            await self._get_upcoming_plants()
             while self.crops_to_handle or self.weeds_to_handle:
                 await self._handle_plants()
                 already_explored_count = 0
                 await rosys.sleep(0.2)
-                await self._get_upcoming_crops()
+                await self._get_upcoming_plants()
             if not self.crops_to_handle and already_explored_count != 5:
                 self.log.info('No crops found, advancing a bit to ensure there are really no more crops')
                 target = self.system.odometer.prediction.transform(Point(x=0.10, y=0))
@@ -429,15 +432,16 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _check_for_plants(self):
         self.log.info('Checking for plants...')
         while True:
-            await self._get_upcoming_crops()
+            await self._get_upcoming_plants()
             if self.system.field_friend.tool == 'tornado':
                 if self.crops_to_handle:
                     return
-            if self.weeds_to_handle or self.crops_to_handle:
-                return
+            else:
+                if self.weeds_to_handle or self.crops_to_handle:
+                    return
             await rosys.sleep(0.2)
 
-    async def _get_upcoming_crops(self):
+    async def _get_upcoming_plants(self):
         relative_crop_positions = {
             c.id: self.system.odometer.prediction.relative_point(c.position)
             for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5
@@ -489,12 +493,12 @@ class Weeding(rosys.persistence.PersistentModule):
 
         if self.system.field_friend.tool == 'tornado' and self.crops_to_handle and not self.use_monitor_workflow:
             await self._tornado_workflow()
-        elif self.system.field_friend.tool == 'weed_screw':
+        elif self.system.field_friend.tool == 'weed_screw' and not self.use_monitor_workflow:
             await self._weed_screw_workflow()
+        elif self.system.field_friend.tool == 'dual_mechanism' and not self.use_monitor_workflow:
+            await self._double_mechanism_workflow()
         elif self.system.field_friend.tool == 'none' or self.use_monitor_workflow:
             await self._monitor_workflow()
-
-        # ToDo: implement workflow of other tools
 
     async def _tornado_workflow(self) -> None:
         self.log.info('Starting Tornado Workflow..')
@@ -502,7 +506,7 @@ class Weeding(rosys.persistence.PersistentModule):
             closest_crop_position = list(self.crops_to_handle.values())[0]
             self.log.info(f'Closest crop position: {closest_crop_position}')
             # fist check if the closest crop is in the working area
-            if closest_crop_position.x < self.system.field_friend.WORK_X + 0.05:
+            if closest_crop_position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
                 self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
                 drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
@@ -524,20 +528,8 @@ class Weeding(rosys.persistence.PersistentModule):
                         if not self.only_monitoring:
                             # punch in the middle position with closed knives
                             await self.system.puncher.punch(0, angle=180)
-
-                self.system.plant_locator.resume()
             else:
-                self.log.info('follow line of crops')
-                farthest_crop = list(self.crops_to_handle.values())[-1]
-                self.log.info(f'Farthest crop: {farthest_crop}')
-                upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
-                yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
-                # only apply minimal yaw corrections to avoid oversteering
-                yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.85 + eliminate_2pi(yaw) * 0.15
-                target = self.system.odometer.prediction.point.polar(0.04, yaw)
-
-                self.log.info(f'current world position: {self.system.odometer.prediction} target next crop at {target}')
-                await self.system.driver.drive_to(target)
+                await self._follow_line_of_crops()
             await rosys.sleep(0.2)
             self.log.info('workflow completed')
         except Exception as e:
@@ -549,7 +541,7 @@ class Weeding(rosys.persistence.PersistentModule):
             closest_crop_position = list(self.crops_to_handle.values())[0]
             self.log.info(f'Closest crop position: {closest_crop_position}')
             # fist check if the closest crop is in the working area
-            if closest_crop_position.x < 0.05:
+            if closest_crop_position.x < self.WORKING_DISTANCE:
                 self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
                 target = self.system.odometer.prediction.transform(Point(x=closest_crop_position.x, y=0))
@@ -557,18 +549,9 @@ class Weeding(rosys.persistence.PersistentModule):
                 self.system.plant_locator.resume()
             else:
                 if self.crops_to_handle:
-                    self.log.info('follow line of crops')
-                    farthest_crop = list(self.crops_to_handle.values())[-1]
-                    self.log.info(f'Farthest crop: {farthest_crop}')
-                    upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
-                    yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
-                    # only apply minimal yaw corrections to avoid oversteering
-                    yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.85 + eliminate_2pi(yaw) * 0.15
-                    target = self.system.odometer.prediction.point.polar(0.04, yaw)
+                    await self._follow_line_of_crops()
                 else:
-                    target = self.system.odometer.prediction.point.polar(0.04, self.system.odometer.prediction.yaw)
-                self.log.info(f'current world position: {self.system.odometer.prediction} target next crop at {target}')
-                await self.system.driver.drive_to(target)
+                    await self._driving_a_bit_forward()
             await rosys.sleep(0.2)
             self.log.info('workflow completed')
         except Exception as e:
@@ -577,61 +560,108 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _weed_screw_workflow(self) -> None:
         self.log.info('Starting Weed Screw Workflow...')
         try:
-            self._keep_crops_safe()
-            next_weed_position = None
-            if self.weeds_to_handle:
-                next_weed_position = list(self.weeds_to_handle.values())[0]
-                self.log.info(f'Next weed position: {next_weed_position}')
-
-            if next_weed_position and next_weed_position.x < self.system.field_friend.WORK_X + 0.06:
-                self.log.info(f'target next weed at {next_weed_position}')
-                drive_distance = next_weed_position.x - self.system.field_friend.WORK_X
-                target = self.system.odometer.prediction.transform(
-                    Point(x=drive_distance, y=0))
-                await self.system.driver.drive_to(target)
-                corrected_positions = [Point(x=position.x - drive_distance, y=position.y)
-                                       for _, position in self.weeds_to_handle.items()]
-                for index, position in enumerate(corrected_positions):
-                    if self.system.field_friend.can_reach(position):
-                        if not self.only_monitoring:
-                            await self.system.puncher.punch(position.y, depth=self.weed_screw_depth)
-                            corrected_positions.pop(index)
-                        self.log.info(f'Punched weed at {position}')
-                        for index, other_position in enumerate(corrected_positions):
-                            if position.distance(other_position) < self.system.field_friend.DRILL_RADIUS:
-                                corrected_positions.pop(index)
-                                self.log.info(f'Punched weed at {other_position}')
-                    else:
-                        self.log.info(f'Could not reach weed at {position}')
-                self.system.plant_locator.resume()
+            weeds_in_range = [position for position in self.weeds_to_handle.values(
+            ) if position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE and self.system.field_friend.can_reach(position)]
+            if weeds_in_range:
+                self.log.info('Weeds in range...')
+                self._keep_crops_safe()
+                while weeds_in_range:
+                    next_weed_position = weeds_in_range[0]
+                    self.log.info(f'Targeting weed at {next_weed_position}')
+                    self.system.puncher.drive_and_punch(
+                        next_weed_position.x, next_weed_position.y, depth=self.weed_screw_depth)
+                    weeds_in_range = [position for position in weeds_in_range if position.distance(
+                        next_weed_position) > self.system.field_friend.DRILL_RADIUS]
             elif self.crops_to_handle:
-                self.log.info('follow line of crops')
-                farthest_crop = list(self.crops_to_handle.values())[-1]
-                self.log.info(f'Farthest crop: {farthest_crop}')
-                upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
-                yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
-                # only apply minimal yaw corrections to avoid oversteering
-                yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.85 + eliminate_2pi(yaw) * 0.15
-                target = self.system.odometer.prediction.point.polar(0.04, yaw)
-
-                self.log.info(f'current world position: {self.system.odometer.prediction} target next crop at {target}')
-                await self.system.driver.drive_to(target)
+                await self._follow_line_of_crops()
             else:
-                self.log.info('No crops and no weeeds in range, driving forward a bit...')
-                target = self.system.odometer.prediction.point.polar(0.04, self.system.odometer.prediction.yaw)
-                self.log.info(f'current world position: {self.system.odometer.prediction} target: {target}')
-                await self.system.driver.drive_to(target)
-
+                await self._driving_a_bit_forward()
             await rosys.sleep(0.2)
-            self.log.info('workflow completed')
+            self.log.info('Workflow completed')
         except Exception as e:
             raise WorkflowException(f'Error while Weed Screw Workflow: {e}') from e
+
+    async def _double_mechanism_workflow(self) -> None:
+        self.log.info('Starting double mechanism workflow...')
+        try:
+            moved = False
+            if self.crops_to_handle:
+                next_crop_position = list(self.crops_to_handle.values())[0]
+                # first check if weeds near crop
+                weeds_in_range = [position for position in self.weeds_to_handle.values() if next_crop_position.x - (self.system.field_friend.DRILL_RADIUS * 2)
+                                  < position.x < next_crop_position.x + (self.system.field_friend.DRILL_RADIUS * 2) and self.system.field_friend.can_reach(position)]
+                if weeds_in_range:
+                    self.log.info('Weeds in range...')
+                    self._keep_crops_safe()
+                    while weeds_in_range:
+                        next_weed_position = weeds_in_range[0]
+                        self.log.info(f'Targeting weed at {next_weed_position}')
+                        moved = True
+                        self.system.puncher.drive_and_punch(
+                            next_weed_position.x, next_weed_position.y, depth=self.weed_screw_depth)
+                        weeds_in_range = [position for position in weeds_in_range if position.distance(
+                            next_weed_position) > self.system.field_friend.DRILL_RADIUS]
+                # second check if weed before crop
+                weeds_in_range = [position for position in self.weeds_to_handle.values() if position.x < next_crop_position.x - (
+                    self.system.field_friend.DRILL_RADIUS * 2) and self.system.field_friend.can_reach(position, second_tool=True)]
+                if weeds_in_range:
+                    target_position = next_crop_position.x - self.system.field_friend.DRILL_RADIUS * 2 - self.system.field_friend.CHOP_RADIUS
+                    axis_distance = target_position - self.system.field_friend.WORK_X_CHOP
+                    local_target = Point(x=axis_distance, y=0)
+                    world_target = self.system.driver.prediction.transform(local_target)
+                    moved = True
+                    await self.system.driver.drive_to(world_target)
+                    self.system.puncher.chop()
+                # third check if weed after crop
+                weeds_in_range = [position for position in self.weeds_to_handle.values() if position.x > next_crop_position.x + (
+                    self.system.field_friend.DRILL_RADIUS * 2) and self.system.field_friend.can_reach(position, second_tool=True)]
+                if weeds_in_range:
+                    target_position = next_crop_position.x + self.system.field_friend.DRILL_RADIUS * 2 + self.system.field_friend.CHOP_RADIUS
+                    axis_distance = target_position - self.system.field_friend.WORK_X_CHOP
+                    local_target = Point(x=axis_distance, y=0)
+                    world_target = self.system.driver.prediction.transform(local_target)
+                    moved = True
+                    await self.system.driver.drive_to(world_target)
+                    self.system.puncher.chop()
+                if not moved:
+                    await self._follow_line_of_crops()
+                    moved = True
+            elif self.weeds_to_handle:
+                next_weed_position = list(self.weeds_to_handle.values())[0]
+                axis_distance = next_weed_position.x - self.system.field_friend.WORK_X_CHOP-self.system.field_friend.CHOP_RADIUS
+                local_target = Point(x=axis_distance, y=0)
+                world_target = self.system.driver.prediction.transform(local_target)
+                moved = True
+                await self.system.driver.drive_to(world_target)
+                self.system.puncher.chop()
+            if not moved:
+                await self._driving_a_bit_forward()
+            await rosys.sleep(0.2)
+            self.log.info('Workflow completed')
+        except Exception as e:
+            raise WorkflowException(f'Error while double mechanism Workflow: {e}') from e
+
+    async def _follow_line_of_crops(self):
+        self.log.info('Following line of crops...')
+        farthest_crop = list(self.crops_to_handle.values())[-1]
+        self.log.info(f'Farthest crop: {farthest_crop}')
+        upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
+        yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
+        # only apply minimal yaw corrections to avoid oversteering
+        yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.85 + eliminate_2pi(yaw) * 0.15
+        target = self.system.odometer.prediction.point.polar(self.DRIVE_DISTANCE, yaw)
+        self.log.info(f'Current world position: {self.system.odometer.prediction} Target next crop at {target}')
+        await self.system.driver.drive_to(target)
+
+    async def _driving_a_bit_forward(self):
+        self.log.info('No crops and no weeds in range, driving forward a bit...')
+        target = self.system.odometer.prediction.point.polar(self.DRIVE_DISTANCE, self.system.odometer.prediction.yaw)
+        self.log.info(f'Current world position: {self.system.odometer.prediction} Target: {target}')
+        await self.system.driver.drive_to(target)
 
     def _keep_crops_safe(self) -> None:
         self.log.info('Keeping crops safe...')
         for crop, crop_position in self.crops_to_handle.items():
-            if crop_position.x > 0.06:
-                continue
             for weed, weed_position in self.weeds_to_handle.items():
                 if weed_position.x > 0.06:
                     continue
@@ -643,6 +673,7 @@ class Weeding(rosys.persistence.PersistentModule):
                     self.log.info(f'Moved weed {weed} to {safe_weed_position} to safe {crop} at {crop_position}')
 
     def _safe_crop_to_row(self, crop_id: str) -> None:
+        self.log.info(f'Saving crop {crop_id} to row...')
         if self.current_row is None:
             return
         crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
@@ -650,7 +681,7 @@ class Weeding(rosys.persistence.PersistentModule):
             self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
             return
         for c in self.current_row.crops:
-            if c.position.distance(crop.position) < 0.08 and c.type == crop.type:
+            if c.position.distance(crop.position) < 0.05 and c.type == crop.type:
                 if c.confidence >= crop.confidence:
                     return
                 self.log.info('Updating crop with higher confidence')
