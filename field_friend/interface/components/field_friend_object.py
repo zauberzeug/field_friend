@@ -43,12 +43,12 @@ class field_friend_object(robot_object):
         elif isinstance(self.robot.y_axis, ChainAxis):
             if self.robot.y_axis.MIN_POSITION <= self.robot.y_axis.position <= self.robot.y_axis.MAX_POSITION:
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.position)
-                self.second_tool.move(x=self.robot.WORK_X_DRILL, y=self.robot.y_axis.position,
+                self.second_tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position,
                                       z=self.robot.z_axis.position)
             elif self.robot.y_axis.position > self.robot.y_axis.MAX_POSITION:
                 difference = self.robot.y_axis.position - self.robot.y_axis.MAX_POSITION
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.MAX_POSITION - difference)
-                self.second_tool.move(x=self.robot.WORK_X_DRILL, y=self.robot.y_axis.MAX_POSITION - difference)
+                self.second_tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.MAX_POSITION - difference)
             else:
                 difference = self.robot.y_axis.MIN_POSITION - self.robot.y_axis.position
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.MIN_POSITION + difference)
