@@ -25,7 +25,7 @@ def extract_events(filepath: str) -> dict[str, str]:
 
 for path in sorted(Path('.').rglob('__init__.py')):
     identifier = str(path.parent).replace('/', '.')
-    if identifier in []:
+    if identifier in ['field_friend']:
         continue
 
     try:
@@ -46,7 +46,11 @@ for path in sorted(Path('.').rglob('__init__.py')):
             continue  # skip dataclasses
         if not cls.__doc__:
             continue  # skip classes without docstring
-        events = extract_events(inspect.getfile(cls))
+        try:
+            events = extract_events(inspect.getfile(cls))
+        except Exception:
+            logging.warning(f'skipping {identifier}.{name}')
+            continue
         with mkdocs_gen_files.open(Path('reference', doc_path), 'a') as fd:
             print(f'::: {identifier}.{name}', file=fd)
             if events:
