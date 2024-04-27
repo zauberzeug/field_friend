@@ -61,21 +61,12 @@ class FieldFriend(rosys.hardware.Robot):
 
         The point is given in local coordinates, i.e. the origin is the center of the tool.
         """
-        if self.tool in ['weed_screw'] and isinstance(self.y_axis, YAxis):
-            return self.WORK_X - self.DRILL_RADIUS <= local_point.x <= self.WORK_X + self.DRILL_RADIUS \
-                and self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
-        elif self.tool in ['tornado'] and isinstance(self.y_axis, YAxis):
+        if self.tool in ['weed_screw', 'tornado'] and isinstance(self.y_axis, YAxis):
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         elif self.tool in ['double_mechanism'] and isinstance(self.y_axis, ChainAxis):
-            if not second_tool:
-                work_x = self.WORK_X_CHOP
-                tool_radius = self.CHOP_RADIUS
-                return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
-                    and self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
+            if second_tool:
+                return self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
             else:
-                work_x = self.WORK_X_DRILL
-                tool_radius = self.DRILL_RADIUS
-                return work_x - tool_radius <= local_point.x <= work_x + tool_radius \
-                    and self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
+                return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         else:
             raise NotImplementedError(f'Tool {self.tool} is not implemented for reachability check')
