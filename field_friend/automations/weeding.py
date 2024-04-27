@@ -383,6 +383,7 @@ class Weeding(rosys.persistence.PersistentModule):
                 turn_path = self.turn_paths[i]
                 await self.system.driver.drive_path(turn_path)
                 await rosys.sleep(1)
+            self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
         self.system.automation_watcher.stop_field_watch()
         self.system.automation_watcher.gnss_watch_active = False

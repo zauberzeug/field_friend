@@ -127,6 +127,7 @@ class Puncher:
         else:
             await self.field_friend.y_axis.move_dw_to_r_ref()
         await self.field_friend.y_axis.stop()
+        self.kpi_provider.increment_weeding_kpi('chops')
 
     async def tornado_drill(self, angle: float = 180) -> None:
         self.log.info(f'Drilling with tornado at {angle}...')

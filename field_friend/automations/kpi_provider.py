@@ -26,7 +26,9 @@ class Weeding_KPIs(KPIs):
     rows_weeded: int = 0
     crops_detected: int = 0
     weeds_detected: int = 0
+    weeds_removed: int = 0
     punches: int = 0
+    chops: int = 0
     weeding_completed: bool = False
 
 
