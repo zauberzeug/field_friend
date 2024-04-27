@@ -43,7 +43,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.DRILL_RADIUS: float = config_params['drill_radius']
         elif tool in ['dual_mechanism']:
             self.WORK_X_CHOP: float = config_params['work_x_chop']
-            self.WORK_X_DRILL: float = config_params['work_x_drill']
+            self.WORK_X: float = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS: float = config_params['chop_radius']
         else:

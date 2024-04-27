@@ -44,10 +44,7 @@ class Puncher:
             rosys.notify('no y or z axis', 'negative')
             return
         self.log.info(f'Driving to punch at {local_target_x}...')
-        if self.field_friend.tool in ['tornado', 'weed_screw', 'none']:
-            work_x = self.field_friend.WORK_X
-        elif self.field_friend.tool in ['dual_mechanism']:
-            work_x = self.field_friend.WORK_X_DRILL
+        work_x = self.field_friend.WORK_X
         if local_target_x < work_x:
             self.log.info(f'Target: {local_target_x} is behind')
         axis_distance = local_target_x - work_x
@@ -115,7 +112,6 @@ class Puncher:
         try:
             await self.drive_to_punch(x)
             await self.punch(y, depth=depth, angle=angle)
-            await self.clear_view()
         except Exception as e:
             raise PuncherException('drive and punch failed') from e
 
