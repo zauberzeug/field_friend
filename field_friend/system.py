@@ -22,12 +22,12 @@ class System:
 
         self.field_friend: FieldFriendHardware | FieldFriendSimulation
         self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
+        self.circle_sight_provider: rosys.vision.MjpegCameraProvider | SimulatedCamProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = CalibratableUsbCameraProvider()
-            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(
-                username='root', password='zauberzg!')
+            self.circle_sight_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
@@ -41,9 +41,19 @@ class System:
                                                                                roll=np.deg2rad(360-150),
                                                                                pitch=np.deg2rad(0),
                                                                                yaw=np.deg2rad(90)))
-            self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
-            # self.circle_sight = None
+
+            self.circle_sight_provider = SimulatedCamProvider()
+            self.circle_sight_provider.remove_all_cameras()
+            front = SimulatedCam.create_calibrated(id='front-3',
+                                                   x=0.4, z=0.4,
+                                                   pitch=np.deg2rad(-70),
+                                                   )
+            assert front.calibration is not None
+            front.calibration.intrinsics = rosys.vision.Intrinsics.create_default(800, 600, focal_length=200)
+            self.circle_sight_provider.add_camera(front)
+            self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
+            self.monitoring_detector = rosys.vision.DetectorSimulation(self.circle_sight_provider)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
