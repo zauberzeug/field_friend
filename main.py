@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import rosys
 from nicegui import app, ui
 from rosys.analysis import logging_page
 
