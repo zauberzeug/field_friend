@@ -24,6 +24,7 @@ class System:
         self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
         self.circle_sight_provider: rosys.vision.MjpegCameraProvider | SimulatedCamProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
+        self.monitoring_detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = CalibratableUsbCameraProvider()
