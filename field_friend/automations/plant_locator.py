@@ -5,8 +5,8 @@ import rosys
 
 from .plant_provider import Plant, PlantProvider
 
-WEED_CATEGORY_NAME = ['coin', 'weed']
-CROP_CATEGORY_NAME = ['coin_with_hole', 'crop']
+WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
+CROP_CATEGORY_NAME = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
 MINIMUM_WEED_CONFIDENCE = 0.8
 MINIMUM_CROP_CONFIDENCE = 0.75
 
