@@ -28,7 +28,7 @@ jobs:
       - name: Analyze
         run: |
           pwd
-          ls -lha docs/reference
+          ls -lha
       - name: Deploy gh-pages
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
