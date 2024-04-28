@@ -53,8 +53,9 @@ class AutomationWatcher:
             if self.path_recorder.state == 'recording':
                 return
             else:
-                self.log.info(f'pausing automation because {reason}')
-                self.automator.pause(because=f'{reason})')
+                if self.automator.is_running:
+                    self.log.info(f'pausing automation because {reason}')
+                    self.automator.pause(because=f'{reason})')
                 return
         if reason.startswith('GNSS') and not self.gnss_watch_active:
             return

@@ -31,7 +31,8 @@ class monitoring:
                  field_friend: FieldFriend,
                  system: 'System',
                  *,
-                 shrink_factor: int = 1) -> None:
+                 shrink_factor: int = 1,
+                 ) -> None:
         self.log = logging.getLogger('field_friend.monitoring')
         self.usb_camera_provider = usb_camera_provider
         self.mjpg_camera_provider = mjpeg_camera_provider

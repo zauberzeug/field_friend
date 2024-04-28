@@ -20,9 +20,13 @@ class monitor_page():
             self.content()
 
     def content(self) -> None:
-        # ui.query('body').classes('bg-black text-white')
-        # ui.query('.nicegui-content').classes('p-0 h-screen')
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
-        if self.system.is_real:
-            monitoring(self.system.usb_camera_provider, self.system.mjpeg_camera_provider,
-                       self.system.detector, self.system.monitoring_detector, self.system.plant_locator, self.system.automator, self.system.field_friend, self.system)
+        monitoring(self.system.usb_camera_provider,
+                   self.system.circle_sight_provider,
+                   self.system.detector,
+                   self.system.monitoring_detector,
+                   self.system.plant_locator,
+                   self.system.automator,
+                   self.system.field_friend,
+                   self.system,
+                   )
