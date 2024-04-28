@@ -86,8 +86,11 @@ class System:
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
         self.small_weed_category_names = ['weed', 'coin']
         self.crop_category_names = ['sugar_beet', 'crop', 'coin_with_hole']
-        self.plant_locator = PlantLocator(self.usb_camera_provider, self.detector,
-                                          self.plant_provider, self.odometer)
+        self.plant_locator = PlantLocator(self.usb_camera_provider,
+                                          self.detector,
+                                          self.plant_provider,
+                                          self.odometer,
+                                          )
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
 
