@@ -7,7 +7,7 @@ nav:
       - features/user_interface.md # NOTE: shown when clicking on "Examples" folder
       - features/user_interface.md
       - features/field_planner.md
-  - Module Reference: reference/
+  #- Module Reference: reference/
   - contributing.md
   - troubleshooting.md
 repo_url: https://github.com/zauberzeug/field_friend

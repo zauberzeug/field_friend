@@ -25,6 +25,10 @@ jobs:
           python3 -m pip install -e .
       - name: Build docs
         run: mkdocs build -v
+      - name: Analyze
+        run: |
+          pwd
+          ls -lha docs/reference
       - name: Deploy gh-pages
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
