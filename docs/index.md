@@ -1,6 +1,6 @@
 # About
 
-The Field Friend is an autonomous, mobile, and AI-driven agricultural robot developed by [Zauberzeug GmbH](https://zauberzeug.com).
+**Zauberzeug Field Friend** is an autonomous, mobile, and AI-driven agricultural robot developed by [Zauberzeug GmbH](https://zauberzeug.com).
 The robot is specifically designed for autonomous actions, combining lightness, flexibility, and robustness
 to efficiently handle a variety of outdoor tasks.
 Equipped with advanced sensor technologies and camera systems,
