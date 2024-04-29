@@ -13,7 +13,7 @@ configuration = {
         'version': 'y_axis_stepper',
         'name': 'y_axis',
         'max_speed': 60_000,
-        'reference_speed': 20_000,
+        'reference_speed': 10_000,
         'min_position': -0.068,
         'max_position': 0.068,
         'axis_offset': 0.075,

@@ -145,14 +145,14 @@ class Puncher:
             await self.field_friend.z_axis.move_down_until_reference()
 
             await self.field_friend.z_axis.turn_knifes_to(angle)
-            await rosys.sleep(3)
+            await rosys.sleep(2)
             await self.field_friend.z_axis.turn_by(turns)
-            await rosys.sleep(3)
+            await rosys.sleep(2)
 
             await self.field_friend.z_axis.return_to_reference()
             await rosys.sleep(0.5)
-            if not await self.field_friend.z_axis.try_reference_turn():
-                raise PuncherException('tornado reference failed')
+            await self.field_friend.z_axis.turn_knifes_to(0)
+            await rosys.sleep(0.5)
         except Exception as e:
             raise PuncherException(f'tornado drill failed because of: {e}') from e
         finally:

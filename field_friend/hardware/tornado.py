@@ -202,6 +202,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         except RuntimeError as e:
             raise Exception(e) from e
         await self.robot_brain.send(f'{self.name}_z.position({position});')
+        while not position - 0.005 < self.position_z < position + 0.005:
+            await rosys.sleep(0.1)
 
     async def move_down_until_reference(self) -> None:
         try:
@@ -249,7 +251,10 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await super().turn_by(turns)
         except RuntimeError as e:
             raise Exception(e)
-        await self.robot_brain.send(f'{self.name}_turn.position({(self.position_turn/360)+turns});')
+        target = self.position_turn/360 + turns
+        await self.robot_brain.send(f'{self.name}_turn.position({target});')
+        while not target - 0.01 < self.position_turn/360 < target + 0.01:
+            await rosys.sleep(0.1)
 
     async def turn_knifes_to(self, angle: float) -> None:
         try:
@@ -261,7 +266,11 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             return
         elif target_angle < 0:
             target_angle = 360 - self.last_angle + angle
-        await self.robot_brain.send(f'{self.name}_turn.position({(self.position_turn - target_angle)/360});')
+        target = (self.position_turn - target_angle)/360
+        await self.robot_brain.send(f'{self.name}_turn.position({target});')
+        while not target - 0.01 < self.position_turn/360 < target + 0.01:
+            await rosys.sleep(0.1)
+        self.last_angle = angle
 
     async def try_reference_z(self) -> bool:
         if not await super().try_reference_z():
