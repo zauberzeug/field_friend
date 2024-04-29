@@ -273,10 +273,10 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             if current_automation == 'weeding' or current_automation == 'monitoring':
                 if current_automation == 'weeding':
                     current_row_label.text = system.weeding.current_row.name if system.weeding.current_row is not None else 'No row'
-                    worked_area_label.text = f'{system.weeding.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.weeding.field.area:.2f}m²' if system.weeding.field is not None else 'No field'
+                    worked_area_label.text = f'{system.weeding.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.weeding.field.area():.2f}m²' if system.weeding.field is not None else 'No field'
                 elif current_automation == 'monitoring':
                     current_row_label.text = system.monitoring.current_row.name if system.monitoring.current_row is not None else 'No row'
-                    worked_area_label.text = f'{system.monitoring.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.monitoring.field.area:.2f}m²' if system.monitoring.field is not None else 'No field'
+                    worked_area_label.text = f'{system.monitoring.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.monitoring.field.area():.2f}m²' if system.monitoring.field is not None else 'No field'
                 kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
                 kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
                 kpi_weeds_removed_label.text = system.kpi_provider.current_weeding_kpis.weeds_removed
