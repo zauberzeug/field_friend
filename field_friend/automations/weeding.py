@@ -108,8 +108,8 @@ class Weeding(rosys.persistence.PersistentModule):
 
     def restore(self, data: dict[str, Any]) -> None:
         self.use_field_planning = data.get('use_field_planning', False)
-        self.start_row_id = data.get('start_row_id')
-        self.end_row_id = data.get('end_row_id')
+        self.start_row_id = data.get('start_row_id', None)
+        self.end_row_id = data.get('end_row_id', None)
         self.tornado_angle = data.get('tornado_angle', 110.0)
         self.minimum_turning_radius = data.get('minimum_turning_radius', 0.5)
         self.only_monitoring = data.get('only_monitoring', False)
@@ -191,10 +191,6 @@ class Weeding(rosys.persistence.PersistentModule):
         self.turn_paths = await self._generate_turn_paths()
         if not self.turn_paths:
             self.log.error('No turn paths available')
-            return False
-        self.log.info(f'Turn paths: {self.turn_paths}')
-        self.log.info(
-            f'Planned path: {[path_segment for path in self.weeding_plan for path_segment in path] + self.turn_paths}')
         paths = [path_segment for path in self.weeding_plan for path_segment in path]
         turn_paths = [path_segment for path in self.turn_paths for path_segment in path]
         self.PATH_PLANNED.emit(paths + turn_paths)
@@ -232,14 +228,17 @@ class Weeding(rosys.persistence.PersistentModule):
         distance_to_last_row = min([point.distance(robot_position) for point in rows[-1].points(reference)])
         if distance_to_first_row > distance_to_last_row:
             rows = list(reversed(rows))
-        minimum_row_distance = 1  # 1 = no row needs to be skippen when turning
+        minimum_row_distance = 1  # 1 = no row needs to be skipped when turning
         if len(rows) > 1:
             rows_distance = rows[0].points(reference)[0].distance(rows[1].points(reference)[0])
+            self.log.info(f'Rows distance: {rows_distance}')
+            self.log.info(f'Minimum turning radius: {self.minimum_turning_radius}')
             if self.minimum_turning_radius * 2 > rows_distance:
+                self.log.info('Rows distance is smaller than minimum turning radius * 2')
                 minimum_row_distance = int(
                     np.ceil(self.minimum_turning_radius * 2 / rows_distance))
 
-        self.log.info(f'Minimum row distance: {minimum_row_distance}')
+        self.log.info(f'Minimum row distance: {minimum_row_distance} need to skip {minimum_row_distance - 1} rows')
         if minimum_row_distance > 1:
             sequence = find_sequence(len(rows), minimum_distance=minimum_row_distance)
             if not sequence:
@@ -290,26 +289,26 @@ class Weeding(rosys.persistence.PersistentModule):
         for obstacle in self.field.obstacles:
             self.system.path_planner.obstacles[obstacle.id] = rosys.pathplanning.Obstacle(
                 id=obstacle.id, outline=obstacle.points([self.field.reference_lat, self.field.reference_lon]))
-        for row in self.field.rows:
-            row_points = row.points([self.field.reference_lat, self.field.reference_lon])
-            # create a small polygon around the row to avoid the robot driving through the row
-            row_polygon = [
-                Point(x=row_points[0].x - 0.01, y=row_points[0].y - 0.01),
-                Point(x=row_points[0].x - 0.01, y=row_points[-1].y + 0.01),
-                Point(x=row_points[-1].x + 0.01, y=row_points[-1].y + 0.01),
-                Point(x=row_points[-1].x + 0.01, y=row_points[0].y - 0.01),
-            ]
-            self.system.path_planner.obstacles[f'row_{row.id}'] = rosys.pathplanning.Obstacle(
-                id=f'row_{row.id}', outline=row_polygon)
+        # for row in self.field.rows:
+        #     row_points = row.points([self.field.reference_lat, self.field.reference_lon])
+        #     # create a small polygon around the row to avoid the robot driving through the row
+        #     row_polygon = [
+        #         Point(x=row_points[0].x - 0.01, y=row_points[0].y - 0.01),
+        #         Point(x=row_points[0].x - 0.01, y=row_points[-1].y + 0.01),
+        #         Point(x=row_points[-1].x + 0.01, y=row_points[-1].y + 0.01),
+        #         Point(x=row_points[-1].x + 0.01, y=row_points[0].y - 0.01),
+        #     ]
+        #     self.system.path_planner.obstacles[f'row_{row.id}'] = rosys.pathplanning.Obstacle(
+        #         id=f'row_{row.id}', outline=row_polygon)
 
         area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
         self.system.path_planner.areas = {area.id: area}
         for i in range(len(self.weeding_plan) - 1):
             # remove this rows from obstacles to allow starting in it an insert it afterwards again
-            start_row = self.sorted_weeding_rows[i]
-            end_row = self.sorted_weeding_rows[i + 1]
-            temp_removed_start_row = self.system.path_planner.obstacles.pop(f'row_{start_row.id}')
-            temp_removed_end_row = self.system.path_planner.obstacles.pop(f'row_{end_row.id}')
+            # start_row = self.sorted_weeding_rows[i]
+            # end_row = self.sorted_weeding_rows[i + 1]
+            # temp_removed_start_row = self.system.path_planner.obstacles.pop(f'row_{start_row.id}')
+            # temp_removed_end_row = self.system.path_planner.obstacles.pop(f'row_{end_row.id}')
             start_pose = Pose(x=self.weeding_plan[i][-1].spline.end.x,
                               y=self.weeding_plan[i][-1].spline.end.y,
                               yaw=self.weeding_plan[i][-1].spline.start.direction(self.weeding_plan[i][-1].spline.end))
@@ -323,8 +322,8 @@ class Weeding(rosys.persistence.PersistentModule):
             else:
                 self.log.error(f'No turn path found from row {i} to row {i + 1}')
                 return []
-            self.system.path_planner.obstacles[f'row_{start_row.id}'] = temp_removed_start_row
-            self.system.path_planner.obstacles[f'row_{end_row.id}'] = temp_removed_end_row
+            # self.system.path_planner.obstacles[f'row_{start_row.id}'] = temp_removed_start_row
+            # self.system.path_planner.obstacles[f'row_{end_row.id}'] = temp_removed_end_row
         return turn_paths
 
     async def _weeding(self):
