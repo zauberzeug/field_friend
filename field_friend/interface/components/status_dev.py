@@ -6,7 +6,7 @@ import rosys
 from nicegui import ui
 
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
-                         Tornado, YAxis, YAxisCanOpen, YAxisTornado, ZAxis, ZAxisCanOpen, ZAxisV2)
+                         Tornado, YAxis, ZAxis)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -26,10 +26,10 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.label('Software ESTOP is active!').classes('text-red mt-1')
 
         with ui.row().bind_visibility_from(robot.estop, 'active', value=False):
-            if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
-                with ui.row().bind_visibility_from(robot.z_axis, 'ref_t', value=False):
+            if isinstance(robot.z_axis, ZAxis):
+                with ui.row().bind_visibility_from(robot.z_axis, 'end_t'):
                     ui.icon('report').props('size=md').classes('text-red')
-                    ui.label('Z-axis not in top position!').classes('text-red mt-1')
+                    ui.label('Z-axis in end top position, error!').classes('text-red mt-1')
 
                 with ui.row().bind_visibility_from(robot.z_axis, 'end_b'):
                     ui.icon('report').props('size=md').classes('text-red')
@@ -59,6 +59,10 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 ui.label('real hardware')
             else:
                 ui.label('simulated hardware')
+
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Tool:**').style('color: #EDF4FB')
+            ui.label(robot.tool)
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
@@ -112,6 +116,9 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.markdown('**Current Field:**').style('color: #EDF4FB')
             current_field_label = ui.label()
         with ui.row().classes('place-items-center'):
+            ui.markdown('**Worked Area:**').style('color: #EDF4FB')
+            worked_area_label = ui.label()
+        with ui.row().classes('place-items-center'):
             ui.markdown('**Current Row:**').style('color: #EDF4FB')
             current_row_label = ui.label()
         with ui.row().classes('place-items-center'):
@@ -130,8 +137,15 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
             kpi_weeds_detected_label = ui.label()
         with ui.row().classes('place-items-center'):
+            ui.markdown('**Weeds Removed:**').style('color: #EDF4FB')
+            kpi_weeds_removed_label = ui.label()
+        with ui.row().classes('place-items-center'):
             ui.markdown('**Punches:**').style('color: #EDF4FB')
             kpi_punches_label = ui.label()
+        if robot.tool == 'dual_mechanism':
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Chops:**').style('color: #EDF4FB')
+                kpi_chops_label = ui.label()
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
@@ -175,26 +189,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 'not referenced' if not robot.y_axis.is_referenced else '',
                 'alarm' if robot.y_axis.alarm else '',
                 'idle'if robot.y_axis.idle else 'moving',
-                'ref l' if robot.y_axis.end_l else '',
-                'ref r' if robot.y_axis.end_r else '',
-                f'{robot.y_axis.steps:.0f}',
-                f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
-            ]
-        elif isinstance(robot.y_axis, YAxisTornado):
-            y_axis_flags = [
-                'not referenced' if not robot.y_axis.is_referenced else '',
-                'alarm' if robot.y_axis.alarm else '',
-                'idle'if robot.y_axis.idle else 'moving',
-                'end l' if robot.y_axis.end_l else '',
-                'end r' if robot.y_axis.end_r else '',
-                f'{robot.y_axis.steps:.0f}',
-                f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
-            ]
-        elif isinstance(robot.y_axis, YAxisCanOpen):
-            y_axis_flags = [
-                'not referenced' if not robot.y_axis.is_referenced else '',
-                'alarm' if robot.y_axis.alarm else '',
-                'idle'if robot.y_axis.idle else 'moving',
                 'end l' if robot.y_axis.end_l else '',
                 'end r' if robot.y_axis.end_r else '',
                 f'{robot.y_axis.steps:.0f}',
@@ -202,17 +196,15 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ]
         else:
             y_axis_flags = ['no y-axis']
-        if isinstance(robot.z_axis, ZAxis) or isinstance(robot.z_axis, ZAxisV2):
+        if isinstance(robot.z_axis, ZAxis):
             z_axis_flags = [
                 '' if robot.z_axis.is_referenced else 'not referenced',
                 'alarm' if robot.z_axis.alarm else '',
                 'idle' if robot.z_axis.idle else 'moving',
-                'ref stop enabled' if robot.z_axis.is_ref_enabled else '',
-                'end disabled' if not robot.z_axis.is_end_b_enabled else '',
-                'ref_t active' if robot.z_axis.ref_t else '',
+                'ref_t active' if robot.z_axis.end_t else '',
                 'end_b active' if robot.z_axis.end_b else '',
                 f'{robot.z_axis.steps}',
-                f'{robot.z_axis.depth:.2f}m' if robot.z_axis.is_referenced else '',
+                f'{robot.z_axis.position:.2f}m' if robot.z_axis.is_referenced else '',
             ]
         elif isinstance(robot.z_axis, Tornado):
             z_axis_flags = [
@@ -227,16 +219,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 'ref_knife_ground' if robot.z_axis.ref_knife_ground else '',
                 f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.z_is_referenced else '',
                 f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.turn_is_referenced else '',
-            ]
-        elif isinstance(robot.z_axis, ZAxisCanOpen):
-            z_axis_flags = [
-                '' if robot.z_axis.is_referenced else 'not referenced',
-                'alarm' if robot.z_axis.alarm else '',
-                'idle' if robot.z_axis.idle else 'moving',
-                'end_t' if robot.z_axis.end_t else '',
-                'end_b' if robot.z_axis.end_b else '',
-                f'{robot.z_axis.steps}',
-                f'{robot.z_axis.position:.2f}m' if robot.z_axis.is_referenced else '',
             ]
         else:
             z_axis_flags = ['no z-axis']
@@ -256,8 +238,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             flashlight_label.text = 'simulated'
         if isinstance(robot.bumper, rosys.hardware.Bumper):
             bumper_label.text = ', '.join(robot.bumper.active_bumpers)
-        else:
-            bumper_label.text = 'simulated'
 
         uptime_label.set_text(f'{timedelta(seconds=rosys.uptime())}')
         cpu_label.text = f'{psutil.cpu_percent():.0f}%'
@@ -285,19 +265,26 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         if system.automator.is_running:
             if system.field_provider.active_field is not None:
                 current_field_label.text = system.field_provider.active_field.name
-            kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
-            kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
+            kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time:.2f}s'
+            kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance:.0f}m'
 
             current_automation = next(key for key, value in system.automations.items()
                                       if value == system.automator.default_automation)
             if current_automation == 'weeding' or current_automation == 'monitoring':
-                if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
-                    current_row_label.text = system.field_provider.active_object['object'].name
+                if current_automation == 'weeding':
+                    current_row_label.text = system.weeding.current_row.name if system.weeding.current_row is not None else 'No row'
+                    worked_area_label.text = f'{system.weeding.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.weeding.field.area:.2f}m²' if system.weeding.field is not None else 'No field'
+                elif current_automation == 'monitoring':
+                    current_row_label.text = system.monitoring.current_row.name if system.monitoring.current_row is not None else 'No row'
+                    worked_area_label.text = f'{system.monitoring.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.monitoring.field.area:.2f}m²' if system.monitoring.field is not None else 'No field'
                 kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
                 kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+                kpi_weeds_removed_label.text = system.kpi_provider.current_weeding_kpis.weeds_removed
                 kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
                 if current_automation == 'weeding':
                     kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
+                    if robot.tool == 'dual_mechanism':
+                        kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
 
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
         reference_position_label.text = 'No reference' if system.gnss.reference_lat is None else 'Set'

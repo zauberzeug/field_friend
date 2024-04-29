@@ -12,11 +12,7 @@ from .flashlight_v2 import FlashlightSimulationV2
 from .safety import SafetySimulation
 from .tornado import TornadoSimulation
 from .y_axis import YAxisSimulation
-from .y_axis_canopen import YAxisCanOpenSimulation
-from .y_axis_tornado import YAxisSimulationTornado
 from .z_axis import ZAxisSimulation
-from .z_axis_canopen import ZAxisCanOpenSimulation
-from .z_axis_v2 import ZAxisSimulationV2
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
@@ -34,38 +30,48 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         if tool in ['tornado', 'weed_screw', 'none']:
             self.WORK_X = config_params['work_x']
             self.DRILL_RADIUS = config_params['drill_radius']
-        elif tool in ['double_mechanism']:
+        elif tool in ['dual_mechanism']:
             self.WORK_X_CHOP = config_params['work_x_chop']
-            self.WORK_X_DRILL = config_params['work_x_drill']
+            self.WORK_X = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS = config_params['chop_radius']
         else:
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
         wheels = rosys.hardware.WheelsSimulation()
+
+        y_axis: YAxisSimulation | ChainAxisSimulation | None
         if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()
-        elif config_hardware['y_axis']['version'] == 'y_axis':
-            y_axis = YAxisSimulation()
-        elif config_hardware['y_axis']['version'] == 'y_axis_tornado':
-            y_axis = YAxisSimulationTornado()
-        elif config_hardware['y_axis']['version'] == 'y_axis_canopen':
-            y_axis = YAxisCanOpenSimulation()
-        else:
+        elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen']:
+            y_axis = YAxisSimulation(
+                min_position=config_hardware['y_axis']['min_position'],
+                max_position=config_hardware['y_axis']['max_position'],
+                axis_offset=config_hardware['y_axis']['axis_offset'],
+            )
+        elif config_hardware['y_axis']['version'] == 'none':
             y_axis = None
+        else:
+            raise NotImplementedError(f'Unknown Y-Axis version: {config_hardware["y_axis"]["version"]}')
 
-        if config_hardware['z_axis']['version'] == 'z_axis':
-            z_axis = ZAxisSimulation()
-        elif config_hardware['z_axis']['version'] == 'z_axis_v2':
-            z_axis = ZAxisSimulationV2(ccw=config_hardware['z_axis']['ccw'])
+        z_axis: ZAxisSimulation | TornadoSimulation | None
+        if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen']:
+            z_axis = ZAxisSimulation(
+                min_position=config_hardware['z_axis']['min_position'],
+                max_position=config_hardware['z_axis']['max_position'],
+                axis_offset=config_hardware['z_axis']['axis_offset'],
+            )
+
         elif config_hardware['z_axis']['version'] == 'tornado':
             z_axis = TornadoSimulation(min_position=config_hardware['z_axis']['min_position'],
                                        m_per_tick=config_hardware['z_axis']['m_per_tick'],
                                        is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
                                        is_turn_reversed=config_hardware['z_axis']['is_turn_reversed'])
-        elif config_hardware['z_axis']['version'] == 'z_axis_canopen':
-            z_axis = ZAxisCanOpenSimulation()
-        else:
+        elif config_hardware['z_axis']['version'] == 'none':
             z_axis = None
+        else:
+            raise NotImplementedError(f'Unknown Z-Axis version: {config_hardware["z_axis"]["version"]}')
+
+        flashlight: FlashlightSimulation | FlashlightSimulationV2 | FlashlightPWMSimulationV2 | None
         if config_hardware['flashlight']['version'] == 'flashlight':
             flashlight = FlashlightSimulation()
         elif config_hardware['flashlight']['version'] == 'flashlight_v2':
@@ -74,10 +80,14 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             flashlight = FlashlightSimulationV2()
         elif config_hardware['flashlight']['version'] == 'flashlight_pwm_v2':
             flashlight = FlashlightPWMSimulationV2()
-        else:
+        elif config_hardware['flashlight']['version'] == 'none':
             flashlight = None
+        else:
+            raise NotImplementedError(f'Unknown Flashlight version: {config_hardware["flashlight"]["version"]}')
 
         estop = rosys.hardware.EStopSimulation()
+
+        bumper: rosys.hardware.BumperSimulation | None
         if 'bumper' in config_hardware:
             bumper = rosys.hardware.BumperSimulation(estop=estop)
         else:

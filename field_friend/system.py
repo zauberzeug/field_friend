@@ -20,6 +20,9 @@ class System:
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
 
+        self.field_friend: FieldFriendHardware | FieldFriendSimulation
+        self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
+        self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = CalibratableUsbCameraProvider()
@@ -29,7 +32,7 @@ class System:
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
-            version = 'rb33'  # insert here your field friend version to be simulated
+            version = 'rb27'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
             self.usb_camera_provider.remove_all_cameras()
@@ -44,6 +47,7 @@ class System:
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
+        self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
             self.gnss = GnssHardware(self.odometer)
         else:
@@ -59,7 +63,7 @@ class System:
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
 
         self.kpi_provider = KpiProvider(self.plant_provider)
-        if not (self.is_real):
+        if not self.is_real:
             generate_kpis(self.kpi_provider)
 
         def watch_robot() -> None:

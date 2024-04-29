@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 from random import randint
-from .automations import KpiProvider
+
 from rosys.analysis import Day, Month, date_to_str
+
+from .automations import KpiProvider
 
 
 def generate_kpis(kpi_provider: KpiProvider) -> None:
@@ -23,7 +25,9 @@ def generate_kpis(kpi_provider: KpiProvider) -> None:
                 'mowing_completed': randint(0, 10),
                 'crops_detected': randint(0, 100),
                 'weeds_detected': randint(0, 500),
+                'weeds_removed': randint(0, 500),
                 'punches': randint(0, 200),
+                'chops': randint(0, 200),
             },
         )
         for i in range(7 * 12)
@@ -49,7 +53,9 @@ def generate_kpis(kpi_provider: KpiProvider) -> None:
                 'mowing_completed': randint(0, 10) * 7 * 4,
                 'crops_detected': randint(0, 100) * 7 * 4,
                 'weeds_detected': randint(0, 500) * 7 * 4,
+                'weeds_removed': randint(0, 500) * 7 * 4,
                 'punches': randint(0, 200) * 7 * 4,
+                'chops': randint(0, 200) * 7 * 4,
             },
         )
         for i in range(4, 10)

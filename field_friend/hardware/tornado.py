@@ -86,7 +86,7 @@ class Tornado(rosys.hardware.Module, abc.ABC):
                 raise RuntimeError('zaxis is not referenced, reference first')
             await self.move_to(0)
         except RuntimeError as e:
-            rosys.notify(e, type='negative')
+            self.log.error(f'error while returning to reference: {e}')
             return False
         return True
 
@@ -200,14 +200,14 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         try:
             await super().move_to(position)
         except RuntimeError as e:
-            raise Exception(e)
+            raise Exception(e) from e
         await self.robot_brain.send(f'{self.name}_z.position({position});')
 
     async def move_down_until_reference(self) -> None:
         try:
             await super().move_down_until_reference()
         except RuntimeError as e:
-            raise Exception(e)
+            raise Exception(e) from e
         try:
             self.log.info('moving z axis down')
             await self.robot_brain.send(
@@ -234,7 +234,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.is_referenced = False
             self.z_is_referenced = False
             self.turn_is_referenced = False
-            raise Exception(e)
+            raise Exception(e) from e
         finally:
             # await rosys.sleep(1.5)
             self.log.info('finalizing moving z axis down')
@@ -255,7 +255,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         try:
             await super().turn_knifes_to(angle)
         except RuntimeError as e:
-            raise Exception(e)
+            raise Exception(e) from e
         target_angle = angle - self.last_angle
         if target_angle == 0:
             return
@@ -415,7 +415,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.ref_knife_stop = int(words.pop(0)) == 1
         self.ref_knife_ground = int(words.pop(0)) == 0
         self.position_z = float(words.pop(0))
-        self.position_turn = (float(words.pop(0)) * 360)
+        self.position_turn = float(words.pop(0)) * 360
 
 
 class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
@@ -443,21 +443,28 @@ class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
         try:
             await super().move_to(position)
         except RuntimeError as e:
-            raise Exception(e)
+            raise Exception(e) from e
         self.position_z = position
 
     async def move_down_until_reference(self) -> None:
         try:
             await super().move_down_until_reference()
         except RuntimeError as e:
-            raise Exception(e)
+            raise Exception(e) from e
         self.position_z = self.min_position
 
     async def turn_by(self, angle: float) -> None:
         try:
             await super().turn_by(angle)
         except RuntimeError as e:
-            raise Exception(e)
+            raise Exception(e) from e
+        self.position_turn = angle
+
+    async def turn_knifes_to(self, angle: float) -> None:
+        try:
+            await super().turn_knifes_to(angle)
+        except RuntimeError as e:
+            raise Exception(e) from e
         self.position_turn = angle
 
     async def turn_knifes_to(self, angle: float) -> None:
