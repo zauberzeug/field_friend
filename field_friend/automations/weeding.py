@@ -48,6 +48,8 @@ class Weeding(rosys.persistence.PersistentModule):
 
         # workflow settings
         self.only_monitoring: bool = False
+        self.drill_with_open_tornado: bool = False
+        self.drill_between_crops: bool = False
 
         # tool settings
         self.tornado_angle: float = 110.0
@@ -539,25 +541,32 @@ class Weeding(rosys.persistence.PersistentModule):
             if closest_crop_position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
                 self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
-                drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
-                target = self.system.odometer.prediction.transform(Point(x=drive_distance, y=0))
-                await self.system.driver.drive_to(target)
+
                 if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position):
-                    await self.system.puncher.punch(closest_crop_position.y, angle=self.tornado_angle)
-                if len(self.crops_to_handle) > 1:
+                    await self.system.puncher.drive_and_punch(closest_crop_position.x, closest_crop_position.y, angle=self.tornado_angle)
+                    if self.drill_with_open_tornado:
+                        await self.system.puncher.punch(closest_crop_position.y, angle=0)
+                else:
+                    drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
+                    target = self.system.odometer.prediction.transform(Point(x=drive_distance, y=0))
+                    await self.system.driver.drive_to(target)
+
+                if len(self.crops_to_handle) > 1 and self.drill_between_crops:
                     self.log.info('checking for second closest crop')
                     second_closest_crop_position = list(self.crops_to_handle.values())[1]
                     distance_to_next_crop = closest_crop_position.distance(second_closest_crop_position)
                     if distance_to_next_crop > 0.15:
                         # get the target of half the distance between the two crops
+                        target = closest_crop_position.x + distance_to_next_crop / 2
                         self.log.info(f'driving to position between two crops: {target}')
-                        target = self.system.odometer.prediction.transform(
-                            Point(x=closest_crop_position.x + distance_to_next_crop / 2 - self.system.field_friend.WORK_X, y=0))
-                        await self.system.driver.drive_to(target)
-                        self.log.info(f'target between two crops at {target}')
                         if not self.only_monitoring:
                             # punch in the middle position with closed knives
-                            await self.system.puncher.punch(0, angle=180)
+                            await self.system.puncher.drive_and_punch(target, 0, angle=180)
+                        else:
+                            drive_distance = target - self.system.field_friend.WORK_X
+                            target = self.system.odometer.prediction.transform(Point(x=drive_distance, y=0))
+                            await self.system.driver.drive_to(target)
+
             else:
                 await self._follow_line_of_crops()
             await rosys.sleep(0.2)
@@ -574,7 +583,8 @@ class Weeding(rosys.persistence.PersistentModule):
             if closest_crop_position.x < self.WORKING_DISTANCE:
                 self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
-                target = self.system.odometer.prediction.transform(Point(x=closest_crop_position.x, y=0))
+                drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
+                target = self.system.odometer.prediction.transform(Point(x=drive_distance, y=0))
                 await self.system.driver.drive_to(target)
                 self.system.plant_locator.resume()
             else:
