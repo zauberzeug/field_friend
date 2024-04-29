@@ -42,8 +42,10 @@ class PlantLocator:
         t = rosys.time()
         camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
         if not camera:
-            raise DetectorError()
+            self.log.error('no connected camera found')
+            return
         if camera.calibration is None:
+            self.log.error('no calibration found')
             raise DetectorError()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:
