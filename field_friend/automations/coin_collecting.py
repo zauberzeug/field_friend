@@ -61,12 +61,12 @@ class CoinCollecting():
         already_explored = False
         try:
             while True:
-                self.system.plant_locator.pause()
+                self.system.plant_locator.camera = None
                 self.system.plant_provider.clear()
                 self.log.info(f'cleared crops at start {self.system.plant_provider.crops}')
                 if not self.system.is_real:
                     self.create_simulated_plants()
-                self.system.plant_locator.resume()
+                self.system.plant_locator.camera = self.system.bottom_cam
                 await rosys.sleep(2)
                 while upcoming_crop_positions := self.get_upcoming_crops():
                     try:
@@ -140,7 +140,7 @@ class CoinCollecting():
         if self.system.field_friend.y_axis.min_position > center.y > self.system.field_friend.y_axis.max_position:
             self.log.info('crop is not reachable with y axis')
             return
-        self.system.plant_locator.pause()
+        self.system.plant_locator.camera = None
         self.log.info('Using implement')
         await self.system.puncher.punch(center.y, angle=TORNADO_ANGLE)
-        self.system.plant_locator.resume()
+        self.system.plant_locator.camera = self.system.bottom_cam

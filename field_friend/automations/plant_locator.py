@@ -18,17 +18,25 @@ class DetectorError(Exception):
 class PlantLocator:
 
     def __init__(self,
-                 camera_provider: rosys.vision.CameraProvider,
                  detector: rosys.vision.Detector,
                  plant_provider: PlantProvider,
                  odometer: rosys.driving.Odometer,
                  ) -> None:
+        """The PlantLocator manages the whole localization pipeline for plants.
+
+        It pulls images from the configured camera, 
+        triggers the plant detection and
+        adds the detected plants to the PlantProvider for future use.
+        The odometer (eg. current robot position) is used to transform the detected plants from camera coordinates to world coordinates.
+
+        You can change the used camera by setting the camera property.
+        If the camera property is None there is no localization being performed.
+        """
         self.log = logging.getLogger('field_friend.plant_detection')
-        self.camera_provider = camera_provider
+        self.camera: rosys.vision.CalibratableCamera | None = None
         self.detector = detector
         self.plant_provider = plant_provider
         self.odometer = odometer
-        self.is_paused = True
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
@@ -36,16 +44,15 @@ class PlantLocator:
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
 
     async def _detect_plants(self) -> None:
-        if self.is_paused:
+        if self.camera is None:
             await asyncio.sleep(0.01)
             return
         t = rosys.time()
-        camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
-        if not camera:
+        if not self.camera:
             raise DetectorError()
-        if camera.calibration is None:
+        if self.camera.calibration is None:
             raise DetectorError()
-        new_image = camera.latest_captured_image
+        new_image = self.camera.latest_captured_image
         if new_image is None or new_image.detections:
             await asyncio.sleep(0.01)
             return
@@ -61,7 +68,7 @@ class PlantLocator:
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = camera.calibration.project_from_image(image_point)
+                floor_point = self.camera.calibration.project_from_image(image_point)
                 if floor_point is None:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
@@ -71,7 +78,7 @@ class PlantLocator:
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info('crop found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = camera.calibration.project_from_image(image_point)
+                floor_point = self.camera.calibration.project_from_image(image_point)
                 if floor_point is None:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
@@ -83,11 +90,3 @@ class PlantLocator:
                 self.log.info(f'{d.category_name} not in categories')
             # else:
             #     self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
-
-    def pause(self) -> None:
-        self.log.info('pausing plant detection')
-        self.is_paused = True
-
-    def resume(self) -> None:
-        self.log.info('resuming plant detection')
-        self.is_paused = False
