@@ -1,0 +1,36 @@
+{
+    "cameras": {
+        "b8:a4:4f:8f:8b:77-1": {
+            "id": "b8:a4:4f:8f:8b:77-1",
+            "name": "b8:a4:4f:8f:8b:77-1",
+            "connect_after_init": false,
+            "streaming": true,
+            "username": "root",
+            "password": "zauberzg!"
+        },
+        "b8:a4:4f:8f:8b:77-2": {
+            "id": "b8:a4:4f:8f:8b:77-2",
+            "name": "b8:a4:4f:8f:8b:77-2",
+            "connect_after_init": false,
+            "streaming": true,
+            "username": "root",
+            "password": "zauberzg!"
+        },
+        "b8:a4:4f:8f:8b:77-3": {
+            "id": "b8:a4:4f:8f:8b:77-3",
+            "name": "b8:a4:4f:8f:8b:77-3",
+            "connect_after_init": false,
+            "streaming": true,
+            "username": "root",
+            "password": "zauberzg!"
+        },
+        "b8:a4:4f:8f:8b:77-4": {
+            "id": "b8:a4:4f:8f:8b:77-4",
+            "name": "b8:a4:4f:8f:8b:77-4",
+            "connect_after_init": false,
+            "streaming": true,
+            "username": "root",
+            "password": "zauberzg!"
+        }
+    }
+}
