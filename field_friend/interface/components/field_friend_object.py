@@ -4,7 +4,7 @@ from rosys.driving import Odometer, robot_object
 from rosys.geometry import Prism
 from rosys.vision import CameraProjector, CameraProvider, camera_objects
 
-from ...hardware import ChainAxis, FieldFriend, YAxis
+from ...hardware import ChainAxis, FieldFriend, Tornado, YAxis, ZAxis
 
 
 class field_friend_object(robot_object):
@@ -34,8 +34,14 @@ class field_friend_object(robot_object):
 
     def update(self) -> None:
         super().update()
-        if isinstance(self.robot.y_axis, YAxis):
+        if isinstance(self.robot.y_axis, YAxis) and isinstance(self.robot.z_axis, ZAxis):
             self.tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position, z=self.robot.z_axis.position)
+            if self.robot.y_axis.position > self.robot.y_axis.max_position or self.robot.y_axis.position < self.robot.y_axis.min_position:
+                self.tool.material('red')
+            else:
+                self.tool.material('#4488ff')
+        elif isinstance(self.robot.y_axis, YAxis) and isinstance(self.robot.z_axis, Tornado):
+            self.tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position, z=self.robot.z_axis.position_z)
             if self.robot.y_axis.position > self.robot.y_axis.max_position or self.robot.y_axis.position < self.robot.y_axis.min_position:
                 self.tool.material('red')
             else:
