@@ -1,7 +1,7 @@
 {
     "current_weeding_kpis": {
-        "distance": 0,
-        "time": 0,
+        "distance": 99,
+        "time": 903,
         "bumps": 0,
         "low_battery": 0,
         "can_failure": 0,
@@ -12,11 +12,11 @@
         "gnss_connection_lost": 0,
         "rows_weeded": 0,
         "crops_detected": 0,
-        "weeds_detected": 0,
-        "weeds_removed": null,
-        "punches": 21,
-        "chops": null,
-        "weeding_completed": false
+        "weeds_detected": 1,
+        "weeds_removed": 0,
+        "punches": 0,
+        "chops": 0,
+        "weeding_completed": 2
     },
     "current_mowing_kpis": {
         "distance": 0,
@@ -140,7 +140,13 @@
             "date": "2024-04-29",
             "incidents": {
                 "punches": 21,
-                "bumps": 2
+                "bumps": 6,
+                "time": 6040,
+                "distance": 678,
+                "weeds_detected": 10595,
+                "weeding_completed": 15,
+                "crops_detected": 15,
+                "rows_weeded": 5
             }
         }
     ],
