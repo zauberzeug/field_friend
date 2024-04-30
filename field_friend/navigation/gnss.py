@@ -5,7 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Optional, Protocol
+from typing import Optional, Protocol
 
 import numpy as np
 import pynmea2
@@ -14,7 +14,7 @@ import serial
 from geographiclib.geodesic import Geodesic
 from serial.tools import list_ports
 
-from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
+from field_friend.navigation.point_transformation import cartesian_to_wgs84, get_new_position, wgs84_to_cartesian
 
 
 @dataclass
@@ -88,9 +88,10 @@ class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
     TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
 
-    def __init__(self, odometer: rosys.driving.Odometer) -> None:
+    def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
         super().__init__()
         self.odometer = odometer
+        self.antenna_offset = antenna_offset
 
     def __del__(self) -> None:
         if self.ser is not None:
@@ -197,13 +198,18 @@ class GnssHardware(Gnss):
                     self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
                     self.set_reference(record.latitude, record.longitude)
                 else:
-                    cartesian_coordinates = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
-                        record.latitude, record.longitude])
                     if has_heading:
                         yaw = np.deg2rad(float(-record.heading))
                     else:
                         yaw = self.odometer.get_pose(time=record.timestamp).yaw
                         # TODO: Better INS implementation if no heading provided by GNSS
+                    # correct the gnss coordinat by antenna offset
+                    corrected_coordinates = get_new_position([
+                        record.latitude, record.longitude], self.antenna_offset, yaw+np.pi/2)
+                    self.record.latitude = deepcopy(corrected_coordinates[0])
+                    self.record.longitude = deepcopy(corrected_coordinates[1])
+                    cartesian_coordinates = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
+                        self.record.latitude, self.record.longitude])
                     pose = rosys.geometry.Pose(
                         x=cartesian_coordinates[0],
                         y=cartesian_coordinates[1],

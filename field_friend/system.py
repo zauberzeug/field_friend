@@ -49,7 +49,7 @@ class System:
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
-            self.gnss = GnssHardware(self.odometer)
+            self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
             self.gnss = GnssSimulation(self.field_friend.wheels)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
