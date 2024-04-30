@@ -1,0 +1,13 @@
+{
+    "record": {
+        "timestamp": null,
+        "latitude": 0.0,
+        "longitude": 0.0,
+        "mode": "NNNN",
+        "gps_qual": 0,
+        "altitude": 0.0,
+        "separation": 0.0,
+        "heading": 0.0,
+        "speed_kmh": 0.0
+    }
+}
