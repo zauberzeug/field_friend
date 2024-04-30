@@ -1,5 +1,5 @@
 {
-    "use_field_planning": false,
+    "use_field_planning": true,
     "start_row_id": null,
     "end_row_id": null,
     "tornado_angle": 110.0,
