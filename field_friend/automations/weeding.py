@@ -309,7 +309,7 @@ class Weeding(rosys.persistence.PersistentModule):
         area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
         self.system.path_planner.areas = {area.id: area}
         for i in range(len(self.weeding_plan) - 1):
-            # remove this rows from obstacles to allow starting in it an insert it afterwards again
+            # remove the current and the rows from obstacles to allow starting in it an insert it afterwards again
             # start_row = self.sorted_weeding_rows[i]
             # end_row = self.sorted_weeding_rows[i + 1]
             # temp_removed_start_row = self.system.path_planner.obstacles.pop(f'row_{start_row.id}')
@@ -377,7 +377,6 @@ class Weeding(rosys.persistence.PersistentModule):
             if self.continue_canceled_weeding and self.current_row != self.sorted_weeding_rows[i]:
                 continue
             self.system.driver.parameters.can_drive_backwards = False
-            self.system.driver.parameters.minimum_turning_radius = 0.02
             self.current_row = self.sorted_weeding_rows[i]
             self.system.plant_locator.pause()
             self.system.plant_provider.clear()
