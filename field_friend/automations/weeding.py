@@ -62,6 +62,10 @@ class Weeding(rosys.persistence.PersistentModule):
         self.crop_safety_distance: float = 0.01
 
         # driver settings
+        self.linear_speed_on_row: float = 0.08
+        self.angular_speed_on_row: float = 0.4
+        self.linear_speed_between_rows: float = 0.3
+        self.angular_speed_between_rows: float = 0.8
 
         self.state: str = 'idle'
         self.start_time: Optional[float] = None
@@ -99,11 +103,23 @@ class Weeding(rosys.persistence.PersistentModule):
     def backup(self) -> dict:
         return {
             'use_field_planning': self.use_field_planning,
+            'field': rosys.persistence.to_dict(self.field) if self.field else None,
             'start_row_id': self.start_row_id,
             'end_row_id': self.end_row_id,
-            'tornado_angle': self.tornado_angle,
             'minimum_turning_radius': self.minimum_turning_radius,
             'only_monitoring': self.only_monitoring,
+            'drill_with_open_tornado': self.drill_with_open_tornado,
+            'drill_between_crops': self.drill_between_crops,
+            'only_drilling': self.only_drilling,
+            'only_chopping': self.only_chopping,
+            'chop_if_no_crops': self.chop_if_no_crops,
+            'tornado_angle': self.tornado_angle,
+            'weed_screw_depth': self.weed_screw_depth,
+            'crop_safety_distance': self.crop_safety_distance,
+            'linear_speed_on_row': self.linear_speed_on_row,
+            'angular_speed_on_row': self.angular_speed_on_row,
+            'linear_speed_between_rows': self.linear_speed_between_rows,
+            'angular_speed_between_rows': self.angular_speed_between_rows,
             'sorted_weeding_rows': self.sorted_weeding_rows,
             'weeding_plan': [[rosys.persistence.to_dict(segment) for segment in row] for row in self.weeding_plan] if self.weeding_plan else [],
             'turn_paths': [rosys.persistence.to_dict(segment) for segment in self.turn_paths],
@@ -113,11 +129,23 @@ class Weeding(rosys.persistence.PersistentModule):
 
     def restore(self, data: dict[str, Any]) -> None:
         self.use_field_planning = data.get('use_field_planning', False)
+        self.field = rosys.persistence.from_dict(Field, data['field']) if data['field'] else None
         self.start_row_id = data.get('start_row_id', None)
         self.end_row_id = data.get('end_row_id', None)
-        self.tornado_angle = data.get('tornado_angle', 110.0)
         self.minimum_turning_radius = data.get('minimum_turning_radius', 0.5)
         self.only_monitoring = data.get('only_monitoring', False)
+        self.drill_with_open_tornado = data.get('drill_with_open_tornado', False)
+        self.drill_between_crops = data.get('drill_between_crops', False)
+        self.only_drilling = data.get('only_drilling', False)
+        self.only_chopping = data.get('only_chopping', False)
+        self.chop_if_no_crops = data.get('chop_if_no_crops', False)
+        self.tornado_angle = data.get('tornado_angle', 110.0)
+        self.weed_screw_depth = data.get('weed_screw_depth', 0.15)
+        self.crop_safety_distance = data.get('crop_safety_distance', 0.01)
+        self.linear_speed_on_row = data.get('linear_speed_on_row', 0.5)
+        self.angular_speed_on_row = data.get('angular_speed_on_row', 0.5)
+        self.linear_speed_between_rows = data.get('linear_speed_between_rows', 0.5)
+        self.angular_speed_between_rows = data.get('angular_speed_between_rows', 0.5)
         self.sorted_weeding_rows = data.get('sorted_weeding_rows', [])
         self.weeding_plan = [
             [rosys.persistence.from_dict(PathSegment, segment_data)
@@ -383,6 +411,8 @@ class Weeding(rosys.persistence.PersistentModule):
             if self.continue_canceled_weeding and self.current_row != self.sorted_weeding_rows[i]:
                 continue
             self.system.driver.parameters.can_drive_backwards = False
+            self.system.driver.parameters.linear_speed_limit = self.linear_speed_on_row
+            self.system.driver.parameters.angular_speed_limit = self.angular_speed_on_row
             self.current_row = self.sorted_weeding_rows[i]
             self.system.plant_locator.pause()
             self.system.plant_provider.clear()
@@ -423,6 +453,8 @@ class Weeding(rosys.persistence.PersistentModule):
             self.system.plant_locator.pause()
             if i < len(self.weeding_plan) - 1:
                 self.system.driver.parameters.can_drive_backwards = True
+                self.system.driver.parameters.linear_speed_limit = self.linear_speed_between_rows
+                self.system.driver.parameters.angular_speed_limit = self.angular_speed_between_rows
                 self.log.info('Driving to next row...')
                 turn_path = self.turn_paths[i]
                 await self.system.driver.drive_path(turn_path)
