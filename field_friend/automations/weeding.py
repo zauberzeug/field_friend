@@ -294,32 +294,38 @@ class Weeding(rosys.persistence.PersistentModule):
         for obstacle in self.field.obstacles:
             self.system.path_planner.obstacles[obstacle.id] = rosys.pathplanning.Obstacle(
                 id=obstacle.id, outline=obstacle.points([self.field.reference_lat, self.field.reference_lon]))
-        # for row in self.field.rows:
-        #     row_points = row.points([self.field.reference_lat, self.field.reference_lon])
-        #     # create a small polygon around the row to avoid the robot driving through the row
-        #     row_polygon = [
-        #         Point(x=row_points[0].x - 0.01, y=row_points[0].y - 0.01),
-        #         Point(x=row_points[0].x - 0.01, y=row_points[-1].y + 0.01),
-        #         Point(x=row_points[-1].x + 0.01, y=row_points[-1].y + 0.01),
-        #         Point(x=row_points[-1].x + 0.01, y=row_points[0].y - 0.01),
-        #     ]
-        #     self.system.path_planner.obstacles[f'row_{row.id}'] = rosys.pathplanning.Obstacle(
-        #         id=f'row_{row.id}', outline=row_polygon)
+        for row in self.field.rows:
+            row_points = row.points([self.field.reference_lat, self.field.reference_lon])
+            # create a small polygon around the row to avoid the robot driving through the row
+            row_polygon = [
+                Point(x=row_points[0].x - 0.01, y=row_points[0].y - 0.01),
+                Point(x=row_points[0].x - 0.01, y=row_points[-1].y + 0.01),
+                Point(x=row_points[-1].x + 0.01, y=row_points[-1].y + 0.01),
+                Point(x=row_points[-1].x + 0.01, y=row_points[0].y - 0.01),
+            ]
+            self.system.path_planner.obstacles[f'row_{row.id}'] = rosys.pathplanning.Obstacle(
+                id=f'row_{row.id}', outline=row_polygon)
 
         area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
         self.system.path_planner.areas = {area.id: area}
         for i in range(len(self.weeding_plan) - 1):
             # remove the current and the rows from obstacles to allow starting in it an insert it afterwards again
-            # start_row = self.sorted_weeding_rows[i]
-            # end_row = self.sorted_weeding_rows[i + 1]
-            # temp_removed_start_row = self.system.path_planner.obstacles.pop(f'row_{start_row.id}')
-            # temp_removed_end_row = self.system.path_planner.obstacles.pop(f'row_{end_row.id}')
-            start_pose = Pose(x=self.weeding_plan[i][-1].spline.end.x,
-                              y=self.weeding_plan[i][-1].spline.end.y,
-                              yaw=self.weeding_plan[i][-1].spline.start.direction(self.weeding_plan[i][-1].spline.end))
-            end_pose = Pose(x=self.weeding_plan[i + 1][0].spline.start.x,
-                            y=self.weeding_plan[i + 1][0].spline.start.y,
-                            yaw=self.weeding_plan[i + 1][0].spline.start.direction(self.weeding_plan[i + 1][0].spline.end))
+            start_row = self.sorted_weeding_rows[i]
+            end_row = self.sorted_weeding_rows[i + 1]
+            temp_removed_start_row = self.system.path_planner.obstacles.pop(f'row_{start_row.id}')
+            temp_removed_end_row = self.system.path_planner.obstacles.pop(f'row_{end_row.id}')
+            start_point = Point(x=self.weeding_plan[i][-1].spline.end.x,
+                                y=self.weeding_plan[i][-1].spline.end.y
+                                )
+            yaw = self.weeding_plan[i][-1].spline.start.direction(self.weeding_plan[i][-1].spline.end)
+            offset_start_point = start_point.polar(0.4, yaw)
+
+            start_pose = Pose(x=offset_start_point.x, y=offset_start_point.y, yaw=yaw)
+            end_point = Point(x=self.weeding_plan[i + 1][0].spline.start.x,
+                              y=self.weeding_plan[i + 1][0].spline.start.y)
+            end_yaw = self.weeding_plan[i + 1][0].spline.start.direction(self.weeding_plan[i + 1][0].spline.end)
+            offset_end_point = end_point.polar(0.5, yaw)
+            end_pose = Pose(x=offset_end_point.x, y=offset_end_point.y, yaw=end_yaw)
             self.log.info(f'Searching path from row {i} to row {i + 1}...')
             turn_path = await self.system.path_planner.search(start=start_pose, goal=end_pose, timeout=120)
             if turn_path:
@@ -327,8 +333,8 @@ class Weeding(rosys.persistence.PersistentModule):
             else:
                 self.log.error(f'No turn path found from row {i} to row {i + 1}')
                 return []
-            # self.system.path_planner.obstacles[f'row_{start_row.id}'] = temp_removed_start_row
-            # self.system.path_planner.obstacles[f'row_{end_row.id}'] = temp_removed_end_row
+            self.system.path_planner.obstacles[f'row_{start_row.id}'] = temp_removed_start_row
+            self.system.path_planner.obstacles[f'row_{end_row.id}'] = temp_removed_end_row
         return turn_paths
 
     async def _weeding(self):
@@ -487,7 +493,7 @@ class Weeding(rosys.persistence.PersistentModule):
             # Correctly filter to get upcoming crops based on their x position
             upcoming_crop_positions = {
                 c: pos for c, pos in relative_crop_positions.items()
-                if self.system.field_friend.WORK_X < pos.x <= self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x
+                if self.system.field_friend.WORK_X+self.system.field_friend.DRILL_RADIUS < pos.x <= self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x
             }
         else:
             upcoming_crop_positions = {
@@ -508,7 +514,7 @@ class Weeding(rosys.persistence.PersistentModule):
             # Filter to get upcoming weeds based on their .x position
             upcoming_weed_positions = {
                 w: pos for w, pos in relative_weed_positions.items()
-                if self.system.field_friend.WORK_X < pos.x <= self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x
+                if self.system.field_friend.WORK_X+self.system.field_friend.DRILL_RADIUS < pos.x <= self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x
             }
         else:
             upcoming_weed_positions = {
