@@ -69,7 +69,7 @@ class PlantLocator:
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
                 weed = Plant(position=world_point, type=d.category_name, detection_time=rosys.time())
-                self.plant_provider.add_weed(weed)
+                await self.plant_provider.add_weed(weed)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info('crop found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
@@ -80,7 +80,7 @@ class PlantLocator:
                 world_point = self.odometer.prediction.transform(floor_point.projection())
                 crop = Plant(position=world_point, type=d.category_name,
                              detection_time=rosys.time(), confidence=d.confidence)
-                self.plant_provider.add_crop(crop)
+                await self.plant_provider.add_crop(crop)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
             # else:
