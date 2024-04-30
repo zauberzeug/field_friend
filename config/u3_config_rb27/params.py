@@ -8,4 +8,5 @@ configuration = {
     'drill_radius': 0.025,
     'chop_radius': 0.07,
     'tool': 'dual_mechanism',
+    'antenna_offset': 0.205,
 }
