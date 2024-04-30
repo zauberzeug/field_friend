@@ -252,7 +252,11 @@ class GnssSimulation(Gnss):
         if self.reference_lon is None:
             self.reference_lon = 7.434212
         pose = deepcopy(self.pose_provider.pose)
-        pose.time = rosys.time()
+        try:
+            pose.time = rosys.time()
+        except Exception:
+            self.log.error('Pose provider has no time attribute')
+            return
         current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
 
         self.record.timestamp = pose.time
