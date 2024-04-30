@@ -142,18 +142,22 @@ class operation:
                         ui.separator()
                         ui.markdown('**Driver settings**').style('color: #6E93D6')
                         with ui.row():
-                            ui.number('Carrot distance', value=0.2, step=0.01, min=0.0, format='%.2f').props('dense outlined suffix=m').classes(
-                                'w-24').bind_value(system.driver.parameters, 'carrot_distance').tooltip('Set the carrot distance for the weeding automation')
-                            ui.number('Carrot offset', value=0.8, step=0.01, min=0.0, format='%.2f').props('dense outlined suffix=m').classes(
-                                'w-24').bind_value(system.driver.parameters, 'carrot_offset').tooltip('Set the carrot offset for the weeding automation')
-                            ui.number('Hook offset', value=0.6, step=0.01, min=0.0, format='%.2f').props('dense outlined suffix=m').classes(
-                                'w-24').bind_value(system.driver.parameters, 'hook_offset').tooltip('Set the hook offset for the weeding automation')
-                            ui.number('Linear speed limit', value=0.1, step=0.01, min=0.0, format='%.2f').props('dense outlined suffix=m/s').classes(
-                                'w-24').bind_value(system.driver.parameters, 'linear_speed_limit').tooltip('Set the linear speed limit for the weeding automation')
-                            ui.number('Angular speed limit', value=0.5, step=0.01, min=0.0, format='%.2f').props('dense outlined suffix=rad/s').classes(
-                                'w-24').bind_value(system.driver.parameters, 'angular_speed_limit').tooltip('Set the angular speed limit for the weeding automation')
-                            ui.number('Minimum turning radius', value=0.02, step=0.01, min=0.0, format='%.2f').props('dense outlined suffix=m').classes(
-                                'w-24').bind_value(system.driver.parameters, 'minimum_turning_radius').tooltip('Set the minimum turning radius for the weeding automation')
+                            ui.number('linear_speed_on_row', value=0.5, step=0.1, min=0.1, format='%.1f').props(
+                                'dense outlined suffix=m/s').classes('w-24').bind_value(
+                                self.system.weeding, 'linear_speed_on_row').tooltip(
+                                'Set the linear speed on row for the weeding automation')
+                            ui.number('linear_speed_between_rows', value=0.5, step=0.1, min=0.1, format='%.1f').props(
+                                'dense outlined suffix=m/s').classes('w-24').bind_value(
+                                self.system.weeding, 'linear_speed_between_rows').tooltip(
+                                'Set the linear speed between rows for the weeding automation')
+                            ui.number('angular_speed_on_row', value=0.5, step=0.1, min=0.1, format='%.1f').props(
+                                'dense outlined suffix=°/s').classes('w-24').bind_value(
+                                self.system.weeding, 'angular_speed_on_row').tooltip(
+                                'Set the angular speed on row for the weeding automation')
+                            ui.number('angular_speed_between_rows', value=0.5, step=0.1, min=0.1, format='%.1f').props(
+                                'dense outlined suffix=°/s').classes('w-24').bind_value(
+                                self.system.weeding, 'angular_speed_between_rows').tooltip(
+                                'Set the angular speed between rows for the weeding automation')
 
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='monitoring'):
                         with ui.column():
