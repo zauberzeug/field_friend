@@ -70,7 +70,7 @@ class monitoring:
                     ui.label('Animal count:').classes('text-2xl text-bold') \
                         .bind_text_from(self, 'animal_count', backward=lambda x: f'Animal count: {x}')
                     ui.space()
-                    ui.switch('Person detection') \
+                    ui.switch('Environment detection') \
                         .bind_value(self, 'monitoring_active') \
                         .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                     ui.label('Plant detection:').classes('ml-6')
