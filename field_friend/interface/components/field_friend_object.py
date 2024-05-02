@@ -21,7 +21,8 @@ class field_friend_object(robot_object):
         self.with_stl('assets/field_friend.stl', x=-0.365, y=-0.3, z=0.06, scale=0.001, color='#6E93D6', opacity=0.7)
         with self:
             camera_objects(internal_camera_provider, CameraProjector(internal_camera_provider))
-            camera_objects(circle_sight_provider, CameraProjector(circle_sight_provider))
+            if False:  # TODO enable when mjpeg cameras are calibratable
+                camera_objects(circle_sight_provider, CameraProjector(circle_sight_provider))
             if isinstance(self.robot.y_axis, YAxis):
                 with Group() as self.tool:
                     Box(0.015, 0.015, 0.35).material('#4488ff').move(z=0.4)
