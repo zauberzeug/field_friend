@@ -196,7 +196,7 @@ class GnssHardware(Gnss):
                         # print(f'The GNSS message: {msg.mode_indicator}')
                         has_location = True
                     if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None):
-                        record.heading = msg.heading
+                        record.heading = float(msg.heading)
                         has_heading = True
                 except pynmea2.ParseError as e:
                     self.log.info(f'Parse error: {e}')
@@ -221,7 +221,7 @@ class GnssHardware(Gnss):
                     cartesian_coordinates = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
                         record.latitude, record.longitude])
                     if has_heading:
-                        yaw = np.deg2rad(float(-record.heading))
+                        yaw = np.deg2rad(-record.heading)
                     else:
                         yaw = self.odometer.get_pose(time=record.timestamp).yaw
                         # TODO: Better INS implementation if no heading provided by GNSS
