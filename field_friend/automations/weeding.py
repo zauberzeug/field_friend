@@ -45,6 +45,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.start_row_id: Optional[str] = None
         self.end_row_id: Optional[str] = None
         self.minimum_turning_radius: float = 0.5
+        self.turn_offset: float = 0.4
 
         # workflow settings
         self.only_monitoring: bool = False
@@ -52,8 +53,8 @@ class Weeding(rosys.persistence.PersistentModule):
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
         # dual mechanism
-        self.only_drilling: bool = False
-        self.only_chopping: bool = False
+        self.with_drilling: bool = False
+        self.with_chopping: bool = False
         self.chop_if_no_crops: bool = False
 
         # tool settings
@@ -101,17 +102,18 @@ class Weeding(rosys.persistence.PersistentModule):
             self.start_time = rosys.time()
 
     def backup(self) -> dict:
-        return {
+        dict = {
             'use_field_planning': self.use_field_planning,
             'field': rosys.persistence.to_dict(self.field) if self.field else None,
             'start_row_id': self.start_row_id,
             'end_row_id': self.end_row_id,
             'minimum_turning_radius': self.minimum_turning_radius,
+            'turn_offset': self.turn_offset,
             'only_monitoring': self.only_monitoring,
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
-            'only_drilling': self.only_drilling,
-            'only_chopping': self.only_chopping,
+            'with_drilling': self.with_drilling,
+            'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
             'tornado_angle': self.tornado_angle,
             'weed_screw_depth': self.weed_screw_depth,
@@ -126,26 +128,29 @@ class Weeding(rosys.persistence.PersistentModule):
             'current_row': rosys.persistence.to_dict(self.current_row) if self.current_row else None,
             'current_segment': rosys.persistence.to_dict(self.current_segment) if self.current_segment else None,
         }
+        self.log.info(f'backing up: {dict}')
+        return dict
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.use_field_planning = data.get('use_field_planning', False)
+        self.use_field_planning = data.get('use_field_planning', self.use_field_planning)
         self.field = rosys.persistence.from_dict(Field, data['field']) if data['field'] else None
-        self.start_row_id = data.get('start_row_id', None)
-        self.end_row_id = data.get('end_row_id', None)
-        self.minimum_turning_radius = data.get('minimum_turning_radius', 0.5)
-        self.only_monitoring = data.get('only_monitoring', False)
-        self.drill_with_open_tornado = data.get('drill_with_open_tornado', False)
-        self.drill_between_crops = data.get('drill_between_crops', False)
-        self.only_drilling = data.get('only_drilling', False)
-        self.only_chopping = data.get('only_chopping', False)
-        self.chop_if_no_crops = data.get('chop_if_no_crops', False)
-        self.tornado_angle = data.get('tornado_angle', 110.0)
-        self.weed_screw_depth = data.get('weed_screw_depth', 0.15)
-        self.crop_safety_distance = data.get('crop_safety_distance', 0.01)
-        self.linear_speed_on_row = data.get('linear_speed_on_row', 0.5)
-        self.angular_speed_on_row = data.get('angular_speed_on_row', 0.5)
-        self.linear_speed_between_rows = data.get('linear_speed_between_rows', 0.5)
-        self.angular_speed_between_rows = data.get('angular_speed_between_rows', 0.5)
+        self.start_row_id = data.get('start_row_id', self.start_row_id)
+        self.end_row_id = data.get('end_row_id', self.end_row_id)
+        self.minimum_turning_radius = data.get('minimum_turning_radius', self.minimum_turning_radius)
+        self.turn_offset = data.get('turn_offset', self.turn_offset)
+        self.only_monitoring = data.get('only_monitoring', self.only_monitoring)
+        self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
+        self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
+        self.with_drilling = data.get('with_drilling', self.with_drilling)
+        self.with_chopping = data.get('with_chopping', self.with_chopping)
+        self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
+        self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
+        self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
+        self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
+        self.linear_speed_on_row = data.get('linear_speed_on_row', self.linear_speed_on_row)
+        self.angular_speed_on_row = data.get('angular_speed_on_row', self.angular_speed_on_row)
+        self.linear_speed_between_rows = data.get('linear_speed_between_rows', self.linear_speed_between_rows)
+        self.angular_speed_between_rows = data.get('angular_speed_between_rows', self.angular_speed_between_rows)
         self.sorted_weeding_rows = data.get('sorted_weeding_rows', [])
         self.weeding_plan = [
             [rosys.persistence.from_dict(PathSegment, segment_data)
@@ -159,6 +164,7 @@ class Weeding(rosys.persistence.PersistentModule):
             'current_segment']) if data['current_segment'] else None
 
     def invalidate(self) -> None:
+        self.log.info('backing up...')
         self.request_backup()
 
     async def start(self):
@@ -169,6 +175,7 @@ class Weeding(rosys.persistence.PersistentModule):
             if self.use_field_planning and not await self._field_planning():
                 rosys.notify('Field planning failed', 'negative')
                 return
+        self.invalidate()
         await self._weeding()
 
     async def _check_hardware_ready(self) -> bool:
@@ -326,10 +333,9 @@ class Weeding(rosys.persistence.PersistentModule):
             row_points = row.points([self.field.reference_lat, self.field.reference_lon])
             # create a small polygon around the row to avoid the robot driving through the row
             row_polygon = [
-                Point(x=row_points[0].x - 0.01, y=row_points[0].y - 0.01),
-                Point(x=row_points[0].x - 0.01, y=row_points[-1].y + 0.01),
-                Point(x=row_points[-1].x + 0.01, y=row_points[-1].y + 0.01),
-                Point(x=row_points[-1].x + 0.01, y=row_points[0].y - 0.01),
+                Point(x=row_points[0].x, y=row_points[0].y),
+                Point(x=row_points[0].x - 0.01, y=row_points[0].y + 0.01),
+                Point(x=row_points[-1].x, y=row_points[-1].y),
             ]
             self.system.path_planner.obstacles[f'row_{row.id}'] = rosys.pathplanning.Obstacle(
                 id=f'row_{row.id}', outline=row_polygon)
@@ -346,7 +352,7 @@ class Weeding(rosys.persistence.PersistentModule):
                                 y=self.weeding_plan[i][-1].spline.end.y
                                 )
             yaw = self.weeding_plan[i][-1].spline.start.direction(self.weeding_plan[i][-1].spline.end)
-            offset_start_point = start_point.polar(0.4, yaw)
+            offset_start_point = start_point.polar(self.turn_offset, yaw)
 
             start_pose = Pose(x=offset_start_point.x, y=offset_start_point.y, yaw=yaw)
             end_point = Point(x=self.weeding_plan[i + 1][0].spline.start.x,
@@ -363,6 +369,9 @@ class Weeding(rosys.persistence.PersistentModule):
                 return []
             self.system.path_planner.obstacles[f'row_{start_row.id}'] = temp_removed_start_row
             self.system.path_planner.obstacles[f'row_{end_row.id}'] = temp_removed_end_row
+        # # clear all row obstacles
+        # for row in self.field.rows:
+        #     self.system.path_planner.obstacles.pop(f'row_{row.id}')
         return turn_paths
 
     async def _weeding(self):
@@ -510,6 +519,11 @@ class Weeding(rosys.persistence.PersistentModule):
             if self.system.field_friend.tool in ['tornado', 'none'] or self.use_monitor_workflow:
                 if self.crops_to_handle:
                     return
+            elif self.system.field_friend.tool == 'dual_mechanism':
+                if (self.with_drilling and not self.only_monitoring) and (self.crops_to_handle or self.weeds_to_handle):
+                    return
+                elif self.crops_to_handle:
+                    return
             else:
                 if self.weeds_to_handle or self.crops_to_handle:
                     return
@@ -568,7 +582,9 @@ class Weeding(rosys.persistence.PersistentModule):
             await self._tornado_workflow()
         elif self.system.field_friend.tool == 'weed_screw' and not self.use_monitor_workflow:
             await self._weed_screw_workflow()
-        elif self.system.field_friend.tool == 'dual_mechanism' and not self.use_monitor_workflow:
+        elif self.system.field_friend.tool == 'dual_mechanism' and not self.use_monitor_workflow and self.crops_to_handle:
+            await self._dual_mechanism_workflow()
+        elif self.system.field_friend.tool == 'dual_mechanism' and not self.use_monitor_workflow and self.with_drilling and not self.only_monitoring:
             await self._dual_mechanism_workflow()
         elif self.system.field_friend.tool == 'none' or self.use_monitor_workflow:
             await self._monitor_workflow()
@@ -681,7 +697,8 @@ class Weeding(rosys.persistence.PersistentModule):
             if self.crops_to_handle:
                 next_crop_position = list(self.crops_to_handle.values())[0]
                 # first: check if weeds near crop
-                if not self.only_chopping:
+                if self.with_chopping:
+                    self.log.info(f'Drilling allowed: only chopping is {self.with_chopping}')
                     self._keep_crops_safe()
                     weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if next_crop_position.x - self.system.field_friend.DRILL_RADIUS*2
                                       < position.x < next_crop_position.x + self.system.field_friend.DRILL_RADIUS*2 and self.system.field_friend.can_reach(position)}
@@ -708,7 +725,8 @@ class Weeding(rosys.persistence.PersistentModule):
                                 self.kpi_provider.increment_weeding_kpi('weeds_removed')
                         await self.system.puncher.clear_view()
                 # second: check if weed before crop to chop
-                if not self.only_drilling:
+                if self.with_drilling:
+                    self.log.info(f'Chopping allowed: only drilling is {self.with_drilling}')
                     weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if position.x < next_crop_position.x - (
                         self.system.field_friend.DRILL_RADIUS) and self.system.field_friend.can_reach(position, second_tool=True)}
                     if weeds_in_range:

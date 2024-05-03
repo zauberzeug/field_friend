@@ -25,12 +25,12 @@ services:
         max-size: "200m"
         max-file: "100"
     init: true
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 60s
-      timeout: 20s
-      retries: 3
-      start_period: 60s
+    # healthcheck:
+    #   test: curl --fail http://localhost/status || exit 1
+    #   interval: 20s
+    #   retries: 3
+    #   start_period: 1h
+    #   timeout: 10s
 
   autoheal: # restart containers which turn unhealthy
     image: willfarrell/autoheal

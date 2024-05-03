@@ -73,7 +73,7 @@ class operation:
                                 'w-28').bind_value(system.mowing, 'number_of_outer_lanes').tooltip('Set the number of outer lanes for the mowing automation')
                             ui.number('Min. turning radius', format='%.2f', value=0.5, step=0.05, min=0.1, max=2.0).props(
                                 'dense outlined suffix=m').classes('w-32').bind_value(
-                                self.system.mowing, 'turning_radius').tooltip(
+                                self.system.mowing, 'minimum_turning_radius').tooltip(
                                 'Set the turning radius for the mowing automation')
 
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='weeding'):
@@ -90,6 +90,21 @@ class operation:
                                     'dense outlined suffix=m').classes('w-30').bind_value(
                                     self.system.weeding, 'minimum_turning_radius').tooltip(
                                     'Set the turning radius for the weeding automation')
+                                ui.number('turn_offset', format='%.2f', value=0.4, step=0.05, min=0.05, max=2.0).props(
+                                    'dense outlined suffix=m').classes('w-30').bind_value(
+                                    self.system.weeding, 'turn_offset').tooltip(
+                                    'Set the turning offset for the weeding automation')
+                        ui.separator()
+                        ui.markdown('Detector settings').style('color: #6E93D6')
+                        with ui.row():
+                            ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0).props(
+                                'dense outlined').classes('w-24').bind_value(
+                                self.system.plant_locator, 'minimum_weed_confidence').tooltip(
+                                'Set the minimum weed confidence for the weeding automation')
+                            ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0).props(
+                                'dense outlined').classes('w-24').bind_value(
+                                self.system.plant_locator, 'minimum_crop_confidence').tooltip(
+                                'Set the minimum crop confidence for the weeding automation')
                         ui.separator()
                         ui.markdown('Tool settings').style('color: #6E93D6')
                         with ui.row():
@@ -112,7 +127,7 @@ class operation:
                         ui.markdown('Workflow settings').style('color: #6E93D6')
                         with ui.row():
                             if self.system.field_friend.tool == 'tornado':
-                                ui.checkbox('Drill 2x with open torando', value=False).bind_value(
+                                ui.checkbox('Drill 2x with open torando', value=False, on_change=system.weeding.invalidate).bind_value(
                                     self.system.weeding, 'drill_with_open_tornado').tooltip(
                                     'Set the weeding automation to drill a second time with open tornado')
                                 ui.checkbox('Drill between crops', value=False).bind_value(
@@ -120,17 +135,12 @@ class operation:
                                     'Set the weeding automation to drill between crops')
                             elif self.system.field_friend.tool == 'dual_mechanism':
 
-                                def uncheck_tools():
-                                    if drill_check.value:
-                                        chop_check.value = False
-                                    if chop_check.value:
-                                        drill_check.value = False
-                                drill_check = ui.checkbox('Only Drilling', value=False, on_change=uncheck_tools).bind_value(
-                                    self.system.weeding, 'only_drilling').tooltip(
-                                    'Set the weeding automation to only drill')
-                                chop_check = ui.checkbox('Only Chopping', value=False, on_change=uncheck_tools).bind_value(
-                                    self.system.weeding, 'only_chopping').tooltip(
-                                    'Set the weeding automation to only chop')
+                                ui.checkbox('Drilling', value=False).bind_value(
+                                    self.system.weeding, 'with_drilling').tooltip(
+                                    'Set the weeding automation to with drill')
+                                ui.checkbox('Chopping', value=False).bind_value(
+                                    self.system.weeding, 'with_chopping').tooltip(
+                                    'Set the weeding automation to with chop')
 
                                 ui.checkbox('Chop if no crops', value=False).bind_value(
                                     self.system.weeding, 'chop_if_no_crops').tooltip(
