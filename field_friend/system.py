@@ -48,17 +48,17 @@ class System:
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
-            self.gnss = GnssHardware(self.odometer)
+            self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
             self.gnss = GnssSimulation(self.field_friend.wheels)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
-        self.driver.parameters.linear_speed_limit = 0.1
-        self.driver.parameters.angular_speed_limit = 0.5
+        self.driver.parameters.linear_speed_limit = 0.3
+        self.driver.parameters.angular_speed_limit = 0.8
         self.driver.parameters.can_drive_backwards = True
-        self.driver.parameters.minimum_turning_radius = 0.02
-        self.driver.parameters.hook_offset = 0.6
-        self.driver.parameters.carrot_distance = 0.2
+        self.driver.parameters.minimum_turning_radius = 0.01
+        self.driver.parameters.hook_offset = 0.45
+        self.driver.parameters.carrot_distance = 0.15
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
 
         self.kpi_provider = KpiProvider(self.plant_provider)
@@ -82,6 +82,8 @@ class System:
                                           )
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
+        self.plant_locator.minimum_weed_confidence = 0.8
+        self.plant_locator.minimum_crop_confidence = 0.40
 
         rosys.on_repeat(watch_robot, 1.0)
 

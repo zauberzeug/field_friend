@@ -1,4 +1,13 @@
 {
-    "reference_lat": 51.983140848333335,
-    "reference_lon": 7.434131408333333
+    "record": {
+        "timestamp": 1714383598.7,
+        "latitude": 53.110880316666666,
+        "longitude": 13.91411435,
+        "mode": "DAAA",
+        "gps_qual": 2,
+        "altitude": 62.1027,
+        "separation": "43.2568",
+        "heading": 0.0,
+        "speed_kmh": 0.0
+    }
 }

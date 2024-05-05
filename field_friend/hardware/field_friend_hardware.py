@@ -37,6 +37,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH / np.pi
         self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
+        self.ANTENNA_OFFSET: float = config_params['antenna_offset']
         tool: str = config_params['tool']
         if tool in ['tornado', 'weed_screw', 'none']:
             self.WORK_X: float = config_params['work_x']
@@ -181,8 +182,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      end_bottom_pin=config_hardware['z_axis']['end_bottom_pin'],
                                      ref_motor_pin=config_hardware['z_axis']['ref_motor_pin'],
                                      ref_gear_pin=config_hardware['z_axis']['ref_gear_pin'],
-                                     ref_t_pin=config_hardware['z_axis']['ref_t_pin'],
-                                     ref_b_pin=config_hardware['z_axis']['ref_b_pin'],
+                                     ref_knife_stop_pin=config_hardware['z_axis']['ref_knife_stop_pin'],
+                                     ref_knife_ground_pin=config_hardware['z_axis']['ref_knife_ground_pin'],
                                      motors_on_expander=config_hardware['z_axis']['motors_on_expander'],
                                      end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
                                      is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
@@ -190,6 +191,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      speed_limit=config_hardware['z_axis']['speed_limit'],
                                      turn_speed_limit=config_hardware['z_axis']['turn_speed_limit'],
                                      current_limit=config_hardware['z_axis']['current_limit'],
+                                     z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
+                                     turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
                                      )
         elif config_hardware['z_axis']['version'] == 'z_axis_canopen':
             z_axis = ZAxisCanOpenHardware(robot_brain,

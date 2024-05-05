@@ -5,7 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Optional, Protocol
+from typing import Optional, Protocol
 
 import numpy as np
 import pynmea2
@@ -14,7 +14,7 @@ import serial
 from geographiclib.geodesic import Geodesic
 from serial.tools import list_ports
 
-from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
+from field_friend.navigation.point_transformation import cartesian_to_wgs84, get_new_position, wgs84_to_cartesian
 
 
 @dataclass
@@ -30,7 +30,7 @@ class GNSSRecord:
     speed_kmh: float = 0.0
 
 
-class Gnss(rosys.persistence.PersistentModule, ABC):
+class Gnss(ABC):
 
     def __init__(self) -> None:
         super().__init__()
@@ -58,26 +58,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         rosys.on_repeat(self.update, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
 
-    def backup(self) -> dict:
-        return {
-            'record': rosys.persistence.to_dict(self.record)
-        }
-
-    def restore(self, data: dict[str, Any]) -> None:
-        record = data.get('record')
-        if not isinstance(record, dict):
-            self.log.error('No record data found')
-            return
-        self.record.timestamp = record["timestamp"]
-        self.record.latitude = record["latitude"]
-        self.record.longitude = record["longitude"]
-        self.record.mode = record["mode"]
-        self.record.gps_qual = record["gps_qual"]
-        self.record.altitude = record["altitude"]
-        self.record.separation = record["separation"]
-        self.record.heading = record["heading"]
-        self.record.speed_kmh = record["speed_kmh"]
-
     @abstractmethod
     async def update(self) -> None:
         pass
@@ -93,7 +73,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
     def clear_reference(self) -> None:
         self.reference_lat = None
         self.reference_lon = None
-        self.request_backup()
 
     def get_reference(self) -> tuple[Optional[float], Optional[float]]:
         return self.reference_lat, self.reference_lon
@@ -109,9 +88,10 @@ class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
     TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
 
-    def __init__(self, odometer: rosys.driving.Odometer) -> None:
+    def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
         super().__init__()
         self.odometer = odometer
+        self.antenna_offset = antenna_offset
 
     def __del__(self) -> None:
         if self.ser is not None:
@@ -218,13 +198,18 @@ class GnssHardware(Gnss):
                     self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
                     self.set_reference(record.latitude, record.longitude)
                 else:
-                    cartesian_coordinates = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
-                        record.latitude, record.longitude])
                     if has_heading:
                         yaw = np.deg2rad(float(-record.heading))
                     else:
                         yaw = self.odometer.get_pose(time=record.timestamp).yaw
                         # TODO: Better INS implementation if no heading provided by GNSS
+                    # correct the gnss coordinat by antenna offset
+                    corrected_coordinates = get_new_position([
+                        record.latitude, record.longitude], self.antenna_offset, yaw+np.pi/2)
+                    self.record.latitude = deepcopy(corrected_coordinates[0])
+                    self.record.longitude = deepcopy(corrected_coordinates[1])
+                    cartesian_coordinates = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
+                        self.record.latitude, self.record.longitude])
                     pose = rosys.geometry.Pose(
                         x=cartesian_coordinates[0],
                         y=cartesian_coordinates[1],
@@ -244,7 +229,6 @@ class GnssHardware(Gnss):
     def set_reference(self, lat: float, lon: float) -> None:
         self.reference_lat = lat
         self.reference_lon = lon
-        self.request_backup()
 
 
 class PoseProvider(Protocol):
@@ -268,7 +252,11 @@ class GnssSimulation(Gnss):
         if self.reference_lon is None:
             self.reference_lon = 7.434212
         pose = deepcopy(self.pose_provider.pose)
-        pose.time = rosys.time()
+        try:
+            pose.time = rosys.time()
+        except Exception:
+            self.log.error('Pose provider has no time attribute')
+            return
         current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], [pose.x, pose.y])
 
         self.record.timestamp = pose.time
@@ -288,4 +276,3 @@ class GnssSimulation(Gnss):
         self.record.latitude = lat
         self.record.longitude = lon
         self.ROBOT_POSITION_LOCATED.emit()
-        self.request_backup()
