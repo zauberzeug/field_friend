@@ -1,4 +1,6 @@
 import logging
+from typing import TYPE_CHECKING
+
 import rosys
 from nicegui import events, ui
 
@@ -7,7 +9,6 @@ from .field_object import field_object
 from .plant_object import plant_objects
 from .visualizer_object import visualizer_object
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -24,18 +25,19 @@ class robot_scene:
         with self.scene_card.tight().classes('w-full place-items-center').style('max-width: 100%; overflow: hidden;'):
             def toggle_lock():
                 self.locked_view = not self.locked_view
-                self.lock_view_button.props(
-                    f'flat color={"primary" if self.locked_view else "grey"}')
-            self.lock_view_button = ui.button(icon='sym_o_visibility_lock', on_click=toggle_lock).props('flat color=primary').style(
-                'position: absolute; left: 1px; top: 1px; z-index: 500;').tooltip('Lock view to robot')
+                self.lock_view_button.props(f'flat color={"primary" if self.locked_view else "grey"}')
+            self.lock_view_button = ui.button(icon='sym_o_visibility_lock', on_click=toggle_lock).props('flat color=primary') \
+                .style('position: absolute; left: 1px; top: 1px; z-index: 500;').tooltip('Lock view to robot')
 
             with ui.scene(200, 200, on_click=self.handle_click, grid=False).classes('w-full') as self.scene:
                 field_friend_object(self.system.odometer, self.system.usb_camera_provider, self.system.field_friend)
                 rosys.driving.driver_object(self.system.driver)
-                plant_objects(self.system.plant_provider, self.system.big_weed_category_names +
-                              self.system.small_weed_category_names)
-                visualizer_object(self.system.automator, self.system.path_provider,
-                                  self.system.mowing, self.system.weeding)
+                plant_objects(self.system.plant_provider,
+                              self.system.big_weed_category_names + self.system.small_weed_category_names)
+                visualizer_object(self.system.automator,
+                                  self.system.path_provider,
+                                  self.system.mowing,
+                                  self.system.weeding)
                 field_object(self.system.field_provider)
                 self.scene.move_camera(-0.5, -1, 2)
 
