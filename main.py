@@ -45,7 +45,7 @@ def startup() -> None:
     logging_page(['field_friend', 'rosys'])
 
 
-rosys.on_startup(startup)
+app.on_startup(startup)
 
 ui.run(title='Field Friend', port=80, favicon='assets/favicon.ico',
        binding_refresh_interval=0.3,
