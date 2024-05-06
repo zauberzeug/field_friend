@@ -72,9 +72,9 @@ class System:
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
-        self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
-        self.small_weed_category_names = ['weed', 'coin']
-        self.crop_category_names = ['sugar_beet', 'crop', 'coin_with_hole']
+        self.big_weed_category_names = ['big_weed', 'thistle', 'orache', 'weedy_area', ]
+        self.small_weed_category_names = ['coin', 'weed',]
+        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
         self.plant_locator = PlantLocator(self.usb_camera_provider,
                                           self.detector,
                                           self.plant_provider,
@@ -82,7 +82,7 @@ class System:
                                           )
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
-        self.plant_locator.minimum_weed_confidence = 0.8
+        self.plant_locator.minimum_weed_confidence = 0.85
         self.plant_locator.minimum_crop_confidence = 0.40
 
         rosys.on_repeat(watch_robot, 1.0)
