@@ -16,8 +16,7 @@ def startup() -> None:
     system = System()
 
     def page_wrapper() -> None:
-        drawer = status_drawer(system, system.field_friend, system.gnss,
-                               system.odometer, system.automator)
+        drawer = status_drawer(system, system.field_friend, system.gnss, system.odometer, system.automator)
         header_bar(system, drawer)
         system_bar()
 
@@ -40,6 +39,7 @@ app.on_startup(startup)
 
 ui.run(title='Field Friend',
        port=80,
+       storage_secret='feldfreund',
        favicon='assets/favicon.ico',
        binding_refresh_interval=0.3,
        reconnect_timeout=10,

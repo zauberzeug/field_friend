@@ -1,14 +1,13 @@
 
 import logging
 import uuid
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import TYPE_CHECKING
 
-import numpy as np
 import rosys
 import rosys.geometry
-from nicegui import elements, events, ui
+from nicegui import app, events, ui
+from nicegui.elements.leaflet_layers import TileLayer
 
-from ...automations import Field
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
@@ -34,28 +33,22 @@ class leaflet_map:
             },
             'edit': False,
         }
-        self.center_point = [51.983159, 7.434212]
+        center_point = [51.983159, 7.434212]
         if self.field_provider.active_field is None:
-            self.center_point = [51.983159, 7.434212]
+            center_point = [51.983159, 7.434212]
         else:
             if len(self.field_provider.active_field.outline_wgs84) > 0:
-                self.center_point = self.field_provider.active_field.outline_wgs84[0]
+                center_point = self.field_provider.active_field.outline_wgs84[0]
+        self.m: ui.leaflet
         if draw_tools:
-            self.m = ui.leaflet(center=(self.center_point[0], self.center_point[1]),
+            self.m = ui.leaflet(center=(center_point[0], center_point[1]),
                                 zoom=13, draw_control=self.draw_control)
         else:
-            self.m = ui.leaflet(center=(self.center_point[0], self.center_point[1]),
+            self.m = ui.leaflet(center=(center_point[0], center_point[1]),
                                 zoom=13)
-
         self.m.clear_layers()
-        self.m.tile_layer(
-            url_template=r'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            options={
-                'maxZoom': 21,
-                'attribution': '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            },
-        )
-
+        self.current_basemap: TileLayer | None = None
+        self.toggle_basemap()
         self.field_layers: list[list] = []
         self.robot_marker = None
         self.drawn_marker = None
@@ -100,6 +93,14 @@ class leaflet_map:
         with self.m as m:
             m.on('draw:created', handle_draw)
         self.gnss.ROBOT_POSITION_LOCATED.register(self.update_robot_position)
+
+    def buttons(self) -> None:
+        """Builds additional buttons to interact with the map."""
+        ui.button(icon='my_location', on_click=self.zoom_to_robot).props('dense flat')
+        ui.button(icon='satellite', on_click=self.toggle_basemap).props('dense flat') \
+            .bind_visibility_from(self, 'current_basemap', lambda x: x is not None and 'openstreetmap' not in x.url_template)
+        ui.button(icon='map', on_click=self.toggle_basemap).props('dense flat') \
+            .bind_visibility_from(self, 'current_basemap', lambda x: x is not None and 'openstreetmap' in x.url_template)
 
     def set_simulated_reference(self, latlon, dialog):
         dialog.close()
@@ -167,11 +168,39 @@ class leaflet_map:
         self.robot_marker.run_method(':setIcon', icon)
         self.robot_marker.move(self.gnss.record.latitude, self.gnss.record.longitude)
 
-    def change_basemap(self) -> None:
-        return
-        # TODO: add a button in leaflet map to change basemap layer and implement the functionality here
+    def zoom_to_robot(self) -> None:
+        self.m.center = (self.gnss.record.latitude, self.gnss.record.longitude)
+        self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
-        # this is the ESRI satellite  image as free satellite image
-        # Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        #     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-        # })
+    def toggle_basemap(self) -> None:
+        use_satellite = app.storage.user.get('use_satellite', False)
+        if self.current_basemap is not None:
+            self.m.remove_layer(self.current_basemap)
+            use_satellite = not use_satellite
+            app.storage.user['use_satellite'] = use_satellite
+        if use_satellite:
+            # ESRI satellite image provides free usage
+            self.current_basemap = self.m.tile_layer(
+                url_template='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                options={
+                    'maxZoom': 21,
+                    'attribution': 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                })
+            # self.current_basemap = self.m.tile_layer(
+            #     url_template=r'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+            #     options={
+            #         'maxZoom': 20,
+            #         'subdomains': ['mt0', 'mt1', 'mt2', 'mt3'],
+            #         'attribution': '&copy; <a href="https://maps.google.com">Google Maps</a>'
+            #     },
+            # )
+        else:
+            self.current_basemap = self.m.tile_layer(
+                url_template=r'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                options={
+                    'maxZoom': 20,
+                    'attribution': '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                },
+            )
+        if self.current_basemap.options['maxZoom'] - 1 < self.m.zoom:
+            self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
