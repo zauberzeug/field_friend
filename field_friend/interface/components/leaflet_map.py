@@ -170,7 +170,7 @@ class leaflet_map:
 
     def zoom_to_robot(self) -> None:
         self.m.center = (self.gnss.record.latitude, self.gnss.record.longitude)
-        self.m.set_zoom(20)
+        self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def toggle_basemap(self) -> None:
         use_satellite = app.storage.user.get('use_satellite', False)
@@ -183,7 +183,7 @@ class leaflet_map:
             self.current_basemap = self.m.tile_layer(
                 url_template='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
                 options={
-                    'maxZoom': 20,
+                    'maxZoom': 21,
                     'attribution': 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
                 })
             # self.current_basemap = self.m.tile_layer(
@@ -198,7 +198,9 @@ class leaflet_map:
             self.current_basemap = self.m.tile_layer(
                 url_template=r'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 options={
-                    'maxZoom': 21,
+                    'maxZoom': 20,
                     'attribution': '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 },
             )
+        if self.current_basemap.options['maxZoom'] - 1 < self.m.zoom:
+            self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
