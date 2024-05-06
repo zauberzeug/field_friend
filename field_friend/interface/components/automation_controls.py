@@ -21,7 +21,8 @@ class automation_controls:
         async def start() -> None:
             if callable(can_start):
                 # Directly handle both synchronous and asynchronous can_start
-                proceed = can_start() if not isinstance(can_start(), Awaitable) else await can_start()
+                result = can_start()
+                proceed = result if not isinstance(result, Awaitable) else await result
                 if not proceed:
                     return
 
