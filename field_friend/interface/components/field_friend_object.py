@@ -58,4 +58,4 @@ class field_friend_object(robot_object):
             else:
                 difference = self.robot.y_axis.MIN_POSITION - self.robot.y_axis.position
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.MIN_POSITION + difference)
-                self.second_tool.move(x=self.robot.WORK_X_DRILL, y=self.robot.y_axis.MIN_POSITION + difference)
+                self.second_tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.MIN_POSITION + difference)

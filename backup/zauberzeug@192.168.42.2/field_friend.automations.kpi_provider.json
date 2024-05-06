@@ -1,0 +1,64 @@
+{
+    "current_weeding_kpis": {
+        "distance": 0,
+        "time": 0,
+        "bumps": 0,
+        "low_battery": 0,
+        "can_failure": 0,
+        "automation_stopped": 0,
+        "e_stop_triggered": 0,
+        "soft_e_stop_triggered": 0,
+        "imu_rolling_detected": 0,
+        "gnss_connection_lost": 0,
+        "rows_weeded": 0,
+        "crops_detected": 0,
+        "weeds_detected": 0,
+        "weeds_removed": 0,
+        "punches": 0,
+        "chops": 0,
+        "weeding_completed": false
+    },
+    "current_mowing_kpis": {
+        "distance": 0,
+        "time": 0,
+        "bumps": 0,
+        "low_battery": 0,
+        "can_failure": 0,
+        "automation_stopped": 0,
+        "e_stop_triggered": 0,
+        "soft_e_stop_triggered": 0,
+        "imu_rolling_detected": 0,
+        "gnss_connection_lost": 0,
+        "mowing_completed": false
+    },
+    "days": [
+        {
+            "date": "2024-04-24",
+            "incidents": {
+                "low_battery": 3
+            }
+        },
+        {
+            "date": "2024-04-26",
+            "incidents": {
+                "low_battery": 9,
+                "punches": 4
+            }
+        },
+        {
+            "date": "2024-04-30",
+            "incidents": {
+                "time": 3817,
+                "distance": 277,
+                "weeds_detected": 1497,
+                "crops_detected": 94,
+                "rows_weeded": 3,
+                "weeding_completed": 4,
+                "punches": 33,
+                "weeds_removed": 55,
+                "chops": 19
+            }
+        }
+    ],
+    "months": []
+}

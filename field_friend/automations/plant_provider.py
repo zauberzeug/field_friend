@@ -20,6 +20,17 @@ class Plant:
             self.id = str(uuid.uuid4())
 
 
+def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
+    for p in plants:
+        if p.position.distance(plant.position) < distance and p.type == plant.type:
+            if p.confidence > plant.confidence:
+                return True
+            p.position = plant.position
+            p.confidence = plant.confidence
+            return True
+    return False
+
+
 class PlantProvider:
 
     def __init__(self) -> None:
@@ -38,20 +49,16 @@ class PlantProvider:
 
         rosys.on_repeat(self.prune, 10.0)
 
-    def prune(self, max_age: float = 10 * 60.0) -> None:
-        self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - max_age]
-        self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - max_age]
+    def prune(self) -> None:
+        weeds_max_age = 10.0
+        crops_max_age = 60.0 * 60.0
+        self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - weeds_max_age]
+        self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - crops_max_age]
         self.PLANTS_CHANGED.emit()
 
-    def add_weed(self, weed: Plant) -> None:
-        for w in self.weeds:
-            if w.position.distance(weed.position) < 0.02 and w.type == weed.type:
-                if w.confidence > weed.confidence:
-                    return
-                w.position = weed.position
-                w.confidence = weed.confidence
-                self.PLANTS_CHANGED.emit()
-                return
+    async def add_weed(self, weed: Plant) -> None:
+        if await rosys.run.cpu_bound(check_if_plant_exists, weed, self.weeds, 0.05):
+            return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_WEED.emit()
@@ -64,15 +71,9 @@ class PlantProvider:
         self.weeds.clear()
         self.PLANTS_CHANGED.emit()
 
-    def add_crop(self, crop: Plant) -> None:
-        for c in self.crops:
-            if c.position.distance(crop.position) < 0.05 and c.type == crop.type:
-                if c.confidence > crop.confidence:
-                    return
-                c.position = crop.position
-                c.confidence = crop.confidence
-                self.PLANTS_CHANGED.emit()
-                return
+    async def add_crop(self, crop: Plant) -> None:
+        if await rosys.run.cpu_bound(check_if_plant_exists, crop, self.crops, 0.05):
+            return
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_CROP.emit()

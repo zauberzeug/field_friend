@@ -1,0 +1,14 @@
+{
+    "stop_distance": 200.0,
+    "max_y_distance": 414.0,
+    "max_matching_distance": 270.0,
+    "max_first_matching_distance": 250.0,
+    "yaw_min": 0.05,
+    "yaw_max": 0.4,
+    "linear_speed": 0.2,
+    "angular_speed": 0.2,
+    "projection_factor": 0.24,
+    "confidence": 0.4,
+    "target_timeout": 6.0,
+    "drive": true
+}

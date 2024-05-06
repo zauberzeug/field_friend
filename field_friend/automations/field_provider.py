@@ -84,7 +84,6 @@ class Field:
         else:
             return []
 
-    @property
     def area(self) -> float:
         if len(self.outline) > 0:
             polygon = Polygon([(p.x, p.y) for p in self.outline])
@@ -94,8 +93,8 @@ class Field:
 
     def worked_area(self, worked_rows: int) -> float:
         worked_area = 0.0
-        if self.area > 0:
-            worked_area = worked_rows * self.area / len(self.rows)
+        if self.area() > 0:
+            worked_area = worked_rows * self.area() / len(self.rows)
         return worked_area
 
 
