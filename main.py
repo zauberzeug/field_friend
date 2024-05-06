@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import rosys
 from nicegui import app, ui
 from rosys.analysis import logging_page
 
@@ -46,6 +47,9 @@ def startup() -> None:
 
 app.on_startup(startup)
 
-ui.run(title='Field Friend', port=80, favicon='assets/favicon.ico',
+ui.run(title='Field Friend',
+       port=80,
+       favicon='assets/favicon.ico',
        binding_refresh_interval=0.3,
-       reconnect_timeout=10)
+       reconnect_timeout=10,
+       )

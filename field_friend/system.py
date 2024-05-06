@@ -43,7 +43,6 @@ class System:
                                                                                yaw=np.deg2rad(90)))
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
-            # self.circle_sight = None
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
@@ -76,8 +75,11 @@ class System:
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
         self.small_weed_category_names = ['weed', 'coin']
         self.crop_category_names = ['sugar_beet', 'crop', 'coin_with_hole']
-        self.plant_locator = PlantLocator(self.usb_camera_provider, self.detector,
-                                          self.plant_provider, self.odometer)
+        self.plant_locator = PlantLocator(self.usb_camera_provider,
+                                          self.detector,
+                                          self.plant_provider,
+                                          self.odometer,
+                                          )
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
         self.plant_locator.minimum_weed_confidence = 0.8
