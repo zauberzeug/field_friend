@@ -2,7 +2,7 @@
 import logging
 from typing import TYPE_CHECKING
 
-from nicegui import ui
+from nicegui import app, events, ui
 
 from .automation_controls import automation_controls
 from .key_controls import KeyControls
@@ -41,28 +41,29 @@ class operation:
                         if self.field_provider.fields is not None and len(self.field_provider.fields) > 0:
                             for field in self.system.field_provider.fields:
                                 field_selection_dict[field.id] = field.name
-                            self.initial_value = None if self.field_provider.active_field is None else self.field_provider.active_field.id
+                            active = self.field_provider.active_field
+                            self.initial_value = app.storage.user.get('field') if active is None else active.id
                         self.field_selection = None
 
                         @ui.refreshable
                         def show_field_selection() -> None:
                             self.field_selection = ui.select(
                                 field_selection_dict,
-                                with_input=True, on_change=self.set_field, label='Field', value=self.initial_value)\
+                                with_input=True,
+                                on_change=self.set_field,
+                                label='Field')\
                                 .tooltip('Select the field to work on').classes('w-24')
+                            self.field_selection.value = self.initial_value
                         show_field_selection()
                         self.field_provider.FIELDS_CHANGED.register(show_field_selection.refresh)
                     ui.separator()
                     with ui.row():
                         ui.label('Automation').classes('text-xl')
                     with ui.row().classes('w-full'):
-                        self.automations_toggle = ui.select([key for key in self.system.automations.keys()], value='weeding') \
-                            .bind_value(self.system.automator,
-                                        'default_automation',
-                                        forward=lambda key: self.system.automations[key],
-                                        backward=lambda automation: next(key for key, value in self.system.automations.items() if value == automation)) \
+                        self.automations_toggle = ui.select([key for key in self.system.automations.keys()],
+                                                            on_change=self.handle_automation_changed) \
                             .classes('w-full border pl-2').style('border: 2px solid #6E93D6; border-radius: 5px; background-color: #EEF4FA')
-
+                        self.automations_toggle.value = app.storage.user.get('automation', 'weeding')
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='mowing'):
                         with ui.row():
                             ui.number('Padding', value=0.5, step=0.1, min=0.0, format='%.1f') \
@@ -209,7 +210,7 @@ class operation:
                         .bind_visibility_from(system.field_friend.estop, 'is_soft_estop_active', value=True)
                 ui.space()
                 with ui.row():
-                    automation_controls(self.system, can_start=self.ensure_start)
+                    automation_controls(self.system, can_start=self.can_start)
         with ui.dialog() as self.dialog, ui.card():
             self.dialog_label = ui.label('Do you want to continue the canceled automation').classes('text-lg')
             with ui.row():
@@ -239,6 +240,7 @@ class operation:
         for field in self.system.field_provider.fields:
             if field.id == self.field_selection.value:
                 self.field_provider.select_field(field)
+                app.storage.user['field'] = field.id
                 if len(field.outline_wgs84) > 0:
                     self.system.gnss.set_reference(field.outline_wgs84[0][0], field.outline_wgs84[0][1])
                 # TODO das hier noch auf das active field umbauen, damit auch diese werte im weeding auf das active field registriert sind
@@ -247,16 +249,16 @@ class operation:
                 self.show_start_row.refresh()
                 self.show_end_row.refresh()
 
-    async def ensure_start(self) -> bool:
-        self.log.info('Ensuring start of automation')
+    async def can_start(self) -> bool:
+        self.log.info('Checking if automation can be started')
         if self.automations_toggle.value == 'mowing':
-            return await self.ensure_mowing_start()
+            return await self.can_mowing_start()
         elif self.automations_toggle.value == 'weeding':
-            return await self.ensure_weeding_start()
+            return await self.can_weeding_start()
         return True
 
-    async def ensure_mowing_start(self) -> bool:
-        self.log.info('Ensuring start of mowing automation')
+    async def can_mowing_start(self) -> bool:
+        self.log.info('Checking mowing automation')
         if self.system.mowing.current_path_segment is None:
             self.system.mowing.continue_mowing = False
             return True
@@ -270,8 +272,8 @@ class operation:
             return False
         return True
 
-    async def ensure_weeding_start(self) -> bool:
-        self.log.info('Ensuring start of weeding automation')
+    async def can_weeding_start(self) -> bool:
+        self.log.info('Checking weeding automation')
         if not self.system.weeding.current_row or not self.system.weeding.current_segment:
             self.system.weeding.continue_canceled_weeding = False
             return True
@@ -284,3 +286,7 @@ class operation:
         elif result == 'Cancel':
             return False
         return True
+
+    def handle_automation_changed(self, e: events.ValueChangeEventArguments) -> None:
+        app.storage.user.update({'automation': e.value})
+        self.system.automator.default_automation = self.system.automations[e.value]

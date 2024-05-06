@@ -11,3 +11,4 @@ config.hjson
 sync.sh
 nicegui
 rosys
+.nicegui
