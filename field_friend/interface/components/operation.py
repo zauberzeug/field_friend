@@ -32,8 +32,6 @@ class operation:
                             if self.field_provider.active_field is not None and len(self.field_provider.active_field.outline_wgs84) > 0:
                                 ui.button(on_click=lambda: self.leaflet_map.m.set_center(self.field_provider.active_field.outline_wgs84[0])) \
                                     .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
-                                ui.button(on_click=lambda: self.leaflet_map.m.set_center(self.field_provider.active_field.outline_wgs84[0])) \
-                                    .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                             else:
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
                         center_map_button()
@@ -68,23 +66,6 @@ class operation:
                         self.automations_toggle.value = app.storage.user.get('automation', 'weeding')
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='mowing'):
                         with ui.row():
-                            ui.number('Padding', value=0.5, step=0.1, min=0.0, format='%.1f') \
-                                .props('dense outlined suffix=m').classes('w-24') \
-                                .bind_value(system.mowing, 'padding') \
-                                .tooltip('Set the padding for the mowing automation')
-                            ui.number('Lane distance', value=0.5, step=0.1, min=0.0, format='%.1f') \
-                                .props('dense outlined suffix=m') \
-                                .classes('w-24').bind_value(system.mowing,   'lane_distance') \
-                                .tooltip('Set the lane distance for the system. automation')
-                            ui.number('Number of outer lanes', value=3, step=1, min=3, format='%.0f') \
-                                .props('dense outlined').classes('w-28') \
-                                .bind_value(system.mowing, 'number_of_outer_lanes') \
-                                .tooltip('Set the number of outer lanes for the mowing automation')
-                            ui.number('Min. turning radius', format='%.2f', value=0.5, step=0.05, min=0.1, max=2.0) \
-                                .props('dense outlined suffix=m') \
-                                .classes('w-32') \
-                                .bind_value(self.system.mowing, 'minimum_turning_radius') \
-                                .tooltip('Set the turning radius for the mowing automation')
                             ui.number('Padding', value=0.5, step=0.1, min=0.0, format='%.1f') \
                                 .props('dense outlined suffix=m').classes('w-24') \
                                 .bind_value(system.mowing, 'padding') \
@@ -218,9 +199,6 @@ class operation:
                             self.with_field_planning_monitor = ui.checkbox('Use field planning', value=True) \
                                 .bind_value(self.system.monitoring, 'use_field_planning') \
                                 .tooltip('Set the monitoring automation to use the field planning with GNSS')
-                            self.with_field_planning_monitor = ui.checkbox('Use field planning', value=True) \
-                                .bind_value(self.system.monitoring, 'use_field_planning') \
-                                .tooltip('Set the monitoring automation to use the field planning with GNSS')
 
                         with ui.row().bind_visibility_from(self.with_field_planning_monitor, 'value', value=True):
                             self.show_start_row()
@@ -230,20 +208,15 @@ class operation:
                                 .props('dense outlined suffix=m').classes('w-30') \
                                 .bind_value(self.system.monitoring, 'minimum_turning_radius') \
                                 .tooltip('Set the turning radius for the monitoring automation')
-                        ui.number('Min. turning radius', format='%.2f',
-                                  value=0.5, step=0.05, min=0.05, max=2.0) \
-                            .props('dense outlined suffix=m').classes('w-30') \
-                            .bind_value(self.system.monitoring, 'minimum_turning_radius') \
-                            .tooltip('Set the turning radius for the monitoring automation')
 
-                        with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='collecting (demo)'):
-                            with ui.row():
-                                ui.number('Drill angle', format='%.0f', value=100, step=1, min=1, max=180) \
-                                    .props('dense outlined suffix=°').classes('w-24') \
-                                    .bind_value(self.system.coin_collecting, 'angle') \
-                                    .tooltip('Set the drill depth for the weeding automation')
-                                ui.checkbox('with drilling', value=True) \
-                                    .bind_value(self.system.coin_collecting, 'with_drilling')
+                    with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='collecting (demo)'):
+                        with ui.row():
+                            ui.number('Drill angle', format='%.0f', value=100, step=1, min=1, max=180) \
+                                .props('dense outlined suffix=°').classes('w-24') \
+                                .bind_value(self.system.coin_collecting, 'angle') \
+                                .tooltip('Set the drill depth for the weeding automation')
+                            ui.checkbox('with drilling', value=True) \
+                                .bind_value(self.system.coin_collecting, 'with_drilling')
             ui.space()
             with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
                 with ui.column():
