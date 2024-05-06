@@ -151,7 +151,7 @@ class GnssHardware(Gnss):
                     self.log.debug('No data received')
                     return
                 try:
-                    msg = await rosys.run.cpu_bound(pynmea2.parse, line)
+                    msg = pynmea2.parse(line)
                     if not hasattr(msg, 'sentence_type'):
                         self.log.debug(f'No sentence type: {msg}')
                         return
@@ -176,7 +176,7 @@ class GnssHardware(Gnss):
                         # print(f'The GNSS message: {msg.mode_indicator}')
                         has_location = True
                     if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None):
-                        record.heading = msg.heading
+                        record.heading = float(msg.heading)
                         has_heading = True
                 except pynmea2.ParseError as e:
                     self.log.info(f'Parse error: {e}')
@@ -186,10 +186,10 @@ class GnssHardware(Gnss):
             self.device = None
             return
         if self.record.gps_qual > 0 and record.gps_qual == 0:
-            self.log.info('GNSS lost')
+            self.log.warning('GNSS lost')
             self.GNSS_CONNECTION_LOST.emit()
         if self.record.gps_qual == 4 and record.gps_qual != 4:
-            self.log.info('GNSS RTK fix lost')
+            self.log.warning('GNSS RTK fix lost')
             self.RTK_FIX_LOST.emit()
         self.record = deepcopy(record)
         if has_location:
@@ -199,7 +199,7 @@ class GnssHardware(Gnss):
                     self.set_reference(record.latitude, record.longitude)
                 else:
                     if has_heading:
-                        yaw = np.deg2rad(float(-record.heading))
+                        yaw = np.deg2rad(-record.heading)
                     else:
                         yaw = self.odometer.get_pose(time=record.timestamp).yaw
                         # TODO: Better INS implementation if no heading provided by GNSS
