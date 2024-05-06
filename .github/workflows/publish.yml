@@ -1,0 +1,36 @@
+name: Upload Python Package
+
+on: push
+
+# on:
+#   workflow_dispatch:
+#   push:
+#     tags:
+#       - v**
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install -r mkdocs_requirements.txt
+          python3 -m pip install -e .
+      - name: Build docs
+        run: mkdocs build -v
+      - name: Analyze
+        run: |
+          pwd
+          ls -lha
+      - name: Deploy gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4.2.5
+        with:
+          branch: gh-pages
+          folder: site

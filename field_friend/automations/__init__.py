@@ -29,6 +29,7 @@ __all__ = [
     'Plant',
     'Puncher',
     'Row',
+    'KpiProvider',
     'find_sequence',
     'Weeding',
     'BatteryWatcher',
