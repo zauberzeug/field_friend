@@ -22,12 +22,13 @@ class System:
 
         self.field_friend: FieldFriendHardware | FieldFriendSimulation
         self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
+        self.circle_sight_provider: rosys.vision.MjpegCameraProvider | SimulatedCamProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
+        self.monitoring_detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = CalibratableUsbCameraProvider()
-            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(
-                username='root', password='zauberzg!')
+            self.circle_sight_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
@@ -41,8 +42,24 @@ class System:
                                                                                roll=np.deg2rad(360-150),
                                                                                pitch=np.deg2rad(0),
                                                                                yaw=np.deg2rad(90)))
-            self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
+
+            self.circle_sight_provider = SimulatedCamProvider()
+            self.circle_sight_provider.remove_all_cameras()
+            front = SimulatedCam.create_calibrated(id='front-3',
+                                                   x=0.4, z=0.4,
+                                                   pitch=np.deg2rad(-70),
+                                                   )
+            assert front.calibration is not None
+            front.calibration.intrinsics = rosys.vision.Intrinsics.create_default(800, 600, focal_length=200)
+            self.circle_sight_provider.add_camera(front)
+            self.detector = rosys.vision.DetectorSimulation(
+                rosys.vision.MultiCameraProvider(self.usb_camera_provider, self.circle_sight_provider))
+            self.monitoring_detector = rosys.vision.DetectorSimulation(self.circle_sight_provider)
+
+            self.detector.simulated_objects.append(
+                rosys.vision.SimulatedObject(category_name='thistle',
+                                             position=rosys.geometry.Point3d(x=1.5, y=0, z=0)))
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
@@ -75,11 +92,7 @@ class System:
         self.big_weed_category_names = ['thistle', 'big_weed', 'orache']
         self.small_weed_category_names = ['weed', 'coin']
         self.crop_category_names = ['sugar_beet', 'crop', 'coin_with_hole']
-        self.plant_locator = PlantLocator(self.usb_camera_provider,
-                                          self.detector,
-                                          self.plant_provider,
-                                          self.odometer,
-                                          )
+        self.plant_locator = PlantLocator(self.detector, self.plant_provider, self.odometer)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
 
@@ -128,3 +141,7 @@ class System:
 
     def restart(self) -> None:
         os.utime('main.py')
+
+    @property
+    def bottom_cam(self) -> rosys.vision.CalibratableCamera | None:
+        return next((c for c in self.usb_camera_provider.cameras.values() if c.is_connected), None)

@@ -63,19 +63,21 @@ class monitoring:
                 ui.label('Right').classes('text-2xl text-bold')
                 ui.image('assets/field_friend.webp').classes('w-full')
         with ui.row().classes('w-full items-stretch gap-0'):
-            with ui.card().style('background-color: #6E93D6; color: white;').classes('w-full'):
-                with ui.row().classes('w-full items-stretch'):
-                    ui.label('Person count:').classes('text-2xl text-bold').bind_text_from(self,
-                                                                                           'person_count', backward=lambda x: f'Person count: {x}')
-                    ui.label('Animal count:').classes('text-2xl text-bold').bind_text_from(self,
-                                                                                           'animal_count', backward=lambda x: f'Animal count: {x}')
+            with ui.card().classes('w-full'):
+                with ui.row().classes('w-full items-center'):
+                    ui.label('Person count:').classes('text-2xl text-bold') \
+                        .bind_text_from(self, 'person_count', backward=lambda x: f'Person count: {x}')
+                    ui.label('Animal count:').classes('text-2xl text-bold') \
+                        .bind_text_from(self, 'animal_count', backward=lambda x: f'Animal count: {x}')
                     ui.space()
-                    ui.switch('Person detection') \
+                    ui.switch('Environment detection') \
                         .bind_value(self, 'monitoring_active') \
                         .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
-                    ui.switch('Plant detection') \
-                        .bind_value(self.plant_locator, 'is_paused', forward=lambda x: not x, backward=lambda x: not x) \
+                    ui.label('Plant detection:').classes('ml-6')
+                    detection = ui.select(['bottom', 'front'], clearable=True, on_change=self._update_plant_detection) \
+                        .classes('w-36').props('dense') \
                         .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                    detection.value = 'front'
 
         with ui.row().classes('w-full items-stretch gap-0'):
             column_classes = 'w-1/3 items-center mt-[50px]'
@@ -154,12 +156,11 @@ class monitoring:
         self.animal_count = animal_count
 
     async def update_bottom_view(self):
-        cameras = list(self.usb_camera_provider.cameras.values())
-        camera = next((camera for camera in cameras if camera.is_connected), None)
+        camera = self.system.bottom_cam
         if not camera:
             self.bottom_view.set_source('assets/field_friend.webp')
             return
-        image = camera.latest_captured_image if self.plant_locator and self.plant_locator.is_paused \
+        image = camera.latest_captured_image if self.plant_locator and self.plant_locator.camera is None \
             else camera.latest_detected_image
         if not image:
             return
@@ -248,3 +249,15 @@ class monitoring:
                                    add='w-1/4').style(remove='border: 5px solid #6E93D6; border-radius: 5px; background-color: #6E93D6; color: white')
             self.right_view.classes(remove='hidden w-1/2',
                                     add='w-1/4').style(remove='border: 5px solid #6E93D6; border-radius: 5px; background-color: #6E93D6; color: white')
+
+    def _update_plant_detection(self, e: events.ValueChangeEventArguments) -> None:
+        match e.value:
+            case None:
+                self.plant_locator.camera = None
+            case 'bottom':
+                self.plant_locator.camera = self.system.bottom_cam
+            case 'front':
+                key = next((k for k in self.mjpg_camera_provider.cameras.keys() if CameraPosition.FRONT in k))
+                self.plant_locator.camera = self.mjpg_camera_provider.cameras[key]
+            case _:
+                self.log.warning(f'unknown camera for plant detection {e.value}')

@@ -344,7 +344,7 @@ class Weeding(rosys.persistence.PersistentModule):
         finally:
             self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.system.field_friend.stop()
-            self.system.plant_locator.pause()
+            self.system.plant_locator.camera = None
             self.system.automation_watcher.stop_field_watch()
             self.system.automation_watcher.gnss_watch_active = False
 
@@ -373,13 +373,13 @@ class Weeding(rosys.persistence.PersistentModule):
             self.system.driver.parameters.can_drive_backwards = False
             self.system.driver.parameters.minimum_turning_radius = 0.02
             self.current_row = self.sorted_weeding_rows[i]
-            self.system.plant_locator.pause()
+            self.system.plant_locator.camera = None
             self.system.plant_provider.clear()
             if self.system.field_friend.tool != 'none':
                 await self.system.puncher.clear_view()
             await self.system.field_friend.flashlight.turn_on()
             await rosys.sleep(3)
-            self.system.plant_locator.resume()
+            self.system.plant_locator.camera = self.system.bottom_cam
             await rosys.sleep(3)
             for j, segment in enumerate(path):
                 if self.continue_canceled_weeding and self.current_segment != segment:
@@ -409,7 +409,7 @@ class Weeding(rosys.persistence.PersistentModule):
                             self.row_segment_completed = True
 
             await self.system.field_friend.flashlight.turn_off()
-            self.system.plant_locator.pause()
+            self.system.plant_locator.camera = None
             if i < len(self.weeding_plan) - 1:
                 self.system.driver.parameters.can_drive_backwards = True
                 self.log.info('Driving to next row...')
@@ -429,7 +429,7 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _weed_planless(self):
         already_explored_count = 0
         while True:
-            self.system.plant_locator.pause()
+            self.system.plant_locator.camera = None
             self.system.plant_provider.clear()
             if not self.system.is_real:
                 self.system.detector.simulated_objects = []
@@ -438,7 +438,7 @@ class Weeding(rosys.persistence.PersistentModule):
                 await self.system.puncher.clear_view()
             await self.system.field_friend.flashlight.turn_on()
             await rosys.sleep(2)
-            self.system.plant_locator.resume()
+            self.system.plant_locator.camera = self.system.bottom_cam
             await rosys.sleep(0.5)
             await self._get_upcoming_plants()
             while self.crops_to_handle or self.weeds_to_handle:
@@ -576,7 +576,7 @@ class Weeding(rosys.persistence.PersistentModule):
                 # do not steer while advancing on a crop
                 target = self.system.odometer.prediction.transform(Point(x=closest_crop_position.x, y=0))
                 await self.system.driver.drive_to(target)
-                self.system.plant_locator.resume()
+                self.system.plant_locator.camera = self.system.bottom_cam
             else:
                 if self.crops_to_handle:
                     await self._follow_line_of_crops()
