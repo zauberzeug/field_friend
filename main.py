@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import rosys
 from nicegui import app, ui
 from rosys.analysis import logging_page
 
@@ -20,32 +21,26 @@ def startup() -> None:
         header_bar(system, drawer)
         system_bar()
 
-    # /
-    interface.pages.main_page(page_wrapper, system)
-    # /field
-    interface.pages.field_planner_page(page_wrapper, system)
-    # /path
-    interface.pages.path_planner_page(page_wrapper, system)
-    # /dev
-    interface.pages.dev_page(page_wrapper, system)
-    # /test
-    interface.pages.test_page(page_wrapper, system)
-    # /kpis
-    interface.pages.kpi_page(page_wrapper, system)
-    # /monitor
-    interface.pages.monitor_page(page_wrapper, system)
-    # /status
+    interface.pages.main_page(page_wrapper, system)  # /
+    interface.pages.field_planner_page(page_wrapper, system)  # /field
+    interface.pages.path_planner_page(page_wrapper, system)  # /path
+    interface.pages.dev_page(page_wrapper, system)  # /dev
+    interface.pages.test_page(page_wrapper, system)  # /test
+    interface.pages.kpi_page(page_wrapper, system)  # /kpis
+    interface.pages.monitor_page(page_wrapper, system)  # /monitor
 
-    @app.get('/status')
+    @app.get('/status')  # /status
     def status():
         return {'status': 'ok'}
 
-    # /logging
-    logging_page(['field_friend', 'rosys'])
+    logging_page(['field_friend', 'rosys'])  # /logging
 
 
 app.on_startup(startup)
 
-ui.run(title='Field Friend', port=80, favicon='assets/favicon.ico',
+ui.run(title='Field Friend',
+       port=80,
+       favicon='assets/favicon.ico',
        binding_refresh_interval=0.3,
-       reconnect_timeout=10)
+       reconnect_timeout=10,
+       )

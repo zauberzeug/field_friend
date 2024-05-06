@@ -87,6 +87,9 @@ class operation:
                         ui.separator()
                         ui.markdown('Field settings').style('color: #6E93D6')
                         with ui.row():
+                        ui.separator()
+                        ui.markdown('Field settings').style('color: #6E93D6')
+                        with ui.row():
                             self.with_field_planning = ui.checkbox('Use field planning', value=True).bind_value(
                                 self.system.weeding, 'use_field_planning').tooltip('Set the weeding automation to use the field planning with GNSS')
 
