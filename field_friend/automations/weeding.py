@@ -44,8 +44,8 @@ class Weeding(rosys.persistence.PersistentModule):
         self.field: Optional[Field] = None
         self.start_row_id: Optional[str] = None
         self.end_row_id: Optional[str] = None
-        self.minimum_turning_radius: float = 0.5
-        self.turn_offset: float = 0.4
+        self.minimum_turning_radius: float = 1.8
+        self.turn_offset: float = 1.0
 
         # workflow settings
         self.only_monitoring: bool = False
