@@ -157,12 +157,6 @@ class operation:
                                 ui.checkbox('Chop if no crops', value=False) \
                                     .bind_value(self.system.weeding, 'chop_if_no_crops') \
                                     .tooltip('Set the weeding automation to chop also if no crops seen')
-                            elif self.system.field_friend.tool in ['weed_screw', 'dual_mechanism']:
-                                ui.number('Drill depth', value=0.02, format='%.2f', step=0.01,
-                                          min=self.system.field_friend.z_axis.max_position, max=self.system.field_friend.z_axis.min_position*-1) \
-                                    .props('dense outlined suffix=°').classes('w-24') \
-                                    .bind_value(self.system.weeding, 'weed_screw_depth') \
-                                    .tooltip('Set the drill depth for the weeding automation')
                             ui.number('Crop safety distance', value=0.01, step=0.01, min=0.0, max=0.05, format='%.2f') \
                                 .props('dense outlined suffix=m').classes('w-24') \
                                 .bind_value(self.system.weeding, 'crop_safety_distance') \
