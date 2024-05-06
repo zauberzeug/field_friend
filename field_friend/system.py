@@ -72,7 +72,7 @@ class System:
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
-        self.big_weed_category_names = ['big_weed', 'thistle', 'orache', 'weedy_area', ]
+        self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
         self.small_weed_category_names = ['coin', 'weed',]
         self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
         self.plant_locator = PlantLocator(self.usb_camera_provider,
