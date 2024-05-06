@@ -24,5 +24,7 @@ class field_planner_page():
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height:40%; max-height:40%;'):
                 leaflet_map_field = leaflet_map(self.system, True)
                 leaflet_map_field.m.style('height: 100%; max-height:100%;')
+                with ui.column():
+                    leaflet_map_field.buttons()
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height: 60%; max-height:60%;'):
                 field_planner(self.system.field_provider, self.system.odometer, self.system.gnss, leaflet_map_field)

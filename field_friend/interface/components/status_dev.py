@@ -116,6 +116,9 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.markdown('**Current Field:**').style('color: #EDF4FB')
             current_field_label = ui.label()
         with ui.row().classes('place-items-center'):
+            ui.markdown('**Worked Area:**').style('color: #EDF4FB')
+            worked_area_label = ui.label()
+        with ui.row().classes('place-items-center'):
             ui.markdown('**Current Row:**').style('color: #EDF4FB')
             current_row_label = ui.label()
         with ui.row().classes('place-items-center'):
@@ -134,8 +137,15 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
             kpi_weeds_detected_label = ui.label()
         with ui.row().classes('place-items-center'):
+            ui.markdown('**Weeds Removed:**').style('color: #EDF4FB')
+            kpi_weeds_removed_label = ui.label()
+        with ui.row().classes('place-items-center'):
             ui.markdown('**Punches:**').style('color: #EDF4FB')
             kpi_punches_label = ui.label()
+        if robot.tool == 'dual_mechanism':
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Chops:**').style('color: #EDF4FB')
+                kpi_chops_label = ui.label()
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
@@ -205,8 +215,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 'end_bottom' if robot.z_axis.end_bottom else '',
                 'ref_motor' if robot.z_axis.ref_motor else '',
                 'ref_gear' if robot.z_axis.ref_gear else '',
-                'ref_t' if robot.z_axis.ref_t else '',
-                'ref_b' if robot.z_axis.ref_b else '',
+                'ref_knife_stop' if robot.z_axis.ref_knife_stop else '',
+                'ref_knife_ground' if robot.z_axis.ref_knife_ground else '',
                 f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.z_is_referenced else '',
                 f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.turn_is_referenced else '',
             ]
@@ -255,19 +265,26 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         if system.automator.is_running:
             if system.field_provider.active_field is not None:
                 current_field_label.text = system.field_provider.active_field.name
-            kpi_fieldtime_label.text = system.kpi_provider.current_weeding_kpis.time
-            kpi_distance_label.text = system.kpi_provider.current_weeding_kpis.distance
+            kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time:.2f}s'
+            kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance:.0f}m'
 
             current_automation = next(key for key, value in system.automations.items()
                                       if value == system.automator.default_automation)
             if current_automation == 'weeding' or current_automation == 'monitoring':
-                if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
-                    current_row_label.text = system.field_provider.active_object['object'].name
+                if current_automation == 'weeding':
+                    current_row_label.text = system.weeding.current_row.name if system.weeding.current_row is not None else 'No row'
+                    worked_area_label.text = f'{system.weeding.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.weeding.field.area():.2f}m²' if system.weeding.field is not None else 'No field'
+                elif current_automation == 'monitoring':
+                    current_row_label.text = system.monitoring.current_row.name if system.monitoring.current_row is not None else 'No row'
+                    worked_area_label.text = f'{system.monitoring.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.monitoring.field.area():.2f}m²' if system.monitoring.field is not None else 'No field'
                 kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
                 kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+                kpi_weeds_removed_label.text = system.kpi_provider.current_weeding_kpis.weeds_removed
                 kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
                 if current_automation == 'weeding':
                     kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
+                    if robot.tool == 'dual_mechanism':
+                        kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
 
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
         reference_position_label.text = 'No reference' if system.gnss.reference_lat is None else 'Set'

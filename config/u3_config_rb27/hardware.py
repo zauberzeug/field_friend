@@ -11,6 +11,8 @@ configuration = {'wheels': {
     'y_axis': {
         'version': 'chain_axis',
         'name': 'chain_axis',
+        'min_position': -0.10,
+        'max_position': 0.10,
         'motor_on_expander': False,
         'end_stops_on_expander': True,
         'step_pin': 13,

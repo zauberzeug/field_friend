@@ -1,12 +1,9 @@
-import json
 import logging
 import uuid
 from typing import Literal, Optional
 
 import rosys
 from nicegui import events, ui
-
-from field_friend.navigation.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
 
 from ...automations import Field, FieldObstacle, FieldProvider, Row
 from ...navigation import Gnss
@@ -343,7 +340,7 @@ class field_planner:
 
     def add_field(self) -> None:
         new_id = str(uuid.uuid4())
-        field = Field(id=f'{new_id}', name=f'{new_id}', outline_wgs84=[])
+        field = Field(id=f'{new_id}', name=f'field_{len(self.field_provider.fields)+1}', outline_wgs84=[])
         self.field_provider.add_field(field)
 
     def delete_field(self, field: Field) -> None:
@@ -353,7 +350,7 @@ class field_planner:
         self.field_provider.clear_fields()
 
     def add_obstacle(self, field: Field) -> None:
-        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}', points_wgs84=[])
+        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points_wgs84=[])
         self.field_provider.add_obstacle(field, obstacle)
 
     async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
@@ -399,7 +396,7 @@ class field_planner:
             self.field_provider.invalidate()
 
     def add_row(self, field: Field) -> None:
-        row = Row(id=f'{str(uuid.uuid4())}', name=f'{str(uuid.uuid4())}', points_wgs84=[])
+        row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points_wgs84=[])
         self.field_provider.add_row(field, row)
 
     def add_row_point(self, field: Field, row: Row, point: Optional[list] = None, new_point: Optional[list] = None) -> None:

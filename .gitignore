@@ -7,3 +7,4 @@ detector/
 *.swp
 site/
 docs/reference/
+.nicegui/

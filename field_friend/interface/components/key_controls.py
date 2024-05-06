@@ -27,9 +27,6 @@ class KeyControls(rosys.driving.keyboard_control):
             if e.key == '!':
                 self.automator.start(self.puncher.try_home())
 
-        if e.action.keydown and e.key == 'r' and e.modifiers.shift:
-            self.system.restart()
-
         if e.action.keydown and e.key == 's':
             if self.automator.is_running:
                 self.automator.stop(because='stop button was pressed')

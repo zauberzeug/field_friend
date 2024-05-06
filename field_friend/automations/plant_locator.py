@@ -5,8 +5,8 @@ import rosys
 
 from .plant_provider import Plant, PlantProvider
 
-WEED_CATEGORY_NAME = ['coin', 'weed']
-CROP_CATEGORY_NAME = ['coin_with_hole', 'crop']
+WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
+CROP_CATEGORY_NAME = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
 MINIMUM_WEED_CONFIDENCE = 0.8
 MINIMUM_CROP_CONFIDENCE = 0.75
 
@@ -42,8 +42,10 @@ class PlantLocator:
         t = rosys.time()
         camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
         if not camera:
-            raise DetectorError()
+            self.log.error('no connected camera found')
+            return
         if camera.calibration is None:
+            self.log.error('no calibration found')
             raise DetectorError()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:
@@ -67,7 +69,7 @@ class PlantLocator:
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
                 weed = Plant(position=world_point, type=d.category_name, detection_time=rosys.time())
-                self.plant_provider.add_weed(weed)
+                await self.plant_provider.add_weed(weed)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info('crop found')
                 image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
@@ -78,7 +80,7 @@ class PlantLocator:
                 world_point = self.odometer.prediction.transform(floor_point.projection())
                 crop = Plant(position=world_point, type=d.category_name,
                              detection_time=rosys.time(), confidence=d.confidence)
-                self.plant_provider.add_crop(crop)
+                await self.plant_provider.add_crop(crop)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
             # else:
