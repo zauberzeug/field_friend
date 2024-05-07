@@ -8,6 +8,8 @@ import rosys.geometry
 from nicegui import app, events, ui
 from nicegui.elements.leaflet_layers import TileLayer
 
+from field_friend.automations.field_provider import Field
+
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
