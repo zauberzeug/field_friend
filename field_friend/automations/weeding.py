@@ -378,7 +378,6 @@ class Weeding(rosys.persistence.PersistentModule):
         await rosys.sleep(0.5)
         self.state = 'running'
         try:
-
             if self.weeding_plan:
                 await self._weed_with_plan()
                 self.log.info('Weeding with plan completed')
@@ -519,7 +518,7 @@ class Weeding(rosys.persistence.PersistentModule):
                 if self.crops_to_handle:
                     return
             elif self.system.field_friend.tool == 'dual_mechanism':
-                if (self.with_drilling and not self.only_monitoring) and (self.crops_to_handle or self.weeds_to_handle):
+                if (self.with_drilling and not self.only_monitoring) and self.weeds_to_handle:
                     return
                 elif self.crops_to_handle:
                     return
@@ -576,14 +575,15 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log.info('Handling plants...')
         for crop_id in self.crops_to_handle:
             self._safe_crop_to_row(crop_id)
-        if self.system.field_friend.tool == 'tornado' and self.crops_to_handle and not self.use_monitor_workflow:
+        if self.system.field_friend.tool == 'tornado' and not self.use_monitor_workflow:
             await self._tornado_workflow()
         elif self.system.field_friend.tool == 'weed_screw' and not self.use_monitor_workflow:
             await self._weed_screw_workflow()
-        elif self.system.field_friend.tool == 'dual_mechanism' and not self.use_monitor_workflow and self.with_chopping:
-            await self._dual_mechanism_workflow()
-        elif self.system.field_friend.tool == 'dual_mechanism' and not self.use_monitor_workflow and self.with_drilling:
-            await self._weed_screw_workflow()
+        elif self.system.field_friend.tool == 'dual_mechanism' and not self.use_monitor_workflow:
+            if self.with_chopping:
+                await self._dual_mechanism_workflow()
+            else:
+                await self._weed_screw_workflow()
         elif self.system.field_friend.tool == 'none' or self.use_monitor_workflow:
             await self._monitor_workflow()
 
