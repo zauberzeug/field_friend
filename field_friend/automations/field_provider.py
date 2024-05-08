@@ -1,13 +1,11 @@
 from dataclasses import dataclass, field
-from functools import lru_cache
 from statistics import mean
-from typing import Any, List, Literal, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
-import geopandas as gpd
 import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 
 from field_friend.navigation.point_transformation import wgs84_to_cartesian
 
@@ -85,6 +83,20 @@ class Field:
             return cartesian_outline
         else:
             return []
+
+    @property
+    def area(self) -> float:
+        if len(self.outline) > 0:
+            polygon = Polygon([(p.x, p.y) for p in self.outline])
+            return polygon.area
+        else:
+            return 0.0
+
+    def worked_area(self, worked_rows: int) -> float:
+        worked_area = 0.0
+        if self.area > 0:
+            worked_area = worked_rows * self.area / len(self.rows)
+        return worked_area
 
 
 class Active_object(TypedDict):
@@ -198,6 +210,15 @@ class FieldProvider(rosys.persistence.PersistentModule):
     # the function need to be extended for more special cases
 
     def sort_rows(self, field: Field) -> None:
+        if len(field.rows) <= 1:
+            rosys.notify(f'There are not enough rows that can be sorted.', type='warning')
+            return
+
+        for row in field.rows:
+            if len(row.points_wgs84) < 1:
+                rosys.notify(f'Row {row.name} has to few points. Sorting not possible.', type='warning')
+                return
+
         def get_centroid(row: Row) -> Point:
             polyline = LineString(row.points_wgs84)
             return polyline.centroid

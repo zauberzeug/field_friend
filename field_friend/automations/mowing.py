@@ -28,6 +28,7 @@ class Mowing(rosys.persistence.PersistentModule):
         self.gnss = system.gnss
         self.system = system
         self.coverage_planner = CoveragePlanner(self)
+        self.kpi_provider = system.kpi_provider
 
         self.padding: float = 1.0
         self.lane_distance: float = 0.5
@@ -112,10 +113,12 @@ class Mowing(rosys.persistence.PersistentModule):
                         raise Exception('No paths to drive')
                 self.MOWING_STARTED.emit([path_segment for path in self.paths for path_segment in path])
                 await self._drive_mowing_paths(self.paths)
+                self.kpi_provider.increment_mowing_kpi('mowing_completed')
                 rosys.notify('Mowing finished', 'positive')
                 # break TODO: only for demo
             except Exception as e:
                 self.log.exception(e)
+                self.kpi_provider.increment('automation_stopped')
                 rosys.notify(f'Mowing failed because of {e}', 'negative')
                 break
 

@@ -11,18 +11,19 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
     # STEPS_PER_REV = 1600
     CIRCUMFERENCE = 51.85 * 2 * np.pi / 1000
     # STEPS_PER_M: float = STEPS_PER_REV * GEAR / CIRCUMFERENCE
-    DEFAULT_SPEED: float = 20000  # TODO: make configurable (U2=40000, U3 = 20000)
+    DEFAULT_SPEED: int = 20000  # TODO: make configurable (U2=40000, U3 = 20000)
     MIN_POSITION = -0.14235
     MAX_POSITION = 0.14235
     CHAIN_RADIUS = 0.05185
     RADIUS_STEPS = 8400  # TODO: make configurable (U2=16000, U3 = 8400)
-    WORK_OFFSET = 0.04
     REF_OFFSET = 1500
     POSITION_OFFSET = CHAIN_RADIUS / RADIUS_STEPS * REF_OFFSET
     TOP_DOWN_FACTOR = 1.0589
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, min_position: float = -0.10, max_position: float = 0.10, **kwargs) -> None:
         super().__init__(**kwargs)
+        self.min_position = min_position
+        self.max_position = max_position
 
         self.steps: int = 0
         self.alarm: bool = False
@@ -71,10 +72,12 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
         return self.compute_position(self.steps)
 
     @abc.abstractmethod
-    async def move_to(self, position: float, speed: int) -> None:
+    async def move_to(self, position: float, speed: int | None = None) -> None:
+        if speed is None:
+            speed = self.DEFAULT_SPEED
         if not self.is_referenced:
             raise RuntimeError('yaxis is not referenced, reference first')
-        if not self.MIN_POSITION + self.WORK_OFFSET <= position <= self.MAX_POSITION - self.WORK_OFFSET:
+        if not self.min_position <= position <= self.max_position:
             raise RuntimeError(f'target yaxis {position} is out of range')
         if not self.ref_t:
             raise RuntimeError('yaxis is not at top reference, move to top reference first')
@@ -126,6 +129,8 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'chain_axis',
                  expander: Optional[rosys.hardware.ExpanderHardware],
+                 min_position: float = -0.10,
+                 max_position: float = 0.10,
                  step_pin: int = 5,
                  dir_pin: int = 4,
                  alarm_pin: int = 13,
@@ -138,7 +143,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {name} = {expander.name + "." if motor_on_expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander else ""}Input({alarm_pin})
-            {name}_ref_t = {expander.name + "." if end_stops_on_expander == True else ""}Input({ref_t_pin})
+            {name}_ref_t = {expander.name + "." if end_stops_on_expander else ""}Input({ref_t_pin})
 
             bool {name}_ref_r_is_referencing = false
             bool {name}_ref_l_is_referencing = false
@@ -194,7 +199,8 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             f'{name}_alarm.level',
             f'{name}_ref_t.level',
         ]
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+        super().__init__(min_position=min_position, max_position=max_position, robot_brain=robot_brain,
+                         lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
         await super().stop()
@@ -287,7 +293,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
 
         await rosys.sleep(0.5)
 
-    async def reference_left(self) -> bool:
+    async def reference_left(self, first_time: bool = True) -> bool:
         self.log.info('moving to ref_l...')
         await self.robot_brain.send(
             f'{self.name}_ref_r_is_referencing = false;'
@@ -315,12 +321,21 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             f'{self.name}_ref_l_is_referencing = false;'
             f'{self.name}.position({self.steps + self.REF_OFFSET}, {self.DEFAULT_SPEED / 10}, 40000);'
         )
+        await rosys.sleep(0.2)
+        if not await self.check_idle_or_alarm():
+            raise Exception('chain_axis fault detected')
 
         # save position
         await rosys.sleep(0.5)
-        self.steps_to_end = self.steps
-        self.log.info(f'steps_to_end: {self.steps_to_end}')
-
+        if first_time is True:
+            self.steps_to_end = self.steps
+            self.log.info(f'steps_to_end: {self.steps_to_end}')
+        else:
+            self.log.info('setting steps_to_end position')
+            await self.robot_brain.send(
+                f'{self.name}.position = {self.steps_to_end};'
+            )
+        await rosys.sleep(0.5)
         await self.robot_brain.send(
             f'{self.name}_ref_t_stop_enabled = false;'
         )
@@ -361,7 +376,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
             raise Exception('chain_axis fault detected')
-        await self.reference_left()
+        await self.reference_left(first_time=False)
 
     async def move_dw_to_r_ref(self) -> None:
         try:
@@ -427,7 +442,9 @@ class ChainAxisSimulation(ChainAxis, rosys.hardware.ModuleSimulation):
         self.speed = 0
         self.target_steps = None
 
-    async def move_to(self, position: float, speed: int = ChainAxis.DEFAULT_SPEED) -> None:
+    async def move_to(self, position: float, speed: int | None = None) -> None:
+        if speed is None:
+            speed = self.DEFAULT_SPEED
         try:
             await super().move_to(position, speed)
         except RuntimeError as e:

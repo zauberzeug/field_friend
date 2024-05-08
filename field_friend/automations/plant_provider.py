@@ -33,8 +33,8 @@ class PlantProvider:
         self.ADDED_NEW_WEED = rosys.event.Event()
         """A new weed has been added."""
 
-        self.ADDED_NEW_BEET = rosys.event.Event()
-        """A new beet has been added."""
+        self.ADDED_NEW_CROP = rosys.event.Event()
+        """A new crop has been added."""
 
         rosys.on_repeat(self.prune, 10.0)
 
@@ -45,10 +45,11 @@ class PlantProvider:
 
     def add_weed(self, weed: Plant) -> None:
         for w in self.weeds:
-            if w.position.distance(weed.position) < 0.03 and w.type == weed.type:
+            if w.position.distance(weed.position) < 0.02 and w.type == weed.type:
                 if w.confidence > weed.confidence:
                     return
                 w.position = weed.position
+                w.confidence = weed.confidence
                 self.PLANTS_CHANGED.emit()
                 return
         self.weeds.append(weed)
@@ -69,11 +70,12 @@ class PlantProvider:
                 if c.confidence > crop.confidence:
                     return
                 c.position = crop.position
+                c.confidence = crop.confidence
                 self.PLANTS_CHANGED.emit()
                 return
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
-        self.ADDED_NEW_BEET.emit()
+        self.ADDED_NEW_CROP.emit()
 
     def remove_crop(self, crop: Plant) -> None:
         self.crops[:] = [c for c in self.crops if c.id != crop.id]
