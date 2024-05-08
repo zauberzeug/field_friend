@@ -208,7 +208,21 @@ class geodata_picker(ui.dialog):
                 divided_lines = []
                 for obstacle in field.obstacles:
                     # TODO hier Obstacles buffern und dann diese als Beschnitt nutzen
-                    divided_lines.append(difference(LineString(intersection_list), Polygon(obstacle.points_wgs84)))
+                    obstacle_meter = obstacle.points([field.reference_lat, field.reference_lon])
+                    obstacle_points_meter = []
+                    for point in obstacle_meter:
+                        obstacle_points_meter.append([point.x, point.y])
+                    obstacle_polygon = Polygon(obstacle_points_meter)
+                    obstacle_buffer_width = self.working_width + self.safety_distance
+                    obstacle_buffer = obstacle_polygon.buffer(
+                        obstacle_buffer_width, join_style='mitre', mitre_limit=math.inf)
+                    obstacle_coordinates_meter = mapping(obstacle_buffer)['coordinates'][0]
+                    obstacle_coordinates = []
+                    for point in obstacle_coordinates_meter:
+                        transformed_point = cartesian_to_wgs84(
+                            [field.reference_lat, field.reference_lon], [-point[1], point[0]])
+                        obstacle_coordinates.append([transformed_point[0], transformed_point[1]])
+                    divided_lines.append(difference(LineString(intersection_list), Polygon(obstacle_coordinates)))
                 if any(isinstance(x, MultiLineString) for x in divided_lines):
                     for segment in divided_lines:
                         if isinstance(segment, MultiLineString):
@@ -235,8 +249,23 @@ class geodata_picker(ui.dialog):
                             intersection_list.append([point[0], point[1]])
                         divided_lines = []
                         for obstacle in field.obstacles:
+                            # TODO hier Obstacles buffern und dann diese als Beschnitt nutzen
+                            obstacle_meter = obstacle.points([field.reference_lat, field.reference_lon])
+                            obstacle_points_meter = []
+                            for point in obstacle_meter:
+                                obstacle_points_meter.append([point.x, point.y])
+                            obstacle_polygon = Polygon(obstacle_points_meter)
+                            obstacle_buffer_width = self.working_width + self.safety_distance
+                            obstacle_buffer = obstacle_polygon.buffer(
+                                obstacle_buffer_width, join_style='mitre', mitre_limit=math.inf)
+                            obstacle_coordinates_meter = mapping(obstacle_buffer)['coordinates'][0]
+                            obstacle_coordinates = []
+                            for point in obstacle_coordinates_meter:
+                                transformed_point = cartesian_to_wgs84(
+                                    [field.reference_lat, field.reference_lon], [-point[1], point[0]])
+                                obstacle_coordinates.append([transformed_point[0], transformed_point[1]])
                             divided_lines.append(difference(LineString(intersection_list),
-                                                 Polygon(obstacle.points_wgs84)))
+                                                 Polygon(obstacle_coordinates)))
                         if any(isinstance(x, MultiLineString) for x in divided_lines):
                             for segment in divided_lines:
                                 if isinstance(segment, MultiLineString):
