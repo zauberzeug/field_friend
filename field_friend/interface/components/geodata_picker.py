@@ -126,10 +126,9 @@ class geodata_picker(ui.dialog):
         return lat, lon
 
     def get_extrapoled_line(self, p1, p2) -> LineString:
-        'Creates a line with two points extrapoled in both direction'
-        EXTRAPOL_RATIO = 10
-        a = [p1[0]+EXTRAPOL_RATIO*(p1[0]-p2[0]), p1[1]+EXTRAPOL_RATIO*(p1[1]-p2[1])]
-        b = [p2[0]+EXTRAPOL_RATIO*(p2[0]-p1[0]), p2[1]+EXTRAPOL_RATIO*(p2[1]-p1[1])]
+        extrapol_ratio = 10
+        a = [p1[0]+extrapol_ratio*(p1[0]-p2[0]), p1[1]+extrapol_ratio*(p1[1]-p2[1])]
+        b = [p2[0]+extrapol_ratio*(p2[0]-p1[0]), p2[1]+extrapol_ratio*(p2[1]-p1[1])]
         return LineString([a, b])
 
     def get_rows(self, field: Field) -> list:
@@ -145,9 +144,8 @@ class geodata_picker(ui.dialog):
             outline.append([point.x, point.y])
         outline_polygon = Polygon(outline)
         buffer_width = self.safety_distance + (self.headland_tracks * self.working_width)
-        row_spacing = self.working_width / 5
+        row_spacing = self.working_width / 6
         working_area_meter = outline_polygon.buffer(-buffer_width, join_style='mitre', mitre_limit=math.inf)
-        field.working_area = working_area_meter.area
         working_area_coordinates_meter = mapping(working_area_meter)['coordinates'][0]
         working_area_coordinates = []
         for point in working_area_coordinates_meter:
