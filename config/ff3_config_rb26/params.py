@@ -5,4 +5,4 @@ configuration = {'motor_gear_ratio': 12.52,
                  'work_x': 0.118,
                  'drill_radius': 0.025,
                  'tool': 'none',
-                 'antenna_offset': 0.195, }
+                 'antenna_offset': 0, }
