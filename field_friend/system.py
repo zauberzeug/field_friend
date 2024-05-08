@@ -35,7 +35,6 @@ class System:
             version = 'rb27'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
-            self.falling_detection = FallingSimulation(self.field_friend)
             self.usb_camera_provider.remove_all_cameras()
             self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
                                                                                x=0.4, z=0.4,
@@ -47,7 +46,6 @@ class System:
             # self.circle_sight = None
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
-        self.to_safety = RuturnToSafety(self.steerer, self.falling_detection)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
