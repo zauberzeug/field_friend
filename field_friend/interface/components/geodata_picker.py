@@ -143,6 +143,7 @@ class geodata_picker(ui.dialog):
         for point in field.outline:
             outline.append([point.x, point.y])
         outline_polygon = Polygon(outline)
+        # TODO: hinzufügen von abstand zwischen reihen und arbeitsbreite
         buffer_width = self.safety_distance + (self.headland_tracks * self.working_width)
         row_spacing = self.working_width / 6
         working_area_meter = outline_polygon.buffer(-buffer_width, join_style='mitre', mitre_limit=math.inf)
@@ -172,11 +173,14 @@ class geodata_picker(ui.dialog):
         if working_area_meter.contains(direction_check) or working_area_meter.intersects(direction_check):
             row_spacing = -row_spacing
         lines_meter = []
-        lines_meter.append(ab_line_meter)
-        lines.append(ab_line)
+        # lines_meter.append(ab_line_meter)
+        # lines.append(ab_line)
         line_inside = True
         while line_inside:
-            line_meter = offset_curve(lines_meter[-1], row_spacing)
+            if len(lines_meter) == 0:
+                line_meter = offset_curve(ab_line_meter, (row_spacing/2))
+            else:
+                line_meter = offset_curve(lines_meter[-1], row_spacing)
             if working_area_meter.contains(line_meter) or working_area_meter.intersects(line_meter):
                 lines_meter.append(line_meter)
                 line = []
@@ -189,6 +193,7 @@ class geodata_picker(ui.dialog):
                 line_inside = False
         working_area_ring = LinearRing(working_area_coordinates)
         rows = []
+        row_number = 1
         for line in lines:
             point_list = list(mapping(line)['coordinates'])
             for index, point in enumerate(point_list):
@@ -202,20 +207,24 @@ class geodata_picker(ui.dialog):
                     intersection_list.append([point[0], point[1]])
                 divided_lines = []
                 for obstacle in field.obstacles:
+                    # TODO hier Obstacles buffern und dann diese als Beschnitt nutzen
                     divided_lines.append(difference(LineString(intersection_list), Polygon(obstacle.points_wgs84)))
                 if any(isinstance(x, MultiLineString) for x in divided_lines):
                     for segment in divided_lines:
                         if isinstance(segment, MultiLineString):
+                            row_segment_number = 1
                             for line in mapping(segment)['coordinates']:
                                 row_coordinates = []
                                 for point in line:
                                     row_coordinates.append([point[0], point[1]])
                                 row_id = str(uuid.uuid4())
-                                new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=row_coordinates)
+                                new_row = Row(id=f'{row_id}', name=f'{row_number}_{row_segment_number}',
+                                              points_wgs84=row_coordinates)
                                 rows.append(new_row)
+                                row_segment_number += 1
                 else:
                     row_id = str(uuid.uuid4())
-                    new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=intersection_list)
+                    new_row = Row(id=f'{row_id}', name=f'{row_number}', points_wgs84=intersection_list)
                     rows.append(new_row)
             elif isinstance(intersection_geometry, GeometryCollection):
                 for geometry in mapping(intersection_geometry)['geometries']:
@@ -231,19 +240,23 @@ class geodata_picker(ui.dialog):
                         if any(isinstance(x, MultiLineString) for x in divided_lines):
                             for segment in divided_lines:
                                 if isinstance(segment, MultiLineString):
+                                    row_segment_number = 1
                                     for line in mapping(segment)['coordinates']:
                                         row_coordinates = []
                                         for point in line:
                                             row_coordinates.append([point[0], point[1]])
                                         row_id = str(uuid.uuid4())
-                                        new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=row_coordinates)
+                                        new_row = Row(
+                                            id=f'{row_id}', name=f'{row_id}_{row_segment_number}', points_wgs84=row_coordinates)
                                         rows.append(new_row)
+                                        row_segment_number += 1
                         else:
                             row_id = str(uuid.uuid4())
-                            new_row = Row(id=f'{row_id}', name=f'{row_id}', points_wgs84=intersection_list)
+                            new_row = Row(id=f'{row_id}', name=f'{row_number}', points_wgs84=intersection_list)
                             rows.append(new_row)
                     # elif type(geometry) == Point:
                     #     intersection_list.append([geometry[0], geometry[1]])
+            row_number += 1
         return rows
 
     def get_obstacles(self, polygon_list):
