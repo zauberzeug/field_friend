@@ -82,8 +82,11 @@ class System:
                                           )
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
-        self.plant_locator.minimum_weed_confidence = 0.85
-        self.plant_locator.minimum_crop_confidence = 0.40
+        self.plant_locator.minimum_weed_confidence = 0.8
+        if self.field_friend.tool == 'tornado':
+            self.plant_locator.minimum_crop_confidence = 0.75
+        else:
+            self.plant_locator.minimum_crop_confidence = 0.40
 
         rosys.on_repeat(watch_robot, 1.0)
 
