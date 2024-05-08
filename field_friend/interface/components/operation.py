@@ -3,8 +3,6 @@ import logging
 from typing import TYPE_CHECKING
 
 from nicegui import ui
-
-from ..falling_detection import RuturnToSafety
 from .automation_controls import automation_controls
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
@@ -128,14 +126,6 @@ class operation:
                     ui.button('emergency reset', on_click=lambda: system.field_friend.estop.set_soft_estop(False)).props(
                         'color=red-700 outline').classes('py-3 px-6 text-lg').bind_visibility_from(system.field_friend.estop,
                                                                                                    'is_soft_estop_active', value=True)
-                ui.button('self rescue', on_click=self.system.to_safety.rescue).props('color=orange').classes(
-                    'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'has_stopped', value=True)
-                ui.button('self rescue in progress').props('color=orange outline').classes(
-                    'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'rescue_in_progress_val', value=True)
-                ui.button('rescue attemt stopped, reset', on_click=system.falling_detection.reset_emergency).props('color=orange').classes(
-                    'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'rescue_stop', value=True)
-                ui.button('reset', on_click=system.falling_detection.reset).props('color=orange outline').classes(
-                    'py-3 px-6 text-lg').bind_visibility(system.falling_detection, 'has_stopped', value=True)
 
                 ui.space()
                 with ui.row():
