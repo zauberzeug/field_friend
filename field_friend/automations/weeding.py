@@ -63,7 +63,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.crop_safety_distance: float = 0.01
 
         # driver settings
-        self.linear_speed_on_row: float = 0.05
+        self.linear_speed_on_row: float = 0.04
         self.angular_speed_on_row: float = 0.3
         self.linear_speed_between_rows: float = 0.3
         self.angular_speed_between_rows: float = 0.8
@@ -789,10 +789,26 @@ class Weeding(rosys.persistence.PersistentModule):
         upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
         yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
         # only apply minimal yaw corrections to avoid oversteering
-        yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.85 + eliminate_2pi(yaw) * 0.15
-        target = self.system.odometer.prediction.point.polar(self.DRIVE_DISTANCE, yaw)
+        target_yaw = self._weighted_angle_combine(self.system.odometer.prediction.yaw, 0.85, yaw, 0.15)
+        # yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.9 + eliminate_2pi(yaw) * 0.1
+        target = self.system.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
         self.log.info(f'Current world position: {self.system.odometer.prediction} Target next crop at {target}')
         await self.system.driver.drive_to(target)
+
+    def _weighted_angle_combine(self, angle1: float, weight1: float, angle2: float, weight2: float) -> float:
+        # Normalize both angles
+        angle1 = eliminate_2pi(angle1)
+        angle2 = eliminate_2pi(angle2)
+
+        # Combine angles with the weights
+        x = np.cos(angle1) * weight1 + np.cos(angle2) * weight2
+        y = np.sin(angle1) * weight1 + np.sin(angle2) * weight2
+
+        # Compute the resultant angle
+        combined_angle = np.arctan2(y, x)
+
+        # Normalize the resultant angle
+        return eliminate_2pi(combined_angle)
 
     async def _driving_a_bit_forward(self):
         self.log.info('No crops and no weeds in range, driving forward a bit...')
