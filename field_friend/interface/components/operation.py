@@ -63,8 +63,7 @@ class operation:
                         self.automations_toggle = ui.select([key for key in self.system.automations.keys()],
                                                             on_change=self.handle_automation_changed) \
                             .classes('w-full border pl-2').style('border: 2px solid #6E93D6; border-radius: 5px; background-color: #EEF4FA')
-                        self.automations_toggle.value = {v: k for k, v in self.system.automations.items()} \
-                            .get(self.system.automator.default_automation, None)
+                        self.automations_toggle.value = self.system.get_current_automation_id()
                     with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='mowing'):
                         with ui.row():
                             ui.number('Padding', value=0.5, step=0.1, min=0.0, format='%.1f') \

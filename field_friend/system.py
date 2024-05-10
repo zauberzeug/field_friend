@@ -139,14 +139,14 @@ class System(rosys.persistence.PersistentModule):
         os.utime('main.py')
 
     def backup(self) -> dict:
-        automation = self.automator.default_automation
-        if automation is None:
-            automation_id = None
-        else:
-            automation_id = {v: k for k, v in self.automations.items()}.get(automation, None)
-        return {'automation': automation_id}
+        return {'automation': self.get_current_automation_id()}
 
     def restore(self, data: dict[str, Any]) -> None:
         name = data.get('automation', None)
         automation = self.automations.get(name, None)
         self.automator.default_automation = automation
+
+    def get_current_automation_id(self) -> str | None:
+        if self.automator.default_automation is None:
+            return None
+        return {v: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
