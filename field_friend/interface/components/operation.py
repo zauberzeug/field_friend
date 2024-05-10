@@ -21,7 +21,6 @@ class operation:
         self.field = None
         self.key_controls = KeyControls(self.system)
         self.leaflet_map = leaflet_map
-        self.initial_value = None
 
         with ui.card().tight().classes('w-full').style('margin-bottom: 10px; min-height: 100%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
@@ -36,26 +35,14 @@ class operation:
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
                         center_map_button()
                         self.field_provider.FIELD_SELECTED.register(center_map_button.refresh)
-
-                        field_selection_dict = {}
-                        if self.field_provider.fields is not None and len(self.field_provider.fields) > 0:
-                            for field in self.system.field_provider.fields:
-                                field_selection_dict[field.id] = field.name
-                            active = self.field_provider.active_field
-                            self.initial_value = app.storage.user.get('field') if active is None else active.id
-                        self.field_selection = None
-
-                        @ui.refreshable
-                        def show_field_selection() -> None:
-                            self.field_selection = ui.select(
-                                field_selection_dict,
-                                with_input=True,
-                                on_change=self.set_field,
-                                label='Field')\
-                                .tooltip('Select the field to work on').classes('w-24')
-                            self.field_selection.value = self.initial_value
-                        show_field_selection()
-                        self.field_provider.FIELDS_CHANGED.register(show_field_selection.refresh)
+                        self.field_selection = ui.select(
+                            {f.id: f.name for f in self.system.field_provider.fields},
+                            with_input=True,
+                            on_change=self.set_field,
+                            label='Field')\
+                            .props('clearable').classes('w-full') \
+                            .tooltip('Select the field to work on') \
+                            .bind_value_from(self.field_provider, 'active_field', lambda f: f.id if f else None)
                     ui.separator()
                     with ui.row():
                         ui.label('Automation').classes('text-xl')
@@ -248,10 +235,12 @@ class operation:
                 .bind_value(self.system.weeding, 'end_row').classes('w-24').tooltip('Select the row to end on')
 
     def set_field(self) -> None:
+        if self.field_selection.value is None:
+            self.field_provider.select_field()
+            return
         for field in self.system.field_provider.fields:
             if field.id == self.field_selection.value:
                 self.field_provider.select_field(field)
-                app.storage.user['field'] = field.id
                 if len(field.outline_wgs84) > 0:
                     self.system.gnss.set_reference(field.outline_wgs84[0][0], field.outline_wgs84[0][1])
                 # TODO das hier noch auf das active field umbauen, damit auch diese werte im weeding auf das active field registriert sind
