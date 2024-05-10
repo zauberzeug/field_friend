@@ -27,16 +27,6 @@ class operation:
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
                 with ui.column().classes('w-full'):
                     with ui.row().classes('items-center'):
-                        @ui.refreshable
-                        def center_map_button() -> None:
-                            if self.field_provider.active_field is not None and len(self.field_provider.active_field.outline_wgs84) > 0:
-                                ui.button(on_click=lambda: self.leaflet_map.m.set_center(self.field_provider.active_field.outline_wgs84[0])) \
-                                    .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
-                            else:
-                                ui.icon('place').props('size=sm color=grey').classes('ml-2')
-                        center_map_button()
-                        self.field_provider.FIELD_SELECTED.register(center_map_button.refresh)
-
                         field_selection_dict = {}
                         if self.field_provider.fields is not None and len(self.field_provider.fields) > 0:
                             for field in self.system.field_provider.fields:
