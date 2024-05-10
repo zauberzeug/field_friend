@@ -41,7 +41,9 @@ class operation:
                             on_change=self.set_field,
                             label='Field')\
                             .props('clearable').classes('w-full') \
-                            .tooltip('Select the field to work on') \
+                            .tooltip('Select the field to work on')
+                        # NOTE: having this in a separate call will trigger the on_change handler which is necessary to perform all the necessary updates (eg. self.set_field)
+                        self.field_selection \
                             .bind_value_from(self.field_provider, 'active_field', lambda f: f.id if f else None)
                     ui.separator()
                     with ui.row():
