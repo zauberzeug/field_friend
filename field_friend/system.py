@@ -4,11 +4,29 @@ import os
 import numpy as np
 import rosys
 
-from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider,
-                                      Mowing, PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
+from field_friend.automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    CoinCollecting,
+    FieldProvider,
+    KpiProvider,
+    Mowing,
+    PathProvider,
+    PathRecorder,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+    Weeding,
+)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
-from field_friend.navigation import GnssHardware, GnssSimulation
-from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from field_friend.navigation.gnss_hardware import GnssHardware
+from field_friend.navigation.gnss_simulation import GnssSimulation
+from field_friend.vision import (
+    CalibratableUsbCameraProvider,
+    CameraConfigurator,
+    SimulatedCam,
+    SimulatedCamProvider,
+)
 
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis

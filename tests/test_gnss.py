@@ -2,7 +2,7 @@ import rosys
 from rosys.testing import assert_point, forward
 
 from field_friend.automations.field_provider import Field
-from field_friend.navigation.gnss import GnssSimulation
+from field_friend.navigation.gnss_simulation import GnssSimulation
 from field_friend.system import System
 
 

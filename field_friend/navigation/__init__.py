@@ -1,1 +1,3 @@
-from .gnss import Gnss, GnssHardware, GnssSimulation
+from .gnss import Gnss
+from .gnss_hardware import GnssHardware
+from .gnss_simulation import GnssSimulation
