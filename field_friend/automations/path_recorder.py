@@ -37,7 +37,7 @@ class PathRecorder:
             return
         self.log.info(f'recording path {path.name}')
         if self.gnss.device != 'simulation':
-            ref_lat, ref_lon = await self.gnss.get_reference()
+            ref_lat, ref_lon = self.gnss.get_reference()
             if ref_lat is None or ref_lon is None:
                 self.log.warning('not recording because no reference location set')
                 return
@@ -47,10 +47,13 @@ class PathRecorder:
         self.current_path_recording = path.name
         self.state = 'recording'
         splines = []
-        last_pose = self.driver.odometer.prediction
+        last_pose = self.driver.prediction
         while self.state == 'recording':
+            assert isinstance(self.driver.odometer, rosys.driving.Odometer)
+            assert self.driver.odometer.current_velocity is not None
             if self.driver.odometer.current_velocity.linear > 0.05:
                 new_pose = self.driver.odometer.prediction
+                self.log.info(f'recording current movement: {new_pose}')
                 splines.append(Spline.from_poses(last_pose, new_pose))
                 last_pose = new_pose
             else:
