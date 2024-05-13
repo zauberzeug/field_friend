@@ -1,11 +1,11 @@
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 import rosys
 from rosys.driving import PathSegment
 from rosys.geometry import Spline
 
-from ..navigation import Gnss
+from ..navigation import GeoPoint, Gnss
 from .path_provider import Path, PathProvider
 
 
@@ -91,7 +91,7 @@ class PathRecorder:
                 self.log.warning('not driving because no reference location set')
                 return
             self.gnss.set_reference(path.reference_lat, path.reference_lon)
-            distance = self.gnss.calculate_distance(self.gnss.record.latitude, self.gnss.record.longitude)
+            distance = self.gnss.distance(GeoPoint(lat=self.gnss.record.latitude, long=self.gnss.record.longitude))
             if not distance or distance > 10:
                 self.log.warning('not driving because distance to reference location is too large')
                 rosys.notify('Distance to reference location is too large', 'negative')

@@ -17,8 +17,7 @@ class GnssHardware(Gnss):
     TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
 
     def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
-        super().__init__()
-        self.odometer = odometer
+        super().__init__(odometer)
         self.antenna_offset = antenna_offset
 
     def __del__(self) -> None:
@@ -26,7 +25,6 @@ class GnssHardware(Gnss):
             self.ser.close()
 
     async def try_connection(self) -> None:
-        await super().try_connection()
         if self.device is not None:
             return
         # self.log.info('Searching for GNSS device...')

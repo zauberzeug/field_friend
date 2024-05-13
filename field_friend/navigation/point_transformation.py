@@ -1,22 +1,24 @@
 from typing import List
 
 import numpy as np
+import rosys
 from geographiclib.geodesic import Geodesic
 
+# TODO move functions into GeoPoint class
 
-def wgs84_to_cartesian(reference, point) -> List[float]:
-    r = Geodesic.WGS84.Inverse(reference[0], reference[1], point[0], point[1])
+
+def wgs84_to_cartesian(reference: list[float], point: rosys.geometry.Point) -> rosys.geometry.Point:
+    r = Geodesic.WGS84.Inverse(reference[0], reference[1], point.x, point.y)
     s = r['s12']
     a = -np.deg2rad(r['azi1'])
     x = s * np.cos(a)
     y = s * np.sin(a)
-    cartesian_coords = [x, y]
-    return cartesian_coords
+    return rosys.geometry.Point(x=x, y=y)
 
 
-def cartesian_to_wgs84(reference, point) -> List[float]:
-    r = Geodesic.WGS84.Direct(reference[0], reference[1], 90.0, point[0])
-    r = Geodesic.WGS84.Direct(r['lat2'], r['lon2'], 0.0, point[1])
+def cartesian_to_wgs84(reference: list[float], point: rosys.geometry.Point) -> List[float]:
+    r = Geodesic.WGS84.Direct(reference[0], reference[1], 90.0, point.x)
+    r = Geodesic.WGS84.Direct(r['lat2'], r['lon2'], 0.0, point.y)
     wgs84_coords = [r['lat2'], r['lon2']]
     return wgs84_coords
 

@@ -7,7 +7,8 @@ from typing import Optional, Protocol
 
 import rosys
 import serial
-from geographiclib.geodesic import Geodesic
+
+from .geo_point import GeoPoint
 
 
 @dataclass
@@ -25,9 +26,10 @@ class GNSSRecord:
 
 class Gnss(ABC):
 
-    def __init__(self) -> None:
+    def __init__(self, odometer: rosys.driving.Odometer) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.gnss')
+        self.odometer = odometer
 
         self.ROBOT_POSE_LOCATED = rosys.event.Event()
         """the robot has been located (argument: pose) with RTK-fixed"""
@@ -70,11 +72,11 @@ class Gnss(ABC):
     def get_reference(self) -> tuple[Optional[float], Optional[float]]:
         return self.reference_lat, self.reference_lon
 
-    def calculate_distance(self, lat: float, lon: float) -> Optional[float]:
+    def distance(self, point: GeoPoint) -> Optional[float]:
+        """Compute the distance between the reference point and the given point in meters"""
         if self.reference_lat is None or self.reference_lon is None:
             return None
-        geodetic_measurement = Geodesic.WGS84.Inverse(self.reference_lat, self.reference_lon, lat, lon)
-        return geodetic_measurement['s12']
+        return GeoPoint(lat=self.reference_lat, long=self.reference_lon).distance(point)
 
 
 class PoseProvider(Protocol):

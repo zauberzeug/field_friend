@@ -78,8 +78,11 @@ class Field:
         if len(self.outline_wgs84) > 0:
             cartesian_outline = []
             for point in self.outline_wgs84:
-                cartesian_point = wgs84_to_cartesian([self.reference_lat, self.reference_lon], point)
-                cartesian_outline.append(Point(x=cartesian_point[0], y=cartesian_point[1]))
+                assert self.reference_lat
+                assert self.reference_lon
+                cartesian_point = wgs84_to_cartesian([self.reference_lat, self.reference_lon],
+                                                     rosys.geometry.Point(x=point[0], y=point[1]))
+                cartesian_outline.append(cartesian_point)
             return cartesian_outline
         else:
             return []
