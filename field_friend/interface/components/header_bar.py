@@ -45,7 +45,7 @@ class header_bar:
                 'Open the manual steering window to move the robot with a joystick.')
             self.internet_status = ui.icon('sym_o_wifi', size='sm')
             self._show_battery(system.field_friend)
-            ui.timer(5, callback=self._update_internet_status)
+            # ui.timer(5, callback=self._update_internet_status)
 
             def handle_toggle() -> None:
                 right_drawer.toggle()
