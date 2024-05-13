@@ -27,8 +27,8 @@ class Weeding(rosys.persistence.PersistentModule):
     WORKING_DISTANCE = 0.06
     DRIVE_DISTANCE = 0.04
 
-    def __init__(self, system: 'System') -> None:
-        super().__init__()
+    def __init__(self, system: 'System', persistence_key: str = 'weeding') -> None:
+        super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
         self.PATH_PLANNED = rosys.event.Event()
         '''Event that is emitted when the path is planed. The event contains the path as a list of PathSegments.'''
 
@@ -106,7 +106,6 @@ class Weeding(rosys.persistence.PersistentModule):
     def backup(self) -> dict:
         dict = {
             'use_field_planning': self.use_field_planning,
-            'field': rosys.persistence.to_dict(self.field) if self.field else None,
             'start_row_id': self.start_row_id,
             'end_row_id': self.end_row_id,
             'minimum_turning_radius': self.minimum_turning_radius,
@@ -124,7 +123,8 @@ class Weeding(rosys.persistence.PersistentModule):
             'angular_speed_on_row': self.angular_speed_on_row,
             'linear_speed_between_rows': self.linear_speed_between_rows,
             'angular_speed_between_rows': self.angular_speed_between_rows,
-            'sorted_weeding_rows': self.sorted_weeding_rows,
+            'sorted_weeding_rows': [rosys.persistence.to_dict(row) for row in self.sorted_weeding_rows],
+            'field': rosys.persistence.to_dict(self.field) if self.field else None,
             'weeding_plan': [[rosys.persistence.to_dict(segment) for segment in row] for row in self.weeding_plan] if self.weeding_plan else [],
             'turn_paths': [rosys.persistence.to_dict(segment) for segment in self.turn_paths],
             'current_row': rosys.persistence.to_dict(self.current_row) if self.current_row else None,
@@ -135,7 +135,6 @@ class Weeding(rosys.persistence.PersistentModule):
 
     def restore(self, data: dict[str, Any]) -> None:
         self.use_field_planning = data.get('use_field_planning', self.use_field_planning)
-        self.field = rosys.persistence.from_dict(Field, data['field']) if data['field'] else None
         self.start_row_id = data.get('start_row_id', self.start_row_id)
         self.end_row_id = data.get('end_row_id', self.end_row_id)
         self.minimum_turning_radius = data.get('minimum_turning_radius', self.minimum_turning_radius)
@@ -153,7 +152,9 @@ class Weeding(rosys.persistence.PersistentModule):
         self.angular_speed_on_row = data.get('angular_speed_on_row', self.angular_speed_on_row)
         self.linear_speed_between_rows = data.get('linear_speed_between_rows', self.linear_speed_between_rows)
         self.angular_speed_between_rows = data.get('angular_speed_between_rows', self.angular_speed_between_rows)
-        self.sorted_weeding_rows = data.get('sorted_weeding_rows', [])
+        self.sorted_weeding_rows = [rosys.persistence.from_dict(
+            Row, row_data) for row_data in data['sorted_weeding_rows']]
+        self.field = rosys.persistence.from_dict(Field, data['field']) if data['field'] else None
         self.weeding_plan = [
             [rosys.persistence.from_dict(PathSegment, segment_data)
              for segment_data in row_data] for row_data in data.get('weeding_plan', [])
@@ -171,13 +172,13 @@ class Weeding(rosys.persistence.PersistentModule):
 
     async def start(self):
         self.log.info('starting weeding...')
+        self.invalidate()
         if not await self._check_hardware_ready():
             return
         if not self.continue_canceled_weeding:
             if self.use_field_planning and not await self._field_planning():
                 rosys.notify('Field planning failed', 'negative')
                 return
-        # self.invalidate()
         await self._weeding()
 
     async def _check_hardware_ready(self) -> bool:
