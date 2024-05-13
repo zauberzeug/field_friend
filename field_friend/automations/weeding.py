@@ -12,6 +12,7 @@ from rosys.helpers import eliminate_2pi
 from ..hardware import ChainAxis
 from .field_provider import Field, Row
 from .plant_provider import Plant
+from .puncher import PuncherException
 from .sequence import find_sequence
 
 if TYPE_CHECKING:
@@ -46,6 +47,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.end_row_id: Optional[str] = None
         self.minimum_turning_radius: float = 1.8
         self.turn_offset: float = 1.0
+        self.drive_backwards_to_start: bool = True
 
         # workflow settings
         self.only_monitoring: bool = False
@@ -410,8 +412,6 @@ class Weeding(rosys.persistence.PersistentModule):
                             yaw=self.current_segment.spline.start.direction(self.current_segment.spline.end))
             start_spline = Spline.from_poses(start_pose, end_pose)
             await self.system.driver.drive_spline(start_spline)
-        else:
-            await self._drive_to_start()
         self.system.automation_watcher.start_field_watch(self.field.outline)
         self.system.automation_watcher.gnss_watch_active = True
         for i, path in enumerate(self.weeding_plan):
@@ -455,6 +455,12 @@ class Weeding(rosys.persistence.PersistentModule):
                         self.weeds_to_handle = {}
                         if self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
                             self.row_segment_completed = True
+                    await rosys.sleep(0.2)
+                    if self.drive_backwards_to_start and self.system.field_friend.bms.is_below_percent(15.0):
+                        self.log.info('Low battery, driving backwards to start...')
+                        rosys.notify('Low battery, driving backwards to start', 'warning')
+                        await self.system.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
+                        return
 
             await self.system.field_friend.flashlight.turn_off()
             self.system.plant_locator.pause()
@@ -626,6 +632,8 @@ class Weeding(rosys.persistence.PersistentModule):
                 await self._follow_line_of_crops()
             await rosys.sleep(0.2)
             self.log.info('workflow completed')
+        except PuncherException as e:
+            self.log.error(f'Error while Tornado Workflow: {e}')
         except Exception as e:
             raise WorkflowException(f'Error while tornado Workflow: {e}') from e
 
@@ -649,6 +657,8 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self._driving_a_bit_forward()
             await rosys.sleep(0.2)
             self.log.info('workflow completed')
+        except PuncherException as e:
+            self.log.error(f'Error while Monitoring Workflow: {e}')
         except Exception as e:
             raise WorkflowException(f'Error while Monitoring Workflow: {e}') from e
 
@@ -779,6 +789,8 @@ class Weeding(rosys.persistence.PersistentModule):
                 await self._driving_a_bit_forward()
             await rosys.sleep(0.2)
             self.log.info('Workflow completed')
+        except PuncherException as e:
+            self.log.error(f'Error while Dual Mechanism Workflow: {e}')
         except Exception as e:
             raise WorkflowException(f'Error while double mechanism Workflow: {e}') from e
 
@@ -789,7 +801,7 @@ class Weeding(rosys.persistence.PersistentModule):
         upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
         yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
         # only apply minimal yaw corrections to avoid oversteering
-        target_yaw = self._weighted_angle_combine(self.system.odometer.prediction.yaw, 0.85, yaw, 0.15)
+        target_yaw = self._weighted_angle_combine(self.system.odometer.prediction.yaw, 0.95, yaw, 0.05)
         # yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.9 + eliminate_2pi(yaw) * 0.1
         target = self.system.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
         self.log.info(f'Current world position: {self.system.odometer.prediction} Target next crop at {target}')
