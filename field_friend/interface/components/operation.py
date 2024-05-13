@@ -135,7 +135,7 @@ class operation:
                                     .classes('w-24') \
                                     .bind_value(self.system.weeding, 'weed_screw_depth') \
                                     .tooltip('Set the drill depth for the weeding automation')
-                                ui.number('Crop safety distance', value=0.01, step=0.01, min=0.0, max=0.05, format='%.2f') \
+                                ui.number('Crop safety distance', value=0.01, step=0.001, min=0.001, max=0.05, format='%.3f') \
                                     .props('dense outlined suffix=m') \
                                     .classes('w-24') \
                                     .bind_value(self.system.weeding, 'crop_safety_distance') \

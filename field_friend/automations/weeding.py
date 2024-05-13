@@ -549,7 +549,7 @@ class Weeding(rosys.persistence.PersistentModule):
         else:
             upcoming_crop_positions = {
                 c: pos for c, pos in relative_crop_positions.items()
-                if self.system.field_friend.WORK_X < pos.x < 0.4
+                if self.system.field_friend.WORK_X < pos.x < 0.3
             }
 
         # Sort the upcoming_crop_positions dictionary by the .x attribute of its values
@@ -831,15 +831,16 @@ class Weeding(rosys.persistence.PersistentModule):
 
     def _keep_crops_safe(self) -> None:
         self.log.info('Keeping crops safe...')
-        for crop, crop_position in self.crops_to_handle.items():
+        for crop in self.system.plant_provider.crops:
+            crop_position = self.system.odometer.prediction.transform(crop.position)
             for weed, weed_position in self.weeds_to_handle.items():
                 offset = self.system.field_friend.DRILL_RADIUS + \
-                    self.crop_safety_distance - crop_position.distance(weed_position)
+                    self.crop_safety_distance - crop.position.distance(weed_position)
                 if offset > 0:
                     safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
                     self.weeds_to_handle[weed] = safe_weed_position
                     self.log.info(
-                        f'Moved weed {weed} from {weed_position} to {safe_weed_position} by {offset} to safe {crop} at {crop_position}')
+                        f'Moved weed {weed} from {weed_position} to {safe_weed_position} by {offset} to safe {crop.id} at {crop_position}')
 
     def _safe_crop_to_row(self, crop_id: str) -> None:
         if self.current_row is None:
