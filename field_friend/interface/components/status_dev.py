@@ -265,7 +265,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         if system.automator.is_running:
             if system.field_provider.active_field is not None:
                 current_field_label.text = system.field_provider.active_field.name
-            kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time:.2f}s'
+            kpi_fieldtime_label.text = f'{timedelta(seconds=system.kpi_provider.current_weeding_kpis.time)}'
             kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance:.0f}m'
 
             current_automation = next(key for key, value in system.automations.items()
