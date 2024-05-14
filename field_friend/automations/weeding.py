@@ -104,7 +104,7 @@ class Weeding(rosys.persistence.PersistentModule):
             self.start_time = rosys.time()
 
     def backup(self) -> dict:
-        dict = {
+        data = {
             'use_field_planning': self.use_field_planning,
             'start_row_id': self.start_row_id,
             'end_row_id': self.end_row_id,
@@ -130,8 +130,7 @@ class Weeding(rosys.persistence.PersistentModule):
             'current_row': rosys.persistence.to_dict(self.current_row) if self.current_row else None,
             'current_segment': rosys.persistence.to_dict(self.current_segment) if self.current_segment else None,
         }
-        self.log.info(f'backing up: {dict}')
-        return dict
+        return data
 
     def restore(self, data: dict[str, Any]) -> None:
         self.use_field_planning = data.get('use_field_planning', self.use_field_planning)
