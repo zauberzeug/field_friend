@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections import deque
 from dataclasses import dataclass
 
 import rosys
@@ -10,9 +11,16 @@ from rosys.geometry import Point
 class Plant:
     id: str = ...
     type: str
-    positions: list[Point]
+    positions: deque[Point]
     detection_time: float
     confidence: float = 0.0
+
+    def __init__(self, type: str, position: Point, detection_time: float, id: str = ..., confidence: float = 0.0, max_positions: int = 20) -> None:
+        self.id = id
+        self.type = type
+        self.positions = deque([position], maxlen=max_positions)
+        self.detection_time = detection_time
+        self.confidence = confidence
 
     def __post_init__(self) -> None:
         """Generate a unique ID if not already loaded from persistence"""
@@ -37,12 +45,7 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
             # Update the confidence
             p.confidence = max(p.confidence, plant.confidence)  # Optionally updating confidence to the higher one
             # Add the new position to the positions list
-            if len(p.positions) < 20:
-                p.positions.append(plant.position)
-            else:
-                # If there are already 20 positions, remove the oldest one and add the new one
-                p.positions.pop(0)
-                p.positions.append(plant.position)
+            p.positions.append(plant.position)
             return True
     return False
 
