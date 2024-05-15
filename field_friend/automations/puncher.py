@@ -57,7 +57,7 @@ class Puncher:
         world_target = self.driver.prediction.transform(local_target)
         await self.driver.drive_to(world_target, backward=axis_distance < 0)
 
-    async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180, turns: float = 2.0) -> None:
+    async def punch(self, plant_id: str, y: float, *, depth: float = 0.01, angle: float = 180, turns: float = 2.0) -> None:
         self.log.info(f'Punching at {y} with depth {depth}...')
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
@@ -88,7 +88,7 @@ class Puncher:
                     await self.tornado_drill(angle=angle, turns=turns)
                 else:
                     self.punch_allowed = 'waiting'
-                    self.POSSIBLE_PUNCH.emit()
+                    self.POSSIBLE_PUNCH.emit(plant_id)
                     while self.punch_allowed == 'waiting':
                         await rosys.sleep(0.1)
                     if self.punch_allowed == 'not_allowed':
@@ -122,7 +122,7 @@ class Puncher:
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         await self.field_friend.y_axis.stop()
 
-    async def drive_and_punch(self, x: float, y: float, depth: float = 0.05, angle: float = 180, turns: float = 2.0, backwards_allowed: bool = True) -> None:
+    async def drive_and_punch(self, plant_id: str, x: float, y: float, depth: float = 0.05, angle: float = 180, turns: float = 2.0, backwards_allowed: bool = True) -> None:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             return
@@ -132,7 +132,7 @@ class Puncher:
                 self.log.warning(f'target x: {x} is behind')
                 return
             await self.drive_to_punch(x)
-            await self.punch(y, depth=depth, angle=angle, turns=turns)
+            await self.punch(plant_id, y, depth=depth, angle=angle, turns=turns)
             # await self.clear_view()
         except Exception as e:
             raise PuncherException('drive and punch failed') from e

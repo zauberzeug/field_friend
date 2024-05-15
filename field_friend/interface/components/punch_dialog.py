@@ -3,8 +3,10 @@ from typing import Optional
 import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments
+from rosys.geometry import Point3d
+from rosys.vision import Image
 
-from ...automations import PlantLocator
+from ...automations import Plant, PlantLocator
 
 
 class PunchDialog(ui.dialog):
@@ -14,26 +16,44 @@ class PunchDialog(ui.dialog):
         self.camera_provider = camera_provider
         self.plant_locator = plant_locator
         self.shrink_factor = shrink_factor
-        self.image_view: Optional[ui.interactive_image] = None
-        with self, ui.card():
+        self.static_image_view: Optional[ui.interactive_image] = None
+        self.live_image_view: Optional[ui.interactive_image] = None
+        self.target_plant: Optional[Plant] = None
+        self.timer = ui.timer(0.2, self.update_live_view, active=False)
+        self.setup_camera()
+        with self, ui.card().style('max-width: 1400px'):
             events = ['mousemove', 'mouseout', 'mouseup']
-            self.image_view = ui.interactive_image(
-                '',
-                cross=True,
-                on_mouse=self.on_mouse_move,
-                events=events
-            ).classes('w-full')
+            with ui.row(wrap=False):
+                with ui.column().classes('w-1/2'):
+                    ui.label('Last detection').classes('text-lg')
+                    self.static_image_view = ui.interactive_image(
+                        '',
+                        cross=True,
+                        on_mouse=self.on_mouse_move,
+                        events=events
+                    )
+                with ui.column().classes('w-1/2'):
+                    ui.label('Live').classes('text-lg')
+                    self.live_image_view = ui.interactive_image('')
             self.label = ui.label('Do you want to continue the canceled automation').classes('text-lg')
             with ui.row():
                 ui.button('Yes', on_click=lambda: self.submit('Yes'))
                 ui.button('No', on_click=lambda: self.submit('No'))
                 ui.button('Cancel', on_click=lambda: self.submit('Cancel'))
 
+    def submit(self, value: str) -> None:
+        self.timer.cancel()
+        super().submit(value)
+
     def open(self) -> None:
-        self.update_content()
+        assert self.target_plant is not None
+        assert self.camera is not None
+        detection_image = self.camera.latest_detected_image if self.target_plant.detection_image is None else self.target_plant.detection_image
+        self.update_content(self.static_image_view, detection_image, draw_target=True)
+        self.timer.activate()
         super().open()
 
-    def update_content(self) -> None:
+    def setup_camera(self) -> None:
         cameras = list(self.camera_provider.cameras.values())
         active_camera = next((camera for camera in cameras if camera.is_connected), None)
         if not active_camera:
@@ -46,16 +66,26 @@ class PunchDialog(ui.dialog):
             return
         if self.camera is None or self.camera != active_camera:
             self.camera = active_camera
+
+    def update_content(self, image_view: ui.interactive_image, image: Image, draw_target: bool = False) -> None:
+        assert self.camera is not None
         if self.shrink_factor > 1:
             url = f'{self.camera.get_latest_image_url()}?shrink={self.shrink_factor}'
         else:
             url = self.camera.get_latest_image_url()
-        self.image_view.set_source(url)
-        image = self.camera.latest_detected_image
+        image_view.set_source(url)
         if image and image.detections:
-            self.image_view.set_content(self.to_svg(image.detections))
+            target_point = None
+            if self.target_plant and draw_target:
+                target_point = self.camera.calibration.project_to_image(
+                    Point3d(x=self.target_plant.position.x, y=self.target_plant.position.y, z=0))
+            image_view.set_content(self.to_svg(image.detections, target_point))
 
-    def to_svg(self, detections: rosys.vision.Detections) -> str:
+    def update_live_view(self) -> None:
+        assert self.camera is not None
+        self.update_content(self.live_image_view, self.camera.latest_detected_image)
+
+    def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point]) -> str:
         svg = ''
         cross_size = 20
         for point in detections.points:
@@ -87,6 +117,9 @@ class PunchDialog(ui.dialog):
                                 transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
                             <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">Weed</text>
                     '''
+        if target_point:
+            svg += f'''<circle cx="{target_point.x / self.shrink_factor}" cy="{target_point.y /
+                                                                               self.shrink_factor}" r="18" stroke-width="8" stroke="gold" fill="none" />'''
         return svg
 
     def on_mouse_move(self, e: MouseEventArguments):
