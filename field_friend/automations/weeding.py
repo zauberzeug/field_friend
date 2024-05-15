@@ -451,6 +451,8 @@ class Weeding(rosys.persistence.PersistentModule):
                         self._drive_segment(),
                         return_when_first_completed=True
                     )
+                    await rosys.sleep(2)  # wait for robot to stand still
+                    await self._get_upcoming_plants()
                     if self.crops_to_handle or self.weeds_to_handle:
                         self.log.info('Plants to handle...')
                         await self._handle_plants()
@@ -600,6 +602,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log.info('Starting Tornado Workflow..')
         try:
             closest_crop_position = list(self.crops_to_handle.values())[0]
+            closest_crop_id = list(self.crops_to_handle.keys())[0]
             self.log.info(f'Closest crop position: {closest_crop_position}')
             # fist check if the closest crop is in the working area
             if closest_crop_position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
@@ -607,9 +610,13 @@ class Weeding(rosys.persistence.PersistentModule):
                 # do not steer while advancing on a crop
 
                 if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position):
-                    await self.system.puncher.drive_and_punch(closest_crop_position.x, closest_crop_position.y, angle=self.tornado_angle)
-                    if self.drill_with_open_tornado:
-                        await self.system.puncher.punch(closest_crop_position.y, angle=0)
+                    if not self._crops_in_drill_range(closest_crop_id, closest_crop_position):
+                        self.log.info('drilling crop')
+                        await self.system.puncher.drive_and_punch(closest_crop_position.x, closest_crop_position.y, angle=self.tornado_angle)
+                        if self.drill_with_open_tornado:
+                            await self.system.puncher.punch(closest_crop_position.y, angle=0)
+                    else:
+                        self.log.warning('Other crops in drill range, drilling not allowed')
                 else:
                     drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
                     target = self.system.odometer.prediction.transform(Point(x=drive_distance, y=0))
@@ -804,7 +811,7 @@ class Weeding(rosys.persistence.PersistentModule):
         upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
         yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
         # only apply minimal yaw corrections to avoid oversteering
-        target_yaw = self._weighted_angle_combine(self.system.odometer.prediction.yaw, 0.95, yaw, 0.05)
+        target_yaw = self._weighted_angle_combine(self.system.odometer.prediction.yaw, 0.85, yaw, 0.15)
         # yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.9 + eliminate_2pi(yaw) * 0.1
         target = self.system.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
         self.log.info(f'Current world position: {self.system.odometer.prediction} Target next crop at {target}')
@@ -843,6 +850,16 @@ class Weeding(rosys.persistence.PersistentModule):
                     self.weeds_to_handle[weed] = safe_weed_position
                     self.log.info(
                         f'Moved weed {weed} from {weed_position} to {safe_weed_position} by {offset} to safe {crop.id} at {crop_position}')
+
+    def _crops_in_drill_range(self, crop_id: str, crop_position: Point, angle: float) -> bool:
+        inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
+        for crop in self.system.plant_provider.crops:
+            other_crop_position = self.system.odometer.prediction.transform(crop.position)
+            if crop.id != crop_id:
+                distance = crop_position.distance(other_crop_position)
+                if distance >= inner_diameter and distance <= outer_diameter:
+                    return True
+        return False
 
     def _safe_crop_to_row(self, crop_id: str) -> None:
         if self.current_row is None:
