@@ -168,7 +168,7 @@ class operation:
                         ui.separator()
                         ui.markdown('**Driver settings**').style('color: #6E93D6')
                         with ui.row():
-                            ui.number('linear_speed_on_row', value=0.5, step=0.01, min=0.03, format='%.2f') \
+                            ui.number('linear_speed_on_row', value=0.5, step=0.005, min=0.015, format='%.2f') \
                                 .props('dense outlined suffix=m/s') \
                                 .classes('w-24') \
                                 .bind_value(self.system.weeding, 'linear_speed_on_row') \
@@ -178,12 +178,12 @@ class operation:
                                 .classes('w-24') \
                                 .bind_value(self.system.weeding, 'linear_speed_between_rows') \
                                 .tooltip('Set the linear speed between rows for the weeding automation')
-                            ui.number('angular_speed_on_row', value=0.5, step=0.1, min=0.03, format='%.2f') \
+                            ui.number('angular_speed_on_row', value=0.5, step=0.01, min=0.03, format='%.2f') \
                                 .props('dense outlined suffix=°/s') \
                                 .classes('w-24') \
                                 .bind_value(self.system.weeding, 'angular_speed_on_row') \
                                 .tooltip('Set the angular speed on row for the weeding automation')
-                            ui.number('angular_speed_between_rows', value=0.5, step=0.01, min=0.3, format='%.2f') \
+                            ui.number('angular_speed_between_rows', value=0.5, step=0.01, min=0.03, format='%.2f') \
                                 .props('dense outlined suffix=°/s') \
                                 .classes('w-24') \
                                 .bind_value(self.system.weeding, 'angular_speed_between_rows') \
