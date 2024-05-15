@@ -151,7 +151,7 @@ class leaflet_map:
         layer_index = self.field_provider.fields.index(self.field_provider.active_field)
         self.m.remove_layer(self.field_layers[layer_index])
         self.field_layers[layer_index] = self.m.generic_layer(name="polygon",
-                                                              args=[self.field_provider.active_field.points_as_tuples, {'color': '#999'}])
+                                                              args=[self.field_provider.active_field.points_as_tuples, {'color': '#6E93D6'}])
         for obstacle in self.field_provider.active_field.obstacles:
             self.obstacle_layers.append(self.m.generic_layer(
                 name="polygon", args=[obstacle.points, {'color': '#C10015'}]))
@@ -166,7 +166,7 @@ class leaflet_map:
         for field in self.field_provider.fields:
             if field.reference is not None:
                 self.field_layers.append(self.m.generic_layer(name="polygon",
-                                                              args=[field.points_as_tuples, {'color': '#6E93D6'}]))
+                                                              args=[field.points_as_tuples, {'color': '#999'}]))
 
     def update_robot_position(self) -> None:
         if self.robot_marker is None:
