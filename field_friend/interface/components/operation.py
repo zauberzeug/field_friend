@@ -7,6 +7,7 @@ from nicegui import app, events, ui
 from .automation_controls import automation_controls
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
+from .punch_dialog import PunchDialog
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -223,12 +224,7 @@ class operation:
                 ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
         self.system.puncher.POSSIBLE_PUNCH.register(self.can_punch)
-        with ui.dialog() as self.punch_dialog, ui.card():
-            self.punch_dialog_label = ui.label('Do you want to punch at the current position?').classes('text-lg')
-            with ui.row():
-                ui.button('Yes', on_click=lambda: self.punch_dialog.submit('Yes'))
-                ui.button('No', on_click=lambda: self.punch_dialog.submit('No'))
-                ui.button('Cancel', on_click=lambda: self.punch_dialog.submit('Cancel'))
+        self.punch_dialog = PunchDialog(self.system.usb_camera_provider, self.system.plant_locator)
 
     @ui.refreshable
     def show_start_row(self) -> None:
@@ -263,8 +259,9 @@ class operation:
                 self.show_start_row.refresh()
                 self.show_end_row.refresh()
 
-    async def can_punch(self) -> None:
-        self.punch_dialog_label.text = 'Do you want to punch at the current position?'
+    async def can_punch(self, plant_id: str) -> None:
+        self.punch_dialog.label.text = 'Do you want to punch at the current position?'
+        self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)
         result = await self.punch_dialog
         if result == 'Yes':
             self.system.puncher.punch_allowed = 'allowed'
@@ -301,7 +298,8 @@ class operation:
         if not self.system.weeding.current_row or not self.system.weeding.current_segment:
             self.system.weeding.continue_canceled_weeding = False
             return True
-        self.dialog_label.text = f'Do you want to continue the canceled weeding automation on row {self.system.weeding.current_row.name}?'
+        self.dialog_label.text = f'''Do you want to continue the canceled weeding automation on row {
+            self.system.weeding.current_row.name}?'''
         result = await self.dialog
         if result == 'Yes':
             self.system.weeding.continue_canceled_weeding = True
