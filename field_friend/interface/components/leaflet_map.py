@@ -154,10 +154,10 @@ class leaflet_map:
                                                               args=[self.field_provider.active_field.points_as_tuples, {'color': '#6E93D6'}])
         for obstacle in self.field_provider.active_field.obstacles:
             self.obstacle_layers.append(self.m.generic_layer(
-                name="polygon", args=[obstacle.points, {'color': '#C10015'}]))
+                name="polygon", args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
         for row in self.field_provider.active_field.rows:
             self.row_layers.append(self.m.generic_layer(
-                name="polyline", args=[row.points, {'color': '#F2C037'}]))
+                name="polyline", args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
     def update_layers(self) -> None:
         for layer in self.field_layers:

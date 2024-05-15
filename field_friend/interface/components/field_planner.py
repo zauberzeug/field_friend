@@ -266,10 +266,10 @@ class field_planner:
                                 with ui.row().style("width: 100%;"):
                                     ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points.index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
+                                    ui.number('latitude', value=point.lat, format='%.6f', step=0.1,
+                                              on_change=lambda event, point=point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row, point, [event.value, point[1]])).classes('w-20')
                                     ui.number(
-                                        'latitude', value=point[0], format='%.6f', step=0.1,  on_change=lambda event, point=point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row, point, [event.value, point[1]])).classes('w-20')
-                                    ui.number(
-                                        'longitude', value=point[1], format='%.6f', step=0.1,
+                                        'longitude', value=point.long, format='%.6f', step=0.1,
                                         on_change=lambda event, point=point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row, point, [point[0], event.value])).classes('w-20')
                                     ui.button(on_click=lambda point=point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row, point)).props(
                                         'icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
