@@ -166,7 +166,7 @@ class leaflet_map:
         for field in self.field_provider.fields:
             if field.reference is not None:
                 self.field_layers.append(self.m.generic_layer(name="polygon",
-                                                              args=[field.outline_as_tuples, {'color': '#6E93D6'}]))
+                                                              args=[field.points_as_tuples, {'color': '#6E93D6'}]))
 
     def update_robot_position(self) -> None:
         if self.robot_marker is None:
