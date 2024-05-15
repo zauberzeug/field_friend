@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Any
 
 import numpy as np
 import rosys
@@ -14,8 +15,10 @@ from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
 
-class System:
+class System(rosys.persistence.PersistentModule):
+
     def __init__(self) -> None:
+        super().__init__()
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
@@ -134,3 +137,16 @@ class System:
 
     def restart(self) -> None:
         os.utime('main.py')
+
+    def backup(self) -> dict:
+        return {'automation': self.get_current_automation_id()}
+
+    def restore(self, data: dict[str, Any]) -> None:
+        name = data.get('automation', None)
+        automation = self.automations.get(name, None)
+        self.automator.default_automation = automation
+
+    def get_current_automation_id(self) -> str | None:
+        if self.automator.default_automation is None:
+            return None
+        return {v: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
