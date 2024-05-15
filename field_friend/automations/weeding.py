@@ -868,11 +868,12 @@ class Weeding(rosys.persistence.PersistentModule):
             self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
             return
         for c in self.current_row.crops:
-            if c.position.distance(crop.position) < 0.07 and c.type == crop.type:
-                self.log.info('Updating crop with higher confidence')
-                c.position = crop.position
+            if c.position.distance(crop.position) < 0.07:
+                self.log.info('Crop already in row')
+                self.current_row.crops.remove(c)
+                self.current_row.crops.append(crop)
                 return
-        if crop.confidence >= 0.9:
+        if crop.confidence >= 0.85 and len(crop.positions) >= 10:
             self.log.info('Adding new crop to row')
             self.current_row.crops.append(crop)
 
@@ -882,31 +883,32 @@ class Weeding(rosys.persistence.PersistentModule):
             self.log.info('Creating simulated plants for current segment')
             distance = self.current_segment.spline.start.distance(self.current_segment.spline.end)
             for i in range(1, int(distance/0.20)):
-                await self.system.plant_provider.add_crop(Plant(
-                    id=str(i),
-                    type='beet',
-                    position=self.system.odometer.prediction.point.polar(
-                        0.14*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
-                    detection_time=rosys.time(),
-                    confidence=0.9,
-                ))
-                for j in range(1, 7):
-                    await self.system.plant_provider.add_weed(Plant(
-                        id=f'{i}_{j}',
-                        type='weed',
-                        position=self.system.odometer.prediction.point.polar(
-                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
+                for z in range(1, 7):
+                    await self.system.plant_provider.add_crop(Plant(
+                        id=str(i),
+                        type='beet',
+                        positions=[self.system.odometer.prediction.point.polar(
+                            0.14*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2)],
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
+                    for j in range(1, 5):
+                        await self.system.plant_provider.add_weed(Plant(
+                            id=f'{i}_{j}',
+                            type='weed',
+                            positions=[self.system.odometer.prediction.point.polar(
+                                0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
+                            detection_time=rosys.time(),
+                            confidence=0.9,
+                        ))
         else:
             self.log.info('Creating simulated plants for whole row')
             for i in range(0, 30):
                 await self.system.plant_provider.add_crop(Plant(
                     id=str(i),
                     type='beet',
-                    position=self.system.odometer.prediction.point.polar(
-                        0.20*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
+                    positions=[self.system.odometer.prediction.point.polar(
+                        0.20*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2)],
                     detection_time=rosys.time(),
                     confidence=0.9,
                 ))
@@ -914,8 +916,8 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.plant_provider.add_weed(Plant(
                         id=f'{i}_{j}',
                         type='weed',
-                        position=self.system.odometer.prediction.point.polar(
-                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
+                        positions=[self.system.odometer.prediction.point.polar(
+                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
