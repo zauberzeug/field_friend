@@ -6,8 +6,10 @@ from typing import TYPE_CHECKING
 import rosys
 import rosys.geometry
 from nicegui import app, events, ui
-from nicegui.elements.leaflet_layers import TileLayer
+from nicegui.elements.leaflet_layers import GenericLayer, TileLayer
 
+from ...automations.field_provider import Field
+from ...navigation.geo_point import GeoPoint
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
@@ -33,23 +35,23 @@ class leaflet_map:
             },
             'edit': False,
         }
-        center_point = [51.983159, 7.434212]
+        center_point = GeoPoint(lat=51.983159, long=7.434212)
         if self.field_provider.active_field is None:
-            center_point = [51.983159, 7.434212]
+            center_point = GeoPoint(lat=51.983159, long=7.434212)
         else:
-            if len(self.field_provider.active_field.outline_wgs84) > 0:
-                center_point = self.field_provider.active_field.outline_wgs84[0]
+            if len(self.field_provider.active_field.outline) > 0:
+                center_point = self.field_provider.active_field.points[0]
         self.m: ui.leaflet
         if draw_tools:
-            self.m = ui.leaflet(center=(center_point[0], center_point[1]),
+            self.m = ui.leaflet(center=center_point.tuple,
                                 zoom=13, draw_control=self.draw_control)
         else:
-            self.m = ui.leaflet(center=(center_point[0], center_point[1]),
+            self.m = ui.leaflet(center=center_point.tuple,
                                 zoom=13)
         self.m.clear_layers()
         self.current_basemap: TileLayer | None = None
         self.toggle_basemap()
-        self.field_layers: list[list] = []
+        self.field_layers: list[GenericLayer] = []
         self.robot_marker = None
         self.drawn_marker = None
         self.obstacle_layers: list = []
@@ -85,9 +87,12 @@ class leaflet_map:
                 coordinates = e.args['layer']['_latlngs']
                 point_list = []
                 for point in coordinates[0]:
-                    point_list.append([point['lat'], point['lng']])
-                field = Field(id=f'{str(uuid.uuid4())}', name=f'field_{len(self.field_provider.fields)+1}',
-                              outline_wgs84=point_list, reference_lat=point_list[0][0], reference_lon=point_list[0][1])
+                    point_list.append(GeoPoint(lat=point['lat'], long=point['lng']))
+                field = Field(id=f'{str(uuid.uuid4())}',
+                              name=f'field_{len(self.field_provider.fields)+1}',
+                              points=point_list,
+                              reference=point_list[0]
+                              )
                 self.field_provider.add_field(field)
 
         with self.m as m:
@@ -125,41 +130,44 @@ class leaflet_map:
         dialog.close()
         self.m.remove_layer(self.drawn_marker)
         if self.field_provider.active_object is not None and self.field_provider.active_object["object"] is not None:
-            self.field_provider.active_object["object"].points_wgs84.append([latlon[0], latlon[1]])
+            self.field_provider.active_object["object"].points.append([latlon[0], latlon[1]])
             self.field_provider.OBJECT_SELECTED.emit()
             self.visualize_active_field()
         else:
             ui.notify("No object selected. Point could not be added to the void.")
 
     def visualize_active_field(self) -> None:
+        if self.field_provider.active_field is None:
+            return
+
+        for field in self.field_layers:
+            field.run_method(':setStyle', "{'color': '#6E93D6'}")
+        for layer in self.obstacle_layers:
+            self.m.remove_layer(layer)
+        self.obstacle_layers = []
+        for layer in self.row_layers:
+            self.m.remove_layer(layer)
+        self.row_layers = []
         if self.field_provider.active_field is not None:
-            for field in self.field_layers:
-                field.run_method(':setStyle', "{'color': '#6E93D6'}")
-            for layer in self.obstacle_layers:
-                self.m.remove_layer(layer)
-            self.obstacle_layers = []
-            for layer in self.row_layers:
-                self.m.remove_layer(layer)
-            self.row_layers = []
-            if self.field_provider.active_field is not None:
-                layer_index = self.field_provider.fields.index(self.field_provider.active_field)
-                self.m.remove_layer(self.field_layers[layer_index])
-                self.field_layers[layer_index] = self.m.generic_layer(
-                    name="polygon", args=[self.field_provider.active_field.outline_wgs84, {'color': '#999'}])
-                for obstacle in self.field_provider.active_field.obstacles:
-                    self.obstacle_layers.append(self.m.generic_layer(
-                        name="polygon", args=[obstacle.points_wgs84, {'color': '#C10015'}]))
-                for row in self.field_provider.active_field.rows:
-                    self.row_layers.append(self.m.generic_layer(
-                        name="polyline", args=[row.points_wgs84, {'color': '#F2C037'}]))
+            layer_index = self.field_provider.fields.index(self.field_provider.active_field)
+            self.m.remove_layer(self.field_layers[layer_index])
+            self.field_layers[layer_index] = self.m.generic_layer(name="polygon",
+                                                                  args=[self.field_provider.active_field.points_as_tuples, {'color': '#999'}])
+            for obstacle in self.field_provider.active_field.obstacles:
+                self.obstacle_layers.append(self.m.generic_layer(
+                    name="polygon", args=[obstacle.points, {'color': '#C10015'}]))
+            for row in self.field_provider.active_field.rows:
+                self.row_layers.append(self.m.generic_layer(
+                    name="polyline", args=[row.points, {'color': '#F2C037'}]))
 
     def update_layers(self) -> None:
         for layer in self.field_layers:
             self.m.remove_layer(layer)
         self.field_layers = []
         for field in self.field_provider.fields:
-            self.field_layers.append(self.m.generic_layer(name="polygon", args=[
-                                     field.outline_wgs84, {'color': '#6E93D6'}]))
+            if field.reference is not None:
+                self.field_layers.append(self.m.generic_layer(name="polygon",
+                                                              args=[field.outline_as_tuples, {'color': '#6E93D6'}]))
 
     def update_robot_position(self) -> None:
         if self.robot_marker is None:

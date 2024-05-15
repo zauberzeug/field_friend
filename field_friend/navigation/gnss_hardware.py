@@ -8,8 +8,8 @@ import rosys
 import serial
 from serial.tools import list_ports
 
-from field_friend.navigation.gnss import Gnss, GNSSRecord
-from field_friend.navigation.point_transformation import get_new_position, wgs84_to_cartesian
+from .gnss import GeoPoint, Gnss, GNSSRecord
+from .point_transformation import get_new_position
 
 
 class GnssHardware(Gnss):
@@ -62,13 +62,9 @@ class GnssHardware(Gnss):
         return line
 
     async def update(self) -> None:
-        await super().update()
         if self.ser is None:
             return
         record = GNSSRecord()
-        has_location = False
-        has_heading = False
-
         types_seen: set[str] = set()
         try:
             while self.TYPES_NEEDED != types_seen:
@@ -100,10 +96,8 @@ class GnssHardware(Gnss):
                         record.longitude = msg.longitude
                         record.mode = msg.mode_indicator
                         # print(f'The GNSS message: {msg.mode_indicator}')
-                        has_location = True
                     if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None):
                         record.heading = float(msg.heading)
-                        has_heading = True
                 except pynmea2.ParseError as e:
                     self.log.info(f'Parse error: {e}')
                     continue
@@ -118,27 +112,28 @@ class GnssHardware(Gnss):
             self.log.warning('GNSS RTK fix lost')
             self.RTK_FIX_LOST.emit()
         self.record = deepcopy(record)
-        if has_location:
+        if self.record.has_location:
             if record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
-                if self.reference_lat is None or self.reference_lon is None:
+                if self.reference is None:
                     self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
-                    self.set_reference(record.latitude, record.longitude)
+                    self.set_reference(GeoPoint(lat=record.latitude, long=record.longitude))
                 else:
-                    if has_heading:
+                    if record.has_heading:
                         yaw = np.deg2rad(-record.heading)
                     else:
                         yaw = self.odometer.get_pose(time=record.timestamp).yaw
                         # TODO: Better INS implementation if no heading provided by GNSS
                     # correct the gnss coordinat by antenna offset
-                    corrected_coordinates = get_new_position([
-                        record.latitude, record.longitude], self.antenna_offset, yaw+np.pi/2)
+                    corrected_coordinates = get_new_position([record.latitude, record.longitude],
+                                                             self.antenna_offset, yaw+np.pi/2)
                     self.record.latitude = deepcopy(corrected_coordinates[0])
                     self.record.longitude = deepcopy(corrected_coordinates[1])
-                    cartesian_coordinates = wgs84_to_cartesian([self.reference_lat, self.reference_lon], [
-                        self.record.latitude, self.record.longitude])
+                    assert self.reference is not None
+                    cartesian_coordinates = GeoPoint(lat=self.record.latitude, long=self.record.longitude) \
+                        .cartesian(self.reference)
                     pose = rosys.geometry.Pose(
-                        x=cartesian_coordinates[0],
-                        y=cartesian_coordinates[1],
+                        x=cartesian_coordinates.x,
+                        y=cartesian_coordinates.y,
                         yaw=yaw,
                         time=record.timestamp,
                     )
@@ -151,7 +146,3 @@ class GnssHardware(Gnss):
                 return
             else:
                 self.ROBOT_POSITION_LOCATED.emit()
-
-    def set_reference(self, lat: float, lon: float) -> None:
-        self.reference_lat = lat
-        self.reference_lon = lon

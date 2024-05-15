@@ -7,10 +7,10 @@ import rosys
 from rosys.testing import forward, helpers
 
 from field_friend.automations.field_provider import Field
-from field_friend.navigation.gnss_simulation import GnssSimulation
+from field_friend.navigation import GeoPoint, GnssSimulation
 from field_friend.system import System
 
-ROBOT_GEO_START_POSITION = [51.983159, 7.434212]
+ROBOT_GEO_START_POSITION = GeoPoint(lat=51.983159, long=7.434212)
 
 
 log = logging.getLogger('field_friend.testing')
@@ -27,7 +27,7 @@ async def system(integration) -> AsyncGenerator[System, None]:
 
 @pytest.fixture
 async def gnss(system: System) -> AsyncGenerator[GnssSimulation, None]:
-    system.gnss.set_reference(ROBOT_GEO_START_POSITION[0], ROBOT_GEO_START_POSITION[1])
+    system.gnss.set_reference(ROBOT_GEO_START_POSITION)
     await forward(1)
     assert system.gnss.device is None, 'device should not be created yet'
     await forward(3)
@@ -37,17 +37,17 @@ async def gnss(system: System) -> AsyncGenerator[GnssSimulation, None]:
 
 @pytest.fixture
 async def field(system: System) -> AsyncGenerator[Field, None]:
-    point_list = [[51.98317071260942, 7.43411239981148],
-                  [51.98307173817015, 7.43425187239752],
-                  [51.983141020300614, 7.434388662818431],
-                  [51.98322844759802, 7.43424919023239]]
-    f = Field(id='test-field', name='test-field',
-              outline_wgs84=point_list, reference_lat=point_list[0][0], reference_lon=point_list[0][1])
+    points = [[51.98317071260942, 7.43411239981148],
+              [51.98307173817015, 7.43425187239752],
+              [51.983141020300614, 7.434388662818431],
+              [51.98322844759802, 7.43424919023239]]
+    geo_points = [GeoPoint.from_list(point) for point in points]
+    f = Field(id='test-field',  name='test-field', points=geo_points, reference=geo_points[0])
     system.field_provider.add_field(f)
     yield f
 
 
-@pytest.fixture
+@ pytest.fixture
 def mowing(system: System, gnss: GnssSimulation, field: Field) -> Generator[System, None, None]:
     """Start mowing autiomation"""
     system.field_provider.active_field = field
@@ -55,7 +55,7 @@ def mowing(system: System, gnss: GnssSimulation, field: Field) -> Generator[Syst
     yield system
 
 
-@pytest.fixture
+@ pytest.fixture
 def driving(system: System) -> Generator[System, None, None]:
     """Drive 10 meters in a straight line"""
     async def automation():
@@ -66,14 +66,14 @@ def driving(system: System) -> Generator[System, None, None]:
     yield system
 
 
-@pytest.fixture
+@ pytest.fixture
 def gnss_driving(system: System, gnss: GnssSimulation) -> Generator[System, None, None]:
     """Use GNSS to drive 10 meters in a straight line"""
     async def automation():
         while system.driver.prediction.point.x < 10.0:
             await system.driver.wheels.drive(0.2, 0)
             await rosys.sleep(0.1)
-    gnss.set_reference(*ROBOT_GEO_START_POSITION)
+    gnss.set_reference(ROBOT_GEO_START_POSITION)
     system.automation_watcher.gnss_watch_active = True
     system.automator.start(automation())
     yield system

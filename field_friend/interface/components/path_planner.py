@@ -24,7 +24,7 @@ class path_planner:
                 self.show_path_settings()
         # rosys.on_repeat(self.check_for_reference, 1)
 
-    @ ui.refreshable
+    @ui.refreshable
     def show_path_settings(self) -> None:
         for path in self.path_provider.paths:
             with ui.card().classes('items-stretch'):

@@ -1,7 +1,7 @@
 import rosys
 
-from field_friend.navigation.gnss import Gnss
-from field_friend.navigation.point_transformation import cartesian_to_wgs84
+from .geo_point import GeoPoint
+from .gnss import Gnss
 
 
 class GnssSimulation(Gnss):
@@ -13,14 +13,12 @@ class GnssSimulation(Gnss):
     async def update(self) -> None:
         if self.device is None:
             return
-        if self.reference_lat is None:
-            self.reference_lat = 51.983159
-        if self.reference_lon is None:
-            self.reference_lon = 7.434212
+        if self.reference is None:
+            self.reference = GeoPoint(lat=51.983159, long=7.434212)
         pose = self.odometer.prediction
-        current_position = cartesian_to_wgs84([self.reference_lat, self.reference_lon], pose.point)
+        current_position = self.reference.shifted(pose.point)
         self.record.timestamp = pose.time
-        self.record.latitude, self.record.longitude = current_position
+        self.record.latitude, self.record.longitude = current_position.tuple
         self.record.mode = "simulation"  # TODO check for possible values and replace "simulation"
         self.record.gps_qual = 8
         self.ROBOT_POSITION_LOCATED.emit()
@@ -30,11 +28,10 @@ class GnssSimulation(Gnss):
         if self.allow_connection:
             self.device = 'simulation'
 
-    def set_reference(self, lat: float, lon: float) -> None:
-        self.reference_lat = lat
-        self.reference_lon = lon
-        self.record.latitude = lat
-        self.record.longitude = lon
+    def set_reference(self, point: GeoPoint) -> None:
+        super().set_reference(point)
+        self.record.latitude = point.lat
+        self.record.longitude = point.long
         self.ROBOT_POSITION_LOCATED.emit()
 
     def disconnect(self):

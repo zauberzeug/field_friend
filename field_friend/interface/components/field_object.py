@@ -43,7 +43,7 @@ class field_object(Group):
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('obstacle_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
-        if self.field_provider.active_field:
+        if self.field_provider.active_field and self.field_provider.active_field.reference is not None:
             field = self.field_provider.active_field
             outline = [[point.x, point.y] for point in field.outline]
             if len(outline) > 1:  # Make sure there are at least two points to form a segment
@@ -52,19 +52,17 @@ class field_object(Group):
                     end = outline[(i + 1) % len(outline)]  # Loop back to the first point
                     self.create_fence(start, end)
 
-            if not field.reference_lat or not field.reference_lon:
+            if not field.reference:
                 return
-            reference = [field.reference_lat, field.reference_lon]
-
             for obstacle in field.obstacles:
-                outline = [[point.x, point.y] for point in obstacle.points(reference)]
+                outline = [[point.x, point.y] for point in obstacle.cartesian(field.reference)]
                 Extrusion(outline, 0.1).with_name(f'obstacle_{obstacle.id}').material('#B80F0A')
 
             for row in field.rows:
-                if len(row.points(reference)) == 1:
+                if len(row.points) == 1:
                     continue
                 else:
-                    row_points = row.points(reference)
+                    row_points = row.cartesian(field.reference)
                     for i in range(len(row_points) - 1):
                         spline = Spline.from_points(row_points[i], row_points[i + 1])
                         Curve(

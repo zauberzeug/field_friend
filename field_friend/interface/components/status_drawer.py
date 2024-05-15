@@ -3,7 +3,15 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado, YAxis, ZAxis
+from ...hardware import (
+    ChainAxis,
+    FieldFriend,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+    YAxis,
+    ZAxis,
+)
 from ...navigation import Gnss
 
 if TYPE_CHECKING:
@@ -232,7 +240,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
 
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
-            reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'
+            reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'
             gnss_label.text = f'lat: {gnss.record.latitude:.6f}, lon: {gnss.record.longitude:.6f}'
             heading_label.text = f'{gnss.record.heading:.2f}° ' + direction_flag
             rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'

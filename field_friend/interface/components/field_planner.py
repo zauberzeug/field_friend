@@ -6,7 +6,7 @@ import rosys
 from nicegui import events, ui
 
 from ...automations import Field, FieldObstacle, FieldProvider, Row
-from ...navigation import Gnss
+from ...navigation import GeoPoint, Gnss
 from .geodata_picker import geodata_picker
 from .leaflet_map import leaflet_map
 from .operation import operation
@@ -20,7 +20,7 @@ class field_planner:
         self.operation = operation
         self.odometer = odometer
         self.gnss = gnss
-        self.leafet_map = leaflet_map
+        self.leaflet_map = leaflet_map
         self.field_provider.active_object = None
         self.coordinate_type = "WGS84"
         self.COORDINATE_TYPE_CHANGED = rosys.event.Event()
@@ -68,8 +68,8 @@ class field_planner:
             for field in self.field_provider.fields:
                 if field.id == selection.selection[0]['id']:
                     self.field_provider.select_field(field)
-                    if len(field.outline_wgs84) > 0:
-                        self.gnss.set_reference(field.outline_wgs84[0][0], field.outline_wgs84[0][1])
+                    if len(field.points) > 0:
+                        self.gnss.set_reference(field.points[0])
         else:
             self.field_provider.select_field(None)
 
@@ -89,7 +89,7 @@ class field_planner:
         for field in self.field_provider.fields:
             data = {'id': field.id,
                     'name': field.name,
-                    'boundary': f'{len(field.outline_wgs84)} points',
+                    'boundary': f'{len(field.points)} points',
                     'obstacles': f'{len(field.obstacles)}',
                     'rows': f'{len(field.rows)}'}
             rows.append(data)
@@ -101,7 +101,7 @@ class field_planner:
         if self.field_provider.active_field is not None:
             active_field_data = {'id': self.field_provider.active_field.id,
                                  'name': self.field_provider.active_field.name,
-                                 'boundary': f'{len(self.field_provider.active_field.outline_wgs84)} points',
+                                 'boundary': f'{len(self.field_provider.active_field.outline)} points',
                                  'obstacles': f'{len(self.field_provider.active_field.obstacles)}',
                                  'rows': f'{len(self.field_provider.active_field.rows)}'}
             self.field_table.selected.append(active_field_data)
@@ -130,23 +130,23 @@ class field_planner:
                         if self.coordinate_type == "cartesian":
                             for point in self.field_provider.active_field.outline:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_field.outline_wgs84[self.field_provider.active_field.outline.index(point)])).props(
-                                        'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
+                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_field.outline[self.field_provider.active_field.outline.index(point)])) \
+                                        .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
                                     ui.separator()
                         elif self.coordinate_type == "WGS84":
-                            for point in self.field_provider.active_field.outline_wgs84:
+                            for geo_point in self.field_provider.active_field.points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_field.outline_wgs84[self.field_provider.active_field.outline_wgs84.index(point)])).props(
-                                        'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
-                                    ui.number(
-                                        'latitude', value=point[0], format='%.6f', step=0.1,  on_change=lambda event, point=point, field=self.field_provider.active_field: self.add_point(field, point, [event.value, point[1]])).classes('w-20')
-                                    ui.number(
-                                        'longitude', value=point[1], format='%.6f', step=0.1,
-                                        on_change=lambda event, point=point, field=self.field_provider.active_field: self.add_point(field, point, [point[0], event.value])).classes('w-20')
-                                    ui.button(on_click=lambda point=point, field=self.field_provider.active_field: self.add_point(field, point)).props(
-                                        'icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
+                                    ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(point.tuple)) \
+                                        .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
+                                    ui.number('latitude', value=geo_point.lat, format='%.6f', step=0.1,
+                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field: self.add_point(field, point, [event.value, point.long])).classes('w-20')
+                                    ui.number('longitude', value=geo_point.long, format='%.6f', step=0.1,
+                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field: self.add_point(field, point, [point.lat, event.value])).classes('w-20')
+                                    ui.button(on_click=lambda point=geo_point,
+                                              field=self.field_provider.active_field: self.add_point(field, point)) \
+                                        .props('icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                                     ui.separator()
                             with ui.row().classes('items-center mt-2'):
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
@@ -186,8 +186,8 @@ class field_planner:
                                 .props('color=primary outline').style("width: 100%")
 
                         with ui.row().classes('items-center mt-3').style("width: 100%"):
-                            ui.button(
-                                "sort rows", on_click=lambda field=self.field_provider.active_field: self.field_provider.sort_rows(field))
+                            ui.button("sort rows",
+                                      on_click=lambda field=self.field_provider.active_field: self.field_provider.sort_rows(field))
 
     @ui.refreshable
     def show_object_settings(self) -> None:
@@ -212,21 +212,21 @@ class field_planner:
                                 self.field_provider.active_field.reference)
                             for point in points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_object['object'].points_wgs84[self.field_provider.active_object['object'].points(self.field_provider.active_field.reference).index(point)])).props(
+                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points(self.field_provider.active_field.reference).index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
                         else:
-                            for point in self.field_provider.active_object['object'].points_wgs84:
+                            for point in self.field_provider.active_object['object'].cartesian:
                                 with ui.row().style("width: 100%;"):
 
-                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_object['object'].points_wgs84[self.field_provider.active_object['object'].points_wgs84.index(point)])).props(
+                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].cartesian.index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.number(
                                         'latitude', value=point[0], format='%.6f', step=0.1,  on_change=lambda event, point=point, field=self.field_provider.active_field, obstacle=self.field_provider.active_object['object']: self.add_obstacle_point(field, obstacle, point, [event.value, point[1]])).classes('w-20')
                                     ui.number(
                                         'longitude', value=point[1], format='%.6f', step=0.1,
-                                        on_change=lambda event, point=point, field=self.field_provider.active_field, obstacle=self.field_provider.active_object['object']: self.add_obstacle_point(field, obstacle, point, [point[0], event.value])).classes('w-20')
+                                        on_change=lambda event, point=point, field=self.field_provider.active_field, obstacle=self.field_provider.active_object['object']: self.add_obstacle_point(field, obstacle, point, [point.lat, event.value])).classes('w-20')
                                     ui.button(on_click=lambda point=point, field=self.field_provider.active_field, obstacle=self.field_provider.active_object['object']: self.add_obstacle_point(field, obstacle, point)).props(
                                         'icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                             with ui.row().classes('items-center mt-2'):
@@ -257,14 +257,14 @@ class field_planner:
                                 self.field_provider.active_field.reference)
                             for point in points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_object['object'].points_wgs84[self.field_provider.active_object['object'].points(self.field_provider.active_field.reference).index(point)])).props(
+                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points(self.field_provider.active_field.reference).index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
                         else:
-                            for point in self.field_provider.active_object['object'].points_wgs84:
+                            for point in self.field_provider.active_object['object'].points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leafet_map.m.set_center(self.field_provider.active_object['object'].points_wgs84[self.field_provider.active_object['object'].points_wgs84.index(point)])).props(
+                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points.index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.number(
                                         'latitude', value=point[0], format='%.6f', step=0.1,  on_change=lambda event, point=point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row, point, [event.value, point[1]])).classes('w-20')
@@ -275,9 +275,11 @@ class field_planner:
                                         'icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                             with ui.row().classes('items-center mt-2').style('display: block; margin: auto;'):
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
-                                ui.button('', on_click=lambda field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row)) \
+                                ui.button('', on_click=lambda field=self.field_provider.active_field,
+                                          row=self.field_provider.active_object['object']: self.add_row_point(field, row)) \
                                     .props('icon=add color=primary fab-mini flat').tooltip('Add point')
-                                ui.button('', on_click=lambda row=self.field_provider.active_object['object']: self.remove_row_point(row)) \
+                                ui.button(
+                                    '', on_click=lambda row=self.field_provider.active_object['object']: self.remove_row_point(row)) \
                                     .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
 
     def get_field_reference(self, field: Field) -> None:
@@ -300,47 +302,38 @@ class field_planner:
         if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
             self.gnss.set_reference(field.reference_lat, field.reference_lon)
 
-    async def add_point(self, field: Field, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
+    async def add_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+        positioning = GeoPoint.from_list([self.gnss.record.latitude, self.gnss.record.longitude])
+        if positioning is None or positioning.lat == 0 or positioning.long == 0:
+            rosys.notify("No GNSS position.")
+            return
+        if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
+            rosys.notify("GNSS position is not accurate enough.")
+            return
+        new_point = positioning
         if point is not None:
-            index = field.outline_wgs84.index(point)
-            if new_point is None:
-                positioning = [self.gnss.record.latitude, self.gnss.record.longitude]
-                if positioning is None or positioning[0] == 0 or positioning[1] == 0:
-                    rosys.notify("No GNSS position.")
-                    return
-                if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
-                    rosys.notify("GNSS position is not accurate enough.")
-                    return
-                new_point = positioning
+            index = field.points.index(point)
             if index == 0:
                 self.field_provider.set_reference(field, new_point)
-            field.outline_wgs84[index] = new_point
+            field.points[index] = new_point
         else:
-            positioning = [self.gnss.record.latitude, self.gnss.record.longitude]
-            if positioning is None or positioning[0] == 0 or positioning[1] == 0:
-                rosys.notify("No GNSS position.")
-                return
-            if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
-                rosys.notify("GNSS position is not accurate enough.")
-                return
-            new_point = positioning
-            if len(field.outline_wgs84) < 1:
+            if len(field.points) < 1:
                 self.field_provider.set_reference(field, new_point)
-                self.gnss.set_reference(lat=new_point[0], lon=new_point[1])
-            field.outline_wgs84.append(new_point)
+                self.gnss.set_reference(new_point)
+            field.points.append(new_point)
         self.field_provider.invalidate()
 
-    def remove_point(self, field: Field, point: Optional[list] = None) -> None:
+    def remove_point(self, field: Field, point: Optional[GeoPoint] = None) -> None:
         if point is not None:
-            index = field.outline_wgs84.index(point)
-            del field.outline_wgs84[index]
-        elif field.outline_wgs84 != []:
-            del field.outline_wgs84[-1]
+            index = field.points.index(point)
+            del field.points[index]
+        elif field.points:
+            del field.points[-1]
         self.field_provider.invalidate()
 
     def add_field(self) -> None:
         new_id = str(uuid.uuid4())
-        field = Field(id=f'{new_id}', name=f'field_{len(self.field_provider.fields)+1}', outline_wgs84=[])
+        field = Field(id=f'{new_id}', name=f'field_{len(self.field_provider.fields)+1}', points=[])
         self.field_provider.add_field(field)
 
     def delete_field(self, field: Field) -> None:
@@ -350,91 +343,74 @@ class field_planner:
         self.field_provider.clear_fields()
 
     def add_obstacle(self, field: Field) -> None:
-        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points_wgs84=[])
+        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points=[])
         self.field_provider.add_obstacle(field, obstacle)
 
-    async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
+    async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+        if new_point is None:
+            positioning = GeoPoint.from_list([self.gnss.record.latitude, self.gnss.record.longitude])
+            if positioning is None or positioning.lat == 0 or positioning.long == 0:
+                rosys.notify("No GNSS position.")
+                return
+            if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
+                rosys.notify("GNSS position is not accurate enough.")
+                return
+            new_point = positioning
         if self.gnss.device != 'simulation':
             self.get_field_reference(field)
         if point is not None:
-            index = obstacle.points_wgs84.index(point)
-            if new_point is None:
-                positioning = [self.gnss.record.latitude, self.gnss.record.longitude]
-                if positioning is None or positioning[0] == 0 or positioning[1] == 0:
-                    rosys.notify("No GNSS position.")
-                    return
-                if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
-                    rosys.notify("GNSS position is not accurate enough.")
-                    return
-                new_point = positioning
-            obstacle.points_wgs84[index] = new_point
+            index = obstacle.points.index(point)
+            obstacle.points[index] = new_point
         else:
-            if new_point is not None:
-                obstacle.points_wgs84.append(new_point)
-            else:
-                positioning = [self.gnss.record.latitude, self.gnss.record.longitude]
-                if positioning is None or positioning[0] == 0 or positioning[1] == 0:
-                    rosys.notify("No GNSS position.")
-                    return
-                if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
-                    print(self.gnss.record.gps_qual)
-                    rosys.notify("GNSS position is not accurate enough.")
-                    return
-                new_point = positioning
-            obstacle.points_wgs84.append(new_point)
+            obstacle.points.append(new_point)
+        assert self.field_provider.active_object
         self.field_provider.select_object(self.field_provider.active_object['object'].id, self.tab)
         self.field_provider.invalidate()
 
-    def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[list] = None) -> None:
-        if obstacle.points_wgs84 != []:
+    def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[GeoPoint] = None) -> None:
+        if obstacle.points:
             if point is not None:
-                index = obstacle.points_wgs84.index(point)
-                del obstacle.points_wgs84[index]
+                index = obstacle.points.index(point)
+                del obstacle.points[index]
             else:
-                del obstacle.points_wgs84[-1]
+                del obstacle.points[-1]
+            assert self.field_provider.active_object
             self.field_provider.select_object(self.field_provider.active_object['object'].id, self.tab)
             self.field_provider.invalidate()
 
     def add_row(self, field: Field) -> None:
-        row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points_wgs84=[])
+        row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points=[])
         self.field_provider.add_row(field, row)
 
-    def add_row_point(self, field: Field, row: Row, point: Optional[list] = None, new_point: Optional[list] = None) -> None:
+    def add_row_point(self, field: Field, row: Row, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+        if new_point is None:
+            positioning = GeoPoint.from_list([self.gnss.record.latitude, self.gnss.record.longitude])
+            if positioning is None or positioning.lat == 0 or positioning.long == 0:
+                rosys.notify("No GNSS position.")
+                return
+            if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
+                rosys.notify("GNSS position is not accurate enough.")
+                return
+            new_point = positioning
         if self.gnss.device != 'simulation':
             self.get_field_reference(field)
         if point is not None:
-            index = row.points_wgs84.index(point)
-            if new_point is None:
-                positioning = [self.gnss.record.latitude, self.gnss.record.longitude]
-                if positioning is None or positioning[0] == 0 or positioning[1] == 0:
-                    rosys.notify("No GNSS position.")
-                    return
-                if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
-                    rosys.notify("GNSS position is not accurate enough.")
-                    return
-                new_point = positioning
-            row.points_wgs84[index] = new_point
+            index = row.points.index(point)
+            row.points[index] = new_point
         else:
-            if new_point is None:
-                positioning = [self.gnss.record.latitude, self.gnss.record.longitude]
-                if positioning is None or positioning[0] == 0 or positioning[1] == 0:
-                    rosys.notify("No GNSS position.")
-                    return
-                if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
-                    rosys.notify("GNSS position is not accurate enough.")
-                    return
-                new_point = positioning
-            row.points_wgs84.append(new_point)
+            row.points.append(new_point)
+        assert self.field_provider.active_object
         self.field_provider.select_object(self.field_provider.active_object['object'].id, self.tab)
         self.field_provider.invalidate()
 
-    def remove_row_point(self, row: Row, point: Optional[list] = None) -> None:
-        if row.points_wgs84 != []:
+    def remove_row_point(self, row: Row, point: Optional[GeoPoint] = None) -> None:
+        if row.points:
             if point is not None:
-                index = row.points_wgs84.index(point)
-                del row.points_wgs84[index]
+                index = row.points.index(point)
+                del row.points[index]
             else:
-                del row.points_wgs84[-1]
+                del row.points[-1]
+            assert self.field_provider.active_object
             self.field_provider.select_object(self.field_provider.active_object['object'].id, self.tab)
             self.field_provider.invalidate()
 

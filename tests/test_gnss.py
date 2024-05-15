@@ -21,4 +21,13 @@ async def test_device_disconnects(gnss_driving: System, gnss: GnssSimulation):
     await forward(x=2.0)
     gnss.disconnect()
     await forward(5)
+    # robot should have stopped driving if gnss is not active anymore
+    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))
+
+
+async def test_connection_lost(gnss_driving: System, gnss: GnssSimulation):
+    await forward(x=2.0)
+    gnss.GNSS_CONNECTION_LOST.emit()
+    await forward(5)
+    # robot should have stopped driving if gnss connection is lost
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))

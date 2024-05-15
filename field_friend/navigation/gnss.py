@@ -23,6 +23,14 @@ class GNSSRecord:
     heading: float = 0.0
     speed_kmh: float = 0.0
 
+    @property
+    def has_location(self):
+        return self.latitude is not None and self.longitude is not None
+
+    @property
+    def has_heading(self):
+        return self.heading is not None
+
 
 class Gnss(ABC):
 
@@ -46,8 +54,7 @@ class Gnss(ABC):
         self.record = GNSSRecord()
         self.device: str | None = None
         self.ser: serial.Serial | None = None
-        self.reference_lat: Optional[float] = None
-        self.reference_lon: Optional[float] = None
+        self.reference: Optional[GeoPoint] = None
 
         self.needs_backup = False
         rosys.on_repeat(self.update, 0.01)
@@ -62,12 +69,11 @@ class Gnss(ABC):
         pass
 
     @abstractmethod
-    def set_reference(self, lat: float, lon: float) -> None:
-        pass
+    def set_reference(self, point: GeoPoint) -> None:
+        self.reference = point
 
     def clear_reference(self) -> None:
-        self.reference_lat = None
-        self.reference_lon = None
+        self.reference = None
 
     def get_reference(self) -> tuple[Optional[float], Optional[float]]:
         return self.reference_lat, self.reference_lon

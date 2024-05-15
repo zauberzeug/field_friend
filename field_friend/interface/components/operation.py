@@ -29,8 +29,8 @@ class operation:
                     with ui.row().classes('items-center'):
                         @ui.refreshable
                         def center_map_button() -> None:
-                            if self.field_provider.active_field is not None and len(self.field_provider.active_field.outline_wgs84) > 0:
-                                ui.button(on_click=lambda: self.leaflet_map.m.set_center(self.field_provider.active_field.outline_wgs84[0])) \
+                            if self.field_provider.active_field is not None and len(self.field_provider.active_field.points) > 0:
+                                ui.button(on_click=lambda: self.leaflet_map.m.set_center(self.field_provider.active_field.points[0])) \
                                     .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                             else:
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
@@ -252,8 +252,8 @@ class operation:
             if field.id == self.field_selection.value:
                 self.field_provider.select_field(field)
                 app.storage.user['field'] = field.id
-                if len(field.outline_wgs84) > 0:
-                    self.system.gnss.set_reference(field.outline_wgs84[0][0], field.outline_wgs84[0][1])
+                if len(field.points) > 0:
+                    self.system.gnss.set_reference(field.points[0])
                 # TODO das hier noch auf das active field umbauen, damit auch diese werte im weeding auf das active field registriert sind
                 self.system.weeding.field = field
                 self.system.mowing.field = field
