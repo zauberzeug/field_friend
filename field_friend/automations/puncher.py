@@ -18,6 +18,7 @@ class Puncher:
         self.POSSIBLE_PUNCH = rosys.event.Event()
         '''Event that is emitted when a punch is possible.'''
         self.punch_allowed: str = 'waiting'
+        self.with_punch_check: bool = False
         self.field_friend = field_friend
         self.driver = driver
         self.kpi_provider = kpi_provider
@@ -83,16 +84,19 @@ class Puncher:
 
             if isinstance(self.field_friend.z_axis, Tornado):
                 await self.field_friend.y_axis.move_to(y)
-                self.punch_allowed = 'waiting'
-                self.POSSIBLE_PUNCH.emit()
-                while self.punch_allowed == 'waiting':
-                    await rosys.sleep(0.1)
-                if self.punch_allowed == 'not_allowed':
-                    self.log.warning('punch was not allowed')
-                    return
-                else:
-                    self.log.info('punching was allowed')
+                if not self.with_punch_check:
                     await self.tornado_drill(angle=angle, turns=turns)
+                else:
+                    self.punch_allowed = 'waiting'
+                    self.POSSIBLE_PUNCH.emit()
+                    while self.punch_allowed == 'waiting':
+                        await rosys.sleep(0.1)
+                    if self.punch_allowed == 'not_allowed':
+                        self.log.warning('punch was not allowed')
+                        return
+                    else:
+                        self.log.info('punching was allowed')
+                        await self.tornado_drill(angle=angle, turns=turns)
             elif isinstance(self.field_friend.z_axis, ZAxis):
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(-depth)
