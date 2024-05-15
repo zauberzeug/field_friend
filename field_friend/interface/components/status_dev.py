@@ -63,6 +63,9 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         with ui.row().classes('place-items-center'):
             ui.markdown('**Tool:**').style('color: #EDF4FB')
             ui.label(robot.tool)
+            if robot.tool == 'tornado':
+                tornado_diameters = robot.tornado_diameters(system.weeding.tornado_angle)
+                tornado_label = ui.label(f'Inner: {tornado_diameters[0]:.4f}m, Outer: {tornado_diameters[1]:.4f}m')
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
@@ -171,6 +174,9 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             odometry_label = ui.label()
 
     def update_status() -> None:
+        if robot.tool == 'tornado':
+            tornado_diameters = robot.tornado_diameters(system.weeding.tornado_angle)
+            tornado_label.set_text(f'Inner: {tornado_diameters[0]:.4f}m, Outer: {tornado_diameters[1]:.4f}m')
         bms_flags = [
             f'{robot.bms.state.short_string}',
             'charging' if robot.bms.state.is_charging else ''
