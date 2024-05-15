@@ -42,7 +42,7 @@ class PunchDialog(ui.dialog):
                 ui.button('Cancel', on_click=lambda: self.submit('Cancel'))
 
     def submit(self, value: str) -> None:
-        self.timer.cancel()
+        self.timer.active = False
         super().submit(value)
 
     def open(self) -> None:
@@ -50,7 +50,7 @@ class PunchDialog(ui.dialog):
         assert self.camera is not None
         detection_image = self.camera.latest_detected_image if self.target_plant.detection_image is None else self.target_plant.detection_image
         self.update_content(self.static_image_view, detection_image, draw_target=True)
-        self.timer.activate()
+        self.timer.active = True
         super().open()
 
     def setup_camera(self) -> None:
