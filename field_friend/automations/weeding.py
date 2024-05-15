@@ -48,6 +48,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.minimum_turning_radius: float = 1.8
         self.turn_offset: float = 1.0
         self.drive_backwards_to_start: bool = True
+        self.drive_to_start: bool = True
 
         # workflow settings
         self.only_monitoring: bool = False
@@ -380,7 +381,7 @@ class Weeding(rosys.persistence.PersistentModule):
         await rosys.sleep(0.5)
         self.state = 'running'
         try:
-            if self.weeding_plan:
+            if self.weeding_plan and self.use_field_planning:
                 await self._weed_with_plan()
                 self.log.info('Weeding with plan completed')
             else:
@@ -412,6 +413,8 @@ class Weeding(rosys.persistence.PersistentModule):
                             yaw=self.current_segment.spline.start.direction(self.current_segment.spline.end))
             start_spline = Spline.from_poses(start_pose, end_pose)
             await self.system.driver.drive_spline(start_spline)
+        elif self.drive_to_start:
+            await self._drive_to_start()
         self.system.automation_watcher.start_field_watch(self.field.outline)
         self.system.automation_watcher.gnss_watch_active = True
         for i, path in enumerate(self.weeding_plan):
@@ -438,7 +441,7 @@ class Weeding(rosys.persistence.PersistentModule):
                 # self.invalidate()
                 if not self.system.is_real:
                     self.system.detector.simulated_objects = []
-                    self._create_simulated_plants()
+                    await self._create_simulated_plants()
                 self.log.info(f'Driving row {i + 1}/{len(self.weeding_plan)} and segment {j + 1}/{len(path)}...')
                 self.row_segment_completed = False
                 while not self.row_segment_completed:
@@ -489,7 +492,7 @@ class Weeding(rosys.persistence.PersistentModule):
             self.system.plant_provider.clear()
             if not self.system.is_real:
                 self.system.detector.simulated_objects = []
-                self._create_simulated_plants()
+                await self._create_simulated_plants()
             if self.system.field_friend.tool != 'none':
                 await self.system.puncher.clear_view()
             await self.system.field_friend.flashlight.turn_on()
@@ -860,13 +863,13 @@ class Weeding(rosys.persistence.PersistentModule):
             self.log.info('Adding new crop to row')
             self.current_row.crops.append(crop)
 
-    def _create_simulated_plants(self):
+    async def _create_simulated_plants(self):
         self.log.info('Creating simulated plants...')
         if self.current_segment:
             self.log.info('Creating simulated plants for current segment')
             distance = self.current_segment.spline.start.distance(self.current_segment.spline.end)
             for i in range(1, int(distance/0.20)):
-                self.system.plant_provider.add_crop(Plant(
+                await self.system.plant_provider.add_crop(Plant(
                     id=str(i),
                     type='beet',
                     position=self.system.odometer.prediction.point.polar(
@@ -875,7 +878,7 @@ class Weeding(rosys.persistence.PersistentModule):
                     confidence=0.9,
                 ))
                 for j in range(1, 7):
-                    self.system.plant_provider.add_weed(Plant(
+                    await self.system.plant_provider.add_weed(Plant(
                         id=f'{i}_{j}',
                         type='weed',
                         position=self.system.odometer.prediction.point.polar(
@@ -886,7 +889,7 @@ class Weeding(rosys.persistence.PersistentModule):
         else:
             self.log.info('Creating simulated plants for whole row')
             for i in range(0, 30):
-                self.system.plant_provider.add_crop(Plant(
+                await self.system.plant_provider.add_crop(Plant(
                     id=str(i),
                     type='beet',
                     position=self.system.odometer.prediction.point.polar(
@@ -895,7 +898,7 @@ class Weeding(rosys.persistence.PersistentModule):
                     confidence=0.9,
                 ))
                 for j in range(1, 7):
-                    self.system.plant_provider.add_weed(Plant(
+                    await self.system.plant_provider.add_weed(Plant(
                         id=f'{i}_{j}',
                         type='weed',
                         position=self.system.odometer.prediction.point.polar(

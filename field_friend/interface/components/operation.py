@@ -104,8 +104,11 @@ class operation:
                                     .props('dense outlined suffix=m').classes('w-30') \
                                     .bind_value(self.system.weeding, 'turn_offset') \
                                     .tooltip('Set the turning offset for the weeding automation')
-                                ui.checkbox('Drive to start', value=True).bind_value(self.system.weeding, 'drive_backwards_to_start') \
-                                    .tooltip('Set the weeding automation to drive backwards to the start row')
+                                ui.checkbox('Drive backwards to start', value=True).bind_value(self.system.weeding, 'drive_backwards_to_start') \
+                                    .tooltip('Set the weeding automation to drive backwards to the start row at the end of the row')
+                                ui.checkbox('Drive to start row', value=True).bind_value(self.system.weeding, 'drive_to_start') \
+                                    .tooltip('Set the weeding automation to drive to the start of the row before starting the weeding')
+
                         ui.separator()
                         ui.markdown('Detector settings').style('color: #6E93D6')
                         with ui.row():
@@ -227,6 +230,14 @@ class operation:
                 ui.button('No', on_click=lambda: self.dialog.submit('No'))
                 ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
+        self.system.puncher.POSSIBLE_PUNCH.register(self.can_punch)
+        with ui.dialog() as self.punch_dialog, ui.card():
+            self.punch_dialog_label = ui.label('Do you want to punch at the current position?').classes('text-lg')
+            with ui.row():
+                ui.button('Yes', on_click=lambda: self.punch_dialog.submit('Yes'))
+                ui.button('No', on_click=lambda: self.punch_dialog.submit('No'))
+                ui.button('Cancel', on_click=lambda: self.punch_dialog.submit('Cancel'))
+
     @ui.refreshable
     def show_start_row(self) -> None:
         if self.field_provider.active_field is not None:
@@ -257,6 +268,16 @@ class operation:
                 self.system.mowing.field = field
                 self.show_start_row.refresh()
                 self.show_end_row.refresh()
+
+    async def can_punch(self) -> None:
+        self.punch_dialog_label.text = 'Do you want to punch at the current position?'
+        result = await self.punch_dialog
+        if result == 'Yes':
+            self.system.puncher.punch_allowed = 'allowed'
+        elif result == 'No':
+            self.system.puncher.punch_allowed = 'not_allowed'
+        elif result == 'Cancel':
+            self.system.puncher.punch_allowed = 'not_allowed'
 
     async def can_start(self) -> bool:
         self.log.info('Checking if automation can be started')
