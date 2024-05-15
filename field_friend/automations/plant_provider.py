@@ -73,7 +73,7 @@ class PlantProvider:
         self.PLANTS_CHANGED.emit()
 
     async def add_weed(self, weed: Plant) -> None:
-        if await rosys.run.cpu_bound(check_if_plant_exists, weed, self.weeds, 0.04):
+        if check_if_plant_exists(weed, self.weeds, 0.04):
             return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()
@@ -88,7 +88,7 @@ class PlantProvider:
         self.PLANTS_CHANGED.emit()
 
     async def add_crop(self, crop: Plant) -> None:
-        if await rosys.run.cpu_bound(check_if_plant_exists, crop, self.crops, 0.07):
+        if check_if_plant_exists(crop, self.crops, 0.07):
             return
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
