@@ -50,7 +50,7 @@ class System:
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
-            version = 'rb27'  # insert here your field friend version to be simulated
+            version = 'rb28'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
             self.usb_camera_provider.remove_all_cameras()
