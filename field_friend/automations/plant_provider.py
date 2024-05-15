@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections import deque
 from dataclasses import dataclass
 
 import rosys
@@ -10,21 +11,41 @@ from rosys.geometry import Point
 class Plant:
     id: str = ...
     type: str
-    position: Point
+    positions: deque[Point]
     detection_time: float
     confidence: float = 0.0
+
+    def __init__(self, type: str, position: Point, detection_time: float, id: str = ..., confidence: float = 0.0, max_positions: int = 20) -> None:
+        self.id = id
+        self.type = type
+        self.positions = deque([position], maxlen=max_positions)
+        self.detection_time = detection_time
+        self.confidence = confidence
 
     def __post_init__(self) -> None:
         """Generate a unique ID if not already loaded from persistence"""
         if self.id == ...:
             self.id = str(uuid.uuid4())
 
+    @property
+    def position(self) -> Point:
+        """Calculate the middle position of all points"""
+        total_x = sum(point.x for point in self.positions)
+        total_y = sum(point.y for point in self.positions)
+
+        middle_x = total_x / len(self.positions)
+        middle_y = total_y / len(self.positions)
+
+        return Point(x=middle_x, y=middle_y)
+
 
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
     for p in plants:
         if p.position.distance(plant.position) < distance and p.type == plant.type:
-            p.position = plant.position
-            p.confidence = plant.confidence
+            # Update the confidence
+            p.confidence = max(p.confidence, plant.confidence)  # Optionally updating confidence to the higher one
+            # Add the new position to the positions list
+            p.positions.append(plant.position)
             return True
     return False
 
@@ -55,7 +76,7 @@ class PlantProvider:
         self.PLANTS_CHANGED.emit()
 
     async def add_weed(self, weed: Plant) -> None:
-        if await rosys.run.cpu_bound(check_if_plant_exists, weed, self.weeds, 0.04):
+        if check_if_plant_exists(weed, self.weeds, 0.04):
             return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()
@@ -70,7 +91,7 @@ class PlantProvider:
         self.PLANTS_CHANGED.emit()
 
     async def add_crop(self, crop: Plant) -> None:
-        if await rosys.run.cpu_bound(check_if_plant_exists, crop, self.crops, 0.07):
+        if check_if_plant_exists(crop, self.crops, 0.07):
             return
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
