@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
@@ -21,6 +22,27 @@ class Puncher:
         self.driver = driver
         self.kpi_provider = kpi_provider
         self.log = logging.getLogger('field_friend.puncher')
+
+    def tornado_diameter(self, angle: float, inner: bool = True) -> float:
+        # Constants for maximum and minimum diameters
+        if inner:
+            max_diameter = 105
+            min_diameter = 69
+        else:
+            max_diameter = 165
+            min_diameter = 129
+
+        # Normalize angle to ensure it is within the range [0, 180]
+        angle = np.clip(angle, 0, 180)
+
+        # Calculate diameter using the cosine function for a smooth transition
+        # Adjust the cosine function to have its peak at 0° and its trough at 180°
+        # Cosine function typically has a maximum value of 1 at 0° and -1 at 180°
+        # We scale and shift the output of the cosine function so that it varies
+        # linearly from max_diameter at 0° to min_diameter at 180°
+        diameter = (max_diameter - min_diameter) / 2 * (1 - np.cos(np.radians(angle))) + min_diameter
+
+        return diameter
 
     async def try_home(self) -> bool:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
