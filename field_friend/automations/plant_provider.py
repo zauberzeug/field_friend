@@ -10,7 +10,7 @@ from rosys.geometry import Point
 class Plant:
     id: str = ...
     type: str
-    position: Point
+    positions: list[Point]
     detection_time: float
     confidence: float = 0.0
 
@@ -19,12 +19,30 @@ class Plant:
         if self.id == ...:
             self.id = str(uuid.uuid4())
 
+    @property
+    def position(self) -> Point:
+        """Calculate the middle position of all points"""
+        total_x = sum(point.x for point in self.positions)
+        total_y = sum(point.y for point in self.positions)
+
+        middle_x = total_x / len(self.positions)
+        middle_y = total_y / len(self.positions)
+
+        return Point(x=middle_x, y=middle_y)
+
 
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
     for p in plants:
         if p.position.distance(plant.position) < distance and p.type == plant.type:
-            p.position = plant.position
-            p.confidence = plant.confidence
+            # Update the confidence
+            p.confidence = max(p.confidence, plant.confidence)  # Optionally updating confidence to the higher one
+            # Add the new position to the positions list
+            if len(p.positions) < 20:
+                p.positions.append(plant.position)
+            else:
+                # If there are already 20 positions, remove the oldest one and add the new one
+                p.positions.pop(0)
+                p.positions.append(plant.position)
             return True
     return False
 
