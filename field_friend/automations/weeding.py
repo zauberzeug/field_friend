@@ -887,8 +887,8 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.plant_provider.add_crop(Plant(
                         id=f'{i}_{j}',
                         type='beet',
-                        positions=[self.system.odometer.prediction.point.polar(
-                            0.14*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2)],
+                        position=self.system.odometer.prediction.point.polar(
+                            0.14*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
@@ -907,8 +907,8 @@ class Weeding(rosys.persistence.PersistentModule):
                 await self.system.plant_provider.add_crop(Plant(
                     id=str(i),
                     type='beet',
-                    positions=[self.system.odometer.prediction.point.polar(
-                        0.20*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2)],
+                    position=self.system.odometer.prediction.point.polar(
+                        0.20*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                     detection_time=rosys.time(),
                     confidence=0.9,
                 ))
