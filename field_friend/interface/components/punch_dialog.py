@@ -22,16 +22,10 @@ class PunchDialog(ui.dialog):
         self.timer = ui.timer(0.2, self.update_live_view, active=False)
         self.setup_camera()
         with self, ui.card().style('max-width: 1400px'):
-            events = ['mousemove', 'mouseout', 'mouseup']
             with ui.row(wrap=False):
                 with ui.column().classes('w-1/2'):
                     ui.label('Last detection').classes('text-lg')
-                    self.static_image_view = ui.interactive_image(
-                        '',
-                        cross=True,
-                        on_mouse=self.on_mouse_move,
-                        events=events
-                    )
+                    self.static_image_view = ui.interactive_image('')
                 with ui.column().classes('w-1/2'):
                     ui.label('Live').classes('text-lg')
                     self.live_image_view = ui.interactive_image('')
@@ -121,6 +115,3 @@ class PunchDialog(ui.dialog):
             svg += f'''<circle cx="{target_point.x / self.shrink_factor}" cy="{target_point.y /
                                                                                self.shrink_factor}" r="18" stroke-width="8" stroke="gold" fill="none" />'''
         return svg
-
-    def on_mouse_move(self, e: MouseEventArguments):
-        pass
