@@ -609,14 +609,12 @@ class Weeding(rosys.persistence.PersistentModule):
                 self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
 
-                if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position):
-                    if not self._crops_in_drill_range(closest_crop_id, closest_crop_position):
-                        self.log.info('drilling crop')
-                        await self.system.puncher.drive_and_punch(closest_crop_position.x, closest_crop_position.y, angle=self.tornado_angle)
-                        if self.drill_with_open_tornado:
-                            await self.system.puncher.punch(closest_crop_position.y, angle=0)
-                    else:
-                        self.log.warning('Other crops in drill range, drilling not allowed')
+                if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position) and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
+                    self.log.info('drilling crop')
+                    await self.system.puncher.drive_and_punch(closest_crop_position.x, closest_crop_position.y, angle=self.tornado_angle)
+                    if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
+                        self.log.info('drilling crop with open tornado')
+                        await self.system.puncher.punch(closest_crop_position.y, angle=0)
                 else:
                     drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
                     target = self.system.odometer.prediction.transform(Point(x=drive_distance, y=0))
@@ -626,7 +624,7 @@ class Weeding(rosys.persistence.PersistentModule):
                     self.log.info('checking for second closest crop')
                     second_closest_crop_position = list(self.crops_to_handle.values())[1]
                     distance_to_next_crop = closest_crop_position.distance(second_closest_crop_position)
-                    if distance_to_next_crop > 0.15:
+                    if distance_to_next_crop > 0.13:
                         # get the target of half the distance between the two crops
                         target = closest_crop_position.x + distance_to_next_crop / 2
                         self.log.info(f'driving to position between two crops: {target}')
@@ -854,10 +852,10 @@ class Weeding(rosys.persistence.PersistentModule):
     def _crops_in_drill_range(self, crop_id: str, crop_position: Point, angle: float) -> bool:
         inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
         for crop in self.system.plant_provider.crops:
-            other_crop_position = self.system.odometer.prediction.transform(crop.position)
+            crop_world_position = self.system.odometer.prediction.transform(crop_position)
             if crop.id != crop_id:
-                distance = crop_position.distance(other_crop_position)
-                if distance >= inner_diameter and distance <= outer_diameter:
+                distance = crop_world_position.distance(crop.position)
+                if distance >= inner_diameter/2 and distance <= outer_diameter/2:
                     return True
         return False
 
@@ -870,9 +868,7 @@ class Weeding(rosys.persistence.PersistentModule):
             self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
             return
         for c in self.current_row.crops:
-            if c.position.distance(crop.position) < 0.05 and c.type == crop.type:
-                if c.confidence >= crop.confidence:
-                    return
+            if c.position.distance(crop.position) < 0.07 and c.type == crop.type:
                 self.log.info('Updating crop with higher confidence')
                 c.position = crop.position
                 return
@@ -890,7 +886,7 @@ class Weeding(rosys.persistence.PersistentModule):
                     id=str(i),
                     type='beet',
                     position=self.system.odometer.prediction.point.polar(
-                        0.20*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
+                        0.14*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                     detection_time=rosys.time(),
                     confidence=0.9,
                 ))
