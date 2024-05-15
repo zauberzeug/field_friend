@@ -39,7 +39,7 @@ class leaflet_map:
         if self.field_provider.active_field is None:
             center_point = GeoPoint(lat=51.983159, long=7.434212)
         else:
-            if len(self.field_provider.active_field.outline) > 0:
+            if len(self.field_provider.active_field.points) > 0:
                 center_point = self.field_provider.active_field.points[0]
         self.m: ui.leaflet
         if draw_tools:
@@ -148,17 +148,16 @@ class leaflet_map:
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
-        if self.field_provider.active_field is not None:
-            layer_index = self.field_provider.fields.index(self.field_provider.active_field)
-            self.m.remove_layer(self.field_layers[layer_index])
-            self.field_layers[layer_index] = self.m.generic_layer(name="polygon",
-                                                                  args=[self.field_provider.active_field.points_as_tuples, {'color': '#999'}])
-            for obstacle in self.field_provider.active_field.obstacles:
-                self.obstacle_layers.append(self.m.generic_layer(
-                    name="polygon", args=[obstacle.points, {'color': '#C10015'}]))
-            for row in self.field_provider.active_field.rows:
-                self.row_layers.append(self.m.generic_layer(
-                    name="polyline", args=[row.points, {'color': '#F2C037'}]))
+        layer_index = self.field_provider.fields.index(self.field_provider.active_field)
+        self.m.remove_layer(self.field_layers[layer_index])
+        self.field_layers[layer_index] = self.m.generic_layer(name="polygon",
+                                                              args=[self.field_provider.active_field.points_as_tuples, {'color': '#999'}])
+        for obstacle in self.field_provider.active_field.obstacles:
+            self.obstacle_layers.append(self.m.generic_layer(
+                name="polygon", args=[obstacle.points, {'color': '#C10015'}]))
+        for row in self.field_provider.active_field.rows:
+            self.row_layers.append(self.m.generic_layer(
+                name="polyline", args=[row.points, {'color': '#F2C037'}]))
 
     def update_layers(self) -> None:
         for layer in self.field_layers:

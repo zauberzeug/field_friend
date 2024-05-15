@@ -101,7 +101,7 @@ class field_planner:
         if self.field_provider.active_field is not None:
             active_field_data = {'id': self.field_provider.active_field.id,
                                  'name': self.field_provider.active_field.name,
-                                 'boundary': f'{len(self.field_provider.active_field.outline)} points',
+                                 'boundary': f'{len(self.field_provider.active_field.points)} points',
                                  'obstacles': f'{len(self.field_provider.active_field.obstacles)}',
                                  'rows': f'{len(self.field_provider.active_field.rows)}'}
             self.field_table.selected.append(active_field_data)

@@ -26,8 +26,8 @@ class CoveragePlanner:
         return (inner_lanes, outer_lanes)
 
     def _determine_area_and_distance(self) -> None:
-        self.min_x = self.field.outline[0].x
-        self.min_y = self.field.outline[0].y
+        assert self.field is not None
+        self.min_x, self.min_y = self.field.outline[0].tuple
         translated_field = Polygon([(point.x - self.min_x, point.y - self.min_y) for point in self.field.outline])
 
         # Determine the unit vector direction of the first line of the polygon
