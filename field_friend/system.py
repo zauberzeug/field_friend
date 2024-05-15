@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Any
 
 import numpy as np
 import rosys
@@ -14,8 +15,10 @@ from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
 
-class System:
+class System(rosys.persistence.PersistentModule):
+
     def __init__(self) -> None:
+        super().__init__()
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
@@ -32,7 +35,7 @@ class System:
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
-            version = 'rb27'  # insert here your field friend version to be simulated
+            version = 'rb28'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
             self.usb_camera_provider.remove_all_cameras()
@@ -107,8 +110,8 @@ class System:
             height=height)
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
 
-        self.weeding = Weeding(self)
-        self.monitoring = Weeding(self)
+        self.weeding = Weeding(self, persistence_key='weeding')
+        self.monitoring = Weeding(self, persistence_key='monitoring')
         self.monitoring.use_monitor_workflow = True
         self.coin_collecting = CoinCollecting(self)
         self.mowing = Mowing(self, robot_width=width)
@@ -134,3 +137,16 @@ class System:
 
     def restart(self) -> None:
         os.utime('main.py')
+
+    def backup(self) -> dict:
+        return {'automation': self.get_current_automation_id()}
+
+    def restore(self, data: dict[str, Any]) -> None:
+        name = data.get('automation', None)
+        automation = self.automations.get(name, None)
+        self.automator.default_automation = automation
+
+    def get_current_automation_id(self) -> str | None:
+        if self.automator.default_automation is None:
+            return None
+        return {v: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
