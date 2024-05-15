@@ -104,6 +104,8 @@ class operation:
                                     .props('dense outlined suffix=m').classes('w-30') \
                                     .bind_value(self.system.weeding, 'turn_offset') \
                                     .tooltip('Set the turning offset for the weeding automation')
+                                ui.checkbox('Drive to start', value=True).bind_value(self.system.weeding, 'drive_backwards_to_start') \
+                                    .tooltip('Set the weeding automation to drive backwards to the start row')
                         ui.separator()
                         ui.markdown('Detector settings').style('color: #6E93D6')
                         with ui.row():
@@ -133,7 +135,7 @@ class operation:
                                     .classes('w-24') \
                                     .bind_value(self.system.weeding, 'weed_screw_depth') \
                                     .tooltip('Set the drill depth for the weeding automation')
-                                ui.number('Crop safety distance', value=0.01, step=0.01, min=0.0, max=0.05, format='%.2f') \
+                                ui.number('Crop safety distance', value=0.01, step=0.001, min=0.001, max=0.05, format='%.3f') \
                                     .props('dense outlined suffix=m') \
                                     .classes('w-24') \
                                     .bind_value(self.system.weeding, 'crop_safety_distance') \
@@ -142,7 +144,7 @@ class operation:
                         ui.markdown('Workflow settings').style('color: #6E93D6')
                         with ui.row():
                             if self.system.field_friend.tool == 'tornado':
-                                ui.checkbox('Drill 2x with open torando', value=False, on_change=system.weeding.invalidate) \
+                                ui.checkbox('Drill 2x with open torando', value=False,) \
                                     .bind_value(self.system.weeding, 'drill_with_open_tornado') \
                                     .tooltip('Set the weeding automation to drill a second time with open tornado')
                                 ui.checkbox('Drill between crops', value=False) \
@@ -157,10 +159,6 @@ class operation:
                                 ui.checkbox('Chop if no crops', value=False) \
                                     .bind_value(self.system.weeding, 'chop_if_no_crops') \
                                     .tooltip('Set the weeding automation to chop also if no crops seen')
-                            ui.number('Crop safety distance', value=0.01, step=0.01, min=0.0, max=0.05, format='%.2f') \
-                                .props('dense outlined suffix=m').classes('w-24') \
-                                .bind_value(self.system.weeding, 'crop_safety_distance') \
-                                .tooltip('Set the crop safety distance for the weeding automation')
                             ui.checkbox('Only monitoring') \
                                 .bind_value(self.system.weeding, 'only_monitoring') \
                                 .tooltip('Set the weeding automation to only monitor the field')

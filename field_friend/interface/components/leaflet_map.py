@@ -8,7 +8,7 @@ import rosys.geometry
 from nicegui import app, events, ui
 from nicegui.elements.leaflet_layers import GenericLayer, TileLayer
 
-from ...automations.field_provider import Field
+from ...automations import Field
 from ...navigation.geo_point import GeoPoint
 from .key_controls import KeyControls
 

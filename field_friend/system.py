@@ -126,8 +126,8 @@ class System:
             height=height)
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
 
-        self.weeding = Weeding(self)
-        self.monitoring = Weeding(self)
+        self.weeding = Weeding(self, persistence_key='weeding')
+        self.monitoring = Weeding(self, persistence_key='monitoring')
         self.monitoring.use_monitor_workflow = True
         self.coin_collecting = CoinCollecting(self)
         self.mowing = Mowing(self, robot_width=width)
