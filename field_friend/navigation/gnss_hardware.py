@@ -1,24 +1,17 @@
 import datetime
-from copy import deepcopy
 from typing import Optional
 
-import numpy as np
 import pynmea2
 import rosys
 import serial
 from serial.tools import list_ports
 
-from .gnss import GeoPoint, Gnss, GNSSRecord
-from .point_transformation import get_new_position
+from .gnss import Gnss, GNSSRecord
 
 
 class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
     TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
-
-    def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
-        super().__init__(odometer)
-        self.antenna_offset = antenna_offset
 
     def __del__(self) -> None:
         if self.ser is not None:
@@ -105,44 +98,4 @@ class GnssHardware(Gnss):
             self.log.info(f'Device error: {e}')
             self.device = None
             return
-        if self.record.gps_qual > 0 and record.gps_qual == 0:
-            self.log.warning('GNSS lost')
-            self.GNSS_CONNECTION_LOST.emit()
-        if self.record.gps_qual == 4 and record.gps_qual != 4:
-            self.log.warning('GNSS RTK fix lost')
-            self.RTK_FIX_LOST.emit()
-        self.record = deepcopy(record)
-        if self.record.has_location:
-            if record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
-                if self.reference is None:
-                    self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
-                    self.set_reference(GeoPoint(lat=record.latitude, long=record.longitude))
-                else:
-                    if record.has_heading:
-                        yaw = np.deg2rad(-record.heading)
-                    else:
-                        yaw = self.odometer.get_pose(time=record.timestamp).yaw
-                        # TODO: Better INS implementation if no heading provided by GNSS
-                    # correct the gnss coordinat by antenna offset
-                    corrected_coordinates = get_new_position([record.latitude, record.longitude],
-                                                             self.antenna_offset, yaw+np.pi/2)
-                    self.record.latitude = deepcopy(corrected_coordinates[0])
-                    self.record.longitude = deepcopy(corrected_coordinates[1])
-                    assert self.reference is not None
-                    cartesian_coordinates = GeoPoint(lat=self.record.latitude, long=self.record.longitude) \
-                        .cartesian(self.reference)
-                    pose = rosys.geometry.Pose(
-                        x=cartesian_coordinates.x,
-                        y=cartesian_coordinates.y,
-                        yaw=yaw,
-                        time=record.timestamp,
-                    )
-                    distance = self.odometer.prediction.distance(pose)
-                    if distance > 1:
-                        self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
-                    self.ROBOT_POSE_LOCATED.emit(pose)
-                    self.ROBOT_POSITION_LOCATED.emit()
-            elif record.gps_qual == 0:
-                return
-            else:
-                self.ROBOT_POSITION_LOCATED.emit()
+        self._update_record(record)

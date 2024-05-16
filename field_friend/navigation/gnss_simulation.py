@@ -1,14 +1,15 @@
 import rosys
 
 from .geo_point import GeoPoint
-from .gnss import Gnss
+from .gnss import Gnss, GNSSRecord
 
 
 class GnssSimulation(Gnss):
 
     def __init__(self, odometer: rosys.driving.Odometer) -> None:
-        super().__init__(odometer)
+        super().__init__(odometer, 0.0)
         self.allow_connection = True
+        self.gps_quality = 8
 
     async def update(self) -> None:
         if self.device is None:
@@ -17,12 +18,14 @@ class GnssSimulation(Gnss):
             self.reference = GeoPoint(lat=51.983159, long=7.434212)
         pose = self.odometer.prediction
         current_position = self.reference.shifted(pose.point)
-        self.record.timestamp = pose.time
-        self.record.latitude, self.record.longitude = current_position.tuple
-        self.record.mode = "simulation"  # TODO check for possible values and replace "simulation"
-        self.record.gps_qual = 8
+        record = GNSSRecord()
+        record.timestamp = pose.time
+        record.latitude, record.longitude = current_position.tuple
+        record.mode = "simulation"  # TODO check for possible values and replace "simulation"
+        record.gps_qual = self.gps_quality
         self.ROBOT_POSITION_LOCATED.emit()
         self.ROBOT_POSE_LOCATED.emit(pose)
+        self._update_record(record)
 
     async def try_connection(self) -> None:
         if self.allow_connection:

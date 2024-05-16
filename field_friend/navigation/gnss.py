@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Optional, Protocol
 
+import numpy as np
 import rosys
 import serial
 
 from .geo_point import GeoPoint
+from .point_transformation import get_new_position
 
 
 @dataclass
@@ -34,7 +37,7 @@ class GNSSRecord:
 
 class Gnss(ABC):
 
-    def __init__(self, odometer: rosys.driving.Odometer) -> None:
+    def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.gnss')
         self.odometer = odometer
@@ -55,6 +58,7 @@ class Gnss(ABC):
         self.device: str | None = None
         self.ser: serial.Serial | None = None
         self.reference: Optional[GeoPoint] = None
+        self.antenna_offset = antenna_offset
 
         self.needs_backup = False
         rosys.on_repeat(self.update, 0.01)
@@ -75,14 +79,57 @@ class Gnss(ABC):
     def clear_reference(self) -> None:
         self.reference = None
 
-    def get_reference(self) -> tuple[Optional[float], Optional[float]]:
-        return self.reference_lat, self.reference_lon
+    def get_reference(self) -> Optional[GeoPoint]:
+        return self.reference
 
     def distance(self, point: GeoPoint) -> Optional[float]:
         """Compute the distance between the reference point and the given point in meters"""
-        if self.reference_lat is None or self.reference_lon is None:
+        if self.reference is None:
             return None
-        return GeoPoint(lat=self.reference_lat, long=self.reference_lon).distance(point)
+        return point.distance(point)
+
+    def _update_record(self, record: GNSSRecord) -> None:
+        if self.record.gps_qual > 0 and record.gps_qual == 0:
+            self.log.warning('GNSS lost')
+            self.GNSS_CONNECTION_LOST.emit()
+        if self.record.gps_qual == 4 and record.gps_qual != 4:
+            self.log.warning('GNSS RTK fix lost')
+            self.RTK_FIX_LOST.emit()
+        self.record = deepcopy(record)
+        if self.record.has_location:
+            if record.gps_qual == 4:  # 4 = RTK fixed, 5 = RTK float
+                if self.reference is None:
+                    self.log.info(f'GNSS reference set to {record.latitude}, {record.longitude}')
+                    self.set_reference(GeoPoint(lat=record.latitude, long=record.longitude))
+                else:
+                    if record.has_heading:
+                        yaw = np.deg2rad(-record.heading)
+                    else:
+                        yaw = self.odometer.get_pose(time=record.timestamp).yaw
+                        # TODO: Better INS implementation if no heading provided by GNSS
+                    # correct the gnss coordinat by antenna offset
+                    corrected_coordinates = get_new_position([record.latitude, record.longitude],
+                                                             self.antenna_offset, yaw+np.pi/2)
+                    self.record.latitude = deepcopy(corrected_coordinates[0])
+                    self.record.longitude = deepcopy(corrected_coordinates[1])
+                    assert self.reference is not None
+                    cartesian_coordinates = GeoPoint(lat=self.record.latitude, long=self.record.longitude) \
+                        .cartesian(self.reference)
+                    pose = rosys.geometry.Pose(
+                        x=cartesian_coordinates.x,
+                        y=cartesian_coordinates.y,
+                        yaw=yaw,
+                        time=record.timestamp,
+                    )
+                    distance = self.odometer.prediction.distance(pose)
+                    if distance > 1:
+                        self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
+                    self.ROBOT_POSE_LOCATED.emit(pose)
+                    self.ROBOT_POSITION_LOCATED.emit()
+            elif record.gps_qual == 0:
+                return
+            else:
+                self.ROBOT_POSITION_LOCATED.emit()
 
 
 class PoseProvider(Protocol):
