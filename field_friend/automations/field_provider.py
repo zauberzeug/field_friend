@@ -98,6 +98,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def invalidate(self) -> None:
         self.request_backup()
+        self.FIELDS_CHANGED.emit()
 
     def add_field(self, field: Field) -> None:
         self.fields.append(field)
