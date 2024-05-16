@@ -90,7 +90,7 @@ class GnssHardware(Gnss):
                         record.mode = msg.mode_indicator
                         # print(f'The GNSS message: {msg.mode_indicator}')
                     if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None):
-                        record.heading = float(msg.heading)
+                        record.heading = float(msg.heading) if msg.heading else None
                 except pynmea2.ParseError as e:
                     self.log.info(f'Parse error: {e}')
                     continue

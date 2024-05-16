@@ -91,13 +91,12 @@ class leaflet_map:
                 field = Field(id=f'{str(uuid.uuid4())}',
                               name=f'field_{len(self.field_provider.fields)+1}',
                               points=point_list,
-                              reference=point_list[0]
-                              )
+                              reference=point_list[0])
                 self.field_provider.add_field(field)
 
         with self.m as m:
             m.on('draw:created', handle_draw)
-        self.gnss.ROBOT_POSITION_LOCATED.register(self.update_robot_position)
+        self.gnss.ROBOT_GNSS_POSITION_CHANGED.register(self.update_robot_position)
 
     def buttons(self) -> None:
         """Builds additional buttons to interact with the map."""
@@ -118,7 +117,7 @@ class leaflet_map:
         dialog.close()
         self.m.remove_layer(self.drawn_marker)
         self.gnss.set_reference(latlon[0], latlon[1])
-        self.gnss.ROBOT_POSITION_LOCATED.emit()
+        self.gnss.ROBOT_GNSS_POSITION_CHANGED.emit()
         self.gnss.ROBOT_POSE_LOCATED.emit(rosys.geometry.Pose(
             x=0.000,
             y=0.000,
@@ -171,26 +170,25 @@ class leaflet_map:
             self.m.remove_layer(layer)
         self.field_layers = []
         for field in self.field_provider.fields:
-            if field.reference is not None:
-                self.field_layers.append(self.m.generic_layer(name="polygon",
-                                                              args=[field.points_as_tuples, {'color': '#999'}]))
+            self.field_layers.append(self.m.generic_layer(name="polygon",
+                                                          args=[field.points_as_tuples, {'color': '#999'}]))
 
-    def update_robot_position(self) -> None:
+    def update_robot_position(self, position: GeoPoint) -> None:
         if self.robot_marker is None:
-            self.robot_marker = self.m.marker(latlng=(self.gnss.record.latitude, self.gnss.record.longitude))
+            self.robot_marker = self.m.marker(latlng=position.tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
-        self.robot_marker.move(self.gnss.record.latitude, self.gnss.record.longitude)
+        self.robot_marker.move(*position.tuple)
 
     def zoom_to_robot(self) -> None:
-        self.m.set_center((self.gnss.record.latitude, self.gnss.record.longitude))
+        self.m.set_center((self.gnss.current.latitude, self.gnss.current.longitude))
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def zoom_to_field(self) -> None:
         field = self.field_provider.active_field
         if field is None:
             return
-        coords = field.outline_wgs84
+        coords = field.points_as_tuples
         center = sum(lat for lat, _ in coords) / len(coords), sum(lon for _, lon in coords) / len(coords)
         self.m.set_center(center)
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)  # TODO use field boundaries to calculate zoom

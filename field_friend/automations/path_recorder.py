@@ -91,7 +91,7 @@ class PathRecorder:
                 self.log.warning('not driving because no reference location set')
                 return
             self.gnss.set_reference(path.reference_lat, path.reference_lon)
-            distance = self.gnss.distance(GeoPoint(lat=self.gnss.record.latitude, long=self.gnss.record.longitude))
+            distance = self.gnss.distance(GeoPoint(lat=self.gnss.current.latitude, long=self.gnss.current.longitude))
             if not distance or distance > 10:
                 self.log.warning('not driving because distance to reference location is too large')
                 rosys.notify('Distance to reference location is too large', 'negative')

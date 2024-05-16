@@ -290,7 +290,7 @@ class field_planner:
             self.log.warning('not creating Reference because no GNSS device found')
             rosys.notify('No GNSS device found', 'negative')
             return
-        if self.gnss.record.gps_qual != 4:
+        if self.gnss.current.gps_qual != 4:
             self.log.warning('not creating Reference because no RTK fix available')
             rosys.notify('No RTK fix available', 'negative')
             return
@@ -306,11 +306,11 @@ class field_planner:
             self.gnss.set_reference(field.reference_lat, field.reference_lon)
 
     async def add_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
-        positioning = GeoPoint.from_list([self.gnss.record.latitude, self.gnss.record.longitude])
+        positioning = GeoPoint.from_list([self.gnss.current.latitude, self.gnss.current.longitude])
         if positioning is None or positioning.lat == 0 or positioning.long == 0:
             rosys.notify("No GNSS position.")
             return
-        if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
+        if not (self.gnss.current.gps_qual == 4 or self.gnss.current.gps_qual == 8):
             rosys.notify("GNSS position is not accurate enough.")
             return
         new_point = positioning
@@ -351,11 +351,11 @@ class field_planner:
 
     async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         if new_point is None:
-            positioning = GeoPoint.from_list([self.gnss.record.latitude, self.gnss.record.longitude])
+            positioning = GeoPoint.from_list([self.gnss.current.latitude, self.gnss.current.longitude])
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
+            if not (self.gnss.current.gps_qual == 4 or self.gnss.current.gps_qual == 8):
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
@@ -387,11 +387,11 @@ class field_planner:
 
     def add_row_point(self, field: Field, row: Row, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         if new_point is None:
-            positioning = GeoPoint.from_list([self.gnss.record.latitude, self.gnss.record.longitude])
+            positioning = GeoPoint.from_list([self.gnss.current.latitude, self.gnss.current.longitude])
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if not (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual == 8):
+            if not (self.gnss.current.gps_qual == 4 or self.gnss.current.gps_qual == 8):
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
