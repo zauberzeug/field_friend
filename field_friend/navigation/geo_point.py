@@ -35,9 +35,9 @@ class GeoPoint:
         return rosys.geometry.Point(x=x, y=y)
 
     def shifted(self, point: rosys.geometry.Point) -> GeoPoint:
-        r = Geodesic.WGS84.Direct(self.lat, self.long, 90.0, point.x)
-        r = Geodesic.WGS84.Direct(r['lat2'], r['lon2'], 0.0, point.y)
-        return GeoPoint(lat=r['lat2'], long=r['lon2'])
+        r1 = Geodesic.WGS84.Direct(self.lat, self.long, 90.0, point.x)
+        r2 = Geodesic.WGS84.Direct(r1['lat2'], r1['lon2'], 0.0, point.y)
+        return GeoPoint(lat=r2['lat2'], long=r2['lon2'])
 
 
 @dataclass(slots=True, kw_only=True)
