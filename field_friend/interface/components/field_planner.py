@@ -24,7 +24,7 @@ class field_planner:
         self.field_provider.active_object = None
         self.coordinate_type = "WGS84"
         self.COORDINATE_TYPE_CHANGED = rosys.event.Event()
-        "switch between displaying cartesian and wgs84 coordiantes."
+        "switch between displaying cartesian and wgs84 coordinates."
 
         self.tab: Literal["Obstacles", "Outline", "Rows"] = "Outline"
         self.TAB_CHANGED = rosys.event.Event()

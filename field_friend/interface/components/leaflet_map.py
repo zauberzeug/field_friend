@@ -101,11 +101,18 @@ class leaflet_map:
 
     def buttons(self) -> None:
         """Builds additional buttons to interact with the map."""
-        ui.button(icon='my_location', on_click=self.zoom_to_robot).props('dense flat')
         ui.button(icon='satellite', on_click=self.toggle_basemap).props('dense flat') \
-            .bind_visibility_from(self, 'current_basemap', lambda x: x is not None and 'openstreetmap' not in x.url_template)
+            .bind_visibility_from(self, 'current_basemap', lambda x: x is not None and 'openstreetmap' not in x.url_template) \
+            .tooltip('Switch to map view')
         ui.button(icon='map', on_click=self.toggle_basemap).props('dense flat') \
-            .bind_visibility_from(self, 'current_basemap', lambda x: x is not None and 'openstreetmap' in x.url_template)
+            .bind_visibility_from(self, 'current_basemap', lambda x: x is not None and 'openstreetmap' in x.url_template) \
+            .tooltip('Switch to satellite view')
+        ui.button(icon='my_location', on_click=self.zoom_to_robot).props('dense flat') \
+            .tooltip('Center map on robot position').classes('ml-0')
+        ui.button(on_click=self.zoom_to_field) \
+            .bind_enabled_from(self.field_provider, 'active_field') \
+            .props('icon=polyline dense flat') \
+            .tooltip('center map on field boundaries').classes('ml-0')
 
     def set_simulated_reference(self, latlon, dialog):
         dialog.close()
@@ -176,8 +183,17 @@ class leaflet_map:
         self.robot_marker.move(self.gnss.record.latitude, self.gnss.record.longitude)
 
     def zoom_to_robot(self) -> None:
-        self.m.center = (self.gnss.record.latitude, self.gnss.record.longitude)
+        self.m.set_center((self.gnss.record.latitude, self.gnss.record.longitude))
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
+
+    def zoom_to_field(self) -> None:
+        field = self.field_provider.active_field
+        if field is None:
+            return
+        coords = field.outline_wgs84
+        center = sum(lat for lat, _ in coords) / len(coords), sum(lon for _, lon in coords) / len(coords)
+        self.m.set_center(center)
+        self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)  # TODO use field boundaries to calculate zoom
 
     def toggle_basemap(self) -> None:
         use_satellite = app.storage.user.get('use_satellite', False)
