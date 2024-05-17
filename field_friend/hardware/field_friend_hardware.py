@@ -5,6 +5,7 @@ import rosys
 
 import config.config_selection as config_selector
 
+from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
@@ -93,6 +94,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
 
+        if config_hardware['y_axis']['version'] == 'y_axis_canopen' or config_hardware['z_axis']['version'] == 'z_axis_canopen':
+            can_open_master = CanOpenMasterHardware(robot_brain, can=can, name='master')
+        else:
+            can_open_master = None
         y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | None
         if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisHardware(robot_brain,
@@ -312,7 +317,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
                                     y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
-        modules = [bluetooth, can, wheels, serial, expander, y_axis,
+        modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis,
                    z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(tool=tool,
