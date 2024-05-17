@@ -101,10 +101,10 @@ class Gnss(ABC):
         self.ROBOT_GNSS_POSITION_CHANGED.emit(geo_point)  # TODO also do antenna_offset correction for this event
         if self.current.gps_qual != 4:  # 4 = RTK fixed (cm accuracy), 5 = RTK float (dm accuracy)
             return
+
         if self.reference is None:
             self.log.info(f'GNSS reference set to {self.current.latitude}, {self.current.longitude}')
             self.set_reference(GeoPoint(lat=self.current.latitude, long=self.current.longitude))
-
         if self.current.heading is not None:
             yaw = np.deg2rad(-self.current.heading)
         else:
@@ -125,10 +125,3 @@ class Gnss(ABC):
         if distance > 1:
             self.log.warning(f'GNSS distance to prediction too high: {distance:.2f}m!!')
         self.ROBOT_POSE_LOCATED.emit(pose)
-
-
-class PoseProvider(Protocol):
-
-    @property
-    def pose(self) -> rosys.geometry.Pose:
-        ...

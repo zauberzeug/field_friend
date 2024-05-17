@@ -281,8 +281,7 @@ class field_planner:
                                 ui.button('', on_click=lambda field=self.field_provider.active_field,
                                           row=self.field_provider.active_object['object']: self.add_row_point(field, row)) \
                                     .props('icon=add color=primary fab-mini flat').tooltip('Add point')
-                                ui.button(
-                                    '', on_click=lambda row=self.field_provider.active_object['object']: self.remove_row_point(row)) \
+                                ui.button('', on_click=lambda row=self.field_provider.active_object['object']: self.remove_row_point(row)) \
                                     .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
 
     def get_field_reference(self, field: Field) -> None:
