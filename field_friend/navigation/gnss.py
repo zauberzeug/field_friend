@@ -88,14 +88,13 @@ class Gnss(ABC):
                 self.log.warning('GNSS lost')
                 self.GNSS_CONNECTION_LOST.emit()
             return
+        assert self.current.has_location
+        geo_point = GeoPoint(lat=self.current.latitude, long=self.current.longitude)
+        self.ROBOT_GNSS_POSITION_CHANGED.emit(geo_point)  # TODO also do antenna_offset correction for this event
         if previous.gps_qual == 4 and new.gps_qual != 4:
             self.log.warning('GNSS RTK fix lost')
             self.RTK_FIX_LOST.emit()
             return
-        if not self.current.has_location:
-            return
-        geo_point = GeoPoint(lat=self.current.latitude, long=self.current.longitude)
-        self.ROBOT_GNSS_POSITION_CHANGED.emit(geo_point)  # TODO also do antenna_offset correction for this event
         if self.current.gps_qual != 4:  # 4 = RTK fixed (cm accuracy), 5 = RTK float (dm accuracy)
             return
 
