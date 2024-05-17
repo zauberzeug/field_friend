@@ -116,7 +116,7 @@ class leaflet_map:
     def set_simulated_reference(self, latlon, dialog):
         dialog.close()
         self.m.remove_layer(self.drawn_marker)
-        self.gnss.set_reference(latlon[0], latlon[1])
+        self.gnss.reference = GeoPoint.from_list(latlon)
         self.gnss.ROBOT_GNSS_POSITION_CHANGED.emit()
         self.gnss.ROBOT_POSE_LOCATED.emit(rosys.geometry.Pose(
             x=0.000,

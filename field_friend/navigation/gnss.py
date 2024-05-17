@@ -68,9 +68,6 @@ class Gnss(ABC):
     async def try_connection(self) -> None:
         pass
 
-    def set_reference(self, point: GeoPoint) -> None:
-        self.reference = point
-
     def clear_reference(self) -> None:
         self.reference = None
 
@@ -100,13 +97,13 @@ class Gnss(ABC):
 
         if self.reference is None:
             self.log.info(f'GNSS reference set to {self.current.latitude}, {self.current.longitude}')
-            self.set_reference(GeoPoint(lat=self.current.latitude, long=self.current.longitude))
+            self.reference = GeoPoint(lat=self.current.latitude, long=self.current.longitude)
         if self.current.heading is not None:
             yaw = np.deg2rad(-self.current.heading)
         else:
             # TODO: Better INS implementation if no heading provided by GNSS
             yaw = self.odometer.get_pose(time=self.current.timestamp).yaw
-        # correct the gnss coordinat by antenna offset
+        # correct the gnss coordinate by antenna offset
         corrected_coordinates = get_new_position([self.current.latitude, self.current.longitude],
                                                  self.antenna_offset, yaw+np.pi/2)
         self.current.latitude = deepcopy(corrected_coordinates[0])

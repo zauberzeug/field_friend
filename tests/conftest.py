@@ -27,7 +27,7 @@ async def system(integration) -> AsyncGenerator[System, None]:
 
 @pytest.fixture
 async def gnss(system: System) -> AsyncGenerator[GnssSimulation, None]:
-    system.gnss.set_reference(ROBOT_GEO_START_POSITION)
+    system.gnss.reference = ROBOT_GEO_START_POSITION
     await forward(1)
     assert system.gnss.device is None, 'device should not be created yet'
     await forward(3)
@@ -73,7 +73,7 @@ def gnss_driving(system: System, gnss: GnssSimulation) -> Generator[System, None
         while system.driver.prediction.point.x < 10.0:
             await system.driver.wheels.drive(0.2, 0)
             await rosys.sleep(0.1)
-    gnss.set_reference(ROBOT_GEO_START_POSITION)
+    gnss.reference = ROBOT_GEO_START_POSITION
     system.automation_watcher.gnss_watch_active = True
     system.automator.start(automation())
     yield system

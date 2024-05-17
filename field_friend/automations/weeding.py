@@ -226,7 +226,7 @@ class Weeding(rosys.persistence.PersistentModule):
         if not self.field.reference:
             self.log.error('Field reference is not available')
             return False
-        self.system.gnss.set_reference(self.field.reference)
+        self.system.gnss.reference = self.field.reference
         self.weeding_plan = self._make_plan()
         if not self.weeding_plan:
             self.log.error('No plan available')

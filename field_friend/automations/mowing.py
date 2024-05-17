@@ -89,7 +89,7 @@ class Mowing(rosys.persistence.PersistentModule):
         if not self.field.reference:
             self.log.error('Field reference is not available')
             return
-        self.system.gnss.set_reference(self.field.reference)
+        self.system.gnss.reference = self.field.reference
         if self.padding < self.robot_width+self.lane_distance:
             self.padding = self.robot_width+self.lane_distance
         await self._mowing()

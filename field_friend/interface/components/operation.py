@@ -243,7 +243,7 @@ class operation:
             if field.id == self.field_selection.value:
                 self.field_provider.select_field(field)
                 if len(field.points) > 0:
-                    self.system.gnss.set_reference(field.points[0])
+                    self.system.gnss.reference = field.points[0]
                 # TODO das hier noch auf das active field umbauen, damit auch diese werte im weeding auf das active field registriert sind
                 self.system.weeding.field = field
                 self.system.mowing.field = field

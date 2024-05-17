@@ -69,7 +69,7 @@ class field_planner:
                 if field.id == selection.selection[0]['id']:
                     self.field_provider.select_field(field)
                     if len(field.points) > 0:
-                        self.gnss.set_reference(field.points[0])
+                        self.gnss.reference = field.points[0]
         else:
             self.field_provider.select_field(None)
 
@@ -301,7 +301,7 @@ class field_planner:
                 return
             field.reference = ref
         if self.gnss.reference != field.reference:
-            self.gnss.set_reference(field.reference)
+            self.gnss.reference = field.reference
 
     async def add_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         positioning = GeoPoint.from_list([self.gnss.current.latitude, self.gnss.current.longitude])
@@ -320,7 +320,7 @@ class field_planner:
         else:
             if len(field.points) < 1:
                 self.field_provider.set_reference(field, new_point)
-                self.gnss.set_reference(new_point)
+                self.gnss.reference = new_point
             field.points.append(new_point)
         self.field_provider.invalidate()
 

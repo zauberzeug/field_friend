@@ -3,13 +3,14 @@ from typing import Any, Optional
 
 import rosys
 
+from ..navigation import GeoPoint
+
 
 @dataclass(slots=True, kw_only=True)
 class Path:
     name: str
     path_segments: list[rosys.driving.PathSegment] = field(default_factory=list)
-    reference_lat: Optional[float] = None
-    reference_lon: Optional[float] = None
+    reference: Optional[GeoPoint] = None
     visualized: bool = False
 
 
