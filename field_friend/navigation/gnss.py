@@ -98,7 +98,7 @@ class Gnss(ABC):
         if not self.current.has_location:
             return
         geo_point = GeoPoint(lat=self.current.latitude, long=self.current.longitude)
-        self.ROBOT_GNSS_POSITION_CHANGED.emit(geo_point)
+        self.ROBOT_GNSS_POSITION_CHANGED.emit(geo_point)  # TODO also do antenna_offset correction for this event
         if self.current.gps_qual != 4:  # 4 = RTK fixed (cm accuracy), 5 = RTK float (dm accuracy)
             return
         if self.reference is None:
