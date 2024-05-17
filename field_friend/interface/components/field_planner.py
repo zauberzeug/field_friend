@@ -294,7 +294,7 @@ class field_planner:
             rosys.notify('No RTK fix available', 'negative')
             return
         if field.reference is None:
-            ref = self.gnss.get_reference()
+            ref = self.gnss.reference
             if ref is None:
                 self.log.warning('not creating Point because no reference position available')
                 rosys.notify('No reference position available')
@@ -308,7 +308,7 @@ class field_planner:
         if positioning is None or positioning.lat == 0 or positioning.long == 0:
             rosys.notify("No GNSS position.")
             return
-        if not (self.gnss.current.gps_qual == 4 or self.gnss.current.gps_qual == 8):
+        if self.gnss.current.gps_qual != 4:
             rosys.notify("GNSS position is not accurate enough.")
             return
         new_point = positioning
@@ -353,7 +353,7 @@ class field_planner:
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if not (self.gnss.current.gps_qual == 4 or self.gnss.current.gps_qual == 8):
+            if self.gnss.current.gps_qual != 4:
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
@@ -389,7 +389,7 @@ class field_planner:
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if not (self.gnss.current.gps_qual == 4 or self.gnss.current.gps_qual == 8):
+            if self.gnss.current.gps_qual != 4:
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
