@@ -136,41 +136,40 @@ class leaflet_map:
         dialog.close()
         self.m.remove_layer(self.drawn_marker)
         if self.field_provider.active_object is not None and self.field_provider.active_object["object"] is not None:
-            self.field_provider.active_object["object"].points.append([latlon[0], latlon[1]])
+            self.field_provider.active_object["object"].points.append(GeoPoint.from_list(latlon))
             self.field_provider.OBJECT_SELECTED.emit()
             self.highlight_active_field()
         else:
             ui.notify("No object selected. Point could not be added to the void.")
-
-    def highlight_active_field(self) -> None:
-        if self.field_provider.active_field is None:
-            return
-        for field in self.field_layers:
-            field.run_method(':setStyle', "{'color': '#999'}")
-        for layer in self.obstacle_layers:
-            self.m.remove_layer(layer)
-        self.obstacle_layers = []
-        for layer in self.row_layers:
-            self.m.remove_layer(layer)
-        self.row_layers = []
-        layer_index = self.field_provider.fields.index(self.field_provider.active_field)
-        self.m.remove_layer(self.field_layers[layer_index])
-        self.field_layers[layer_index] = self.m.generic_layer(name="polygon",
-                                                              args=[self.field_provider.active_field.points_as_tuples, {'color': '#6E93D6'}])
-        for obstacle in self.field_provider.active_field.obstacles:
-            self.obstacle_layers.append(self.m.generic_layer(
-                name="polygon", args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
-        for row in self.field_provider.active_field.rows:
-            self.row_layers.append(self.m.generic_layer(
-                name="polyline", args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
     def update_layers(self) -> None:
         for layer in self.field_layers:
             self.m.remove_layer(layer)
         self.field_layers = []
         for field in self.field_provider.fields:
+            color = '#6E93D6' if field == self.field_provider.active_field else '#999'
             self.field_layers.append(self.m.generic_layer(name="polygon",
-                                                          args=[field.points_as_tuples, {'color': '#999'}]))
+                                                          args=[field.points_as_tuples, {'color': color}]))
+
+    def highlight_active_field(self) -> None:
+        if self.field_provider.active_field is None:
+            return
+        active_index = self.field_provider.fields.index(self.field_provider.active_field)
+        for i, layer in enumerate(self.field_layers):
+            color = '#6E93D6' if i == active_index else '#999'
+            layer.run_method(':setStyle', "{'color': '" + color + "'}")
+        for layer in self.obstacle_layers:
+            self.m.remove_layer(layer)
+        self.obstacle_layers = []
+        for layer in self.row_layers:
+            self.m.remove_layer(layer)
+        self.row_layers = []
+        for obstacle in self.field_provider.active_field.obstacles:
+            self.obstacle_layers.append(
+                self.m.generic_layer(name="polygon", args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
+        for row in self.field_provider.active_field.rows:
+            self.row_layers.append(
+                self.m.generic_layer(name="polyline", args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
     def update_robot_position(self, position: GeoPoint) -> None:
         if self.robot_marker is None:
