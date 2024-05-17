@@ -47,7 +47,7 @@ async def field(system: System) -> AsyncGenerator[Field, None]:
     yield f
 
 
-@ pytest.fixture
+@pytest.fixture
 def mowing(system: System, gnss: GnssSimulation, field: Field) -> Generator[System, None, None]:
     """Start mowing autiomation"""
     system.field_provider.active_field = field
@@ -55,7 +55,7 @@ def mowing(system: System, gnss: GnssSimulation, field: Field) -> Generator[Syst
     yield system
 
 
-@ pytest.fixture
+@pytest.fixture
 def driving(system: System) -> Generator[System, None, None]:
     """Drive 10 meters in a straight line"""
     async def automation():
@@ -66,7 +66,7 @@ def driving(system: System) -> Generator[System, None, None]:
     yield system
 
 
-@ pytest.fixture
+@pytest.fixture
 def gnss_driving(system: System, gnss: GnssSimulation) -> Generator[System, None, None]:
     """Use GNSS to drive 10 meters in a straight line"""
     async def automation():
