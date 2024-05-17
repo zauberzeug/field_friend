@@ -178,8 +178,8 @@ class camera_card:
                     svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'
                     svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
                 else:
-                    svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="yellow" fill="none" />'
-                    svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">{point.category_name}</text>'
+                    svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="orange" fill="none" />'
+                    svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="orange">{point.category_name}</text>'
             elif point.category_name in self.plant_locator.weed_category_names:
                 if point.confidence > self.plant_locator.minimum_weed_confidence:
                     svg += f'''
