@@ -74,9 +74,6 @@ class Gnss(ABC):
     def clear_reference(self) -> None:
         self.reference = None
 
-    def get_reference(self) -> Optional[GeoPoint]:
-        return self.reference
-
     def distance(self, point: GeoPoint) -> Optional[float]:
         """Compute the distance between the reference point and the given point in meters"""
         if self.reference is None:

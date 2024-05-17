@@ -37,7 +37,8 @@ class PathRecorder:
             return
         self.log.info(f'recording path {path.name}')
         if self.gnss.device != 'simulation':
-            ref_lat, ref_lon = self.gnss.get_reference()
+            assert self.gnss.reference is not None
+            ref_lat, ref_lon = self.gnss.reference.tuple
             if ref_lat is None or ref_lon is None:
                 self.log.warning('not recording because no reference location set')
                 return
@@ -90,6 +91,7 @@ class PathRecorder:
             if path.reference_lat is None or path.reference_lon is None:
                 self.log.warning('not driving because no reference location set')
                 return
+            # NOTE the target location is the path reference point; we do not approach a path if it is to far away
             self.gnss.set_reference(path.reference_lat, path.reference_lon)
             distance = self.gnss.distance(GeoPoint(lat=self.gnss.current.latitude, long=self.gnss.current.longitude))
             if not distance or distance > 10:
