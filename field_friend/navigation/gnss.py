@@ -57,7 +57,7 @@ class Gnss(ABC):
         self.antenna_offset = antenna_offset
 
         self.needs_backup = False
-        rosys.on_repeat(self.update, 0.1)
+        rosys.on_repeat(self.update, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
 
     @abstractmethod
@@ -111,10 +111,10 @@ class Gnss(ABC):
             # TODO: Better INS implementation if no heading provided by GNSS
             yaw = self.odometer.get_pose(time=self.current.timestamp).yaw
         # correct the gnss coordinat by antenna offset
-        # corrected_coordinates = get_new_position([self.current.latitude, self.current.longitude],
-        #                                          self.antenna_offset, yaw+np.pi/2)
-        # self.current.latitude = deepcopy(corrected_coordinates[0])
-        # self.current.longitude = deepcopy(corrected_coordinates[1])
+        corrected_coordinates = get_new_position([self.current.latitude, self.current.longitude],
+                                                 self.antenna_offset, yaw+np.pi/2)
+        self.current.latitude = deepcopy(corrected_coordinates[0])
+        self.current.longitude = deepcopy(corrected_coordinates[1])
         cartesian_coordinates = geo_point.cartesian(self.reference)
         pose = rosys.geometry.Pose(
             x=cartesian_coordinates.x,
@@ -123,7 +123,7 @@ class Gnss(ABC):
             time=self.current.timestamp)
         distance = self.odometer.prediction.distance(pose)
         if distance > 1:
-            self.log.warning(f'GNSS distance to prediction to high: {distance:.2f}m!!')
+            self.log.warning(f'GNSS distance to prediction too high: {distance:.2f}m!!')
         self.ROBOT_POSE_LOCATED.emit(pose)
 
 

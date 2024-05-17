@@ -30,9 +30,8 @@ class GeoPoint:
         """Calculate the cartesian coordinates of this point relative to a reference point.
 
         This method uses the geodesic distance and azimuth angle between the reference point and
-        the current point to calculate the Cartesian coordinates. The azimuth angle is measured
-        clockwise from the north direction, and the resulting Cartesian coordinates follow the 
-        standard convention where the x-axis points east and the y-axis points north.
+        the current point to calculate the Cartesian coordinates.
+        The azimuth angle is measured clockwise from the north direction, and the resulting Cartesian coordinates have the x-axis to north and y-axis to west.
 
         Parameters:
         reference (GeoPoint): The reference GeoPoint to which the Cartesian coordinates are relative.
@@ -45,13 +44,15 @@ class GeoPoint:
         """
         r = Geodesic.WGS84.Inverse(reference.lat, reference.long, self.lat, self.long)
         s = r['s12']
-        a = np.deg2rad(r['azi1'])
+        a = -np.deg2rad(r['azi1'])
         x = s * np.cos(a)
         y = s * np.sin(a)
         return rosys.geometry.Point(x=x, y=y)
 
     def shifted(self, point: rosys.geometry.Point) -> GeoPoint:
         """Shift by the given Cartesian coordinates (x, y) relative to the current point.
+
+        Note: the RoSys coordinate system maps x-axis to north and y-axis to west.
 
         Parameters:
         point (rosys.geometry.Point): A Point object representing the shift in meters, where:
@@ -61,9 +62,12 @@ class GeoPoint:
         Returns:
         GeoPoint: A new GeoPoint object representing the shifted geographic coordinates.
         """
-        north_shift = Geodesic.WGS84.Direct(self.lat, self.long, 0.0, point.y)
-        east_shift = Geodesic.WGS84.Direct(north_shift['lat2'], north_shift['lon2'], 90.0, point.x)
-        return GeoPoint(lat=east_shift['lat2'], long=east_shift['lon2'])
+        north_shift = Geodesic.WGS84.Direct(self.lat, self.long, 0.0, point.x)
+        west_shift = Geodesic.WGS84.Direct(north_shift['lat2'], north_shift['lon2'], 270.0, point.y)
+        return GeoPoint(lat=west_shift['lat2'], long=west_shift['lon2'])
+
+    def __str__(self) -> str:
+        return f'GeoPoint({round(self.lat, 5)}, {round(self.long, 5)})'
 
 
 @dataclass(slots=True, kw_only=True)
