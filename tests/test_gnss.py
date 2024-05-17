@@ -45,41 +45,41 @@ def test_updating_gnss_record():
     record.longitude = 7.4343
     gnss._update_record(record)  # pylint: disable=protected-access
     assert gnss.current.timestamp == 1
-    assert_point(odometer.prediction.point, rosys.geometry.Point(x=0, y=-6.0))
+    assert_point(odometer.prediction.point, rosys.geometry.Point(x=0, y=6.0))
 
 
 async def test_driving(gnss_driving: System):
     await forward(x=2.0)
-    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=1.7))
+    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.0, y=1.7))
 
 
 async def test_connection_lost(gnss_driving: System, gnss: GnssSimulation):
     await forward(x=2.0)
     gnss.gps_quality = 0
-    await forward(1)
-    # robot should have stopped driving if gnss connection is lost
-    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))
-    gnss.gps_quality = 8
+    await forward(3)
+    # robot should have stopped driving
+    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.0, y=1.7))
+    gnss.gps_quality = 4
     await forward(10)
-    # robot should continue driving if gnss connection is reestablished
-    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=4, y=0))
+    # robot should continue driving
+    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.7, y=3.0))
 
 
 async def test_rtk_lost(gnss_driving: System, gnss: GnssSimulation):
     await forward(x=2.0)
+    gnss.gps_quality = 5
+    await forward(3)
+    # robot should have stopped driving
+    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.0, y=1.7))
     gnss.gps_quality = 4
-    await forward(1)
-    # robot should have stopped driving if gnss connection is lost
-    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))
-    gnss.gps_quality = 8
     await forward(10)
-    # robot should continue driving if gnss connection is reestablished
-    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=4, y=0))
+    # robot should continue driving
+    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.7, y=3.0))
 
 
 async def test_device_disconnects(gnss_driving: System, gnss: GnssSimulation):
     await forward(x=2.0)
     gnss.disconnect()
     await forward(5)
-    # robot should have stopped driving if gnss is not active anymore
+    # robot should have stopped driving
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))
