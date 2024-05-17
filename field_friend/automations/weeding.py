@@ -223,10 +223,10 @@ class Weeding(rosys.persistence.PersistentModule):
             self.log.error('Field is not available')
             rosys.notify('No field selected', 'negative')
             return False
-        if not self.field.reference_lat or not self.field.reference_lon:
+        if not self.field.reference:
             self.log.error('Field reference is not available')
             return False
-        self.system.gnss.set_reference(self.field.reference_lat, self.field.reference_lon)
+        self.system.gnss.set_reference(self.field.reference)
         self.weeding_plan = self._make_plan()
         if not self.weeding_plan:
             self.log.error('No plan available')
@@ -261,18 +261,19 @@ class Weeding(rosys.persistence.PersistentModule):
         if start_row is None or end_row is None:
             self.log.warning('Start or end row not available')
             return None
-        reference = [self.field.reference_lat, self.field.reference_lon]
+        reference = self.field.reference
+        assert reference is not None
         rows_to_weed = self.field.rows[self.field.rows.index(
             start_row):self.field.rows.index(end_row) + 1]
-        rows = [row for row in rows_to_weed if len(row.points(reference)) > 1]
+        rows = [row for row in rows_to_weed if len(row.cartesian(reference)) > 1]
         robot_position = self.system.odometer.prediction.point
-        distance_to_first_row = min([point.distance(robot_position) for point in rows[0].points(reference)])
-        distance_to_last_row = min([point.distance(robot_position) for point in rows[-1].points(reference)])
+        distance_to_first_row = min([point.distance(robot_position) for point in rows[0].cartesian(reference)])
+        distance_to_last_row = min([point.distance(robot_position) for point in rows[-1].cartesian(reference)])
         if distance_to_first_row > distance_to_last_row:
             rows = list(reversed(rows))
         minimum_row_distance = 1  # 1 = no row needs to be skipped when turning
         if len(rows) > 1:
-            rows_distance = rows[0].points(reference)[0].distance(rows[1].points(reference)[0])
+            rows_distance = rows[0].cartesian(reference)[0].distance(rows[1].cartesian(reference)[0])
             self.log.info(f'Rows distance: {rows_distance}')
             self.log.info(f'Minimum turning radius: {self.minimum_turning_radius}')
             if self.minimum_turning_radius * 2 > rows_distance:
@@ -296,7 +297,7 @@ class Weeding(rosys.persistence.PersistentModule):
             splines = []
             row = rows[row_index]
             self.sorted_weeding_rows.append(row)
-            row_points = row.points(reference).copy()
+            row_points = row.cartesian(reference).copy()
             if i == 0:
                 switch_first_row = robot_position.distance(row_points[0]) > robot_position.distance(row_points[-1])
                 self.log.info(f'Switch first row: {switch_first_row}')
@@ -328,19 +329,20 @@ class Weeding(rosys.persistence.PersistentModule):
             return []
         turn_paths = []
         self.system.path_planner.obstacles.clear()
+        assert self.field.reference is not None
         for obstacle in self.field.obstacles:
-            self.system.path_planner.obstacles[obstacle.id] = rosys.pathplanning.Obstacle(
-                id=obstacle.id, outline=obstacle.points([self.field.reference_lat, self.field.reference_lon]))
+            self.system.path_planner.obstacles[obstacle.id] = \
+                rosys.pathplanning.Obstacle(id=obstacle.id, outline=obstacle.cartesian(self.field.reference))
         for row in self.field.rows:
-            row_points = row.points([self.field.reference_lat, self.field.reference_lon])
+            row_points = row.cartesian(self.field.reference)
             # create a small polygon around the row to avoid the robot driving through the row
             row_polygon = [
                 Point(x=row_points[0].x, y=row_points[0].y),
                 Point(x=row_points[0].x - 0.01, y=row_points[0].y + 0.01),
                 Point(x=row_points[-1].x, y=row_points[-1].y),
             ]
-            self.system.path_planner.obstacles[f'row_{row.id}'] = rosys.pathplanning.Obstacle(
-                id=f'row_{row.id}', outline=row_polygon)
+            self.system.path_planner.obstacles[f'row_{row.id}'] = \
+                rosys.pathplanning.Obstacle(id=f'row_{row.id}', outline=row_polygon)
 
         area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
         self.system.path_planner.areas = {area.id: area}

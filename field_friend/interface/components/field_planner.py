@@ -294,16 +294,15 @@ class field_planner:
             self.log.warning('not creating Reference because no RTK fix available')
             rosys.notify('No RTK fix available', 'negative')
             return
-        if field.reference_lat is None or field.reference_lon is None:
-            ref_lat, ref_lon = self.gnss.get_reference()
-            if ref_lat is None or ref_lon is None:
+        if field.reference is None:
+            ref = self.gnss.get_reference()
+            if ref is None:
                 self.log.warning('not creating Point because no reference position available')
                 rosys.notify('No reference position available')
                 return
-            field.reference_lat = ref_lat
-            field.reference_lon = ref_lon
-        if self.gnss.reference_lat != field.reference_lat or self.gnss.reference_lon != field.reference_lon:
-            self.gnss.set_reference(field.reference_lat, field.reference_lon)
+            field.reference = ref
+        if self.gnss.reference != field.reference:
+            self.gnss.set_reference(field.reference)
 
     async def add_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         positioning = GeoPoint.from_list([self.gnss.current.latitude, self.gnss.current.longitude])

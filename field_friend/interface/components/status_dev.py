@@ -266,7 +266,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-        direction_flag = 'N' if system.gnss.current.heading <= 23 else \
+        direction_flag = '?' if system.gnss.current.heading is None else \
+            'N' if system.gnss.current.heading <= 23 else \
             'NE' if system.gnss.current.heading <= 68 else \
             'E' if system.gnss.current.heading <= 113 else \
             'SE' if system.gnss.current.heading <= 158 else \
@@ -301,9 +302,9 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                         kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
 
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
-        reference_position_label.text = 'No reference' if system.gnss.reference_lat is None else 'Set'
+        reference_position_label.text = 'No reference' if system.gnss.reference is None else 'Set'
         gnss_label.text = f'lat: {system.gnss.current.latitude:.6f}, lon: {system.gnss.current.longitude:.6f}'
-        heading_label.text = f'{system.gnss.current.heading:.2f}° ' + direction_flag
+        heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current.heading is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}'
         odometry_label.text = str(system.odometer.prediction)
 
