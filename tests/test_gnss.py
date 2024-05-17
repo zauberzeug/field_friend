@@ -1,3 +1,5 @@
+import asyncio
+
 import rosys
 from rosys.testing import assert_point, forward
 
@@ -15,20 +17,16 @@ def test_distance_calculation():
 def test_shifted_calculation():
     point = GeoPoint(lat=51.983159, long=7.434212)
     shifted = point.shifted(rosys.geometry.Point(x=6, y=6))
-    assert shifted.lat == 51.98321292429538
-    assert shifted.long == 7.434299331433169
+    # coordinates verified with https://www.meridianoutpost.com/resources/etools/calculators/calculator-latitude-longitude-distance.php?
+    assert shifted.lat == 51.98321292429539
+    assert shifted.long == 7.434299331538039
+    assert_point(shifted.cartesian(point), rosys.geometry.Point(x=6, y=6))
 
 
-def test_updating_record():
-    pose_location: rosys.geometry.Pose | None = None
-
-    def located(pose: rosys.geometry.Pose):
-        nonlocal pose_location
-        pose_location = pose
-        ic(pose_location)
-    odometer = rosys.driving.Odometer(rosys.hardware.)
+def test_updating_gnss_record():
+    odometer = rosys.driving.Odometer(rosys.hardware.WheelsSimulation())
     gnss = GnssSimulation(odometer)
-    gnss.ROBOT_POSE_LOCATED.register(located)
+    gnss.ROBOT_POSE_LOCATED.register(odometer.handle_detection)
     record = GNSSRecord()
     record.timestamp = 0
     record.latitude = 51.983159
@@ -37,7 +35,7 @@ def test_updating_record():
     record.gps_qual = 4
     assert gnss.reference is None
     gnss._update_record(record)  # pylint: disable=protected-access
-    assert pose_location == rosys.geometry.Pose()
+    assert odometer.prediction.point == rosys.geometry.Point(x=0, y=0)
     assert gnss.current.timestamp == 0
     assert gnss.current.has_location
     assert gnss.reference is not None
@@ -47,12 +45,12 @@ def test_updating_record():
     record.longitude = 7.4343
     gnss._update_record(record)  # pylint: disable=protected-access
     assert gnss.current.timestamp == 1
-    assert pose_location == rosys.geometry.Pose(x=6, time=1)
+    assert_point(odometer.prediction.point, rosys.geometry.Point(x=0, y=-6.0))
 
 
 async def test_driving(gnss_driving: System):
     await forward(x=2.0)
-    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))
+    assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=1.7))
 
 
 async def test_connection_lost(gnss_driving: System, gnss: GnssSimulation):
