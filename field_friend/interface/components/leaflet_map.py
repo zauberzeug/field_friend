@@ -57,10 +57,10 @@ class leaflet_map:
         self.obstacle_layers: list = []
         self.row_layers: list = []
         self.update_layers()
-        self.visualize_active_field()
+        self.highlight_active_field()
         self.field_provider.FIELDS_CHANGED.register(self.update_layers)
-        self.field_provider.FIELD_SELECTED.register(self.visualize_active_field)
-        self.field_provider.FIELDS_CHANGED.register(self.visualize_active_field)
+        self.field_provider.FIELD_SELECTED.register(self.highlight_active_field)
+        self.field_provider.FIELDS_CHANGED.register(self.highlight_active_field)
 
         def handle_draw(e: events.GenericEventArguments):
             if e.args['layerType'] == 'marker':
@@ -138,16 +138,15 @@ class leaflet_map:
         if self.field_provider.active_object is not None and self.field_provider.active_object["object"] is not None:
             self.field_provider.active_object["object"].points.append([latlon[0], latlon[1]])
             self.field_provider.OBJECT_SELECTED.emit()
-            self.visualize_active_field()
+            self.highlight_active_field()
         else:
             ui.notify("No object selected. Point could not be added to the void.")
 
-    def visualize_active_field(self) -> None:
+    def highlight_active_field(self) -> None:
         if self.field_provider.active_field is None:
             return
-
         for field in self.field_layers:
-            field.run_method(':setStyle', "{'color': '#6E93D6'}")
+            field.run_method(':setStyle', "{'color': '#999'}")
         for layer in self.obstacle_layers:
             self.m.remove_layer(layer)
         self.obstacle_layers = []
