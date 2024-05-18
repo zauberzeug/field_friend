@@ -1,4 +1,3 @@
-import asyncio
 
 import rosys
 from rosys.testing import assert_point, forward
@@ -60,11 +59,11 @@ async def test_device_disconnects(gnss_driving: System, gnss: GnssSimulation):
     assert gnss_driving.odometer.prediction.point.x > 2.5
 
 
-async def test_hanging_gnss(gnss_driving: System, gnss: GnssSimulation):
-    async def hang():
-        await rosys.sleep(3000)
+async def test_record_is_none(gnss_driving: System, gnss: GnssSimulation):
+    async def empty():
+        return None
     await forward(x=2.0)
-    gnss._create_new_record = hang  # type: ignore
+    gnss._create_new_record = empty  # type: ignore
     await forward(5)
     # robot should have stopped driving
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))
