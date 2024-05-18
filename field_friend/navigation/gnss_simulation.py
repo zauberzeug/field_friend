@@ -21,9 +21,7 @@ class GnssSimulation(Gnss):
         pose = self.odometer.prediction
         reference = self.reference if self.reference else GeoPoint(lat=51.983159, long=7.434212)
         new_position = reference.shifted(pose.point)
-        record = GNSSRecord()
-        record.timestamp = pose.time
-        record.latitude, record.longitude = new_position.tuple
+        record = GNSSRecord(timestamp=pose.time, location=new_position)
         record.mode = "simulation"  # TODO check for possible values and replace "simulation"
         record.gps_qual = self.gps_quality
         await rosys.sleep(0.1)  # NOTE simulation does not be so fast and only eats a lot of cpu time

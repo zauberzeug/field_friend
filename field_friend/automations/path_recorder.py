@@ -90,7 +90,7 @@ class PathRecorder:
                 return
             # NOTE the target location is the path reference point; we do not approach a path if it is to far away
             self.gnss.reference = path.reference
-            distance = self.gnss.distance(GeoPoint(lat=self.gnss.current.latitude, long=self.gnss.current.longitude))
+            distance = self.gnss.distance(self.gnss.current)
             if not distance or distance > 10:
                 self.log.warning('not driving because distance to reference location is too large')
                 rosys.notify('Distance to reference location is too large', 'negative')

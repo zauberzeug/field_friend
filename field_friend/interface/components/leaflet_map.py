@@ -179,7 +179,8 @@ class leaflet_map:
         self.robot_marker.move(*position.tuple)
 
     def zoom_to_robot(self) -> None:
-        self.m.set_center((self.gnss.current.latitude, self.gnss.current.longitude))
+        assert self.gnss.current is not None
+        self.m.set_center(self.gnss.current.location.tuple)
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def zoom_to_field(self) -> None:

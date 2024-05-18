@@ -7,7 +7,7 @@ import serial
 from rosys.driving.odometer import Odometer
 from serial.tools import list_ports
 
-from .gnss import Gnss, GNSSRecord
+from .gnss import GeoPoint, Gnss, GNSSRecord
 
 
 class GnssHardware(Gnss):
@@ -59,10 +59,10 @@ class GnssHardware(Gnss):
         line = line.decode()
         return line
 
-    async def _create_new_record(self) -> Optional[GNSSRecord]:
+    async def _create_new_record(self) -> GNSSRecord | None:
         if self.ser is None:
             return None
-        record = GNSSRecord()
+        data = {}
         types_seen: set[str] = set()
         try:
             while self.TYPES_NEEDED != types_seen:
@@ -78,24 +78,21 @@ class GnssHardware(Gnss):
                     if msg.sentence_type in self.TYPES_NEEDED:
                         types_seen.add(msg.sentence_type)
                     if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
-                        # self.log.info(f'GGA: gps_qual: {msg.gps_qual}, lat:{msg.latitude} and long:{msg.longitude}')
-                        record.gps_qual = msg.gps_qual
-                        record.altitude = msg.altitude
-                        record.separation = msg.geo_sep
+                        data['gps_qual'] = msg.gps_qual
+                        data['altitude'] = msg.altitude
+                        data['separation'] = msg.geo_sep
                     if msg.sentence_type == 'GNS' and getattr(msg, 'mode_indicator', None):
-                        # self.log.info(f'GNS: mode: {msg.mode_indicator}, lat:{msg.latitude} and long:{msg.longitude}')
                         if isinstance(msg.timestamp, datetime.time):
                             dt = datetime.datetime.combine(datetime.date.today(), msg.timestamp)
                             dt.replace(tzinfo=datetime.timezone.utc)
-                            record.timestamp = dt.timestamp()
+                            data['timestamp'] = dt.timestamp()
                         else:
-                            record.timestamp = msg.timestamp
-                        record.latitude = msg.latitude
-                        record.longitude = msg.longitude
-                        record.mode = msg.mode_indicator
+                            data['timestamp'] = msg.timestamp
+                        data['location'] = GeoPoint(lat=msg.latitude, long=msg.longitude)
+                        data['mode'] = msg.mode_indicator
                         # print(f'The GNSS message: {msg.mode_indicator}')
                     if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None):
-                        record.heading = float(msg.heading) if msg.heading else None
+                        data['heading'] = float(msg.heading) if msg.heading else None
                 except pynmea2.ParseError as e:
                     self.log.info(f'Parse error: {e}')
                     continue
@@ -103,4 +100,4 @@ class GnssHardware(Gnss):
             self.log.info(f'Device error: {e}')
             self.device = None
             return None
-        return record
+        return GNSSRecord(**data)

@@ -204,7 +204,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-            direction_flag = '?' if gnss.current.heading is None else \
+            direction_flag = '?' if gnss.current is None or gnss.current.heading is None else \
                 'N' if gnss.current.heading <= 23 else \
                 'NE' if gnss.current.heading <= 68 else \
                 'E' if gnss.current.heading <= 113 else \
@@ -234,9 +234,9 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
             reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'
-            gnss_label.text = f'lat: {gnss.current.latitude:.6f}, lon: {gnss.current.longitude:.6f}'
-            heading_label.text = f'{gnss.current.heading:.2f}° {direction_flag}' if gnss.current.heading is not None else 'No heading'
-            rtk_fix_label.text = f'gps_qual: {gnss.current.gps_qual}, mode: {gnss.current.mode}'
+            gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
+            heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
+            rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
             odometry_label.text = str(odometer.prediction)
 
         ui.timer(rosys.config.ui_update_interval, update_status)

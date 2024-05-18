@@ -16,19 +16,14 @@ from .point_transformation import get_new_position
 
 @dataclass
 class GNSSRecord:
-    timestamp: float = 0.0
-    latitude: float = 0.0
-    longitude: float = 0.0
+    timestamp: float
+    location: GeoPoint
     mode: str = ''
     gps_qual: int = 0
     altitude: float = 0.0
     separation: float = 0.0
     heading: Optional[float] = None
     speed_kmh: float = 0.0
-
-    @property
-    def has_location(self):
-        return self.latitude is not None and self.longitude is not None
 
 
 class Gnss(ABC):
@@ -50,7 +45,7 @@ class Gnss(ABC):
         self.GNSS_CONNECTION_LOST = rosys.event.Event()
         """the GNSS connection was lost"""
 
-        self.current: Optional[GNSSRecord] = GNSSRecord()
+        self.current: Optional[GNSSRecord] = None
         self.device: str | None = None
         self.reference: Optional[GeoPoint] = None
         self.antenna_offset = antenna_offset
@@ -73,63 +68,49 @@ class Gnss(ABC):
         return point.distance(point)
 
     async def update(self) -> None:
-        if self.device is None:
-            if self.current is not None:
-                self.GNSS_CONNECTION_LOST.emit()
-                self.log.warning('unexpected lost of gnss device')
-                self.current = None
-            return
-        record = None
+        previous = deepcopy(self.current)
         try:
-            record = await self._create_new_record()
+            self.current = await self._create_new_record()
         except Exception:
             self.log.exception('creation of gnss record failed')
-        if record is None:
-            self.log.warning('gnss record was None')
-            self.device = None
+
+        if previous is not None:
+            if self.current is None:
+                self.log.warning('new GNSS record is None')
+                self.GNSS_CONNECTION_LOST.emit()
+                return
+            if previous.gps_qual == 4 and self.current.gps_qual != 4:
+                self.log.warning('GNSS RTK fix lost')
+                self.RTK_FIX_LOST.emit()
+                return
+        if self.current is None:
             return
         try:
-            self._update_record(record)
+            # TODO also do antenna_offset correction for this event
+            self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
+            if self.current.gps_qual == 4:  # 4 = RTK fixed (cm accuracy), 5 = RTK float (dm accuracy)
+                self._on_rtk_fix()
         except Exception:
             self.log.exception('gnss record could not be applied')
-            self.device = None
+            self.current = None
 
     @abstractmethod
     async def _create_new_record(self) -> Optional[GNSSRecord]:
         pass
 
-    def _update_record(self, new: GNSSRecord) -> None:
-        previous = deepcopy(self.current)
-        self.current = deepcopy(new)
-        if new.gps_qual == 0:
-            if previous is not None and previous.gps_qual != 0:
-                self.log.warning('GNSS lost')
-                self.GNSS_CONNECTION_LOST.emit()
-            return
-        assert self.current.has_location
-        geo_point = GeoPoint(lat=self.current.latitude, long=self.current.longitude)
-        self.ROBOT_GNSS_POSITION_CHANGED.emit(geo_point)  # TODO also do antenna_offset correction for this event
-        if previous is not None and previous.gps_qual == 4 and new.gps_qual != 4:
-            self.log.warning('GNSS RTK fix lost')
-            self.RTK_FIX_LOST.emit()
-            return
-        if self.current.gps_qual != 4:  # 4 = RTK fixed (cm accuracy), 5 = RTK float (dm accuracy)
-            return
-
+    def _on_rtk_fix(self) -> None:
+        assert self.current is not None
         if self.reference is None:
-            self.log.info(f'GNSS reference set to {self.current.latitude}, {self.current.longitude}')
-            self.reference = GeoPoint(lat=self.current.latitude, long=self.current.longitude)
+            self.log.info(f'GNSS reference set to {self.current.location}')
+            self.reference = deepcopy(self.current.location)
         if self.current.heading is not None:
             yaw = np.deg2rad(-self.current.heading)
         else:
             # TODO: Better INS implementation if no heading provided by GNSS
             yaw = self.odometer.get_pose(time=self.current.timestamp).yaw
         # correct the gnss coordinate by antenna offset
-        corrected_coordinates = get_new_position([self.current.latitude, self.current.longitude],
-                                                 self.antenna_offset, yaw+np.pi/2)
-        self.current.latitude = deepcopy(corrected_coordinates[0])
-        self.current.longitude = deepcopy(corrected_coordinates[1])
-        cartesian_coordinates = geo_point.cartesian(self.reference)
+        self.current.location = get_new_position(self.current.location, self.antenna_offset, yaw+np.pi/2)
+        cartesian_coordinates = self.current.location.cartesian(self.reference)
         pose = rosys.geometry.Pose(
             x=cartesian_coordinates.x,
             y=cartesian_coordinates.y,

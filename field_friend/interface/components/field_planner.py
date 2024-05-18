@@ -304,7 +304,8 @@ class field_planner:
             self.gnss.reference = field.reference
 
     async def add_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
-        positioning = GeoPoint.from_list([self.gnss.current.latitude, self.gnss.current.longitude])
+        assert self.gnss.current is not None
+        positioning = self.gnss.current.location
         if positioning is None or positioning.lat == 0 or positioning.long == 0:
             rosys.notify("No GNSS position.")
             return
@@ -349,7 +350,8 @@ class field_planner:
 
     async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         if new_point is None:
-            positioning = GeoPoint.from_list([self.gnss.current.latitude, self.gnss.current.longitude])
+            assert self.gnss.current is not None
+            positioning = self.gnss.current.location
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
@@ -385,7 +387,8 @@ class field_planner:
 
     def add_row_point(self, field: Field, row: Row, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         if new_point is None:
-            positioning = GeoPoint.from_list([self.gnss.current.latitude, self.gnss.current.longitude])
+            assert self.gnss.current is not None
+            positioning = self.gnss.current.location
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
