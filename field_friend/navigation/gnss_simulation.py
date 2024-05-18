@@ -21,6 +21,7 @@ class GnssSimulation(Gnss):
         record.mode = "simulation"  # TODO check for possible values and replace "simulation"
         record.gps_qual = self.gps_quality
         self._update_record(record)
+        await rosys.sleep(0.1)  # NOTE simulation does not be so fast and only eats a lot of cpu time
 
     async def try_connection(self) -> None:
         if self.allow_connection:
