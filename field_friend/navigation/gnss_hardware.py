@@ -4,6 +4,7 @@ from typing import Optional
 import pynmea2
 import rosys
 import serial
+from rosys.driving.odometer import Odometer
 from serial.tools import list_ports
 
 from .gnss import Gnss, GNSSRecord
@@ -12,6 +13,10 @@ from .gnss import Gnss, GNSSRecord
 class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
     TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
+
+    def __init__(self, odometer: Odometer, antenna_offset: float) -> None:
+        super().__init__(odometer, antenna_offset)
+        self.ser: serial.Serial | None = None
 
     def __del__(self) -> None:
         if self.ser is not None:
@@ -54,9 +59,9 @@ class GnssHardware(Gnss):
         line = line.decode()
         return line
 
-    async def update(self) -> None:
+    async def _create_new_record(self) -> Optional[GNSSRecord]:
         if self.ser is None:
-            return
+            return None
         record = GNSSRecord()
         types_seen: set[str] = set()
         try:
@@ -64,12 +69,12 @@ class GnssHardware(Gnss):
                 line = await self._read()
                 if not line:
                     self.log.debug('No data received')
-                    return
+                    return None
                 try:
                     msg = pynmea2.parse(line)
                     if not hasattr(msg, 'sentence_type'):
                         self.log.debug(f'No sentence type: {msg}')
-                        return
+                        return None
                     if msg.sentence_type in self.TYPES_NEEDED:
                         types_seen.add(msg.sentence_type)
                     if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
@@ -97,5 +102,5 @@ class GnssHardware(Gnss):
         except serial.SerialException as e:
             self.log.info(f'Device error: {e}')
             self.device = None
-            return
-        self._update_record(record)
+            return None
+        return record

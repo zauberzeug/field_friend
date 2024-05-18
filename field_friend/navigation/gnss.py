@@ -50,19 +50,14 @@ class Gnss(ABC):
         self.GNSS_CONNECTION_LOST = rosys.event.Event()
         """the GNSS connection was lost"""
 
-        self.current = GNSSRecord()
+        self.current: Optional[GNSSRecord] = GNSSRecord()
         self.device: str | None = None
-        self.ser: serial.Serial | None = None
         self.reference: Optional[GeoPoint] = None
         self.antenna_offset = antenna_offset
 
         self.needs_backup = False
         rosys.on_repeat(self.update, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
-
-    @abstractmethod
-    async def update(self) -> None:
-        pass
 
     @abstractmethod
     async def try_connection(self) -> None:
@@ -77,18 +72,44 @@ class Gnss(ABC):
             return None
         return point.distance(point)
 
+    async def update(self) -> None:
+        if self.device is None:
+            if self.current is not None:
+                self.GNSS_CONNECTION_LOST.emit()
+                self.log.warning('unexpected lost of gnss device')
+                self.current = None
+            return
+        record = None
+        try:
+            record = await self._create_new_record()
+        except Exception:
+            self.log.exception('creation of gnss record failed')
+        if record is None:
+            self.log.warning('gnss record was None')
+            self.device = None
+            return
+        try:
+            self._update_record(record)
+        except Exception:
+            self.log.exception('gnss record could not be applied')
+            self.device = None
+
+    @abstractmethod
+    async def _create_new_record(self) -> Optional[GNSSRecord]:
+        pass
+
     def _update_record(self, new: GNSSRecord) -> None:
         previous = deepcopy(self.current)
         self.current = deepcopy(new)
         if new.gps_qual == 0:
-            if previous.gps_qual != 0:
+            if previous is not None and previous.gps_qual != 0:
                 self.log.warning('GNSS lost')
                 self.GNSS_CONNECTION_LOST.emit()
             return
         assert self.current.has_location
         geo_point = GeoPoint(lat=self.current.latitude, long=self.current.longitude)
         self.ROBOT_GNSS_POSITION_CHANGED.emit(geo_point)  # TODO also do antenna_offset correction for this event
-        if previous.gps_qual == 4 and new.gps_qual != 4:
+        if previous is not None and previous.gps_qual == 4 and new.gps_qual != 4:
             self.log.warning('GNSS RTK fix lost')
             self.RTK_FIX_LOST.emit()
             return
