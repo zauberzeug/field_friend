@@ -73,7 +73,6 @@ class Gnss(ABC):
             self.current = await self._create_new_record()
         except Exception:
             self.log.exception('creation of gnss record failed')
-
         if previous is not None:
             if self.current is None:
                 self.log.warning('new GNSS record is None')
@@ -81,6 +80,7 @@ class Gnss(ABC):
                 return
             if previous.gps_qual == 4 and self.current.gps_qual != 4:
                 self.log.warning('GNSS RTK fix lost')
+                self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
                 self.RTK_FIX_LOST.emit()
                 return
         if self.current is None:
