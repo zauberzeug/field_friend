@@ -40,6 +40,7 @@ class System(rosys.persistence.PersistentModule):
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
+        self.AUTOMATION_CHANGED = rosys.event.Event()
 
         self.field_friend: FieldFriendHardware | FieldFriendSimulation
         self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider

@@ -34,10 +34,7 @@ class robot_scene:
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system.plant_provider,
                               self.system.big_weed_category_names + self.system.small_weed_category_names)
-                visualizer_object(self.system.automator,
-                                  self.system.path_provider,
-                                  self.system.mowing,
-                                  self.system.weeding)
+                visualizer_object(self.system)
                 field_object(self.system.field_provider)
                 self.scene.move_camera(-0.5, -1, 2)
 

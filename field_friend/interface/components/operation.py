@@ -302,4 +302,5 @@ class operation:
 
     def handle_automation_changed(self, e: events.ValueChangeEventArguments) -> None:
         self.system.automator.default_automation = self.system.automations[e.value]
+        self.system.AUTOMATION_CHANGED.emit(e.value)
         self.system.request_backup()
