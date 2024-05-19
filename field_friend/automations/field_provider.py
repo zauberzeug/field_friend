@@ -92,7 +92,23 @@ class FieldProvider(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        rosys.persistence.replace_list(self.fields, Field, data.get('fields', []))
+        fields_data = data.get('fields', [])
+        rosys.persistence.replace_list(self.fields, Field, fields_data)
+
+        # NOTE we had some changes in persistence; this code transforms old to new format
+        for i, f in enumerate(self.fields):
+            outline = fields_data[i].get('outline_wgs84', [])
+            for coords in outline:
+                f.points.append(GeoPoint(lat=coords[0], long=coords[1]))
+            rlat = fields_data[i].get('reference_lat', None)
+            rlong = fields_data[i].get('reference_lon', None)
+            if rlat is not None and rlong is not None:
+                f.reference = GeoPoint(lat=rlat, long=rlong)
+            rows = fields_data[i].get('rows', [])
+            for j, row in enumerate(rows):
+                for point in row.get('points_wgs84', []):
+                    f.rows[j].points.append(GeoPoint(lat=point[0], long=point[1]))
+
         self.active_field = next((f for f in self.fields if f.id == data.get('active_field')), None)
 
     def invalidate(self) -> None:
