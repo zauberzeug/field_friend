@@ -255,7 +255,7 @@ class Weeding(rosys.persistence.PersistentModule):
         end_row = next((row for row in self.field.rows if row.id == self.end_row_id), None)
         if start_row is None or end_row is None:
             self.log.warning('Start or end row not available')
-            return None
+            return []
         reference = self.field.reference
         assert reference is not None
         rows_to_weed = self.field.rows[self.field.rows.index(
