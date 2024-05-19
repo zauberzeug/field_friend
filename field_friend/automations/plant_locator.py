@@ -3,7 +3,8 @@ import logging
 
 import rosys
 
-from .plant_provider import Plant, PlantProvider
+from .plant import Plant
+from .plant_provider import PlantProvider
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
 CROP_CATEGORY_NAME = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
@@ -68,7 +69,7 @@ class PlantLocator:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
-                weed = Plant(position=world_point, type=d.category_name,
+                weed = Plant(position=world_point, type_=d.category_name,
                              detection_time=rosys.time(), detection_image=new_image)
                 await self.plant_provider.add_weed(weed)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
@@ -79,7 +80,7 @@ class PlantLocator:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
-                crop = Plant(position=world_point, type=d.category_name,
+                crop = Plant(position=world_point, type_=d.category_name,
                              detection_time=rosys.time(), confidence=d.confidence, detection_image=new_image)
                 await self.plant_provider.add_crop(crop)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:

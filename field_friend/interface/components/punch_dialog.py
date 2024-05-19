@@ -6,7 +6,8 @@ from nicegui.events import MouseEventArguments
 from rosys.geometry import Point3d
 from rosys.vision import Image
 
-from ...automations import Plant, PlantLocator
+from ...automations import PlantLocator
+from ...automations.plant import Plant
 
 
 class PunchDialog(ui.dialog):

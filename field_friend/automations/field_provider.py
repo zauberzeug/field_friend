@@ -8,7 +8,7 @@ from shapely.geometry import Polygon
 
 from field_friend.navigation import GeoPoint, GeoPointCollection
 
-from .plant_provider import Plant
+from .plant import Plant
 
 
 @dataclass(slots=True, kw_only=True)
