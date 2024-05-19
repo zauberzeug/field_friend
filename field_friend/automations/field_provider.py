@@ -1,11 +1,10 @@
 from dataclasses import dataclass, field
-from statistics import mean
 from typing import Any, Literal, Optional, TypedDict, Union
 
 import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import Polygon
 
 from field_friend.navigation import GeoPoint, GeoPointCollection
 
