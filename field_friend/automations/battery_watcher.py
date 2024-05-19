@@ -30,4 +30,5 @@ class BatteryWatcher:
 
     async def release_relais_on_startup(self) -> None:
         self.log.info('releasing battery relay on rosys startup')
+        await rosys.sleep(15)
         await self.field_friend.battery_control.release_battery_relay()

@@ -21,6 +21,7 @@ class CoinCollecting():
         super().__init__()
         self.log = logging.getLogger('field_friend.coin_collecting')
         self.system = system
+        self.kpi_provider = system.kpi_provider
         self.work_x: float = 0.0
         self.front_x: float = 0.18
 
@@ -39,12 +40,12 @@ class CoinCollecting():
             rosys.notify('Y-Axis is in alarm, aborting', 'negative')
             self.log.error('Y-Axis is in alarm, aborting')
             return
-        if self.system.field_friend.z_axis.ref_t:
-            rosys.notify('Tornado is in top ref', 'negative')
-            self.log.error('Tornado is in top ref')
+        if self.system.field_friend.z_axis.ref_knife_stop:
+            rosys.notify('Tornado is in knife stop ref', 'negative')
+            self.log.error('Tornado is in knife stop ref')
             return
         if not await self.system.puncher.try_home():
-            rosys.notify('Puncher homing failed, aborting', 'error')
+            rosys.notify('Puncher homing failed, aborting', 'negative')
             self.log.error('Puncher homing failed, aborting')
         self.work_x = self.system.field_friend.WORK_X
         self.system.odometer.reset()
@@ -97,6 +98,7 @@ class CoinCollecting():
                         continue
                     except Exception as e:
                         self.log.exception(f'error while advancing on crop: {e}')
+                        self.kpi_provider.increment('automation_stopped')
                         break
                 if self.system.odometer.prediction.point.distance(Point(x=0, y=0)) > 0.1:
                     self.log.info('returning to start position')
@@ -107,6 +109,7 @@ class CoinCollecting():
                     await self.system.driver.drive_to(target)
                     already_explored = True  # avoid infinite loop if there are no crops
         finally:
+            self.kpi_provider.increment('coin_collecting_completed')
             await rosys.sleep(0.1)
             await self.system.field_friend.stop()
 

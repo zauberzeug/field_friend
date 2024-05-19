@@ -53,8 +53,9 @@ class AutomationWatcher:
             if self.path_recorder.state == 'recording':
                 return
             else:
-                self.log.info(f'pausing automation because {reason}')
-                self.automator.pause(because=f'{reason})')
+                if self.automator.is_running:
+                    self.log.info(f'pausing automation because {reason}')
+                    self.automator.pause(because=f'{reason})')
                 return
         if reason.startswith('GNSS') and not self.gnss_watch_active:
             return
@@ -89,10 +90,10 @@ class AutomationWatcher:
         if self.try_resume_active and rosys.time() > self.incidence_time + self.resume_delay:
             if not bumper_condition or not gnss_condition:
                 self.log.info(f'waiting for conditions to be met: bumper={bumper_condition}, gnss={gnss_condition}')
+                self.resume_delay += 2
                 return
             self.log.info(f'resuming automation after {self.resume_delay:.0f}s')
             self.automator.resume()
-            self.resume_delay += 2
             self.try_resume_active = False
 
         if self.odometer.prediction.distance(self.incidence_pose) > RESET_POSE_DISTANCE:

@@ -1,13 +1,11 @@
 from dataclasses import dataclass, field
-from functools import lru_cache
 from statistics import mean
-from typing import Any, List, Literal, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
-import geopandas as gpd
 import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 
 from field_friend.navigation.point_transformation import wgs84_to_cartesian
 
@@ -86,6 +84,19 @@ class Field:
         else:
             return []
 
+    def area(self) -> float:
+        if len(self.outline) > 0:
+            polygon = Polygon([(p.x, p.y) for p in self.outline])
+            return polygon.area
+        else:
+            return 0.0
+
+    def worked_area(self, worked_rows: int) -> float:
+        worked_area = 0.0
+        if self.area() > 0:
+            worked_area = worked_rows * self.area() / len(self.rows)
+        return worked_area
+
 
 class Active_object(TypedDict):
     object_type: Literal["Obstacles", "Rows", "Outline"]
@@ -111,10 +122,14 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.needs_backup: bool = False
 
     def backup(self) -> dict:
-        return {'fields': rosys.persistence.to_dict(self.fields)}
+        return {
+            'fields': rosys.persistence.to_dict(self.fields),
+            'active_field': None if self.active_field is None else self.active_field.id,
+        }
 
     def restore(self, data: dict[str, Any]) -> None:
         rosys.persistence.replace_list(self.fields, Field, data.get('fields', []))
+        self.active_field = next((f for f in self.fields if f.id == data.get('active_field')), None)
 
     def invalidate(self) -> None:
         self.request_backup()
@@ -170,6 +185,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELD_SELECTED.emit()
         self.active_object = None
         self.OBJECT_SELECTED.emit()
+        self.invalidate()
 
     def select_object(self, object_id: Optional[str] = None, object_type: Optional[Literal["Obstacles", "Rows", "Outline"]] = None) -> None:
         if self.active_field is not None and object_id is not None and object_type is not None:
@@ -198,6 +214,15 @@ class FieldProvider(rosys.persistence.PersistentModule):
     # the function need to be extended for more special cases
 
     def sort_rows(self, field: Field) -> None:
+        if len(field.rows) <= 1:
+            rosys.notify(f'There are not enough rows that can be sorted.', type='warning')
+            return
+
+        for row in field.rows:
+            if len(row.points_wgs84) < 1:
+                rosys.notify(f'Row {row.name} has to few points. Sorting not possible.', type='warning')
+                return
+
         def get_centroid(row: Row) -> Point:
             polyline = LineString(row.points_wgs84)
             return polyline.centroid
