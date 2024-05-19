@@ -55,12 +55,8 @@ class System(rosys.persistence.PersistentModule):
             version = 'rb28'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
-            self.usb_camera_provider.remove_all_cameras()
-            self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
-                                                                               x=0.4, z=0.4,
-                                                                               roll=np.deg2rad(360-150),
-                                                                               pitch=np.deg2rad(0),
-                                                                               yaw=np.deg2rad(90)))
+            # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
+            rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
         self.plant_provider = PlantProvider()
@@ -168,3 +164,11 @@ class System(rosys.persistence.PersistentModule):
         if self.automator.default_automation is None:
             return None
         return {v: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
+
+    def setup_simulated_usb_camera(self):
+        self.usb_camera_provider.remove_all_cameras()
+        self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
+                                                                           x=0.4, z=0.4,
+                                                                           roll=np.deg2rad(360-150),
+                                                                           pitch=np.deg2rad(0),
+                                                                           yaw=np.deg2rad(90)))
