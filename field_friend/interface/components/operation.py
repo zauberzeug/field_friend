@@ -23,7 +23,7 @@ class operation:
         self.key_controls = KeyControls(self.system)
         self.leaflet_map = leaflet_map
 
-        with ui.card().tight().classes('w-full').style('margin-bottom: 10px; min-height: 100%;'):
+        with ui.card().tight().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
                 with ui.column().classes('w-full'):
                     with ui.row().classes('items-center'):
