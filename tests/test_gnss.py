@@ -2,7 +2,7 @@
 import rosys
 from rosys.testing import assert_point, forward
 
-from field_friend.navigation import GNSSRecord, GnssSimulation
+from field_friend.navigation import GnssSimulation
 from field_friend.navigation.geo_point import GeoPoint
 from field_friend.system import System
 
