@@ -28,7 +28,7 @@ class visualizer_object(Object3D):
             segments = []
         self.update_path([path_segment for path in segments for path_segment in path])
 
-    def update_path(self, path: list[rosys.driving.PathSegment], height: float = 0.2) -> None:
+    def update_path(self, path: list[rosys.driving.PathSegment], height: float = 0.02) -> None:
         for obj in list(self.scene.objects.values()):
             if obj.name == 'path':
                 obj.delete()
