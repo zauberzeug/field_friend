@@ -31,7 +31,7 @@ class Puncher:
             return False
         try:
             if self.field_friend.estop.active:
-                rosys.notify('Estop active, relaese first', 'negative')
+                rosys.notify('Estop active, release first', 'negative')
                 return False
             if not await self.field_friend.z_axis.try_reference():
                 return False
