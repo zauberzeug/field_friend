@@ -184,7 +184,7 @@ class field_planner:
                                     radio_el, on_change=lambda event: self.field_provider.select_object(event.value, self.tab))
 
                         with ui.row().classes('items-center mt-3').style("width: 100%"):
-                            ui.button(icon='add', on_click=lambda field=self.field_provider.active_field: self.field_provider.add_row(field)) \
+                            ui.button(icon='add', on_click=lambda field=self.field_provider.active_field: self.field_provider.create_row(field)) \
                                 .props('color=primary outline').style("width: 100%")
 
                         with ui.row().classes('items-center mt-3').style("width: 100%"):

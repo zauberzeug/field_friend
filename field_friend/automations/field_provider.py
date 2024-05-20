@@ -66,13 +66,14 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.request_backup()
         self.FIELDS_CHANGED.emit()
 
-    def create_field(self, points: list[GeoPoint] = []) -> None:
+    def create_field(self, points: list[GeoPoint] = []) -> Field:
         new_id = str(uuid.uuid4())
         field = Field(id=f'{new_id}', name=f'field_{len(self.fields)+1}', points=points)
         if points:
             self.set_reference(field, points[0])
         self.fields.append(field)
         self.invalidate()
+        return field
 
     def remove_field(self, field: Field) -> None:
         self.fields.remove(field)
@@ -92,10 +93,11 @@ class FieldProvider(rosys.persistence.PersistentModule):
         if field.reference is None:
             field.reference = point
 
-    def create_obstacle(self, field: Field) -> None:
-        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points=[])
+    def create_obstacle(self, field: Field, points: list[GeoPoint] = []) -> FieldObstacle:
+        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points=points)
         field.obstacles.append(obstacle)
         self.invalidate()
+        return obstacle
 
     def remove_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         field.obstacles.remove(obstacle)
@@ -103,10 +105,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.OBJECT_SELECTED.emit()
         self.invalidate()
 
-    def add_row(self, field: Field) -> None:
-        row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points=[])
+    def create_row(self, field: Field, points: list[GeoPoint] = []) -> Row:
+        assert not points or len(points) == 2
+        row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points=points)
         field.rows.append(row)
         self.invalidate()
+        return row
 
     def remove_row(self, field: Field, row: Row) -> None:
         field.rows.remove(row)
