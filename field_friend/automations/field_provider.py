@@ -1,10 +1,12 @@
+import logging
+import uuid
 from typing import Any, Literal, Optional, TypedDict, Union
 
 import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
 
-from ..navigation import GeoPoint
+from ..navigation import GeoPoint, Gnss
 from . import Field, FieldObstacle, Row
 
 
@@ -14,8 +16,11 @@ class Active_object(TypedDict):
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
-    def __init__(self) -> None:
+
+    def __init__(self, gnss: Gnss) -> None:
         super().__init__()
+        self.log = logging.getLogger('field_friend.field_provider')
+        self.gnss = gnss
         self.fields: list[Field] = []
         self.active_field: Optional[Field] = None
         self.active_object: Optional[Active_object] = None
@@ -61,7 +66,11 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.request_backup()
         self.FIELDS_CHANGED.emit()
 
-    def add_field(self, field: Field) -> None:
+    def create_field(self, points: list[GeoPoint] = []) -> None:
+        new_id = str(uuid.uuid4())
+        field = Field(id=f'{new_id}', name=f'field_{len(self.fields)+1}', points=points)
+        if points:
+            self.set_reference(field, points[0])
         self.fields.append(field)
         self.invalidate()
 
@@ -83,7 +92,8 @@ class FieldProvider(rosys.persistence.PersistentModule):
         if field.reference is None:
             field.reference = point
 
-    def add_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
+    def create_obstacle(self, field: Field) -> None:
+        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points=[])
         field.obstacles.append(obstacle)
         self.invalidate()
 
@@ -93,7 +103,8 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.OBJECT_SELECTED.emit()
         self.invalidate()
 
-    def add_row(self, field: Field, row: Row) -> None:
+    def add_row(self, field: Field) -> None:
+        row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points=[])
         field.rows.append(row)
         self.invalidate()
 
@@ -133,10 +144,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
         except Exception:
             return False
 
-    # TODO currently the function does only sort even fields where rows have the same length
-    # the function need to be extended for more special cases
-
     def sort_rows(self, field: Field) -> None:
+        # TODO currently the function does only sort even fields where rows have the same length
+        # the function need to be extended for more special cases
         if len(field.rows) <= 1:
             rosys.notify(f'There are not enough rows that can be sorted.', type='warning')
             return
@@ -168,3 +178,129 @@ class FieldProvider(rosys.persistence.PersistentModule):
         direction = "x" if abs(reference_centroid.x - p.lat) > abs(reference_centroid.y - p.long) else "y"
         self.fields[field_index].rows = sorted(field.rows, key=lambda row: get_distance(row, direction=direction))
         self.FIELDS_CHANGED.emit()
+
+    def ensure_field_reference(self, field: Field) -> None:
+        if self.gnss.device is None:
+            self.log.warning('not creating Reference because no GNSS device found')
+            rosys.notify('No GNSS device found', 'negative')
+            return
+        if self.gnss.current is None or self.gnss.current.gps_qual != 4:
+            self.log.warning('not creating Reference because no RTK fix available')
+            rosys.notify('No RTK fix available', 'negative')
+            return
+        if field.reference is None:
+            ref = self.gnss.reference
+            if ref is None:
+                self.log.warning('not creating Point because no reference position available')
+                rosys.notify('No reference position available')
+                return
+            field.reference = ref
+        if self.gnss.reference != field.reference:
+            self.gnss.reference = field.reference
+
+    async def add_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+        assert self.gnss.current is not None
+        positioning = self.gnss.current.location
+        if positioning is None or positioning.lat == 0 or positioning.long == 0:
+            rosys.notify("No GNSS position.")
+            return
+        if self.gnss.current.gps_qual != 4:
+            rosys.notify("GNSS position is not accurate enough.")
+            return
+        new_point = positioning
+        if point is not None:
+            index = field.points.index(point)
+            if index == 0:
+                self.set_reference(field, new_point)
+            field.points[index] = new_point
+        else:
+            if len(field.points) < 1:
+                self.set_reference(field, new_point)
+                self.gnss.reference = new_point
+            field.points.append(new_point)
+        self.invalidate()
+
+    def remove_point(self, field: Field, point: Optional[GeoPoint] = None) -> None:
+        if point is not None:
+            index = field.points.index(point)
+            del field.points[index]
+        elif field.points:
+            del field.points[-1]
+        self.invalidate()
+
+    async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+        if new_point is None:
+            assert self.gnss.current is not None
+            positioning = self.gnss.current.location
+            if positioning is None or positioning.lat == 0 or positioning.long == 0:
+                rosys.notify("No GNSS position.")
+                return
+            if self.gnss.current.gps_qual != 4:
+                rosys.notify("GNSS position is not accurate enough.")
+                return
+            new_point = positioning
+        if self.gnss.device != 'simulation':
+            self.ensure_field_reference(field)
+        if point is not None:
+            index = obstacle.points.index(point)
+            obstacle.points[index] = new_point
+        else:
+            obstacle.points.append(new_point)
+        assert self.active_object
+        self.select_object(self.active_object['object'].id, 'Obstacles')
+        self.invalidate()
+
+    def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[GeoPoint] = None) -> None:
+        if obstacle.points:
+            if point is not None:
+                index = obstacle.points.index(point)
+                del obstacle.points[index]
+            else:
+                del obstacle.points[-1]
+            assert self.active_object
+            self.select_object(self.active_object['object'].id, 'Obstacles')
+            self.invalidate()
+
+    def add_row_point(self, field: Field, row: Row, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+        if new_point is None:
+            assert self.gnss.current is not None
+            positioning = self.gnss.current.location
+            if positioning is None or positioning.lat == 0 or positioning.long == 0:
+                rosys.notify("No GNSS position.")
+                return
+            if self.gnss.current.gps_qual != 4:
+                rosys.notify("GNSS position is not accurate enough.")
+                return
+            new_point = positioning
+        if self.gnss.device != 'simulation':
+            self.ensure_field_reference(field)
+        if point is not None:
+            index = row.points.index(point)
+            row.points[index] = new_point
+        else:
+            row.points.append(new_point)
+        assert self.active_object
+        self.select_object(self.active_object['object'].id, 'Rows')
+        self.invalidate()
+
+    def remove_row_point(self, row: Row, point: Optional[GeoPoint] = None) -> None:
+        if row.points:
+            if point is not None:
+                index = row.points.index(point)
+                del row.points[index]
+            else:
+                del row.points[-1]
+            assert self.active_object
+            self.select_object(self.active_object['object'].id, 'Rows')
+            self.invalidate()
+
+    def move_row(self, field: Field, row: Row, next: bool = False) -> None:
+        index = field.rows.index(row)
+        if next:
+            if index == len(field.rows)-1:
+                field.rows[index], field.rows[0] = field.rows[0], field.rows[index]
+            else:
+                field.rows[index], field.rows[index+1] = field.rows[index+1], field.rows[index]
+        else:
+            field.rows[index], field.rows[index-1] = field.rows[index-1], field.rows[index]
+        self.invalidate()

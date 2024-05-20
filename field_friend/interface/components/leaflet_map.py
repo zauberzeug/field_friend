@@ -88,11 +88,7 @@ class leaflet_map:
                 point_list = []
                 for point in coordinates[0]:
                     point_list.append(GeoPoint(lat=point['lat'], long=point['lng']))
-                field = Field(id=f'{str(uuid.uuid4())}',
-                              name=f'field_{len(self.field_provider.fields)+1}',
-                              points=point_list,
-                              reference=point_list[0])
-                self.field_provider.add_field(field)
+                self.field_provider.create_field(points=point_list)
 
         with self.m as m:
             m.on('draw:created', handle_draw)

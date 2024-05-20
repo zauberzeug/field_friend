@@ -43,7 +43,7 @@ async def field(system: System) -> AsyncGenerator[Field, None]:
               [51.98322844759802, 7.43424919023239]]
     geo_points = [GeoPoint.from_list(point) for point in points]
     f = Field(id='test-field',  name='test-field', points=geo_points, reference=geo_points[0])
-    system.field_provider.add_field(f)
+    system.field_provider.create_field(f)
     yield f
 
 
