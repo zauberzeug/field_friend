@@ -198,7 +198,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         if self.gnss.reference != field.reference:
             self.gnss.reference = field.reference
 
-    async def add_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+    async def add_field_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         assert self.gnss.current is not None
         positioning = self.gnss.current.location
         if positioning is None or positioning.lat == 0 or positioning.long == 0:
@@ -220,7 +220,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             field.points.append(new_point)
         self.invalidate()
 
-    def remove_point(self, field: Field, point: Optional[GeoPoint] = None) -> None:
+    def remove_field_point(self, field: Field, point: Optional[GeoPoint] = None) -> None:
         if point is not None:
             index = field.points.index(point)
             del field.points[index]

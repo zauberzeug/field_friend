@@ -141,20 +141,20 @@ class field_planner:
                                     ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(point.tuple)) \
                                         .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.number('latitude', value=geo_point.lat, format='%.6f', step=0.1,
-                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field: self.field_provider.add_point(field, point, [event.value, point.long])) \
+                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field: self.field_provider.add_field_point(field, point, [event.value, point.long])) \
                                         .classes('w-20')
                                     ui.number('longitude', value=geo_point.long, format='%.6f', step=0.1,
-                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field: self.field_provider.add_point(field, point, [point.lat, event.value])) \
+                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field: self.field_provider.add_field_point(field, point, [point.lat, event.value])) \
                                         .classes('w-20')
                                     ui.button(on_click=lambda point=geo_point,
-                                              field=self.field_provider.active_field: self.field_provider.add_point(field, point)) \
+                                              field=self.field_provider.active_field: self.field_provider.add_field_point(field, point)) \
                                         .props('icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                                     ui.separator()
                             with ui.row().classes('items-center mt-2'):
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
-                                ui.button('', on_click=lambda field=self.field_provider.active_field: self.field_provider.add_point(field)) \
+                                ui.button('', on_click=lambda field=self.field_provider.active_field: self.field_provider.add_field_point(field)) \
                                     .props('icon=add color=primary fab-mini flat').tooltip('Add point')
-                                ui.button('', on_click=lambda field=self.field_provider.active_field: self.field_provider.remove_point(field)) \
+                                ui.button('', on_click=lambda field=self.field_provider.active_field: self.field_provider.remove_field_point(field)) \
                                     .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
 
                     with ui.tab_panel('Obstacles'):
