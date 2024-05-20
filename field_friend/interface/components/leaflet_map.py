@@ -61,6 +61,7 @@ class leaflet_map:
         self.field_provider.FIELDS_CHANGED.register(self.update_layers)
         self.field_provider.FIELD_SELECTED.register(self.highlight_active_field)
         self.field_provider.FIELDS_CHANGED.register(self.highlight_active_field)
+        self.zoom_to_robot()
 
         def handle_draw(e: events.GenericEventArguments):
             if e.args['layerType'] == 'marker':

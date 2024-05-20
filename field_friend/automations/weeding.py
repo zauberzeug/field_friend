@@ -183,7 +183,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.PATH_PLANNED.emit()
 
     async def start(self):
-        self.log.info('starting weeding...')
+        self.log.info('start weeding...')
         self.invalidate()
         if not await self._check_hardware_ready():
             return
@@ -412,6 +412,7 @@ class Weeding(rosys.persistence.PersistentModule):
         await self.system.driver.drive_spline(start_spline)
 
     async def _weed_with_plan(self):
+        self.log.info('Weeding with plan...')
         if self.continue_canceled_weeding:
             start_pose = self.system.odometer.prediction
             end_pose = Pose(x=self.current_segment.spline.start.x, y=self.current_segment.spline.start.y,
@@ -493,6 +494,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.current_segment = None
 
     async def _weed_planless(self):
+        self.log.info('Weeding without a plan...')
         already_explored_count = 0
         while True:
             self.system.plant_locator.pause()
@@ -588,20 +590,22 @@ class Weeding(rosys.persistence.PersistentModule):
         self.weeds_to_handle = sorted_weeds
 
     async def _handle_plants(self) -> None:
-        self.log.info('Handling plants...')
+        self.log.info(f'Handling plants with {self.system.field_friend.tool}...')
         for crop_id in self.crops_to_handle:
             self._safe_crop_to_row(crop_id)
-        if self.system.field_friend.tool == 'tornado' and not self.use_monitor_workflow:
+        if self.system.field_friend.tool == 'none' or self.use_monitor_workflow:
+            await self._monitor_workflow()
+        elif self.system.field_friend.tool == 'tornado':
             await self._tornado_workflow()
-        elif self.system.field_friend.tool == 'weed_screw' and not self.use_monitor_workflow:
+        elif self.system.field_friend.tool == 'weed_screw':
             await self._weed_screw_workflow()
-        elif self.system.field_friend.tool == 'dual_mechanism' and not self.use_monitor_workflow:
+        elif self.system.field_friend.tool == 'dual_mechanism':
             if self.with_chopping:
                 await self._dual_mechanism_workflow()
             else:
                 await self._weed_screw_workflow()
-        elif self.system.field_friend.tool == 'none' or self.use_monitor_workflow:
-            await self._monitor_workflow()
+        else:
+            raise WorkflowException(f'Unknown tool {self.system.field_friend.tool}')
 
     async def _tornado_workflow(self) -> None:
         self.log.info('Starting Tornado Workflow..')
@@ -911,7 +915,8 @@ class Weeding(rosys.persistence.PersistentModule):
                 await self.system.plant_provider.add_crop(Plant(
                     id_=str(i),
                     type_='beet',
-                    position=self.system.odometer.prediction.point.polar(0.20*i, self.system.odometer.prediction.yaw)
+                    position=self.system.odometer.prediction.point.polar(0.20*i,
+                                                                         self.system.odometer.prediction.yaw)
                     .polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                     detection_time=rosys.time(),
                     confidence=0.9,
@@ -920,8 +925,9 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.plant_provider.add_weed(Plant(
                         id_=f'{i}_{j}',
                         type_='weed',
-                        positions=[self.system.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(
-                            randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
+                        position=self.system.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01,
+                                                                             self.system.odometer.prediction.yaw)
+                        .polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
