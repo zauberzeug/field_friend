@@ -119,7 +119,7 @@ class field_planner:
                         "display:block; margin-top:auto; margin-bottom: auto;")
                     ui.input(value=f'{self.field_provider.active_field.name}').on('blur', self.field_provider.invalidate).bind_value(
                         self.field_provider.active_field, 'name').classes('w-32')
-                    ui.button(on_click=lambda field=self.field_provider.active_field: self.field_provider.delete_field(field)) \
+                    ui.button(on_click=lambda field=self.field_provider.active_field: self.field_provider.remove_field(field)) \
                         .props('icon=delete color=warning fab-mini flat').classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;').tooltip('Delete field')
                 with ui.tabs().style('width: 100%;') as self.tabs:
                     ui.tab('Outline', 'Outline')
