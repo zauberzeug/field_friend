@@ -290,7 +290,7 @@ class field_planner:
             self.log.warning('not creating Reference because no GNSS device found')
             rosys.notify('No GNSS device found', 'negative')
             return
-        if self.gnss.current.gps_qual != 4:
+        if self.gnss.current is None or self.gnss.current.gps_qual != 4:
             self.log.warning('not creating Reference because no RTK fix available')
             rosys.notify('No RTK fix available', 'negative')
             return
