@@ -33,12 +33,13 @@ class field_planner:
             with ui.card().style('width: 48%; max-width: 48%; max-height: 100%; height: 100%;'):
                 with ui.row():
                     self.show_coordinate_type_selection()
-                    ui.button('Upload Field', on_click=lambda field_provider=self.field_provider: geodata_picker(field_provider)).tooltip(
-                        'Upload a file with field boundaries. Supported file formates: KML, XML and Shape').classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
-                    ui.button('Add field', on_click=self.add_field).tooltip('Add a new field').classes(
-                        'ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
-                    ui.button('Clear fields', on_click=self.clear_fields).props(
-                        'outline color=warning').tooltip('Delete all fields').classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
+                    ui.button('Upload Field', on_click=lambda field_provider=self.field_provider: geodata_picker(field_provider)) \
+                        .tooltip('Upload a file with field boundaries. Supported file formates: KML, XML and Shape') \
+                        .classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
+                    ui.button('Add field', on_click=self.add_field).tooltip('Add a new field') \
+                        .classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
+                    ui.button('Clear fields', on_click=self.clear_fields).props('outline color=warning').tooltip('Delete all fields') \
+                        .classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
                 with ui.row().style('width: 100%;'):
                     self.show_field_table()
                     self.field_provider.FIELDS_CHANGED.register(self.show_field_table.refresh)

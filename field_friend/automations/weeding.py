@@ -348,8 +348,7 @@ class Weeding(rosys.persistence.PersistentModule):
             temp_removed_start_row = self.system.path_planner.obstacles.pop(f'row_{start_row.id}')
             temp_removed_end_row = self.system.path_planner.obstacles.pop(f'row_{end_row.id}')
             start_point = Point(x=self.weeding_plan[i][-1].spline.end.x,
-                                y=self.weeding_plan[i][-1].spline.end.y
-                                )
+                                y=self.weeding_plan[i][-1].spline.end.y)
             yaw = self.weeding_plan[i][-1].spline.start.direction(self.weeding_plan[i][-1].spline.end)
             offset_start_point = start_point.polar(self.turn_offset, yaw)
 
