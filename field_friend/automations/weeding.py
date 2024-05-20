@@ -85,6 +85,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.weeds_to_handle: dict[str, Point] = {}
 
         rosys.on_repeat(self._update_time_and_distance, 0.1)
+        self.system.field_provider.FIELD_SELECTED.register(self.clear)
 
     def _update_time_and_distance(self):
         if self.state == 'idle':
@@ -167,6 +168,20 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log.info('backing up...')
         self.request_backup()
 
+    def clear(self) -> None:
+        self.field = None
+        self.start_row_id = None
+        self.end_row_id = None
+        self.sorted_weeding_rows = []
+        self.weeding_plan = []
+        self.turn_paths = []
+        self.current_row = None
+        self.current_segment = None
+        self.row_segment_completed = False
+        self.crops_to_handle = {}
+        self.weeds_to_handle = {}
+        self.PATH_PLANNED.emit()
+
     async def start(self):
         self.log.info('starting weeding...')
         self.invalidate()
@@ -242,20 +257,14 @@ class Weeding(rosys.persistence.PersistentModule):
         if not self.field.rows:
             self.log.warning('No rows available')
             return []
-        if self.start_row_id is None:
-            self.start_row_id = self.field.rows[0].id
-        else:
-            self.start_row_id = next((row.id for row in self.field.rows if row.id == self.start_row_id), None)
-        if self.end_row_id is None:
-            self.end_row_id = self.field.rows[-1].id
-        else:
-            self.end_row_id = next((row.id for row in self.field.rows if row.id == self.end_row_id), None)
-
         start_row = next((row for row in self.field.rows if row.id == self.start_row_id), None)
         end_row = next((row for row in self.field.rows if row.id == self.end_row_id), None)
-        if start_row is None or end_row is None:
-            self.log.warning('Start or end row not available')
-            return []
+        if start_row is None:
+            start_row = self.field.rows[0]
+        if end_row is None:
+            end_row = self.field.rows[-1]
+        self.start_row_id = start_row.id
+        self.end_row_id = end_row.id
         reference = self.field.reference
         assert reference is not None
         rows_to_weed = self.field.rows[self.field.rows.index(
