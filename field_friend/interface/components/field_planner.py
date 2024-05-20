@@ -271,17 +271,17 @@ class field_planner:
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
                         else:
-                            for point in self.field_provider.active_object['object'].points:
+                            for geo_point in self.field_provider.active_object['object'].points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points.index(point)])).props(
+                                    ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points.index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
-                                    ui.number('latitude', value=point.lat, format='%.6f', step=0.1,
-                                              on_change=lambda event, point=point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row, point, [event.value, point[1]])).classes('w-20')
+                                    ui.number('latitude', value=geo_point.lat, format='%.6f', step=0.1,
+                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.field_provider.add_row_point(field, row, point, [event.value, point[1]])).classes('w-20')
                                     ui.number(
-                                        'longitude', value=point.long, format='%.6f', step=0.1,
-                                        on_change=lambda event, point=point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row, point, [point[0], event.value])).classes('w-20')
-                                    ui.button(on_click=lambda point=point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.add_row_point(field, row, point)).props(
-                                        'icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
+                                        'longitude', value=geo_point.long, format='%.6f', step=0.1,
+                                        on_change=lambda event, point=geo_point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.field_provider.add_row_point(field, row, point, [point[0], event.value])).classes('w-20')
+                                    ui.button(on_click=lambda point=geo_point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.field_provider.add_row_point(field, row, point)) \
+                                        .props('icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                             with ui.row().classes('items-center mt-2').style('display: block; margin: auto;'):
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
                                 ui.button('', on_click=lambda field=self.field_provider.active_field,
