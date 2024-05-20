@@ -285,7 +285,7 @@ class field_planner:
                                 ui.button('', on_click=lambda row=self.field_provider.active_object['object']: self.remove_row_point(row)) \
                                     .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
 
-    def get_field_reference(self, field: Field) -> None:
+    def ensure_field_reference(self, field: Field) -> None:
         if self.gnss.device is None:
             self.log.warning('not creating Reference because no GNSS device found')
             rosys.notify('No GNSS device found', 'negative')
@@ -361,7 +361,7 @@ class field_planner:
                 return
             new_point = positioning
         if self.gnss.device != 'simulation':
-            self.get_field_reference(field)
+            self.ensure_field_reference(field)
         if point is not None:
             index = obstacle.points.index(point)
             obstacle.points[index] = new_point
@@ -398,7 +398,7 @@ class field_planner:
                 return
             new_point = positioning
         if self.gnss.device != 'simulation':
-            self.get_field_reference(field)
+            self.ensure_field_reference(field)
         if point is not None:
             index = row.points.index(point)
             row.points[index] = new_point
