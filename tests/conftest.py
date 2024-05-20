@@ -1,14 +1,12 @@
 
 import logging
-import shutil
-from pathlib import Path
 from typing import AsyncGenerator, Generator
 
 import pytest
 import rosys
 from rosys.testing import forward, helpers
 
-from field_friend.automations.field_provider import Field
+from field_friend.automations import Field
 from field_friend.navigation import GeoPoint, GnssSimulation
 from field_friend.system import System
 

@@ -10,7 +10,7 @@ from rosys.geometry import Point, Pose, Spline
 from rosys.helpers import eliminate_2pi
 
 from ..hardware import ChainAxis
-from .field_provider import Field, Row
+from . import Field
 from .plant import Plant
 from .puncher import PuncherException
 from .sequence import find_sequence
