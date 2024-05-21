@@ -34,13 +34,14 @@ class Plant:
     @property
     def position(self) -> Point:
         """Calculate the middle position of all points"""
-        total_x = sum(point.x for point in self.positions)
-        total_y = sum(point.y for point in self.positions)
-
-        middle_x = total_x / len(self.positions)
-        middle_y = total_y / len(self.positions)
-
-        return Point(x=middle_x, y=middle_y)
+        sum_confidence = sum(self.confidences)
+        x = 0.0
+        y = 0.0
+        for position, confidence in zip(self.positions, self.confidences):
+            confidence_weight = confidence / sum_confidence
+            x += position.x * confidence_weight
+            y += position.y * confidence_weight
+        return Point(x=x, y=y)
 
     @property
     def confidence(self) -> float:
