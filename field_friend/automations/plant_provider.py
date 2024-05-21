@@ -63,11 +63,14 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
 
 
 class PlantProvider:
-
-    def __init__(self) -> None:
+    def __init__(self, match_distance: float = 0.07, crop_spacing: float = 0.18, prediction_confidence: float = 0.3) -> None:
         self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
+
+        self.match_distance = match_distance
+        self.crop_spacing = crop_spacing
+        self.prediction_confidence = prediction_confidence
 
         self.PLANTS_CHANGED = rosys.event.Event()
         """The collection of plants has changed."""
@@ -109,8 +112,9 @@ class PlantProvider:
         self.PLANTS_CHANGED.emit()
 
     async def add_crop(self, crop: Plant) -> None:
-        if check_if_plant_exists(crop, self.crops, 0.07):
+        if check_if_plant_exists(crop, self.crops, self.match_distance):
             return
+        self._add_crop_prediction(crop)
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_CROP.emit()
@@ -126,3 +130,18 @@ class PlantProvider:
     def clear(self) -> None:
         self.clear_weeds()
         self.clear_crops()
+
+    def _add_crop_prediction(self, plant: Plant) -> None:
+        sorted_crops = sorted(self.crops, key=lambda crop: crop.position.distance(plant.position))
+        if len(sorted_crops) < 2:
+            return
+        crop_1 = sorted_crops[0]
+        crop_2 = sorted_crops[1]
+
+        yaw = crop_2.position.direction(crop_1.position)
+        prediction = crop_1.position.polar(self.crop_spacing, yaw)
+
+        if plant.position.distance(prediction) > self.match_distance:
+            return
+        plant.positions.append(prediction)
+        plant.confidences.append(self.prediction_confidence)
