@@ -546,9 +546,10 @@ class Weeding(rosys.persistence.PersistentModule):
             await rosys.sleep(0.2)
 
     async def _get_upcoming_plants(self):
+        # TODO: confidence parameter
         relative_crop_positions = {
             c.id: self.system.odometer.prediction.relative_point(c.position)
-            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and len(c.positions) >= 3
+            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and c.confidence > 0.8
         }
         # remove very distant crops (probably not row
         if self.current_segment:
@@ -608,7 +609,11 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _tornado_workflow(self) -> None:
         self.log.info('Starting Tornado Workflow..')
         try:
-            closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+            try:
+                closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+            except IndexError:
+                self.log.warning('No crops to handle')
+                return
             self.log.info(f'Closest crop position: {closest_crop_position}')
             # fist check if the closest crop is in the working area
             if closest_crop_position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
@@ -922,8 +927,8 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.plant_provider.add_weed(Plant(
                         id=f'{i}_{j}',
                         type='weed',
-                        positions=[self.system.odometer.prediction.point.polar(
-                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
+                        position=self.system.odometer.prediction.point.polar(
+                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))

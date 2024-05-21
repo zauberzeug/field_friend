@@ -3,7 +3,6 @@ from typing import Optional
 import rosys
 from icecream import ic
 from nicegui import ui
-from nicegui.events import MouseEventArguments
 from rosys.driving import Odometer
 from rosys.geometry import Point3d
 from rosys.vision import Image
