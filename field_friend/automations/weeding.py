@@ -608,7 +608,11 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _tornado_workflow(self) -> None:
         self.log.info('Starting Tornado Workflow..')
         try:
-            closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+            try:
+                closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+            except IndexError:
+                self.log.warning('No crops to handle')
+                return
             self.log.info(f'Closest crop position: {closest_crop_position}')
             # fist check if the closest crop is in the working area
             if closest_crop_position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
