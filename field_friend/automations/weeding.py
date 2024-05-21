@@ -546,9 +546,10 @@ class Weeding(rosys.persistence.PersistentModule):
             await rosys.sleep(0.2)
 
     async def _get_upcoming_plants(self):
+        # TODO: confidence parameter
         relative_crop_positions = {
             c.id: self.system.odometer.prediction.relative_point(c.position)
-            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and len(c.positions) >= 3
+            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and c.confidence > 0.8
         }
         # remove very distant crops (probably not row
         if self.current_segment:
