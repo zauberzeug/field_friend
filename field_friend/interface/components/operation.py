@@ -215,7 +215,8 @@ class operation:
                 ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
         self.system.puncher.POSSIBLE_PUNCH.register(self.can_punch)
-        self.punch_dialog = PunchDialog(self.system.usb_camera_provider, self.system.plant_locator)
+        self.punch_dialog = PunchDialog(self.system.usb_camera_provider,
+                                        self.system.plant_locator, self.system.odometer)
 
     @ui.refreshable
     def show_start_row(self) -> None:
