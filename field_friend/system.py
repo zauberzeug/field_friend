@@ -18,6 +18,10 @@ from field_friend.automations import (
     PlantProvider,
     Puncher,
     Weeding,
+    WeedingScrew,
+    WeedingTornado,
+    WeedingChop,
+    WeedingMonitor,
 )
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation.gnss_hardware import GnssHardware
@@ -53,7 +57,7 @@ class System(rosys.persistence.PersistentModule):
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
-            version = 'rb28'  # insert here your field friend version to be simulated
+            version = 'rb34'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
@@ -124,8 +128,14 @@ class System(rosys.persistence.PersistentModule):
             ],
             height=height)
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
-
-        self.weeding = Weeding(self, persistence_key='weeding')
+        self.weeding: Weeding
+        match self.field_friend.tool:
+            case 'tornado':
+                self.weeding = WeedingTornado(self, persistence_key='weeding')
+            case 'weed_screw':
+                self.weeding = WeedingScrew(self, persistence_key='weeding')
+            case _:
+                raise NotImplementedError(f'Unknown tool: {self.field_friend.tool}')
         self.monitoring = Weeding(self, persistence_key='monitoring')
         self.monitoring.use_monitor_workflow = True
         self.coin_collecting = CoinCollecting(self)

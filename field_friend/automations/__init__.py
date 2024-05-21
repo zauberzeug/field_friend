@@ -12,9 +12,13 @@ from .path_recorder import PathRecorder
 from .plant import Plant
 from .plant_locator import DetectorError, PlantLocator
 from .plant_provider import PlantProvider
-from .puncher import Puncher
+from .puncher import Puncher, PuncherException
 from .sequence import find_sequence
-from .weeding import Weeding
+from .weeding import Weeding, WorkflowException
+from .weeding_chop import WeedingChop
+from .weeding_monitor import WeedingMonitor
+from .weeding_screw import WeedingScrew
+from .weeding_tornado import WeedingTornado
 
 __all__ = [
     'CoveragePlanner',
@@ -30,10 +34,16 @@ __all__ = [
     'PlantProvider',
     'Plant',
     'Puncher',
+    'PuncherException',
     'Row',
     'KpiProvider',
     'find_sequence',
     'Weeding',
+    'WeedingChop',
+    'WeedingMonitor',
+    'WeedingScrew',
+    'WeedingTornado',
+    'WorkflowException',
     'BatteryWatcher',
     'CoinCollecting',
     'AutomationWatcher',
