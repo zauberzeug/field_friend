@@ -15,16 +15,16 @@ class Plant:
     type: str
     positions: deque[Point]
     detection_time: float
-    confidence: float = 0.0
+    confidences: deque[float]
     detection_image: Optional[Image] = None
 
     def __init__(self, type: str, position: Point, detection_time: float, id: str = ..., confidence: float = 0.0, max_positions: int = 20, detection_image: Optional[Image] = None) -> None:
         self.id = id
         self.type = type
-        self.positions = deque([position], maxlen=max_positions)
         self.detection_time = detection_time
-        self.confidence = confidence
         self.detection_image = detection_image
+        self.positions = deque([position], maxlen=max_positions)
+        self.confidences = deque([confidence], maxlen=max_positions)
 
     def __post_init__(self) -> None:
         """Generate a unique ID if not already loaded from persistence"""
@@ -42,12 +42,19 @@ class Plant:
 
         return Point(x=middle_x, y=middle_y)
 
+    @property
+    def confidence(self) -> float:
+        # TODO: maybe use weighted confidence
+        # sum_confidence = sum(confidence**1.5 for confidence in self.confidences)
+        sum_confidence = sum(self.confidences)
+        return sum_confidence
+
 
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
     for p in plants:
         if p.position.distance(plant.position) < distance and p.type == plant.type:
             # Update the confidence
-            p.confidence = max(p.confidence, plant.confidence)  # Optionally updating confidence to the higher one
+            p.confidences.append(plant.confidence)
             # Add the new position to the positions list
             p.positions.append(plant.position)
             p.detection_image = plant.detection_image
