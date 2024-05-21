@@ -24,8 +24,8 @@ class WorkflowException(Exception):
 
 
 class Weeding(rosys.persistence.PersistentModule):
-    WORKING_DISTANCE = 0.06
-    DRIVE_DISTANCE = 0.04
+    WORKING_DISTANCE = 0.15
+    DRIVE_DISTANCE = 0.03
 
     def __init__(self, system: 'System', persistence_key: str = 'weeding') -> None:
         super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
@@ -111,6 +111,8 @@ class Weeding(rosys.persistence.PersistentModule):
             'end_row_id': self.end_row_id,
             'minimum_turning_radius': self.minimum_turning_radius,
             'turn_offset': self.turn_offset,
+            'drive_backwards_to_start': self.drive_backwards_to_start,
+            'drive_to_start': self.drive_to_start,
             'only_monitoring': self.only_monitoring,
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
@@ -139,6 +141,8 @@ class Weeding(rosys.persistence.PersistentModule):
         self.end_row_id = data.get('end_row_id', self.end_row_id)
         self.minimum_turning_radius = data.get('minimum_turning_radius', self.minimum_turning_radius)
         self.turn_offset = data.get('turn_offset', self.turn_offset)
+        self.drive_backwards_to_start = data.get('drive_backwards_to_start', self.drive_backwards_to_start)
+        self.drive_to_start = data.get('drive_to_start', self.drive_to_start)
         self.only_monitoring = data.get('only_monitoring', self.only_monitoring)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
@@ -451,6 +455,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         self._drive_segment(),
                         return_when_first_completed=True
                     )
+                    await self.system.field_friend.stop()
                     await rosys.sleep(2)  # wait for robot to stand still
                     await self._get_upcoming_plants()
                     if self.crops_to_handle or self.weeds_to_handle:
@@ -461,11 +466,13 @@ class Weeding(rosys.persistence.PersistentModule):
                         if self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
                             self.row_segment_completed = True
                     await rosys.sleep(0.2)
-                    if self.drive_backwards_to_start and self.system.field_friend.bms.is_below_percent(15.0):
-                        self.log.info('Low battery, driving backwards to start...')
-                        rosys.notify('Low battery, driving backwards to start', 'warning')
-                        await self.system.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
-                        return
+            if self.drive_backwards_to_start:
+                self.log.info('Low battery, driving backwards to start...')
+                rosys.notify('Low battery, driving backwards to start', 'warning')
+                self.system.driver.parameters.can_drive_backwards = True
+                await self.system.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
+                self.system.driver.parameters.can_drive_backwards = False
+                return
 
             await self.system.field_friend.flashlight.turn_off()
             self.system.plant_locator.pause()
@@ -586,7 +593,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log.info('Handling plants...')
         for crop_id in self.crops_to_handle:
             self._safe_crop_to_row(crop_id)
-        if self.system.field_friend.tool == 'tornado' and not self.use_monitor_workflow:
+        if self.system.field_friend.tool == 'tornado' and not self.use_monitor_workflow and self.crops_to_handle:
             await self._tornado_workflow()
         elif self.system.field_friend.tool == 'weed_screw' and not self.use_monitor_workflow:
             await self._weed_screw_workflow()
@@ -615,9 +622,8 @@ class Weeding(rosys.persistence.PersistentModule):
                         self.log.info('drilling crop with open tornado')
                         await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
                 else:
-                    drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
-                    target = self.system.odometer.prediction.transform(Point(x=drive_distance, y=0))
-                    await self.system.driver.drive_to(target)
+                    self.log.info('Cant reach crop')
+                    await self._follow_line_of_crops()
 
                 if len(self.crops_to_handle) > 1 and self.drill_between_crops:
                     self.log.info('checking for second closest crop')
@@ -855,6 +861,7 @@ class Weeding(rosys.persistence.PersistentModule):
             if crop.id != crop_id:
                 distance = crop_world_position.distance(crop.position)
                 if distance >= inner_diameter/2 and distance <= outer_diameter/2:
+                    self.log.info(f'other crop with distance {distance} in drill range, drilling not allowed')
                     return True
         return False
 
