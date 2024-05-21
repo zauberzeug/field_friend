@@ -58,7 +58,6 @@ class Weeding(rosys.persistence.PersistentModule):
         # dual mechanism
         self.with_drilling: bool = False
         self.with_chopping: bool = False
-        self.chop_if_no_crops: bool = False
 
         # tool settings
         self.tornado_angle: float = 30.0
@@ -116,7 +115,6 @@ class Weeding(rosys.persistence.PersistentModule):
             'drill_between_crops': self.drill_between_crops,
             'with_drilling': self.with_drilling,
             'with_chopping': self.with_chopping,
-            'chop_if_no_crops': self.chop_if_no_crops,
             'tornado_angle': self.tornado_angle,
             'weed_screw_depth': self.weed_screw_depth,
             'crop_safety_distance': self.crop_safety_distance,
@@ -144,7 +142,6 @@ class Weeding(rosys.persistence.PersistentModule):
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.with_drilling = data.get('with_drilling', self.with_drilling)
         self.with_chopping = data.get('with_chopping', self.with_chopping)
-        self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
         self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
         self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
@@ -718,80 +715,57 @@ class Weeding(rosys.persistence.PersistentModule):
                     weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if next_crop_position.x - self.system.field_friend.DRILL_RADIUS*2
                                       < position.x < next_crop_position.x + self.system.field_friend.DRILL_RADIUS*2 and self.system.field_friend.can_reach(position)}
                     self.log.info(f'weed_position in range: {weeds_in_range.items()}')
-                    if weeds_in_range:
-                        self.log.info(f' {len(weeds_in_range)} Weeds in range for drilling')
-                        while weeds_in_range:
-                            next_weed_id, next_weed_position = list(self.crops_to_handle.items())[0]
-                            self.log.info(f'Next weed position: {next_weed_position}')
-                            weed_world_position = starting_position.transform(next_weed_position)
-                            corrected_relative_weed_position = self.system.odometer.prediction.relative_point(
-                                weed_world_position)
-                            self.log.info(f'corrected relative weed position: {corrected_relative_weed_position}')
+                    while weeds_in_range:
+                        next_weed_id, next_weed_position = list(weeds_in_range.items())[0]
+                        self.log.info(f'Next weed position: {next_weed_position}')
+                        weed_world_position = starting_position.transform(next_weed_position)
+                        corrected_relative_weed_position = self.system.odometer.prediction.relative_point(
+                            weed_world_position)
+                        self.log.info(f'corrected relative weed position: {corrected_relative_weed_position}')
+                        if not self.only_monitoring:
+                            await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
+                                                                      x=corrected_relative_weed_position.x,
+                                                                      y=next_weed_position.y,
+                                                                      depth=self.weed_screw_depth,
+                                                                      backwards_allowed=False
+                                                                      )
                             moved = True
-                            if not self.only_monitoring:
-                                await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
-                                                                          x=corrected_relative_weed_position.x, y=next_weed_position.y, depth=self.weed_screw_depth, backwards_allowed=False)
-                            punched_weeds = [weed_id for weed_id, position in weeds_in_range.items(
-                            ) if position.distance(next_weed_position) < self.system.field_friend.DRILL_RADIUS]
-                            for weed_id in punched_weeds:
-                                self.system.plant_provider.remove_weed(weed_id)
-                                if weed_id in weeds_in_range:
-                                    del weeds_in_range[weed_id]
-                                self.kpi_provider.increment_weeding_kpi('weeds_removed')
-                        await self.system.puncher.clear_view()
+                        punched_weeds = [weed_id for weed_id, position in weeds_in_range.items(
+                        ) if position.distance(corrected_relative_weed_position) < self.system.field_friend.DRILL_RADIUS]
+                        for weed_id in punched_weeds:
+                            self.system.plant_provider.remove_weed(weed_id)
+                            if weed_id in weeds_in_range:
+                                del weeds_in_range[weed_id]
+                            self.kpi_provider.increment_weeding_kpi('weeds_removed')
+                    await self.system.puncher.clear_view()
                 # second: check if weed before crop to chop
-                if self.with_chopping:
-                    self.log.info(f'Chopping allowed: only chopping is {self.with_chopping}')
-                    weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if position.x < next_crop_position.x - (
-                        self.system.field_friend.DRILL_RADIUS) and self.system.field_friend.can_reach(position, second_tool=True)}
-                    if weeds_in_range:
-                        self.log.info('Weeds in range for chopping before crop')
-                        crop_world_position = starting_position.transform(next_crop_position)
-                        corrected_relative_crop_position = self.system.odometer.prediction.relative_point(
-                            crop_world_position)
-                        target_position = corrected_relative_crop_position.x - \
-                            self.system.field_friend.DRILL_RADIUS - self.system.field_friend.CHOP_RADIUS
-                        axis_distance = target_position - self.system.field_friend.WORK_X_CHOP
-                        if axis_distance >= 0:
-                            local_target = Point(x=axis_distance, y=0)
-                            world_target = self.system.driver.prediction.transform(local_target)
-                            moved = True
-                            await self.system.driver.drive_to(world_target)
-                            if not self.only_monitoring:
-                                await self.system.puncher.chop()
-                            choped_weeds = [weed_id for weed_id, position in self.weeds_to_handle.items(
-                            ) if target_position - self.system.field_friend.CHOP_RADIUS < self.system.odometer.prediction.relative_point(starting_position.transform(position)).x < target_position + self.system.field_friend.CHOP_RADIUS]
-                            for weed_id in choped_weeds:
-                                self.system.plant_provider.remove_weed(weed_id)
-                                self.kpi_provider.increment_weeding_kpi('weeds_removed')
-                        else:
-                            self.log.warning(f'Weed position {next_weed_position} is behind field friend')
-                    if not moved:
-                        await self._follow_line_of_crops()
-                        moved = True
-            elif self.weeds_to_handle and self.chop_if_no_crops:
-                self.log.info('No crops in range, checking for weeds...')
-                weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if self.system.field_friend.WORK_X_CHOP <
-                                  position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE and self.system.field_friend.can_reach(position)}
+                weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if position.x < next_crop_position.x - (
+                    self.system.field_friend.DRILL_RADIUS) and self.system.field_friend.can_reach(position, second_tool=True)}
                 if weeds_in_range:
-                    next_weed_position = list(weeds_in_range.values())[0]
-                    axis_distance = next_weed_position.x - self.system.field_friend.WORK_X_CHOP + self.system.field_friend.CHOP_RADIUS
+                    self.log.info('Weeds in range for chopping before crop')
+                    crop_world_position = starting_position.transform(next_crop_position)
+                    corrected_relative_crop_position = self.system.odometer.prediction.relative_point(
+                        crop_world_position)
+                    target_position = corrected_relative_crop_position.x - \
+                        self.system.field_friend.DRILL_RADIUS - self.system.field_friend.CHOP_RADIUS
+                    axis_distance = target_position - self.system.field_friend.WORK_X_CHOP
                     if axis_distance >= 0:
                         local_target = Point(x=axis_distance, y=0)
-                        self.log.info(f'Next weed position: {next_weed_position}')
-                        self.log.info(f'Axis distance: {axis_distance}')
                         world_target = self.system.driver.prediction.transform(local_target)
                         moved = True
                         await self.system.driver.drive_to(world_target)
                         if not self.only_monitoring:
                             await self.system.puncher.chop()
                         choped_weeds = [weed_id for weed_id, position in self.weeds_to_handle.items(
-                        ) if axis_distance - self.system.field_friend.CHOP_RADIUS < self.system.odometer.prediction.relative_point(starting_position.transform(position)).x < axis_distance + self.system.field_friend.CHOP_RADIUS]
+                        ) if target_position - self.system.field_friend.CHOP_RADIUS < self.system.odometer.prediction.relative_point(starting_position.transform(position)).x < target_position + self.system.field_friend.CHOP_RADIUS]
                         for weed_id in choped_weeds:
                             self.system.plant_provider.remove_weed(weed_id)
                             self.kpi_provider.increment_weeding_kpi('weeds_removed')
                     else:
-                        self.log.warning(f'Weed position {next_weed_position} is behind field friend')
+                        self.log.warning(f'Crop position {next_weed_position} is behind field friend')
+                if not moved:
+                    await self._follow_line_of_crops()
+                    moved = True
             if not moved:
                 await self._driving_a_bit_forward()
             await rosys.sleep(0.2)
@@ -880,7 +854,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log.info('Creating simulated plants...')
         if self.current_segment:
             self.log.info('Creating simulated plants for current segment')
-            distance = self.current_segment.spline.start.distance(self.current_segment.spline.end)
+            distance = self.current_segment.spline.start.distance(self.current_segment.spline.end)/10
             for i in range(1, int(distance/0.20)):
                 for j in range(1, 4):
                     await self.system.plant_provider.add_crop(Plant(
@@ -891,15 +865,16 @@ class Weeding(rosys.persistence.PersistentModule):
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
-                    # for j in range(1, 5):
-                    #     await self.system.plant_provider.add_weed(Plant(
-                    #         id=f'{i}_{j}',
-                    #         type='weed',
-                    #         positions=[self.system.odometer.prediction.point.polar(
-                    #             0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
-                    #         detection_time=rosys.time(),
-                    #         confidence=0.9,
-                    #     ))
+                for b in range(1, 5):
+                    for j in range(1, 4):
+                        await self.system.plant_provider.add_weed(Plant(
+                            id=f'{i}_{b}',
+                            type='weed',
+                            position=self.system.odometer.prediction.point.polar(
+                                0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
+                            detection_time=rosys.time(),
+                            confidence=0.9,
+                        ))
         else:
             self.log.info('Creating simulated plants for whole row')
             for i in range(0, 30):
@@ -915,8 +890,8 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.plant_provider.add_weed(Plant(
                         id=f'{i}_{j}',
                         type='weed',
-                        positions=[self.system.odometer.prediction.point.polar(
-                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
+                        position=self.system.odometer.prediction.point.polar(
+                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))

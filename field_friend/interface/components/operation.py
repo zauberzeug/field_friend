@@ -146,9 +146,6 @@ class operation:
                                 ui.checkbox('Chopping', value=False) \
                                     .bind_value(self.system.weeding, 'with_chopping') \
                                     .tooltip('Set the weeding automation to with chop')
-                                ui.checkbox('Chop if no crops', value=False) \
-                                    .bind_value(self.system.weeding, 'chop_if_no_crops') \
-                                    .tooltip('Set the weeding automation to chop also if no crops seen')
                         ui.separator()
                         ui.markdown('**Driver settings**').style('color: #6E93D6')
                         with ui.row():
