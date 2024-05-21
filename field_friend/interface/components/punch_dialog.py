@@ -1,8 +1,10 @@
 from typing import Optional
 
 import rosys
+from icecream import ic
 from nicegui import ui
 from nicegui.events import MouseEventArguments
+from rosys.driving import Odometer
 from rosys.geometry import Point3d
 from rosys.vision import Image
 
@@ -10,11 +12,12 @@ from ...automations import Plant, PlantLocator
 
 
 class PunchDialog(ui.dialog):
-    def __init__(self, camera_provider: rosys.vision.CameraProvider, plant_locator: PlantLocator, shrink_factor: int = 1) -> None:
+    def __init__(self, camera_provider: rosys.vision.CameraProvider, plant_locator: PlantLocator, odometer: Odometer, shrink_factor: int = 1) -> None:
         super().__init__()
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.camera_provider = camera_provider
         self.plant_locator = plant_locator
+        self.odometer = odometer
         self.shrink_factor = shrink_factor
         self.static_image_view: Optional[ui.interactive_image] = None
         self.live_image_view: Optional[ui.interactive_image] = None
@@ -71,8 +74,10 @@ class PunchDialog(ui.dialog):
         if image and image.detections:
             target_point = None
             if self.target_plant and draw_target:
+                relative_point = self.odometer.prediction.relative_point(self.target_plant.position)
                 target_point = self.camera.calibration.project_to_image(
-                    Point3d(x=self.target_plant.position.x, y=self.target_plant.position.y, z=0))
+                    Point3d(x=relative_point.x, y=relative_point.y, z=0))
+                ic(f'target plant : {self.target_plant.position} and target point : {target_point}')
             image_view.set_content(self.to_svg(image.detections, target_point))
 
     def update_live_view(self) -> None:
