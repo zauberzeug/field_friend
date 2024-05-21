@@ -926,8 +926,8 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.plant_provider.add_weed(Plant(
                         id=f'{i}_{j}',
                         type='weed',
-                        positions=[self.system.odometer.prediction.point.polar(
-                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
+                        position=self.system.odometer.prediction.point.polar(
+                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
