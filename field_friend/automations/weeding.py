@@ -317,14 +317,14 @@ class Weeding(rosys.persistence.PersistentModule):
                 if i % 2 == 0:
                     row_points = list(reversed(row_points))
             self.log.info(f'Row {row.name} has {row_points} points')
-            if row.crops:
-                self.log.info(f'Row {row.name} has beets, creating {row.crops} points')
-                # only take every tenth crop into account
-                for i, beet in enumerate(row.crops):
-                    if i % 10 == 0 and i != 0:
-                        row_points.append(beet.position)
-                row_points = sorted(row_points, key=lambda point: point.distance(row_points[0]))
-                self.log.info(f'Row {row.name} has {len(row_points)} points')
+            # if row.crops:
+            #     self.log.info(f'Row {row.name} has beets, creating {row.crops} points')
+            #     # only take every tenth crop into account
+            #     for i, beet in enumerate(row.crops):
+            #         if i % 10 == 0 and i != 0:
+            #             row_points.append(beet.position)
+            #     row_points = sorted(row_points, key=lambda point: point.distance(row_points[0]))
+            #     self.log.info(f'Row {row.name} has {len(row_points)} points')
             for j in range(len(row_points) - 1):
                 splines.append(Spline.from_points(row_points[j], row_points[j + 1]))
             path = [PathSegment(spline=spline) for spline in splines]
@@ -598,8 +598,8 @@ class Weeding(rosys.persistence.PersistentModule):
 
     async def _handle_plants(self) -> None:
         self.log.info('Handling plants...')
-        for crop_id in self.crops_to_handle:
-            self._safe_crop_to_row(crop_id)
+        # for crop_id in self.crops_to_handle:
+        #     self._safe_crop_to_row(crop_id)
         if self.system.field_friend.tool == 'tornado' and not self.use_monitor_workflow and self.crops_to_handle:
             await self._tornado_workflow()
         elif self.system.field_friend.tool == 'weed_screw' and not self.use_monitor_workflow:
@@ -628,10 +628,13 @@ class Weeding(rosys.persistence.PersistentModule):
 
                 if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position) and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
                     self.log.info('drilling crop')
-                    await self.system.puncher.drive_and_punch(plant_id=closest_crop_id, x=closest_crop_position.x, y=closest_crop_position.y, angle=self.tornado_angle)
+                    open_drill = False
                     if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
-                        self.log.info('drilling crop with open tornado')
-                        await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
+                        open_drill = True
+                    await self.system.puncher.drive_and_punch(plant_id=closest_crop_id, x=closest_crop_position.x, y=closest_crop_position.y, angle=self.tornado_angle, with_open_tornado=open_drill)
+                    # if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
+                    #     self.log.info('drilling crop with open tornado')
+                    #     await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
                 else:
                     self.log.info('Cant reach crop')
                     await self._follow_line_of_crops()
@@ -876,23 +879,23 @@ class Weeding(rosys.persistence.PersistentModule):
                     return True
         return False
 
-    def _safe_crop_to_row(self, crop_id: str) -> None:
-        if self.current_row is None:
-            return
-        self.log.info(f'Saving crop {crop_id} to row {self.current_row.name}...')
-        crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
-        if crop is None:
-            self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
-            return
-        for c in self.current_row.crops:
-            if c.position.distance(crop.position) < 0.07:
-                self.log.info('Crop already in row')
-                self.current_row.crops.remove(c)
-                self.current_row.crops.append(crop)
-                return
-        if crop.confidence >= 0.85 and len(crop.positions) >= 10:
-            self.log.info('Adding new crop to row')
-            self.current_row.crops.append(crop)
+    # def _safe_crop_to_row(self, crop_id: str) -> None:
+    #     if self.current_row is None:
+    #         return
+    #     self.log.info(f'Saving crop {crop_id} to row {self.current_row.name}...')
+    #     crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
+    #     if crop is None:
+    #         self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
+    #         return
+    #     for c in self.current_row.crops:
+    #         if c.position.distance(crop.position) < 0.07:
+    #             self.log.info('Crop already in row')
+    #             self.current_row.crops.remove(c)
+    #             self.current_row.crops.append(crop)
+    #             return
+    #     if crop.confidence >= 0.85 and len(crop.positions) >= 10:
+    #         self.log.info('Adding new crop to row')
+    #         self.current_row.crops.append(crop)
 
     async def _create_simulated_plants(self):
         self.log.info('Creating simulated plants...')
