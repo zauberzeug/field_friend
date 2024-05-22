@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Any
 
 import rosys
 
@@ -15,7 +16,7 @@ class DetectorError(Exception):
     pass
 
 
-class PlantLocator:
+class PlantLocator(rosys.persistence.PersistentModule):
 
     def __init__(self,
                  camera_provider: rosys.vision.CameraProvider,
@@ -23,6 +24,7 @@ class PlantLocator:
                  plant_provider: PlantProvider,
                  odometer: rosys.driving.Odometer,
                  ) -> None:
+        super().__init__()
         self.log = logging.getLogger('field_friend.plant_detection')
         self.camera_provider = camera_provider
         self.detector = detector
@@ -34,6 +36,20 @@ class PlantLocator:
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
+
+    def backup(self) -> dict:
+        return {
+            'weed_category_names': self.weed_category_names,
+            'crop_category_names': self.crop_category_names,
+            'minimum_weed_confidence': self.minimum_weed_confidence,
+            'minimum_crop_confidence': self.minimum_crop_confidence,
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.weed_category_names = data.get('weed_category_names', self.weed_category_names)
+        self.crop_category_names = data.get('crop_category_names', self.crop_category_names)
+        self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
+        self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
 
     async def _detect_plants(self) -> None:
         if self.is_paused:
