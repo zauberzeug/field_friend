@@ -132,7 +132,7 @@ class operation:
                                 .tooltip('Set the weeding automation to only monitor the field')
                             if self.system.field_friend.tool == 'tornado':
                                 ui.checkbox('With punch check', value=True) \
-                                    .bind_value(self.system.puncher, 'with_punch_check') \
+                                    .bind_value(self.system.weeding, 'with_punch_check') \
                                     .tooltip('Set the weeding automation to check for punch')
                                 ui.checkbox('Drill 2x with open torando', value=False,) \
                                     .bind_value(self.system.weeding, 'drill_with_open_tornado') \

@@ -55,6 +55,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.crop_confidence_threshold: float = 0.8
         self.weed_confidence_threshold: float = 0.8
         # tornado
+        self.with_punch_check: bool = False
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
         # dual mechanism
@@ -118,6 +119,7 @@ class Weeding(rosys.persistence.PersistentModule):
             'only_monitoring': self.only_monitoring,
             'crop_confidence_threshold': self.crop_confidence_threshold,
             'weed_confidence_threshold': self.weed_confidence_threshold,
+            'with_punch_check': self.with_punch_check,
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
             'with_drilling': self.with_drilling,
@@ -150,6 +152,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.only_monitoring = data.get('only_monitoring', self.only_monitoring)
         self.crop_confidence_threshold = data.get('crop_confidence_threshold', self.crop_confidence_threshold)
         self.weed_confidence_threshold = data.get('weed_confidence_threshold', self.weed_confidence_threshold)
+        self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.with_drilling = data.get('with_drilling', self.with_drilling)
@@ -626,12 +629,14 @@ class Weeding(rosys.persistence.PersistentModule):
                 self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
 
-                if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position) and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
+                if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position) \
+                        and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
                     self.log.info('drilling crop')
                     open_drill = False
                     if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
                         open_drill = True
-                    await self.system.puncher.drive_and_punch(plant_id=closest_crop_id, x=closest_crop_position.x, y=closest_crop_position.y, angle=self.tornado_angle, with_open_tornado=open_drill)
+                    await self.system.puncher.drive_and_punch(
+                        plant_id=closest_crop_id, x=closest_crop_position.x, y=closest_crop_position.y, angle=self.tornado_angle, with_open_tornado=open_drill, with_punch_check=self.with_punch_check)
                     # if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
                     #     self.log.info('drilling crop with open tornado')
                     #     await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
