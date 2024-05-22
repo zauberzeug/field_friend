@@ -149,6 +149,16 @@ class operation:
                                 ui.checkbox('Chop if no crops', value=False) \
                                     .bind_value(self.system.weeding, 'chop_if_no_crops') \
                                     .tooltip('Set the weeding automation to chop also if no crops seen')
+                            ui.number('Combined crop confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+                                .props('dense outlined') \
+                                .classes('w-24') \
+                                .bind_value(self.system.weeding, 'crop_confidence_threshold') \
+                                .tooltip('Needed crop confidence for punshing')
+                            ui.number('Combined weed confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+                                .props('dense outlined') \
+                                .classes('w-24') \
+                                .bind_value(self.system.weeding, 'weed_confidence_threshold') \
+                                .tooltip('Needed weed confidence for punshing')
                         ui.separator()
                         ui.markdown('PlantProvider settings').style('color: #6E93D6')
                         with ui.row():

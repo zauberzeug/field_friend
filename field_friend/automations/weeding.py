@@ -52,6 +52,8 @@ class Weeding(rosys.persistence.PersistentModule):
 
         # workflow settings
         self.only_monitoring: bool = False
+        self.crop_confidence_threshold: float = 0.8
+        self.weed_confidence_threshold: float = 0.8
         # tornado
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
@@ -114,6 +116,8 @@ class Weeding(rosys.persistence.PersistentModule):
             'drive_backwards_to_start': self.drive_backwards_to_start,
             'drive_to_start': self.drive_to_start,
             'only_monitoring': self.only_monitoring,
+            'crop_confidence_threshold': self.crop_confidence_threshold,
+            'weed_confidence_threshold': self.weed_confidence_threshold,
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
             'with_drilling': self.with_drilling,
@@ -144,6 +148,8 @@ class Weeding(rosys.persistence.PersistentModule):
         self.drive_backwards_to_start = data.get('drive_backwards_to_start', self.drive_backwards_to_start)
         self.drive_to_start = data.get('drive_to_start', self.drive_to_start)
         self.only_monitoring = data.get('only_monitoring', self.only_monitoring)
+        self.crop_confidence_threshold = data.get('crop_confidence_threshold', self.crop_confidence_threshold)
+        self.weed_confidence_threshold = data.get('weed_confidence_threshold', self.weed_confidence_threshold)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.with_drilling = data.get('with_drilling', self.with_drilling)
@@ -549,7 +555,7 @@ class Weeding(rosys.persistence.PersistentModule):
         # TODO: confidence parameter
         relative_crop_positions = {
             c.id: self.system.odometer.prediction.relative_point(c.position)
-            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and c.confidence > 0.8
+            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and c.confidence > self.crop_confidence_threshold
         }
         # remove very distant crops (probably not row
         if self.current_segment:
@@ -571,7 +577,7 @@ class Weeding(rosys.persistence.PersistentModule):
 
         relative_weed_positions = {
             w.id: self.system.odometer.prediction.relative_point(w.position)
-            for w in self.system.plant_provider.weeds if w.position.distance(self.system.odometer.prediction.point) < 0.5 and len(w.positions) >= 3
+            for w in self.system.plant_provider.weeds if w.position.distance(self.system.odometer.prediction.point) < 0.5 and w.confidence > self.weed_confidence_threshold
         }
         if self.current_segment:
             # Filter to get upcoming weeds based on their .x position
