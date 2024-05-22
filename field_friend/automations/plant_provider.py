@@ -2,7 +2,7 @@ import logging
 import uuid
 from collections import deque
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 import rosys
 from rosys.geometry import Point
@@ -63,8 +63,9 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
     return False
 
 
-class PlantProvider:
-    def __init__(self, match_distance: float = 0.07, crop_spacing: float = 0.18, prediction_confidence: float = 0.3) -> None:
+class PlantProvider(rosys.persistence.PersistentModule):
+    def __init__(self, match_distance: float = 0.07, crop_spacing: float = 0.18, prediction_confidence: float = 0.3, persistence_key: str = 'plant_provider') -> None:
+        super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
         self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
@@ -83,6 +84,19 @@ class PlantProvider:
         """A new crop has been added."""
 
         rosys.on_repeat(self.prune, 10.0)
+
+    def backup(self) -> dict:
+        data = {
+            'match_distance': self.match_distance,
+            'crop_spacing': self.crop_spacing,
+            'prediction_confidence': self.prediction_confidence
+        }
+        return data
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.match_distance = data.get('match_distance', self.match_distance)
+        self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
+        self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
 
     def prune(self) -> None:
         weeds_max_age = 10.0
