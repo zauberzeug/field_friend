@@ -68,7 +68,7 @@ class PlantLocator:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
-                weed = Plant(position=world_point, type=d.category_name,
+                weed = Plant(position=world_point, type=d.category_name, confidence=d.confidence,
                              detection_time=rosys.time(), detection_image=new_image)
                 await self.plant_provider.add_weed(weed)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
