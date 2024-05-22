@@ -4,7 +4,7 @@ import rosys
 from icecream import ic
 from nicegui import ui
 from rosys.driving import Odometer
-from rosys.geometry import Point, Point3d
+from rosys.geometry import Point3d
 from rosys.vision import Image
 
 from ...automations import Plant, PlantLocator
