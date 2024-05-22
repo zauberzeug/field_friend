@@ -9,6 +9,7 @@ from field_friend.automations import (
     AutomationWatcher,
     BatteryWatcher,
     CoinCollecting,
+    FieldFriendAutomation,
     FieldProvider,
     KpiProvider,
     Mowing,
@@ -17,11 +18,10 @@ from field_friend.automations import (
     PlantLocator,
     PlantProvider,
     Puncher,
-    Weeding,
-    WeedingScrew,
-    WeedingTornado,
     WeedingChop,
     WeedingMonitor,
+    WeedingScrew,
+    WeedingTornado,
 )
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation.gnss_hardware import GnssHardware
@@ -128,26 +128,26 @@ class System(rosys.persistence.PersistentModule):
             ],
             height=height)
         self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
-        self.weeding: Weeding
+        self.monitoring = WeedingMonitor(self)
+        self.monitoring.use_monitor_workflow = True
+        self.weeding_strategies: list[FieldFriendAutomation] = [self.monitoring]
         match self.field_friend.tool:
             case 'tornado':
-                self.weeding = WeedingTornado(self, persistence_key='weeding')
+                self.weeding_strategies.append(WeedingTornado(self))
             case 'weed_screw':
-                self.weeding = WeedingScrew(self, persistence_key='weeding')
+                self.weeding_strategies.append(WeedingScrew(self))
+            case 'dual_mechanism':
+                self.weeding_strategies.append(WeedingScrew(self))
+                self.weeding_strategies.append(WeedingChop(self))
+            case 'none':
+                self.weeding_strategies.append(WeedingScrew(self))
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.tool}')
-        self.monitoring = Weeding(self, persistence_key='monitoring')
-        self.monitoring.use_monitor_workflow = True
         self.coin_collecting = CoinCollecting(self)
         self.mowing = Mowing(self, robot_width=width)
         self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
-
-        self.automations = {
-            'weeding': self.weeding.start,
-            'monitoring': self.monitoring.start,
-            'mowing': self.mowing.start,
-            'collecting (demo)': self.coin_collecting.start,
-        }
+        automations: list[FieldFriendAutomation] = self.weeding_strategies + [self.coin_collecting, self.mowing]
+        self.automations = {s.name: s for s in automations}
         self.automator = rosys.automation.Automator(None, on_interrupt=lambda _: self.field_friend.stop(),
                                                     default_automation=self.coin_collecting.start)
         self.info = Info(self)
@@ -156,6 +156,7 @@ class System(rosys.persistence.PersistentModule):
             self.automation_watcher.bumper_watch_active = True
 
         if self.is_real:
+            assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
@@ -169,12 +170,13 @@ class System(rosys.persistence.PersistentModule):
     def restore(self, data: dict[str, Any]) -> None:
         name = data.get('automation', None)
         automation = self.automations.get(name, None)
-        self.automator.default_automation = automation
+        if automation is not None:
+            self.automator.default_automation = automation.start
 
     def get_current_automation_id(self) -> str | None:
         if self.automator.default_automation is None:
             return None
-        return {v: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
+        return {v.start: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
 
     def setup_simulated_usb_camera(self):
         self.usb_camera_provider.remove_all_cameras()

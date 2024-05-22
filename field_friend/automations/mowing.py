@@ -10,16 +10,18 @@ from shapely.geometry import LineString
 
 from . import Field
 from .coverage_planer import CoveragePlanner
+from .field_friend_automation import FieldFriendAutomation
 from .sequence import find_sequence
 
 if TYPE_CHECKING:
     from system import System
 
 
-class Mowing(rosys.persistence.PersistentModule):
+class Mowing(FieldFriendAutomation, rosys.persistence.PersistentModule):
 
     def __init__(self, system: 'System', *, robot_width: float) -> None:
-        super().__init__()
+        FieldFriendAutomation.__init__(self, 'Mowing')
+        rosys.persistence.PersistentModule.__init__(self)
         self.log = logging.getLogger('field_friend.path_recorder')
         self.field_friend = system.field_friend
         self.field_provider = system.field_provider
@@ -274,3 +276,6 @@ class Mowing(rosys.persistence.PersistentModule):
                             lanes[i+1].end)))
                 splines.append(second_turn_spline)
         return splines
+
+    def settings_ui(self):
+        return super().settings_ui()

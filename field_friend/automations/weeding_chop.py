@@ -1,14 +1,17 @@
 
 from copy import deepcopy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from . import PuncherException, Weeding, WorkflowException
+from . import PuncherException, WeedingStrategy, WorkflowException
+
+if TYPE_CHECKING:
+    from system import System
 
 
-class WeedingChop(Weeding):
+class WeedingChop(WeedingStrategy):
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, system: 'System') -> None:
+        super().__init__('Tornado', system)
 
     async def _perform_workflow(self) -> None:
         self.log.info('Starting dual mechanism workflow...')

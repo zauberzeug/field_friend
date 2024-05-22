@@ -1,11 +1,19 @@
 
 
+from typing import TYPE_CHECKING
+
 import rosys
 
-from . import PuncherException, Weeding, WorkflowException
+from . import PuncherException, WeedingStrategy, WorkflowException
+
+if TYPE_CHECKING:
+    from system import System
 
 
-class WeedingMonitor(Weeding):
+class WeedingMonitor(WeedingStrategy):
+
+    def __init__(self, system: 'System') -> None:
+        super().__init__('Weed Monitor', system, persistence_key='monitor')
 
     async def _perform_workflow(self) -> None:
         self.log.info('Starting Monitoring Workflow...')

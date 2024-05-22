@@ -1,12 +1,19 @@
 
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 import rosys
 
-from . import Weeding, WorkflowException
+from . import WeedingStrategy, WorkflowException
+
+if TYPE_CHECKING:
+    from system import System
 
 
-class WeedingScrew(Weeding):
+class WeedingScrew(WeedingStrategy):
+
+    def __init__(self, system: 'System') -> None:
+        super().__init__('Weed Screw', system)
 
     async def _perform_workflow(self) -> None:
         self.log.info('Performing Screw Workflow..')
@@ -23,11 +30,13 @@ class WeedingScrew(Weeding):
                     corrected_relative_weed_position = self.system.odometer.prediction.relative_point(
                         weed_world_position)
                     self.log.info(f'Targeting weed at {next_weed_position}')
-                    if not self.only_monitoring:
-                        await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
-                                                                  x=corrected_relative_weed_position.x, y=corrected_relative_weed_position.y, depth=self.weed_screw_depth, backwards_allowed=False)
-                    punched_weeds = [weed_id for weed_id, position in weeds_in_range.items(
-                    ) if position.distance(next_weed_position) <= self.system.field_friend.DRILL_RADIUS]
+                    await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
+                                                              x=corrected_relative_weed_position.x,
+                                                              y=corrected_relative_weed_position.y,
+                                                              depth=self.weed_screw_depth,
+                                                              backwards_allowed=False)
+                    punched_weeds = [weed_id for weed_id, position in weeds_in_range.items()
+                                     if position.distance(next_weed_position) <= self.system.field_friend.DRILL_RADIUS]
                     for weed_id in punched_weeds:
                         self.system.plant_provider.remove_weed(weed_id)
                         if weed_id in weeds_in_range:

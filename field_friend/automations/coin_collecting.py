@@ -6,6 +6,7 @@ import rosys
 from rosys.geometry import Point
 from rosys.helpers import eliminate_2pi
 
+from .field_friend_automation import FieldFriendAutomation
 from .plant import Plant
 from .puncher import PuncherException
 
@@ -15,10 +16,10 @@ if TYPE_CHECKING:
 TORNADO_ANGLE = 110.0
 
 
-class CoinCollecting():
+class CoinCollecting(FieldFriendAutomation):
 
     def __init__(self, system: 'System') -> None:
-        super().__init__()
+        super().__init__('Demo')
         self.log = logging.getLogger('field_friend.coin_collecting')
         self.system = system
         self.kpi_provider = system.kpi_provider
@@ -144,3 +145,6 @@ class CoinCollecting():
         self.log.info('Using implement')
         await self.system.puncher.punch(center.y, angle=TORNADO_ANGLE)
         self.system.plant_locator.resume()
+
+    def settings_ui(self):
+        return super().settings_ui()

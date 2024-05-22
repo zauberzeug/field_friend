@@ -1,15 +1,18 @@
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import rosys
 
-from . import PuncherException, Weeding, WorkflowException
+from . import PuncherException, WeedingStrategy, WorkflowException
+
+if TYPE_CHECKING:
+    from system import System
 
 
-class WeedingTornado(Weeding):
+class WeedingTornado(WeedingStrategy):
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, system: 'System') -> None:
+        super().__init__('Tornado', system)
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
 
