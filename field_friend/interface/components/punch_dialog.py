@@ -4,7 +4,7 @@ import rosys
 from icecream import ic
 from nicegui import ui
 from rosys.driving import Odometer
-from rosys.geometry import Point3d
+from rosys.geometry import Point, Point3d
 from rosys.vision import Image
 
 from ...automations import Plant, PlantLocator
@@ -72,18 +72,20 @@ class PunchDialog(ui.dialog):
         image_view.set_source(url)
         if image and image.detections:
             target_point = None
+            confidence = None
             if self.target_plant and draw_target:
+                confidence = self.target_plant.confidence
                 relative_point = self.odometer.prediction.relative_point(self.target_plant.position)
                 target_point = self.camera.calibration.project_to_image(
                     Point3d(x=relative_point.x, y=relative_point.y, z=0))
                 ic(f'target plant : {self.target_plant.position} and target point : {target_point}')
-            image_view.set_content(self.to_svg(image.detections, target_point))
+            image_view.set_content(self.to_svg(image.detections, target_point, confidence))
 
     def update_live_view(self) -> None:
         assert self.camera is not None
         self.update_content(self.live_image_view, self.camera.latest_detected_image)
 
-    def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point]) -> str:
+    def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point], confidence: Optional[float], color: str = 'red') -> str:
         svg = ''
         cross_size = 20
         for point in detections.points:
@@ -115,7 +117,9 @@ class PunchDialog(ui.dialog):
                                 transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
                             <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">Weed</text>
                     '''
-        if target_point:
+        if target_point and confidence:
             svg += f'''<circle cx="{target_point.x / self.shrink_factor}" cy="{target_point.y /
-                                                                               self.shrink_factor}" r="18" stroke-width="8" stroke="gold" fill="none" />'''
+                                                                               self.shrink_factor}" r="18" stroke-width="8" stroke="{color}" fill="none" />'''
+            svg += f'''<text x="{target_point.x / self.shrink_factor+20}" y="{target_point.y /
+                                                                              self.shrink_factor-20}" font-size="20" fill="{color}">{confidence}</text>'''
         return svg
