@@ -280,7 +280,6 @@ class operation:
                 self.show_end_row.refresh()
 
     async def can_punch(self, plant_id: str) -> None:
-        self.punch_dialog.label.text = 'Do you want to punch at the current position?'
         self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)
         result = await self.punch_dialog
         if result == 'Yes':

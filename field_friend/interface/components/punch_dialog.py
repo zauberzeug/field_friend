@@ -31,7 +31,7 @@ class PunchDialog(ui.dialog):
                 with ui.column().classes('w-1/2'):
                     ui.label('Live').classes('text-lg')
                     self.live_image_view = ui.interactive_image('')
-            self.label = ui.label('Do you want to continue the canceled automation').classes('text-lg')
+            self.label = ui.label('Do you want to punch at the current position?').classes('text-lg')
             with ui.row():
                 ui.button('Yes', on_click=lambda: self.submit('Yes'))
                 ui.button('No', on_click=lambda: self.submit('No'))
