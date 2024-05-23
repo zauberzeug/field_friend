@@ -1,0 +1,17 @@
+{
+    "cameras": {
+        "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0": {
+            "id": "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0",
+            "name": "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0",
+            "connect_after_init": true,
+            "streaming": true,
+            "focal_length": null,
+            "calibration": null,
+            "auto_exposure": true,
+            "exposure": false,
+            "width": 1920,
+            "height": 1080,
+            "fps": 6
+        }
+    }
+}
