@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 import rosys
+from rosys.vision import Autoupload
 
 from .plant_provider import Plant, PlantProvider
 
@@ -31,6 +32,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.plant_provider = plant_provider
         self.odometer = odometer
         self.is_paused = True
+        self.autoupload: Autoupload = Autoupload.DISABLED
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
@@ -67,7 +69,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         if new_image is None or new_image.detections:
             await asyncio.sleep(0.01)
             return
-        await self.detector.detect(new_image, autoupload=rosys.vision.Autoupload.DISABLED)
+        await self.detector.detect(new_image, autoupload=self.autoupload)
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
             await asyncio.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
