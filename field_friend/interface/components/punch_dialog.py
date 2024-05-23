@@ -11,17 +11,20 @@ from ...automations import Plant, PlantLocator
 
 
 class PunchDialog(ui.dialog):
-    def __init__(self, camera_provider: rosys.vision.CameraProvider, plant_locator: PlantLocator, odometer: Odometer, shrink_factor: int = 1) -> None:
+    def __init__(self, camera_provider: rosys.vision.CameraProvider, plant_locator: PlantLocator, odometer: Odometer, shrink_factor: int = 1, timeout: float = 5.0, ui_update_rate: float = 0.2) -> None:
         super().__init__()
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.camera_provider = camera_provider
         self.plant_locator = plant_locator
         self.odometer = odometer
         self.shrink_factor = shrink_factor
+        self.timeout = timeout
+        self._duration_left = timeout
+        self.ui_update_rate = ui_update_rate
         self.static_image_view: Optional[ui.interactive_image] = None
         self.live_image_view: Optional[ui.interactive_image] = None
         self.target_plant: Optional[Plant] = None
-        self.timer = ui.timer(0.2, self.update_live_view, active=False)
+        self.timer = ui.timer(self.ui_update_rate, self.update_live_view)
         self.setup_camera()
         with self, ui.card().style('max-width: 1400px'):
             with ui.row(wrap=False):
@@ -33,21 +36,25 @@ class PunchDialog(ui.dialog):
                     self.live_image_view = ui.interactive_image('')
             self.label = ui.label('Do you want to punch at the current position?').classes('text-lg')
             with ui.row():
+                # TODO: doesn't load properly on first open
+                ui.circular_progress(min=0.0, max=self.timeout,
+                                     show_value=False, size='lg').bind_value_from(self, '_duration_left')
                 ui.button('Yes', on_click=lambda: self.submit('Yes'))
                 ui.button('No', on_click=lambda: self.submit('No'))
                 ui.button('Cancel', on_click=lambda: self.submit('Cancel'))
 
-    def submit(self, value: str) -> None:
-        self.timer.active = False
-        super().submit(value)
-
     def open(self) -> None:
+        self._duration_left = self.timeout
         assert self.target_plant is not None
         assert self.camera is not None
         detection_image = self.camera.latest_detected_image if self.target_plant.detection_image is None else self.target_plant.detection_image
         self.update_content(self.static_image_view, detection_image, draw_target=True)
-        self.timer.active = True
+        self.timer.activate()
         super().open()
+
+    def close(self) -> None:
+        self.timer.deactivate()
+        super().close()
 
     def setup_camera(self) -> None:
         cameras = list(self.camera_provider.cameras.values())
@@ -64,6 +71,7 @@ class PunchDialog(ui.dialog):
             self.camera = active_camera
 
     def update_content(self, image_view: ui.interactive_image, image: Image, draw_target: bool = False) -> None:
+        self._duration_left -= self.ui_update_rate
         assert self.camera is not None
         if self.shrink_factor > 1:
             url = f'{self.camera.get_latest_image_url()}?shrink={self.shrink_factor}'

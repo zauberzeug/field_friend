@@ -1,4 +1,5 @@
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
@@ -281,12 +282,15 @@ class operation:
 
     async def can_punch(self, plant_id: str) -> None:
         self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)
-        result = await self.punch_dialog
+        result: str | None = None
+        try:
+            result = await asyncio.wait_for(self.punch_dialog, timeout=self.punch_dialog.timeout)
+        except asyncio.TimeoutError:
+            self.punch_dialog.close()
+            result = None
         if result == 'Yes':
             self.system.puncher.punch_allowed = 'allowed'
-        elif result == 'No':
-            self.system.puncher.punch_allowed = 'not_allowed'
-        elif result == 'Cancel':
+        elif result is None or result == 'No' or result == 'Cancel':
             self.system.puncher.punch_allowed = 'not_allowed'
 
     async def can_start(self) -> bool:
