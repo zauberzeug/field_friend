@@ -913,7 +913,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         id=f'{i}_{j}',
                         type='beet',
                         position=self.system.odometer.prediction.point.polar(
-                            0.14*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
+                            0.18*i+(randint(-2, 2)*0.01), self.system.odometer.prediction.yaw).polar(randint(-4, 4)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
