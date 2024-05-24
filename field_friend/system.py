@@ -153,7 +153,7 @@ class System(rosys.persistence.PersistentModule):
         self.tools = {t.name: t for t in tools}
         self.field_navigation.tool = Recorder(self)
         self.straight_line_navigation.tool = Recorder(self)
-        self.automator = rosys.automation.Automator(None, on_interrupt=lambda _: self.field_friend.stop(),
+        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
                                                     default_automation=self.straight_line_navigation.start)
         self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)

@@ -193,18 +193,11 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
             c.id: self.system.odometer.prediction.relative_point(c.position)
             for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and len(c.positions) >= 3
         }
-        # remove very distant crops (probably not row
-        if self.current_segment:
-            # Correctly filter to get upcoming crops based on their x position
-            upcoming_crop_positions = {
-                c: pos for c, pos in relative_crop_positions.items()
-                if self.system.field_friend.WORK_X+self.system.field_friend.DRILL_RADIUS < pos.x <= self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x
-            }
-        else:
-            upcoming_crop_positions = {
-                c: pos for c, pos in relative_crop_positions.items()
-                if self.system.field_friend.WORK_X < pos.x < 0.3
-            }
+
+        upcoming_crop_positions = {
+            c: pos for c, pos in relative_crop_positions.items()
+            if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS < pos.x < 0.3
+        }
         # Sort the upcoming_crop_positions dictionary by the .x attribute of its values
         sorted_crops = dict(sorted(upcoming_crop_positions.items(), key=lambda item: item[1].x))
         self.crops_to_handle = sorted_crops
@@ -213,17 +206,10 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
             w.id: self.system.odometer.prediction.relative_point(w.position)
             for w in self.system.plant_provider.weeds if w.position.distance(self.system.odometer.prediction.point) < 0.5 and len(w.positions) >= 3
         }
-        if self.current_segment:
-            # Filter to get upcoming weeds based on their .x position
-            upcoming_weed_positions = {
-                w: pos for w, pos in relative_weed_positions.items()
-                if self.system.field_friend.WORK_X+self.system.field_friend.DRILL_RADIUS < pos.x <= self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x
-            }
-        else:
-            upcoming_weed_positions = {
-                w: pos for w, pos in relative_weed_positions.items()
-                if self.system.field_friend.WORK_X < pos.x < 0.4
-            }
+        upcoming_weed_positions = {
+            w: pos for w, pos in relative_weed_positions.items()
+            if self.system.field_friend.WORK_X+self.system.field_friend.DRILL_RADIUS < pos.x < 0.4
+        }
         # Sort the upcoming_weed_positions dictionary by the .x attribute of its values
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds

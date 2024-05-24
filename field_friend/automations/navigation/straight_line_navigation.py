@@ -36,7 +36,7 @@ class StraightLineNavigation(Navigation):
         await self.tool.deactivate()
 
     async def _drive_forward(self):
-        while not self._should_stop():
+        while not await self._should_stop():
             target = self.odometer.prediction.transform(rosys.geometry.Point(x=0.10, y=0))
             await self.driver.drive_to(target)
 
