@@ -6,9 +6,9 @@ import rosys
 from rosys.geometry import Point
 from rosys.helpers import eliminate_2pi
 
-from .field_friend_automation import FieldFriendAutomation
 from .plant import Plant
 from .puncher import PuncherException
+from .tool.tool import Tool
 
 if TYPE_CHECKING:
     from system import System
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 TORNADO_ANGLE = 110.0
 
 
-class CoinCollecting(FieldFriendAutomation):
+class CoinCollecting(Tool):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Demo')

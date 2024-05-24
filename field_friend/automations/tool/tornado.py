@@ -3,13 +3,14 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 
-from . import PuncherException, WeedingStrategy, WorkflowException
+from ..puncher import PuncherException
+from .weeding_tool import WeedingTool, WorkflowException
 
 if TYPE_CHECKING:
     from system import System
 
 
-class WeedingTornado(WeedingStrategy):
+class Tornado(WeedingTool):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Tornado', system)

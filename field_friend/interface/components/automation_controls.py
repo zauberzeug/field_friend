@@ -18,16 +18,8 @@ class automation_controls:
         async def start() -> None:
             if not await self.can_start():
                 return
-
-            current_automation = next(key for key, value in system.automations.items()
-                                      if value == system.automator.default_automation)
-            if current_automation == 'weeding' or current_automation == 'monitoring' or current_automation == 'collecting (demo)':
-                if system.weeding.continue_canceled_weeding is not True:
-                    system.kpi_provider.clear_weeding_kpis()
-            elif current_automation == 'mowing':
-                if system.mowing.continue_mowing is not True:
-                    system.kpi_provider.clear_mowing_kpis()
             system.automator.start()
+
         self.log = logging.getLogger('field_friend.automation_controls')
         self.system = system
         play_button = ui.button(on_click=start) \

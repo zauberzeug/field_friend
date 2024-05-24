@@ -3,7 +3,15 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado, YAxis, ZAxis
+from ...hardware import (
+    ChainAxis,
+    FieldFriend,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+    YAxis,
+    ZAxis,
+)
 from ...navigation import Gnss
 
 if TYPE_CHECKING:
@@ -221,16 +229,17 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time}s'
                 kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance}m'
 
-                current_automation = next(key for key, value in system.automations.items()
-                                          if value == system.automator.default_automation)
-                if current_automation == 'weeding' or current_automation == 'monitoring':
-                    if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
-                        current_row_label.text = system.field_provider.active_object['object'].name
-                    kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
-                    kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
-                    kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
-                    if current_automation == 'weeding':
-                        kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
+                # TODO reimplement with navigation and tools
+                # current_automation = next(key for key, value in system.tools.items()
+                #                           if value == system.automator.default_automation)
+                # if current_automation == 'weeding' or current_automation == 'monitoring':
+                #     if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
+                #         current_row_label.text = system.field_provider.active_object['object'].name
+                #     kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
+                #     kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+                #     kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
+                #     if current_automation == 'weeding':
+                #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
 
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
             reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'

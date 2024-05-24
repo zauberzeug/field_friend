@@ -5,24 +5,6 @@ from typing import Any
 import numpy as np
 import rosys
 
-from field_friend.automations import (
-    AutomationWatcher,
-    BatteryWatcher,
-    CoinCollecting,
-    FieldFriendAutomation,
-    FieldProvider,
-    KpiProvider,
-    Mowing,
-    PathProvider,
-    PathRecorder,
-    PlantLocator,
-    PlantProvider,
-    Puncher,
-    WeedingChop,
-    WeedingMonitor,
-    WeedingScrew,
-    WeedingTornado,
-)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation.gnss_hardware import GnssHardware
 from field_friend.navigation.gnss_simulation import GnssSimulation
@@ -33,6 +15,21 @@ from field_friend.vision import (
     SimulatedCamProvider,
 )
 
+from .automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    CoinCollecting,
+    FieldProvider,
+    KpiProvider,
+    Mowing,
+    PathProvider,
+    PathRecorder,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+)
+from .automations.navigation import FieldNavigation, StraightLineNavigation
+from .automations.tool import ChopAndScrew, Recorder, Screw, Tool, Tornado
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -127,29 +124,37 @@ class System(rosys.persistence.PersistentModule):
                 (-offset, width/2)
             ],
             height=height)
-        self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
-        self.monitoring = WeedingMonitor(self)
-        self.monitoring.use_monitor_workflow = True
-        self.weeding_strategies: list[FieldFriendAutomation] = [self.monitoring]
+        self.monitoring = Recorder(self)
+        self.field_navigation = FieldNavigation(self.driver,
+                                                self.odometer,
+                                                self.monitoring,
+                                                self.shape,
+                                                self.gnss,
+                                                self.field_friend.bms)
+        self.straight_line_navigation = StraightLineNavigation(self.driver, self.odometer, self.monitoring)
+        self.weeding_tools: list[Tool] = [self.monitoring]
         match self.field_friend.tool:
             case 'tornado':
-                self.weeding_strategies.append(WeedingTornado(self))
+                self.weeding_tools.append(Tornado(self))
             case 'weed_screw':
-                self.weeding_strategies.append(WeedingScrew(self))
+                self.weeding_tools.append(Screw(self))
             case 'dual_mechanism':
-                self.weeding_strategies.append(WeedingScrew(self))
-                self.weeding_strategies.append(WeedingChop(self))
+                self.weeding_tools.append(Screw(self))
+                self.weeding_tools.append(ChopAndScrew(self))
             case 'none':
-                self.weeding_strategies.append(WeedingScrew(self))
+                self.weeding_tools.append(Screw(self))
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.tool}')
-        self.coin_collecting = CoinCollecting(self)
-        self.mowing = Mowing(self, robot_width=width)
-        self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
-        automations: list[FieldFriendAutomation] = self.weeding_strategies + [self.coin_collecting, self.mowing]
-        self.automations = {s.name: s for s in automations}
+        # TODO reactivate other tools
+        # self.coin_collecting = CoinCollecting(self)
+        # self.mowing = Mowing(self, robot_width=width, shape=self.shape)
+        # self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
+        tools: list[Tool] = self.weeding_tools  # + [self.coin_collecting, self.mowing]
+        self.tools = {t.name: t for t in tools}
+        self.field_navigation.tool = Recorder(self)
+        self.straight_line_navigation.tool = Recorder(self)
         self.automator = rosys.automation.Automator(None, on_interrupt=lambda _: self.field_friend.stop(),
-                                                    default_automation=self.coin_collecting.start)
+                                                    default_automation=self.straight_line_navigation.start)
         self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)
         if self.field_friend.bumper:
@@ -169,14 +174,16 @@ class System(rosys.persistence.PersistentModule):
 
     def restore(self, data: dict[str, Any]) -> None:
         name = data.get('automation', None)
-        automation = self.automations.get(name, None)
-        if automation is not None:
-            self.automator.default_automation = automation.start
+        tool = self.tools.get(name, None)
+        # TODO restore last selected tool
+        # if tool is not None:
+        #     self.automator.default_automation = tool.start
 
     def get_current_automation_id(self) -> str | None:
+        return 'none'
         if self.automator.default_automation is None:
             return None
-        return {v.start: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
+        return {v.start: k for k, v in self.tools.items()}.get(self.automator.default_automation, None)
 
     def setup_simulated_usb_camera(self):
         self.usb_camera_provider.remove_all_cameras()

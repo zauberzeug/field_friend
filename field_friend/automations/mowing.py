@@ -10,23 +10,23 @@ from shapely.geometry import LineString
 
 from . import Field
 from .coverage_planer import CoveragePlanner
-from .field_friend_automation import FieldFriendAutomation
 from .sequence import find_sequence
+from .tool.tool import Tool
 
 if TYPE_CHECKING:
     from system import System
 
 
-class Mowing(FieldFriendAutomation, rosys.persistence.PersistentModule):
+class Mowing(Tool, rosys.persistence.PersistentModule):
 
-    def __init__(self, system: 'System', *, robot_width: float) -> None:
-        FieldFriendAutomation.__init__(self, 'Mowing')
+    def __init__(self, system: 'System', *, robot_width: float, shape: rosys.geometry.Prism) -> None:
+        Tool.__init__(self, 'Mowing')
         rosys.persistence.PersistentModule.__init__(self)
         self.log = logging.getLogger('field_friend.path_recorder')
         self.field_friend = system.field_friend
         self.field_provider = system.field_provider
         self.driver = system.driver
-        self.path_planner = system.path_planner
+        self.path_planner = rosys.pathplanning.PathPlanner(shape)
         self.gnss = system.gnss
         self.system = system
         self.coverage_planner = CoveragePlanner(self)
@@ -39,7 +39,7 @@ class Mowing(FieldFriendAutomation, rosys.persistence.PersistentModule):
         self.robot_width: float = robot_width
 
         self.field: Optional[Field] = None
-        self.paths: list[list[rosys.driving.PathSegment]] = None
+        self.paths: list[list[rosys.driving.PathSegment]] = []
         self.current_path: Optional[list[rosys.driving.PathSegment]] = None
         self.current_path_segment: Optional[rosys.driving.PathSegment] = None
         self.continue_mowing: bool = False
@@ -95,6 +95,11 @@ class Mowing(FieldFriendAutomation, rosys.persistence.PersistentModule):
         if self.padding < self.robot_width+self.lane_distance:
             self.padding = self.robot_width+self.lane_distance
         await self._mowing()
+
+    def prepare(self):
+        # TODO
+        if system.mowing.continue_mowing is not True:
+            system.kpi_provider.clear_mowing_kpis()
 
     async def _mowing(self) -> None:
         rosys.notify('Starting mowing')

@@ -5,16 +5,8 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ...hardware import (
-    ChainAxis,
-    FieldFriend,
-    FieldFriendHardware,
-    FlashlightPWMHardware,
-    FlashlightPWMHardwareV2,
-    Tornado,
-    YAxis,
-    ZAxis,
-)
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
+                         Tornado, YAxis, ZAxis)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -283,7 +275,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             kpi_fieldtime_label.text = f'{timedelta(seconds=system.kpi_provider.current_weeding_kpis.time)}'
             kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance:.0f}m'
 
-            current_automation = next(key for key, value in system.automations.items()
+            current_automation = next(key for key, value in system.tools.items()
                                       if value == system.automator.default_automation)
             if current_automation == 'weeding' or current_automation == 'monitoring':
                 if current_automation == 'weeding':

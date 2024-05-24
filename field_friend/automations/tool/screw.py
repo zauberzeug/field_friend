@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 
 import rosys
 
-from . import WeedingStrategy, WorkflowException
+from . import WeedingTool, WorkflowException
 
 if TYPE_CHECKING:
     from system import System
 
 
-class WeedingScrew(WeedingStrategy):
+class Screw(WeedingTool):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Weed Screw', system)

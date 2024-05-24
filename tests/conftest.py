@@ -53,7 +53,7 @@ async def field(system: System) -> AsyncGenerator[Field, None]:
 def mowing(system: System, gnss: GnssSimulation, field: Field) -> Generator[System, None, None]:
     """Start mowing autiomation"""
     system.field_provider.active_field = field
-    system.automator.start(system.automations['mowing']())
+    system.automator.start(system.tools['mowing']())
     yield system
 
 

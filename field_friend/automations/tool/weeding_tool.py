@@ -9,10 +9,10 @@ from rosys.driving import PathSegment
 from rosys.geometry import Point, Pose, Spline
 from rosys.helpers import eliminate_2pi
 
-from ..hardware import ChainAxis
-from .navigation import Navigation,
-from . import Field, FieldFriendAutomation, Row
-from .plant import Plant
+from ...hardware import ChainAxis
+from ..navigation import Navigation
+from ..plant import Plant
+from ..tool.tool import Tool
 
 if TYPE_CHECKING:
     from system import System
@@ -22,18 +22,17 @@ class WorkflowException(Exception):
     pass
 
 
-class WeedingStrategy(FieldFriendAutomation, rosys.persistence.PersistentModule):
+class WeedingTool(Tool, rosys.persistence.PersistentModule):
     WORKING_DISTANCE = 0.06
     DRIVE_DISTANCE = 0.04
 
     def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
-        FieldFriendAutomation.__init__(self, name)
+        Tool.__init__(self, name)
         rosys.persistence.PersistentModule.__init__(self, persistence_key=f'field_friend.automations.{persistence_key}')
 
         self.log = logging.getLogger('field_friend.weeding')
         self.system = system
         self.kpi_provider = system.kpi_provider
-        self.navigation: Navigation | None = None
 
         # dual mechanism
         self.with_drilling: bool = False
@@ -54,6 +53,24 @@ class WeedingStrategy(FieldFriendAutomation, rosys.persistence.PersistentModule)
 
         rosys.on_repeat(self._update_time_and_distance, 0.1)
         self.system.field_provider.FIELD_SELECTED.register(self.clear)
+
+    async def activate(self):
+        self.system.plant_locator.pause()
+        self.system.plant_provider.clear()
+        if self.system.field_friend.tool != 'none':
+            await self.system.puncher.clear_view()
+        await self.system.field_friend.flashlight.turn_on()
+        await rosys.sleep(3)
+        self.system.plant_locator.resume()
+        await rosys.sleep(3)
+        # if not self.system.is_real:
+        #     self.system.detector.simulated_objects = []
+        #     await self._create_simulated_plants()
+
+    async def deactivate(self):
+        await self.system.field_friend.flashlight.turn_off()
+        self.system.plant_locator.pause()
+        self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
     def _update_time_and_distance(self):
         if self.state == 'idle':
@@ -92,23 +109,16 @@ class WeedingStrategy(FieldFriendAutomation, rosys.persistence.PersistentModule)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
 
     def clear(self) -> None:
-        self.navigation.clear()
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
-    async def start(self):
+    async def prepare(self) -> bool:
         self.log.info('start weeding...')
         self.request_backup()
-        if self.navigation is None:
-            rosys.notify('missing navigation strategy')
-            return
         if not await self._check_hardware_ready():
             rosys.notify('hardware is not ready')
-            return
-        if not await self.navigation.on_start():
-            rosys.notify('preparation of navigation failed')
-            return
-        await self._weeding()
+            return False
+        return True
 
     async def _check_hardware_ready(self) -> bool:
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
@@ -122,8 +132,6 @@ class WeedingStrategy(FieldFriendAutomation, rosys.persistence.PersistentModule)
         if camera.calibration is None:
             rosys.notify('camera has no calibration')
             return False
-        if self.use_monitor_workflow:
-            return True
         if self.system.field_friend.tool == 'none':
             rosys.notify('This field friend has no tool, only monitoring', 'info')
             self.log.info('This field friend has no tool, only monitoring')
@@ -165,40 +173,20 @@ class WeedingStrategy(FieldFriendAutomation, rosys.persistence.PersistentModule)
             self.system.automation_watcher.stop_field_watch()
             self.system.automation_watcher.gnss_watch_active = False
 
-    async def _weed_planless(self):
-        self.log.info('Weeding without a plan...')
-        already_explored_count = 0
-        while True:
-            self.system.plant_locator.pause()
-            self.system.plant_provider.clear()
-            if not self.system.is_real:
-                self.system.detector.simulated_objects = []
-                await self._create_simulated_plants()
-            if self.system.field_friend.tool != 'none':
-                await self.system.puncher.clear_view()
-            await self.system.field_friend.flashlight.turn_on()
-            await rosys.sleep(2)
-            self.system.plant_locator.resume()
-            await rosys.sleep(0.5)
-            while self._has_plants_to_handle():
-                await self._handle_plants()
-                already_explored_count = 0
-                await rosys.sleep(0.2)
-            if not self._has_plants_to_handle() and already_explored_count < 5:
-                self.log.info('No crops found, advancing a bit to ensure there are really no more crops')
-                target = self.system.odometer.prediction.transform(Point(x=0.10, y=0))
-                await self.system.driver.drive_to(target)
-                already_explored_count += 1
-            else:
-                self.log.info('No more crops found')
-                break
-
-    async def _check_for_plants(self):
+    async def observe(self) -> None:
         self.log.info('Checking for plants...')
         while True:
             if self._has_plants_to_handle():
                 return
             await rosys.sleep(0.2)
+
+    async def on_focus(self) -> None:
+        await rosys.sleep(2)  # wait for robot to stand still
+        if self._has_plants_to_handle():
+            self.log.info('Plants to handle...')
+            await self._handle_plants()
+            self.crops_to_handle = {}
+            self.weeds_to_handle = {}
 
     def _has_plants_to_handle(self) -> bool:
         relative_crop_positions = {
@@ -415,3 +403,7 @@ class WeedingStrategy(FieldFriendAutomation, rosys.persistence.PersistentModule)
         else:
             ui.select([None], label='End row') \
                 .bind_value(self.system.weeding, 'end_row').classes('w-24').tooltip('Select the row to end on')
+
+    def reset_kpis(self):
+        super().reset_kpis()
+        self.kpi_provider.clear_weeding_kpis()

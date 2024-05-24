@@ -24,7 +24,7 @@ class AutomationWatcher:
         self.field_friend = system.field_friend
         self.gnss = system.gnss
         self.steerer = system.steerer
-        self.path_recorder = system.path_recorder
+        # self.path_recorder = system.path_recorder
 
         self.try_resume_active: bool = False
         self.incidence_time: float = 0.0
@@ -48,15 +48,16 @@ class AutomationWatcher:
         self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
 
     def pause(self, reason: str) -> None:
+        # TODO re-think integration of path recorder
         # dont pause automator if steering is active and path_recorder is recording
-        if reason.startswith('steering'):
-            if self.path_recorder.state == 'recording':
-                return
-            else:
-                if self.automator.is_running:
-                    self.log.info(f'pausing automation because {reason}')
-                    self.automator.pause(because=f'{reason})')
-                return
+        # if reason.startswith('steering'):
+        #     if self.path_recorder.state == 'recording':
+        #         return
+        #     else:
+        #         if self.automator.is_running:
+        #             self.log.info(f'pausing automation because {reason}')
+        #             self.automator.pause(because=f'{reason})')
+        #         return
         if reason.startswith('GNSS') and not self.gnss_watch_active:
             self.log.info(f'not pausing automation because {reason} but GNSS watch is not active')
             return

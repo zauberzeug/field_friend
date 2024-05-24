@@ -1,26 +1,36 @@
 import abc
 import logging
-from typing import Any, Callable
+from typing import Any
 
 import rosys
+
+from ..tool.tool import Tool
 
 
 class Navigation(rosys.persistence.PersistentModule):
 
-    def __init__(self) -> None:
+    def __init__(self,
+                 driver: rosys.driving.Driver,
+                 odometer: rosys.driving.Odometer,
+                 tool: Tool,
+                 ) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.navigation')
+        self.driver = driver
+        self.odometer = odometer
+        self.tool = tool
 
     @abc.abstractmethod
-    async def on_start(self) -> bool:
-        """Executed when the automation is started.
+    async def start(self) -> None:
+        """Executed to start the automation.
 
         Returns False if automation can not be started."""
 
-    @abc.abstractmethod
     def clear(self) -> None:
         """Resets the state to initial configuration"""
 
-    @abc.abstractmethod
-    async def advance(self, condition: Callable[..., Any]) -> None:
-        """Executed regularly when the automation is running to drive forward until condition is meat."""
+    def backup(self) -> dict:
+        return {}
+
+    def restore(self, data: dict[str, Any]) -> None:
+        pass

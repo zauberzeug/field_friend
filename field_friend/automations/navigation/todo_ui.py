@@ -128,3 +128,30 @@
                                 .tooltip('Set the drill depth for the weeding automation')
                             ui.checkbox('with drilling', value=True) \
                                 .bind_value(self.system.coin_collecting, 'with_drilling')
+
+
+
+
+
+
+
+
+                    with ui.column().bind_visibility_from(self.automations_toggle, 'value', value='mowing'):
+                        with ui.row():
+                            ui.number('Padding', value=0.5, step=0.1, min=0.0, format='%.1f') \
+                                .props('dense outlined suffix=m').classes('w-24') \
+                                .bind_value(system.mowing, 'padding') \
+                                .tooltip('Set the padding for the mowing automation')
+                            ui.number('Lane distance', value=0.5, step=0.1, min=0.0, format='%.1f') \
+                                .props('dense outlined suffix=m') \
+                                .classes('w-24').bind_value(system.mowing,   'lane_distance') \
+                                .tooltip('Set the lane distance for the system. automation')
+                            ui.number('Number of outer lanes', value=3, step=1, min=3, format='%.0f') \
+                                .props('dense outlined').classes('w-28') \
+                                .bind_value(system.mowing, 'number_of_outer_lanes') \
+                                .tooltip('Set the number of outer lanes for the mowing automation')
+                            ui.number('Min. turning radius', format='%.2f', value=0.5, step=0.05, min=0.1, max=2.0) \
+                                .props('dense outlined suffix=m') \
+                                .classes('w-32') \
+                                .bind_value(self.system.mowing, 'minimum_turning_radius') \
+                                .tooltip('Set the turning radius for the mowing automation')

@@ -2,13 +2,14 @@
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
-from . import PuncherException, WeedingStrategy, WorkflowException
+from ..puncher import PuncherException
+from .weeding_tool import WeedingTool, WorkflowException
 
 if TYPE_CHECKING:
     from system import System
 
 
-class WeedingChop(WeedingStrategy):
+class ChopAndScrew(WeedingTool):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Tornado', system)

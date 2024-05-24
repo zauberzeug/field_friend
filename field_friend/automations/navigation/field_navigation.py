@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 import numpy as np
 import rosys
@@ -6,21 +6,28 @@ from rosys.driving import PathSegment
 from rosys.geometry import Point, Pose, Spline
 
 from ...navigation import Gnss
-from .. import Field, Row
+from ..field import Field, Row
 from ..sequence import find_sequence
+from ..tool.tool import Tool
 from .navigation import Navigation
 
 
 class FieldNavigation(Navigation):
 
-    def __init__(self, shape: rosys.geometry.Prism, gnss:  Gnss, odometer: rosys.driving.Odometer) -> None:
-        super().__init__()
+    def __init__(self,
+                 driver: rosys.driving.Driver,
+                 odometer: rosys.driving.Odometer,
+                 tool: Tool,
+                 shape: rosys.geometry.Prism,
+                 gnss:  Gnss,
+                 bms: rosys.hardware.Bms) -> None:
+        super().__init__(driver, odometer, tool)
 
         self.PATH_PLANNED = rosys.event.Event()
         '''Event that is emitted when the path is planed. The event contains the path as a list of PathSegments.'''
 
         self.gnss = gnss
-        self.odometer = odometer
+        self.bms = bms
         self.path_planner = rosys.pathplanning.PathPlanner(shape)
         self.continue_canceled_weeding: bool = False
 
@@ -45,29 +52,89 @@ class FieldNavigation(Navigation):
         self.linear_speed_between_rows: float = 0.3
         self.angular_speed_between_rows: float = 0.8
 
-    async def on_start(self) -> bool:
-        await super().on_start()
+    async def start(self) -> None:
+        if not await self.tool.prepare():
+            self.log.error('Tool-Preparation failed')
+            return
+        if not await self._prepare():
+            self.log.error('Navigation-Preparation failed')
+            return
+        for i, path in enumerate(self.weeding_plan):
+            if self.continue_canceled_weeding and self.current_row != self.sorted_weeding_rows[i]:
+                continue
+            self.driver.parameters.can_drive_backwards = False
+            self.driver.parameters.linear_speed_limit = self.linear_speed_on_row
+            self.driver.parameters.angular_speed_limit = self.angular_speed_on_row
+            self.current_row = self.sorted_weeding_rows[i]
+            await self.tool.activate()
+            for j, segment in enumerate(path):
+                if self.continue_canceled_weeding and self.current_segment != segment:
+                    continue
+                else:
+                    self.continue_canceled_weeding = False
+                self.current_segment = segment
+                # self.invalidate()
+                self.log.info(f'Driving row {i + 1}/{len(self.weeding_plan)} and segment {j + 1}/{len(path)}...')
+                self.row_segment_completed = False
+                while not self.row_segment_completed:
+                    self.log.info('while not row completed...')
+                    await rosys.automation.parallelize(
+                        self.tool.observe(),
+                        self._drive_segment(),
+                        return_when_first_completed=True
+                    )
+                    await self.tool.on_focus()
+                    if self.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
+                        self.row_segment_completed = True
+                    await rosys.sleep(0.2)
+                    if self.drive_backwards_to_start and self.bms.is_below_percent(15.0):
+                        self.log.info('Low battery, driving backwards to start...')
+                        rosys.notify('Low battery, driving backwards to start', 'warning')
+                        await self.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
+                        return
+
+            await self.tool.deactivate()
+            if i < len(self.weeding_plan) - 1:
+                self.driver.parameters.can_drive_backwards = True
+                self.driver.parameters.linear_speed_limit = self.linear_speed_between_rows
+                self.driver.parameters.angular_speed_limit = self.angular_speed_between_rows
+                self.log.info('Driving to next row...')
+                turn_path = self.turn_paths[i]
+                await self.driver.drive_path(turn_path)
+                await rosys.sleep(1)
+
+        # TODO reactivate automation watch
+        # self.system.automation_watcher.stop_field_watch()
+        # self.system.automation_watcher.gnss_watch_active = False
+        self.sorted_weeding_rows = []
+        self.weeding_plan = []
+        self.turn_paths = []
+        self.current_row = None
+        self.current_segment = None
+
+    async def _prepare(self) -> bool:
         if not self.continue_canceled_weeding:
             if not await self._field_planning():
                 rosys.notify('Field planning failed', 'negative')
                 return False
         if self.continue_canceled_weeding:
             start_pose = self.odometer.prediction
+            assert self.current_segment is not None
             end_pose = Pose(x=self.current_segment.spline.start.x, y=self.current_segment.spline.start.y,
                             yaw=self.current_segment.spline.start.direction(self.current_segment.spline.end))
             start_spline = Spline.from_poses(start_pose, end_pose)
-            await self.system.driver.drive_spline(start_spline)
+            await self.driver.drive_spline(start_spline)
         elif self.drive_to_start:
             await self._drive_to_start()
-        self.system.automation_watcher.start_field_watch(self.field.outline)
-        self.system.automation_watcher.gnss_watch_active = True
+        # TODO: reactivate automation watcher
+        # self.system.automation_watcher.start_field_watch(self.field.outline)
+        # self.system.automation_watcher.gnss_watch_active = True
         return True
 
     async def _field_planning(self) -> bool:
         if self.gnss.device is None:
             self.log.error('GNSS is not available')
             return False
-        self.field = self.system.field_provider.active_field
         if self.field is None:
             self.log.error('Field is not available')
             rosys.notify('No field selected', 'negative')
@@ -104,8 +171,7 @@ class FieldNavigation(Navigation):
         self.end_row_id = end_row.id
         reference = self.field.reference
         assert reference is not None
-        rows_to_weed = self.field.rows[self.field.rows.index(
-            start_row):self.field.rows.index(end_row) + 1]
+        rows_to_weed = self.field.rows[self.field.rows.index(start_row):self.field.rows.index(end_row) + 1]
         rows = [row for row in rows_to_weed if len(row.cartesian(reference)) > 1]
         robot_position = self.odometer.prediction.point
         distance_to_first_row = min([point.distance(robot_position) for point in rows[0].cartesian(reference)])
@@ -218,89 +284,17 @@ class FieldNavigation(Navigation):
         #     self.path_planner.obstacles.pop(f'row_{row.id}')
         return turn_paths
 
-    async def advance(self, condition: Callable[..., Any]) -> None:
-        await super().advance(condition)
-
-        for i, path in enumerate(self.weeding_plan):
-            if self.continue_canceled_weeding and self.current_row != self.sorted_weeding_rows[i]:
-                continue
-            self.system.driver.parameters.can_drive_backwards = False
-            self.system.driver.parameters.linear_speed_limit = self.linear_speed_on_row
-            self.system.driver.parameters.angular_speed_limit = self.angular_speed_on_row
-            self.current_row = self.sorted_weeding_rows[i]
-            self.system.plant_locator.pause()
-            self.system.plant_provider.clear()
-            if self.system.field_friend.tool != 'none':
-                await self.system.puncher.clear_view()
-            await self.system.field_friend.flashlight.turn_on()
-            await rosys.sleep(3)
-            self.system.plant_locator.resume()
-            await rosys.sleep(3)
-            for j, segment in enumerate(path):
-                if self.continue_canceled_weeding and self.current_segment != segment:
-                    continue
-                else:
-                    self.continue_canceled_weeding = False
-                self.current_segment = segment
-                # self.invalidate()
-                if not self.system.is_real:
-                    self.system.detector.simulated_objects = []
-                    await self._create_simulated_plants()
-                self.log.info(f'Driving row {i + 1}/{len(self.weeding_plan)} and segment {j + 1}/{len(path)}...')
-                self.row_segment_completed = False
-                while not self.row_segment_completed:
-                    self.log.info('while not row completed...')
-                    await rosys.automation.parallelize(
-                        self._check_for_plants(),
-                        self._drive_segment(),
-                        return_when_first_completed=True
-                    )
-                    await rosys.sleep(2)  # wait for robot to stand still
-                    if self._has_plants_to_handle():
-                        self.log.info('Plants to handle...')
-                        await self._handle_plants()
-                        self.crops_to_handle = {}
-                        self.weeds_to_handle = {}
-                        if self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
-                            self.row_segment_completed = True
-                    await rosys.sleep(0.2)
-                    if self.drive_backwards_to_start and self.system.field_friend.bms.is_below_percent(15.0):
-                        self.log.info('Low battery, driving backwards to start...')
-                        rosys.notify('Low battery, driving backwards to start', 'warning')
-                        await self.system.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
-                        return
-
-            await self.system.field_friend.flashlight.turn_off()
-            self.system.plant_locator.pause()
-            if i < len(self.weeding_plan) - 1:
-                self.system.driver.parameters.can_drive_backwards = True
-                self.system.driver.parameters.linear_speed_limit = self.linear_speed_between_rows
-                self.system.driver.parameters.angular_speed_limit = self.angular_speed_between_rows
-                self.log.info('Driving to next row...')
-                turn_path = self.turn_paths[i]
-                await self.system.driver.drive_path(turn_path)
-                await rosys.sleep(1)
-            self.kpi_provider.increment_weeding_kpi('rows_weeded')
-
-        self.system.automation_watcher.stop_field_watch()
-        self.system.automation_watcher.gnss_watch_active = False
-        self.sorted_weeding_rows = []
-        self.weeding_plan = []
-        self.turn_paths = []
-        self.current_row = None
-        self.current_segment = None
-
     async def _drive_to_start(self):
         self.log.info('Driving to start...')
-        start_pose = self.system.odometer.prediction
+        start_pose = self.odometer.prediction
         end_pose = Pose(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y,
                         yaw=self.weeding_plan[0][0].spline.start.direction(self.weeding_plan[0][0].spline.end))
         start_spline = Spline.from_poses(start_pose, end_pose)
-        await self.system.driver.drive_spline(start_spline)
+        await self.driver.drive_spline(start_spline)
 
     async def _drive_segment(self):
         self.log.info('Driving segment...')
-        await self.system.driver.drive_spline(self.current_segment.spline)
+        await self.driver.drive_spline(self.current_segment.spline)
         self.row_segment_completed = True
 
     def clear(self) -> None:

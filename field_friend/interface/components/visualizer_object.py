@@ -13,19 +13,20 @@ class visualizer_object(Object3D):
         super().__init__('group')
         self.system = system
         self.system.path_provider.SHOW_PATH.register_ui(self.update_path)
-        self.system.mowing.MOWING_STARTED.register_ui(self.refresh)
-        self.system.weeding.PATH_PLANNED.register_ui(self.refresh)
+        # self.system.mowing.MOWING_STARTED.register_ui(self.refresh)
+        # self.system.weeding.PATH_PLANNED.register_ui(self.refresh)
         self.system.AUTOMATION_CHANGED.register_ui(lambda _: self.refresh())
         self.refresh()
 
     def refresh(self) -> None:
         automation = self.system.get_current_automation_id()
-        if automation == 'weeding':
-            segments = self.system.weeding.weeding_plan + self.system.weeding.turn_paths
-        elif automation == 'mowing':
-            segments = self.system.mowing.paths
-        else:
-            segments = []
+        # TODO visualization should be part of tool and navigation strategy
+        # if automation == 'weeding':
+        #     segments = self.system.weeding.weeding_plan + self.system.weeding.turn_paths
+        # elif automation == 'mowing':
+        #     segments = self.system.mowing.paths
+        # else:
+        segments = []
         self.update_path([path_segment for path in segments for path_segment in path])
 
     def update_path(self, path: list[rosys.driving.PathSegment], height: float = 0.02) -> None:

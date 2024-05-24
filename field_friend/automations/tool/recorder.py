@@ -4,19 +4,20 @@ from typing import TYPE_CHECKING
 
 import rosys
 
-from . import PuncherException, WeedingStrategy, WorkflowException
+from ..puncher import PuncherException
+from .weeding_tool import WeedingTool, WorkflowException
 
 if TYPE_CHECKING:
     from system import System
 
 
-class WeedingMonitor(WeedingStrategy):
+class Recorder(WeedingTool):
 
     def __init__(self, system: 'System') -> None:
-        super().__init__('Weed Monitor', system, persistence_key='monitor')
+        super().__init__('Recorder', system, persistence_key='recorder')
 
     async def _perform_workflow(self) -> None:
-        self.log.info('Starting Monitoring Workflow...')
+        self.log.info('Starting Recorder...')
         try:
             closest_crop_position = list(self.crops_to_handle.values())[0]
             self.log.info(f'Closest crop position: {closest_crop_position}')
