@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from copy import deepcopy
 
 import rosys
 
@@ -45,6 +46,7 @@ class PlantLocator:
         if not camera:
             self.log.error('no connected camera found')
             return
+        assert isinstance(camera, rosys.vision.CalibratableCamera)
         if camera.calibration is None:
             self.log.error('no calibration found')
             raise DetectorError()
@@ -61,28 +63,20 @@ class PlantLocator:
 
         # self.log.info(f'{[point.category_name for point in new_image.detections.points]} detections found')
         for d in new_image.detections.points:
+            image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
+            world_point = camera.calibration.project_from_image(image_point)
+            self.log.info(f'world point: {world_point}')
+            if world_point is None:
+                self.log.error('could not generate world point of detection, calibration error')
+                continue
+            plant = Plant(position=world_point.projection(), type_=d.category_name,
+                          detection_time=rosys.time(), confidence=d.confidence, detection_image=new_image)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
-                image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = camera.calibration.project_from_image(image_point)
-                if floor_point is None:
-                    self.log.error('could not generate floor point of detection, calibration error')
-                    continue
-                world_point = self.odometer.prediction.transform(floor_point.projection())
-                weed = Plant(position=world_point, type_=d.category_name,
-                             detection_time=rosys.time(), detection_image=new_image)
-                await self.plant_provider.add_weed(weed)
+                await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info('crop found')
-                image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = camera.calibration.project_from_image(image_point)
-                if floor_point is None:
-                    self.log.error('could not generate floor point of detection, calibration error')
-                    continue
-                world_point = self.odometer.prediction.transform(floor_point.projection())
-                crop = Plant(position=world_point, type_=d.category_name,
-                             detection_time=rosys.time(), confidence=d.confidence, detection_image=new_image)
-                await self.plant_provider.add_crop(crop)
+                await self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
             # else:

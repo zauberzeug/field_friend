@@ -6,7 +6,7 @@ from field_friend.navigation import GeoPoint, GnssSimulation
 
 
 async def test_start_weeding_auto_selects_rows(system: System, field: Field, gnss: GnssSimulation):
-    system.automator.start(system.tools['weeding']())
+    system.automator.start(system.straight_line_navigation.start())
     await forward(1)
     assert system.automator.is_running
     assert system.weeding.start_row_id == field.rows[0].id

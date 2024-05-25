@@ -79,3 +79,9 @@ def gnss_driving(system: System, gnss: GnssSimulation) -> Generator[System, None
     system.automation_watcher.gnss_watch_active = True
     system.automator.start(automation())
     yield system
+
+
+@pytest.fixture
+def detector(system: System) -> Generator[rosys.vision.DetectorSimulation, None, None]:
+    assert isinstance(system.detector, rosys.vision.DetectorSimulation)
+    yield system.detector

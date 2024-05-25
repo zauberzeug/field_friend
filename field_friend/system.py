@@ -185,10 +185,12 @@ class System(rosys.persistence.PersistentModule):
             return None
         return {v.start: k for k, v in self.tools.items()}.get(self.automator.default_automation, None)
 
-    def setup_simulated_usb_camera(self):
+    async def setup_simulated_usb_camera(self):
         self.usb_camera_provider.remove_all_cameras()
-        self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
-                                                                           x=0.4, z=0.4,
-                                                                           roll=np.deg2rad(360-150),
-                                                                           pitch=np.deg2rad(0),
-                                                                           yaw=np.deg2rad(90)))
+        camera = SimulatedCam.create_calibrated(id='bottom_cam',
+                                                x=0.4, z=0.4,
+                                                roll=np.deg2rad(360-150),
+                                                pitch=np.deg2rad(0),
+                                                yaw=np.deg2rad(90))
+        self.usb_camera_provider.add_camera(camera)
+        self.odometer.ROBOT_MOVED.register(lambda: camera.update_calibration(self.odometer.prediction))
