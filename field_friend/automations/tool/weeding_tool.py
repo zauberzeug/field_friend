@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from system import System
 
 
-class WorkflowException(Exception):
+class ToolException(Exception):
     pass
 
 
@@ -118,7 +118,14 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
         if not await self._check_hardware_ready():
             rosys.notify('hardware is not ready')
             return False
+        self.state = 'running'
         return True
+
+    async def finish(self) -> None:
+        self.system.plant_locator.pause()
+        self.system.automation_watcher.stop_field_watch()
+        self.system.automation_watcher.gnss_watch_active = False
+        await self.system.field_friend.stop()
 
     async def _check_hardware_ready(self) -> bool:
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
@@ -151,28 +158,6 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
             return False
         return True
 
-    async def _weeding(self):
-        self.log.info('Starting driving...')
-        await rosys.sleep(0.5)
-        self.state = 'running'
-        try:
-            if self.weeding_plan and self.use_field_planning:
-                await self._weed_with_plan()
-                self.log.info('Weeding with plan completed')
-            else:
-                await self._weed_planless()
-                self.log.info('Planless weeding completed')
-
-        except WorkflowException as e:
-            self.kpi_provider.increment_weeding_kpi('automation_stopped')
-            self.log.error(f'WorkflowException: {e}')
-        finally:
-            self.kpi_provider.increment_weeding_kpi('weeding_completed')
-            await self.system.field_friend.stop()
-            self.system.plant_locator.pause()
-            self.system.automation_watcher.stop_field_watch()
-            self.system.automation_watcher.gnss_watch_active = False
-
     async def observe(self) -> None:
         self.log.info('Checking for plants...')
         while True:
@@ -182,11 +167,12 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
 
     async def on_focus(self) -> None:
         await rosys.sleep(2)  # wait for robot to stand still
-        if self._has_plants_to_handle():
-            self.log.info('Plants to handle...')
-            await self._handle_plants()
-            self.crops_to_handle = {}
-            self.weeds_to_handle = {}
+        if not self._has_plants_to_handle():
+            return
+        self.log.info(f'Handling plants with {self.name}...')
+        await self._perform_workflow()
+        self.crops_to_handle = {}
+        self.weeds_to_handle = {}
 
     def _has_plants_to_handle(self) -> bool:
         relative_crop_positions = {
@@ -214,12 +200,6 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds
         return False
-
-    async def _handle_plants(self) -> None:
-        self.log.info(f'Handling plants with {self.system.field_friend.tool}...')
-        for crop_id in self.crops_to_handle:
-            self._safe_crop_to_row(crop_id)
-        await self._perform_workflow()
 
     async def _perform_workflow(self) -> None:
         pass
@@ -280,24 +260,6 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
                 if distance >= inner_diameter/2 and distance <= outer_diameter/2:
                     return True
         return False
-
-    def _safe_crop_to_row(self, crop_id: str) -> None:
-        if self.current_row is None:
-            return
-        self.log.info(f'Saving crop {crop_id} to row {self.current_row.name}...')
-        crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
-        if crop is None:
-            self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
-            return
-        for c in self.current_row.crops:
-            if c.position.distance(crop.position) < 0.07:
-                self.log.info('Crop already in row')
-                self.current_row.crops.remove(c)
-                self.current_row.crops.append(crop)
-                return
-        if crop.confidence >= 0.85 and len(crop.positions) >= 10:
-            self.log.info('Adding new crop to row')
-            self.current_row.crops.append(crop)
 
     async def _create_simulated_plants(self):
         self.log.info('Creating simulated plants...')

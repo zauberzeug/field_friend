@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 import rosys
 
 from ..puncher import PuncherException
-from .weeding_tool import WeedingTool, WorkflowException
+from .weeding_tool import ToolException, WeedingTool
 
 if TYPE_CHECKING:
     from system import System
@@ -62,7 +62,7 @@ class Tornado(WeedingTool):
         except PuncherException as e:
             self.log.error(f'Error while Tornado Workflow: {e}')
         except Exception as e:
-            raise WorkflowException(f'Error while tornado Workflow: {e}') from e
+            raise ToolException(f'Error while tornado Workflow: {e}') from e
 
     def backup(self) -> dict:
         return super().backup() | {

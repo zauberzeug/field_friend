@@ -65,7 +65,6 @@ class PlantLocator:
         for d in new_image.detections.points:
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
             world_point = camera.calibration.project_from_image(image_point)
-            self.log.info(f'world point: {world_point}')
             if world_point is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue

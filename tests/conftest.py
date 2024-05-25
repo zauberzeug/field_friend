@@ -26,7 +26,8 @@ async def system(integration) -> AsyncGenerator[System, None]:
 
 
 @pytest.fixture
-async def gnss(system: System) -> AsyncGenerator[GnssSimulation, None]:
+async def gnss(system: System, request) -> AsyncGenerator[GnssSimulation, None]:
+    system.version = getattr(request, 'param', 'rb34')
     system.gnss.reference = ROBOT_GEO_START_POSITION
     await forward(1)
     assert system.gnss.device is None, 'device should not be created yet'

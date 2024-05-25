@@ -7,6 +7,7 @@ from rosys.geometry import Point, Pose, Spline
 
 from ...navigation import Gnss
 from ..field import Field, Row
+from ..kpi_provider import KpiProvider
 from ..sequence import find_sequence
 from ..tool.tool import Tool
 from .navigation import Navigation
@@ -17,11 +18,12 @@ class FieldNavigation(Navigation):
     def __init__(self,
                  driver: rosys.driving.Driver,
                  odometer: rosys.driving.Odometer,
+                 kpi_provider: KpiProvider,
                  tool: Tool,
                  shape: rosys.geometry.Prism,
                  gnss:  Gnss,
                  bms: rosys.hardware.Bms) -> None:
-        super().__init__(driver, odometer, tool)
+        super().__init__(driver, odometer, kpi_provider, tool)
 
         self.PATH_PLANNED = rosys.event.Event()
         '''Event that is emitted when the path is planed. The event contains the path as a list of PathSegments.'''
@@ -52,7 +54,7 @@ class FieldNavigation(Navigation):
         self.linear_speed_between_rows: float = 0.3
         self.angular_speed_between_rows: float = 0.8
 
-    async def start(self) -> None:
+    async def _start(self) -> None:
         if not await self.tool.prepare():
             self.log.error('Tool-Preparation failed')
             return

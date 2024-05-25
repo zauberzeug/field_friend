@@ -1,5 +1,5 @@
 # isort: off
-from .weeding_tool import WeedingTool, WorkflowException
+from .weeding_tool import WeedingTool, ToolException
 # isort: on
 from .chop_and_screw import ChopAndScrew
 from .recorder import Recorder
@@ -14,5 +14,5 @@ __all__ = [
     'Recorder',
     'Screw',
     'Tornado',
-    'WorkflowException',
+    'ToolException',
 ]

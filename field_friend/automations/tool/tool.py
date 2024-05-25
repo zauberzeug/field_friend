@@ -13,6 +13,10 @@ class Tool(abc.ABC):
         return False if preparation failed."""
 
     @abc.abstractmethod
+    async def finish(self) -> None:
+        """Finish the tool once at the end (for example to store KPIs)"""
+
+    @abc.abstractmethod
     async def activate(self):
         """Activate the tool (for example to start weeding in a new row)"""
 

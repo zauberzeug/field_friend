@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import rosys
 
 from ..puncher import PuncherException
-from .weeding_tool import Tool, WorkflowException
+from .weeding_tool import Tool, ToolException
 
 if TYPE_CHECKING:
     from system import System
@@ -19,6 +19,9 @@ class Recorder(Tool):
 
     async def prepare(self) -> bool:
         return True
+
+    async def finish(self) -> None:
+        pass
 
     async def activate(self):
         self.system.plant_locator.pause()

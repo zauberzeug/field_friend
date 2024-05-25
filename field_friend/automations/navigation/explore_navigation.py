@@ -3,7 +3,7 @@ from .navigation import Navigation
 
 class ExploreNavigation(Navigation):
 
-    async def start(self):
+    async def _start(self):
         self.log.info('Weeding without a plan...')
         already_explored_count = 0
         while True:

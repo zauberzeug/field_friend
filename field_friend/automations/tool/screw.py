@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import rosys
 
-from . import WeedingTool, WorkflowException
+from . import ToolException, WeedingTool
 
 if TYPE_CHECKING:
     from system import System
@@ -16,7 +16,6 @@ class Screw(WeedingTool):
         super().__init__('Weed Screw', system)
 
     async def _perform_workflow(self) -> None:
-        self.log.info('Performing Screw Workflow..')
         try:
             starting_position = deepcopy(self.system.odometer.prediction)
             self._keep_crops_safe()
@@ -50,7 +49,7 @@ class Screw(WeedingTool):
             await rosys.sleep(0.2)
             self.log.info('Workflow completed')
         except Exception as e:
-            raise WorkflowException(f'Error while Weed Screw Workflow: {e}') from e
+            raise ToolException(f'Error while Weed Screw Workflow: {e}') from e
 
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()

@@ -36,6 +36,8 @@ from .kpi_generator import generate_kpis
 
 class System(rosys.persistence.PersistentModule):
 
+    version = 'rb34'  # insert here your field friend version to be simulated
+
     def __init__(self) -> None:
         super().__init__()
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
@@ -54,13 +56,12 @@ class System(rosys.persistence.PersistentModule):
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
-            version = 'rb34'  # insert here your field friend version to be simulated
-            self.field_friend = FieldFriendSimulation(robot_id=version)
+            self.field_friend = FieldFriendSimulation(robot_id=self.version)
             self.usb_camera_provider = SimulatedCamProvider()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
-            self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
+            self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=self.version)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
@@ -93,7 +94,7 @@ class System(rosys.persistence.PersistentModule):
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
         self.small_weed_category_names = ['coin', 'weed',]
-        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
+        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', ]
         self.plant_locator = PlantLocator(self.usb_camera_provider,
                                           self.detector,
                                           self.plant_provider,
@@ -127,11 +128,15 @@ class System(rosys.persistence.PersistentModule):
         self.monitoring = Recorder(self)
         self.field_navigation = FieldNavigation(self.driver,
                                                 self.odometer,
+                                                self.kpi_provider,
                                                 self.monitoring,
                                                 self.shape,
                                                 self.gnss,
                                                 self.field_friend.bms)
-        self.straight_line_navigation = StraightLineNavigation(self.driver, self.odometer, self.monitoring)
+        self.straight_line_navigation = StraightLineNavigation(self.driver,
+                                                               self.odometer,
+                                                               self.kpi_provider,
+                                                               self.monitoring)
         self.weeding_tools: list[Tool] = [self.monitoring]
         match self.field_friend.tool:
             case 'tornado':

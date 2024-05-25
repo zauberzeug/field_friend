@@ -3,6 +3,7 @@ from rosys.driving.driver import Driver
 
 from field_friend.automations.tool.tool import Tool
 
+from ..kpi_provider import KpiProvider
 from .navigation import Navigation
 
 
@@ -11,13 +12,14 @@ class StraightLineNavigation(Navigation):
     def __init__(self,
                  driver: rosys.driving.Driver,
                  odometer: rosys.driving.Odometer,
+                 kpi_provider: KpiProvider,
                  tool: Tool,
                  ) -> None:
-        super().__init__(driver, odometer, tool)
+        super().__init__(driver, odometer, kpi_provider, tool)
         self.length = 2.0
         self.start_position = self.odometer.prediction.point
 
-    async def start(self):
+    async def _start(self):
         self.start_position = self.odometer.prediction.point
         if not await self.tool.prepare():
             self.log.error('Tool-Preparation failed')

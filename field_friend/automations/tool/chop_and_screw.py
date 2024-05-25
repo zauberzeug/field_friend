@@ -3,7 +3,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 from ..puncher import PuncherException
-from .weeding_tool import WeedingTool, WorkflowException
+from .weeding_tool import ToolException, WeedingTool
 
 if TYPE_CHECKING:
     from system import System
@@ -109,7 +109,7 @@ class ChopAndScrew(WeedingTool):
         except PuncherException as e:
             self.log.error(f'Error while Dual Mechanism Workflow: {e}')
         except Exception as e:
-            raise WorkflowException(f'Error while double mechanism Workflow: {e}') from e
+            raise ToolException(f'Error while double mechanism Workflow: {e}') from e
 
     def backup(self) -> dict:
         return super().backup() | {
