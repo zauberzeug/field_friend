@@ -137,6 +137,7 @@ class System(rosys.persistence.PersistentModule):
                                                                self.odometer,
                                                                self.kpi_provider,
                                                                self.monitoring)
+        self.straight_line_navigation.length = 1.0
         self.weeding_tools: list[Tool] = [self.monitoring]
         match self.field_friend.tool:
             case 'tornado':
