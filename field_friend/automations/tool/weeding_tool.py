@@ -179,7 +179,6 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
             c.id: self.system.odometer.prediction.relative_point(c.position)
             for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and len(c.positions) >= 3
         }
-
         upcoming_crop_positions = {
             c: pos for c, pos in relative_crop_positions.items()
             if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS < pos.x < 0.3
@@ -241,15 +240,15 @@ class WeedingTool(Tool, rosys.persistence.PersistentModule):
     def _keep_crops_safe(self) -> None:
         self.log.info('Keeping crops safe...')
         for crop in self.system.plant_provider.crops:
-            crop_position = self.system.odometer.prediction.transform(crop.position)
+            crop_position = self.system.odometer.prediction.relative_point(crop.position)
             for weed, weed_position in self.weeds_to_handle.items():
                 offset = self.system.field_friend.DRILL_RADIUS + \
-                    self.crop_safety_distance - crop.position.distance(weed_position)
+                    self.crop_safety_distance - crop_position.distance(weed_position)
                 if offset > 0:
                     safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
                     self.weeds_to_handle[weed] = safe_weed_position
-                    self.log.info(
-                        f'Moved weed {weed} from {weed_position} to {safe_weed_position} by {offset} to safe {crop.id} at {crop_position}')
+                    self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
+                                  f'by {offset} to safe {crop.id} at {crop_position}')
 
     def _crops_in_drill_range(self, crop_id: str, crop_position: Point, angle: float) -> bool:
         inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)

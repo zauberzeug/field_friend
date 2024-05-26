@@ -68,8 +68,11 @@ class PlantLocator:
             if world_point is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue
-            plant = Plant(position=world_point.projection(), type_=d.category_name,
-                          detection_time=rosys.time(), confidence=d.confidence, detection_image=new_image)
+            plant = Plant(type=d.category_name,
+                          detection_time=rosys.time(),
+                          confidence=d.confidence,
+                          detection_image=new_image)
+            plant.positions.append(world_point.projection())
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
                 await self.plant_provider.add_weed(plant)

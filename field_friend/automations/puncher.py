@@ -121,7 +121,14 @@ class Puncher:
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         await self.field_friend.y_axis.stop()
 
-    async def drive_and_punch(self, x: float, y: float, depth: float = 0.05, angle: float = 180, turns: float = 2.0, backwards_allowed: bool = True, plant_id: Optional[str] = None) -> None:
+    async def drive_and_punch(self,
+                              x: float,
+                              y: float,
+                              depth: float = 0.05,
+                              angle: float = 180,
+                              turns: float = 2.0,
+                              backwards_allowed: bool = True,
+                              plant_id: Optional[str] = None) -> None:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             return
