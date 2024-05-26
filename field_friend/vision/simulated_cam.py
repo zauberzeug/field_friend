@@ -10,7 +10,6 @@ class SimulatedCam(rosys.vision.SimulatedCamera, rosys.vision.CalibratableCamera
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.focal_length: Optional[float] = None
-        self.mount_position: Optional[rosys.geometry.Point3d] = None
         self.mounting: Optional[rosys.vision.calibration.Extrinsics] = None
 
     @classmethod
