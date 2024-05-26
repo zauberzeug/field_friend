@@ -1,9 +1,9 @@
 import asyncio
 import logging
-from copy import deepcopy
 
 import rosys
 
+from ..vision import SimulatedCam
 from .plant import Plant
 from .plant_provider import PlantProvider
 
@@ -64,7 +64,14 @@ class PlantLocator:
         # self.log.info(f'{[point.category_name for point in new_image.detections.points]} detections found')
         for d in new_image.detections.points:
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-            world_point = camera.calibration.project_from_image(image_point)
+            if isinstance(camera, SimulatedCam):
+                world_point = camera.calibration.project_from_image(image_point)
+            else:
+                floor_point = camera.calibration.project_from_image(image_point)
+                if floor_point is None:
+                    self.log.error('could not generate floor point of detection, calibration error')
+                    continue
+                world_point = self.odometer.prediction.transform(floor_point.projection())
             if world_point is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue
