@@ -65,7 +65,7 @@ class PlantLocator:
         for d in new_image.detections.points:
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
             if isinstance(camera, SimulatedCam):
-                world_point = camera.calibration.project_from_image(image_point)
+                world_point = camera.calibration.project_from_image(image_point).projection()
             else:
                 floor_point = camera.calibration.project_from_image(image_point)
                 if floor_point is None:
@@ -79,7 +79,7 @@ class PlantLocator:
                           detection_time=rosys.time(),
                           confidence=d.confidence,
                           detection_image=new_image)
-            plant.positions.append(world_point.projection())
+            plant.positions.append(world_point)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
                 await self.plant_provider.add_weed(plant)
