@@ -12,12 +12,12 @@ async def test_straight_line(system: System):
     assert system.odometer.prediction.point.x == 0
     assert isinstance(system.straight_line_navigation, StraightLineNavigation)
     assert isinstance(system.straight_line_navigation.tool, Recorder)
-    system.automator.start(system.straight_line_navigation._start())
+    system.automator.start(system.straight_line_navigation.start())
     await forward(2)
     assert system.automator.is_running
     await forward(20)
     assert not system.automator.is_running, 'default is 2m, so automation should stop'
-    assert system.odometer.prediction.point.x == pytest.approx(2.0, abs=0.1)
+    assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
 
 
 # async def test_start_weeding_auto_selects_rows(system: System, field: Field, gnss: GnssSimulation):
