@@ -8,7 +8,7 @@ from rosys.helpers import eliminate_2pi
 
 from .plant import Plant
 from .puncher import PuncherException
-from .tool.tool import Tool
+from .tool.tool import Implement
 
 if TYPE_CHECKING:
     from system import System
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 TORNADO_ANGLE = 110.0
 
 
-class CoinCollecting(Tool):
+class CoinCollecting(Implement):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Demo')

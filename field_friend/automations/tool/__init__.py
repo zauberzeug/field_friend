@@ -1,18 +1,18 @@
 # isort: off
-from .weeding_tool import WeedingTool, ToolException
+from .weeding_tool import WeedingImplement, ImplementException
 # isort: on
 from .chop_and_screw import ChopAndScrew
 from .recorder import Recorder
 from .screw import Screw
-from .tool import Tool
+from .tool import Implement
 from .tornado import Tornado
 
 __all__ = [
-    'Tool',
-    'WeedingTool',
+    'Implement',
+    'WeedingImplement',
     'ChopAndScrew',
     'Recorder',
     'Screw',
     'Tornado',
-    'ToolException',
+    'ImplementException',
 ]

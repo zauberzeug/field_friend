@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 
 import rosys
 
-from . import ToolException, WeedingTool
+from . import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
     from system import System
 
 
-class Screw(WeedingTool):
+class Screw(WeedingImplement):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Weed Screw', system)
@@ -53,7 +53,7 @@ class Screw(WeedingTool):
             await rosys.sleep(0.2)
             self.log.info('Workflow completed')
         except Exception as e:
-            raise ToolException(f'Error while Weed Screw Workflow: {e}') from e
+            raise ImplementException(f'Error while Weed Screw Workflow: {e}') from e
 
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()

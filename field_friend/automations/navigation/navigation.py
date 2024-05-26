@@ -5,7 +5,7 @@ from typing import Any
 import rosys
 
 from ..kpi_provider import KpiProvider
-from ..tool.tool import Tool
+from ..tool.tool import Implement
 
 
 class WorkflowException(Exception):
@@ -18,14 +18,14 @@ class Navigation(rosys.persistence.PersistentModule):
                  driver: rosys.driving.Driver,
                  odometer: rosys.driving.Odometer,
                  kpi_provider: KpiProvider,
-                 tool: Tool,
+                 implement: Implement,
                  ) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.navigation')
         self.driver = driver
         self.odometer = odometer
         self.kpi_provider = kpi_provider
-        self.tool = tool
+        self.implement = implement
 
     async def start(self) -> None:
         try:
@@ -35,7 +35,7 @@ class Navigation(rosys.persistence.PersistentModule):
             self.log.error(f'WorkflowException: {e}')
         finally:
             self.kpi_provider.increment_weeding_kpi('weeding_completed')
-            await self.tool.finish()
+            await self.implement.finish()
             await self.driver.wheels.stop()
 
     @abc.abstractmethod

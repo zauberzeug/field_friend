@@ -29,7 +29,7 @@ from .automations import (
     Puncher,
 )
 from .automations.navigation import FieldNavigation, StraightLineNavigation
-from .automations.tool import ChopAndScrew, Recorder, Screw, Tool, Tornado
+from .automations.tool import ChopAndScrew, Implement, Recorder, Screw, Tornado
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -45,7 +45,6 @@ class System(rosys.persistence.PersistentModule):
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED = rosys.event.Event()
 
-        self.field_friend: FieldFriendHardware | FieldFriendSimulation
         self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         if self.is_real:
@@ -138,7 +137,7 @@ class System(rosys.persistence.PersistentModule):
                                                                self.kpi_provider,
                                                                self.monitoring)
         self.straight_line_navigation.length = 1.0
-        self.weeding_tools: list[Tool] = [self.monitoring]
+        self.weeding_tools: list[Implement] = [self.monitoring]
         match self.field_friend.tool:
             case 'tornado':
                 self.weeding_tools.append(Tornado(self))
@@ -155,10 +154,10 @@ class System(rosys.persistence.PersistentModule):
         # self.coin_collecting = CoinCollecting(self)
         # self.mowing = Mowing(self, robot_width=width, shape=self.shape)
         # self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
-        tools: list[Tool] = self.weeding_tools  # + [self.coin_collecting, self.mowing]
+        tools: list[Implement] = self.weeding_tools  # + [self.coin_collecting, self.mowing]
         self.tools = {t.name: t for t in tools}
-        self.field_navigation.tool = Recorder(self)
-        self.straight_line_navigation.tool = Recorder(self)
+        self.field_navigation.implement = Recorder(self)
+        self.straight_line_navigation.implement = Screw(self)
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
                                                     default_automation=self.straight_line_navigation.start)
         self.info = Info(self)

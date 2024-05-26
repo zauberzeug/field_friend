@@ -14,7 +14,7 @@ from .plant_locator import DetectorError, PlantLocator
 from .plant_provider import PlantProvider
 from .puncher import Puncher, PuncherException
 from .sequence import find_sequence
-from .tool.tool import Tool
+from .tool.tool import Implement
 
 __all__ = [
     'CoveragePlanner',
@@ -22,7 +22,7 @@ __all__ = [
     'Field',
     'FieldObstacle',
     'FieldProvider',
-    'Tool',
+    'Implement',
     'Mowing',
     'Path',
     'PathProvider',

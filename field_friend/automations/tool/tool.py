@@ -1,7 +1,7 @@
 import abc
 
 
-class Tool(abc.ABC):
+class Implement(abc.ABC):
 
     def __init__(self, name: str) -> None:
         self.name = name

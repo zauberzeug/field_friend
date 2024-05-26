@@ -9,7 +9,7 @@ from ...navigation import Gnss
 from ..field import Field, Row
 from ..kpi_provider import KpiProvider
 from ..sequence import find_sequence
-from ..tool.tool import Tool
+from ..tool.tool import Implement
 from .navigation import Navigation
 
 
@@ -19,7 +19,7 @@ class FieldNavigation(Navigation):
                  driver: rosys.driving.Driver,
                  odometer: rosys.driving.Odometer,
                  kpi_provider: KpiProvider,
-                 tool: Tool,
+                 tool: Implement,
                  shape: rosys.geometry.Prism,
                  gnss:  Gnss,
                  bms: rosys.hardware.Bms) -> None:
@@ -55,7 +55,7 @@ class FieldNavigation(Navigation):
         self.angular_speed_between_rows: float = 0.8
 
     async def _start(self) -> None:
-        if not await self.tool.prepare():
+        if not await self.implement.prepare():
             self.log.error('Tool-Preparation failed')
             return
         if not await self._prepare():
@@ -68,7 +68,7 @@ class FieldNavigation(Navigation):
             self.driver.parameters.linear_speed_limit = self.linear_speed_on_row
             self.driver.parameters.angular_speed_limit = self.angular_speed_on_row
             self.current_row = self.sorted_weeding_rows[i]
-            await self.tool.activate()
+            await self.implement.activate()
             for j, segment in enumerate(path):
                 if self.continue_canceled_weeding and self.current_segment != segment:
                     continue
@@ -81,11 +81,11 @@ class FieldNavigation(Navigation):
                 while not self.row_segment_completed:
                     self.log.info('while not row completed...')
                     await rosys.automation.parallelize(
-                        self.tool.observe(),
+                        self.implement.observe(),
                         self._drive_segment(),
                         return_when_first_completed=True
                     )
-                    await self.tool.on_focus()
+                    await self.implement.on_focus()
                     if self.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
                         self.row_segment_completed = True
                     await rosys.sleep(0.2)
@@ -95,7 +95,7 @@ class FieldNavigation(Navigation):
                         await self.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
                         return
 
-            await self.tool.deactivate()
+            await self.implement.deactivate()
             if i < len(self.weeding_plan) - 1:
                 self.driver.parameters.can_drive_backwards = True
                 self.driver.parameters.linear_speed_limit = self.linear_speed_between_rows

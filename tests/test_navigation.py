@@ -11,7 +11,7 @@ from field_friend.navigation import GeoPoint, GnssSimulation
 async def test_straight_line(system: System):
     assert system.odometer.prediction.point.x == 0
     assert isinstance(system.straight_line_navigation, StraightLineNavigation)
-    assert isinstance(system.straight_line_navigation.tool, Recorder)
+    assert isinstance(system.straight_line_navigation.implement, Recorder)
     system.automator.start(system.straight_line_navigation.start())
     await forward(2)
     assert system.automator.is_running

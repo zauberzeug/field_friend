@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING
 import rosys
 
 from ..puncher import PuncherException
-from .weeding_tool import Tool, ToolException
+from .weeding_tool import Implement, ImplementException
 
 if TYPE_CHECKING:
     from system import System
 
 
-class Recorder(Tool):
+class Recorder(Implement):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Recorder')

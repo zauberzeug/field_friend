@@ -1,7 +1,7 @@
 import rosys
 from rosys.driving.driver import Driver
 
-from field_friend.automations.tool.tool import Tool
+from field_friend.automations.tool.tool import Implement
 
 from ..kpi_provider import KpiProvider
 from .navigation import Navigation
@@ -13,7 +13,7 @@ class StraightLineNavigation(Navigation):
                  driver: rosys.driving.Driver,
                  odometer: rosys.driving.Odometer,
                  kpi_provider: KpiProvider,
-                 tool: Tool,
+                 tool: Implement,
                  ) -> None:
         super().__init__(driver, odometer, kpi_provider, tool)
         self.length = 2.0
@@ -21,21 +21,21 @@ class StraightLineNavigation(Navigation):
 
     async def _start(self):
         self.start_position = self.odometer.prediction.point
-        if not await self.tool.prepare():
+        if not await self.implement.prepare():
             self.log.error('Tool-Preparation failed')
             return
         self.log.info('driving straight line forward...')
-        await self.tool.activate()
+        await self.implement.activate()
         while True:
             await rosys.automation.parallelize(
-                self.tool.observe(),
+                self.implement.observe(),
                 self._drive_forward(),
                 return_when_first_completed=True
             )
-            await self.tool.on_focus()
+            await self.implement.on_focus()
             if await self._should_stop():
                 break
-        await self.tool.deactivate()
+        await self.implement.deactivate()
 
     async def _drive_forward(self):
         while not await self._should_stop():

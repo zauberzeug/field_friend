@@ -5,29 +5,27 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 import rosys
 from nicegui import ui
-from rosys.driving import PathSegment
-from rosys.geometry import Point, Pose, Spline
+from rosys.geometry import Point, Pose
 from rosys.helpers import eliminate_2pi
 
 from ...hardware import ChainAxis
-from ..navigation import Navigation
 from ..plant import Plant
-from ..tool.tool import Tool
+from ..tool.tool import Implement
 
 if TYPE_CHECKING:
     from system import System
 
 
-class ToolException(Exception):
+class ImplementException(Exception):
     pass
 
 
-class WeedingTool(Tool, rosys.persistence.PersistentModule):
+class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     WORKING_DISTANCE = 0.06
     DRIVE_DISTANCE = 0.04
 
     def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
-        Tool.__init__(self, name)
+        Implement.__init__(self, name)
         rosys.persistence.PersistentModule.__init__(self, persistence_key=f'field_friend.automations.{persistence_key}')
 
         self.log = logging.getLogger('field_friend.weeding')

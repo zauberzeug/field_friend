@@ -11,16 +11,16 @@ from shapely.geometry import LineString
 from . import Field
 from .coverage_planer import CoveragePlanner
 from .sequence import find_sequence
-from .tool.tool import Tool
+from .tool.tool import Implement
 
 if TYPE_CHECKING:
     from system import System
 
 
-class Mowing(Tool, rosys.persistence.PersistentModule):
+class Mowing(Implement, rosys.persistence.PersistentModule):
 
     def __init__(self, system: 'System', *, robot_width: float, shape: rosys.geometry.Prism) -> None:
-        Tool.__init__(self, 'Mowing')
+        Implement.__init__(self, 'Mowing')
         rosys.persistence.PersistentModule.__init__(self)
         self.log = logging.getLogger('field_friend.path_recorder')
         self.field_friend = system.field_friend
