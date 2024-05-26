@@ -50,7 +50,9 @@ class CameraConfigurator:
                         parameters_changed = True
                     else:
                         self.log.info(f'{camera.parameters[parameter]} = {value}')
-
+            if not camera.streaming:
+                camera.streaming = True
+                parameters_changed = True
             if 'crop' in self.config:
                 # Fetch new cropping parameters
                 left = self.config['crop']['left']
