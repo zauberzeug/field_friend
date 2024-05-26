@@ -176,7 +176,9 @@ class leaflet_map:
         self.robot_marker.move(*position.tuple)
 
     def zoom_to_robot(self) -> None:
-        assert self.gnss.current is not None
+        if self.gnss.current is None:
+            self.log.warning('No GNSS position available, could not zoom to robot')
+            return
         self.m.set_center(self.gnss.current.location.tuple)
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
