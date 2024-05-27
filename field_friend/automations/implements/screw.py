@@ -26,16 +26,15 @@ class Screw(WeedingImplement):
                 while weeds_in_range:
                     next_weed_id, next_weed_position = list(weeds_in_range.items())[0]
                     weed_world_position = starting_position.transform(next_weed_position)
-                    self.log.info(f'Targeting weed at {weed_world_position}')
-                    corrected_relative_weed_position = \
-                        self.system.odometer.prediction.relative_point(weed_world_position)
+                    self.log.info(f'Targeting weed at world: {weed_world_position}, local: {next_weed_position}')
                     await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
-                                                              x=corrected_relative_weed_position.x,
-                                                              y=corrected_relative_weed_position.y,
+                                                              x=next_weed_position.x,
+                                                              y=next_weed_position.y,
                                                               depth=self.weed_screw_depth,
                                                               backwards_allowed=False)
                     punched_weeds = [weed_id for weed_id, position in weeds_in_range.items()
-                                     if position.distance(corrected_relative_weed_position) <= self.system.field_friend.DRILL_RADIUS]
+                                     if position.distance(next_weed_position) <= self.system.field_friend.DRILL_RADIUS
+                                     or weed_id == next_weed_id]
                     if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
                         self.system.detector.simulated_objects = [
                             obj for obj in self.system.detector.simulated_objects
