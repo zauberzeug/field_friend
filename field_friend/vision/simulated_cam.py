@@ -28,10 +28,7 @@ class SimulatedCam(rosys.vision.SimulatedCamera, rosys.vision.CalibratableCamera
         assert self.mounting is not None
         assert self.calibration is not None
         new_translation = pose.transform3d(rosys.geometry.Point3d.from_tuple(self.mounting.translation))
-        pose_rotation = rosys.geometry.Rotation.from_euler(0, 0, pose.yaw)  # Assuming pose contains only yaw for 2D
+        pose_rotation = rosys.geometry.Rotation.from_euler(0, 0, pose.yaw)
         new_rotation = pose_rotation * self.mounting.rotation
-        self.calibration = rosys.vision.calibration.Calibration(
-            intrinsics=self.calibration.intrinsics,
-            extrinsics=rosys.vision.calibration.Extrinsics(rotation=new_rotation, translation=[
-                new_translation.x, new_translation.y, new_translation.z])
-        )
+        self.calibration.extrinsics.rotation = new_rotation
+        self.calibration.extrinsics.translation[:] = new_translation.tuple
