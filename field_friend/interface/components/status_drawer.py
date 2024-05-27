@@ -82,7 +82,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
         with ui.row().classes('place-items-center'):
             ui.markdown('**Tool:**').style('color: #6E93D6')
-            ui.label(robot.tool)
+            ui.label(robot.implement_name)
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):

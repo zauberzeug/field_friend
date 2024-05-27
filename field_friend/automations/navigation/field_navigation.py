@@ -7,9 +7,9 @@ from rosys.geometry import Point, Pose, Spline
 
 from ...navigation import Gnss
 from ..field import Field, Row
+from ..implements.implement import Implement
 from ..kpi_provider import KpiProvider
 from ..sequence import find_sequence
-from ..tool.tool import Implement
 from .navigation import Navigation
 
 

@@ -4,8 +4,8 @@ from typing import Any
 
 import rosys
 
+from ..implements.implement import Implement
 from ..kpi_provider import KpiProvider
-from ..tool.tool import Implement
 
 
 class WorkflowException(Exception):

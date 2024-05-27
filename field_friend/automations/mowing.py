@@ -10,8 +10,8 @@ from shapely.geometry import LineString
 
 from . import Field
 from .coverage_planer import CoveragePlanner
+from .implements.implement import Implement
 from .sequence import find_sequence
-from .tool.tool import Implement
 
 if TYPE_CHECKING:
     from system import System

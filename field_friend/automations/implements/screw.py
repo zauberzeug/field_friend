@@ -29,7 +29,6 @@ class Screw(WeedingImplement):
                     self.log.info(f'Targeting weed at {weed_world_position}')
                     corrected_relative_weed_position = \
                         self.system.odometer.prediction.relative_point(weed_world_position)
-                    self.log.info(f'Targeting weed at {weed_world_position}')
                     await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
                                                               x=corrected_relative_weed_position.x,
                                                               y=corrected_relative_weed_position.y,

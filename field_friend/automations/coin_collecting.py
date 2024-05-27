@@ -6,9 +6,9 @@ import rosys
 from rosys.geometry import Point
 from rosys.helpers import eliminate_2pi
 
+from .implements.implement import Implement
 from .plant import Plant
 from .puncher import PuncherException
-from .tool.tool import Implement
 
 if TYPE_CHECKING:
     from system import System
@@ -33,7 +33,7 @@ class CoinCollecting(Implement):
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return
-        if self.system.field_friend.tool != 'tornado':
+        if self.system.field_friend.implement_name != 'tornado':
             rosys.notify('Tool is not tornado, aborting', 'negative')
             self.log.error('Tool is not tornado, aborting')
             return

@@ -28,8 +28,8 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
+from .automations.implements import ChopAndScrew, Implement, Recorder, Screw, Tornado
 from .automations.navigation import FieldNavigation, StraightLineNavigation
-from .automations.tool import ChopAndScrew, Implement, Recorder, Screw, Tornado
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -101,7 +101,7 @@ class System(rosys.persistence.PersistentModule):
                                           )
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
-        if self.field_friend.tool == 'tornado':
+        if self.field_friend.implement_name == 'tornado':
             self.plant_locator.minimum_weed_confidence = 0.8
             self.plant_locator.minimum_crop_confidence = 0.75
         else:
@@ -138,7 +138,7 @@ class System(rosys.persistence.PersistentModule):
                                                                self.monitoring)
         self.straight_line_navigation.length = 1.0
         self.weeding_tools: list[Implement] = [self.monitoring]
-        match self.field_friend.tool:
+        match self.field_friend.implement_name:
             case 'tornado':
                 self.weeding_tools.append(Tornado(self))
             case 'weed_screw':
@@ -149,7 +149,7 @@ class System(rosys.persistence.PersistentModule):
             case 'none':
                 self.weeding_tools.append(Screw(self))
             case _:
-                raise NotImplementedError(f'Unknown tool: {self.field_friend.tool}')
+                raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         # TODO reactivate other tools
         # self.coin_collecting = CoinCollecting(self)
         # self.mowing = Mowing(self, robot_width=width, shape=self.shape)

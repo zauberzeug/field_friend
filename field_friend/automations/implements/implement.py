@@ -8,21 +8,21 @@ class Implement(abc.ABC):
 
     @abc.abstractmethod
     async def prepare(self) -> bool:
-        """Prepare the tool once at the beginning (for reference points, etc.); 
+        """Prepare the implement once at the beginning (for reference points, etc.); 
 
         return False if preparation failed."""
 
     @abc.abstractmethod
     async def finish(self) -> None:
-        """Finish the tool once at the end (for example to store KPIs)"""
+        """Finish the implement once at the end (for example to store KPIs)"""
 
     @abc.abstractmethod
     async def activate(self):
-        """Activate the tool (for example to start weeding in a new row)"""
+        """Activate the implement (for example to start weeding in a new row)"""
 
     @abc.abstractmethod
     async def deactivate(self):
-        """Deactivate the tool (for example to stop weeding at the row's end)"""
+        """Deactivate the implement (for example to stop weeding at the row's end)"""
 
     @abc.abstractmethod
     async def observe(self) -> None:
@@ -38,4 +38,4 @@ class Implement(abc.ABC):
 
     @abc.abstractmethod
     def reset_kpis(self):
-        """Reset KPIs for the tool."""
+        """Reset KPIs for the implement."""

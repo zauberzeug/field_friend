@@ -9,8 +9,8 @@ from rosys.geometry import Point, Pose
 from rosys.helpers import eliminate_2pi
 
 from ...hardware import ChainAxis
+from ..implements.implement import Implement
 from ..plant import Plant
-from ..tool.tool import Implement
 
 if TYPE_CHECKING:
     from system import System
@@ -55,7 +55,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def activate(self):
         self.system.plant_locator.pause()
         self.system.plant_provider.clear()
-        if self.system.field_friend.tool != 'none':
+        if self.system.field_friend.implement_name != 'none':
             await self.system.puncher.clear_view()
         await self.system.field_friend.flashlight.turn_on()
         await rosys.sleep(3)
@@ -137,7 +137,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         if camera.calibration is None:
             rosys.notify('camera has no calibration')
             return False
-        if self.system.field_friend.tool == 'none':
+        if self.system.field_friend.implement_name == 'none':
             rosys.notify('This field friend has no tool, only monitoring', 'info')
             self.log.info('This field friend has no tool, only monitoring')
             return True

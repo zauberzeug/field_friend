@@ -1,7 +1,6 @@
 import rosys
-from rosys.driving.driver import Driver
 
-from field_friend.automations.tool.tool import Implement
+from field_friend.automations.implements.implement import Implement
 
 from ..kpi_provider import KpiProvider
 from .navigation import Navigation

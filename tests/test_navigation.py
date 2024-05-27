@@ -1,11 +1,9 @@
 import pytest
-from rosys.testing import assert_point, forward
+from rosys.testing import forward
 
 from field_friend import System
-from field_friend.automations import Field
+from field_friend.automations.implements import Recorder
 from field_friend.automations.navigation import StraightLineNavigation
-from field_friend.automations.tool import Recorder
-from field_friend.navigation import GeoPoint, GnssSimulation
 
 
 async def test_straight_line(system: System):
