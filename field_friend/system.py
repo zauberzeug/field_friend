@@ -144,6 +144,7 @@ class System(rosys.persistence.PersistentModule):
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
         self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)
+        self.current_navigation = self.straight_line_navigation
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
 
@@ -163,7 +164,6 @@ class System(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.current_navigation = self.straight_line_navigation
         implement = self.implements.get(data.get('implement', None), None)
         if implement is not None:
             self.current_navigation.implement = implement
@@ -175,7 +175,10 @@ class System(rosys.persistence.PersistentModule):
     @current_implement.setter
     def current_implement(self, implement: Implement) -> None:
         self.current_navigation.implement = implement
-        self.AUTOMATION_CHANGED.emit(implement.name)
+        if hasattr(implement, 'relevant_weeds'):
+            self.plant_provider.relevant_weeds = implement.relevant_weeds
+        else:
+            self.plant_provider.relevant_weeds = self.small_weed_category_names + self.big_weed_category_names
         self.request_backup()
 
     @property
@@ -185,7 +188,8 @@ class System(rosys.persistence.PersistentModule):
     @current_navigation.setter
     def current_navigation(self, navigation: Navigation) -> None:
         self._current_navigation = navigation
-        self.automator.default_automation = self.current_navigation.start
+        self.automator.default_automation = self._current_navigation.start
+        self.AUTOMATION_CHANGED.emit(navigation.name)
 
     async def setup_simulated_usb_camera(self):
         self.usb_camera_provider.remove_all_cameras()

@@ -21,6 +21,7 @@ class PlantProvider:
 
     def __init__(self) -> None:
         self.log = logging.getLogger('field_friend.plant_provider')
+        self.relevant_weeds: list[str] = []
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 
@@ -50,6 +51,8 @@ class PlantProvider:
 
     async def add_weed(self, weed: Plant) -> None:
         if check_if_plant_exists(weed, self.weeds, 0.04):
+            return
+        if weed.type not in self.relevant_weeds:
             return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()

@@ -15,6 +15,7 @@ class Screw(WeedingImplement):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Weed Screw', system)
+        self.relevant_weeds = system.big_weed_category_names
 
     async def _perform_workflow(self) -> None:
         try:
