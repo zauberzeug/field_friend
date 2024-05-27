@@ -49,11 +49,6 @@ class automation_controls:
         ui.timer(config.ui_update_interval, refresh)
 
     async def can_start(self) -> bool:
-        self.log.info('Checking if automation can be started')
-        if self.system.get_current_automation_id() == 'mowing':
-            return await self.can_mowing_start()
-        elif self.system.get_current_automation_id() == 'weeding':
-            return await self.can_weeding_start()
         return True
 
     async def can_mowing_start(self) -> bool:

@@ -3,6 +3,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import rosys
+from nicegui import ui
 
 from . import ImplementException, WeedingImplement
 
@@ -56,3 +57,6 @@ class Screw(WeedingImplement):
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()
         return any(self.weeds_to_handle)
+
+    def settings_ui(self):
+        ui.label('Weeding Screw settings ...')

@@ -17,6 +17,7 @@ class StraightLineNavigation(Navigation):
         super().__init__(driver, odometer, kpi_provider, tool)
         self.length = 2.0
         self.start_position = self.odometer.prediction.point
+        self.name = 'Straight Line'
 
     async def _start(self):
         self.start_position = self.odometer.prediction.point

@@ -26,6 +26,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.odometer = odometer
         self.kpi_provider = kpi_provider
         self.implement = implement
+        self.name = 'Unknown'
 
     async def start(self) -> None:
         try:

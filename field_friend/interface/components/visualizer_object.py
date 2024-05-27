@@ -19,7 +19,7 @@ class visualizer_object(Object3D):
         self.refresh()
 
     def refresh(self) -> None:
-        automation = self.system.get_current_automation_id()
+        automation = self.system.current_implement
         # TODO visualization should be part of tool and navigation strategy
         # if automation == 'weeding':
         #     segments = self.system.weeding.weeding_plan + self.system.weeding.turn_paths

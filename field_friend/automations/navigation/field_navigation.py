@@ -28,6 +28,7 @@ class FieldNavigation(Navigation):
         self.PATH_PLANNED = rosys.event.Event()
         '''Event that is emitted when the path is planed. The event contains the path as a list of PathSegments.'''
 
+        self.name = 'Field'
         self.gnss = gnss
         self.bms = bms
         self.path_planner = rosys.pathplanning.PathPlanner(shape)
