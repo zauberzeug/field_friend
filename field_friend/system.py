@@ -30,8 +30,7 @@ class System(rosys.persistence.PersistentModule):
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = CalibratableUsbCameraProvider()
-            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(
-                username='root', password='zauberzg!')
+            self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
@@ -39,12 +38,8 @@ class System(rosys.persistence.PersistentModule):
             version = 'rb28'  # insert here your field friend version to be simulated
             self.field_friend = FieldFriendSimulation(robot_id=version)
             self.usb_camera_provider = SimulatedCamProvider()
-            self.usb_camera_provider.remove_all_cameras()
-            self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
-                                                                               x=0.4, z=0.4,
-                                                                               roll=np.deg2rad(360-150),
-                                                                               pitch=np.deg2rad(0),
-                                                                               yaw=np.deg2rad(90)))
+            # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
+            rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
         self.plant_provider = PlantProvider()
@@ -53,8 +48,10 @@ class System(rosys.persistence.PersistentModule):
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
+            assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
+            self.gnss = GnssSimulation(self.odometer)
             self.gnss = GnssSimulation(self.odometer)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
@@ -152,3 +149,11 @@ class System(rosys.persistence.PersistentModule):
         if self.automator.default_automation is None:
             return None
         return {v: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
+
+    def setup_simulated_usb_camera(self):
+        self.usb_camera_provider.remove_all_cameras()
+        self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
+                                                                           x=0.4, z=0.4,
+                                                                           roll=np.deg2rad(360-150),
+                                                                           pitch=np.deg2rad(0),
+                                                                           yaw=np.deg2rad(90)))

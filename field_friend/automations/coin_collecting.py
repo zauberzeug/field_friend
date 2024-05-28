@@ -6,7 +6,7 @@ import rosys
 from rosys.geometry import Point
 from rosys.helpers import eliminate_2pi
 
-from .plant_provider import Plant
+from .plant import Plant
 from .puncher import PuncherException
 
 if TYPE_CHECKING:
@@ -129,8 +129,8 @@ class CoinCollecting():
     def create_simulated_plants(self):
         for i in range(1, 8):
             self.system.plant_provider.add_crop(Plant(
-                id=str(i),
-                type='coin_with_hole',
+                id_=str(i),
+                type_='coin_with_hole',
                 position=Point(x=0.1 * i, y=pow(i*0.1, 5)),
                 detection_time=rosys.time(),
                 confidence=0.9,

@@ -11,7 +11,7 @@ from rosys.helpers import eliminate_2pi
 
 from ..hardware import ChainAxis
 from .field_provider import Field, Row
-from .plant_provider import Plant
+from .plant import Plant
 from .puncher import PuncherException
 from .sequence import find_sequence
 
@@ -165,19 +165,16 @@ class Weeding(rosys.persistence.PersistentModule):
         self.angular_speed_on_row = data.get('angular_speed_on_row', self.angular_speed_on_row)
         self.linear_speed_between_rows = data.get('linear_speed_between_rows', self.linear_speed_between_rows)
         self.angular_speed_between_rows = data.get('angular_speed_between_rows', self.angular_speed_between_rows)
-        self.sorted_weeding_rows = [rosys.persistence.from_dict(
-            Row, row_data) for row_data in data['sorted_weeding_rows']]
+        self.sorted_weeding_rows = [rosys.persistence.from_dict(Row, row_data)
+                                    for row_data in data['sorted_weeding_rows']]
         self.field = rosys.persistence.from_dict(Field, data['field']) if data['field'] else None
-        self.weeding_plan = [
-            [rosys.persistence.from_dict(PathSegment, segment_data)
-             for segment_data in row_data] for row_data in data.get('weeding_plan', [])
-        ]
+        self.weeding_plan = [[rosys.persistence.from_dict(PathSegment, segment_data)
+                              for segment_data in row_data] for row_data in data.get('weeding_plan', [])]
         self.turn_paths = [rosys.persistence.from_dict(PathSegment, segment_data)
                            for segment_data in data.get('turn_paths', [])]
-        self.current_row = rosys.persistence.from_dict(
-            Row, data['current_row']) if data['current_row'] else None
-        self.current_segment = rosys.persistence.from_dict(PathSegment, data[
-            'current_segment']) if data['current_segment'] else None
+        self.current_row = rosys.persistence.from_dict(Row, data['current_row']) if data['current_row'] else None
+        self.current_segment = rosys.persistence.from_dict(PathSegment, data['current_segment']) \
+            if data['current_segment'] else None
 
     def invalidate(self) -> None:
         self.log.info('backing up...')
@@ -912,8 +909,8 @@ class Weeding(rosys.persistence.PersistentModule):
             for i in range(1, int(distance/0.20)):
                 for j in range(1, 4):
                     await self.system.plant_provider.add_crop(Plant(
-                        id=f'{i}_{j}',
-                        type='beet',
+                        id_=f'{i}_{j}',
+                        type_='beet',
                         position=self.system.odometer.prediction.point.polar(
                             0.18*i+(randint(-2, 2)*0.01), self.system.odometer.prediction.yaw).polar(randint(-4, 4)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                         detection_time=rosys.time(),
@@ -932,19 +929,19 @@ class Weeding(rosys.persistence.PersistentModule):
             self.log.info('Creating simulated plants for whole row')
             for i in range(0, 30):
                 await self.system.plant_provider.add_crop(Plant(
-                    id=str(i),
-                    type='beet',
-                    position=self.system.odometer.prediction.point.polar(
-                        0.20*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
+                    id_=str(i),
+                    type_='beet',
+                    position=self.system.odometer.prediction.point.polar(0.20*i, self.system.odometer.prediction.yaw)
+                    .polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                     detection_time=rosys.time(),
                     confidence=0.9,
                 ))
                 for j in range(1, 7):
                     await self.system.plant_provider.add_weed(Plant(
-                        id=f'{i}_{j}',
-                        type='weed',
-                        position=self.system.odometer.prediction.point.polar(
-                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
+                        id_=f'{i}_{j}',
+                        type_='weed',
+                        position=self.system.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(
+                            randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))

@@ -8,8 +8,9 @@ from .kpi_provider import KpiProvider
 from .mowing import Mowing
 from .path_provider import Path, PathProvider
 from .path_recorder import PathRecorder
+from .plant import Plant
 from .plant_locator import DetectorError, PlantLocator
-from .plant_provider import Plant, PlantProvider
+from .plant_provider import PlantProvider
 from .puncher import Puncher
 from .sequence import find_sequence
 from .weeding import Weeding

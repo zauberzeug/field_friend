@@ -1,54 +1,9 @@
 import logging
-import uuid
-from collections import deque
-from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import rosys
-from rosys.geometry import Point
-from rosys.vision import Image
 
-
-@dataclass(slots=True, kw_only=True)
-class Plant:
-    id: str = ...
-    type: str
-    positions: deque[Point]
-    detection_time: float
-    confidences: deque[float]
-    detection_image: Optional[Image] = None
-
-    def __init__(self, type: str, position: Point, detection_time: float, id: str = ..., confidence: float = 0.0, max_positions: int = 20, detection_image: Optional[Image] = None) -> None:
-        self.id = id
-        self.type = type
-        self.detection_time = detection_time
-        self.detection_image = detection_image
-        self.positions = deque([position], maxlen=max_positions)
-        self.confidences = deque([confidence], maxlen=max_positions)
-
-    def __post_init__(self) -> None:
-        """Generate a unique ID if not already loaded from persistence"""
-        if self.id == ...:
-            self.id = str(uuid.uuid4())
-
-    @property
-    def position(self) -> Point:
-        """Calculate the middle position of all points"""
-        sum_confidence = sum(self.confidences)
-        x = 0.0
-        y = 0.0
-        for position, confidence in zip(self.positions, self.confidences):
-            confidence_weight = confidence / sum_confidence
-            x += position.x * confidence_weight
-            y += position.y * confidence_weight
-        return Point(x=x, y=y)
-
-    @property
-    def confidence(self) -> float:
-        # TODO: maybe use weighted confidence
-        # sum_confidence = sum(confidence**1.5 for confidence in self.confidences)
-        sum_confidence = sum(self.confidences)
-        return sum_confidence
+from .plant import Plant
 
 
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
