@@ -37,7 +37,7 @@ class Mowing(rosys.persistence.PersistentModule):
         self.robot_width: float = robot_width
 
         self.field: Optional[Field] = None
-        self.paths: list[list[rosys.driving.PathSegment]] = None
+        self.paths: list[list[rosys.driving.PathSegment]] = []
         self.current_path: Optional[list[rosys.driving.PathSegment]] = None
         self.current_path_segment: Optional[rosys.driving.PathSegment] = None
         self.continue_mowing: bool = False
