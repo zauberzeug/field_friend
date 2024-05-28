@@ -1,37 +1,31 @@
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import rosys
 from rosys.driving import PathSegment
 from rosys.geometry import Point, Pose, Spline
 
-from ...navigation import Gnss
 from ..field import Field, Row
 from ..implements.implement import Implement
-from ..kpi_provider import KpiProvider
 from ..sequence import find_sequence
 from .navigation import Navigation
+
+if TYPE_CHECKING:
+    from system import System
 
 
 class FieldNavigation(Navigation):
 
-    def __init__(self,
-                 driver: rosys.driving.Driver,
-                 odometer: rosys.driving.Odometer,
-                 kpi_provider: KpiProvider,
-                 tool: Implement,
-                 shape: rosys.geometry.Prism,
-                 gnss:  Gnss,
-                 bms: rosys.hardware.Bms) -> None:
-        super().__init__(driver, odometer, kpi_provider, tool)
+    def __init__(self, system: 'System', tool: Implement) -> None:
+        super().__init__(system, tool)
 
         self.PATH_PLANNED = rosys.event.Event()
         '''Event that is emitted when the path is planed. The event contains the path as a list of PathSegments.'''
 
         self.name = 'Field'
-        self.gnss = gnss
-        self.bms = bms
-        self.path_planner = rosys.pathplanning.PathPlanner(shape)
+        self.gnss = system.gnss
+        self.bms = system.field_friend.bms
+        self.path_planner = rosys.pathplanning.PathPlanner(system.shape)
         self.continue_canceled_weeding: bool = False
 
         self.field: Optional[Field] = None

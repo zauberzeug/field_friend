@@ -1,25 +1,23 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 import rosys
 from rosys.helpers import eliminate_2pi
 
 from ..implements.implement import Implement
-from ..kpi_provider import KpiProvider
-from ..plant_provider import PlantProvider
 from .navigation import Navigation
+
+if TYPE_CHECKING:
+    from system import System
 
 
 class FollowCropsNavigation(Navigation):
     DRIVE_DISTANCE = 0.04
 
-    def __init__(self,
-                 driver: rosys.driving.Driver,
-                 odometer: rosys.driving.Odometer,
-                 kpi_provider: KpiProvider,
-                 tool: Implement,
-                 plant_provider: PlantProvider,
-                 ) -> None:
-        super().__init__(driver, odometer, kpi_provider, tool)
-        self.plant_provider = plant_provider
+    def __init__(self, system: 'System', tool: Implement) -> None:
+        super().__init__(system, tool)
+        self.plant_provider = system.plant_provider
+        self.detector = system.detector
         self.start_position = self.odometer.prediction.point
         self.name = 'Follow Crops'
         self._should_stop = False
@@ -45,10 +43,10 @@ class FollowCropsNavigation(Navigation):
     async def _drive_forward(self):
         while True:
             row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point)
-            if not row:
-                # TODO: make stop condition more sophisticated and configurable (like "stop after 40 cm without crops")
-                self._should_stop = True
-                break
+            # if not row:
+            #     # TODO: make stop condition more sophisticated and configurable (like "stop after 40 cm without crops")
+            #     self._should_stop = True
+            #     break
             if len(row) >= 2:
                 points_array = np.array([(p.position.x, p.position.y) for p in row])
                 # Fit a line using least squares
@@ -58,13 +56,15 @@ class FollowCropsNavigation(Navigation):
             else:
                 yaw_of_row = self.odometer.prediction.yaw
             # only apply some yaw corrections to avoid oversteering
-            target_yaw = self._weighted_angle_combine(self.odometer.prediction.yaw, 0.65, yaw_of_row, 0.35)
+            target_yaw = self.combine_angles(yaw_of_row, 0.6, self.odometer.prediction.yaw)
             target = self.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
             self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
             with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
                 await self.driver.drive_to(target)
 
-    def _weighted_angle_combine(self, angle1: float, weight1: float, angle2: float, weight2: float) -> float:
+    def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
+        weight1 = influence
+        weight2 = 1 - influence
         # Normalize both angles
         angle1 = eliminate_2pi(angle1)
         angle2 = eliminate_2pi(angle2)
@@ -76,8 +76,8 @@ class FollowCropsNavigation(Navigation):
         # Normalize the resultant angle
         return eliminate_2pi(combined_angle)
 
-    # def create_simulation(self):
-    #     for i in range(100):
-    #         x = i/10.0
-    #         p = rosys.geometry.Point3d(x=x, y=np.sin(x/2), z=0)
-    #         self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    def create_simulation(self):
+        for i in range(100):
+            x = i/10.0
+            p = rosys.geometry.Point3d(x=x, y=np.sin(x/2), z=0)
+            self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))

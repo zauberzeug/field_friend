@@ -1,11 +1,13 @@
 import abc
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import rosys
 
 from ..implements.implement import Implement
-from ..kpi_provider import KpiProvider
+
+if TYPE_CHECKING:
+    from system import System
 
 
 class WorkflowException(Exception):
@@ -14,17 +16,12 @@ class WorkflowException(Exception):
 
 class Navigation(rosys.persistence.PersistentModule):
 
-    def __init__(self,
-                 driver: rosys.driving.Driver,
-                 odometer: rosys.driving.Odometer,
-                 kpi_provider: KpiProvider,
-                 implement: Implement,
-                 ) -> None:
+    def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.navigation')
-        self.driver = driver
-        self.odometer = odometer
-        self.kpi_provider = kpi_provider
+        self.driver = system.driver
+        self.odometer = system.odometer
+        self.kpi_provider = system.kpi_provider
         self.implement = implement
         self.name = 'Unknown'
 
@@ -52,4 +49,7 @@ class Navigation(rosys.persistence.PersistentModule):
         return {}
 
     def restore(self, data: dict[str, Any]) -> None:
+        pass
+
+    def create_simulation(self):
         pass

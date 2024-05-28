@@ -130,22 +130,9 @@ class System(rosys.persistence.PersistentModule):
             ],
             height=height)
         self.monitoring = Recorder(self)
-        self.field_navigation = FieldNavigation(self.driver,
-                                                self.odometer,
-                                                self.kpi_provider,
-                                                self.monitoring,
-                                                self.shape,
-                                                self.gnss,
-                                                self.field_friend.bms)
-        self.straight_line_navigation = StraightLineNavigation(self.driver,
-                                                               self.odometer,
-                                                               self.kpi_provider,
-                                                               self.monitoring)
-        self.follow_crops_navigation = FollowCropsNavigation(self.driver,
-                                                             self.odometer,
-                                                             self.kpi_provider,
-                                                             self.monitoring,
-                                                             self.plant_provider)
+        self.field_navigation = FieldNavigation(self, self.monitoring)
+        self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
+        self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
         self.navigation_strategies = {n.name: n for n in [self.field_navigation,
                                                           self.straight_line_navigation,
                                                           self.follow_crops_navigation,
@@ -219,7 +206,7 @@ class System(rosys.persistence.PersistentModule):
     @current_navigation.setter
     def current_navigation(self, navigation: Navigation) -> None:
         old_navigation = self._current_navigation
-        self._current_navigation: Navigation = navigation
+        self._current_navigation = navigation
         if old_navigation is not None:
             implement = self.current_navigation.implement
             self.current_navigation.implement = implement
@@ -227,6 +214,8 @@ class System(rosys.persistence.PersistentModule):
         self.automator.default_automation = self._current_navigation.start
         self.AUTOMATION_CHANGED.emit(navigation.name)
         self.request_backup()
+        if not self.is_real:
+            self._current_navigation.create_simulation()
 
     def update_plant_provider(self):
         if hasattr(self.current_implement, 'relevant_weeds'):

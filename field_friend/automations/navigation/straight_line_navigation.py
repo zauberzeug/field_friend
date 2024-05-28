@@ -1,20 +1,19 @@
+from typing import TYPE_CHECKING
+
 import rosys
 
 from field_friend.automations.implements.implement import Implement
 
-from ..kpi_provider import KpiProvider
 from .navigation import Navigation
+
+if TYPE_CHECKING:
+    from system import System
 
 
 class StraightLineNavigation(Navigation):
 
-    def __init__(self,
-                 driver: rosys.driving.Driver,
-                 odometer: rosys.driving.Odometer,
-                 kpi_provider: KpiProvider,
-                 tool: Implement,
-                 ) -> None:
-        super().__init__(driver, odometer, kpi_provider, tool)
+    def __init__(self, system: 'System', tool: Implement) -> None:
+        super().__init__(system, tool)
         self.length = 2.0
         self.start_position = self.odometer.prediction.point
         self.name = 'Straight Line'
