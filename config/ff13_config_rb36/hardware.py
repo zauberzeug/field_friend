@@ -26,20 +26,25 @@ configuration = {
         'reversed_direction': False,
     },
     'z_axis': {
-        'version': 'tornado',
+        'version': 'tornado v1.1',
         'name': 'tornado',
         'min_position': -0.085,
         'z_can_address': 0x500,
         'turn_can_address': 0x400,
         'm_per_tick': 0.025/12.52,
-        'end_top_pin': 32, #p0
-        'end_bottom_pin': 5,#p0
+        'end_top_pin': 32,  # p0
+        'end_top_pin_expander': True,
+        'end_bottom_pin': 5,  # p0
+        'end_bottom_pin_expander': True,  # p0
         'ref_motor_pin': 13,
         'ref_gear_pin': 4,
-        'ref_knife_stop_pin': 4,#po
-        'ref_knife_ground_pin': 33,#p0
+        'ref_gear_pin_expander': False,
+        'ref_knife_stop_pin': 4,  # po
+        'ref_knife_stop_pin_expander': True,  # po
+        'ref_knife_ground_pin': 33,  # p0
+        'ref_knife_ground_pin_expander': True,  # p0
         'motors_on_expander': False,
-        'end_stops_on_expander': True,
+        'end_stops_on_expander': False,
         'is_z_reversed': True,
         'is_turn_reversed': True,
         'speed_limit': 1.5,
@@ -55,8 +60,8 @@ configuration = {
         'front_pin': 22,
         'back_pin': 23,
     },
-    'eyes':{
-        'name':'eyes',
+    'eyes': {
+        'name': 'eyes',
         'on_expander': True,
         'eyes_pin': 25
     },
