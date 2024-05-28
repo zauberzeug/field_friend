@@ -1,57 +1,31 @@
 from dataclasses import dataclass, field
-from statistics import mean
 from typing import Any, Literal, Optional, TypedDict, Union
 
 import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import Polygon
 
-from field_friend.navigation.point_transformation import wgs84_to_cartesian
+from field_friend.navigation import GeoPoint, GeoPointCollection
 
 from .plant_provider import Plant
 
 
 @dataclass(slots=True, kw_only=True)
-class FieldObstacle:
-    id: str
-    name: str
-    points_wgs84: list[list] = field(default_factory=list)
-
-    def points(self, reference_point: list) -> list[Point]:
-        if len(self.points_wgs84) > 0:
-            cartesian_points = []
-            for point in self.points_wgs84:
-                cartesian_point = wgs84_to_cartesian([reference_point[0], reference_point[1]], point)
-                cartesian_points.append(Point(x=cartesian_point[0], y=cartesian_point[1]))
-            return cartesian_points
-        else:
-            return []
+class FieldObstacle(GeoPointCollection):
+    pass
 
 
 @dataclass(slots=True, kw_only=True)
-class Row:
-    id: str
-    name: str
-    points_wgs84: list[list] = field(default_factory=list)
+class Row(GeoPointCollection):
     reverse: bool = False
     crops: list[Plant] = field(default_factory=list)
-
-    def points(self, reference_point: list) -> list[Point]:
-        if len(self.points_wgs84) > 0:
-            cartesian_points = []
-            for point in self.points_wgs84:
-                cartesian_point = wgs84_to_cartesian([reference_point[0], reference_point[1]], point)
-                cartesian_points.append(Point(x=cartesian_point[0], y=cartesian_point[1]))
-            return cartesian_points
-        else:
-            return []
 
     def reversed(self):
         return Row(
             id=self.id,
             name=self.name,
-            points_wgs84=list(reversed(self.points_wgs84)),
+            points=list(reversed(self.points)),
         )
 
     def clear_crops(self):
@@ -59,37 +33,27 @@ class Row:
 
 
 @dataclass(slots=True, kw_only=True)
-class Field:
-    id: str
-    name: str
-    outline_wgs84: list[list] = field(default_factory=list)
-    reference_lat: Optional[float] = None
-    reference_lon: Optional[float] = None
+class Field(GeoPointCollection):
+    reference: Optional[GeoPoint] = None
     visualized: bool = False
     obstacles: list[FieldObstacle] = field(default_factory=list)
     rows: list[Row] = field(default_factory=list)
 
     @property
-    def reference(self) -> list:
-        return [self.reference_lat, self.reference_lon]
+    def outline(self) -> list[rosys.geometry.Point]:
+        assert self.reference is not None
+        return self.cartesian(self.reference)
 
     @property
-    def outline(self) -> list[Point]:
-        if len(self.outline_wgs84) > 0:
-            cartesian_outline = []
-            for point in self.outline_wgs84:
-                cartesian_point = wgs84_to_cartesian([self.reference_lat, self.reference_lon], point)
-                cartesian_outline.append(Point(x=cartesian_point[0], y=cartesian_point[1]))
-            return cartesian_outline
-        else:
-            return []
+    def outline_as_tuples(self) -> list[tuple[float, float]]:
+        return [p.tuple for p in self.outline]
 
     def area(self) -> float:
-        if len(self.outline) > 0:
-            polygon = Polygon([(p.x, p.y) for p in self.outline])
-            return polygon.area
-        else:
+        outline = self.outline
+        if not outline:
             return 0.0
+        polygon = Polygon([(p.x, p.y) for p in outline])
+        return polygon.area
 
     def worked_area(self, worked_rows: int) -> float:
         worked_area = 0.0
@@ -128,7 +92,23 @@ class FieldProvider(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        rosys.persistence.replace_list(self.fields, Field, data.get('fields', []))
+        fields_data = data.get('fields', [])
+        rosys.persistence.replace_list(self.fields, Field, fields_data)
+
+        # NOTE we had some changes in persistence; this code transforms old to new format
+        for i, f in enumerate(self.fields):
+            outline = fields_data[i].get('outline_wgs84', [])
+            for coords in outline:
+                f.points.append(GeoPoint(lat=coords[0], long=coords[1]))
+            rlat = fields_data[i].get('reference_lat', None)
+            rlong = fields_data[i].get('reference_lon', None)
+            if rlat is not None and rlong is not None:
+                f.reference = GeoPoint(lat=rlat, long=rlong)
+            rows = fields_data[i].get('rows', [])
+            for j, row in enumerate(rows):
+                for point in row.get('points_wgs84', []):
+                    f.rows[j].points.append(GeoPoint(lat=point[0], long=point[1]))
+
         self.active_field = next((f for f in self.fields if f.id == data.get('active_field')), None)
 
     def invalidate(self) -> None:
@@ -153,12 +133,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.OBJECT_SELECTED.emit()
         self.invalidate()
 
-    def set_reference(self, field: Field, point: list) -> None:
-        if field.reference_lat is None:
-            field.reference_lat = point[0]
-        if field.reference_lon is None:
-            field.reference_lon = point[1]
-        self.invalidate()
+    def set_reference(self, field: Field, point: GeoPoint) -> None:
+        if field.reference is None:
+            field.reference = point
 
     def add_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         field.obstacles.append(obstacle)
@@ -205,9 +182,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def is_polygon(self, field: Field) -> bool:
         try:
-            polygon = Polygon(field.outline_wgs84)
+            polygon = field.shapely_polygon
             return polygon.is_valid and polygon.geom_type == 'Polygon'
-        except:
+        except Exception:
             return False
 
     # TODO currently the function does only sort even fields where rows have the same length
@@ -219,13 +196,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
             return
 
         for row in field.rows:
-            if len(row.points_wgs84) < 1:
+            if len(row.points) < 1:
                 rosys.notify(f'Row {row.name} has to few points. Sorting not possible.', type='warning')
                 return
 
         def get_centroid(row: Row) -> Point:
-            polyline = LineString(row.points_wgs84)
-            return polyline.centroid
+            return row.shapely_line.centroid
 
         reference_centroid = get_centroid(field.rows[0])
 
@@ -242,18 +218,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             return distance
 
         field_index = self.fields.index(field)
-        rows_axis = []
-
-        for row in field.rows:
-            direction = Geodesic.WGS84.Inverse(
-                row.points_wgs84[0][0], row.points_wgs84[0][1], row.points_wgs84[-1][0], row.points_wgs84[-1][1])['azi1']
-            if direction < 0:
-                direction = Geodesic.WGS84.Inverse(
-                    row.points_wgs84[-1][0], row.points_wgs84[-1][1], row.points_wgs84[0][0], row.points_wgs84[0][1])['azi1']
-            rows_axis.append(direction)
-        sort_axis = mean(rows_axis)  # mean direction of all rows
-
-        direction = "x" if abs(reference_centroid.x - field.rows[-1].points_wgs84[0][0]) > abs(
-            reference_centroid.y - field.rows[-1].points_wgs84[0][1]) else "y"
+        p = field.rows[-1].points[0]
+        direction = "x" if abs(reference_centroid.x - p.lat) > abs(reference_centroid.y - p.long) else "y"
         self.fields[field_index].rows = sorted(field.rows, key=lambda row: get_distance(row, direction=direction))
         self.FIELDS_CHANGED.emit()

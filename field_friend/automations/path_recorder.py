@@ -1,11 +1,11 @@
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 import rosys
 from rosys.driving import PathSegment
 from rosys.geometry import Spline
 
-from ..navigation import Gnss
+from ..navigation import GeoPoint, Gnss
 from .path_provider import Path, PathProvider
 
 
@@ -37,20 +37,21 @@ class PathRecorder:
             return
         self.log.info(f'recording path {path.name}')
         if self.gnss.device != 'simulation':
-            ref_lat, ref_lon = await self.gnss.get_reference()
-            if ref_lat is None or ref_lon is None:
+            if self.gnss.reference is None:
                 self.log.warning('not recording because no reference location set')
                 return
-            path.reference_lat = ref_lat
-            path.reference_lon = ref_lon
+            path.reference = self.gnss.reference
         rosys.notify(f'Recording...Please drive the path {path.name} now.')
         self.current_path_recording = path.name
         self.state = 'recording'
         splines = []
-        last_pose = self.driver.odometer.prediction
+        last_pose = self.driver.prediction
         while self.state == 'recording':
+            assert isinstance(self.driver.odometer, rosys.driving.Odometer)
+            assert self.driver.odometer.current_velocity is not None
             if self.driver.odometer.current_velocity.linear > 0.05:
                 new_pose = self.driver.odometer.prediction
+                self.log.info(f'recording current movement: {new_pose}')
                 splines.append(Spline.from_poses(last_pose, new_pose))
                 last_pose = new_pose
             else:
@@ -64,7 +65,7 @@ class PathRecorder:
             rosys.notify('No path was recorded', 'negative')
             return
         self.log.info(f'path {path.name} recorded')
-        rosys.notify(f'Path {path.name} succesfully recorded', 'positive')
+        rosys.notify(f'Path {path.name} successfully recorded', 'positive')
         self.path_provider.invalidate()
 
     async def drive_path(self, path: Path) -> None:
@@ -84,11 +85,12 @@ class PathRecorder:
             self.log.warning(f'path {path.name} is empty')
             return
         if self.gnss.device != 'simulation':
-            if path.reference_lat is None or path.reference_lon is None:
+            if path.reference is None:
                 self.log.warning('not driving because no reference location set')
                 return
-            self.gnss.set_reference(path.reference_lat, path.reference_lon)
-            distance = self.gnss.calculate_distance(self.gnss.record.latitude, self.gnss.record.longitude)
+            # NOTE the target location is the path reference point; we do not approach a path if it is to far away
+            self.gnss.reference = path.reference
+            distance = self.gnss.distance(self.gnss.current)
             if not distance or distance > 10:
                 self.log.warning('not driving because distance to reference location is too large')
                 rosys.notify('Distance to reference location is too large', 'negative')

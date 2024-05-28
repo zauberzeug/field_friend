@@ -58,8 +58,10 @@ class AutomationWatcher:
                     self.automator.pause(because=f'{reason})')
                 return
         if reason.startswith('GNSS') and not self.gnss_watch_active:
+            self.log.info(f'not pausing automation because {reason} but GNSS watch is not active')
             return
         if reason.startswith('Bumper') and not self.bumper_watch_active:
+            self.log.info(f'not pausing automation because {reason} but bumper watch is not active')
             return
         if self.automator.is_running:
             self.automator.pause(because=f'{reason} (waiting {self.resume_delay:.0f}s)')
@@ -77,8 +79,8 @@ class AutomationWatcher:
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
         bumper_condition = not bool(self.field_friend.bumper.active_bumpers) if self.bumper_watch_active else True
-        gnss_condition = (self.gnss.record.gps_qual == 4 or self.gnss.record.gps_qual ==
-                          8) if self.gnss_watch_active else True
+        gnss_condition = (self.gnss.current is not None and self.gnss.current.gps_qual == 4) \
+            if self.gnss_watch_active else True
 
         # Enable automator only if all relevant conditions are True
         self.automator.enabled = bumper_condition and gnss_condition

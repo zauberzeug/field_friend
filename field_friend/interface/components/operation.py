@@ -279,8 +279,8 @@ class operation:
         for field in self.system.field_provider.fields:
             if field.id == self.field_selection.value:
                 self.field_provider.select_field(field)
-                if len(field.outline_wgs84) > 0:
-                    self.system.gnss.set_reference(field.outline_wgs84[0][0], field.outline_wgs84[0][1])
+                if len(field.points) > 0:
+                    self.system.gnss.reference = field.points[0]
                 # TODO das hier noch auf das active field umbauen, damit auch diese werte im weeding auf das active field registriert sind
                 self.system.weeding.field = field
                 self.system.mowing.field = field

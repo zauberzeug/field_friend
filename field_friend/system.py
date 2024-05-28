@@ -8,7 +8,8 @@ import rosys
 from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider,
                                       Mowing, PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
-from field_friend.navigation import GnssHardware, GnssSimulation
+from field_friend.navigation.gnss_hardware import GnssHardware
+from field_friend.navigation.gnss_simulation import GnssSimulation
 from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
 
 from .interface.components.info import Info
@@ -51,9 +52,10 @@ class System(rosys.persistence.PersistentModule):
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
+            assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
-            self.gnss = GnssSimulation(self.field_friend.wheels)
+            self.gnss = GnssSimulation(self.odometer)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
@@ -123,7 +125,7 @@ class System(rosys.persistence.PersistentModule):
             'mowing': self.mowing.start,
             'collecting (demo)': self.coin_collecting.start,
         }
-        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
+        self.automator = rosys.automation.Automator(None, on_interrupt=lambda _: self.field_friend.stop(),
                                                     default_automation=self.coin_collecting.start)
         self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)

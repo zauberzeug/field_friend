@@ -97,7 +97,9 @@ class geodata_picker(ui.dialog):
             coordinates.pop()
         reference_point = coordinates[0]
         new_id = str(uuid.uuid4())
-        field = Field(id=f'{new_id}', name=f'field_{len(self.field_provider.fields)+1}', outline_wgs84=coordinates,
-                      reference_lat=reference_point[0], reference_lon=reference_point[1])
+        field = Field(id=f'{new_id}',
+                      name=f'field_{len(self.field_provider.fields)+1}',
+                      points=coordinates,
+                      reference=reference_point)
         self.field_provider.add_field(field)
         return

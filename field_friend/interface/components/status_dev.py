@@ -5,8 +5,16 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
-                         Tornado, YAxis, ZAxis)
+from ...hardware import (
+    ChainAxis,
+    FieldFriend,
+    FieldFriendHardware,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+    YAxis,
+    ZAxis,
+)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -252,20 +260,21 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         def get_jetson_cpu_temperature():
             with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
                 temp = f.read().strip()
-            return float(temp) / 1000.0  # Convert from milli°C to °C
+            return float(temp) / 1000.0  # Convert from milli °C to °C
         if isinstance(robot, FieldFriendHardware):
             temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-        direction_flag = 'N' if system.gnss.record.heading <= 23 else \
-            'NE' if system.gnss.record.heading <= 68 else \
-            'E' if system.gnss.record.heading <= 113 else \
-            'SE' if system.gnss.record.heading <= 158 else \
-            'S' if system.gnss.record.heading <= 203 else \
-            'SW' if system.gnss.record.heading <= 248 else \
-            'W' if system.gnss.record.heading <= 293 else \
-            'NW' if system.gnss.record.heading <= 338 else \
+        direction_flag = '?' if system.gnss.current is None or system.gnss.current.heading is None else \
+            'N' if system.gnss.current.heading <= 23 else \
+            'NE' if system.gnss.current.heading <= 68 else \
+            'E' if system.gnss.current.heading <= 113 else \
+            'SE' if system.gnss.current.heading <= 158 else \
+            'S' if system.gnss.current.heading <= 203 else \
+            'SW' if system.gnss.current.heading <= 248 else \
+            'W' if system.gnss.current.heading <= 293 else \
+            'NW' if system.gnss.current.heading <= 338 else \
             'N'
 
         if system.automator.is_running:
@@ -293,10 +302,10 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                         kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
 
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
-        reference_position_label.text = 'No reference' if system.gnss.reference_lat is None else 'Set'
-        gnss_label.text = f'lat: {system.gnss.record.latitude:.6f}, lon: {system.gnss.record.longitude:.6f}'
-        heading_label.text = f'{system.gnss.record.heading:.2f}° ' + direction_flag
-        rtk_fix_label.text = f'gps_qual: {system.gnss.record.gps_qual}, mode: {system.gnss.record.mode}'
+        reference_position_label.text = 'No reference' if system.gnss.reference is None else 'Set'
+        gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
+        heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
+        rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
         odometry_label.text = str(system.odometer.prediction)
 
     ui.timer(rosys.config.ui_update_interval, update_status)

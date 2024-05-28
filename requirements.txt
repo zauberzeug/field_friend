@@ -6,5 +6,5 @@ geopy
 shapely
 fiona
 geopandas
-rosys == 0.10.7
+rosys == 0.10.9
 uvicorn == 0.28.1
