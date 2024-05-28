@@ -65,7 +65,7 @@ class GnssHardware(Gnss):
         data = {}
         types_seen: set[str] = set()
         try:
-            deadline = rosys.time() + 0.1
+            deadline = rosys.time() + 0.2
             while self.TYPES_NEEDED != types_seen and rosys.time() < deadline:
                 line = await self._read()
                 if not line:

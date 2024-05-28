@@ -5,29 +5,12 @@ from typing import Any
 import numpy as np
 import rosys
 
-from field_friend.automations import (
-    AutomationWatcher,
-    BatteryWatcher,
-    CoinCollecting,
-    FieldProvider,
-    KpiProvider,
-    Mowing,
-    PathProvider,
-    PathRecorder,
-    PlantLocator,
-    PlantProvider,
-    Puncher,
-    Weeding,
-)
+from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider,
+                                      Mowing, PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation.gnss_hardware import GnssHardware
 from field_friend.navigation.gnss_simulation import GnssSimulation
-from field_friend.vision import (
-    CalibratableUsbCameraProvider,
-    CameraConfigurator,
-    SimulatedCam,
-    SimulatedCamProvider,
-)
+from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
 
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
@@ -65,8 +48,10 @@ class System(rosys.persistence.PersistentModule):
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
+            assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
+            self.gnss = GnssSimulation(self.odometer)
             self.gnss = GnssSimulation(self.odometer)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
