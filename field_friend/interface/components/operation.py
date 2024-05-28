@@ -105,14 +105,12 @@ class operation:
                                 .classes('w-24') \
                                 .bind_value(self.system.plant_locator, 'minimum_crop_confidence') \
                                 .tooltip('Set the minimum crop confidence for the weeding automation')
-                            options = {autoupload.name: autoupload.value for autoupload in rosys.vision.Autoupload}
+                            options = [autoupload for autoupload in rosys.vision.Autoupload]
 
-                            def show_me():
-                                self.log.info(f'Autoupload: {self.system.plant_locator.autoupload}')
-                            ui.select(options, label='Autoupload', on_change=show_me) \
+                            ui.select(options, label='Autoupload', on_change=self.system.plant_locator.backup) \
                                 .bind_value(self.system.plant_locator, 'autoupload') \
-                                .classes('w-32') \
-                                .tooltip('Set the autoupload for the weeding automation')
+                                .classes('w-24').tooltip('Set the autoupload for the weeding automation')
+
                         ui.separator()
                         ui.markdown('Tool settings').style('color: #6E93D6')
                         with ui.row():
