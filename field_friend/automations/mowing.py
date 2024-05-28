@@ -87,10 +87,8 @@ class Mowing(rosys.persistence.PersistentModule):
             rosys.notify('No field selected', 'negative')
             return
         if not self.field.reference:
-        if not self.field.reference:
             self.log.error('Field reference is not available')
             return
-        self.system.gnss.reference = self.field.reference
         self.system.gnss.reference = self.field.reference
         if self.padding < self.robot_width+self.lane_distance:
             self.padding = self.robot_width+self.lane_distance
@@ -105,12 +103,7 @@ class Mowing(rosys.persistence.PersistentModule):
                     self.path_planner.areas.clear()
                     assert self.field is not None
                     assert self.field.reference is not None
-                    assert self.field is not None
-                    assert self.field.reference is not None
                     for obstacle in self.field.obstacles:
-                        self.path_planner.obstacles[obstacle.id] = \
-                            rosys.pathplanning.Obstacle(id=obstacle.id,
-                                                        outline=obstacle.cartesian(self.field.reference))
                         self.path_planner.obstacles[obstacle.id] = \
                             rosys.pathplanning.Obstacle(id=obstacle.id,
                                                         outline=obstacle.cartesian(self.field.reference))
@@ -176,9 +169,6 @@ class Mowing(rosys.persistence.PersistentModule):
             first_path = self.current_path
         else:
             first_path = paths[0]
-        assert first_path
-        assert self.field is not None
-        assert self.field.outline is not None
         assert first_path
         assert self.field is not None
         assert self.field.outline is not None
