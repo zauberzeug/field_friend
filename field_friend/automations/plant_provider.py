@@ -2,7 +2,7 @@ import logging
 import uuid
 from collections import deque
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 import rosys
 from rosys.geometry import Point
@@ -15,16 +15,16 @@ class Plant:
     type: str
     positions: deque[Point]
     detection_time: float
-    confidence: float = 0.0
+    confidences: deque[float]
     detection_image: Optional[Image] = None
 
     def __init__(self, type: str, position: Point, detection_time: float, id: str = ..., confidence: float = 0.0, max_positions: int = 20, detection_image: Optional[Image] = None) -> None:
         self.id = id
         self.type = type
-        self.positions = deque([position], maxlen=max_positions)
         self.detection_time = detection_time
-        self.confidence = confidence
         self.detection_image = detection_image
+        self.positions = deque([position], maxlen=max_positions)
+        self.confidences = deque([confidence], maxlen=max_positions)
 
     def __post_init__(self) -> None:
         """Generate a unique ID if not already loaded from persistence"""
@@ -34,20 +34,28 @@ class Plant:
     @property
     def position(self) -> Point:
         """Calculate the middle position of all points"""
-        total_x = sum(point.x for point in self.positions)
-        total_y = sum(point.y for point in self.positions)
+        sum_confidence = sum(self.confidences)
+        x = 0.0
+        y = 0.0
+        for position, confidence in zip(self.positions, self.confidences):
+            confidence_weight = confidence / sum_confidence
+            x += position.x * confidence_weight
+            y += position.y * confidence_weight
+        return Point(x=x, y=y)
 
-        middle_x = total_x / len(self.positions)
-        middle_y = total_y / len(self.positions)
-
-        return Point(x=middle_x, y=middle_y)
+    @property
+    def confidence(self) -> float:
+        # TODO: maybe use weighted confidence
+        # sum_confidence = sum(confidence**1.5 for confidence in self.confidences)
+        sum_confidence = sum(self.confidences)
+        return sum_confidence
 
 
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
     for p in plants:
         if p.position.distance(plant.position) < distance and p.type == plant.type:
             # Update the confidence
-            p.confidence = max(p.confidence, plant.confidence)  # Optionally updating confidence to the higher one
+            p.confidences.append(plant.confidence)
             # Add the new position to the positions list
             p.positions.append(plant.position)
             p.detection_image = plant.detection_image
@@ -55,12 +63,16 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
     return False
 
 
-class PlantProvider:
-
-    def __init__(self) -> None:
+class PlantProvider(rosys.persistence.PersistentModule):
+    def __init__(self, match_distance: float = 0.07, crop_spacing: float = 0.18, prediction_confidence: float = 0.3, persistence_key: str = 'plant_provider') -> None:
+        super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
         self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
+
+        self.match_distance = match_distance
+        self.crop_spacing = crop_spacing
+        self.prediction_confidence = prediction_confidence
 
         self.PLANTS_CHANGED = rosys.event.Event()
         """The collection of plants has changed."""
@@ -72,6 +84,19 @@ class PlantProvider:
         """A new crop has been added."""
 
         rosys.on_repeat(self.prune, 10.0)
+
+    def backup(self) -> dict:
+        data = {
+            'match_distance': self.match_distance,
+            'crop_spacing': self.crop_spacing,
+            'prediction_confidence': self.prediction_confidence
+        }
+        return data
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.match_distance = data.get('match_distance', self.match_distance)
+        self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
+        self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
 
     def prune(self) -> None:
         weeds_max_age = 10.0
@@ -102,8 +127,9 @@ class PlantProvider:
         self.PLANTS_CHANGED.emit()
 
     async def add_crop(self, crop: Plant) -> None:
-        if check_if_plant_exists(crop, self.crops, 0.07):
+        if check_if_plant_exists(crop, self.crops, self.match_distance):
             return
+        self._add_crop_prediction(crop)
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_CROP.emit()
@@ -119,3 +145,18 @@ class PlantProvider:
     def clear(self) -> None:
         self.clear_weeds()
         self.clear_crops()
+
+    def _add_crop_prediction(self, plant: Plant) -> None:
+        sorted_crops = sorted(self.crops, key=lambda crop: crop.position.distance(plant.position))
+        if len(sorted_crops) < 2:
+            return
+        crop_1 = sorted_crops[0]
+        crop_2 = sorted_crops[1]
+
+        yaw = crop_2.position.direction(crop_1.position)
+        prediction = crop_1.position.polar(self.crop_spacing, yaw)
+
+        if plant.position.distance(prediction) > self.match_distance:
+            return
+        plant.positions.append(prediction)
+        plant.confidences.append(self.prediction_confidence)
