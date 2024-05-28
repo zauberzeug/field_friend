@@ -176,7 +176,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     def _has_plants_to_handle(self) -> bool:
         relative_crop_positions = {
             c.id: self.system.odometer.prediction.relative_point(c.position)
-            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and len(c.positions) >= 3
+            for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point)
         }
         upcoming_crop_positions = {
             c: pos for c, pos in relative_crop_positions.items()
@@ -266,7 +266,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             distance = self.current_segment.spline.start.distance(self.current_segment.spline.end)
             for i in range(1, int(distance/0.20)):
                 for j in range(1, 4):
-                    await self.system.plant_provider.add_crop(Plant(
+                    self.system.plant_provider.add_crop(Plant(
                         id_=f'{i}_{j}',
                         type_='beet',
                         position=self.system.odometer.prediction.point.polar(
@@ -296,7 +296,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                     confidence=0.9,
                 ))
                 for j in range(1, 7):
-                    await self.system.plant_provider.add_weed(Plant(
+                    self.system.plant_provider.add_weed(Plant(
                         id_=f'{i}_{j}',
                         type_='weed',
                         position=self.system.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01,

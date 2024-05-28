@@ -12,7 +12,7 @@ from rosys.vision import Image
 class Plant:
     id: str = field(default_factory=lambda: str(uuid4()))
     type: str
-    positions: deque = field(default_factory=lambda: deque(maxlen=20))
+    positions: deque[Point] = field(default_factory=lambda: deque(maxlen=20))
     detection_time: float
     confidence: float = 0.0
     detection_image: Optional[Image] = None

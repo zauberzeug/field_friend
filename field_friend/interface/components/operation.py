@@ -31,6 +31,15 @@ class operation:
                     self.implement_settings = ui.column()
 
         with activities:
+            self.navigation_selection = ui.select(
+                [key for key in self.system.navigation_strategies.keys()],
+                on_change=self.handle_navigation_changed,
+                label='Navigation') \
+                .classes('w-32') \
+                .tooltip('Select the navigation strategy') \
+                .bind_value_from(self.system, 'current_navigation', lambda i: i.name)
+            self.navigation_selection.value = self.system.current_navigation.name
+
             self.implement_selection = ui.select(
                 [key for key in self.system.implements.keys()],
                 on_change=self.handle_implement_changed,
@@ -86,3 +95,7 @@ class operation:
         self.implement_settings.clear()
         with self.implement_settings:
             self.system.current_implement.settings_ui()
+
+    def handle_navigation_changed(self, e: events.ValueChangeEventArguments) -> None:
+        if self.system.current_navigation.name != e.value:
+            self.system.current_navigation = self.system.navigation_strategies[e.value]

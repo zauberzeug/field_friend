@@ -8,12 +8,33 @@ import rosys
 from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
 from field_friend.navigation.gnss_hardware import GnssHardware
 from field_friend.navigation.gnss_simulation import GnssSimulation
-from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from field_friend.vision import (
+    CalibratableUsbCameraProvider,
+    CameraConfigurator,
+    SimulatedCam,
+    SimulatedCamProvider,
+)
 
-from .automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider, Mowing,
-                          PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher)
+from .automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    CoinCollecting,
+    FieldProvider,
+    KpiProvider,
+    Mowing,
+    PathProvider,
+    PathRecorder,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+)
 from .automations.implements import ChopAndScrew, Implement, Recorder, Screw, Tornado
-from .automations.navigation import FieldNavigation, Navigation, StraightLineNavigation
+from .automations.navigation import (
+    FieldNavigation,
+    FollowCropsNavigation,
+    Navigation,
+    StraightLineNavigation,
+)
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -120,7 +141,15 @@ class System(rosys.persistence.PersistentModule):
                                                                self.odometer,
                                                                self.kpi_provider,
                                                                self.monitoring)
-        self.straight_line_navigation.length = 2.0
+        self.follow_crops_navigation = FollowCropsNavigation(self.driver,
+                                                             self.odometer,
+                                                             self.kpi_provider,
+                                                             self.monitoring,
+                                                             self.plant_provider)
+        self.navigation_strategies = {n.name: n for n in [self.field_navigation,
+                                                          self.straight_line_navigation,
+                                                          self.follow_crops_navigation,
+                                                          ]}
         self.weeding_implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
             case 'tornado':
@@ -143,7 +172,8 @@ class System(rosys.persistence.PersistentModule):
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
         self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)
-        self.current_navigation = self.straight_line_navigation
+        self._current_navigation: Navigation = self.straight_line_navigation
+        self._current_implement = self._current_navigation
         self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
@@ -167,6 +197,9 @@ class System(rosys.persistence.PersistentModule):
         implement = self.implements.get(data.get('implement', None), None)
         if implement is not None:
             self.current_implement = implement
+        navigation = self.navigation_strategies.get(data.get('navigation', None), None)
+        if navigation is not None:
+            self.current_navigation = navigation
 
     @property
     def current_implement(self) -> Implement:
@@ -185,10 +218,15 @@ class System(rosys.persistence.PersistentModule):
 
     @current_navigation.setter
     def current_navigation(self, navigation: Navigation) -> None:
-        self._current_navigation = navigation
+        old_navigation = self._current_navigation
+        self._current_navigation: Navigation = navigation
+        if old_navigation is not None:
+            implement = self.current_navigation.implement
+            self.current_navigation.implement = implement
         self.update_plant_provider()
         self.automator.default_automation = self._current_navigation.start
         self.AUTOMATION_CHANGED.emit(navigation.name)
+        self.request_backup()
 
     def update_plant_provider(self):
         if hasattr(self.current_implement, 'relevant_weeds'):

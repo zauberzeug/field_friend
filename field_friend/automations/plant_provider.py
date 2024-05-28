@@ -1,6 +1,8 @@
 import logging
 
+import numpy as np
 import rosys
+from rosys.geometry import Point, Pose
 
 from .plant import Plant
 
@@ -8,9 +10,7 @@ from .plant import Plant
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
     for p in plants:
         if p.position.distance(plant.position) < distance and p.type == plant.type:
-            # Update the confidence
-            p.confidence = max(p.confidence, plant.confidence)  # Optionally updating confidence to the higher one
-            # Add the new position to the positions list
+            p.confidence = max(p.confidence, plant.confidence)
             p.positions.append(plant.position)
             p.detection_image = plant.detection_image
             return True
@@ -66,7 +66,7 @@ class PlantProvider:
         self.weeds.clear()
         self.PLANTS_CHANGED.emit()
 
-    async def add_crop(self, crop: Plant) -> None:
+    def add_crop(self, crop: Plant) -> None:
         if check_if_plant_exists(crop, self.crops, 0.07):
             return
         self.crops.append(crop)
@@ -84,3 +84,6 @@ class PlantProvider:
     def clear(self) -> None:
         self.clear_weeds()
         self.clear_crops()
+
+    def get_relevant_crops(self, point: Point, *, max_distance=0.5, min_confidence=0.5) -> list[Plant]:
+        return [c for c in self.crops if c.position.distance(point) <= max_distance and len(c.positions) >= 3 and c.confidence >= min_confidence]
