@@ -24,8 +24,8 @@ class WorkflowException(Exception):
 
 
 class Weeding(rosys.persistence.PersistentModule):
-    WORKING_DISTANCE = 0.06
-    DRIVE_DISTANCE = 0.04
+    WORKING_DISTANCE = 0.15
+    DRIVE_DISTANCE = 0.03
 
     def __init__(self, system: 'System', persistence_key: str = 'weeding') -> None:
         super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
@@ -52,7 +52,10 @@ class Weeding(rosys.persistence.PersistentModule):
 
         # workflow settings
         self.only_monitoring: bool = False
+        self.crop_confidence_threshold: float = 0.8
+        self.weed_confidence_threshold: float = 0.8
         # tornado
+        self.with_punch_check: bool = False
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
         # dual mechanism
@@ -111,7 +114,12 @@ class Weeding(rosys.persistence.PersistentModule):
             'end_row_id': self.end_row_id,
             'minimum_turning_radius': self.minimum_turning_radius,
             'turn_offset': self.turn_offset,
+            'drive_backwards_to_start': self.drive_backwards_to_start,
+            'drive_to_start': self.drive_to_start,
             'only_monitoring': self.only_monitoring,
+            'crop_confidence_threshold': self.crop_confidence_threshold,
+            'weed_confidence_threshold': self.weed_confidence_threshold,
+            'with_punch_check': self.with_punch_check,
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
             'with_drilling': self.with_drilling,
@@ -139,7 +147,12 @@ class Weeding(rosys.persistence.PersistentModule):
         self.end_row_id = data.get('end_row_id', self.end_row_id)
         self.minimum_turning_radius = data.get('minimum_turning_radius', self.minimum_turning_radius)
         self.turn_offset = data.get('turn_offset', self.turn_offset)
+        self.drive_backwards_to_start = data.get('drive_backwards_to_start', self.drive_backwards_to_start)
+        self.drive_to_start = data.get('drive_to_start', self.drive_to_start)
         self.only_monitoring = data.get('only_monitoring', self.only_monitoring)
+        self.crop_confidence_threshold = data.get('crop_confidence_threshold', self.crop_confidence_threshold)
+        self.weed_confidence_threshold = data.get('weed_confidence_threshold', self.weed_confidence_threshold)
+        self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.with_drilling = data.get('with_drilling', self.with_drilling)
@@ -255,9 +268,8 @@ class Weeding(rosys.persistence.PersistentModule):
         end_row = next((row for row in self.field.rows if row.id == self.end_row_id), None)
         if start_row is None or end_row is None:
             self.log.warning('Start or end row not available')
-            return []
-        reference = self.field.reference
-        assert reference is not None
+            return None
+        reference = [self.field.reference_lat, self.field.reference_lon]
         rows_to_weed = self.field.rows[self.field.rows.index(
             start_row):self.field.rows.index(end_row) + 1]
         rows = [row for row in rows_to_weed if len(row.cartesian(reference)) > 1]
@@ -303,14 +315,14 @@ class Weeding(rosys.persistence.PersistentModule):
                 if i % 2 == 0:
                     row_points = list(reversed(row_points))
             self.log.info(f'Row {row.name} has {row_points} points')
-            if row.crops:
-                self.log.info(f'Row {row.name} has beets, creating {row.crops} points')
-                # only take every tenth crop into account
-                for i, beet in enumerate(row.crops):
-                    if i % 10 == 0 and i != 0:
-                        row_points.append(beet.position)
-                row_points = sorted(row_points, key=lambda point: point.distance(row_points[0]))
-                self.log.info(f'Row {row.name} has {len(row_points)} points')
+            # if row.crops:
+            #     self.log.info(f'Row {row.name} has beets, creating {row.crops} points')
+            #     # only take every tenth crop into account
+            #     for i, beet in enumerate(row.crops):
+            #         if i % 10 == 0 and i != 0:
+            #             row_points.append(beet.position)
+            #     row_points = sorted(row_points, key=lambda point: point.distance(row_points[0]))
+            #     self.log.info(f'Row {row.name} has {len(row_points)} points')
             for j in range(len(row_points) - 1):
                 splines.append(Spline.from_points(row_points[j], row_points[j + 1]))
             path = [PathSegment(spline=spline) for spline in splines]
@@ -448,6 +460,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         self._drive_segment(),
                         return_when_first_completed=True
                     )
+                    await self.system.field_friend.stop()
                     await rosys.sleep(2)  # wait for robot to stand still
                     await self._get_upcoming_plants()
                     if self.crops_to_handle or self.weeds_to_handle:
@@ -458,11 +471,13 @@ class Weeding(rosys.persistence.PersistentModule):
                         if self.system.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
                             self.row_segment_completed = True
                     await rosys.sleep(0.2)
-                    if self.drive_backwards_to_start and self.system.field_friend.bms.is_below_percent(15.0):
-                        self.log.info('Low battery, driving backwards to start...')
-                        rosys.notify('Low battery, driving backwards to start', 'warning')
-                        await self.system.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
-                        return
+            if self.drive_backwards_to_start:
+                self.log.info('Low battery, driving backwards to start...')
+                rosys.notify('Low battery, driving backwards to start', 'warning')
+                self.system.driver.parameters.can_drive_backwards = True
+                await self.system.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
+                self.system.driver.parameters.can_drive_backwards = False
+                return
 
             await self.system.field_friend.flashlight.turn_off()
             self.system.plant_locator.pause()
@@ -536,9 +551,10 @@ class Weeding(rosys.persistence.PersistentModule):
             await rosys.sleep(0.2)
 
     async def _get_upcoming_plants(self):
+        # TODO: confidence parameter
         relative_crop_positions = {
             c.id: self.system.odometer.prediction.relative_point(c.position)
-            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and len(c.positions) >= 3
+            for c in self.system.plant_provider.crops if c.position.distance(self.system.odometer.prediction.point) < 0.5 and c.confidence > self.crop_confidence_threshold
         }
         # remove very distant crops (probably not row
         if self.current_segment:
@@ -560,7 +576,7 @@ class Weeding(rosys.persistence.PersistentModule):
 
         relative_weed_positions = {
             w.id: self.system.odometer.prediction.relative_point(w.position)
-            for w in self.system.plant_provider.weeds if w.position.distance(self.system.odometer.prediction.point) < 0.5 and len(w.positions) >= 3
+            for w in self.system.plant_provider.weeds if w.position.distance(self.system.odometer.prediction.point) < 0.5 and w.confidence > self.weed_confidence_threshold
         }
         if self.current_segment:
             # Filter to get upcoming weeds based on their .x position
@@ -581,9 +597,9 @@ class Weeding(rosys.persistence.PersistentModule):
 
     async def _handle_plants(self) -> None:
         self.log.info('Handling plants...')
-        for crop_id in self.crops_to_handle:
-            self._safe_crop_to_row(crop_id)
-        if self.system.field_friend.tool == 'tornado' and not self.use_monitor_workflow:
+        # for crop_id in self.crops_to_handle:
+        #     self._safe_crop_to_row(crop_id)
+        if self.system.field_friend.tool == 'tornado' and not self.use_monitor_workflow and self.crops_to_handle:
             await self._tornado_workflow()
         elif self.system.field_friend.tool == 'weed_screw' and not self.use_monitor_workflow:
             await self._weed_screw_workflow()
@@ -598,23 +614,31 @@ class Weeding(rosys.persistence.PersistentModule):
     async def _tornado_workflow(self) -> None:
         self.log.info('Starting Tornado Workflow..')
         try:
-            closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+            try:
+                closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+            except IndexError:
+                self.log.warning('No crops to handle')
+                return
             self.log.info(f'Closest crop position: {closest_crop_position}')
             # fist check if the closest crop is in the working area
             if closest_crop_position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
                 self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
 
-                if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position) and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
+                if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position) \
+                        and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
                     self.log.info('drilling crop')
-                    await self.system.puncher.drive_and_punch(plant_id=closest_crop_id, x=closest_crop_position.x, y=closest_crop_position.y, angle=self.tornado_angle)
+                    open_drill = False
                     if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
-                        self.log.info('drilling crop with open tornado')
-                        await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
+                        open_drill = True
+                    await self.system.puncher.drive_and_punch(
+                        plant_id=closest_crop_id, x=closest_crop_position.x, y=closest_crop_position.y, angle=self.tornado_angle, with_open_tornado=open_drill, with_punch_check=self.with_punch_check)
+                    # if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
+                    #     self.log.info('drilling crop with open tornado')
+                    #     await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
                 else:
-                    drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
-                    target = self.system.odometer.prediction.transform(Point(x=drive_distance, y=0))
-                    await self.system.driver.drive_to(target)
+                    self.log.info('Cant reach crop')
+                    await self._follow_line_of_crops()
 
                 if len(self.crops_to_handle) > 1 and self.drill_between_crops:
                     self.log.info('checking for second closest crop')
@@ -852,26 +876,27 @@ class Weeding(rosys.persistence.PersistentModule):
             if crop.id != crop_id:
                 distance = crop_world_position.distance(crop.position)
                 if distance >= inner_diameter/2 and distance <= outer_diameter/2:
+                    self.log.info(f'other crop with distance {distance} in drill range, drilling not allowed')
                     return True
         return False
 
-    def _safe_crop_to_row(self, crop_id: str) -> None:
-        if self.current_row is None:
-            return
-        self.log.info(f'Saving crop {crop_id} to row {self.current_row.name}...')
-        crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
-        if crop is None:
-            self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
-            return
-        for c in self.current_row.crops:
-            if c.position.distance(crop.position) < 0.07:
-                self.log.info('Crop already in row')
-                self.current_row.crops.remove(c)
-                self.current_row.crops.append(crop)
-                return
-        if crop.confidence >= 0.85 and len(crop.positions) >= 10:
-            self.log.info('Adding new crop to row')
-            self.current_row.crops.append(crop)
+    # def _safe_crop_to_row(self, crop_id: str) -> None:
+    #     if self.current_row is None:
+    #         return
+    #     self.log.info(f'Saving crop {crop_id} to row {self.current_row.name}...')
+    #     crop = next((c for c in self.system.plant_provider.crops if c.id == crop_id), None)
+    #     if crop is None:
+    #         self.log.error(f'Error in crop saving: Crop with id {crop_id} not found')
+    #         return
+    #     for c in self.current_row.crops:
+    #         if c.position.distance(crop.position) < 0.07:
+    #             self.log.info('Crop already in row')
+    #             self.current_row.crops.remove(c)
+    #             self.current_row.crops.append(crop)
+    #             return
+    #     if crop.confidence >= 0.85 and len(crop.positions) >= 10:
+    #         self.log.info('Adding new crop to row')
+    #         self.current_row.crops.append(crop)
 
     async def _create_simulated_plants(self):
         self.log.info('Creating simulated plants...')
@@ -884,7 +909,7 @@ class Weeding(rosys.persistence.PersistentModule):
                         id_=f'{i}_{j}',
                         type_='beet',
                         position=self.system.odometer.prediction.point.polar(
-                            0.14*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
+                            0.18*i+(randint(-2, 2)*0.01), self.system.odometer.prediction.yaw).polar(randint(-4, 4)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
@@ -910,10 +935,10 @@ class Weeding(rosys.persistence.PersistentModule):
                 ))
                 for j in range(1, 7):
                     await self.system.plant_provider.add_weed(Plant(
-                        id_=f'{i}_{j}',
-                        type_='weed',
-                        positions=[self.system.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(
-                            randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
+                        id=f'{i}_{j}',
+                        type='weed',
+                        positions=[self.system.odometer.prediction.point.polar(
+                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))

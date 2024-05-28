@@ -29,9 +29,7 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
         self.name = name
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            master = CanOpenMaster({can.name})
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
-            master.sync_interval = 5
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
             bool {name}_ends_enabled = true;

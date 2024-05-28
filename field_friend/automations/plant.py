@@ -13,7 +13,7 @@ class Plant:
     type: str
     positions: deque[Point]
     detection_time: float
-    confidence: float = 0.0
+    confidences: deque[float]
     detection_image: Optional[Image] = None
 
     def __init__(self, type_: str, position: Point, detection_time: float, id_: str = ..., confidence: float = 0.0, max_positions: int = 20, detection_image: Optional[Image] = None) -> None:
@@ -21,7 +21,7 @@ class Plant:
         self.type = type_
         self.positions = deque([position], maxlen=max_positions)
         self.detection_time = detection_time
-        self.confidence = confidence
+        self.confidences = deque([confidence], maxlen=max_positions)
         self.detection_image = detection_image
 
     def __post_init__(self) -> None:
@@ -39,3 +39,10 @@ class Plant:
         middle_y = total_y / len(self.positions)
 
         return Point(x=middle_x, y=middle_y)
+
+    @property
+    def confidence(self) -> float:
+        # TODO: maybe use weighted confidence
+        # sum_confidence = sum(confidence**1.5 for confidence in self.confidences)
+        sum_confidence = sum(self.confidences)
+        return sum_confidence
