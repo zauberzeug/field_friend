@@ -23,6 +23,7 @@ class System(rosys.persistence.PersistentModule):
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
+        self.AUTOMATION_CHANGED = rosys.event.Event()
 
         self.field_friend: FieldFriendHardware | FieldFriendSimulation
         self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
@@ -48,10 +49,8 @@ class System(rosys.persistence.PersistentModule):
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
-            assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
-            self.gnss = GnssSimulation(self.odometer)
             self.gnss = GnssSimulation(self.odometer)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)

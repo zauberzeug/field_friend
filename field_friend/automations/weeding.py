@@ -79,7 +79,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.last_pose: Optional[Pose] = None
         self.drived_distance: float = 0.0
         self.sorted_weeding_rows: list = []
-        self.weeding_plan: Optional[list[list[PathSegment]]] = None
+        self.weeding_plan: list[list[PathSegment]] = []
         self.turn_paths: list[list[PathSegment]] = []
         self.current_row: Optional[Row] = None
         self.current_segment: Optional[PathSegment] = None
@@ -134,7 +134,7 @@ class Weeding(rosys.persistence.PersistentModule):
             'angular_speed_between_rows': self.angular_speed_between_rows,
             'sorted_weeding_rows': [rosys.persistence.to_dict(row) for row in self.sorted_weeding_rows],
             'field': rosys.persistence.to_dict(self.field) if self.field else None,
-            'weeding_plan': [[rosys.persistence.to_dict(segment) for segment in row] for row in self.weeding_plan] if self.weeding_plan else [],
+            'weeding_plan': [[rosys.persistence.to_dict(segment) for segment in row] for row in self.weeding_plan],
             'turn_paths': [rosys.persistence.to_dict(segment) for segment in self.turn_paths],
             'current_row': rosys.persistence.to_dict(self.current_row) if self.current_row else None,
             'current_segment': rosys.persistence.to_dict(self.current_segment) if self.current_segment else None,
@@ -244,19 +244,17 @@ class Weeding(rosys.persistence.PersistentModule):
         self.turn_paths = await self._generate_turn_paths()
         if not self.turn_paths:
             self.log.error('No turn paths available')
-        paths = [path_segment for path in self.weeding_plan for path_segment in path]
-        turn_paths = [path_segment for path in self.turn_paths for path_segment in path]
-        self.PATH_PLANNED.emit(paths + turn_paths)
+        self.PATH_PLANNED.emit()
         return True
 
-    def _make_plan(self) -> Optional[list[list[rosys.driving.PathSegment]]]:
+    def _make_plan(self) -> list[list[rosys.driving.PathSegment]]:
         self.log.info('Making plan...')
         if self.field is None:
             self.log.warning('No field available')
-            return None
+            return []
         if not self.field.rows:
             self.log.warning('No rows available')
-            return None
+            return []
         if self.start_row_id is None:
             self.start_row_id = self.field.rows[0].id
         else:
@@ -271,8 +269,7 @@ class Weeding(rosys.persistence.PersistentModule):
         if start_row is None or end_row is None:
             self.log.warning('Start or end row not available')
             return None
-        reference = self.field.reference
-        assert reference is not None
+        reference = [self.field.reference_lat, self.field.reference_lon]
         rows_to_weed = self.field.rows[self.field.rows.index(
             start_row):self.field.rows.index(end_row) + 1]
         rows = [row for row in rows_to_weed if len(row.cartesian(reference)) > 1]
@@ -497,7 +494,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.system.automation_watcher.stop_field_watch()
         self.system.automation_watcher.gnss_watch_active = False
         self.sorted_weeding_rows = []
-        self.weeding_plan = None
+        self.weeding_plan = []
         self.turn_paths = []
         self.current_row = None
         self.current_segment = None
@@ -940,8 +937,8 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.plant_provider.add_weed(Plant(
                         id_=f'{i}_{j}',
                         type_='weed',
-                        position=self.system.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(
-                            randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
+                        position=self.system.odometer.prediction.point.polar(
+                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))

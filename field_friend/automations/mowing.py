@@ -37,7 +37,7 @@ class Mowing(rosys.persistence.PersistentModule):
         self.robot_width: float = robot_width
 
         self.field: Optional[Field] = None
-        self.paths: Optional[list[list[rosys.driving.PathSegment]]] = None
+        self.paths: list[list[rosys.driving.PathSegment]] = []
         self.current_path: Optional[list[rosys.driving.PathSegment]] = None
         self.current_path_segment: Optional[rosys.driving.PathSegment] = None
         self.continue_mowing: bool = False
@@ -51,7 +51,7 @@ class Mowing(rosys.persistence.PersistentModule):
         return {
             'padding': self.padding,
             'lane_distance': self.lane_distance,
-            'paths': [[rosys.persistence.to_dict(segment) for segment in path] for path in self.paths] if self.paths else [],
+            'paths': [[rosys.persistence.to_dict(segment) for segment in path] for path in self.paths],
             'current_path': [rosys.persistence.to_dict(segment) for segment in self.current_path] if self.current_path else [],
             'current_path_segment': rosys.persistence.to_dict(self.current_path_segment) if self.current_path_segment else None,
         }
@@ -115,7 +115,7 @@ class Mowing(rosys.persistence.PersistentModule):
                         rosys.notify('No paths to drive', 'negative')
                         raise Exception('No paths to drive')
                 assert self.paths is not None
-                self.MOWING_STARTED.emit([path_segment for path in self.paths for path_segment in path])
+                self.MOWING_STARTED.emit()
                 await self._drive_mowing_paths(self.paths)
                 self.kpi_provider.increment_mowing_kpi('mowing_completed')
                 rosys.notify('Mowing finished', 'positive')
