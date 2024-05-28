@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import rosys
 from rosys.testing import forward
 
