@@ -40,11 +40,13 @@ class PlantLocator(rosys.persistence.PersistentModule):
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
 
     def backup(self) -> dict:
+        self.log.info(f'backup: autoupload: {self.autoupload}')
         return {
             'weed_category_names': self.weed_category_names,
             'crop_category_names': self.crop_category_names,
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
+            'autoupload': self.autoupload.value,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -52,6 +54,9 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.crop_category_names = data.get('crop_category_names', self.crop_category_names)
         self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
+        self.autoupload = Autoupload(data.get('autoupload', self.autoupload)
+                                     ) if 'autoupload' in data else Autoupload.DISABLED
+        self.log.info(f'self.autoupload: {self.autoupload}')
 
     async def _detect_plants(self) -> None:
         if self.is_paused:
