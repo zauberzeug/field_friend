@@ -1,7 +1,9 @@
 import asyncio
 import logging
+from typing import Any
 
 import rosys
+from rosys.vision import Autoupload
 
 from .plant import Plant
 from .plant_provider import PlantProvider
@@ -16,7 +18,7 @@ class DetectorError(Exception):
     pass
 
 
-class PlantLocator:
+class PlantLocator(rosys.persistence.PersistentModule):
 
     def __init__(self,
                  camera_provider: rosys.vision.CameraProvider,
@@ -24,17 +26,38 @@ class PlantLocator:
                  plant_provider: PlantProvider,
                  odometer: rosys.driving.Odometer,
                  ) -> None:
+        super().__init__()
         self.log = logging.getLogger('field_friend.plant_detection')
         self.camera_provider = camera_provider
         self.detector = detector
         self.plant_provider = plant_provider
         self.odometer = odometer
         self.is_paused = True
+        self.autoupload: Autoupload = Autoupload.DISABLED
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
+
+    def backup(self) -> dict:
+        self.log.info(f'backup: autoupload: {self.autoupload}')
+        return {
+            'weed_category_names': self.weed_category_names,
+            'crop_category_names': self.crop_category_names,
+            'minimum_weed_confidence': self.minimum_weed_confidence,
+            'minimum_crop_confidence': self.minimum_crop_confidence,
+            'autoupload': self.autoupload.value,
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.weed_category_names = data.get('weed_category_names', self.weed_category_names)
+        self.crop_category_names = data.get('crop_category_names', self.crop_category_names)
+        self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
+        self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
+        self.autoupload = Autoupload(data.get('autoupload', self.autoupload)
+                                     ) if 'autoupload' in data else Autoupload.DISABLED
+        self.log.info(f'self.autoupload: {self.autoupload}')
 
     async def _detect_plants(self) -> None:
         if self.is_paused:
@@ -52,7 +75,7 @@ class PlantLocator:
         if new_image is None or new_image.detections:
             await asyncio.sleep(0.01)
             return
-        await self.detector.detect(new_image, autoupload=rosys.vision.Autoupload.FILTERED)
+        await self.detector.detect(new_image, autoupload=self.autoupload)
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
             await asyncio.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
@@ -69,7 +92,7 @@ class PlantLocator:
                     self.log.error('could not generate floor point of detection, calibration error')
                     continue
                 world_point = self.odometer.prediction.transform(floor_point.projection())
-                weed = Plant(position=world_point, type_=d.category_name,
+                weed = Plant(position=world_point, type_=d.category_name, confidence=d.confidence,
                              detection_time=rosys.time(), detection_image=new_image)
                 await self.plant_provider.add_weed(weed)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
