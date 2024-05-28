@@ -9,8 +9,8 @@ from rosys.geometry import Point, Pose
 from rosys.helpers import eliminate_2pi
 
 from ...hardware import ChainAxis
-from ..implements.implement import Implement
 from ..plant import Plant
+from .implement import Implement
 
 if TYPE_CHECKING:
     from system import System

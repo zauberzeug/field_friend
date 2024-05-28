@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import rosys
 
 from ..puncher import PuncherException
-from .weeding_tool import Implement, ImplementException
+from .weeding_implement import Implement, ImplementException
 
 if TYPE_CHECKING:
     from system import System
