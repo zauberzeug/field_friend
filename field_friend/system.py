@@ -120,7 +120,7 @@ class System(rosys.persistence.PersistentModule):
                                                                self.odometer,
                                                                self.kpi_provider,
                                                                self.monitoring)
-        self.straight_line_navigation.length = 5.0
+        self.straight_line_navigation.length = 2.0
         self.weeding_implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
             case 'tornado':
@@ -140,11 +140,11 @@ class System(rosys.persistence.PersistentModule):
         # self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
         tools: list[Implement] = self.weeding_implements  # + [self.coin_collecting, self.mowing]
         self.implements = {t.name: t for t in tools}
-        self.field_navigation.implement = Recorder(self)
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
         self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)
         self.current_navigation = self.straight_line_navigation
+        self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
 
@@ -166,7 +166,7 @@ class System(rosys.persistence.PersistentModule):
     def restore(self, data: dict[str, Any]) -> None:
         implement = self.implements.get(data.get('implement', None), None)
         if implement is not None:
-            self.current_navigation.implement = implement
+            self.current_implement = implement
 
     @property
     def current_implement(self) -> Implement:
@@ -175,11 +175,9 @@ class System(rosys.persistence.PersistentModule):
     @current_implement.setter
     def current_implement(self, implement: Implement) -> None:
         self.current_navigation.implement = implement
-        if hasattr(implement, 'relevant_weeds'):
-            self.plant_provider.relevant_weeds = implement.relevant_weeds
-        else:
-            self.plant_provider.relevant_weeds = self.small_weed_category_names + self.big_weed_category_names
+        self.update_plant_provider()
         self.request_backup()
+        self.log.info(f'Current implement: {implement.name} with relevant weeds {self.plant_provider.relevant_weeds}')
 
     @property
     def current_navigation(self) -> Navigation:
@@ -188,8 +186,15 @@ class System(rosys.persistence.PersistentModule):
     @current_navigation.setter
     def current_navigation(self, navigation: Navigation) -> None:
         self._current_navigation = navigation
+        self.update_plant_provider()
         self.automator.default_automation = self._current_navigation.start
         self.AUTOMATION_CHANGED.emit(navigation.name)
+
+    def update_plant_provider(self):
+        if hasattr(self.current_implement, 'relevant_weeds'):
+            self.plant_provider.relevant_weeds = self.current_implement.relevant_weeds
+        else:
+            self.plant_provider.relevant_weeds = self.small_weed_category_names + self.big_weed_category_names
 
     async def setup_simulated_usb_camera(self):
         self.usb_camera_provider.remove_all_cameras()
