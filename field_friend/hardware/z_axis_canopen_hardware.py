@@ -71,19 +71,15 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
         steps = self.compute_steps(position)
         self.log.info(f'moving to steps: {steps}')
         await self.enable_motor()
-        await self.enter_pp_mode(speed)
         await rosys.sleep(0.1)
         await self.robot_brain.send(
-            f'{self.name}_motor.set_target_position({steps});'
-            f'{self.name}_motor.commit_target_position();'
+            f'{self.name}.position({steps}, {speed}, 0);'
         )
         # Give flags time to turn false first
         await rosys.sleep(0.2)
         while not self.idle and not self.alarm:
-            await self.enter_pp_mode(speed)
             await self.robot_brain.send(
-                f'{self.name}_motor.set_target_position({steps});'
-                f'{self.name}_motor.commit_target_position();'
+                f'{self.name}.position({steps}, {speed}, 0);'
             )
             await rosys.sleep(0.2)
         if self.alarm:
@@ -97,9 +93,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
 
     async def disable_motor(self) -> None:
         await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(false);')
-
-    async def enter_pp_mode(self, velocity: int) -> None:
-        await self.robot_brain.send(f'{self.name}_motor.enter_pp_mode({velocity});')
 
     async def reset_fault(self) -> None:
         await self.robot_brain.send(f'{self.name}_motor.reset_fault();')
@@ -124,8 +117,7 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
                 self.log.info('already in end_b moving out of end_b stop')
                 velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
-                    f'{self.name}_motor.enter_pv_mode({velocity});'
-                    f'{self.name}_motor.set_ctrl_halt(false);'
+                    f'{self.name}.speed({velocity}, 0);'
                 )
                 while self.end_b:
                     await rosys.sleep(0.2)
@@ -137,8 +129,7 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
                 self.log.info('moving to end_t stop')
                 velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
-                    f'{self.name}_motor.enter_pv_mode({velocity});'
-                    f'{self.name}_motor.set_ctrl_halt(false);'
+                    f'{self.name}.speed({velocity}, 0);'
                 )
                 while not self.end_t:
                     await rosys.sleep(0.2)
@@ -148,8 +139,7 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
             self.log.info('moving out of end_t stop')
             velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}_motor.enter_pv_mode({velocity});'
-                f'{self.name}_motor.set_ctrl_halt(false);'
+                f'{self.name}.speed({velocity}, 0);'
             )
             while self.end_t:
                 await rosys.sleep(0.2)
@@ -159,8 +149,7 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly to end_t stop')
             slow_velocity = 25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}_motor.enter_pv_mode({slow_velocity});'
-                f'{self.name}_motor.set_ctrl_halt(false);'
+                f'{self.name}.speed({slow_velocity}, 0);'
             )
             while not self.end_t:
                 await rosys.sleep(0.2)
@@ -170,8 +159,7 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly out of end_t stop')
             slow_velocity = -25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}_motor.enter_pv_mode({slow_velocity});'
-                f'{self.name}_motor.set_ctrl_halt(false);'
+                f'{self.name}.speed({slow_velocity}, 0);'
             )
             while self.end_t:
                 await rosys.sleep(0.2)
