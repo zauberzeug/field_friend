@@ -24,6 +24,7 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
                  end_l_pin: int = 21,
                  motor_on_expander: bool = False,
                  end_stops_on_expander: bool = True,
+                 end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
                  ) -> None:
         self.name = name
@@ -31,19 +32,14 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
+            {name}_end_l.inverted = {str(end_stops_inverted).lower()}
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
-            bool {name}_ends_enabled = true;
-            bool {name}_is_referencing = false;
-            when {name}_ends_enabled and ({name}_end_r.level == 0 or {name}_end_l.level == 0) then
-                {name}_motor.set_ctrl_halt(true);
-            end
-            when !{name}_ends_enabled and {name}_is_referencing and {name}_end_r.level == 1 then
-                {name}_motor.set_ctrl_halt(true);
-            end
+            {name}_end_r.inverted = {str(end_stops_inverted).lower()}
+            {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_l" if reversed_direction else name + "_end_r"}, {name + "_end_r" if reversed_direction else name + "_end_l"})
         ''')
         core_message_fields = [
-            f'{name}_end_l.level',
-            f'{name}_end_r.level',
+            f'{name}_end_l.active',
+            f'{name}_end_r.active',
             f'{name}_motor.actual_position',
             f'{name}_motor.status_target_reached',
             f'{name}_motor.status_fault',
