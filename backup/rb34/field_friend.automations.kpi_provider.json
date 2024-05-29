@@ -1,0 +1,96 @@
+{
+    "current_weeding_kpis": {
+        "distance": 10,
+        "time": 289,
+        "bumps": 0,
+        "low_battery": 0,
+        "can_failure": 0,
+        "automation_stopped": 0,
+        "e_stop_triggered": 0,
+        "soft_e_stop_triggered": 0,
+        "imu_rolling_detected": 0,
+        "gnss_connection_lost": 0,
+        "rows_weeded": 1,
+        "crops_detected": 0,
+        "weeds_detected": 4,
+        "weeds_removed": 0,
+        "punches": 0,
+        "chops": 0,
+        "weeding_completed": 1
+    },
+    "current_mowing_kpis": {
+        "distance": 0,
+        "time": 0,
+        "bumps": 0,
+        "low_battery": 0,
+        "can_failure": 0,
+        "automation_stopped": 0,
+        "e_stop_triggered": 0,
+        "soft_e_stop_triggered": 0,
+        "imu_rolling_detected": 0,
+        "gnss_connection_lost": 0,
+        "mowing_completed": false
+    },
+    "days": [
+        {
+            "date": "2024-05-05",
+            "incidents": {
+                "time": 81,
+                "weeding_completed": 1,
+                "bumps": 2
+            }
+        },
+        {
+            "date": "2024-05-07",
+            "incidents": {
+                "crops_detected": 8,
+                "bumps": 1
+            }
+        },
+        {
+            "date": "2024-05-08",
+            "incidents": {
+                "time": 18832,
+                "crops_detected": 1,
+                "distance": 7902,
+                "weeding_completed": 5,
+                "bumps": 2,
+                "low_battery": 5
+            }
+        },
+        {
+            "date": "2024-05-10",
+            "incidents": {
+                "weeds_detected": 25,
+                "crops_detected": 1,
+                "bumps": 1
+            }
+        },
+        {
+            "date": "2024-05-15",
+            "incidents": {
+                "time": 261,
+                "distance": 13,
+                "weeds_detected": 13,
+                "weeding_completed": 1
+            }
+        },
+        {
+            "date": "2024-05-16",
+            "incidents": {
+                "weeds_detected": 5
+            }
+        },
+        {
+            "date": "2024-05-17",
+            "incidents": {
+                "time": 382,
+                "weeding_completed": 2,
+                "distance": 11,
+                "weeds_detected": 4,
+                "rows_weeded": 1
+            }
+        }
+    ],
+    "months": []
+}

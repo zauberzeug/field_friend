@@ -1,8 +1,10 @@
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from nicegui import app, events, ui
+import rosys
+from nicegui import events, ui
 
 from .automation_controls import automation_controls
 from .key_controls import KeyControls
@@ -103,6 +105,12 @@ class operation:
                                 .classes('w-24') \
                                 .bind_value(self.system.plant_locator, 'minimum_crop_confidence') \
                                 .tooltip('Set the minimum crop confidence for the weeding automation')
+                            options = [autoupload for autoupload in rosys.vision.Autoupload]
+
+                            ui.select(options, label='Autoupload', on_change=self.system.plant_locator.backup) \
+                                .bind_value(self.system.plant_locator, 'autoupload') \
+                                .classes('w-24').tooltip('Set the autoupload for the weeding automation')
+
                         ui.separator()
                         ui.markdown('Tool settings').style('color: #6E93D6')
                         with ui.row():
@@ -132,7 +140,7 @@ class operation:
                                 .tooltip('Set the weeding automation to only monitor the field')
                             if self.system.field_friend.tool == 'tornado':
                                 ui.checkbox('With punch check', value=True) \
-                                    .bind_value(self.system.puncher, 'with_punch_check') \
+                                    .bind_value(self.system.weeding, 'with_punch_check') \
                                     .tooltip('Set the weeding automation to check for punch')
                                 ui.checkbox('Drill 2x with open torando', value=False,) \
                                     .bind_value(self.system.weeding, 'drill_with_open_tornado') \
@@ -149,6 +157,34 @@ class operation:
                                 ui.checkbox('Chop if no crops', value=False) \
                                     .bind_value(self.system.weeding, 'chop_if_no_crops') \
                                     .tooltip('Set the weeding automation to chop also if no crops seen')
+                            ui.number('Combined crop confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+                                .props('dense outlined') \
+                                .classes('w-24') \
+                                .bind_value(self.system.weeding, 'crop_confidence_threshold') \
+                                .tooltip('Needed crop confidence for punshing')
+                            ui.number('Combined weed confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+                                .props('dense outlined') \
+                                .classes('w-24') \
+                                .bind_value(self.system.weeding, 'weed_confidence_threshold') \
+                                .tooltip('Needed weed confidence for punshing')
+                        ui.separator()
+                        ui.markdown('PlantProvider settings').style('color: #6E93D6')
+                        with ui.row():
+                            ui.number('Crop match distance', value=0.07, step=0.01, min=0.01, max=0.10, format='%.2f') \
+                                .props('dense outlined suffix=m') \
+                                .classes('w-24') \
+                                .bind_value(self.system.plant_provider, 'match_distance') \
+                                .tooltip('Maximum distance for a detection to be considered the same plant')
+                            ui.number('Crop spacing', value=0.18, step=0.01, min=0.01, max=1.00, format='%.2f') \
+                                .props('dense outlined suffix=m') \
+                                .classes('w-24') \
+                                .bind_value(self.system.plant_provider, 'crop_spacing') \
+                                .tooltip('Spacing between crops')
+                            ui.number('Crop prediction confidence', value=0.3, step=0.05, min=0.05, max=1.00, format='%.2f') \
+                                .props('dense outlined') \
+                                .classes('w-24') \
+                                .bind_value(self.system.plant_provider, 'prediction_confidence') \
+                                .tooltip('Confidence of the crop prediction')
                         ui.separator()
                         ui.markdown('**Driver settings**').style('color: #6E93D6')
                         with ui.row():
@@ -215,7 +251,8 @@ class operation:
                 ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
         self.system.puncher.POSSIBLE_PUNCH.register(self.can_punch)
-        self.punch_dialog = PunchDialog(self.system.usb_camera_provider, self.system.plant_locator)
+        self.punch_dialog = PunchDialog(self.system.usb_camera_provider,
+                                        self.system.plant_locator, self.system.odometer)
 
     @ui.refreshable
     def show_start_row(self) -> None:
@@ -251,14 +288,16 @@ class operation:
                 self.show_end_row.refresh()
 
     async def can_punch(self, plant_id: str) -> None:
-        self.punch_dialog.label.text = 'Do you want to punch at the current position?'
         self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)
-        result = await self.punch_dialog
+        result: str | None = None
+        try:
+            result = await asyncio.wait_for(self.punch_dialog, timeout=self.punch_dialog.timeout)
+        except asyncio.TimeoutError:
+            self.punch_dialog.close()
+            result = None
         if result == 'Yes':
             self.system.puncher.punch_allowed = 'allowed'
-        elif result == 'No':
-            self.system.puncher.punch_allowed = 'not_allowed'
-        elif result == 'Cancel':
+        elif result is None or result == 'No' or result == 'Cancel':
             self.system.puncher.punch_allowed = 'not_allowed'
 
     async def can_start(self) -> bool:
