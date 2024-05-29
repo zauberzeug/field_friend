@@ -22,7 +22,7 @@ configuration = {
         'end_r_pin': 5,
         'end_l_pin': 36,
         'motor_on_expander': False,
-        'end_stops_on_expander': True,
+        'end_stops_on_expander': False,
         'reversed_direction': False,
     },
     'z_axis': {
@@ -37,6 +37,7 @@ configuration = {
         'end_bottom_pin': 5,  # p0
         'end_bottom_pin_expander': True,  # p0
         'ref_motor_pin': 13,
+        'ref_motor_pin_expander': False,
         'ref_gear_pin': 4,
         'ref_gear_pin_expander': False,
         'ref_knife_stop_pin': 4,  # po
@@ -60,11 +61,11 @@ configuration = {
         'front_pin': 22,
         'back_pin': 23,
     },
-    'eyes': {
-        'name': 'eyes',
-        'on_expander': True,
-        'eyes_pin': 25
-    },
+    # 'eyes': {
+    #     'name': 'eyes',
+    #     'on_expander': True,
+    #     'eyes_pin': 25
+    # },
     'estop': {
         'name': 'estop',
         'pins': {'1': 34, '2': 35},
