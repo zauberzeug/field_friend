@@ -115,8 +115,6 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
             self.log.info("enabling h motors")
             await self.enable_motor()
             await self.robot_brain.send(
-                f'{self.name}_is_referencing = true;'
-                f'{self.name}_ends_enabled = true;'
                 f'{self.name}_motor.position_offset = 0;'
             )
             await rosys.sleep(1)
@@ -124,11 +122,6 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
             # if in end l stop, move out
             if self.end_l:
                 self.log.info('already in end_l moving out of end_l stop')
-                await self.robot_brain.send(
-                    f'{self.name}_ends_enabled = false;'
-                    f'{self.name}_is_referencing = false;'
-                )
-                await rosys.sleep(1)
                 velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
                     f'{self.name}_motor.enter_pv_mode({velocity});'
@@ -142,11 +135,6 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
             # move to end r stop if not already there
             if not self.end_r:
                 self.log.info('moving to end_r stop')
-                await self.robot_brain.send(
-                    f'{self.name}_ends_enabled = true;'
-                    f'{self.name}_is_referencing = true;'
-                )
-                await rosys.sleep(1)
                 velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
                     f'{self.name}_motor.enter_pv_mode({velocity});'
@@ -158,8 +146,6 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
 
             # move out of end r stop
             self.log.info('moving out of end_r stop')
-            await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
-            await rosys.sleep(1)
             velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({velocity});'
@@ -171,8 +157,6 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
 
             # move slowly to end r stop
             self.log.info('moving slowly to end_r stop')
-            await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
-            await rosys.sleep(1)
             slow_velocity = -25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
@@ -184,8 +168,6 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
 
             # move slowly out of end r stop
             self.log.info('moving slowly out of end_r stop')
-            await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
-            await rosys.sleep(1)
             slow_velocity = 25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
@@ -198,10 +180,6 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
             # save position
             await self.robot_brain.send(f'{self.name}_motor.position_offset = {self.steps};')
             await rosys.sleep(0.2)
-            await self.robot_brain.send(
-                f'{self.name}_is_referencing = false;'
-                f'{self.name}_ends_enabled = true;'
-            )
             self.log.info('yaxis referenced')
             self.is_referenced = True
             self.log.info(f'actual position: {self.position}, and steps: {self.steps}')
@@ -211,10 +189,6 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
             return False
         finally:
             await self.stop()
-            await self.robot_brain.send(
-                f'{self.name}_is_referencing = false;'
-                f'{self.name}_ends_enabled = true;'
-            )
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         self.end_l = int(words.pop(0)) == 0

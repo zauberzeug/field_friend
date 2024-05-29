@@ -24,6 +24,7 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
                  end_b_pin: int = 21,
                  motor_on_expander: bool = False,
                  end_stops_on_expander: bool = True,
+                 end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
                  ) -> None:
         self.name = name
@@ -31,19 +32,14 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
             {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
+            {name}_end_t.inverted = {str(end_stops_inverted).lower()}
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
-            bool {name}_ends_enabled = true;
-            bool {name}_is_referencing = false;
-            when {name}_ends_enabled and ({name}_end_t.level == 0 or {name}_end_b.level == 0) then
-                {name}_motor.set_ctrl_halt(true);
-            end
-            when !{name}_ends_enabled and {name}_is_referencing and {name}_end_t.level == 1 then
-                {name}_motor.set_ctrl_halt(true);
-            end
+            {name}_end_b.inverted = {str(end_stops_inverted).lower()}
+            {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
         ''')
         core_message_fields = [
-            f'{name}_end_t.level',
-            f'{name}_end_b.level',
+            f'{name}_end_t.active',
+            f'{name}_end_b.active',
             f'{name}_motor.actual_position',
             f'{name}_motor.status_target_reached',
             f'{name}_motor.status_fault',
@@ -119,8 +115,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
             self.log.info("enabling h motors")
             await self.enable_motor()
             await self.robot_brain.send(
-                f'{self.name}_is_referencing = true;'
-                f'{self.name}_ends_enabled = true;'
                 f'{self.name}_motor.position_offset = 0;'
             )
             await rosys.sleep(1)
@@ -128,8 +122,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
             # if in end b stop, move out
             if self.end_b:
                 self.log.info('already in end_b moving out of end_b stop')
-                await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
-                await rosys.sleep(1)
                 velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
                     f'{self.name}_motor.enter_pv_mode({velocity});'
@@ -143,8 +135,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
             # move to end t stop if not already there
             if not self.end_t:
                 self.log.info('moving to end_t stop')
-                await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
-                await rosys.sleep(1)
                 velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
                     f'{self.name}_motor.enter_pv_mode({velocity});'
@@ -156,8 +146,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
 
             # move out of end t stop
             self.log.info('moving out of end_t stop')
-            await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
-            await rosys.sleep(1)
             velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({velocity});'
@@ -169,8 +157,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
 
             # move slowly to end t stop
             self.log.info('moving slowly to end_t stop')
-            await self.robot_brain.send(f'{self.name}_ends_enabled = true;')
-            await rosys.sleep(1)
             slow_velocity = 25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
@@ -182,8 +168,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
 
             # move slowly out of end t stop
             self.log.info('moving slowly out of end_t stop')
-            await self.robot_brain.send(f'{self.name}_ends_enabled = false;')
-            await rosys.sleep(1)
             slow_velocity = -25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
                 f'{self.name}_motor.enter_pv_mode({slow_velocity});'
@@ -196,10 +180,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
             # save position
             await self.robot_brain.send(f'{self.name}_motor.position_offset = {self.steps};')
             await rosys.sleep(0.2)
-            await self.robot_brain.send(
-                f'{self.name}_is_referencing = false;'
-                f'{self.name}_ends_enabled = true;'
-            )
             self.log.info('zaxis referenced')
             self.is_referenced = True
             self.log.info(f'actual position: {self.position}, and steps: {self.steps}')
@@ -209,10 +189,6 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
             return False
         finally:
             await self.stop()
-            await self.robot_brain.send(
-                f'{self.name}_is_referencing = false;'
-                f'{self.name}_ends_enabled = true;'
-            )
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         self.end_t = int(words.pop(0)) == 0
