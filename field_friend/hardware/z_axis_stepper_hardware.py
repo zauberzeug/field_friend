@@ -25,6 +25,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
                  end_b_pin: int = 22,
                  motor_on_expander: bool = True,
                  end_stops_on_expander: bool = True,
+                 end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
                  ) -> None:
         self.name = name
@@ -34,12 +35,14 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
             {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
+            {name}_end_t.inverted = {str(end_stops_inverted).lower()}
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
+            {name}_end_b.inverted = {str(end_stops_inverted).lower()}
             {name} =  {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
         ''')
         core_message_fields = [
-            f'{name}_end_t.level',
-            f'{name}_end_b.level',
+            f'{name}_end_t.active',
+            f'{name}_end_b.active',
             f'{name}_motor.idle',
             f'{name}_motor.position',
             f'{name}_alarm.level',
