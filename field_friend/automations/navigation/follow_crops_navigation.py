@@ -20,7 +20,6 @@ class FollowCropsNavigation(Navigation):
         self.detector = system.detector
         self.start_position = self.odometer.prediction.point
         self.name = 'Follow Crops'
-        self._should_stop = False
 
     async def _start(self):
         self.start_position = self.odometer.prediction.point
@@ -29,24 +28,18 @@ class FollowCropsNavigation(Navigation):
             return
         self.log.info('following crops ...')
         await self.implement.activate()
-        while True:
+        while not self._should_stop():
             await rosys.automation.parallelize(
                 self.implement.observe(),
                 self._drive_forward(),
                 return_when_first_completed=True
             )
             await self.implement.on_focus()
-            if self._should_stop:
-                break
         await self.implement.deactivate()
 
     async def _drive_forward(self):
-        while True:
+        while not self._should_stop():
             row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point)
-            # if not row:
-            #     # TODO: make stop condition more sophisticated and configurable (like "stop after 40 cm without crops")
-            #     self._should_stop = True
-            #     break
             if len(row) >= 2:
                 points_array = np.array([(p.position.x, p.position.y) for p in row])
                 # Fit a line using least squares
@@ -55,10 +48,10 @@ class FollowCropsNavigation(Navigation):
                 yaw_of_row = np.arctan(m)
             else:
                 yaw_of_row = self.odometer.prediction.yaw
-            # only apply some yaw corrections to avoid oversteering
+            # NOTE we only apply some yaw corrections to avoid oversteering
             target_yaw = self.combine_angles(yaw_of_row, 0.6, self.odometer.prediction.yaw)
             target = self.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
-            self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
+            # self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
             with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
                 await self.driver.drive_to(target)
 
@@ -81,3 +74,10 @@ class FollowCropsNavigation(Navigation):
             x = i/10.0
             p = rosys.geometry.Point3d(x=x, y=np.sin(x/2), z=0)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+
+    def _should_stop(self):
+        distance = self.odometer.prediction.point.distance(self.start_position)
+        if distance < 0.5:
+            return False  # at least drive 0.5m
+        if len(self.plant_provider.get_relevant_crops(self.odometer.prediction.point)) == 0:
+            return True

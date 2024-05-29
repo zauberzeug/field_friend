@@ -25,24 +25,22 @@ class StraightLineNavigation(Navigation):
             return
         self.log.info('driving straight line forward...')
         await self.implement.activate()
-        while True:
+        while not self._should_stop():
             await rosys.automation.parallelize(
                 self.implement.observe(),
                 self._drive_forward(),
                 return_when_first_completed=True
             )
             await self.implement.on_focus()
-            if await self._should_stop():
-                break
         await self.implement.deactivate()
 
     async def _drive_forward(self):
-        while not await self._should_stop():
+        while not self._should_stop():
             self.log.info('driving forward...')
             target = self.odometer.prediction.transform(rosys.geometry.Point(x=0.10, y=0))
             with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
                 await self.driver.drive_to(target)
 
-    async def _should_stop(self):
+    def _should_stop(self):
         distance = self.odometer.prediction.point.distance(self.start_position)
         return distance > self.length
