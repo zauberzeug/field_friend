@@ -62,9 +62,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await rosys.sleep(3)
         self.system.plant_locator.resume()
         await rosys.sleep(3)
-        # if not self.system.is_real:
-        #     self.system.detector.simulated_objects = []
-        #     await self._create_simulated_plants()
 
     async def deactivate(self):
         await self.system.field_friend.flashlight.turn_off()
@@ -201,19 +198,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     async def _perform_workflow(self) -> None:
         pass
-
-    async def _follow_line_of_crops(self):
-        self.log.info('Following line of crops...')
-        farthest_crop = list(self.crops_to_handle.values())[-1]
-        self.log.info(f'Farthest crop: {farthest_crop}')
-        upcoming_world_position = self.system.odometer.prediction.transform(farthest_crop)
-        yaw = self.system.odometer.prediction.point.direction(upcoming_world_position)
-        # only apply minimal yaw corrections to avoid oversteering
-        target_yaw = self._weighted_angle_combine(self.system.odometer.prediction.yaw, 0.85, yaw, 0.15)
-        # yaw = eliminate_2pi(self.system.odometer.prediction.yaw) * 0.9 + eliminate_2pi(yaw) * 0.1
-        target = self.system.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
-        self.log.info(f'Current world position: {self.system.odometer.prediction} Target next crop at {target}')
-        await self.system.driver.drive_to(target)
 
     def _weighted_angle_combine(self, angle1: float, weight1: float, angle2: float, weight2: float) -> float:
         # Normalize both angles
