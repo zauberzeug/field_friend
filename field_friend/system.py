@@ -214,7 +214,7 @@ class System(rosys.persistence.PersistentModule):
         self.automator.default_automation = self._current_navigation.start
         self.AUTOMATION_CHANGED.emit(navigation.name)
         self.request_backup()
-        if not self.is_real:
+        if not self.is_real and not rosys.is_test:
             self._current_navigation.create_simulation()
 
     def update_plant_provider(self):

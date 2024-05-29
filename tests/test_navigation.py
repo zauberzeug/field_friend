@@ -30,9 +30,11 @@ async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimul
     system.automator.start(system.follow_crops_navigation.start())
     await forward(2)
     assert system.automator.is_running
-    await forward(50)
+    await forward(30)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(4, abs=0.1)
+    assert system.odometer.prediction.point.x == pytest.approx(1.4, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0.5, abs=0.1)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=1.0)
 
 
 # async def test_start_weeding_auto_selects_rows(system: System, field: Field, gnss: GnssSimulation):
