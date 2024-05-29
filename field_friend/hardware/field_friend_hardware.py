@@ -311,16 +311,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown Flashlight version: {config_hardware["flashlight"]["version"]}')
 
-        eyes: LedEyesHardware | None
-        if 'eyes' in config_hardware:
-            eyes = LedEyesHardware(robot_brain,
-                                   expander=expander if config_hardware['eyes']['on_expander'] else None,
-                                   name=config_hardware['eyes']['name'],
-                                   eyes_pin=config_hardware['eyes']['eyes_pin'],
-                                   )
-        else:
-            eyes = None
-
         bumper: rosys.hardware.BumperHardware | None
         if 'bumper' in config_hardware:
             bumper = rosys.hardware.BumperHardware(robot_brain,
@@ -339,6 +329,16 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                    )
         else:
             self.imu = None
+
+        eyes: LedEyesHardware | None
+        if 'eyes' in config_hardware:
+            eyes = LedEyesHardware(robot_brain,
+                                   expander=expander if config_hardware['eyes']['on_expander'] else None,
+                                   name=config_hardware['eyes']['name'],
+                                   eyes_pin=config_hardware['eyes']['eyes_pin'],
+                                   )
+        else:
+            eyes = None
 
         self.status_control: StatusControlHardware | None
         if 'status_control' in config_hardware:
@@ -359,7 +359,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                     y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
         modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety, eyes]
+                   z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, eyes, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(tool=tool,
                          wheels=wheels,

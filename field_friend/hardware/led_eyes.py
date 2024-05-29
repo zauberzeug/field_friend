@@ -14,9 +14,7 @@ class LedEyesHardware(rosys.hardware.ModuleHardware):
         self.expander = expander
         self.eyes_pin = eyes_pin
         self.is_active: bool = False
-        lizard_code = f'''
-            {name} = {expander.name + "." if expander else ""}Output({eyes_pin})
-        '''
+        lizard_code = f'{name} = {expander.name + "." if expander else ""}Output({eyes_pin})'
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 
     async def turn_on(self) -> None:
