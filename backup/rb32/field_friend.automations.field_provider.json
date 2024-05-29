@@ -1,0 +1,33 @@
+{
+    "fields": [
+        {
+            "id": "d58e0a14-15b6-4d0c-a259-f6fdff6e36ca",
+            "name": "d58e0a14-15b6-4d0c-a259-f6fdff6e36ca",
+            "outline_wgs84": [],
+            "reference_lat": 54.77082252006726,
+            "reference_lon": 9.101363228185734,
+            "visualized": false,
+            "obstacles": [],
+            "rows": [
+                {
+                    "id": "d0d5e4c7-163a-482e-96ba-610711ae44f8",
+                    "name": "b54b7dd5-ff74-4b9d-bed9-1c97b26e5bf0",
+                    "points_wgs84": [
+                        [
+                            54.77088151833333,
+                            9.102109713333334
+                        ],
+                        [
+                            54.770815201666665,
+                            9.102132628333333
+                        ]
+                    ],
+                    "reverse": false,
+                    "crops": []
+                }
+            ],
+            "area": null,
+            "working_area": null
+        }
+    ]
+}

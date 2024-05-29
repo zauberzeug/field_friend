@@ -1,3 +1,4 @@
+from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
