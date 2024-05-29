@@ -55,6 +55,7 @@ class Screw(WeedingImplement):
         return any(self.weeds_to_handle)
 
     def settings_ui(self):
+        super().settings_ui()
         ui.number('Drill depth', value=0.02, format='%.2f', step=0.01,
                   min=self.system.field_friend.z_axis.max_position, max=self.system.field_friend.z_axis.min_position*-1) \
             .props('dense outlined suffix=°') \
