@@ -144,3 +144,39 @@
                                 .classes('w-32') \
                                 .bind_value(self.system.mowing, 'minimum_turning_radius') \
                                 .tooltip('Set the turning radius for the mowing automation')
+                            
+
+
+
+
+
+
+
+                            ui.number('Combined crop confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+                                .props('dense outlined') \
+                                .classes('w-24') \
+                                .bind_value(self.system.weeding, 'crop_confidence_threshold') \
+                                .tooltip('Needed crop confidence for punshing')
+                            ui.number('Combined weed confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+                                .props('dense outlined') \
+                                .classes('w-24') \
+                                .bind_value(self.system.weeding, 'weed_confidence_threshold') \
+                                .tooltip('Needed weed confidence for punshing')
+                        ui.separator()
+                        ui.markdown('PlantProvider settings').style('color: #6E93D6')
+                        with ui.row():
+                            ui.number('Crop match distance', value=0.07, step=0.01, min=0.01, max=0.10, format='%.2f') \
+                                .props('dense outlined suffix=m') \
+                                .classes('w-24') \
+                                .bind_value(self.system.plant_provider, 'match_distance') \
+                                .tooltip('Maximum distance for a detection to be considered the same plant')
+                            ui.number('Crop spacing', value=0.18, step=0.01, min=0.01, max=1.00, format='%.2f') \
+                                .props('dense outlined suffix=m') \
+                                .classes('w-24') \
+                                .bind_value(self.system.plant_provider, 'crop_spacing') \
+                                .tooltip('Spacing between crops')
+                            ui.number('Crop prediction confidence', value=0.3, step=0.05, min=0.05, max=1.00, format='%.2f') \
+                                .props('dense outlined') \
+                                .classes('w-24') \
+                                .bind_value(self.system.plant_provider, 'prediction_confidence') \
+                                .tooltip('Confidence of the crop prediction')

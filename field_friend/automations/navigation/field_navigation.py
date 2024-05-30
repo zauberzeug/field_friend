@@ -33,8 +33,6 @@ class FieldNavigation(Navigation):
         self.end_row_id: Optional[str] = None
         self.minimum_turning_radius: float = 1.8
         self.turn_offset: float = 1.0
-        self.drive_backwards_to_start: bool = True
-        self.drive_to_start: bool = True
 
         self.weeding_plan: list[list[PathSegment]] = []
         self.sorted_weeding_rows: list = []
@@ -80,6 +78,7 @@ class FieldNavigation(Navigation):
                         self._drive_segment(),
                         return_when_first_completed=True
                     )
+                    # TODO: "await self.system.field_friend.stop()" was added here -- we need to decide why and how to integrate it
                     await self.implement.on_focus()
                     if self.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
                         self.row_segment_completed = True
@@ -87,7 +86,9 @@ class FieldNavigation(Navigation):
                     if self.drive_backwards_to_start and self.bms.is_below_percent(15.0):
                         self.log.info('Low battery, driving backwards to start...')
                         rosys.notify('Low battery, driving backwards to start', 'warning')
+                        self.driver.parameters.can_drive_backwards = True
                         await self.driver.drive_to(Point(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y), backward=True)
+                        self.driver.parameters.can_drive_backwards = False
                         return
 
             await self.implement.deactivate()

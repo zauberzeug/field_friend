@@ -1,7 +1,9 @@
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
+import rosys
 from nicegui import events, ui
 
 from .key_controls import KeyControls
@@ -61,7 +63,9 @@ class operation:
                 .bind_value_from(self.field_provider, 'active_field', lambda f: f.id if f else None)
 
         self.system.puncher.POSSIBLE_PUNCH.register(self.can_punch)
-        self.punch_dialog = PunchDialog(self.system.usb_camera_provider, self.system.plant_locator)
+        self.punch_dialog = PunchDialog(self.system.usb_camera_provider,
+                                        self.system.plant_locator,
+                                        self.system.odometer)
 
     def set_field(self) -> None:
         if self.field_selection.value is None:
@@ -79,14 +83,16 @@ class operation:
                 # self.show_end_row.refresh()
 
     async def can_punch(self, plant_id: str) -> None:
-        self.punch_dialog.label.text = 'Do you want to punch at the current position?'
         self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)
-        result = await self.punch_dialog
+        result: str | None = None
+        try:
+            result = await asyncio.wait_for(self.punch_dialog, timeout=self.punch_dialog.timeout)
+        except asyncio.TimeoutError:
+            self.punch_dialog.close()
+            result = None
         if result == 'Yes':
             self.system.puncher.punch_allowed = 'allowed'
-        elif result == 'No':
-            self.system.puncher.punch_allowed = 'not_allowed'
-        elif result == 'Cancel':
+        elif result is None or result == 'No' or result == 'Cancel':
             self.system.puncher.punch_allowed = 'not_allowed'
 
     def handle_implement_changed(self, e: events.ValueChangeEventArguments) -> None:

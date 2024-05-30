@@ -25,6 +25,9 @@ class Navigation(rosys.persistence.PersistentModule):
         self.implement = implement
         self.name = 'Unknown'
 
+        self.drive_backwards_to_start: bool = True
+        self.drive_to_start: bool = True
+
     async def start(self) -> None:
         try:
             await self._start()
@@ -46,10 +49,14 @@ class Navigation(rosys.persistence.PersistentModule):
         """Resets the state to initial configuration"""
 
     def backup(self) -> dict:
-        return {}
+        return {
+            'drive_backwards_to_start': self.drive_backwards_to_start,
+            'drive_to_start': self.drive_to_start,
+        }
 
     def restore(self, data: dict[str, Any]) -> None:
-        pass
+        self.drive_backwards_to_start = data.get('drive_backwards_to_start', self.drive_backwards_to_start)
+        self.drive_to_start = data.get('drive_to_start', self.drive_to_start)
 
     def create_simulation(self):
         pass

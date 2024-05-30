@@ -28,6 +28,8 @@ class Tornado(rosys.hardware.Module, abc.ABC):
         self.ref_knife_stop: bool = False
         self.ref_knife_ground: bool = False
 
+        self.with_punch_check: bool = False
+
         rosys.on_shutdown(self.stop)
 
     @abc.abstractmethod
@@ -90,6 +92,15 @@ class Tornado(rosys.hardware.Module, abc.ABC):
             return False
         return True
 
+    def backup(self) -> dict:
+        return super().backup() | {
+            'with_punch_check': self.with_punch_check,
+        }
+
+    def restore(self, data: dict[str, any]) -> None:
+        super().restore(data)
+        self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
+
 
 class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
     """The z axis module is a simple example for a representation of real or simulated robot hardware."""
@@ -103,11 +114,16 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                  turn_can_address: int = 0x500,
                  m_per_tick: float = 0.01,
                  end_top_pin: int = 32,
+                 end_top_pin_expander: bool = False,
                  end_bottom_pin: int = 5,
+                 end_bottom_pin_expander: bool = False,
                  ref_motor_pin: int = 33,
                  ref_gear_pin: int = 4,
+                 ref_gear_pin_expander: bool = False,
                  ref_knife_stop_pin: int = 35,
+                 ref_knife_stop_pin_expander: bool = False,
                  ref_knife_ground_pin: int = 18,
+                 ref_knife_ground_pin_expander: bool = False,
                  motors_on_expander: bool = False,
                  end_stops_on_expander: bool = True,
                  is_z_reversed: bool = False,
@@ -135,12 +151,12 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_turn.limits({self.turn_speed_limit}, {self.current_limit})
             {name}_z.reversed = {'true' if is_z_reversed else 'false'}
             {name}_turn.reversed = {'true' if is_turn_reversed else 'false'}
-            {name}_end_top = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_top_pin})
-            {name}_end_bottom = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_bottom_pin})
+            {name}_end_top = {expander.name + "." if end_stops_on_expander or end_top_pin_expander and expander else ""}Input({end_top_pin})
+            {name}_end_bottom = {expander.name + "." if end_stops_on_expander or end_bottom_pin_expander and expander else ""}Input({end_bottom_pin})
             {name}_ref_motor = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_motor_pin})
-            {name}_ref_gear = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_gear_pin})
-            {name}_ref_knife_stop = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_knife_stop_pin})
-            {name}_ref_knife_ground = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_knife_ground_pin})
+            {name}_ref_gear = {expander.name + "." if end_stops_on_expander or ref_gear_pin_expander and expander else ""}Input({ref_gear_pin})
+            {name}_ref_knife_stop = {expander.name + "." if end_stops_on_expander or ref_knife_stop_pin_expander and expander else ""}Input({ref_knife_stop_pin})
+            {name}_ref_knife_ground = {expander.name + "." if end_stops_on_expander or ref_knife_ground_pin_expander and expander else ""}Input({ref_knife_ground_pin})
             bool {name}_is_referencing = false;
             bool {name}_end_top_enabled = true;
             bool {name}_end_bottom_enabled = true;

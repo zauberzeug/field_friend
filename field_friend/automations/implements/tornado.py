@@ -27,16 +27,20 @@ class Tornado(WeedingImplement):
                 self.log.info(f'target next crop at {closest_crop_position}')
                 # do not steer while advancing on a crop
 
-                if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position) and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
+                if not self.only_monitoring and self.system.field_friend.can_reach(closest_crop_position) \
+                        and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
                     self.log.info('drilling crop')
-                    await self.system.puncher.drive_and_punch(plant_id=closest_crop_id, x=closest_crop_position.x, y=closest_crop_position.y, angle=self.tornado_angle)
+                    open_drill = False
                     if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
-                        self.log.info('drilling crop with open tornado')
-                        await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
+                        open_drill = True
+                    await self.system.puncher.drive_and_punch(
+                        plant_id=closest_crop_id, x=closest_crop_position.x, y=closest_crop_position.y, angle=self.tornado_angle, with_open_tornado=open_drill, with_punch_check=self.with_punch_check)
+                    # if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
+                    #     self.log.info('drilling crop with open tornado')
+                    #     await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
                 else:
-                    drive_distance = closest_crop_position.x - self.system.field_friend.WORK_X
-                    target = self.system.odometer.prediction.transform(rosys.geometry.Point(x=drive_distance, y=0))
-                    await self.system.driver.drive_to(target)
+                    self.log.info('Cant reach crop')
+                    await self._follow_line_of_crops()
 
                 if len(self.crops_to_handle) > 1 and self.drill_between_crops:
                     self.log.info('checking for second closest crop')

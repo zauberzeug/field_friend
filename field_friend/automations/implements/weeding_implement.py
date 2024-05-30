@@ -21,8 +21,8 @@ class ImplementException(Exception):
 
 
 class WeedingImplement(Implement, rosys.persistence.PersistentModule):
-    WORKING_DISTANCE = 0.06
-    DRIVE_DISTANCE = 0.04
+    WORKING_DISTANCE = 0.15
+    DRIVE_DISTANCE = 0.03
 
     def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
         Implement.__init__(self, name)
@@ -185,7 +185,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
         relative_weed_positions = {
             w.id: self.system.odometer.prediction.relative_point(w.position)
-            for w in self.system.plant_provider.weeds if w.position.distance(self.system.odometer.prediction.point) < 0.5 and len(w.positions) >= 3
+            for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
         }
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()
@@ -254,7 +254,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                         id_=f'{i}_{j}',
                         type_='beet',
                         position=self.system.odometer.prediction.point.polar(
-                            0.14*i, self.system.odometer.prediction.yaw).polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
+                            0.18*i+(randint(-2, 2)*0.01), self.system.odometer.prediction.yaw).polar(randint(-4, 4)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))
