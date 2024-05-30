@@ -54,10 +54,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system.field_provider.FIELD_SELECTED.register(self.clear)
 
     async def activate(self):
-        self.system.plant_locator.pause()
-        self.system.plant_provider.clear()
-        if self.system.field_friend.implement_name != 'none':
-            await self.system.puncher.clear_view()
         await self.system.field_friend.flashlight.turn_on()
         await rosys.sleep(3)
         self.system.plant_locator.resume()
@@ -243,53 +239,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                 if distance >= inner_diameter/2 and distance <= outer_diameter/2:
                     return True
         return False
-
-    async def _create_simulated_plants(self):
-        self.log.info('Creating simulated plants...')
-        if self.current_segment:
-            self.log.info('Creating simulated plants for current segment')
-            distance = self.current_segment.spline.start.distance(self.current_segment.spline.end)
-            for i in range(1, int(distance/0.20)):
-                for j in range(1, 4):
-                    self.system.plant_provider.add_crop(Plant(
-                        id_=f'{i}_{j}',
-                        type_='beet',
-                        position=self.system.odometer.prediction.point.polar(
-                            0.18*i+(randint(-2, 2)*0.01), self.system.odometer.prediction.yaw).polar(randint(-4, 4)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
-                        detection_time=rosys.time(),
-                        confidence=0.9,
-                    ))
-                    # for j in range(1, 5):
-                    #     await self.system.plant_provider.add_weed(Plant(
-                    #         id=f'{i}_{j}',
-                    #         type='weed',
-                    #         positions=[self.system.odometer.prediction.point.polar(
-                    #             0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
-                    #         detection_time=rosys.time(),
-                    #         confidence=0.9,
-                    #     ))
-        else:
-            self.log.info('Creating simulated plants for whole row')
-            for i in range(0, 30):
-                await self.system.plant_provider.add_crop(Plant(
-                    id_=str(i),
-                    type_='beet',
-                    position=self.system.odometer.prediction.point.polar(0.20*i,
-                                                                         self.system.odometer.prediction.yaw)
-                    .polar(randint(-2, 2)*0.01, self.system.odometer.prediction.yaw+np.pi/2),
-                    detection_time=rosys.time(),
-                    confidence=0.9,
-                ))
-                for j in range(1, 7):
-                    self.system.plant_provider.add_weed(Plant(
-                        id_=f'{i}_{j}',
-                        type_='weed',
-                        position=self.system.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01,
-                                                                             self.system.odometer.prediction.yaw)
-                        .polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
-                        detection_time=rosys.time(),
-                        confidence=0.9,
-                    ))
 
     def settings_ui(self):
         super().settings_ui()

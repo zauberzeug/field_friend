@@ -61,7 +61,6 @@ class FieldNavigation(Navigation):
             self.driver.parameters.linear_speed_limit = self.linear_speed_on_row
             self.driver.parameters.angular_speed_limit = self.angular_speed_on_row
             self.current_row = self.sorted_weeding_rows[i]
-            await self.implement.activate()
             for j, segment in enumerate(path):
                 if self.continue_canceled_weeding and self.current_segment != segment:
                     continue

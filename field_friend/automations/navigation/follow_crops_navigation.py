@@ -26,8 +26,6 @@ class FollowCropsNavigation(Navigation):
         if not await self.implement.prepare():
             self.log.error('Tool-Preparation failed')
             return
-        self.log.info('following crops ...')
-        await self.implement.activate()
         while not self._should_stop():
             await rosys.automation.parallelize(
                 self.implement.observe(),
