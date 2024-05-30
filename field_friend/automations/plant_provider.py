@@ -22,7 +22,6 @@ class PlantProvider(rosys.persistence.PersistentModule):
     def __init__(self, match_distance: float = 0.07, crop_spacing: float = 0.18, prediction_confidence: float = 0.3, persistence_key: str = 'plant_provider') -> None:
         super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
         self.log = logging.getLogger('field_friend.plant_provider')
-        self.relevant_weeds: list[str] = []
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 
@@ -76,8 +75,6 @@ class PlantProvider(rosys.persistence.PersistentModule):
 
     async def add_weed(self, weed: Plant) -> None:
         if check_if_plant_exists(weed, self.weeds, 0.04):
-            return
-        if weed.type not in self.relevant_weeds:
             return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()

@@ -109,7 +109,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.weeds_to_handle = {}
 
     async def prepare(self) -> bool:
-        self.log.info('start weeding...')
+        self.log.info(f'start weeding {self.relevant_weeds} with {self.name} ...')
         self.request_backup()
         if not await self._check_hardware_ready():
             rosys.notify('hardware is not ready')
@@ -186,6 +186,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         relative_weed_positions = {
             w.id: self.system.odometer.prediction.relative_point(w.position)
             for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
+            if w.type in self.relevant_weeds
         }
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()

@@ -195,9 +195,8 @@ class System(rosys.persistence.PersistentModule):
     @current_implement.setter
     def current_implement(self, implement: Implement) -> None:
         self.current_navigation.implement = implement
-        self.update_plant_provider()
         self.request_backup()
-        self.log.info(f'Current implement: {implement.name} with relevant weeds {self.plant_provider.relevant_weeds}')
+        self.log.info(f'selected implement: {implement.name}')
 
     @property
     def current_navigation(self) -> Navigation:
@@ -210,18 +209,11 @@ class System(rosys.persistence.PersistentModule):
         if old_navigation is not None:
             implement = self.current_navigation.implement
             self.current_navigation.implement = implement
-        self.update_plant_provider()
         self.automator.default_automation = self._current_navigation.start
         self.AUTOMATION_CHANGED.emit(navigation.name)
         self.request_backup()
         if not self.is_real and not rosys.is_test:
             self._current_navigation.create_simulation()
-
-    def update_plant_provider(self):
-        if hasattr(self.current_implement, 'relevant_weeds'):
-            self.plant_provider.relevant_weeds = self.current_implement.relevant_weeds
-        else:
-            self.plant_provider.relevant_weeds = self.small_weed_category_names + self.big_weed_category_names
 
     async def setup_simulated_usb_camera(self):
         self.usb_camera_provider.remove_all_cameras()
