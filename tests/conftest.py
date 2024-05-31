@@ -17,7 +17,8 @@ log = logging.getLogger('field_friend.testing')
 
 
 @pytest.fixture
-async def system(integration) -> AsyncGenerator[System, None]:
+async def system(integration, request) -> AsyncGenerator[System, None]:
+    System.version = getattr(request, 'param', 'rb34')
     s = System()
     helpers.odometer = s.odometer
     helpers.driver = s.driver
@@ -26,8 +27,7 @@ async def system(integration) -> AsyncGenerator[System, None]:
 
 
 @pytest.fixture
-async def gnss(system: System, request) -> AsyncGenerator[GnssSimulation, None]:
-    system.version = getattr(request, 'param', 'rb34')
+async def gnss(system: System) -> AsyncGenerator[GnssSimulation, None]:
     system.gnss.reference = ROBOT_GEO_START_POSITION
     await forward(1)
     assert system.gnss.device is None, 'device should not be created yet'

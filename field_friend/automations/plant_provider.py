@@ -19,7 +19,12 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
 
 
 class PlantProvider(rosys.persistence.PersistentModule):
-    def __init__(self, match_distance: float = 0.07, crop_spacing: float = 0.18, prediction_confidence: float = 0.3, persistence_key: str = 'plant_provider') -> None:
+    def __init__(self,
+                 match_distance: float = 0.07,
+                 crop_spacing: float = 0.18,
+                 prediction_confidence: float = 0.3,
+                 persistence_key: str = 'plant_provider',
+                 ) -> None:
         super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
         self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []

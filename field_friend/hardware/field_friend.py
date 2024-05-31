@@ -1,3 +1,4 @@
+import logging
 from typing import Union
 
 import numpy as np
@@ -39,6 +40,7 @@ class FieldFriend(rosys.hardware.Robot):
             safety: Safety,
             **kwargs) -> None:
         super().__init__(**kwargs)
+        self.log = logging.getLogger('field_friend.field_friend')
         self.implement_name = implement_name
         self.wheels = wheels
         self.flashlight = flashlight

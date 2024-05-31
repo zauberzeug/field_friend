@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import rosys
+from nicegui import ui
 from rosys.driving import PathSegment
 from rosys.geometry import Point, Pose, Spline
 
@@ -11,7 +12,7 @@ from ..sequence import find_sequence
 from .navigation import Navigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class FieldNavigation(Navigation):
@@ -336,3 +337,46 @@ class FieldNavigation(Navigation):
         self.current_row = rosys.persistence.from_dict(Row, data['current_row']) if data['current_row'] else None
         self.current_segment = rosys.persistence.from_dict(PathSegment, data['current_segment']) \
             if data['current_segment'] else None
+
+    def settings_ui(self) -> None:
+        ui.markdown('Field settings').style('color: #6E93D6')
+        with ui.row():
+            with_field_planning = ui.checkbox('Use field planning', value=True) \
+                .bind_value(self, 'use_field_planning') \
+                .tooltip('Set the weeding automation to use the field planning with GNSS')
+
+            with ui.row().bind_visibility_from(with_field_planning, 'value', value=True):
+                self.show_start_row()
+                self.show_end_row()
+
+                ui.number('Min. turning radius', format='%.2f',
+                          value=0.5, step=0.05, min=0.05, max=2.0) \
+                    .props('dense outlined suffix=m').classes('w-30') \
+                    .bind_value(self.system.weeding, 'minimum_turning_radius') \
+                    .tooltip('Set the turning radius for the weeding automation')
+                ui.number('turn_offset', format='%.2f', value=0.4, step=0.05, min=0.05, max=2.0) \
+                    .props('dense outlined suffix=m').classes('w-30') \
+                    .bind_value(self.system.weeding, 'turn_offset') \
+                    .tooltip('Set the turning offset for the weeding automation')
+                ui.checkbox('Drive backwards to start', value=True).bind_value(self.system.weeding, 'drive_backwards_to_start') \
+                    .tooltip('Set the weeding automation to drive backwards to the start row at the end of the row')
+                ui.checkbox('Drive to start row', value=True).bind_value(self.system.weeding, 'drive_to_start') \
+                    .tooltip('Set the weeding automation to drive to the start of the row before starting the weeding')
+
+    @ui.refreshable
+    def show_start_row(self) -> None:
+        if self.system.field_provider.active_field is not None:
+            ui.select({row.id: row.name for row in self.system.field_provider.active_field.rows}, label='Start row') \
+                .bind_value(self.system.weeding, 'start_row_id').classes('w-24').tooltip('Select the row to start on')
+        else:
+            ui.select([None], label='Start row')\
+                .bind_value(self.system.weeding, 'start_row').classes('w-24').tooltip('Select the row to start on')
+
+    @ui.refreshable
+    def show_end_row(self) -> None:
+        if self.system.field_provider.active_field is not None:
+            ui.select({row.id: row.name for row in self.system.field_provider.active_field.rows}, label='End row') \
+                .bind_value(self.system.weeding, 'end_row_id').classes('w-24').tooltip('Select the row to end on')
+        else:
+            ui.select([None], label='End row') \
+                .bind_value(self.system.weeding, 'end_row').classes('w-24').tooltip('Select the row to end on')

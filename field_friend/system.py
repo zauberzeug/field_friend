@@ -5,7 +5,11 @@ from typing import Any
 import numpy as np
 import rosys
 
-from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
+from field_friend.hardware import (
+    FieldFriend,
+    FieldFriendHardware,
+    FieldFriendSimulation,
+)
 from field_friend.navigation.gnss_hardware import GnssHardware
 from field_friend.navigation.gnss_simulation import GnssSimulation
 from field_friend.vision import (
@@ -28,7 +32,13 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
-from .automations.implements import ChopAndScrew, Implement, Recorder, Screw, Tornado
+from .automations.implements import (
+    ChopAndScrew,
+    Implement,
+    Recorder,
+    Tornado,
+    WeedingScrew,
+)
 from .automations.navigation import (
     FieldNavigation,
     FollowCropsNavigation,
@@ -52,6 +62,7 @@ class System(rosys.persistence.PersistentModule):
 
         self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
+        self.field_friend: FieldFriend
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = CalibratableUsbCameraProvider()
@@ -142,12 +153,12 @@ class System(rosys.persistence.PersistentModule):
             case 'tornado':
                 self.weeding_implements.append(Tornado(self))
             case 'weed_screw':
-                self.weeding_implements.append(Screw(self))
+                self.weeding_implements.append(WeedingScrew(self))
             case 'dual_mechanism':
-                self.weeding_implements.append(Screw(self))
+                self.weeding_implements.append(WeedingScrew(self))
                 self.weeding_implements.append(ChopAndScrew(self))
             case 'none':
-                self.weeding_implements.append(Screw(self))
+                self.weeding_implements.append(WeedingScrew(self))
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         # TODO reactivate other tools

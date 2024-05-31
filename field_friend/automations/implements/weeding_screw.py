@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from system import System
 
 
-class Screw(WeedingImplement):
+class WeedingScrew(WeedingImplement):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Weed Screw', system)
@@ -36,15 +36,15 @@ class Screw(WeedingImplement):
                 punched_weeds = [weed_id for weed_id, position in weeds_in_range.items()
                                  if position.distance(next_weed_position) <= self.system.field_friend.DRILL_RADIUS
                                  or weed_id == next_weed_id]
-                if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
-                    self.system.detector.simulated_objects = [
-                        obj for obj in self.system.detector.simulated_objects
-                        if obj.position.projection().distance(weed_world_position) > self.system.field_friend.DRILL_RADIUS]
                 for weed_id in punched_weeds:
                     self.system.plant_provider.remove_weed(weed_id)
                     if weed_id in weeds_in_range:
                         del weeds_in_range[weed_id]
                     self.kpi_provider.increment_weeding_kpi('weeds_removed')
+                if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
+                    self.system.detector.simulated_objects = [
+                        obj for obj in self.system.detector.simulated_objects
+                        if obj.position.projection().distance(weed_world_position) > self.system.field_friend.DRILL_RADIUS]
             await self._driving_a_bit_forward()  # TODO is this necessary? It would be better to only let the navigation drive
         except Exception as e:
             raise ImplementException(f'Error while Weed Screw Workflow: {e}') from e

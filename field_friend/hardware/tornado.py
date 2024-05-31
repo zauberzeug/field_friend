@@ -28,8 +28,6 @@ class Tornado(rosys.hardware.Module, abc.ABC):
         self.ref_knife_stop: bool = False
         self.ref_knife_ground: bool = False
 
-        self.with_punch_check: bool = False
-
         rosys.on_shutdown(self.stop)
 
     @abc.abstractmethod
@@ -91,15 +89,6 @@ class Tornado(rosys.hardware.Module, abc.ABC):
             self.log.error(f'error while returning to reference: {e}')
             return False
         return True
-
-    def backup(self) -> dict:
-        return super().backup() | {
-            'with_punch_check': self.with_punch_check,
-        }
-
-    def restore(self, data: dict[str, any]) -> None:
-        super().restore(data)
-        self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
 
 
 class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):

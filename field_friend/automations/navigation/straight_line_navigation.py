@@ -1,9 +1,12 @@
+from random import randint
 from typing import TYPE_CHECKING
 
+import numpy as np
 import rosys
 
 from field_friend.automations.implements.implement import Implement
 
+from ..plant import Plant
 from .navigation import Navigation
 
 if TYPE_CHECKING:
@@ -14,6 +17,7 @@ class StraightLineNavigation(Navigation):
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
+        self.detector = system.detector
         self.length = 2.0
         self.start_position = self.odometer.prediction.point
         self.name = 'Straight Line'
@@ -42,3 +46,18 @@ class StraightLineNavigation(Navigation):
     def _should_stop(self):
         distance = self.odometer.prediction.point.distance(self.start_position)
         return distance > self.length
+
+    def create_simulation(self):
+        crop_distance = 0.2
+        for i in range(0, round(self.length / crop_distance)):
+            p = self.odometer.prediction.point.polar(crop_distance*i,
+                                                     self.odometer.prediction.yaw) \
+                .polar(randint(-2, 2)*0.01, self.odometer.prediction.yaw+np.pi/2)
+            self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
+                                                                                position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
+            for j in range(1, 7):
+                p = self.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01,
+                                                         self.odometer.prediction.yaw) \
+                    .polar(randint(-15, 15)*0.01, self.odometer.prediction.yaw + np.pi/2)
+                self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                                    position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
