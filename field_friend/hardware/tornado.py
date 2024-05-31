@@ -156,14 +156,33 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_z = {expander.name + "." if motors_on_expander and expander else ""}MotorAxis({name}_motor_z, {name}_end_top, {name}_end_bottom)
 
             bool {name}_is_referencing = false;
+            bool {name}_end_top_enabled = true;
+            bool {name}_end_bottom_enabled = true;
+            when {name}_end_top_enabled and {name}_is_referencing and {name}_end_top.level == 0 then
+                {name}_z.speed(0);
+            end
+            when !{name}_end_top_enabled and {name}_is_referencing and {name}_end_top.level == 1 then
+                {name}_z.speed(0);
+            end
+            when {name}_end_bottom_enabled and {name}_end_bottom.level == 0 then
+                {name}_z.speed(0);
+            end
             bool {name}_ref_motor_enabled = false;
             bool {name}_ref_gear_enabled = false;
-            # TODO: check it in rosys
             when {name}_ref_motor_enabled and {name}_is_referencing and {name}_ref_motor.level == 0 then
                 {name}_motor_turn.speed(0);
             end
             when {name}_ref_gear_enabled and {name}_is_referencing and {name}_ref_gear.level == 1 then
                 {name}_motor_turn.speed(0);
+            end
+            bool {name}_knife_ground_enabled = false;
+            bool {name}_knife_stop_enabled = false;
+            when {name}_knife_ground_enabled and {name}_ref_knife_ground.level == 1 then
+                {name}_z.speed(0, 0);
+            end
+            when {name}_knife_stop_enabled and {name}_ref_knife_stop.level == 1 then
+                en3.off();
+                {name}_knife_stop_enabled = false;
             end
         ''')
         core_message_fields = [
@@ -185,8 +204,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
 
     async def stop_z(self) -> None:
         await super().stop_z()
-        # TODO: stop or speed(0)
-        await self.robot_brain.send(f'{self.name}_z.stop()')
+        await self.robot_brain.send(f'{self.name}_z.speed(0, 0)')
 
     async def stop_turn(self) -> None:
         await super().stop_turn()
@@ -237,8 +255,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             # await rosys.sleep(1.5)
             self.log.info('finalizing moving z axis down')
             await self.robot_brain.send(
-                f'{self.name}_motor_z.stop();'
-                # f'{self.name}_motor_z.speed(0);'
+                f'{self.name}_z.speed(0, 0);'
                 # f'{self.name}_knife_stop_enabled = false;'
                 # f'{self.name}_knife_ground_enabled = false;'
             )
