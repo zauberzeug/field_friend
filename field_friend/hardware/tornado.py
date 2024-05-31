@@ -395,14 +395,14 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             )
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.end_top = int(words.pop(0)) == 0
-        self.end_bottom = int(words.pop(0)) == 0
+        self.end_top = words.pop(0) == 'true'
+        self.end_bottom = words.pop(0) == 'true'
         if self.end_bottom:
             self.is_referenced = False
-        self.ref_motor = int(words.pop(0)) == 0
-        self.ref_gear = int(words.pop(0)) == 1
-        self.ref_knife_stop = int(words.pop(0)) == 1
-        self.ref_knife_ground = int(words.pop(0)) == 0
+        self.ref_motor = words.pop(0) == 'true'
+        self.ref_gear = words.pop(0) == 'true'
+        self.ref_knife_stop = words.pop(0) == 'true'
+        self.ref_knife_ground = words.pop(0) == 'true'
         self.position_z = float(words.pop(0))
         self.position_turn = float(words.pop(0)) * 360
 
