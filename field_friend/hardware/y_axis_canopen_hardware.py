@@ -71,22 +71,19 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
         steps = self.compute_steps(position)
         self.log.info(f'moving to steps: {steps}')
         await self.enable_motor()
-        await rosys.sleep(0.1)
+        await rosys.sleep(1)  # necessary ?!
         await self.robot_brain.send(
             f'{self.name}.position({steps},{speed}, 0);'
         )
         # Give flags time to turn false first
-        await rosys.sleep(0.2)
+        await rosys.sleep(0.5)
         while not self.idle and not self.alarm:
-            await self.robot_brain.send(
-                f'{self.name}.position({steps}, {speed}, 0);'
-            )
             await rosys.sleep(0.2)
         if self.alarm:
             self.log.error(f'could not move yaxis to {position} because of fault')
             raise Exception(f'could not move yaxis to {position} because of fault')
         self.log.info(f'yaxis moved to {position}')
-        await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(false);')
+        await self.robot_brain.send(f'{self.name}_motor.set_ctrl_halt(true);')
 
     async def enable_motor(self) -> None:
         await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(true);')
@@ -171,6 +168,7 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
             self.log.info('yaxis referenced')
             self.is_referenced = True
             self.log.info(f'actual position: {self.position}, and steps: {self.steps}')
+            await self.robot_brain.send(f'{self.name}_motor.enter_pp_mode(0);')
             return True
         except Exception as error:
             self.log.error(f'could not reference yaxis because of {error}')
