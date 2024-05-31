@@ -3,6 +3,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 import rosys
+from nicegui import ui
 
 from ..puncher import PuncherException
 from .weeding_implement import ImplementException, WeedingImplement
@@ -15,6 +16,7 @@ class Tornado(WeedingImplement):
 
     def __init__(self, system: 'System') -> None:
         super().__init__('Tornado', system)
+        self.tornado_angle: float = 30.0
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
         self.with_punch_check: bool = False
@@ -74,6 +76,7 @@ class Tornado(WeedingImplement):
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
             'with_punch_check': self.with_punch_check,
+            'tornado_angle': self.tornado_angle,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -81,7 +84,26 @@ class Tornado(WeedingImplement):
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
+        self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
 
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()
         return any(self.crops_to_handle)
+
+    def settings_ui(self):
+        super().settings_ui()
+
+        ui.number('Tornado angle', format='%.0f', value=180, step=1, min=1, max=180) \
+            .props('dense outlined suffix=°') \
+            .classes('w-24') \
+            .bind_value(self, 'tornado_angle') \
+            .tooltip('Set the angle for the tornado drill')
+        ui.checkbox('With punch check', value=True) \
+            .bind_value(self, 'with_punch_check') \
+            .tooltip('Set the weeding automation to check for punch')
+        ui.checkbox('Drill 2x with open torando', value=False,) \
+            .bind_value(self, 'drill_with_open_tornado') \
+            .tooltip('Set the weeding automation to drill a second time with open tornado')
+        ui.checkbox('Drill between crops', value=False) \
+            .bind_value(self, 'drill_between_crops') \
+            .tooltip('Set the weeding automation to drill between crops')

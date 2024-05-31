@@ -35,32 +35,14 @@
                                 .classes('w-24') \
                                 .bind_value(self.system.plant_locator, 'minimum_crop_confidence') \
                                 .tooltip('Set the minimum crop confidence for the weeding automation')
-                        ui.separator()
-                        ui.markdown('Tool settings').style('color: #6E93D6')
-                        with ui.row():
-                            if self.system.field_friend.tool == 'tornado':
-                                ui.number('Tornado angle', format='%.0f', value=180, step=1, min=1, max=180) \
-                                    .props('dense outlined suffix=°') \
-                                    .classes('w-24') \
-                                    .bind_value(self.system.weeding, 'tornado_angle') \
-                                    .tooltip('Set the angle for the tornado drill')
 
-                        ui.separator()
                         ui.markdown('Workflow settings').style('color: #6E93D6')
                         with ui.row():
                             ui.checkbox('Only monitoring') \
                                 .bind_value(self.system.weeding, 'only_monitoring') \
                                 .tooltip('Set the weeding automation to only monitor the field')
                             if self.system.field_friend.tool == 'tornado':
-                                ui.checkbox('With punch check', value=True) \
-                                    .bind_value(self.system.puncher, 'with_punch_check') \
-                                    .tooltip('Set the weeding automation to check for punch')
-                                ui.checkbox('Drill 2x with open torando', value=False,) \
-                                    .bind_value(self.system.weeding, 'drill_with_open_tornado') \
-                                    .tooltip('Set the weeding automation to drill a second time with open tornado')
-                                ui.checkbox('Drill between crops', value=False) \
-                                    .bind_value(self.system.weeding, 'drill_between_crops') \
-                                    .tooltip('Set the weeding automation to drill between crops')
+                               # already moved
                             elif self.system.field_friend.tool == 'dual_mechanism':
                                 ui.checkbox('Drilling', value=False).bind_value(self.system.weeding, 'with_drilling') \
                                     .tooltip('Set the weeding automation to with drill')

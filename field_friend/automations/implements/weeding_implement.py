@@ -39,7 +39,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.chop_if_no_crops: bool = False
 
         # tool settings
-        self.tornado_angle: float = 30.0
         self.weed_screw_depth: float = 0.13
         self.crop_safety_distance: float = 0.01
 
@@ -87,7 +86,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_drilling': self.with_drilling,
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
-            'tornado_angle': self.tornado_angle,
             'weed_screw_depth': self.weed_screw_depth,
             'crop_safety_distance': self.crop_safety_distance,
         }
@@ -96,7 +94,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.with_drilling = data.get('with_drilling', self.with_drilling)
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
-        self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
         self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
 
