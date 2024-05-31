@@ -178,7 +178,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             bool {name}_knife_ground_enabled = false;
             bool {name}_knife_stop_enabled = false;
             when {name}_knife_ground_enabled and {name}_ref_knife_ground.level == 1 then
-                {name}_z.speed(0, 0);
+                {name}_z.stop();
             end
             when {name}_knife_stop_enabled and {name}_ref_knife_stop.level == 1 then
                 en3.off();
