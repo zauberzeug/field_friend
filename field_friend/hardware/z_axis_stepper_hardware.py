@@ -152,12 +152,12 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             await self.stop()
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.end_t = int(words.pop(0)) == 0
-        self.end_b = int(words.pop(0)) == 0
+        self.end_t = words.pop(0) == 'true'
+        self.end_b = words.pop(0) == 'true'
         if self.end_b:
             self.is_referenced = False
         self.idle = words.pop(0) == 'true'
         self.steps = int(words.pop(0))
-        self.alarm = int(words.pop(0)) == 0
+        self.alarm = words.pop(0) == 'true'
         if self.alarm:
             self.is_referenced = False
