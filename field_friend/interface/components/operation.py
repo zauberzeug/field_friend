@@ -30,7 +30,12 @@ class operation:
                     activities = ui.row().classes('items-center')
                     with ui.row():
                         ui.label('Settings').classes('text-xl')
-                    self.implement_settings = ui.column()
+                    with ui.expansion('Navigation'), ui.row():
+                        self.navigation_settings = ui.column()
+                    with ui.expansion('Implement'), ui.row():
+                        self.implement_settings = ui.column()
+                    with ui.expansion('Plant Provider'), ui.row():
+                        self.system.plant_provider.settings_ui()
 
         with activities:
             self.navigation_selection = ui.select(
@@ -105,3 +110,6 @@ class operation:
     def handle_navigation_changed(self, e: events.ValueChangeEventArguments) -> None:
         if self.system.current_navigation.name != e.value:
             self.system.current_navigation = self.system.navigation_strategies[e.value]
+        self.navigation_settings.clear()
+        with self.navigation_settings:
+            self.system.current_navigation.settings_ui()

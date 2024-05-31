@@ -64,5 +64,8 @@ class Navigation(rosys.persistence.PersistentModule):
         self.drive_backwards_to_start = data.get('drive_backwards_to_start', self.drive_backwards_to_start)
         self.drive_to_start = data.get('drive_to_start', self.drive_to_start)
 
-    def create_simulation(self):
+    def create_simulation(self) -> None:
+        pass
+
+    def settings_ui(self) -> None:
         pass

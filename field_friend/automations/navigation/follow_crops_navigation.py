@@ -1,3 +1,4 @@
+from nicegui import ui
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -79,3 +80,6 @@ class FollowCropsNavigation(Navigation):
             return False  # at least drive 0.5m
         if len(self.plant_provider.get_relevant_crops(self.odometer.prediction.point)) == 0:
             return True
+
+    def settings_ui(self) -> None:
+        ui.label('no settings yet')

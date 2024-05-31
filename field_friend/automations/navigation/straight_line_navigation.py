@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import rosys
+from nicegui import ui
 
 from field_friend.automations.implements.implement import Implement
 
@@ -61,3 +62,10 @@ class StraightLineNavigation(Navigation):
                     .polar(randint(-15, 15)*0.01, self.odometer.prediction.yaw + np.pi/2)
                 self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                                     position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
+
+    def settings_ui(self) -> None:
+        ui.number('Length', step=0.5, min=0.05, format='%.1f') \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'length') \
+            .tooltip('Length to drive in meters')

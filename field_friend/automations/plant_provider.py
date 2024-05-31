@@ -3,6 +3,7 @@ from typing import Any
 
 import numpy as np
 import rosys
+from nicegui import ui
 from rosys.geometry import Point, Pose
 
 from .plant import Plant
@@ -133,3 +134,30 @@ class PlantProvider(rosys.persistence.PersistentModule):
 
     def get_relevant_weeds(self, point: Point, *, max_distance=0.5) -> list[Plant]:
         return [w for w in self.weeds if w.position.distance(point) <= max_distance and len(w.positions) >= 3 and w.confidence > self.weed_confidence_threshold]
+
+    def settings_ui(self) -> None:
+        ui.number('Combined crop confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'crop_confidence_threshold') \
+            .tooltip('Needed crop confidence for punshing')
+        ui.number('Combined weed confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'weed_confidence_threshold') \
+            .tooltip('Needed weed confidence for punshing')
+        ui.number('Crop match distance', value=0.07, step=0.01, min=0.01, max=0.10, format='%.2f') \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'match_distance') \
+            .tooltip('Maximum distance for a detection to be considered the same plant')
+        ui.number('Crop spacing', value=0.18, step=0.01, min=0.01, max=1.00, format='%.2f') \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'crop_spacing') \
+            .tooltip('Spacing between crops')
+        ui.number('Crop prediction confidence', value=0.3, step=0.05, min=0.05, max=1.00, format='%.2f') \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'prediction_confidence') \
+            .tooltip('Confidence of the crop prediction')
