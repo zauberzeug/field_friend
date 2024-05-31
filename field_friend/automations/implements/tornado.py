@@ -52,7 +52,7 @@ class Tornado(WeedingImplement):
                     # if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
                     #     self.log.info('drilling crop with open tornado')
                     #     await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
-
+                self.log.info(f'crops to handle: {self.crops_to_handle}')
                 if len(self.crops_to_handle) > 1 and self.drill_between_crops:
                     self.log.info('checking for second closest crop')
                     second_closest_crop_position = list(self.crops_to_handle.values())[1]
