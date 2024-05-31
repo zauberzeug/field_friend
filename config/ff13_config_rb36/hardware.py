@@ -15,15 +15,16 @@ configuration = {
         'can_address': 0x60,
         'max_speed': 2000,
         'reference_speed': 40,
-        'min_position': -0.075,
-        'max_position': 0.065,
-        'axis_offset': 0.08,
+        'min_position': -0.0625,
+        'max_position': 0.0625,
+        'axis_offset': 0.0675,
         'steps_per_m': 1_481_481.48,  # 4000steps/turn motor; 1/20 gear; 0.054m/u
         'end_r_pin': 4,
         'end_l_pin': 13,
         'motor_on_expander': False,
         'end_stops_on_expander': False,
         'reversed_direction': False,
+        'end_stops_inverted': True,
     },
     'z_axis': {
         'version': 'tornado v1.1',
@@ -114,4 +115,5 @@ configuration = {
         'tx_pin': 33,
         'baud': 1_000_000,
     },
+    'small_safety': {},
 }
