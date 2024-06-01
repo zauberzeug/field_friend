@@ -216,9 +216,9 @@ class System(rosys.persistence.PersistentModule):
     @current_navigation.setter
     def current_navigation(self, navigation: Navigation) -> None:
         old_navigation = self._current_navigation
+        implement = self.current_implement
         self._current_navigation = navigation
         if old_navigation is not None:
-            implement = self.current_navigation.implement
             self.current_navigation.implement = implement
         self.automator.default_automation = self._current_navigation.start
         self.AUTOMATION_CHANGED.emit(navigation.name)
