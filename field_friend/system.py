@@ -167,11 +167,12 @@ class System(rosys.persistence.PersistentModule):
         # self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
         tools: list[Implement] = self.weeding_implements  # + [self.coin_collecting, self.mowing]
         self.implements = {t.name: t for t in tools}
-        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
-        self.info = Info(self)
-        self.automation_watcher = AutomationWatcher(self)
         self._current_navigation: Navigation = self.straight_line_navigation
         self._current_implement = self._current_navigation
+        self.automator = rosys.automation.Automator(
+            None, on_interrupt=self.field_friend.stop, default_automation=self._current_navigation.start)
+        self.info = Info(self)
+        self.automation_watcher = AutomationWatcher(self)
         self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
@@ -216,10 +217,10 @@ class System(rosys.persistence.PersistentModule):
     @current_navigation.setter
     def current_navigation(self, navigation: Navigation) -> None:
         old_navigation = self._current_navigation
-        implement = self.current_implement
-        self._current_navigation = navigation
         if old_navigation is not None:
-            self.current_navigation.implement = implement
+            implement = self.current_implement
+            navigation.implement = implement
+        self._current_navigation = navigation
         self.automator.default_automation = self._current_navigation.start
         self.AUTOMATION_CHANGED.emit(navigation.name)
         self.request_backup()

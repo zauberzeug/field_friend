@@ -34,6 +34,7 @@ class FieldNavigation(Navigation):
         self.end_row_id: Optional[str] = None
         self.minimum_turning_radius: float = 1.8
         self.turn_offset: float = 1.0
+        self.drive_to_start: bool = True
 
         self.weeding_plan: list[list[PathSegment]] = []
         self.sorted_weeding_rows: list = []
@@ -47,6 +48,12 @@ class FieldNavigation(Navigation):
         self.angular_speed_on_row: float = 0.3
         self.linear_speed_between_rows: float = 0.3
         self.angular_speed_between_rows: float = 0.8
+
+    async def _drive_forward(self) -> None:
+        pass
+
+    def _should_stop(self) -> bool:
+        return False
 
     async def _start(self) -> None:
         if not await self.implement.prepare():
@@ -84,7 +91,7 @@ class FieldNavigation(Navigation):
                     if self.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
                         self.row_segment_completed = True
                     await rosys.sleep(0.2)
-                    if self.drive_backwards_to_start and self.bms.is_below_percent(15.0):
+                    if self.return_to_start and self.bms.is_below_percent(15.0):
                         self.log.info('Low battery, driving backwards to start...')
                         rosys.notify('Low battery, driving backwards to start', 'warning')
                         self.driver.parameters.can_drive_backwards = True
@@ -321,6 +328,7 @@ class FieldNavigation(Navigation):
             'turn_paths': [rosys.persistence.to_dict(segment) for segment in self.turn_paths],
             'current_row': rosys.persistence.to_dict(self.current_row) if self.current_row else None,
             'current_segment': rosys.persistence.to_dict(self.current_segment) if self.current_segment else None,
+            'drive_to_start': self.drive_to_start,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -338,6 +346,7 @@ class FieldNavigation(Navigation):
         self.current_row = rosys.persistence.from_dict(Row, data['current_row']) if data['current_row'] else None
         self.current_segment = rosys.persistence.from_dict(PathSegment, data['current_segment']) \
             if data['current_segment'] else None
+        self.drive_to_start = data.get('drive_to_start', self.drive_to_start)
 
     def settings_ui(self) -> None:
         ui.markdown('Field settings').style('color: #6E93D6')
@@ -345,6 +354,8 @@ class FieldNavigation(Navigation):
             with_field_planning = ui.checkbox('Use field planning', value=True) \
                 .bind_value(self, 'use_field_planning') \
                 .tooltip('Set the weeding automation to use the field planning with GNSS')
+            ui.checkbox('Drive to start row', value=True).bind_value(self, 'drive_to_start') \
+                .tooltip('Set the weeding automation to drive to the start of the row before starting the weeding')
 
             with ui.row().bind_visibility_from(with_field_planning, 'value', value=True):
                 self.show_start_row()
@@ -359,7 +370,7 @@ class FieldNavigation(Navigation):
                     .props('dense outlined suffix=m').classes('w-30') \
                     .bind_value(self.system.weeding, 'turn_offset') \
                     .tooltip('Set the turning offset for the weeding automation')
-                ui.checkbox('Drive backwards to start', value=True).bind_value(self.system.weeding, 'drive_backwards_to_start') \
+                ui.checkbox('Drive backwards to start', value=True).bind_value(self.system.weeding, 'return_to_start') \
                     .tooltip('Set the weeding automation to drive backwards to the start row at the end of the row')
                 ui.checkbox('Drive to start row', value=True).bind_value(self.system.weeding, 'drive_to_start') \
                     .tooltip('Set the weeding automation to drive to the start of the row before starting the weeding')

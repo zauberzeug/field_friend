@@ -19,7 +19,6 @@ class ImplementException(Exception):
 
 class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     WORKING_DISTANCE = 0.15
-    DRIVE_DISTANCE = 0.03
 
     def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
         Implement.__init__(self, name)
@@ -161,12 +160,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
         # Normalize the resultant angle
         return eliminate_2pi(combined_angle)
-
-    async def _driving_a_bit_forward(self):
-        self.log.info('No crops and no weeds in range, driving forward a bit...')
-        target = self.system.odometer.prediction.point.polar(self.DRIVE_DISTANCE, self.system.odometer.prediction.yaw)
-        self.log.info(f'Current world position: {self.system.odometer.prediction} Target: {target}')
-        await self.system.driver.drive_to(target)
 
     def settings_ui(self):
         pass

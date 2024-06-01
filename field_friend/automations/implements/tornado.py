@@ -52,6 +52,8 @@ class Tornado(WeedingImplement):
                 # if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
                 #     self.log.info('drilling crop with open tornado')
                 #     await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
+            else:
+                await rosys.sleep(0.1)
             # TODO is this working?
             if len(self.crops_to_handle) > 1 and self.drill_between_crops:
                 self.log.info('checking for second closest crop')
@@ -66,10 +68,6 @@ class Tornado(WeedingImplement):
             self.log.error(f'Error while Tornado Workflow: {e}')
         except Exception as e:
             raise ImplementException(f'Error while tornado Workflow: {e}') from e
-
-    async def stop_workflow(self) -> None:
-        await self._driving_a_bit_forward()  # TODO is this necessary? It would be better to only let the navigation drive
-        await super().stop_workflow()
 
     def backup(self) -> dict:
         return super().backup() | {

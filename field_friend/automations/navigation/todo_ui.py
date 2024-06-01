@@ -14,10 +14,6 @@
                                     .props('dense outlined suffix=m').classes('w-30') \
                                     .bind_value(self.system.weeding, 'turn_offset') \
                                     .tooltip('Set the turning offset for the weeding automation')
-                                ui.checkbox('Drive backwards to start', value=True).bind_value(self.system.weeding, 'drive_backwards_to_start') \
-                                    .tooltip('Set the weeding automation to drive backwards to the start row at the end of the row')
-                                ui.checkbox('Drive to start row', value=True).bind_value(self.system.weeding, 'drive_to_start') \
-                                    .tooltip('Set the weeding automation to drive to the start of the row before starting the weeding')
 
                         ui.separator()
                         ui.markdown('Detector settings').style('color: #6E93D6')

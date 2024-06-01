@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 import rosys
+from nicegui import ui
 
 from ..implements import Implement
 
@@ -26,17 +27,32 @@ class Navigation(rosys.persistence.PersistentModule):
         self.puncher = system.puncher
         self.implement = implement
         self.name = 'Unknown'
+        self.start_position = self.odometer.prediction.point
 
-        self.drive_backwards_to_start: bool = True
-        self.drive_to_start: bool = True
+        self.return_to_start: bool = True
 
     async def start(self) -> None:
         try:
+            self.log.info(f'Activating {self.implement.name}...')
             await self.implement.activate()
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             await self.puncher.clear_view()
-            await self._start()
+            self.start_position = self.odometer.prediction.point
+            if not await self.implement.prepare():
+                self.log.error('Tool-Preparation failed')
+                return
+            while not self._should_stop():
+                await rosys.automation.parallelize(
+                    self.implement.observe(),
+                    self._proceed(),
+                    return_when_first_completed=True
+                )
+                if not self._should_stop():
+                    await self.implement.start_workflow()
+                    await self.implement.stop_workflow()
+                    await self._drive_forward()
+            await self.implement.deactivate()
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
@@ -45,27 +61,36 @@ class Navigation(rosys.persistence.PersistentModule):
             await self.implement.finish()
             await self.driver.wheels.stop()
 
-    @abc.abstractmethod
-    async def _start(self) -> None:
-        """Executed to start the automation.
+    async def _proceed(self):
+        while not self._should_stop():
+            await self._drive_forward()
 
-        Returns False if automation can not be started."""
+    @abc.abstractmethod
+    async def _drive_forward(self) -> None:
+        """Drives the vehicle forward
+
+        This should only advance the robot by a small distance, e.g. 2 cm 
+        to allow for adjustments and observations.
+        """
+
+    @abc.abstractmethod
+    def _should_stop(self) -> bool:
+        """Returns True if the navigation should stop"""
 
     def clear(self) -> None:
         """Resets the state to initial configuration"""
 
     def backup(self) -> dict:
         return {
-            'drive_backwards_to_start': self.drive_backwards_to_start,
-            'drive_to_start': self.drive_to_start,
+            'return_to_start': self.return_to_start,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.drive_backwards_to_start = data.get('drive_backwards_to_start', self.drive_backwards_to_start)
-        self.drive_to_start = data.get('drive_to_start', self.drive_to_start)
+        self.return_to_start = data.get('return_to_start', self.return_to_start)
 
     def create_simulation(self) -> None:
         pass
 
     def settings_ui(self) -> None:
-        pass
+        ui.checkbox('Return to start position', value=True).bind_value(self, 'return_to_start') \
+            .tooltip('Set the weeding automation to drive backwards to the start row at the end of the row')
