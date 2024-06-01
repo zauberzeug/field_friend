@@ -1,5 +1,4 @@
 
-from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 import rosys
@@ -21,7 +20,7 @@ class Tornado(WeedingImplement):
         self.drill_between_crops: bool = False
         self.with_punch_check: bool = False
 
-    async def _perform_workflow(self) -> None:
+    async def start_workflow(self) -> None:
         self.log.info('Performing Tornado Workflow..')
         try:
             closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
@@ -64,12 +63,14 @@ class Tornado(WeedingImplement):
                         target = closest_crop_position.x + distance_to_next_crop / 2
                         self.log.info(f'driving to position between two crops: {target}')
                         await self.system.puncher.drive_and_punch(plant_id=closest_crop_id, x=target, y=0, angle=180)
-            await self._driving_a_bit_forward()  # TODO is this necessary? It would be better to only let the navigation drive
-            self.log.info('workflow completed')
         except PuncherException as e:
             self.log.error(f'Error while Tornado Workflow: {e}')
         except Exception as e:
             raise ImplementException(f'Error while tornado Workflow: {e}') from e
+
+    async def stop_workflow(self) -> None:
+        await self._driving_a_bit_forward()  # TODO is this necessary? It would be better to only let the navigation drive
+        await super().stop_workflow()
 
     def backup(self) -> dict:
         return super().backup() | {

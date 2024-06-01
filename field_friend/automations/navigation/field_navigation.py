@@ -79,7 +79,8 @@ class FieldNavigation(Navigation):
                         return_when_first_completed=True
                     )
                     # TODO: "await self.system.field_friend.stop()" was added here -- we need to decide why and how to integrate it
-                    await self.implement.on_focus()
+                    await self.implement.start_workflow()
+                    await self.implement.stop_workflow()
                     if self.odometer.prediction.relative_point(self.current_segment.spline.end).x < 0.01:
                         self.row_segment_completed = True
                     await rosys.sleep(0.2)

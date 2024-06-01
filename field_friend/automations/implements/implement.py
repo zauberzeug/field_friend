@@ -26,11 +26,14 @@ class Implement(abc.ABC):
 
     @abc.abstractmethod
     async def observe(self) -> None:
-        """Perform observation in a loop; exiting will stop the robot and execute the on_focus method."""
+        """Run a custom observation in a loop; exiting will stop the robot and execute the perform_workflow method."""
 
     @abc.abstractmethod
-    async def on_focus(self) -> None:
-        """Called after robot has stopped via observation to focus on a specific point on the ground"""
+    async def start_workflow(self) -> None:
+        """Called after robot has stopped via observation to perform it's workflow on a specific point on the ground"""
+
+    async def stop_workflow(self) -> None:
+        """Called after workflow has been performed to stop the workflow"""
 
     @abc.abstractmethod
     def settings_ui(self):

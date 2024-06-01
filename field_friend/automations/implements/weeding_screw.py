@@ -17,7 +17,7 @@ class WeedingScrew(WeedingImplement):
         super().__init__('Weed Screw', system)
         self.relevant_weeds = system.big_weed_category_names
 
-    async def _perform_workflow(self) -> None:
+    async def start_workflow(self) -> None:
         try:
             starting_position = deepcopy(self.system.odometer.prediction)
             self._keep_crops_safe()
@@ -45,9 +45,12 @@ class WeedingScrew(WeedingImplement):
                     self.system.detector.simulated_objects = [
                         obj for obj in self.system.detector.simulated_objects
                         if obj.position.projection().distance(weed_world_position) > self.system.field_friend.DRILL_RADIUS]
-            await self._driving_a_bit_forward()  # TODO is this necessary? It would be better to only let the navigation drive
         except Exception as e:
             raise ImplementException(f'Error while Weed Screw Workflow: {e}') from e
+
+    async def stop_workflow(self) -> None:
+        await self._driving_a_bit_forward()  # TODO is this necessary? It would be better to only let the navigation drive
+        await super().stop_workflow()
 
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()

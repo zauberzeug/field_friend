@@ -1,8 +1,8 @@
-from nicegui import ui
 from typing import TYPE_CHECKING
 
 import numpy as np
 import rosys
+from nicegui import ui
 from rosys.helpers import eliminate_2pi
 
 from ..implements.implement import Implement
@@ -33,7 +33,8 @@ class FollowCropsNavigation(Navigation):
                 self._drive_forward(),
                 return_when_first_completed=True
             )
-            await self.implement.on_focus()
+            await self.implement.start_workflow()
+            await self.implement.stop_workflow()
         await self.implement.deactivate()
 
     async def _drive_forward(self):

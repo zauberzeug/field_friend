@@ -34,7 +34,8 @@ class StraightLineNavigation(Navigation):
                 self._drive_forward(),
                 return_when_first_completed=True
             )
-            await self.implement.on_focus()
+            await self.implement.start_workflow()
+            await self.implement.stop_workflow()
         await self.implement.deactivate()
 
     async def _drive_forward(self):

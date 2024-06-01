@@ -37,7 +37,7 @@ class Recorder(Implement):
         while True:
             await rosys.sleep(0.5)
 
-    async def on_focus(self) -> None:
+    async def start_workflow(self) -> None:
         pass
 
     def settings_ui(self):

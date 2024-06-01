@@ -1,5 +1,4 @@
 import logging
-from random import randint
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
@@ -154,12 +153,14 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                 return
             await rosys.sleep(0.2)
 
-    async def on_focus(self) -> None:
+    async def start_workflow(self) -> None:
         await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
             return
         self.log.info(f'Handling plants with {self.name}...')
-        await self._perform_workflow()
+
+    async def stop_workflow(self) -> None:
+        self.log.info('workflow completed')
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
@@ -189,9 +190,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds
         return False
-
-    async def _perform_workflow(self) -> None:
-        pass
 
     def _weighted_angle_combine(self, angle1: float, weight1: float, angle2: float, weight2: float) -> float:
         # Normalize both angles
