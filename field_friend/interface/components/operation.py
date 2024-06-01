@@ -3,8 +3,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-import rosys
-from nicegui import events, ui
+from nicegui import app, events, ui
 
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
@@ -30,11 +29,11 @@ class operation:
                     activities = ui.row().classes('items-center')
                     with ui.row():
                         ui.label('Settings').classes('text-xl')
-                    with ui.expansion('Navigation'), ui.row():
+                    with ui.expansion('Navigation').classes('w-full').bind_value(app.storage.user, 'show_navigation_settings'), ui.row():
                         self.navigation_settings = ui.column()
-                    with ui.expansion('Implement'), ui.row():
+                    with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'), ui.row():
                         self.implement_settings = ui.column()
-                    with ui.expansion('Plant Provider'), ui.row():
+                    with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row():
                         self.system.plant_provider.settings_ui()
 
         with activities:
@@ -63,7 +62,6 @@ class operation:
                 .props('clearable') \
                 .classes('w-32') \
                 .tooltip('Select the field to work on')
-            # NOTE: having this in a separate call will trigger the on_change handler which is necessary to perform all the required updates (eg. self.set_field)
             self.field_selection \
                 .bind_value_from(self.field_provider, 'active_field', lambda f: f.id if f else None)
 
