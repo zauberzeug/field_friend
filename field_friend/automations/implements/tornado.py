@@ -108,3 +108,13 @@ class Tornado(WeedingImplement):
         ui.checkbox('Drill between crops', value=False) \
             .bind_value(self, 'drill_between_crops') \
             .tooltip('Set the weeding automation to drill between crops')
+
+    def _crops_in_drill_range(self, crop_id: str, crop_position: rosys.geometry.Point, angle: float) -> bool:
+        inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
+        for crop in self.system.plant_provider.crops:
+            crop_world_position = self.system.odometer.prediction.transform(crop_position)
+            if crop.id != crop_id:
+                distance = crop_world_position.distance(crop.position)
+                if distance >= inner_diameter/2 and distance <= outer_diameter/2:
+                    return True
+        return False

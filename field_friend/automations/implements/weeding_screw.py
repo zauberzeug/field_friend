@@ -70,3 +70,16 @@ class WeedingScrew(WeedingImplement):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
+
+    def _keep_crops_safe(self) -> None:
+        self.log.info('Keeping crops safe...')
+        for crop in self.system.plant_provider.crops:
+            crop_position = self.system.odometer.prediction.relative_point(crop.position)
+            for weed, weed_position in self.weeds_to_handle.items():
+                offset = self.system.field_friend.DRILL_RADIUS + \
+                    self.crop_safety_distance - crop_position.distance(weed_position)
+                if offset > 0:
+                    safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
+                    self.weeds_to_handle[weed] = safe_weed_position
+                    self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
+                                  f'by {offset} to safe {crop.id} at {crop_position}')
