@@ -75,7 +75,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
     async def observe(self) -> None:
-        self.log.info('Checking for plants...')
+        self.log.info('checking for plants...')
         while True:
             if self._has_plants_to_handle():
                 return

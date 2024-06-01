@@ -18,6 +18,7 @@ class WeedingScrew(WeedingImplement):
         self.relevant_weeds = system.big_weed_category_names
 
     async def start_workflow(self) -> None:
+        await super().start_workflow()
         try:
             starting_position = deepcopy(self.system.odometer.prediction)
             self._keep_crops_safe()
@@ -50,7 +51,6 @@ class WeedingScrew(WeedingImplement):
 
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()
-        self.log.info(f'Plants to handle: {self.weeds_to_handle}')
         return any(self.weeds_to_handle)
 
     def settings_ui(self):
