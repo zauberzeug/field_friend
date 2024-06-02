@@ -90,8 +90,7 @@ class FieldNavigation(FollowCropsNavigation):
         if self.state == State.ROW_COMPLETED:
             if self.current_row == self.field.rows[-1]:
                 self.state = State.FIELD_COMPLETED
-                while True:
-                    await rosys.sleep(0.01)  # wait for base class to finish navigation
+                await rosys.sleep(0.1)  # wait for base class to finish navigation
             else:
                 self.row_index += 1
                 self.state = State.APPROACHING_ROW_START
