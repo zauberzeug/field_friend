@@ -29,8 +29,6 @@ class Navigation(rosys.persistence.PersistentModule):
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
 
-        self.return_to_start: bool = True
-
     async def start(self) -> None:
         try:
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
@@ -90,16 +88,13 @@ class Navigation(rosys.persistence.PersistentModule):
         """Resets the state to initial configuration"""
 
     def backup(self) -> dict:
-        return {
-            'return_to_start': self.return_to_start,
-        }
+        return {}
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.return_to_start = data.get('return_to_start', self.return_to_start)
+        pass
 
     def create_simulation(self) -> None:
         pass
 
     def settings_ui(self) -> None:
-        ui.checkbox('Return to start position', value=True).bind_value(self, 'return_to_start') \
-            .tooltip('Set the weeding automation to drive backwards to the start row at the end of the row')
+        pass
