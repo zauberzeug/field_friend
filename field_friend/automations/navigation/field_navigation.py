@@ -55,6 +55,9 @@ class FieldNavigation(FollowCropsNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
+        if self.state == State.FIELD_COMPLETED:
+            self.state = State.APPROACHING_ROW_START
+            self.row_index = 0
 
         self.automation_watcher.start_field_watch(self.field.outline)
         self.automation_watcher.gnss_watch_active = True
@@ -111,18 +114,21 @@ class FieldNavigation(FollowCropsNavigation):
     def backup(self) -> dict:
         return {
             'field_id': self.field.id if self.field else None,
+            'row_index': self.row_index,
+            'state': self.state.name,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
+        self.row_index = data.get('row_index', 0)
+        self.state = State[data.get('state', State.APPROACHING_ROW_START.name)]
 
     def settings_ui(self) -> None:
         field_selection = ui.select(
             {f.id: f.name for f in self.field_provider.fields},
             on_change=lambda args: self._set_field(args.value),
             label='Field')\
-            .props('clearable') \
             .classes('w-32') \
             .tooltip('Select the field to work on')
         field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
@@ -148,7 +154,7 @@ class FieldNavigation(FollowCropsNavigation):
             start = cartesian[0]
             end = cartesian[-1]
             length = start.distance(end)
-            self.log.info(f'Creating row from {start} to {end} with length {length}')
+            self.log.info(f'Adding plants from {start} to {end} (length {length:.1f} m)')
             crop_count = length / 0.15
             for i in range(int(crop_count)):
                 p = start.interpolate(end, (0.15 * i) / length)
