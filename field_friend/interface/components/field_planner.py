@@ -255,11 +255,6 @@ class field_planner:
                             self.field_provider.active_object['object'], 'name').classes('w-32')
                         ui.button(on_click=lambda row=self.field_provider.active_object['object']: self.field_provider.remove_row(self.field_provider.active_field, row)).props(
                             'icon=delete color=warning fab-mini flat').classes('ml-auto').style("display:block; margin-top:auto; margin-bottom: auto;").tooltip('Delete Row')
-                    with ui.row().style("width: 100%;"):
-                        ui.label(f'Row crops: {len(self.field_provider.active_object["object"].crops)}') \
-                            .props('color=primary').style("display:block; margin-top:auto; margin-bottom: auto;")
-                        ui.button(on_click=self.field_provider.active_object['object'].clear_crops) \
-                            .props('icon=sym_o_compost color=warning fab-mini flat').classes('ml-auto').style("display:block; margin-top:auto; margin-bottom: auto;").tooltip('Clear all row crops')
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
                         if self.coordinate_type == "cartesian":
                             points = self.field_provider.active_object['object'] \

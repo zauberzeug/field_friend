@@ -36,6 +36,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
         self.needs_backup: bool = False
 
+    def get_field(self, id_: str) -> Field | None:
+        for field in self.fields:
+            if field.id == id_:
+                return field
+        return None
+
     def backup(self) -> dict:
         return {
             'fields': rosys.persistence.to_dict(self.fields),

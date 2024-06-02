@@ -33,6 +33,9 @@ class Navigation(rosys.persistence.PersistentModule):
 
     async def start(self) -> None:
         try:
+            if not await self.prepare():
+                self.log.error('Preparation failed')
+                return
             self.log.info(f'Activating {self.implement.name}...')
             await self.implement.activate()
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
@@ -60,6 +63,12 @@ class Navigation(rosys.persistence.PersistentModule):
             self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.implement.finish()
             await self.driver.wheels.stop()
+
+    async def prepare(self) -> bool:
+        """Prepares the navigation for the start of the automation
+
+        Returns true if all preparations were successful, otherwise false."""
+        return True
 
     async def _proceed(self):
         while not self._should_stop():

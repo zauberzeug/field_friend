@@ -9,13 +9,13 @@ from rosys.geometry import Point, Pose, Spline
 from ..field import Field, Row
 from ..implements.implement import Implement
 from ..sequence import find_sequence
-from .navigation import Navigation
+from .follow_crops_navigation import FollowCropsNavigation
 
 if TYPE_CHECKING:
     from ...system import System
 
 
-class FieldNavigation(Navigation):
+class FieldNavigation(FollowCropsNavigation):
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
@@ -23,13 +23,17 @@ class FieldNavigation(Navigation):
         self.PATH_PLANNED = rosys.event.Event()
         '''Event that is emitted when the path is planed. The event contains the path as a list of PathSegments.'''
 
-        self.name = 'Field'
+        self.name = 'Field Rows'
         self.gnss = system.gnss
         self.bms = system.field_friend.bms
         self.path_planner = rosys.pathplanning.PathPlanner(system.shape)
+        self.automation_watcher = system.automation_watcher
+        self.field_provider = system.field_provider
         self.continue_canceled_weeding: bool = False
 
-        self.field: Optional[Field] = None
+        self.field: Field | None = None
+        self.row: Row | None = None
+
         self.start_row_id: Optional[str] = None
         self.end_row_id: Optional[str] = None
         self.minimum_turning_radius: float = 1.8
@@ -49,19 +53,60 @@ class FieldNavigation(Navigation):
         self.linear_speed_between_rows: float = 0.3
         self.angular_speed_between_rows: float = 0.8
 
+    async def prepare(self) -> bool:
+        if self.field is None:
+            rosys.notify('No field selected', 'negative')
+            return False
+        if not self.field.reference:
+            rosys.notify('No field reference available', 'negative')
+            return False
+        self.gnss.reference = self.field.reference
+        if not self.field.rows:
+            rosys.notify('No rows available', 'negative')
+            return False
+        if self.gnss.device is None:
+            rosys.notify('GNSS is not available', 'negative')
+            return False
+        if not self.row:
+            self.row = self.field.rows[0]
+        else:
+            rosys.notify('Resume on current row is not yet implemented', 'negative')
+            self.row = self.field.rows[0]
+            # return False
+        if not len(self.row.points) >= 2:
+            rosys.notify('Row has not enough points', 'negative')
+            return False
+
+        # TODO only drive to row if we are not on any rows and near the row start
+        await self._drive_to_row(self.row)
+
+        # TODO Are these preparations necessary?
+        # if not self.continue_canceled_weeding:
+        #     if not await self._field_planning():
+        #         rosys.notify('Field planning failed', 'negative')
+        #         return False
+        # if self.continue_canceled_weeding:
+        #     start_pose = self.odometer.prediction
+        #     assert self.current_segment is not None
+        #     end_pose = Pose(x=self.current_segment.spline.start.x, y=self.current_segment.spline.start.y,
+        #                     yaw=self.current_segment.spline.start.direction(self.current_segment.spline.end))
+        #     start_spline = Spline.from_poses(start_pose, end_pose)
+        #     await self.driver.drive_spline(start_spline)
+        # elif self.drive_to_start:
+        #     await self._drive_to_start()
+        # assert self.field
+        # self.automation_watcher.start_field_watch(self.field.outline)
+        # self.automation_watcher.gnss_watch_active = True
+        return True
+
     async def _drive_forward(self) -> None:
-        pass
+        await super()._drive_forward()
 
     def _should_stop(self) -> bool:
-        return False
+        return super()._should_stop()
 
     async def _start(self) -> None:
-        if not await self.implement.prepare():
-            self.log.error('Tool-Preparation failed')
-            return
-        if not await self._prepare():
-            self.log.error('Navigation-Preparation failed')
-            return
+
         for i, path in enumerate(self.weeding_plan):
             if self.continue_canceled_weeding and self.current_row != self.sorted_weeding_rows[i]:
                 continue
@@ -118,37 +163,7 @@ class FieldNavigation(Navigation):
         self.current_row = None
         self.current_segment = None
 
-    async def _prepare(self) -> bool:
-        if not self.continue_canceled_weeding:
-            if not await self._field_planning():
-                rosys.notify('Field planning failed', 'negative')
-                return False
-        if self.continue_canceled_weeding:
-            start_pose = self.odometer.prediction
-            assert self.current_segment is not None
-            end_pose = Pose(x=self.current_segment.spline.start.x, y=self.current_segment.spline.start.y,
-                            yaw=self.current_segment.spline.start.direction(self.current_segment.spline.end))
-            start_spline = Spline.from_poses(start_pose, end_pose)
-            await self.driver.drive_spline(start_spline)
-        elif self.drive_to_start:
-            await self._drive_to_start()
-        # TODO: reactivate automation watcher
-        # self.system.automation_watcher.start_field_watch(self.field.outline)
-        # self.system.automation_watcher.gnss_watch_active = True
-        return True
-
     async def _field_planning(self) -> bool:
-        if self.gnss.device is None:
-            self.log.error('GNSS is not available')
-            return False
-        if self.field is None:
-            self.log.error('Field is not available')
-            rosys.notify('No field selected', 'negative')
-            return False
-        if not self.field.reference:
-            self.log.error('Field reference is not available')
-            return False
-        self.gnss.reference = self.field.reference
         self.weeding_plan = self._make_plan()
         if not self.weeding_plan:
             self.log.error('No plan available')
@@ -290,12 +305,13 @@ class FieldNavigation(Navigation):
         #     self.path_planner.obstacles.pop(f'row_{row.id}')
         return turn_paths
 
-    async def _drive_to_start(self):
-        self.log.info('Driving to start...')
-        start_pose = self.odometer.prediction
-        end_pose = Pose(x=self.weeding_plan[0][0].spline.start.x, y=self.weeding_plan[0][0].spline.start.y,
-                        yaw=self.weeding_plan[0][0].spline.start.direction(self.weeding_plan[0][0].spline.end))
-        start_spline = Spline.from_poses(start_pose, end_pose)
+    async def _drive_to_row(self, row: Row):
+        self.log.info(f'Driving to row {row.name}...')
+        assert self.field and self.field.reference
+        target = row.points[0].cartesian(self.field.reference)
+        direction = self.odometer.prediction.point.direction(row.points[-1].cartesian(self.field.reference))
+        end_pose = Pose(x=target.x, y=target.y, yaw=direction)
+        start_spline = Spline.from_poses(self.odometer.prediction, end_pose)
         await self.driver.drive_spline(start_spline)
 
     async def _drive_segment(self):
@@ -323,7 +339,7 @@ class FieldNavigation(Navigation):
             'minimum_turning_radius': self.minimum_turning_radius,
             'turn_offset': self.turn_offset,
             'sorted_weeding_rows': [rosys.persistence.to_dict(row) for row in self.sorted_weeding_rows],
-            'field': rosys.persistence.to_dict(self.field) if self.field else None,
+            'field_id': self.field.id if self.field else None,
             'weeding_plan': [[rosys.persistence.to_dict(segment) for segment in row] for row in self.weeding_plan],
             'turn_paths': [rosys.persistence.to_dict(segment) for segment in self.turn_paths],
             'current_row': rosys.persistence.to_dict(self.current_row) if self.current_row else None,
@@ -338,7 +354,8 @@ class FieldNavigation(Navigation):
         self.turn_offset = data.get('turn_offset', self.turn_offset)
         self.sorted_weeding_rows = [rosys.persistence.from_dict(Row, row_data)
                                     for row_data in data['sorted_weeding_rows']]
-        self.field = rosys.persistence.from_dict(Field, data['field']) if data['field'] else None
+        field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
+        self.field = self.field_provider.get_field(field_id)
         self.weeding_plan = [[rosys.persistence.from_dict(PathSegment, segment_data)
                               for segment_data in row_data] for row_data in data.get('weeding_plan', [])]
         self.turn_paths = [rosys.persistence.from_dict(PathSegment, segment_data)
@@ -349,7 +366,15 @@ class FieldNavigation(Navigation):
         self.drive_to_start = data.get('drive_to_start', self.drive_to_start)
 
     def settings_ui(self) -> None:
-        ui.markdown('Field settings').style('color: #6E93D6')
+        field_selection = ui.select(
+            {f.id: f.name for f in self.field_provider.fields},
+            on_change=lambda args: self._set_field(args.value),
+            label='Field')\
+            .props('clearable') \
+            .classes('w-32') \
+            .tooltip('Select the field to work on')
+        field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
+
         with ui.row():
             with_field_planning = ui.checkbox('Use field planning', value=True) \
                 .bind_value(self, 'use_field_planning') \
@@ -364,31 +389,40 @@ class FieldNavigation(Navigation):
                 ui.number('Min. turning radius', format='%.2f',
                           value=0.5, step=0.05, min=0.05, max=2.0) \
                     .props('dense outlined suffix=m').classes('w-30') \
-                    .bind_value(self.system.weeding, 'minimum_turning_radius') \
+                    .bind_value(self, 'minimum_turning_radius') \
                     .tooltip('Set the turning radius for the weeding automation')
                 ui.number('turn_offset', format='%.2f', value=0.4, step=0.05, min=0.05, max=2.0) \
                     .props('dense outlined suffix=m').classes('w-30') \
-                    .bind_value(self.system.weeding, 'turn_offset') \
+                    .bind_value(self, 'turn_offset') \
                     .tooltip('Set the turning offset for the weeding automation')
-                ui.checkbox('Drive backwards to start', value=True).bind_value(self.system.weeding, 'return_to_start') \
+                ui.checkbox('Drive backwards to start', value=True).bind_value(self, 'return_to_start') \
                     .tooltip('Set the weeding automation to drive backwards to the start row at the end of the row')
-                ui.checkbox('Drive to start row', value=True).bind_value(self.system.weeding, 'drive_to_start') \
+                ui.checkbox('Drive to start row', value=True).bind_value(self, 'drive_to_start') \
                     .tooltip('Set the weeding automation to drive to the start of the row before starting the weeding')
 
     @ui.refreshable
     def show_start_row(self) -> None:
-        if self.system.field_provider.active_field is not None:
-            ui.select({row.id: row.name for row in self.system.field_provider.active_field.rows}, label='Start row') \
-                .bind_value(self.system.weeding, 'start_row_id').classes('w-24').tooltip('Select the row to start on')
+        if self.field_provider.active_field is not None:
+            ui.select({row.id: row.name for row in self.field_provider.active_field.rows}, label='Start row') \
+                .bind_value(self, 'start_row_id').classes('w-24').tooltip('Select the row to start on')
         else:
             ui.select([None], label='Start row')\
-                .bind_value(self.system.weeding, 'start_row').classes('w-24').tooltip('Select the row to start on')
+                .bind_value(self, 'start_row').classes('w-24').tooltip('Select the row to start on')
 
     @ui.refreshable
     def show_end_row(self) -> None:
-        if self.system.field_provider.active_field is not None:
-            ui.select({row.id: row.name for row in self.system.field_provider.active_field.rows}, label='End row') \
-                .bind_value(self.system.weeding, 'end_row_id').classes('w-24').tooltip('Select the row to end on')
+        if self.field_provider.active_field is not None:
+            ui.select({row.id: row.name for row in self.field_provider.active_field.rows}, label='End row') \
+                .bind_value(self, 'end_row_id').classes('w-24').tooltip('Select the row to end on')
         else:
             ui.select([None], label='End row') \
-                .bind_value(self.system.weeding, 'end_row').classes('w-24').tooltip('Select the row to end on')
+                .bind_value(self, 'end_row').classes('w-24').tooltip('Select the row to end on')
+
+    def _set_field(self, field_id: str) -> None:
+        field = self.field_provider.get_field(field_id)
+        if field is not None:
+            self.field = field
+            if len(field.points) > 2 and len(field.rows) > 0:
+                self.gnss.reference = field.points[0]
+            else:
+                rosys.notify(f'{field.name} is invalid', 'negative')

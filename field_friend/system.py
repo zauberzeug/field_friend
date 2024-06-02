@@ -140,6 +140,8 @@ class System(rosys.persistence.PersistentModule):
                 (-offset, width/2)
             ],
             height=height)
+        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
+        self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.field_navigation = FieldNavigation(self, self.monitoring)
         self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
@@ -169,10 +171,8 @@ class System(rosys.persistence.PersistentModule):
         self.implements = {t.name: t for t in tools}
         self._current_navigation: Navigation = self.straight_line_navigation
         self._current_implement = self._current_navigation
-        self.automator = rosys.automation.Automator(
-            None, on_interrupt=self.field_friend.stop, default_automation=self._current_navigation.start)
+        self.automator.default_automation = self._current_navigation.start
         self.info = Info(self)
-        self.automation_watcher = AutomationWatcher(self)
         self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True

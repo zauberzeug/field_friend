@@ -17,7 +17,6 @@ class FieldObstacle(GeoPointCollection):
 @dataclass(slots=True, kw_only=True)
 class Row(GeoPointCollection):
     reverse: bool = False
-    crops: list[Plant] = field(default_factory=list)
 
     def reversed(self):
         return Row(
