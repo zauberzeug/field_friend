@@ -63,8 +63,8 @@ class FieldNavigation(FollowCropsNavigation):
         # self.automation_watcher.gnss_watch_active = True
         return True
 
-    async def _drive_forward(self) -> None:
-        await super()._drive_forward()
+    async def _drive(self) -> None:
+        await super()._drive()
 
     def _should_stop(self) -> bool:
         # TODO return True if we have worked all rows

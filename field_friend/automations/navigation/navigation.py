@@ -53,7 +53,7 @@ class Navigation(rosys.persistence.PersistentModule):
                 if not self._should_stop():
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
-                    await self._drive_forward()
+                    await self._drive()
             await self.implement.deactivate()
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
@@ -71,10 +71,10 @@ class Navigation(rosys.persistence.PersistentModule):
 
     async def _proceed(self):
         while not self._should_stop():
-            await self._drive_forward()
+            await self._drive()
 
     @abc.abstractmethod
-    async def _drive_forward(self) -> None:
+    async def _drive(self) -> None:
         """Drives the vehicle forward
 
         This should only advance the robot by a small distance, e.g. 2 cm 

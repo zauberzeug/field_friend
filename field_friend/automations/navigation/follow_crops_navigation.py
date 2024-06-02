@@ -24,7 +24,7 @@ class FollowCropsNavigation(Navigation):
         self.name = 'Follow Crops'
         self.crop_attraction = 0.8
 
-    async def _drive_forward(self):
+    async def _drive(self):
         row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point)
         if len(row) >= 2:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
