@@ -1,3 +1,5 @@
+import math
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
 import rosys
@@ -9,7 +11,15 @@ from ..implements.implement import Implement
 from .follow_crops_navigation import FollowCropsNavigation
 
 if TYPE_CHECKING:
-    from ...system import System
+    from system import System
+
+
+class State(Enum):
+    APPROACHING_ROW_START = auto()
+    FOLLOWING_ROW = auto()
+    RETURNING_TO_START = auto()
+    ROW_COMPLETED = auto()
+    FIELD_COMPLETED = auto()
 
 
 class FieldNavigation(FollowCropsNavigation):
@@ -23,8 +33,9 @@ class FieldNavigation(FollowCropsNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
+        self.state = State.APPROACHING_ROW_START
         self.field: Field | None = None
-        self.row: Row | None = None
+        self.row_index = 0
 
     async def prepare(self) -> bool:
         if self.field is None:
@@ -40,34 +51,53 @@ class FieldNavigation(FollowCropsNavigation):
         if self.gnss.device is None:
             rosys.notify('GNSS is not available', 'negative')
             return False
-        if not self.row:
-            self.row = self.field.rows[0]
-        else:
-            rosys.notify('Resume on current row is not yet implemented', 'negative')
-            self.row = self.field.rows[0]
-            # return False
-        if not len(self.row.points) >= 2:
-            rosys.notify('Row has not enough points', 'negative')
-            return False
+        for idx, row in enumerate(self.field.rows):
+            if not len(row.points) >= 2:
+                rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
+                return False
 
-        # TODO only drive to row if we are not on any rows and near the row start
-        await self._drive_to_row(self.row)
-
-        # self.automation_watcher.start_field_watch(self.field.outline)
-        # self.automation_watcher.gnss_watch_active = True
+        self.automation_watcher.start_field_watch(self.field.outline)
+        self.automation_watcher.gnss_watch_active = True
         return True
 
+    async def finish(self) -> None:
+        await super().finish()
+        self.automation_watcher.gnss_watch_active = False
+        self.automation_watcher.stop_field_watch()
+
     async def _drive(self) -> None:
-        await super()._drive()
+        assert self.field is not None
+        assert self.field.reference is not None
+        if self.state == State.APPROACHING_ROW_START:
+            # TODO only drive to row if we are not on any rows and near the row start
+            await self._drive_to_row(self.current_row)
+            await self.implement.activate()
+            self.state = State.FOLLOWING_ROW
+        if self.state == State.FOLLOWING_ROW:
+            if self.odometer.prediction.point.distance(self.current_row.points[-1].cartesian(self.field.reference)) >= 0.1:
+                await super()._drive()
+            else:
+                await self.implement.deactivate()
+                self.state = State.RETURNING_TO_START
+        if self.state == State.RETURNING_TO_START:
+            self.driver.parameters.can_drive_backwards = True
+            end = self.current_row.points[0].cartesian(self.field.reference)
+            await self.driver.drive_to(end, backward=True)  # TODO replace with following crops or replay recorded path
+            inverse_yaw = (self.odometer.prediction.yaw + math.pi) % (2 * math.pi)
+            await self.driver.drive_to(end.polar(1.5, inverse_yaw), backward=True)
+            self.driver.parameters.can_drive_backwards = False
+            self.state = State.ROW_COMPLETED
+        if self.state == State.ROW_COMPLETED:
+            if self.current_row == self.field.rows[-1]:
+                self.state = State.FIELD_COMPLETED
+                while True:
+                    await rosys.sleep(0.01)  # wait for base class to finish navigation
+            else:
+                self.row_index += 1
+                self.state = State.APPROACHING_ROW_START
 
     def _should_finish(self) -> bool:
-        assert self.field
-        assert self.field.reference
-        assert self.row
-        if self.row == self.field.rows[-1] and \
-                self.odometer.prediction.point.distance(self.row.points[-1].cartesian(self.field.reference)) < 0.1:
-            return True
-        return False
+        return self.state == State.FIELD_COMPLETED
 
     async def _drive_to_row(self, row: Row):
         self.log.info(f'Driving to row {row.name}...')
@@ -126,3 +156,8 @@ class FieldNavigation(FollowCropsNavigation):
                 p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
                 plant = rosys.vision.SimulatedObject(category_name='maize', position=p3d)
                 self.detector.simulated_objects.append(plant)
+
+    @property
+    def current_row(self) -> Row:
+        assert self.field
+        return self.field.rows[self.row_index]

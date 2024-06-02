@@ -21,6 +21,14 @@ class StraightLineNavigation(Navigation):
         self.length = 2.0
         self.name = 'Straight Line'
 
+    async def prepare(self) -> bool:
+        self.log.info(f'Activating {self.implement.name}...')
+        await self.implement.activate()
+        return True
+
+    async def finish(self) -> None:
+        await self.implement.deactivate()
+
     async def _drive(self):
         target = self.odometer.prediction.transform(rosys.geometry.Point(x=0.02, y=0))
         self.log.info(f'driving to {target}')

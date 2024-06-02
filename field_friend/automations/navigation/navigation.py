@@ -38,8 +38,6 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
-            self.log.info(f'Activating {self.implement.name}...')
-            await self.implement.activate()
             self.start_position = self.odometer.prediction.point
             if not await self.implement.prepare():
                 self.log.error('Tool-Preparation failed')
@@ -54,13 +52,13 @@ class Navigation(rosys.persistence.PersistentModule):
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
                     await self._drive()
-            await self.implement.deactivate()
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
         finally:
             self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.implement.finish()
+            await self.finish()
             await self.driver.wheels.stop()
 
     async def prepare(self) -> bool:
@@ -68,6 +66,9 @@ class Navigation(rosys.persistence.PersistentModule):
 
         Returns true if all preparations were successful, otherwise false."""
         return True
+
+    async def finish(self) -> None:
+        """Executed after the navigation is done"""
 
     async def _proceed(self):
         while not self._should_finish():

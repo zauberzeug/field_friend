@@ -24,6 +24,14 @@ class FollowCropsNavigation(Navigation):
         self.name = 'Follow Crops'
         self.crop_attraction = 0.8
 
+    async def prepare(self) -> bool:
+        self.log.info(f'Activating {self.implement.name}...')
+        await self.implement.activate()
+        return True
+
+    async def finish(self) -> None:
+        await self.implement.deactivate()
+
     async def _drive(self):
         row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point)
         if len(row) >= 2:
