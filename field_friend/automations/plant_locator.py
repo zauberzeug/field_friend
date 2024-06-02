@@ -111,9 +111,13 @@ class PlantLocator(rosys.persistence.PersistentModule):
             #     self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
 
     def pause(self) -> None:
+        if self.is_paused:
+            return
         self.log.info('pausing plant detection')
         self.is_paused = True
 
     def resume(self) -> None:
+        if not self.is_paused:
+            return
         self.log.info('resuming plant detection')
         self.is_paused = False
