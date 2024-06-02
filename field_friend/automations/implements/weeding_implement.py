@@ -28,6 +28,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.weeding')
         self.system = system
         self.kpi_provider = system.kpi_provider
+        self.puncher = system.puncher
 
         # dual mechanism
         self.with_drilling: bool = False
@@ -65,7 +66,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     async def activate(self):
         await self.system.field_friend.flashlight.turn_on()
-        await rosys.sleep(3)
+        await self.puncher.clear_view()
         self.system.plant_locator.resume()
         await rosys.sleep(3)
 

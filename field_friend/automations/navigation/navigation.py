@@ -33,14 +33,13 @@ class Navigation(rosys.persistence.PersistentModule):
 
     async def start(self) -> None:
         try:
+            if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
+                self.create_simulation()
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
             self.log.info(f'Activating {self.implement.name}...')
             await self.implement.activate()
-            if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
-                self.create_simulation()
-            await self.puncher.clear_view()
             self.start_position = self.odometer.prediction.point
             if not await self.implement.prepare():
                 self.log.error('Tool-Preparation failed')
