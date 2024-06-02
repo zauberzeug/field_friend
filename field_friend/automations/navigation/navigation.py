@@ -44,13 +44,13 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.implement.prepare():
                 self.log.error('Tool-Preparation failed')
                 return
-            while not self._should_stop():
+            while not self._should_finish():
                 await rosys.automation.parallelize(
                     self.implement.observe(),
                     self._proceed(),
                     return_when_first_completed=True
                 )
-                if not self._should_stop():
+                if not self._should_finish():
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
                     await self._drive()
@@ -70,7 +70,7 @@ class Navigation(rosys.persistence.PersistentModule):
         return True
 
     async def _proceed(self):
-        while not self._should_stop():
+        while not self._should_finish():
             await self._drive()
 
     @abc.abstractmethod
@@ -82,8 +82,8 @@ class Navigation(rosys.persistence.PersistentModule):
         """
 
     @abc.abstractmethod
-    def _should_stop(self) -> bool:
-        """Returns True if the navigation should stop"""
+    def _should_finish(self) -> bool:
+        """Returns True if the navigation should stop and be finished"""
 
     def clear(self) -> None:
         """Resets the state to initial configuration"""

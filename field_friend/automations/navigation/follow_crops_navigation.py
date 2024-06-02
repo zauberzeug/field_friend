@@ -62,7 +62,7 @@ class FollowCropsNavigation(Navigation):
             p = rosys.geometry.Point3d(x=x, y=np.sin(x/2), z=0)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
 
-    def _should_stop(self) -> bool:
+    def _should_finish(self) -> bool:
         distance = self.odometer.prediction.point.distance(self.start_position)
         if distance < 0.5:
             return False  # at least drive 0.5m

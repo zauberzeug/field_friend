@@ -1,14 +1,11 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import rosys
 from nicegui import ui
-from rosys.driving import PathSegment
 from rosys.geometry import Point, Pose, Spline
 
 from ..field import Field, Row
 from ..implements.implement import Implement
-from ..sequence import find_sequence
 from .follow_crops_navigation import FollowCropsNavigation
 
 if TYPE_CHECKING:
@@ -19,9 +16,6 @@ class FieldNavigation(FollowCropsNavigation):
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
-
-        self.PATH_PLANNED = rosys.event.Event()
-        '''Event that is emitted when the path is planed. The event contains the path as a list of PathSegments.'''
 
         self.name = 'Field Rows'
         self.gnss = system.gnss
@@ -66,9 +60,14 @@ class FieldNavigation(FollowCropsNavigation):
     async def _drive(self) -> None:
         await super()._drive()
 
-    def _should_stop(self) -> bool:
-        # TODO return True if we have worked all rows
-        return super()._should_stop()
+    def _should_finish(self) -> bool:
+        assert self.field
+        assert self.field.reference
+        assert self.row
+        if self.row == self.field.rows[-1] and \
+                self.odometer.prediction.point.distance(self.row.points[-1].cartesian(self.field.reference)) < 0.1:
+            return True
+        return False
 
     async def _drive_to_row(self, row: Row):
         self.log.info(f'Driving to row {row.name}...')
@@ -79,19 +78,6 @@ class FieldNavigation(FollowCropsNavigation):
         spline = Spline.from_poses(self.odometer.prediction, end_pose)
         await self.driver.drive_spline(spline)
         self.log.info(f'Arrived at row {row.name} starting at {target}')
-
-    def clear(self) -> None:
-        super().clear()
-        self.field = None
-        self.start_row_id = None
-        self.end_row_id = None
-        self.sorted_weeding_rows = []
-        self.weeding_plan = []
-        self.turn_paths = []
-        self.current_row = None
-        self.current_segment = None
-        self.row_segment_completed = False
-        self.PATH_PLANNED.emit()
 
     def backup(self) -> dict:
         return {
@@ -111,6 +97,7 @@ class FieldNavigation(FollowCropsNavigation):
             .classes('w-32') \
             .tooltip('Select the field to work on')
         field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
+        super().settings_ui()
 
     def _set_field(self, field_id: str) -> None:
         field = self.field_provider.get_field(field_id)

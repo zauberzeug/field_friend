@@ -27,7 +27,7 @@ class StraightLineNavigation(Navigation):
         with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
             await self.driver.drive_to(target)
 
-    def _should_stop(self):
+    def _should_finish(self):
         distance = self.odometer.prediction.point.distance(self.start_position)
         return abs(distance - self.length) < 0.05
 
