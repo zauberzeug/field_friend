@@ -1,3 +1,4 @@
+import math
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -31,9 +32,13 @@ class FollowCropsNavigation(Navigation):
             A = np.vstack([points_array[:, 0], np.ones(len(points_array))]).T
             m, c = np.linalg.lstsq(A, points_array[:, 1], rcond=None)[0]
             yaw_of_row = np.arctan(m)
+            # flip if it is pointing backwards
+            if np.abs(yaw_of_row - self.odometer.prediction.yaw) > math.pi / 2:
+                yaw_of_row = yaw_of_row + math.pi
         else:
             yaw_of_row = self.odometer.prediction.yaw
         target_yaw = self.combine_angles(yaw_of_row, self.crop_attraction, self.odometer.prediction.yaw)
+        self.log.info(f'{yaw_of_row}, {self.odometer.prediction.yaw}, {target_yaw}')
         target = self.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
         # self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
         with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
@@ -45,12 +50,10 @@ class FollowCropsNavigation(Navigation):
         # Normalize both angles
         angle1 = eliminate_2pi(angle1)
         angle2 = eliminate_2pi(angle2)
-        # Combine angles with the weights
         x = np.cos(angle1) * weight1 + np.cos(angle2) * weight2
         y = np.sin(angle1) * weight1 + np.sin(angle2) * weight2
-        # Compute the resultant angle
         combined_angle = np.arctan2(y, x)
-        # Normalize the resultant angle
+        # Normalize
         return eliminate_2pi(combined_angle)
 
     def create_simulation(self):
@@ -59,12 +62,13 @@ class FollowCropsNavigation(Navigation):
             p = rosys.geometry.Point3d(x=x, y=np.sin(x/2), z=0)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
 
-    def _should_stop(self):
+    def _should_stop(self) -> bool:
         distance = self.odometer.prediction.point.distance(self.start_position)
         if distance < 0.5:
             return False  # at least drive 0.5m
         if len(self.plant_provider.get_relevant_crops(self.odometer.prediction.point)) == 0:
             return True
+        return False
 
     def settings_ui(self) -> None:
         ui.number('Crop Attraction', step=0.1, min=0.0, format='%.1f') \

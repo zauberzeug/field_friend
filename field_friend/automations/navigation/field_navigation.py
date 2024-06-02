@@ -309,10 +309,11 @@ class FieldNavigation(FollowCropsNavigation):
         self.log.info(f'Driving to row {row.name}...')
         assert self.field and self.field.reference
         target = row.points[0].cartesian(self.field.reference)
-        direction = self.odometer.prediction.point.direction(row.points[-1].cartesian(self.field.reference))
+        direction = target.direction(row.points[-1].cartesian(self.field.reference))
         end_pose = Pose(x=target.x, y=target.y, yaw=direction)
-        start_spline = Spline.from_poses(self.odometer.prediction, end_pose)
-        await self.driver.drive_spline(start_spline)
+        spline = Spline.from_poses(self.odometer.prediction, end_pose)
+        await self.driver.drive_spline(spline)
+        self.log.info(f'Arrived at row {row.name} starting at {target}')
 
     async def _drive_segment(self):
         self.log.info('Driving segment...')
@@ -426,3 +427,22 @@ class FieldNavigation(FollowCropsNavigation):
                 self.gnss.reference = field.points[0]
             else:
                 rosys.notify(f'{field.name} is invalid', 'negative')
+
+    def create_simulation(self):
+        self.detector.simulated_objects.clear()
+        if self.field is None:
+            return
+        for row in self.field.rows:
+            if len(row.points) < 2:
+                continue
+            cartesian = row.cartesian(self.field.reference)
+            start = cartesian[0]
+            end = cartesian[-1]
+            length = start.distance(end)
+            self.log.info(f'Creating row from {start} to {end} with length {length}')
+            crop_count = length / 0.15
+            for i in range(int(crop_count)):
+                p = start.interpolate(end, (0.15 * i) / length)
+                p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
+                plant = rosys.vision.SimulatedObject(category_name='maize', position=p3d)
+                self.detector.simulated_objects.append(plant)
