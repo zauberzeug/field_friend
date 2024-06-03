@@ -167,7 +167,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             bool {name}_knife_ground_enabled = false;
             bool {name}_knife_stop_enabled = false;
             when {name}_knife_ground_enabled and {name}_ref_knife_ground.level == 1 then
-                {name}_z.stop();
+                {name}_motor_z.off();
             end
             when {name}_knife_stop_enabled and {name}_ref_knife_stop.level == 1 then
                 en3.off();
@@ -204,9 +204,12 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await super().move_to(position)
         except RuntimeError as e:
             raise Exception(e) from e
-        await self.robot_brain.send(f'{self.name}_z.position({position}, {self.speed_limit}, 0);')
+        self.log.info(f'moving z axis to {position}')
+        await self.robot_brain.send(f'{self.name}_z.position({position}, {self.speed_limit}, 0)')
         while not position - 0.005 < self.position_z < position + 0.005:
+            await self.robot_brain.send(f'{self.name}_z.position({position}, {self.speed_limit}, 0)')
             await rosys.sleep(0.1)
+        self.log.info(f'z axis moved to {position}')
 
     async def move_down_until_reference(self) -> None:
         try:
@@ -244,7 +247,6 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             # await rosys.sleep(1.5)
             self.log.info('finalizing moving z axis down')
             await self.robot_brain.send(
-                f'{self.name}_z.speed(0, 0);'
                 f'{self.name}_knife_stop_enabled = false;'
                 f'{self.name}_knife_ground_enabled = false;'
             )
@@ -326,9 +328,9 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
 
             # set as zero position
             self.log.info('setting as zero position')
-            await rosys.sleep(1)
+            await rosys.sleep(2)
             await self.robot_brain.send(
-                f'{self.name}_motor_z.zero();'
+                f'{self.name}_motor_z.zero()'
             )
             self.log.info('referencing tornado z position done')
             self.z_is_referenced = True
