@@ -28,6 +28,7 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
                  ) -> None:
         self.name = name
         self.expander = expander
+        self.ctrl_enable = False
         lizard_code = remove_indentation(f'''
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
@@ -47,6 +48,7 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
             f'{name}_motor.actual_position',
             f'{name}_motor.status_target_reached',
             f'{name}_motor.status_fault',
+            f'{name}_motor.ctrl_enable',
         ]
         super().__init__(
             max_speed=max_speed,
@@ -199,6 +201,9 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
                 await rosys.sleep(0.2)
             await rosys.sleep(0.5)
 
+            # check if this is necessary when enterning pp mode with negative speed
+            await self.robot_brain.send(f'{self.name}_motor.enter_pv_mode(0);')
+
             # save position
             await self.robot_brain.send(f'{self.name}_motor.position_offset = {self.steps};')
             await rosys.sleep(0.2)
@@ -230,3 +235,4 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
         self.alarm = words.pop(0) == 'true'
         if self.alarm:
             self.is_referenced = False
+        self.ctrl_enable = words.pop(0) == 'true'
