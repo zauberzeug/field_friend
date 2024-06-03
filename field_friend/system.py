@@ -93,7 +93,7 @@ class System(rosys.persistence.PersistentModule):
         rosys.on_repeat(watch_robot, 1.0)
 
         self.path_provider = PathProvider()
-        self.field_provider = FieldProvider()
+        self.field_provider = FieldProvider(self.gnss)
         width = 0.64
         length = 0.78
         offset = 0.36
@@ -121,7 +121,7 @@ class System(rosys.persistence.PersistentModule):
             'mowing': self.mowing.start,
             'collecting (demo)': self.coin_collecting.start,
         }
-        self.automator = rosys.automation.Automator(None, on_interrupt=lambda _: self.field_friend.stop(),
+        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop,
                                                     default_automation=self.coin_collecting.start)
         self.info = Info(self)
         self.automation_watcher = AutomationWatcher(self)

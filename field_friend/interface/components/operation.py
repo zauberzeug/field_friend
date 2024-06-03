@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import events, ui
 
-from .automation_controls import automation_controls
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
 from .punch_dialog import PunchDialog
@@ -232,23 +231,6 @@ class operation:
                                 .tooltip('Set the drill depth for the weeding automation')
                             ui.checkbox('with drilling', value=True) \
                                 .bind_value(self.system.coin_collecting, 'with_drilling')
-            ui.space()
-            with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
-                with ui.column():
-                    ui.button('emergency stop', on_click=lambda: system.field_friend.estop.set_soft_estop(True)).props('color=red') \
-                        .classes('py-3 px-6 text-lg').bind_visibility_from(system.field_friend.estop, 'is_soft_estop_active', value=False)
-                    ui.button('emergency reset', on_click=lambda: system.field_friend.estop.set_soft_estop(False)) \
-                        .props('color=red-700 outline').classes('py-3 px-6 text-lg') \
-                        .bind_visibility_from(system.field_friend.estop, 'is_soft_estop_active', value=True)
-                ui.space()
-                with ui.row():
-                    automation_controls(self.system, can_start=self.can_start)
-        with ui.dialog() as self.dialog, ui.card():
-            self.dialog_label = ui.label('Do you want to continue the canceled automation').classes('text-lg')
-            with ui.row():
-                ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
-                ui.button('No', on_click=lambda: self.dialog.submit('No'))
-                ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
         self.system.puncher.POSSIBLE_PUNCH.register(self.can_punch)
         self.punch_dialog = PunchDialog(self.system.usb_camera_provider,
@@ -299,45 +281,6 @@ class operation:
             self.system.puncher.punch_allowed = 'allowed'
         elif result is None or result == 'No' or result == 'Cancel':
             self.system.puncher.punch_allowed = 'not_allowed'
-
-    async def can_start(self) -> bool:
-        self.log.info('Checking if automation can be started')
-        if self.automations_toggle.value == 'mowing':
-            return await self.can_mowing_start()
-        elif self.automations_toggle.value == 'weeding':
-            return await self.can_weeding_start()
-        return True
-
-    async def can_mowing_start(self) -> bool:
-        self.log.info('Checking mowing automation')
-        if self.system.mowing.current_path_segment is None:
-            self.system.mowing.continue_mowing = False
-            return True
-        self.dialog_label.text = 'Do you want to continue the canceled mowing automation?'
-        result = await self.dialog
-        if result == 'Yes':
-            self.system.mowing.continue_mowing = True
-        elif result == 'No':
-            self.system.mowing.continue_mowing = False
-        elif result == 'Cancel':
-            return False
-        return True
-
-    async def can_weeding_start(self) -> bool:
-        self.log.info('Checking weeding automation')
-        if not self.system.weeding.current_row or not self.system.weeding.current_segment:
-            self.system.weeding.continue_canceled_weeding = False
-            return True
-        self.dialog_label.text = f'''Do you want to continue the canceled weeding automation on row {
-            self.system.weeding.current_row.name}?'''
-        result = await self.dialog
-        if result == 'Yes':
-            self.system.weeding.continue_canceled_weeding = True
-        elif result == 'No':
-            self.system.weeding.continue_canceled_weeding = False
-        elif result == 'Cancel':
-            return False
-        return True
 
     def handle_automation_changed(self, e: events.ValueChangeEventArguments) -> None:
         self.system.automator.default_automation = self.system.automations[e.value]

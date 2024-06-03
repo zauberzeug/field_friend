@@ -10,7 +10,7 @@ from rosys.geometry import Point, Pose, Spline
 from rosys.helpers import eliminate_2pi
 
 from ..hardware import ChainAxis
-from .field_provider import Field, Row
+from . import Field, Row
 from .plant import Plant
 from .puncher import PuncherException
 from .sequence import find_sequence
@@ -88,6 +88,7 @@ class Weeding(rosys.persistence.PersistentModule):
         self.weeds_to_handle: dict[str, Point] = {}
 
         rosys.on_repeat(self._update_time_and_distance, 0.1)
+        self.system.field_provider.FIELD_SELECTED.register(self.clear)
 
     def _update_time_and_distance(self):
         if self.state == 'idle':
@@ -180,6 +181,20 @@ class Weeding(rosys.persistence.PersistentModule):
         self.log.info('backing up...')
         self.request_backup()
 
+    def clear(self) -> None:
+        self.field = None
+        self.start_row_id = None
+        self.end_row_id = None
+        self.sorted_weeding_rows = []
+        self.weeding_plan = []
+        self.turn_paths = []
+        self.current_row = None
+        self.current_segment = None
+        self.row_segment_completed = False
+        self.crops_to_handle = {}
+        self.weeds_to_handle = {}
+        self.PATH_PLANNED.emit()
+
     async def start(self):
         self.log.info('starting weeding...')
         self.invalidate()
@@ -266,10 +281,14 @@ class Weeding(rosys.persistence.PersistentModule):
 
         start_row = next((row for row in self.field.rows if row.id == self.start_row_id), None)
         end_row = next((row for row in self.field.rows if row.id == self.end_row_id), None)
-        if start_row is None or end_row is None:
-            self.log.warning('Start or end row not available')
-            return None
-        reference = [self.field.reference_lat, self.field.reference_lon]
+        if start_row is None:
+            start_row = self.field.rows[0]
+        if end_row is None:
+            end_row = self.field.rows[-1]
+        self.start_row_id = start_row.id
+        self.end_row_id = end_row.id
+        reference = self.field.reference
+        assert reference is not None
         rows_to_weed = self.field.rows[self.field.rows.index(
             start_row):self.field.rows.index(end_row) + 1]
         rows = [row for row in rows_to_weed if len(row.cartesian(reference)) > 1]
@@ -360,8 +379,7 @@ class Weeding(rosys.persistence.PersistentModule):
             temp_removed_start_row = self.system.path_planner.obstacles.pop(f'row_{start_row.id}')
             temp_removed_end_row = self.system.path_planner.obstacles.pop(f'row_{end_row.id}')
             start_point = Point(x=self.weeding_plan[i][-1].spline.end.x,
-                                y=self.weeding_plan[i][-1].spline.end.y
-                                )
+                                y=self.weeding_plan[i][-1].spline.end.y)
             yaw = self.weeding_plan[i][-1].spline.start.direction(self.weeding_plan[i][-1].spline.end)
             offset_start_point = start_point.polar(self.turn_offset, yaw)
 
@@ -937,8 +955,8 @@ class Weeding(rosys.persistence.PersistentModule):
                     await self.system.plant_provider.add_weed(Plant(
                         id_=f'{i}_{j}',
                         type_='weed',
-                        position=self.system.odometer.prediction.point.polar(
-                            0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2),
+                        positions=[self.system.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01, self.system.odometer.prediction.yaw).polar(
+                            randint(-15, 15)*0.01, self.system.odometer.prediction.yaw + np.pi/2)],
                         detection_time=rosys.time(),
                         confidence=0.9,
                     ))

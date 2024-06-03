@@ -1,14 +1,12 @@
 
 import logging
-import shutil
-from pathlib import Path
 from typing import AsyncGenerator, Generator
 
 import pytest
 import rosys
 from rosys.testing import forward, helpers
 
-from field_friend.automations.field_provider import Field
+from field_friend.automations import Field
 from field_friend.navigation import GeoPoint, GnssSimulation
 from field_friend.system import System
 
@@ -44,8 +42,10 @@ async def field(system: System) -> AsyncGenerator[Field, None]:
               [51.983141020300614, 7.434388662818431],
               [51.98322844759802, 7.43424919023239]]
     geo_points = [GeoPoint.from_list(point) for point in points]
-    f = Field(id='test-field',  name='test-field', points=geo_points, reference=geo_points[0])
-    system.field_provider.add_field(f)
+    f = system.field_provider.create_field(points=geo_points)
+    system.field_provider.create_row(f, points=[GeoPoint(lat=51.98318416921418, long=7.4342004020500285),
+                                                GeoPoint(lat=51.98312378543273, long=7.434291470886676)])
+    system.field_provider.active_field = f
     yield f
 
 
