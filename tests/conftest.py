@@ -10,8 +10,7 @@ from field_friend.automations import Field
 from field_friend.navigation import GeoPoint, GnssSimulation
 from field_friend.system import System
 
-ROBOT_GEO_START_POSITION = GeoPoint(lat=51.983159, long=7.434212)
-
+ROBOT_GEO_START_POSITION = GeoPoint(lat=51.983173401171236, long=7.434163443756093)
 
 log = logging.getLogger('field_friend.testing')
 
@@ -76,7 +75,6 @@ def gnss_driving(system: System, gnss: GnssSimulation) -> Generator[System, None
         while system.driver.prediction.point.x < 10.0:
             await system.driver.wheels.drive(0.2, 0)
             await rosys.sleep(0.1)
-    gnss.reference = ROBOT_GEO_START_POSITION
     system.automation_watcher.gnss_watch_active = True
     system.automator.start(automation())
     yield system

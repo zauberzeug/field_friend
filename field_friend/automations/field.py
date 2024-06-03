@@ -25,8 +25,9 @@ class Row(GeoPointCollection):
             points=list(reversed(self.points)),
         )
 
-    def clear_crops(self):
-        self.crops.clear()
+    def line_segment(self, reference: GeoPoint) -> rosys.geometry.LineSegment:
+        return rosys.geometry.LineSegment(point1=self.points[0].cartesian(reference),
+                                          point2=self.points[-1].cartesian(reference))
 
 
 @dataclass(slots=True, kw_only=True)

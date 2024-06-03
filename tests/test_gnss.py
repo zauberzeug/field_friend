@@ -1,5 +1,6 @@
 
 import rosys
+from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import assert_point, forward
 
 from field_friend.navigation import GnssSimulation
@@ -23,6 +24,10 @@ def test_shifted_calculation():
 
 
 async def test_driving(gnss_driving: System):
+    assert gnss_driving.odometer.prediction.point.x == 0
+    assert gnss_driving.odometer.prediction.point.y == 0
+    assert gnss_driving.gnss.current is not None
+    assert gnss_driving.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     await forward(x=2.0)
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.0, y=0))
 

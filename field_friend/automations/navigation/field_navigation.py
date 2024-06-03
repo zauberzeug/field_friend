@@ -14,15 +14,13 @@ if TYPE_CHECKING:
     from system import System
 
 
-class State(Enum):
-    APPROACHING_ROW_START = auto()
-    FOLLOWING_ROW = auto()
-    RETURNING_TO_START = auto()
-    ROW_COMPLETED = auto()
-    FIELD_COMPLETED = auto()
-
-
 class FieldNavigation(FollowCropsNavigation):
+    class State(Enum):
+        APPROACHING_ROW_START = auto()
+        FOLLOWING_ROW = auto()
+        RETURNING_TO_START = auto()
+        ROW_COMPLETED = auto()
+        FIELD_COMPLETED = auto()
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
@@ -33,7 +31,7 @@ class FieldNavigation(FollowCropsNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
-        self.state = State.APPROACHING_ROW_START
+        self.state = self.State.APPROACHING_ROW_START
         self.field: Field | None = None
         self.row_index = 0
 
@@ -44,7 +42,6 @@ class FieldNavigation(FollowCropsNavigation):
         if not self.field.reference:
             rosys.notify('No field reference available', 'negative')
             return False
-        self.gnss.reference = self.field.reference
         if not self.field.rows:
             rosys.notify('No rows available', 'negative')
             return False
@@ -55,10 +52,15 @@ class FieldNavigation(FollowCropsNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
-        if self.state == State.FIELD_COMPLETED:
-            self.state = State.APPROACHING_ROW_START
-            self.row_index = 0
+        if self.state == self.State.FIELD_COMPLETED:
+            self.clear()
+        if self.state == self.State.FOLLOWING_ROW:
+            if self.current_row.line_segment(self.field.reference).distance(self.odometer.prediction.point) > 0.1:
+                self.clear()
 
+        # NOTE: it's useful to set the reference point to the reference of the field; that way the cartesian coordinates are simpler to comprehend
+        self.gnss.reference = self.field.reference
+        await rosys.sleep(0.1)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
         self.automation_watcher.gnss_watch_active = True
         return True
@@ -71,38 +73,40 @@ class FieldNavigation(FollowCropsNavigation):
     async def _drive(self) -> None:
         assert self.field is not None
         assert self.field.reference is not None
-        if self.state == State.APPROACHING_ROW_START:
+        if self.state == self.State.APPROACHING_ROW_START:
             # TODO only drive to row if we are not on any rows and near the row start
             await self._drive_to_row(self.current_row)
             await self.implement.activate()
-            self.state = State.FOLLOWING_ROW
-        if self.state == State.FOLLOWING_ROW:
+            self.state = self.State.FOLLOWING_ROW
+            self.log.info(f'Following "{self.current_row.name}"...')
+        if self.state == self.State.FOLLOWING_ROW:
             if self.odometer.prediction.point.distance(self.current_row.points[-1].cartesian(self.field.reference)) >= 0.1:
                 await super()._drive()
             else:
                 await self.implement.deactivate()
-                self.state = State.RETURNING_TO_START
-        if self.state == State.RETURNING_TO_START:
+                self.state = self.State.RETURNING_TO_START
+                self.log.info('Returning to start...')
+        if self.state == self.State.RETURNING_TO_START:
             self.driver.parameters.can_drive_backwards = True
             end = self.current_row.points[0].cartesian(self.field.reference)
             await self.driver.drive_to(end, backward=True)  # TODO replace with following crops or replay recorded path
             inverse_yaw = (self.odometer.prediction.yaw + math.pi) % (2 * math.pi)
             await self.driver.drive_to(end.polar(1.5, inverse_yaw), backward=True)
             self.driver.parameters.can_drive_backwards = False
-            self.state = State.ROW_COMPLETED
-        if self.state == State.ROW_COMPLETED:
+            self.state = self.State.ROW_COMPLETED
+        if self.state == self.State.ROW_COMPLETED:
             if self.current_row == self.field.rows[-1]:
-                self.state = State.FIELD_COMPLETED
+                self.state = self.State.FIELD_COMPLETED
                 await rosys.sleep(0.1)  # wait for base class to finish navigation
             else:
                 self.row_index += 1
-                self.state = State.APPROACHING_ROW_START
+                self.state = self.State.APPROACHING_ROW_START
 
     def _should_finish(self) -> bool:
-        return self.state == State.FIELD_COMPLETED
+        return self.state == self.State.FIELD_COMPLETED
 
     async def _drive_to_row(self, row: Row):
-        self.log.info(f'Driving to row {row.name}...')
+        self.log.info(f'Driving to "{row.name}"...')
         assert self.field and self.field.reference
         target = row.points[0].cartesian(self.field.reference)
         direction = target.direction(row.points[-1].cartesian(self.field.reference))
@@ -122,7 +126,11 @@ class FieldNavigation(FollowCropsNavigation):
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self.row_index = data.get('row_index', 0)
-        self.state = State[data.get('state', State.APPROACHING_ROW_START.name)]
+        self.state = self.State[data.get('state', self.State.APPROACHING_ROW_START.name)]
+
+    def clear(self) -> None:
+        self.state = self.State.APPROACHING_ROW_START
+        self.row_index = 0
 
     def settings_ui(self) -> None:
         field_selection = ui.select(
@@ -138,15 +146,14 @@ class FieldNavigation(FollowCropsNavigation):
         field = self.field_provider.get_field(field_id)
         if field is not None:
             self.field = field
-            if len(field.points) > 2 and len(field.rows) > 0:
-                self.gnss.reference = field.points[0]
-            else:
-                rosys.notify(f'{field.name} is invalid', 'negative')
+            self.gnss.reference = field.points[0]
+            self.clear()
 
-    def create_simulation(self):
+    def create_simulation(self) -> None:
         self.detector.simulated_objects.clear()
         if self.field is None:
             return
+        assert self.field.reference is not None
         for row in self.field.rows:
             if len(row.points) < 2:
                 continue
