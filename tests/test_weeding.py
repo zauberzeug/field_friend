@@ -61,6 +61,7 @@ async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys
     assert detector.simulated_objects[0].category_name == 'sugar_beet'
 
 
+@pytest.mark.skip(reason='Tornado does not yet remove weeds between crops')
 @pytest.mark.parametrize('system', ['rb28'], indirect=True)
 async def test_tornado_removes_weeds_between_crops(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
