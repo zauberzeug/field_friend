@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
-from ..components import camera_card, leaflet_map, operation, robot_scene
+from ..components import automation_controls, camera_card, leaflet_map, operation, robot_scene
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -44,5 +44,16 @@ class main_page():
                                                     self.system.puncher)
                                     with ui.card().classes('w-full'):
                                         robot_scene(self.system)
+                                    with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
+                                        with ui.column():
+                                            ui.button('emergency stop', on_click=lambda: self.system.field_friend.estop.set_soft_estop(True)).props('color=red') \
+                                                .classes('py-3 px-6 text-lg').bind_visibility_from(self.system.field_friend.estop, 'is_soft_estop_active', value=False)
+                                            ui.button('emergency reset', on_click=lambda: self.system.field_friend.estop.set_soft_estop(False)) \
+                                                .props('color=red-700 outline').classes('py-3 px-6 text-lg') \
+                                                .bind_visibility_from(self.system.field_friend.estop, 'is_soft_estop_active', value=True)
+                                        ui.space()
+                                        with ui.row():
+                                            automation_controls(self.system)
+
                 with splitter.separator:
                     ui.button(icon='drag_indicator').props('round')
