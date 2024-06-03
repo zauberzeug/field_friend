@@ -17,7 +17,7 @@ class CanOpenMasterHardware(rosys.hardware.ModuleHardware):
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
         self.message_hooks['error'] = self._on_error
-        rosys.on_repeat(self.restart_core, 10)
+        rosys.on_repeat(self.restart_core, 6)
 
     def _on_error(self, line: str) -> None:
         if 'twai' in line and not self.error:
@@ -26,6 +26,7 @@ class CanOpenMasterHardware(rosys.hardware.ModuleHardware):
 
     async def restart_core(self) -> None:
         if self.error:
-            await self.robot_brain.send('core.restart();')
-            await rosys.sleep(5)
+            self.log.info('Restarting core...')
+            await self.robot_brain.send('core.restart()')
+            await rosys.sleep(3)
             self.error = False
