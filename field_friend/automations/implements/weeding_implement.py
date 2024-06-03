@@ -50,6 +50,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system.field_provider.FIELD_SELECTED.register(self.clear)
 
     async def prepare(self) -> bool:
+        await super().prepare()
         self.log.info(f'start weeding {self.relevant_weeds} with {self.name} ...')
         self.request_backup()
         if not await self._check_hardware_ready():
@@ -63,14 +64,17 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system.automation_watcher.stop_field_watch()
         self.system.automation_watcher.gnss_watch_active = False
         await self.system.field_friend.stop()
+        await super().finish()
 
     async def activate(self):
+        await super().activate()
         await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
         self.system.plant_locator.resume()
         await rosys.sleep(3)
 
     async def deactivate(self):
+        await super().deactivate()
         await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')

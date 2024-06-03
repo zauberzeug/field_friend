@@ -24,7 +24,7 @@ class Recorder(Implement):
         pass
 
     async def activate(self):
-        self.system.plant_locator.pause()
+        super().activate()
         self.system.plant_provider.clear()
         await self.system.field_friend.flashlight.turn_on()
         await rosys.sleep(3)  # NOTE: we wait for the camera to adjust
@@ -32,6 +32,7 @@ class Recorder(Implement):
 
     async def deactivate(self):
         self.system.plant_locator.pause()
+        super().deactivate()
 
     async def observe(self) -> None:
         while True:

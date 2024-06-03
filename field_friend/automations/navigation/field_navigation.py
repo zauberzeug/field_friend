@@ -76,10 +76,11 @@ class FieldNavigation(FollowCropsNavigation):
         if self.state == self.State.APPROACHING_ROW_START:
             # TODO only drive to row if we are not on any rows and near the row start
             await self._drive_to_row(self.current_row)
-            await self.implement.activate()
             self.state = self.State.FOLLOWING_ROW
             self.log.info(f'Following "{self.current_row.name}"...')
         if self.state == self.State.FOLLOWING_ROW:
+            if not self.implement.is_active:
+                await self.implement.activate()
             if self.odometer.prediction.point.distance(self.current_row.points[-1].cartesian(self.field.reference)) >= 0.1:
                 await super()._drive()
             else:

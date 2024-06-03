@@ -10,7 +10,7 @@ from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Recorder
 from field_friend.automations.navigation import StraightLineNavigation
-from field_friend.navigation import GnssSimulation
+from field_friend.navigation import GeoPoint, GnssSimulation
 
 
 async def test_straight_line(system: System):
@@ -43,12 +43,10 @@ async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimul
 
 
 # BETWEEN_ROWS = GeoPoint(lat=51.98316518491446, long=7.434244252776547)
-# ON_FIRST_ROW = GeoPoint(lat=51.983168021639834, long=7.434232023041047)
 
 
 async def test_start_approaching_first_row(system: System, field: Field, gnss: GnssSimulation):
     system.field_navigation.field = field
-    print(json.dumps(rosys.persistence.to_dict(field)))
     system.current_navigation = system.field_navigation
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -62,14 +60,20 @@ async def test_start_approaching_first_row(system: System, field: Field, gnss: G
     assert system.field_navigation.state == system.field_navigation.State.FOLLOWING_ROW
 
 
-# async def test_weeding_after_modifying_rows(system: System, field: Field, gnss: GnssSimulation):
-#     system.automator.start(system.tools['weeding']())
-#     await forward(1)
-#     system.automator.stop('change row')
-#     await forward(1)
-#     system.field_provider.remove_row(field, field.rows[0])
-#     system.field_provider.create_row(field, points=[GeoPoint(lat=51.98318416921418, long=7.4342004020500285),
-#                                                     GeoPoint(lat=51.98312378543273, long=7.434291470886676)])
-#     system.automator.start(system.tools['weeding']())
-#     await forward(1)
-#     assert system.automator.is_running
+async def test_resuming_after_automation_stop(system: System, field: Field, gnss: GnssSimulation):
+    system.field_navigation.field = field
+    system.current_navigation = system.field_navigation
+    system.automator.start()
+    assert field.reference
+    await forward(1)  # update gnss reference to use the fields reference
+    point = rosys.geometry.Point(x=1.50, y=-6.1)
+    await forward(x=point.x, y=point.y, tolerance=0.01)  # drive until we are on first row
+    assert system.field_navigation.state == system.field_navigation.State.FOLLOWING_ROW
+    system.automator.stop(because='test')
+    await forward(2)
+    system.automator.start()
+    await forward(5)
+    assert system.field_navigation.state == system.field_navigation.State.FOLLOWING_ROW
+    assert not system.plant_locator.is_paused
+    await forward(20)
+    assert system.odometer.prediction.point.distance(point) > 0.1
