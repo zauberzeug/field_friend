@@ -153,7 +153,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_ref_knife_stop.inverted = false;
             {name}_ref_knife_ground = {expander.name + "." if end_stops_on_expander or ref_knife_ground_pin_expander and expander else ""}Input({ref_knife_ground_pin})
             {name}_ref_knife_ground.inverted = true;
-            {name}_z = {expander.name + "." if motors_on_expander and expander else ""}MotorAxis({name}_motor_z, {name}_end_top, {name}_end_bottom)
+            {name}_z = {expander.name + "." if motors_on_expander and expander else ""}MotorAxis({name}_motor_z, {name + "_end_bottom" if is_z_reversed else name + "_end_top"}, {name + "_end_top" if is_z_reversed else name + "_end_bottom"})
 
             bool {name}_is_referencing = false;
             bool {name}_ref_motor_enabled = false;
@@ -173,7 +173,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                 en3.off();
                 {name}_knife_stop_enabled = false;
             end
-        ''')
+        ''')  # tornado axis references in positive direction, in contrast to all other axis
         core_message_fields = [
             f'{name}_end_top.active',
             f'{name}_end_bottom.active',
