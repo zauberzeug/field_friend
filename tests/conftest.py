@@ -19,20 +19,21 @@ log = logging.getLogger('field_friend.testing')
 async def system(integration, request) -> AsyncGenerator[System, None]:
     System.version = getattr(request, 'param', 'rb34')
     s = System()
+    s.gnss.reference = ROBOT_GEO_START_POSITION
     helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
+    await forward(1)
+    assert s.gnss.device is None, 'device should not be created yet'
+    await forward(3)
+    assert s.gnss.device is not None, 'device should be created'
     yield s
 
 
 @pytest.fixture
-async def gnss(system: System) -> AsyncGenerator[GnssSimulation, None]:
-    system.gnss.reference = ROBOT_GEO_START_POSITION
-    await forward(1)
-    assert system.gnss.device is None, 'device should not be created yet'
-    await forward(3)
-    assert system.gnss.device is not None, 'device should be created'
-    yield system.gnss
+def gnss(system: System) -> GnssSimulation:
+    assert isinstance(system.gnss, GnssSimulation)
+    return system.gnss
 
 
 @pytest.fixture
@@ -50,14 +51,6 @@ async def field(system: System) -> AsyncGenerator[Field, None]:
 
 
 @pytest.fixture
-def mowing(system: System, gnss: GnssSimulation, field: Field) -> Generator[System, None, None]:
-    """Start mowing autiomation"""
-    system.field_provider.active_field = field
-    system.automator.start(system.implements['mowing']())
-    yield system
-
-
-@pytest.fixture
 def driving(system: System) -> Generator[System, None, None]:
     """Drive 10 meters in a straight line"""
     async def automation():
@@ -69,7 +62,7 @@ def driving(system: System) -> Generator[System, None, None]:
 
 
 @pytest.fixture
-def gnss_driving(system: System, gnss: GnssSimulation) -> Generator[System, None, None]:
+def gnss_driving(system: System) -> Generator[System, None, None]:
     """Use GNSS to drive 10 meters in a straight line"""
     async def automation():
         while system.driver.prediction.point.x < 10.0:

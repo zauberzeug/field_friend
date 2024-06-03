@@ -12,7 +12,8 @@ async def test_working_with_weeding_screw(system: System, detector: rosys.vision
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.05, z=0)))
     system.current_implement = system.implements['Weed Screw']
-    system.automator.start(system.straight_line_navigation.start())
+    system.current_navigation = system.straight_line_navigation
+    system.automator.start()
     await forward(20)
     assert len(detector.simulated_objects) == 1
     assert detector.simulated_objects[0].category_name == 'maize'
@@ -24,7 +25,8 @@ async def test_keep_crops_safe(system: System, detector: rosys.vision.DetectorSi
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=system.field_friend.DRILL_RADIUS-0.01, z=0)))
     system.current_implement = system.implements['Weed Screw']
-    system.automator.start(system.straight_line_navigation.start())
+    system.current_navigation = system.straight_line_navigation
+    system.automator.start()
     await forward(20)
     assert len(detector.simulated_objects) == 1
     assert detector.simulated_objects[0].category_name == 'maize'
@@ -36,7 +38,8 @@ async def test_weeding_screw_only_targets_big_weed(system: System, detector: ros
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
                                                                    position=rosys.geometry.Point3d(x=0.15, y=0, z=0)))
     system.current_implement = system.implements['Weed Screw']
-    system.automator.start(system.straight_line_navigation.start())
+    system.current_navigation = system.straight_line_navigation
+    system.automator.start()
     await forward(20)
     assert len(detector.simulated_objects) == 1
     assert detector.simulated_objects[0].category_name == 'weed'
@@ -51,7 +54,8 @@ async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.05, z=0)))
     system.current_implement = system.implements['Tornado']
-    system.automator.start(system.straight_line_navigation.start())
+    system.current_navigation = system.straight_line_navigation
+    system.automator.start()
     await forward(30)
     assert len(detector.simulated_objects) == 1
     assert detector.simulated_objects[0].category_name == 'sugar_beet'
