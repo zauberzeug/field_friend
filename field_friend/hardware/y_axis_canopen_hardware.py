@@ -26,11 +26,16 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
                  end_stops_on_expander: bool = True,
                  end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
+                 acceleration: int = 500,
+                 quick_stop_deceleration: int = 2000,
                  ) -> None:
         self.name = name
         self.expander = expander
         lizard_code = remove_indentation(f'''
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
+            {name}_motor.set_profile_acceleration({acceleration})
+            {name}_motor.set_profile_deceleration({acceleration})
+            {name}_motor.set_quick_stop_deceleration({quick_stop_deceleration})
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_l.inverted = {str(end_stops_inverted).lower()}
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
