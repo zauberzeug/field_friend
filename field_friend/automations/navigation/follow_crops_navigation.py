@@ -46,7 +46,7 @@ class FollowCropsNavigation(Navigation):
         else:
             yaw_of_row = self.odometer.prediction.yaw
         target_yaw = self.combine_angles(yaw_of_row, self.crop_attraction, self.odometer.prediction.yaw)
-        self.log.info(f'{yaw_of_row}, {self.odometer.prediction.yaw}, {target_yaw}')
+        self.log.info(f'following crops with target yaw {target_yaw}')
         target = self.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
         # self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
         with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
