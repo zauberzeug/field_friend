@@ -139,8 +139,8 @@ class CoveragePlanner:
         outer_lanes_groups = []
         for i in range(self.mowing.num_outer_lanes):
             outer_lanes = []
-            padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]
-                                     ).buffer(-self.mowing.padding-self.mowing.lane_distance*i)
+            padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]) \
+                .buffer(-self.mowing.padding-self.mowing.lane_distance*i)
             outline_coords = list(padded_polygon.exterior.coords)
             for i in range(len(outline_coords) - 1):
                 p1 = outline_coords[i]
