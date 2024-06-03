@@ -107,6 +107,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                  end_bottom_pin: int = 5,
                  end_bottom_pin_expander: bool = False,
                  ref_motor_pin: int = 33,
+                 ref_motor_pin_expander: bool = False,
                  ref_gear_pin: int = 4,
                  ref_gear_pin_expander: bool = False,
                  ref_knife_stop_pin: int = 35,
@@ -142,7 +143,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_turn.reversed = {'true' if is_turn_reversed else 'false'}
             {name}_end_top = {expander.name + "." if end_stops_on_expander or end_top_pin_expander and expander else ""}Input({end_top_pin})
             {name}_end_bottom = {expander.name + "." if end_stops_on_expander or end_bottom_pin_expander and expander else ""}Input({end_bottom_pin})
-            {name}_ref_motor = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_motor_pin})
+            {name}_ref_motor = {expander.name + "." if end_stops_on_expander or ref_motor_pin_expander and expander else ""}Input({ref_motor_pin})
             {name}_ref_gear = {expander.name + "." if end_stops_on_expander or ref_gear_pin_expander and expander else ""}Input({ref_gear_pin})
             {name}_ref_knife_stop = {expander.name + "." if end_stops_on_expander or ref_knife_stop_pin_expander and expander else ""}Input({ref_knife_stop_pin})
             {name}_ref_knife_ground = {expander.name + "." if end_stops_on_expander or ref_knife_ground_pin_expander and expander else ""}Input({ref_knife_ground_pin})

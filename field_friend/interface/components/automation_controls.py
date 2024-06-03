@@ -38,6 +38,13 @@ class automation_controls:
                 ui.button('No', on_click=lambda: self.dialog.submit('No'))
                 ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
+        with ui.dialog() as self.dialog, ui.card():
+            self.dialog_label = ui.label('Do you want to continue the canceled automation').classes('text-lg')
+            with ui.row():
+                ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
+                ui.button('No', on_click=lambda: self.dialog.submit('No'))
+                ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
+
         def refresh() -> None:
             play_button.visible = system.automator.is_stopped
             pause_button.visible = system.automator.is_running
