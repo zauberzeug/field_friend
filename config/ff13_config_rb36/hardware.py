@@ -15,9 +15,9 @@ configuration = {
         'can_address': 0x60,
         'max_speed': 2000,
         'reference_speed': 40,
-        'min_position': -0.0675,
-        'max_position': 0.0675,
-        'axis_offset': 0.0725,
+        'min_position': -0.0625,
+        'max_position': 0.0625,
+        'axis_offset': 0.0675,
         'steps_per_m': 1_481_481.48,  # 4000steps/turn motor; 1/20 gear; 0.054m/u
         'end_r_pin': 4,
         'end_l_pin': 13,
