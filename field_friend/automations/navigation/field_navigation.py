@@ -92,8 +92,9 @@ class FieldNavigation(FollowCropsNavigation):
             end = self.current_row.points[0].cartesian(self.field.reference)
             await self.driver.drive_to(end, backward=True)  # TODO replace with following crops or replay recorded path
             inverse_yaw = (self.odometer.prediction.yaw + math.pi) % (2 * math.pi)
-            between = end.interpolate(self.field.rows[self.row_index +
-                                      1].points[0].cartesian(self.field.reference), 0.5)
+            next_row = self.field.rows[self.row_index + 1] if self.row_index + \
+                1 < len(self.field.rows) else self.current_row
+            between = end.interpolate(next_row.points[0].cartesian(self.field.reference), 0.5)
             await self.driver.drive_to(between.polar(1.5, inverse_yaw), backward=True)
             self.driver.parameters.can_drive_backwards = False
             self.state = self.State.ROW_COMPLETED
