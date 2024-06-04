@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
-from nicegui import ui
+from nicegui import binding, ui
 
+from ...automations import Field
 from ..components import field_planner, leaflet_map
 
 if TYPE_CHECKING:
@@ -12,6 +13,7 @@ class field_planner_page():
 
     def __init__(self, page_wrapper, system: 'System') -> None:
         self.system = system
+        self.field: Field | None = None
 
         @ui.page('/field')
         def page() -> None:
@@ -27,4 +29,10 @@ class field_planner_page():
                 with ui.column():
                     leaflet_map_field.buttons()
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height: 60%; max-height:60%;'):
-                field_planner(self.system.field_provider, self.system.odometer, self.system.gnss, leaflet_map_field)
+                field_planner(self.field, self.system.field_provider,
+                              self.system.odometer, self.system.gnss, leaflet_map_field)
+
+    def _set_field(self, field_id: str) -> None:
+        field = self.system.field_provider.get_field(field_id)
+        if field is not None:
+            self.field = field

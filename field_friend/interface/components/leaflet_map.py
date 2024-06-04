@@ -36,11 +36,8 @@ class leaflet_map:
             'edit': False,
         }
         center_point = GeoPoint(lat=51.983159, long=7.434212)
-        if self.field_provider.active_field is None:
-            center_point = GeoPoint(lat=51.983159, long=7.434212)
-        else:
-            if len(self.field_provider.active_field.points) > 0:
-                center_point = self.field_provider.active_field.points[0]
+        if self.system.gnss.current is not None and self.system.gnss.current.location is not None:
+            center_point = self.system.gnss.current.location
         self.m: ui.leaflet
         if draw_tools:
             self.m = ui.leaflet(center=center_point.tuple,
@@ -154,8 +151,6 @@ class leaflet_map:
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
-        if field is None:
-            return
         for obstacle in field.obstacles:
             self.obstacle_layers.append(self.m.generic_layer(name="polygon",
                                                              args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
@@ -187,7 +182,7 @@ class leaflet_map:
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def zoom_to_field(self) -> None:
-        field = self.field_provider.active_field
+        field = self.field_provider.get_field(self.active_field)
         if field is None:
             return
         coords = field.points_as_tuples

@@ -1,27 +1,37 @@
 import logging
-from typing import Literal
+from typing import Any, Literal, Optional, TypedDict, Union
 
 import rosys
 from nicegui import events, ui
 
-from ...automations import FieldProvider
+from ...automations import Field, FieldObstacle, FieldProvider, Row
 from ...navigation import Gnss
+from ...navigation.geo_point import GeoPoint
 from .geodata_picker import geodata_picker
 from .leaflet_map import leaflet_map
 
 
+class Active_object(TypedDict):
+    object_type: Literal["Obstacles", "Rows", "Outline"]
+    object: Union[Row, FieldObstacle]
+
+
 class field_planner:
 
-    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, leaflet: leaflet_map) -> None:
+    def __init__(self, field: Field | None, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, leaflet: leaflet_map) -> None:
         self.log = logging.getLogger('field_friend.field_planner')
         self.field_provider = field_provider
+        self.active_field = field
         self.odometer = odometer
         self.gnss = gnss
         self.leaflet_map = leaflet
-        self.field_provider.active_object = None
+        self.active_object: Optional[Active_object] = None
         self.coordinate_type = "WGS84"
         self.COORDINATE_TYPE_CHANGED = rosys.event.Event()
         "switch between displaying cartesian and wgs84 coordinates."
+
+        self.OBJECT_SELECTED = rosys.event.Event()
+        """a row or obstacle has been selected or deselected."""
 
         self.tab: Literal["Obstacles", "Outline", "Rows"] = "Outline"
         self.TAB_CHANGED = rosys.event.Event()
@@ -35,24 +45,23 @@ class field_planner:
                         .classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
                     ui.button('Add field', on_click=self.field_provider.create_field).tooltip('Add a new field') \
                         .classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
-                    ui.button('Clear fields', on_click=self.field_provider.clear_fields).props('outline color=warning').tooltip('Delete all fields') \
+                    ui.button('Clear fields', on_click=self._clear_fields).props('outline color=warning').tooltip('Delete all fields') \
                         .classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
                 with ui.row().style('width: 100%;'):
                     self.show_field_table()
                     self.field_provider.FIELDS_CHANGED.register(self.show_field_table.refresh)
             self.show_field_settings()
-            self.field_provider.FIELD_SELECTED.register(self.show_field_settings.refresh)
             self.field_provider.FIELDS_CHANGED.register(self.show_field_settings.refresh)
             self.TAB_CHANGED.register(self.show_field_settings.refresh)
             self.COORDINATE_TYPE_CHANGED.register(self.show_field_settings.refresh)
 
             self.show_object_settings()
-            self.field_provider.OBJECT_SELECTED.register(self.show_object_settings.refresh)
+            self.OBJECT_SELECTED.register(self.show_object_settings.refresh)
             self.COORDINATE_TYPE_CHANGED.register(self.show_object_settings.refresh)
 
     def set_tab(self, e: events.ValueChangeEventArguments) -> None:
         self.tab = e.value
-        self.field_provider.select_object(None)
+        self._select_object(None)
         self.TAB_CHANGED.emit()
 
     def handle_coordinate_type_change(self, e: events.ValueChangeEventArguments) -> None:
@@ -61,15 +70,11 @@ class field_planner:
 
     def table_selected(self, selection):
         if len(selection.selection) > 0:
-            if self.field_provider.active_field is not None and (selection.selection[0]['id'] == self.field_provider.active_field.id):
+            if self.active_field is not None and (selection.selection[0]['id'] == self.active_field.id):
                 return
-            for field in self.field_provider.fields:
-                if field.id == selection.selection[0]['id']:
-                    self.field_provider.select_field(field)
-                    if len(field.points) > 0:
-                        self.gnss.reference = field.points[0]
+            self._set_active_field(selection.selection[0]['id'])
         else:
-            self.field_provider.select_field(None)
+            self._set_active_field(None)
 
     def show_coordinate_type_selection(self) -> None:
         ui.select(["WGS84", "cartesian"], value=self.coordinate_type, on_change=self.handle_coordinate_type_change)
@@ -96,18 +101,18 @@ class field_planner:
         columns[0]['classes'] = 'hidden'
         columns[0]['headerClasses'] = 'hidden'
         self.field_table.update()
-        if self.field_provider.active_field is not None:
-            active_field_data = {'id': self.field_provider.active_field.id,
-                                 'name': self.field_provider.active_field.name,
-                                 'boundary': f'{len(self.field_provider.active_field.points)} points',
-                                 'obstacles': f'{len(self.field_provider.active_field.obstacles)}',
-                                 'rows': f'{len(self.field_provider.active_field.rows)}'}
+        if self.active_field is not None:
+            active_field_data = {'id': self.active_field.id,
+                                 'name': self.active_field.name,
+                                 'boundary': f'{len(self.active_field.points)} points',
+                                 'obstacles': f'{len(self.active_field.obstacles)}',
+                                 'rows': f'{len(self.active_field.rows)}'}
             self.field_table.selected.append(active_field_data)
 
     @ui.refreshable
     def show_field_settings(self) -> None:
         with ui.card().style('width: 25%; max-height: 100%; height: 100%;'):
-            if self.field_provider.active_field is None:
+            if self.active_field is None:
                 with ui.column().style('display: block; margin: auto;'):
                     ui.icon('fence').props('size=lg color=primary').style('display: block; margin: auto;')
                     ui.label("select a field").style('display: block; margin: auto; color: #6E93D6;')
@@ -115,9 +120,9 @@ class field_planner:
                 with ui.row().style('width: 100%'):
                     ui.icon('fence').props('size=lg color=primary').style(
                         "display:block; margin-top:auto; margin-bottom: auto;")
-                    ui.input(value=f'{self.field_provider.active_field.name}').on('blur', self.field_provider.invalidate).bind_value(
-                        self.field_provider.active_field, 'name').classes('w-32')
-                    ui.button(on_click=lambda field=self.field_provider.active_field: self.field_provider.remove_field(field)) \
+                    ui.input(value=f'{self.active_field.name}').on('blur', self.field_provider.invalidate).bind_value(
+                        self.active_field, 'name').classes('w-32')
+                    ui.button(on_click=lambda field=self.active_field: self._remove_field(field)) \
                         .props('icon=delete color=warning fab-mini flat').classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;').tooltip('Delete field')
                 with ui.tabs().style('width: 100%;') as self.tabs:
                     ui.tab('Outline', 'Outline')
@@ -126,73 +131,73 @@ class field_planner:
                 with ui.tab_panels(self.tabs, value=f'{self.tab}', on_change=self.set_tab).style('width: 100%;') as self.panels:
                     with ui.tab_panel('Outline').style('width: 100%;'):
                         if self.coordinate_type == "cartesian":
-                            for point in self.field_provider.active_field.outline:
+                            for point in self.active_field.outline:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_field.outline[self.field_provider.active_field.outline.index(point)])) \
+                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.active_field.outline[self.active_field.outline.index(point)])) \
                                         .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
                                     ui.separator()
                         elif self.coordinate_type == "WGS84":
-                            for geo_point in self.field_provider.active_field.points:
+                            for geo_point in self.active_field.points:
                                 with ui.row().style("width: 100%;"):
                                     ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(point.tuple)) \
                                         .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.number('latitude', value=geo_point.lat, format='%.6f', step=0.1,
-                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field: self.field_provider.add_field_point(field, point, [event.value, point.long])) \
+                                              on_change=lambda event, point=geo_point, field=self.active_field: self.field_provider.add_field_point(field, point, [event.value, point.long])) \
                                         .classes('w-20')
                                     ui.number('longitude', value=geo_point.long, format='%.6f', step=0.1,
-                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field: self.field_provider.add_field_point(field, point, [point.lat, event.value])) \
+                                              on_change=lambda event, point=geo_point, field=self.active_field: self.field_provider.add_field_point(field, point, [point.lat, event.value])) \
                                         .classes('w-20')
                                     ui.button(on_click=lambda point=geo_point,
-                                              field=self.field_provider.active_field: self.field_provider.add_field_point(field, point)) \
+                                              field=self.active_field: self.field_provider.add_field_point(field, point)) \
                                         .props('icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                                     ui.separator()
                             with ui.row().classes('items-center mt-2'):
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
-                                ui.button('', on_click=lambda field=self.field_provider.active_field: self.field_provider.add_field_point(field)) \
+                                ui.button('', on_click=lambda field=self.active_field: self.field_provider.add_field_point(field)) \
                                     .props('icon=add color=primary fab-mini flat').tooltip('Add point')
-                                ui.button('', on_click=lambda field=self.field_provider.active_field: self.field_provider.remove_field_point(field)) \
+                                ui.button('', on_click=lambda field=self.active_field: self.field_provider.remove_field_point(field)) \
                                     .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
 
                     with ui.tab_panel('Obstacles'):
                         with ui.row().style("width: 100%;"):
                             radio_el = {}
-                            for obstacle in self.field_provider.active_field.obstacles:
+                            for obstacle in self.active_field.obstacles:
                                 radio_el[obstacle.id] = obstacle.name
-                            if self.field_provider.active_object is not None and self.field_provider.active_object['object'] is not None and self.tab == "Obstacles":
+                            if self.active_object is not None and self.active_object['object'] is not None and self.tab == "Obstacles":
                                 obstacle_radio = ui.radio(
-                                    radio_el, on_change=lambda event: self.field_provider.select_object(event.value, self.tab), value=self.field_provider.active_object['object'].id)
+                                    radio_el, on_change=lambda event: self._select_object(event.value, self.tab), value=self.active_object['object'].id)
                             else:
                                 obstacle_radio = ui.radio(
-                                    radio_el, on_change=lambda event: self.field_provider.select_object(event.value, self.tab))
+                                    radio_el, on_change=lambda event: self._select_object(event.value, self.tab))
                         with ui.row().classes('items-center mt-3').style("width: 100%"):
-                            ui.button(icon='add', on_click=lambda field=self.field_provider.active_field: self.field_provider.create_obstacle(field)) \
+                            ui.button(icon='add', on_click=lambda field=self.active_field: self.field_provider.create_obstacle(field)) \
                                 .props('color=primary outline').style("width: 100%")
                     with ui.tab_panel('Rows'):
                         with ui.row().style("width: 100%;"):
                             radio_el = {}
-                            for row in self.field_provider.active_field.rows:
+                            for row in self.active_field.rows:
                                 radio_el[row.id] = row.name
-                            if self.field_provider.active_object is not None and self.field_provider.active_object['object'] is not None and self.tab == "Rows":
+                            if self.active_object is not None and self.active_object['object'] is not None and self.tab == "Rows":
                                 row_radio = ui.radio(
-                                    radio_el, on_change=lambda event: self.field_provider.select_object(event.value, self.tab), value=self.field_provider.active_object['object'].id)
+                                    radio_el, on_change=lambda event: self._select_object(event.value, self.tab), value=self.active_object['object'].id)
                             else:
                                 row_radio = ui.radio(
-                                    radio_el, on_change=lambda event: self.field_provider.select_object(event.value, self.tab))
+                                    radio_el, on_change=lambda event: self._select_object(event.value, self.tab))
 
                         with ui.row().classes('items-center mt-3').style("width: 100%"):
-                            ui.button(icon='add', on_click=lambda field=self.field_provider.active_field: self.field_provider.create_row(field)) \
+                            ui.button(icon='add', on_click=lambda field=self.active_field: self.field_provider.create_row(field)) \
                                 .props('color=primary outline').style("width: 100%")
 
                         with ui.row().classes('items-center mt-3').style("width: 100%"):
                             ui.button("sort rows",
-                                      on_click=lambda field=self.field_provider.active_field: self.field_provider.sort_rows(field))
+                                      on_click=lambda field=self.active_field: self.field_provider.sort_rows(field))
 
     @ui.refreshable
     def show_object_settings(self) -> None:
         with ui.card().style('width: 24%; max-height: 100%; height: 100%;'):
-            if self.field_provider.active_object is None or self.field_provider.active_object['object'] is None:
+            if self.active_object is None or self.active_object['object'] is None:
                 with ui.column().style('display: block; margin: auto;'):
                     ui.icon('extension').props('size=lg color=primary').style('display: block; margin: auto;')
                     ui.label("select an object").style('display: block; margin: auto; color: #6E93D6;')
@@ -202,83 +207,148 @@ class field_planner:
                         ui.icon('dangerous').props('size=sm color=primary').style(
                             "display:block; margin-top:auto; margin-bottom: auto;")
                         ui.input(
-                            'Obstacle name', value=f'{self.field_provider.active_object["object"].name}').on('blur', self.field_provider.invalidate).bind_value(
-                            self.field_provider.active_object['object'], 'name').classes('w-32')
-                        ui.button(on_click=lambda field=self.field_provider.active_field, obstacle=self.field_provider.active_object['object']: self.field_provider.remove_obstacle(field, obstacle)) \
+                            'Obstacle name', value=f'{self.active_object["object"].name}').on('blur', self.field_provider.invalidate).bind_value(
+                            self.active_object['object'], 'name').classes('w-32')
+                        ui.button(on_click=lambda field=self.active_field, obstacle=self.active_object['object']: self._remove_obstacle(field, obstacle)) \
                             .props('icon=delete color=warning fab-mini flat').classes('ml-auto') \
                             .style("display:block; margin-top:auto; margin-bottom: auto;") \
                             .tooltip('Delete obstacle')
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
-                        assert self.field_provider.active_field is not None
-                        assert self.field_provider.active_field.reference is not None
+                        assert self.active_field is not None
+                        assert self.active_field.reference is not None
                         if self.coordinate_type == "cartesian":
-                            points = self.field_provider.active_object['object'] \
-                                .cartesian(self.field_provider.active_field.reference)
+                            points = self.active_object['object'] \
+                                .cartesian(self.active_field.reference)
                             for point in points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points(self.field_provider.active_field.reference).index(point)])).props(
+                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.active_object['object'].cartesian[self.active_object['object'].points(self.active_field.reference).index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
                         else:
-                            for geo_point in self.field_provider.active_object['object'].points:
+                            for geo_point in self.active_object['object'].points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].cartesian.index(point)])) \
+                                    ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(self.active_object['object'].cartesian[self.active_object['object'].cartesian.index(point)])) \
                                         .props('icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.number('latitude', value=geo_point.lat, format='%.6f', step=0.1,
-                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field, obstacle=self.field_provider.active_object['object']: self.field_provider.add_obstacle_point(field, obstacle, point, [event.value, point.long])) \
+                                              on_change=lambda event, point=geo_point, field=self.active_field, obstacle=self.active_object['object']: self._add_obstacle_point(field, obstacle, point, [event.value, point.long])) \
                                         .classes('w-20')
                                     ui.number('longitude', value=geo_point.long, format='%.6f', step=0.1,
-                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field, obstacle=self.field_provider.active_object['object']: self.field_provider.add_obstacle_point(field, obstacle, point, [point.lat, event.value])) \
+                                              on_change=lambda event, point=geo_point, field=self.active_field, obstacle=self.active_object['object']: self._add_obstacle_point(field, obstacle, point, [point.lat, event.value])) \
                                         .classes('w-20')
-                                    ui.button(on_click=lambda point=geo_point, field=self.field_provider.active_field, obstacle=self.field_provider.active_object['object']: self.field_provider.add_obstacle_point(field, obstacle, point)) \
+                                    ui.button(on_click=lambda point=geo_point, field=self.active_field, obstacle=self.active_object['object']: self._add_obstacle_point(field, obstacle, point)) \
                                         .props('icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                             with ui.row().classes('items-center mt-2'):
                                 ui.icon('place').props('size=sm color=grey').classes('ml-8')
-                                ui.button('', on_click=lambda field=self.field_provider.active_field,
-                                          obstacle=self.field_provider.active_object['object']: self.field_provider.add_obstacle_point(field=field, obstacle=obstacle)) \
+                                ui.button('', on_click=lambda field=self.active_field,
+                                          obstacle=self.active_object['object']: self._add_obstacle_point(field=field, obstacle=obstacle)) \
                                     .props('icon=add color=primary fab-mini flat')
-                                ui.button('', on_click=lambda obstacle=self.field_provider.active_object['object']: self.field_provider.remove_obstacle_point(obstacle)) \
+                                ui.button('', on_click=lambda obstacle=self.active_object['object']: self._remove_obstacle_point(obstacle)) \
                                     .props('icon=remove color=warning fab-mini flat')
                 elif self.tab == "Rows":
                     with ui.row().style("width: 100%"):
                         ui.icon('spa').props('size=sm color=primary').style(
                             "height: 100%; margin-top:auto; margin-bottom: auto;")
                         with ui.column():
-                            ui.button(on_click=lambda row=self.field_provider.active_object['object']: self.field_provider.move_row(self.field_provider.active_field, row)) .props(
+                            ui.button(on_click=lambda row=self.active_object['object']: self.field_provider.move_row(self.active_field, row)) .props(
                                 'icon=expand_less color=primary fab-mini flat').style("display:block; margin-top:auto; margin-bottom: auto; margin-left: 0; margin-right: 0;")
-                            ui.button(on_click=lambda row=self.field_provider.active_object['object']: self.field_provider.move_row(self.field_provider.active_field, row, next=True)) .props(
+                            ui.button(on_click=lambda row=self.active_object['object']: self.field_provider.move_row(self.active_field, row, next=True)) .props(
                                 'icon=expand_more color=primary fab-mini flat').classes('ml-auto').style("display:block; margin-top:auto; margin-bottom: auto; margin-left: 0; margin-right: 0;")
-                        ui.input(value=self.field_provider.active_object['object'].name).on('blur', self.field_provider.invalidate).bind_value(
-                            self.field_provider.active_object['object'], 'name').classes('w-32')
-                        ui.button(on_click=lambda row=self.field_provider.active_object['object']: self.field_provider.remove_row(self.field_provider.active_field, row)).props(
+                        ui.input(value=self.active_object['object'].name).on('blur', self.field_provider.invalidate).bind_value(
+                            self.active_object['object'], 'name').classes('w-32')
+                        ui.button(on_click=lambda row=self.active_object['object']: self._remove_row(self.active_field, row)).props(
                             'icon=delete color=warning fab-mini flat').classes('ml-auto').style("display:block; margin-top:auto; margin-bottom: auto;").tooltip('Delete Row')
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
                         if self.coordinate_type == "cartesian":
-                            points = self.field_provider.active_object['object'] \
-                                .points(self.field_provider.active_field.reference)
+                            points = self.active_object['object'] \
+                                .points(self.active_field.reference)
                             for point in points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points(self.field_provider.active_field.reference).index(point)])).props(
+                                    ui.button(on_click=lambda point=point: self.leaflet_map.m.set_center(self.active_object['object'].cartesian[self.active_object['object'].points(self.active_field.reference).index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.label(f'x: {float("{:.2f}".format(point.x))}')
                                     ui.label(f'y: {float("{:.2f}".format(point.y))}')
                         else:
-                            for geo_point in self.field_provider.active_object['object'].points:
+                            for geo_point in self.active_object['object'].points:
                                 with ui.row().style("width: 100%;"):
-                                    ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(self.field_provider.active_object['object'].cartesian[self.field_provider.active_object['object'].points.index(point)])).props(
+                                    ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(self.active_object['object'].cartesian[self.active_object['object'].points.index(point)])).props(
                                         'icon=place color=primary fab-mini flat').tooltip('center map on point').classes('ml-0')
                                     ui.number('latitude', value=geo_point.lat, format='%.6f', step=0.1,
-                                              on_change=lambda event, point=geo_point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.field_provider.add_row_point(field, row, point, [event.value, point[1]])).classes('w-20')
+                                              on_change=lambda event, point=geo_point, field=self.active_field, row=self.active_object['object']: self._add_row_point(field, row, point, [event.value, point[1]])).classes('w-20')
                                     ui.number(
                                         'longitude', value=geo_point.long, format='%.6f', step=0.1,
-                                        on_change=lambda event, point=geo_point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.field_provider.add_row_point(field, row, point, [point[0], event.value])).classes('w-20')
-                                    ui.button(on_click=lambda point=geo_point, field=self.field_provider.active_field, row=self.field_provider.active_object['object']: self.field_provider.add_row_point(field, row, point)) \
+                                        on_change=lambda event, point=geo_point, field=self.active_field, row=self.active_object['object']: self._add_row_point(field, row, point, [point[0], event.value])).classes('w-20')
+                                    ui.button(on_click=lambda point=geo_point, field=self.active_field, row=self.active_object['object']: self._add_row_point(field, row, point)) \
                                         .props('icon=edit_location_alt color=primary fab-mini flat').tooltip('Relocate point').classes('ml-0')
                             with ui.row().classes('items-center mt-2').style('display: block; margin: auto;'):
                                 ui.icon('place').props('size=sm color=grey').classes('ml-2')
-                                ui.button('', on_click=lambda field=self.field_provider.active_field,
-                                          row=self.field_provider.active_object['object']: self.field_provider.add_row_point(field, row)) \
+                                ui.button('', on_click=lambda field=self.active_field,
+                                          row=self.active_object['object']: self._add_row_point(field, row)) \
                                     .props('icon=add color=primary fab-mini flat').tooltip('Add point')
-                                ui.button('', on_click=lambda row=self.field_provider.active_object['object']: self.field_provider.remove_row_point(row)) \
+                                ui.button('', on_click=lambda row=self.active_object['object']: self._remove_row_point(row)) \
                                     .props('icon=remove color=warning fab-mini flat').tooltip('Remove point')
+
+    def _remove_field(self, field: Field) -> None:
+        self.active_field = None
+        self.active_object = None
+        self.field_provider.remove_field(field)
+
+    def _clear_fields(self) -> None:
+        self.field_provider.clear_fields()
+        self.active_field = None
+        self.active_object = None
+
+    def _remove_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
+        self.active_object = None
+        self.OBJECT_SELECTED.emit()
+        self.field_provider.remove_obstacle(field, obstacle)
+
+    def _remove_row(self, field: Field, row: Row) -> None:
+        self.active_object = None
+        self.OBJECT_SELECTED.emit()
+        self.field_provider.remove_row(field, row)
+
+    def _set_active_field(self, field_id: str) -> None:
+        field = self.field_provider.get_field(field_id)
+        if field is not None:
+            self.active_field = field
+            self.leaflet_map.active_field = field.id
+            self.show_field_settings.refresh()
+        else:
+            self.active_field = None
+
+    def _select_object(self, object_id: Optional[str] = None, object_type: Optional[Literal["Obstacles", "Rows", "Outline"]] = None) -> None:
+        if self.active_field is not None and object_id is not None and object_type is not None:
+            if object_type == "Obstacles":
+                for obstacle in self.active_field.obstacles:
+                    if object_id == obstacle.id:
+                        self.active_object = {'object_type': object_type, 'object': obstacle}
+            elif object_type == "Rows":
+                for row in self.active_field.rows:
+                    if object_id == row.id:
+                        self.active_object = {'object_type': object_type, 'object': row}
+            else:
+                self.active_object = None
+        else:
+            self.active_object = None
+        self.OBJECT_SELECTED.emit()
+
+    def _add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+        self.field_provider.add_obstacle_point(field, obstacle, point, new_point)
+        assert self.active_object
+        self._select_object(self.active_object['object'].id, 'Obstacles')
+
+    def _remove_obstacle_point(self, obstacle: FieldObstacle) -> None:
+        self.field_provider.remove_obstacle_point(obstacle)
+        assert self.active_object
+        self._select_object(self.active_object['object'].id, 'Obstacles')
+
+    def _add_row_point(self, field: Field, row: Row, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+        self.field_provider.add_row_point(field, row, point, new_point)
+        assert self.active_object
+        self._select_object(self.active_object['object'].id, 'Rows')
+
+    def _remove_row_point(self, row: Row, point: Optional[GeoPoint] = None) -> None:
+        self.field_provider.remove_row_point(row, point)
+        assert self.active_object
+        self._select_object(self.active_object['object'].id, 'Rows')
