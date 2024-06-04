@@ -43,16 +43,12 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
         return {
-            'weed_category_names': self.weed_category_names,
-            'crop_category_names': self.crop_category_names,
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
             'autoupload': self.autoupload.value,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.weed_category_names = data.get('weed_category_names', self.weed_category_names)
-        self.crop_category_names = data.get('crop_category_names', self.crop_category_names)
         self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)
@@ -75,7 +71,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         if new_image is None or new_image.detections:
             await asyncio.sleep(0.01)
             return
-        await self.detector.detect(new_image, autoupload=self.autoupload)
+        await self.detector.detect(new_image, autoupload=self.autoupload, tags=['kiebitz'])
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
             await asyncio.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
