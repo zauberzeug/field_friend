@@ -16,7 +16,7 @@ class PunchDialog(ui.dialog):
                  plant_locator: PlantLocator,
                  odometer: Odometer,
                  shrink_factor: int = 1,
-                 timeout: float = 5.0,
+                 timeout: float = 20.0,
                  ui_update_rate: float = 0.2) -> None:
         super().__init__()
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
