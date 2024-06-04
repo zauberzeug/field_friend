@@ -75,7 +75,7 @@ class System(rosys.persistence.PersistentModule):
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
         self.small_weed_category_names = ['coin', 'weed',]
-        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
+        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', ]
         self.plant_locator = PlantLocator(self.usb_camera_provider,
                                           self.detector,
                                           self.plant_provider,
