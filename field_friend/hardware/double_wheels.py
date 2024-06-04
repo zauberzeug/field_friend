@@ -21,13 +21,18 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
                  m_per_tick: float = 0.01,
                  width: float = 0.5,
                  is_left_reversed: bool = False,
-                 is_right_reversed: bool = False,) -> None:
+                 is_right_reversed: bool = False,
+                 odrive_version: int = 4,) -> None:
         self.name = name
+        self.l0_error = 0
+        self.r0_error = 0
+        self.l1_error = 0
+        self.r1_error = 0
         lizard_code = remove_indentation(f'''
-            l0 = ODriveMotor({can.name}, {left_back_can_address})
-            r0 = ODriveMotor({can.name}, {right_back_can_address})
-            l1 = ODriveMotor({can.name}, {left_front_can_address})
-            r1 = ODriveMotor({can.name}, {right_front_can_address})
+            l0 = ODriveMotor({can.name}, {left_back_can_address}{', 6'if self.odrive_version == 6  else ''})
+            r0 = ODriveMotor({can.name}, {right_back_can_address}{', 6'if self.odrive_version == 6  else ''})
+            l1 = ODriveMotor({can.name}, {left_front_can_address}{', 6'if self.odrive_version == 6  else ''})
+            r1 = ODriveMotor({can.name}, {right_front_can_address}{', 6'if self.odrive_version == 6  else ''})
             l0.m_per_tick = {m_per_tick}
             r0.m_per_tick = {m_per_tick}
             l1.m_per_tick = {m_per_tick}
@@ -42,7 +47,8 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             {name}_front.width = {width}
             {name}.shadow({name}_front)
         ''')
-        core_message_fields = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3']
+        core_message_fields = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3',
+                               f'{'l0.motor_error_flag', 'r0.motor_error_flag', 'l1.motor_error_flag', 'r1.motor_error_flag' if self.odrive_version == 6 else ''}']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def drive(self, linear: float, angular: float) -> None:
@@ -53,6 +59,21 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             angular = -0.0  # TODO: Temp fix
         await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
 
+    async def reset_motors(self) -> None:
+        if self.l0_error == 1:
+            await self.robot_brain.send('l0.reset_motor()')
+        if self.r0_error == 1:
+            await self.robot_brain.send('r0.reset_motor()')
+        if self.l1_error == 1:
+            await self.robot_brain.send('l1.reset_motor()')
+        if self.r1_error == 1:
+            await self.robot_brain.send('r1.reset_motor()')
+
     def handle_core_output(self, time: float, words: list[str]) -> None:
         velocity = rosys.geometry.Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time)
         self.VELOCITY_MEASURED.emit([velocity])
+        if self.odrive_version == 6:
+            self.l0_error = int(words.pop(0))
+            self.r0_error = int(words.pop(0))
+            self.l1_error = int(words.pop(0))
+            self.r1_error = int(words.pop(0))
