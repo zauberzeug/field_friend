@@ -12,7 +12,7 @@ class field_object(Group):
 
         self.field_provider = field_provider
         self.update()
-        self.field_provider.FIELD_SELECTED.register(self.update)
+        self.field_provider.FIELDS_CHANGED.register(self.update)
 
     def create_fence(self, start, end):
         height = 0.12
