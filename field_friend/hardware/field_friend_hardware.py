@@ -91,6 +91,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           width=self.WHEEL_DISTANCE,
                                           is_right_reversed=config_hardware['wheels']['is_right_reversed'],
                                           is_left_reversed=config_hardware['wheels']['is_left_reversed'],
+                                          odrive_version=config_hardware['wheels']['odrive_version']if 'odrive_version' in config_hardware['wheels'] else 4,
                                           )
         else:
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
