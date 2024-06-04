@@ -36,7 +36,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
         self.needs_backup: bool = False
 
-    def get_field(self, id_: str) -> Field | None:
+    def get_field(self, id_: str | None) -> Field | None:
         for field in self.fields:
             if field.id == id_:
                 return field

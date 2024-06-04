@@ -1,8 +1,14 @@
 from typing import TYPE_CHECKING
 
-from nicegui import ui
+from nicegui import binding, ui
 
-from ..components import automation_controls, camera_card, leaflet_map, operation, robot_scene
+from ..components import (
+    automation_controls,
+    camera_card,
+    leaflet_map,
+    operation,
+    robot_scene,
+)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -23,12 +29,16 @@ class main_page():
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         with ui.row().style(f'height:{page_height}; width: calc(100vw - 2rem); flex-wrap: nowrap;'):
             with ui.column().classes('h-full w-1/2 p-2'):
-                leaflet_map_landing = leaflet_map(self.system, False)
-                leaflet_map_landing.m.classes('h-full w-full')
+                leaflet = leaflet_map(self.system, False)
+                leaflet.m.classes('h-full w-full')
+                if self.system.field_navigation.field is not None:
+                    leaflet.active_field = self.system.field_navigation.field.id
+                binding.bind_to(self.system.field_navigation, 'field', leaflet, 'active_field',
+                                lambda f: f.id if f else None)
                 with ui.row():
-                    leaflet_map_landing.buttons()
+                    leaflet.buttons()
             with ui.row().classes('h-full ml-2 m-2').style('width: calc(100% - 1rem)'):
-                operation(self.system, leaflet_map_landing)
+                operation(self.system)
                 with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
                     camera_card(self.system.usb_camera_provider,
                                 self.system.automator,

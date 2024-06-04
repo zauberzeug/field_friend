@@ -15,13 +15,12 @@ if TYPE_CHECKING:
 
 class operation:
 
-    def __init__(self, system: 'System', map: leaflet_map) -> None:
+    def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.operation')
         self.system = system
         self.field_provider = system.field_provider
         self.field = None
         self.key_controls = KeyControls(self.system)
-        self.leaflet_map = map
 
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):

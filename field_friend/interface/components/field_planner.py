@@ -8,18 +8,16 @@ from ...automations import FieldProvider
 from ...navigation import Gnss
 from .geodata_picker import geodata_picker
 from .leaflet_map import leaflet_map
-from .operation import operation
 
 
 class field_planner:
 
-    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, leaflet_map: leaflet_map) -> None:
+    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, leaflet: leaflet_map) -> None:
         self.log = logging.getLogger('field_friend.field_planner')
         self.field_provider = field_provider
-        self.operation = operation
         self.odometer = odometer
         self.gnss = gnss
-        self.leaflet_map = leaflet_map
+        self.leaflet_map = leaflet
         self.field_provider.active_object = None
         self.coordinate_type = "WGS84"
         self.COORDINATE_TYPE_CHANGED = rosys.event.Event()
