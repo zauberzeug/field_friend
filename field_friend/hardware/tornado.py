@@ -231,6 +231,9 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                 if self.min_position - 0.005 <= self.position_z <= self.min_position + 0.005:
                     self.log.info('minimum position reached')
                     break
+                await self.robot_brain.send(
+                    f'{self.name}_z.position({self.min_position}, {self.speed_limit}, 0);'
+                )
                 self.log.info('moving z axis down')
                 await rosys.sleep(0.1)
             if self.ref_knife_stop:
