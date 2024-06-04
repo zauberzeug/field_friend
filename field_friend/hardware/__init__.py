@@ -1,3 +1,4 @@
+from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
@@ -17,3 +18,4 @@ from .y_axis_stepper_hardware import YAxisStepperHardware
 from .z_axis import ZAxis, ZAxisSimulation
 from .z_axis_canopen_hardware import ZAxisCanOpenHardware
 from .z_axis_stepper_hardware import ZAxisStepperHardware
+from .led_eyes import LedEyesHardware

@@ -12,7 +12,8 @@ from .simulated_cam import SimulatedCam
 class CameraConfigurator:
     def __init__(self,
                  camera_provider: rosys.vision.CameraProvider,
-                 robot_id: str | None = None):
+                 robot_id: str | None = None,
+                 ):
         self.log = logging.getLogger('field_friend.camera_configurator')
         self.camera_provider = camera_provider
         if not robot_id:
@@ -23,7 +24,7 @@ class CameraConfigurator:
 
     async def update_camera_config(self):
         await rosys.sleep(15)
-        self.log.info(f'updating camera config')
+        self.log.info('updating camera config')
         camera = None
         start_time = rosys.time()
         while not camera:
@@ -45,11 +46,13 @@ class CameraConfigurator:
                     self.log.info(f'parameter, value {parameter}, {value}')
                     if camera.parameters[parameter] != value:
                         self.log.info(f'{camera.parameters[parameter]} != {value}')
-                        camera.set_parameters({parameter: value})
+                        await camera.set_parameters({parameter: value})
                         parameters_changed = True
                     else:
                         self.log.info(f'{camera.parameters[parameter]} = {value}')
-
+            if not camera.streaming:
+                camera.streaming = True
+                parameters_changed = True
             if 'crop' in self.config:
                 # Fetch new cropping parameters
                 left = self.config['crop']['left']

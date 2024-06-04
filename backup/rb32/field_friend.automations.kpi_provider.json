@@ -1,0 +1,42 @@
+{
+    "current_weeding_kpis": {
+        "distance": 0,
+        "time": 0,
+        "bumps": 0,
+        "low_battery": 0,
+        "can_failure": 0,
+        "automation_stopped": 0,
+        "e_stop_triggered": 0,
+        "soft_e_stop_triggered": 0,
+        "imu_rolling_detected": 0,
+        "gnss_connection_lost": 0,
+        "rows_weeded": 0,
+        "crops_detected": 0,
+        "weeds_detected": 0,
+        "punches": 0,
+        "weeding_completed": false
+    },
+    "current_mowing_kpis": {
+        "distance": 0,
+        "time": 0,
+        "bumps": 0,
+        "low_battery": 0,
+        "can_failure": 0,
+        "automation_stopped": 0,
+        "e_stop_triggered": 0,
+        "soft_e_stop_triggered": 0,
+        "imu_rolling_detected": 0,
+        "gnss_connection_lost": 0,
+        "mowing_completed": false
+    },
+    "days": [
+        {
+            "date": "2024-05-22",
+            "incidents": {
+                "weeding_completed": 3,
+                "bumps": 1
+            }
+        }
+    ],
+    "months": []
+}

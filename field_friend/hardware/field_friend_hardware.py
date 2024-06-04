@@ -5,6 +5,7 @@ import rosys
 
 import config.config_selection as config_selector
 
+from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
@@ -12,6 +13,8 @@ from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
+from .imu import IMUHardware
+from .led_eyes import LedEyesHardware
 from .safety import SafetyHardware
 from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
@@ -36,6 +39,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH / np.pi
         self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
+        self.ANTENNA_OFFSET: float = config_params['antenna_offset']
         tool: str = config_params['tool']
         if tool in ['tornado', 'weed_screw', 'none']:
             self.WORK_X: float = config_params['work_x']
@@ -91,6 +95,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
 
+        if config_hardware['y_axis']['version'] == 'y_axis_canopen' or config_hardware['z_axis']['version'] == 'z_axis_canopen':
+            can_open_master = CanOpenMasterHardware(robot_brain, can=can, name='master')
+        else:
+            can_open_master = None
         y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | None
         if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisHardware(robot_brain,
@@ -180,8 +188,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      end_bottom_pin=config_hardware['z_axis']['end_bottom_pin'],
                                      ref_motor_pin=config_hardware['z_axis']['ref_motor_pin'],
                                      ref_gear_pin=config_hardware['z_axis']['ref_gear_pin'],
-                                     ref_t_pin=config_hardware['z_axis']['ref_t_pin'],
-                                     ref_b_pin=config_hardware['z_axis']['ref_b_pin'],
+                                     ref_knife_stop_pin=config_hardware['z_axis']['ref_knife_stop_pin'],
+                                     ref_knife_ground_pin=config_hardware['z_axis']['ref_knife_ground_pin'],
                                      motors_on_expander=config_hardware['z_axis']['motors_on_expander'],
                                      end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
                                      is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
@@ -189,6 +197,38 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      speed_limit=config_hardware['z_axis']['speed_limit'],
                                      turn_speed_limit=config_hardware['z_axis']['turn_speed_limit'],
                                      current_limit=config_hardware['z_axis']['current_limit'],
+                                     z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
+                                     turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
+                                     )
+        elif config_hardware['z_axis']['version'] == 'tornado v1.1':
+            z_axis = TornadoHardware(robot_brain,
+                                     expander=expander,
+                                     can=can,
+                                     name=config_hardware['z_axis']['name'],
+                                     min_position=config_hardware['z_axis']['min_position'],
+                                     z_can_address=config_hardware['z_axis']['z_can_address'],
+                                     turn_can_address=config_hardware['z_axis']['turn_can_address'],
+                                     m_per_tick=config_hardware['z_axis']['m_per_tick'],
+                                     end_top_pin=config_hardware['z_axis']['end_top_pin'],
+                                     end_top_pin_expander=config_hardware['z_axis']['end_top_pin_expander'],
+                                     end_bottom_pin=config_hardware['z_axis']['end_bottom_pin'],
+                                     end_bottom_pin_expander=config_hardware['z_axis']['end_bottom_pin_expander'],
+                                     ref_motor_pin=config_hardware['z_axis']['ref_motor_pin'],
+                                     ref_gear_pin=config_hardware['z_axis']['ref_gear_pin'],
+                                     ref_gear_pin_expander=config_hardware['z_axis']['ref_gear_pin_expander'],
+                                     ref_knife_stop_pin=config_hardware['z_axis']['ref_knife_stop_pin'],
+                                     ref_knife_stop_pin_expander=config_hardware['z_axis']['ref_knife_stop_pin_expander'],
+                                     ref_knife_ground_pin=config_hardware['z_axis']['ref_knife_ground_pin'],
+                                     ref_knife_ground_pin_expander=config_hardware['z_axis']['ref_knife_ground_pin_expander'],
+                                     motors_on_expander=config_hardware['z_axis']['motors_on_expander'],
+                                     end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
+                                     is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
+                                     is_turn_reversed=config_hardware['z_axis']['is_turn_reversed'],
+                                     speed_limit=config_hardware['z_axis']['speed_limit'],
+                                     turn_speed_limit=config_hardware['z_axis']['turn_speed_limit'],
+                                     current_limit=config_hardware['z_axis']['current_limit'],
+                                     z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
+                                     turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
                                      )
         elif config_hardware['z_axis']['version'] == 'z_axis_canopen':
             z_axis = ZAxisCanOpenHardware(robot_brain,
@@ -296,6 +336,16 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             imu = None
 
+        eyes: LedEyesHardware | None
+        if 'eyes' in config_hardware:
+            eyes = LedEyesHardware(robot_brain,
+                                   expander=expander if config_hardware['eyes']['on_expander'] else None,
+                                   name=config_hardware['eyes']['name'],
+                                   eyes_pin=config_hardware['eyes']['eyes_pin'],
+                                   )
+        else:
+            eyes = None
+
         self.status_control: StatusControlHardware | None
         if 'status_control' in config_hardware:
             self.status_control = StatusControlHardware(robot_brain,
@@ -314,8 +364,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
                                     y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
-        modules = [bluetooth, can, wheels, serial, expander, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, bumper, imu, self.status_control, safety]
+        modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis,
+                   z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, eyes, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(tool=tool,
                          wheels=wheels,

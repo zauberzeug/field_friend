@@ -179,12 +179,12 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     '' if robot.z_axis.is_referenced else 'not referenced',
                     '' if robot.z_axis.z_is_referenced else 'z not referenced',
                     '' if robot.z_axis.turn_is_referenced else 'turn not referenced',
-                    'end_top' if robot.z_axis.end_top else '',
-                    'end_bottom' if robot.z_axis.end_bottom else '',
+                    'top' if robot.z_axis.end_top else '',
+                    'bottom' if robot.z_axis.end_bottom else '',
                     'ref_motor' if robot.z_axis.ref_motor else '',
                     'ref_gear' if robot.z_axis.ref_gear else '',
-                    'ref_t' if robot.z_axis.ref_t else '',
-                    'ref_b' if robot.z_axis.ref_b else '',
+                    'knife_stop' if robot.z_axis.ref_knife_stop else '',
+                    'knife_ground' if robot.z_axis.ref_knife_ground else '',
                     f'{robot.z_axis.position_z:.2f}m' if robot.z_axis.z_is_referenced else '',
                     f'{robot.z_axis.position_turn:.2f}°' if robot.z_axis.turn_is_referenced else '',
                 ]
@@ -204,14 +204,15 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-            direction_flag = 'N' if gnss.record.heading <= 23 else \
-                'NE' if gnss.record.heading <= 68 else \
-                'E' if gnss.record.heading <= 113 else \
-                'SE' if gnss.record.heading <= 158 else \
-                'S' if gnss.record.heading <= 203 else \
-                'SW' if gnss.record.heading <= 248 else \
-                'W' if gnss.record.heading <= 293 else \
-                'NW' if gnss.record.heading <= 338 else \
+            direction_flag = '?' if gnss.current is None or gnss.current.heading is None else \
+                'N' if gnss.current.heading <= 23 else \
+                'NE' if gnss.current.heading <= 68 else \
+                'E' if gnss.current.heading <= 113 else \
+                'SE' if gnss.current.heading <= 158 else \
+                'S' if gnss.current.heading <= 203 else \
+                'SW' if gnss.current.heading <= 248 else \
+                'W' if gnss.current.heading <= 293 else \
+                'NW' if gnss.current.heading <= 338 else \
                 'N'
 
             if automator.is_running:
@@ -232,10 +233,10 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
 
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
-            reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'
-            gnss_label.text = f'lat: {gnss.record.latitude:.6f}, lon: {gnss.record.longitude:.6f}'
-            heading_label.text = f'{gnss.record.heading:.2f}° ' + direction_flag
-            rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'
+            reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'
+            gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
+            heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
+            rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
             odometry_label.text = str(odometer.prediction)
 
         ui.timer(rosys.config.ui_update_interval, update_status)

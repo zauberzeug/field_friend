@@ -115,9 +115,9 @@ class camera_card:
         else:
             url = self.camera.get_latest_image_url()
         self.image_view.set_source(url)
-        image = self.camera.latest_captured_image
+        image = self.camera.latest_detected_image
         if image and image.detections:
-            self.image_view.set_content(image.detections.to_svg())
+            self.image_view.set_content(self.to_svg(image.detections))
 
     def on_mouse_move(self, e: MouseEventArguments):
         if self.camera is None:
@@ -168,6 +168,36 @@ class camera_card:
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
         self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'
                                           for p, color in zip(image_points, colors_hex))
+
+    def to_svg(self, detections: rosys.vision.Detections) -> str:
+        svg = ''
+        cross_size = 20
+        for point in detections.points:
+            if point.category_name in self.plant_locator.crop_category_names:
+                if point.confidence > self.plant_locator.minimum_crop_confidence:
+                    svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'
+                    svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
+                else:
+                    svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="orange" fill="none" />'
+                    svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="orange">{point.category_name}</text>'
+            elif point.category_name in self.plant_locator.weed_category_names:
+                if point.confidence > self.plant_locator.minimum_weed_confidence:
+                    svg += f'''
+                            <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="red" stroke-width="8" 
+                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
+                            <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="red" stroke-width="8" 
+                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
+                            <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Weed</text>
+                    '''
+                else:
+                    svg += f'''
+                            <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="yellow" stroke-width="8" 
+                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
+                            <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="yellow" stroke-width="8" 
+                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
+                            <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">Weed</text>
+                    '''
+        return svg
 
     # async def save_last_image(self) -> None:
     #     """Saves the last captured image to the .rosys folder."""

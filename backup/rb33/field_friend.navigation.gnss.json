@@ -1,0 +1,13 @@
+{
+    "record": {
+        "timestamp": 1714990240.8,
+        "latitude": 53.896005601666666,
+        "longitude": 12.508215146666666,
+        "mode": "RRRR",
+        "gps_qual": 4,
+        "altitude": 54.9302,
+        "separation": "43.9556",
+        "heading": 0.0,
+        "speed_kmh": 0.0
+    }
+}

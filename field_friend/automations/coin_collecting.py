@@ -6,7 +6,7 @@ import rosys
 from rosys.geometry import Point
 from rosys.helpers import eliminate_2pi
 
-from .plant_provider import Plant
+from .plant import Plant
 from .puncher import PuncherException
 
 if TYPE_CHECKING:
@@ -40,12 +40,12 @@ class CoinCollecting():
             rosys.notify('Y-Axis is in alarm, aborting', 'negative')
             self.log.error('Y-Axis is in alarm, aborting')
             return
-        if self.system.field_friend.z_axis.ref_t:
-            rosys.notify('Tornado is in top ref', 'negative')
-            self.log.error('Tornado is in top ref')
+        if self.system.field_friend.z_axis.ref_knife_stop:
+            rosys.notify('Tornado is in knife stop ref', 'negative')
+            self.log.error('Tornado is in knife stop ref')
             return
         if not await self.system.puncher.try_home():
-            rosys.notify('Puncher homing failed, aborting', 'error')
+            rosys.notify('Puncher homing failed, aborting', 'negative')
             self.log.error('Puncher homing failed, aborting')
         self.work_x = self.system.field_friend.WORK_X
         self.system.odometer.reset()
@@ -129,8 +129,8 @@ class CoinCollecting():
     def create_simulated_plants(self):
         for i in range(1, 8):
             self.system.plant_provider.add_crop(Plant(
-                id=str(i),
-                type='coin_with_hole',
+                id_=str(i),
+                type_='coin_with_hole',
                 position=Point(x=0.1 * i, y=pow(i*0.1, 5)),
                 detection_time=rosys.time(),
                 confidence=0.9,

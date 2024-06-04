@@ -37,7 +37,7 @@ class Mowing(rosys.persistence.PersistentModule):
         self.robot_width: float = robot_width
 
         self.field: Optional[Field] = None
-        self.paths: Optional[list[list[rosys.driving.PathSegment]]] = None
+        self.paths: list[list[rosys.driving.PathSegment]] = []
         self.current_path: Optional[list[rosys.driving.PathSegment]] = None
         self.current_path_segment: Optional[rosys.driving.PathSegment] = None
         self.continue_mowing: bool = False
@@ -51,7 +51,7 @@ class Mowing(rosys.persistence.PersistentModule):
         return {
             'padding': self.padding,
             'lane_distance': self.lane_distance,
-            'paths': [[rosys.persistence.to_dict(segment) for segment in path] for path in self.paths] if self.paths else [],
+            'paths': [[rosys.persistence.to_dict(segment) for segment in path] for path in self.paths],
             'current_path': [rosys.persistence.to_dict(segment) for segment in self.current_path] if self.current_path else [],
             'current_path_segment': rosys.persistence.to_dict(self.current_path_segment) if self.current_path_segment else None,
         }
@@ -86,10 +86,10 @@ class Mowing(rosys.persistence.PersistentModule):
             self.log.error('Field is not available')
             rosys.notify('No field selected', 'negative')
             return
-        if not self.field.reference_lat or not self.field.reference_lon:
+        if not self.field.reference:
             self.log.error('Field reference is not available')
             return
-        self.system.gnss.set_reference(self.field.reference_lat, self.field.reference_lon)
+        self.system.gnss.reference = self.field.reference
         if self.padding < self.robot_width+self.lane_distance:
             self.padding = self.robot_width+self.lane_distance
         await self._mowing()
@@ -101,9 +101,12 @@ class Mowing(rosys.persistence.PersistentModule):
                 if not self.continue_mowing:
                     self.path_planner.obstacles.clear()
                     self.path_planner.areas.clear()
+                    assert self.field is not None
+                    assert self.field.reference is not None
                     for obstacle in self.field.obstacles:
-                        self.path_planner.obstacles[obstacle.id] = rosys.pathplanning.Obstacle(
-                            id=obstacle.id, outline=obstacle.points)
+                        self.path_planner.obstacles[obstacle.id] = \
+                            rosys.pathplanning.Obstacle(id=obstacle.id,
+                                                        outline=obstacle.cartesian(self.field.reference))
                     area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
                     self.path_planner.areas = {area.id: area}
                     self.paths = self._generate_mowing_path()
@@ -111,7 +114,8 @@ class Mowing(rosys.persistence.PersistentModule):
                     if not self.paths:
                         rosys.notify('No paths to drive', 'negative')
                         raise Exception('No paths to drive')
-                self.MOWING_STARTED.emit([path_segment for path in self.paths for path_segment in path])
+                assert self.paths is not None
+                self.MOWING_STARTED.emit()
                 await self._drive_mowing_paths(self.paths)
                 self.kpi_provider.increment_mowing_kpi('mowing_completed')
                 rosys.notify('Mowing finished', 'positive')
@@ -165,6 +169,9 @@ class Mowing(rosys.persistence.PersistentModule):
             first_path = self.current_path
         else:
             first_path = paths[0]
+        assert first_path
+        assert self.field is not None
+        assert self.field.outline is not None
         await self.driver.drive_to(first_path[0].spline.start)
         self.system.automation_watcher.start_field_watch(self.field.outline)
         self.system.automation_watcher.gnss_watch_active = True

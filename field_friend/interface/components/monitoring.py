@@ -31,7 +31,8 @@ class monitoring:
                  field_friend: FieldFriend,
                  system: 'System',
                  *,
-                 shrink_factor: int = 1) -> None:
+                 shrink_factor: int = 1,
+                 ) -> None:
         self.log = logging.getLogger('field_friend.monitoring')
         self.usb_camera_provider = usb_camera_provider
         self.mjpg_camera_provider = mjpeg_camera_provider
@@ -69,10 +70,12 @@ class monitoring:
                     ui.label('Animal count:').classes('text-2xl text-bold').bind_text_from(self,
                                                                                            'animal_count', backward=lambda x: f'Animal count: {x}')
                     ui.space()
-                    ui.switch('Person detection').bind_value(
-                        self, 'monitoring_active').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
-                    ui.switch('Plant detection').bind_value(self.plant_locator, 'is_paused', forward=lambda x: not x,
-                                                            backward=lambda x: not x).bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                    ui.switch('Person detection') \
+                        .bind_value(self, 'monitoring_active') \
+                        .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                    ui.switch('Plant detection') \
+                        .bind_value(self.plant_locator, 'is_paused', forward=lambda x: not x, backward=lambda x: not x) \
+                        .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
 
         with ui.row().classes('w-full items-stretch gap-0'):
             column_classes = 'w-1/3 items-center mt-[50px]'
@@ -135,6 +138,8 @@ class monitoring:
         person_count = 0
         animal_count = 0
         for camera in self.mjpg_camera_provider.cameras.values():
+            if not camera.streaming:
+                camera.streaming = True
             image = camera.latest_captured_image
             if not image:
                 continue

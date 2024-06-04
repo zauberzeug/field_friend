@@ -21,6 +21,10 @@ class FieldFriend(rosys.hardware.Robot):
     DRILL_RADIUS = 0.025
     CHOP_RADIUS = 0.07
     WORK_X_CHOP = 0.04
+    TORNADO_INNER_MAX_DIAMETER = 0.069
+    TORNADO_INNER_MIN_DIAMETER = 0.105
+    TORNADO_OUTER_MAX_DIAMETER = 0.129
+    TORNADO_OUTER_MIN_DIAMETER = 0.165
 
     def __init__(
             self, *,
@@ -71,3 +75,13 @@ class FieldFriend(rosys.hardware.Robot):
                 return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         else:
             raise NotImplementedError(f'Tool {self.tool} is not implemented for reachability check')
+
+    def tornado_diameters(self, angle: float) -> tuple:
+        angle = np.clip(angle, 0, 180)
+
+        def calculate_diameter(max_diameter, min_diameter):
+            return (max_diameter - min_diameter) / 2 * (1 - np.cos(np.radians(angle))) + min_diameter
+
+        inner_diameter = calculate_diameter(self.TORNADO_INNER_MAX_DIAMETER, self.TORNADO_INNER_MIN_DIAMETER)
+        outer_diameter = calculate_diameter(self.TORNADO_OUTER_MAX_DIAMETER, self.TORNADO_OUTER_MIN_DIAMETER)
+        return (inner_diameter, outer_diameter)
