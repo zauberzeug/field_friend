@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
-from rosys.geometry import Point, Pose, Spline
+from rosys.geometry import Pose, Spline
 
 from ..field import Field, Row
 from ..implements.implement import Implement
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from system import System
 
 
-class FieldNavigation(FollowCropsNavigation):
+class RowsOnFieldNavigation(FollowCropsNavigation):
     class State(Enum):
         APPROACHING_ROW_START = auto()
         FOLLOWING_ROW = auto()
@@ -25,7 +25,7 @@ class FieldNavigation(FollowCropsNavigation):
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
 
-        self.name = 'Field Rows'
+        self.name = 'Rows on Field'
         self.gnss = system.gnss
         self.bms = system.field_friend.bms
         self.automation_watcher = system.automation_watcher
