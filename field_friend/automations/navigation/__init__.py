@@ -1,4 +1,5 @@
 
+from .coverage_navigation import CoverageNavigation
 from .follow_crops_navigation import FollowCropsNavigation
 from .navigation import Navigation
 from .row_on_field_navigation import RowsOnFieldNavigation
@@ -9,4 +10,5 @@ __all__ = [
     'RowsOnFieldNavigation',
     'StraightLineNavigation',
     'FollowCropsNavigation',
+    'CoverageNavigation',
 ]

@@ -38,6 +38,7 @@ from .automations.implements import (
     WeedingScrew,
 )
 from .automations.navigation import (
+    CoverageNavigation,
     FollowCropsNavigation,
     Navigation,
     RowsOnFieldNavigation,
@@ -144,9 +145,11 @@ class System(rosys.persistence.PersistentModule):
         self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
         self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
         self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
+        self.coverage_navigation = CoverageNavigation(self, self.monitoring)
         self.navigation_strategies = {n.name: n for n in [self.field_navigation,
                                                           self.straight_line_navigation,
                                                           self.follow_crops_navigation,
+                                                          self.coverage_navigation,
                                                           ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
