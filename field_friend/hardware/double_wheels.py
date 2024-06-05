@@ -62,6 +62,8 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
         await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
 
     async def reset_motors(self) -> None:
+        if not self.motor_error:
+            return
         if self.l0_error == 1:
             await self.robot_brain.send('l0.reset_motor()')
         if self.r0_error == 1:
