@@ -6,7 +6,7 @@ from .field import Field, FieldObstacle, Row
 from .field_provider import FieldProvider
 from .implements.implement import Implement
 from .kpi_provider import KpiProvider
-from .mowing import Mowing
+from .navigation.mowing import Mowing
 from .path_provider import Path, PathProvider
 from .path_recorder import PathRecorder
 from .plant import Plant

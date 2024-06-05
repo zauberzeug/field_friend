@@ -8,10 +8,10 @@ from rosys.geometry import Pose, Spline
 from rosys.helpers import angle
 from shapely.geometry import LineString
 
-from . import Field
-from .coverage_planer import CoveragePlanner
-from .implements.implement import Implement
-from .sequence import find_sequence
+from .. import Field
+from ..coverage_planer import CoveragePlanner
+from ..implements.implement import Implement
+from ..sequence import find_sequence
 
 if TYPE_CHECKING:
     from system import System
