@@ -52,8 +52,8 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def restore(self, data: dict[str, Any]) -> None:
         self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
-        self.autoupload = Autoupload(data.get('autoupload', self.autoupload)
-                                     ) if 'autoupload' in data else Autoupload.DISABLED
+        self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
+            if 'autoupload' in data else Autoupload.DISABLED
         self.log.info(f'self.autoupload: {self.autoupload}')
 
     async def _detect_plants(self) -> None:
