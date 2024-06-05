@@ -16,18 +16,6 @@
                                     .tooltip('Set the turning offset for the weeding automation')
 
                         ui.separator()
-                        ui.markdown('Detector settings').style('color: #6E93D6')
-                        with ui.row():
-                            ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0) \
-                                .props('dense outlined') \
-                                .classes('w-24') \
-                                .bind_value(self.system.plant_locator, 'minimum_weed_confidence') \
-                                .tooltip('Set the minimum weed confidence for the weeding automation')
-                            ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0) \
-                                .props('dense outlined') \
-                                .classes('w-24') \
-                                .bind_value(self.system.plant_locator, 'minimum_crop_confidence') \
-                                .tooltip('Set the minimum crop confidence for the weeding automation')
 
                         ui.markdown('Workflow settings').style('color: #6E93D6')
                         with ui.row():

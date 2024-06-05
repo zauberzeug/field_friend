@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 import rosys
+from nicegui import ui
 from rosys.vision import Autoupload
 
 from ..vision import SimulatedCam
@@ -121,3 +122,19 @@ class PlantLocator(rosys.persistence.PersistentModule):
             return
         self.log.info('resuming plant detection')
         self.is_paused = False
+
+    def settings_ui(self) -> None:
+        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'minimum_weed_confidence') \
+            .tooltip('Set the minimum weed confidence for the weeding automation')
+        ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'minimum_crop_confidence') \
+            .tooltip('Set the minimum crop confidence for the weeding automation')
+        options = [autoupload for autoupload in rosys.vision.Autoupload]
+        ui.select(options, label='Autoupload', on_change=self.backup) \
+            .bind_value(self, 'autoupload') \
+            .classes('w-24').tooltip('Set the autoupload for the weeding automation')
