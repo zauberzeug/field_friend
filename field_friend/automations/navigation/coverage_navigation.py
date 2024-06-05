@@ -1,6 +1,6 @@
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Coroutine, Optional
 
 import numpy as np
 import rosys
@@ -8,23 +8,26 @@ from rosys.geometry import Pose, Spline
 from rosys.helpers import angle
 from shapely.geometry import LineString
 
-from .coverage_planer import CoveragePlanner
-from .field_provider import Field
-from .sequence import find_sequence
+from .. import Field
+from ..coverage_planer import CoveragePlanner
+from ..implements.implement import Implement
+from ..sequence import find_sequence
+from .navigation import Navigation
 
 if TYPE_CHECKING:
     from system import System
 
 
-class Mowing(rosys.persistence.PersistentModule):
+class CoverageNavigation(Navigation):
 
-    def __init__(self, system: 'System', *, robot_width: float) -> None:
-        super().__init__()
+    def __init__(self, system: 'System', implement: Implement) -> None:
+        super().__init__(system, implement)
         self.log = logging.getLogger('field_friend.path_recorder')
+        self.name = 'Field Coverage'
         self.field_friend = system.field_friend
         self.field_provider = system.field_provider
         self.driver = system.driver
-        self.path_planner = system.path_planner
+        self.path_planner = rosys.pathplanning.PathPlanner(system.shape)
         self.gnss = system.gnss
         self.system = system
         self.coverage_planner = CoveragePlanner(self)
@@ -34,18 +37,13 @@ class Mowing(rosys.persistence.PersistentModule):
         self.lane_distance: float = 0.5
         self.num_outer_lanes: int = 3
         self.turning_radius: float = self.driver.parameters.minimum_turning_radius
-        self.robot_width: float = robot_width
+        self.robot_width: float = 0.5  # TODO: get from implement
 
         self.field: Optional[Field] = None
         self.paths: list[list[rosys.driving.PathSegment]] = []
         self.current_path: Optional[list[rosys.driving.PathSegment]] = None
         self.current_path_segment: Optional[rosys.driving.PathSegment] = None
         self.continue_mowing: bool = False
-
-        self.MOWING_STARTED = rosys.event.Event()
-        """Mowing has started."""
-
-        self.needs_backup = False
 
     def backup(self) -> dict:
         return {
@@ -73,49 +71,47 @@ class Mowing(rosys.persistence.PersistentModule):
     def invalidate(self) -> None:
         self.request_backup()
 
-    async def start(self) -> None:
-        self.log.info('starting mowing')
+    async def prepare(self) -> bool:
+        await super().prepare()
         if self.field_friend.estop.active or self.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active', 'negative')
-            return
+            return False
         if self.gnss.device is None:
             rosys.notify('No GNSS device found', 'negative')
-            return
+            return False
         self.field = self.system.field_provider.active_field
         if self.field is None:
             self.log.error('Field is not available')
             rosys.notify('No field selected', 'negative')
-            return
+            return False
         if not self.field.reference:
             self.log.error('Field reference is not available')
-            return
+            return False
         self.system.gnss.reference = self.field.reference
         if self.padding < self.robot_width+self.lane_distance:
             self.padding = self.robot_width+self.lane_distance
-        await self._mowing()
 
-    async def _mowing(self) -> None:
+        self.path_planner.obstacles.clear()
+        self.path_planner.areas.clear()
+        assert self.field is not None
+        assert self.field.reference is not None
+        for obstacle in self.field.obstacles:
+            self.path_planner.obstacles[obstacle.id] = \
+                rosys.pathplanning.Obstacle(id=obstacle.id,
+                                            outline=obstacle.cartesian(self.field.reference))
+        area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
+        self.path_planner.areas = {area.id: area}
+        self.paths = self._generate_mowing_path()
+        self.invalidate()
+        if not self.paths:
+            rosys.notify('No paths to drive', 'negative')
+            raise Exception('No paths to drive')
+
+        # TODO remove this hack of doing all the driving in prepare and better implement _drive which advances the robot by a small distance, so implements can stop and do some work
         rosys.notify('Starting mowing')
         while True:
             try:
-                if not self.continue_mowing:
-                    self.path_planner.obstacles.clear()
-                    self.path_planner.areas.clear()
-                    assert self.field is not None
-                    assert self.field.reference is not None
-                    for obstacle in self.field.obstacles:
-                        self.path_planner.obstacles[obstacle.id] = \
-                            rosys.pathplanning.Obstacle(id=obstacle.id,
-                                                        outline=obstacle.cartesian(self.field.reference))
-                    area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
-                    self.path_planner.areas = {area.id: area}
-                    self.paths = self._generate_mowing_path()
-                    self.invalidate()
-                    if not self.paths:
-                        rosys.notify('No paths to drive', 'negative')
-                        raise Exception('No paths to drive')
                 assert self.paths is not None
-                self.MOWING_STARTED.emit()
                 await self._drive_mowing_paths(self.paths)
                 self.kpi_provider.increment_mowing_kpi('mowing_completed')
                 rosys.notify('Mowing finished', 'positive')
@@ -125,6 +121,14 @@ class Mowing(rosys.persistence.PersistentModule):
                 self.kpi_provider.increment('automation_stopped')
                 rosys.notify(f'Mowing failed because of {e}', 'negative')
                 break
+
+        return True
+
+    async def _drive(self) -> None:
+        return await super()._drive()
+
+    def _should_finish(self) -> bool:
+        return False
 
     def _generate_mowing_path(self) -> list[list[rosys.driving.PathSegment]]:
         self.log.info('generating mowing path')
@@ -274,3 +278,6 @@ class Mowing(rosys.persistence.PersistentModule):
                             lanes[i+1].end)))
                 splines.append(second_turn_spline)
         return splines
+
+    def settings_ui(self):
+        return super().settings_ui()

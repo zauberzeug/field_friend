@@ -12,7 +12,7 @@ class field_object(Group):
 
         self.field_provider = field_provider
         self.update()
-        self.field_provider.FIELD_SELECTED.register(self.update)
+        self.field_provider.FIELDS_CHANGED.register(self.update)
 
     def create_fence(self, start, end):
         height = 0.12
@@ -75,8 +75,3 @@ class field_object(Group):
                 for point in row_points:
                     Cylinder(0.04, 0.04, 0.7).move(x=point.x, y=point.y, z=0.35).material(
                         'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)
-                for crop in row.crops:
-                    Extrusion([[0, 0], [0.03, -0.02], [0.1, 0], [0.03, 0.02], ], 0.01).move(x=crop.position.x, y=crop.position.y,
-                                                                                            z=0.0).rotate(0, -np.pi/8, 0).material('green').with_name(f'row_{row.id}_crop')
-                    Extrusion([[0, 0], [0.03, -0.02], [0.1, 0], [0.03, 0.02], ], 0.01).move(x=crop.position.x, y=crop.position.y,
-                                                                                            z=0.0).rotate(0, -np.pi/8, np.pi).material('green').with_name(f'row_{row.id}_crop')

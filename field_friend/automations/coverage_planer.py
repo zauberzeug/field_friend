@@ -7,13 +7,13 @@ from shapely.geometry import LineString, MultiLineString, Polygon
 from shapely.ops import unary_union
 
 if TYPE_CHECKING:
-    from ..automations import Mowing
+    from ..automations import CoverageNavigation
 
 
 class CoveragePlanner:
     OBSTACLE_PADDING = 0.7
 
-    def __init__(self, mowing: 'Mowing') -> None:
+    def __init__(self, mowing: 'CoverageNavigation') -> None:
         self.log = logging.getLogger('field_friend.coverage_planner')
         self.mowing = mowing
 
@@ -139,8 +139,8 @@ class CoveragePlanner:
         outer_lanes_groups = []
         for i in range(self.mowing.num_outer_lanes):
             outer_lanes = []
-            padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]
-                                     ).buffer(-self.mowing.padding-self.mowing.lane_distance*i)
+            padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]) \
+                .buffer(-self.mowing.padding-self.mowing.lane_distance*i)
             outline_coords = list(padded_polygon.exterior.coords)
             for i in range(len(outline_coords) - 1):
                 p1 = outline_coords[i]

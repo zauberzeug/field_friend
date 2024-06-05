@@ -12,7 +12,12 @@ from ...automations.plant import Plant
 
 
 class PunchDialog(ui.dialog):
-    def __init__(self, camera_provider: rosys.vision.CameraProvider, plant_locator: PlantLocator, odometer: Odometer, shrink_factor: int = 1, timeout: float = 5.0, ui_update_rate: float = 0.2) -> None:
+    def __init__(self, camera_provider: rosys.vision.CameraProvider,
+                 plant_locator: PlantLocator,
+                 odometer: Odometer,
+                 shrink_factor: int = 1,
+                 timeout: float = 20.0,
+                 ui_update_rate: float = 0.2) -> None:
         super().__init__()
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.camera_provider = camera_provider

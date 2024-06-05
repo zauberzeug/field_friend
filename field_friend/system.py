@@ -5,18 +5,52 @@ from typing import Any
 import numpy as np
 import rosys
 
-from field_friend.automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider,
-                                      Mowing, PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher, Weeding)
-from field_friend.hardware import FieldFriendHardware, FieldFriendSimulation
-from field_friend.navigation.gnss_hardware import GnssHardware
-from field_friend.navigation.gnss_simulation import GnssSimulation
-from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from field_friend.hardware import (
+    FieldFriend,
+    FieldFriendHardware,
+    FieldFriendSimulation,
+)
+from field_friend.localization.gnss_hardware import GnssHardware
+from field_friend.localization.gnss_simulation import GnssSimulation
+from field_friend.vision import (
+    CalibratableUsbCameraProvider,
+    CameraConfigurator,
+    SimulatedCam,
+    SimulatedCamProvider,
+)
 
+from .automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    FieldProvider,
+    KpiProvider,
+    PathProvider,
+    PathRecorder,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+)
+from .automations.implements import (
+    ChopAndScrew,
+    Implement,
+    Recorder,
+    Tornado,
+    WeedingScrew,
+)
+from .automations.navigation import (
+    CoverageNavigation,
+    FollowCropsNavigation,
+    Navigation,
+    RowsOnFieldNavigation,
+    StraightLineNavigation,
+)
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
 
 class System(rosys.persistence.PersistentModule):
+
+    version = 'rb34'  # insert here your field friend version to be simulated
 
     def __init__(self) -> None:
         super().__init__()
@@ -25,9 +59,9 @@ class System(rosys.persistence.PersistentModule):
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED = rosys.event.Event()
 
-        self.field_friend: FieldFriendHardware | FieldFriendSimulation
         self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
+        self.field_friend: FieldFriend
         if self.is_real:
             self.field_friend = FieldFriendHardware()
             self.usb_camera_provider = CalibratableUsbCameraProvider()
@@ -36,13 +70,12 @@ class System(rosys.persistence.PersistentModule):
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
-            version = 'rb28'  # insert here your field friend version to be simulated
-            self.field_friend = FieldFriendSimulation(robot_id=version)
+            self.field_friend = FieldFriendSimulation(robot_id=self.version)
             self.usb_camera_provider = SimulatedCamProvider()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
-            self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=version)
+            self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=self.version)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
@@ -75,7 +108,7 @@ class System(rosys.persistence.PersistentModule):
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
         self.small_weed_category_names = ['coin', 'weed',]
-        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
+        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', ]
         self.plant_locator = PlantLocator(self.usb_camera_provider,
                                           self.detector,
                                           self.plant_provider,
@@ -83,7 +116,7 @@ class System(rosys.persistence.PersistentModule):
                                           )
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
-        if self.field_friend.tool == 'tornado':
+        if self.field_friend.implement_name == 'tornado':
             self.plant_locator.minimum_weed_confidence = 0.8
             self.plant_locator.minimum_crop_confidence = 0.75
         else:
@@ -93,7 +126,7 @@ class System(rosys.persistence.PersistentModule):
         rosys.on_repeat(watch_robot, 1.0)
 
         self.path_provider = PathProvider()
-        self.field_provider = FieldProvider()
+        self.field_provider = FieldProvider(self.gnss)
         width = 0.64
         length = 0.78
         offset = 0.36
@@ -106,29 +139,42 @@ class System(rosys.persistence.PersistentModule):
                 (-offset, width/2)
             ],
             height=height)
-        self.path_planner = rosys.pathplanning.PathPlanner(self.shape)
-
-        self.weeding = Weeding(self, persistence_key='weeding')
-        self.monitoring = Weeding(self, persistence_key='monitoring')
-        self.monitoring.use_monitor_workflow = True
-        self.coin_collecting = CoinCollecting(self)
-        self.mowing = Mowing(self, robot_width=width)
-        self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
-
-        self.automations = {
-            'weeding': self.weeding.start,
-            'monitoring': self.monitoring.start,
-            'mowing': self.mowing.start,
-            'collecting (demo)': self.coin_collecting.start,
-        }
-        self.automator = rosys.automation.Automator(None, on_interrupt=lambda _: self.field_friend.stop(),
-                                                    default_automation=self.coin_collecting.start)
-        self.info = Info(self)
+        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
         self.automation_watcher = AutomationWatcher(self)
+        self.monitoring = Recorder(self)
+        self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
+        self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
+        self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
+        self.coverage_navigation = CoverageNavigation(self, self.monitoring)
+        self.navigation_strategies = {n.name: n for n in [self.field_navigation,
+                                                          self.straight_line_navigation,
+                                                          self.follow_crops_navigation,
+                                                          self.coverage_navigation,
+                                                          ]}
+        implements: list[Implement] = [self.monitoring]
+        match self.field_friend.implement_name:
+            case 'tornado':
+                implements.append(Tornado(self))
+            case 'weed_screw':
+                implements.append(WeedingScrew(self))
+            case 'dual_mechanism':
+                implements.append(WeedingScrew(self))
+                implements.append(ChopAndScrew(self))
+            case 'none':
+                implements.append(WeedingScrew(self))
+            case _:
+                raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
+        self.implements = {t.name: t for t in implements}
+        self._current_navigation: Navigation = self.straight_line_navigation
+        self._current_implement = self._current_navigation
+        self.automator.default_automation = self._current_navigation.start
+        self.info = Info(self)
+        self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
 
         if self.is_real:
+            assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
@@ -137,22 +183,50 @@ class System(rosys.persistence.PersistentModule):
         os.utime('main.py')
 
     def backup(self) -> dict:
-        return {'automation': self.get_current_automation_id()}
+        return {
+            'navigation': self.current_navigation.name,
+            'implement': self.current_implement.name,
+        }
 
     def restore(self, data: dict[str, Any]) -> None:
-        name = data.get('automation', None)
-        automation = self.automations.get(name, None)
-        self.automator.default_automation = automation
+        implement = self.implements.get(data.get('implement', None), None)
+        if implement is not None:
+            self.current_implement = implement
+        navigation = self.navigation_strategies.get(data.get('navigation', None), None)
+        if navigation is not None:
+            self.current_navigation = navigation
 
-    def get_current_automation_id(self) -> str | None:
-        if self.automator.default_automation is None:
-            return None
-        return {v: k for k, v in self.automations.items()}.get(self.automator.default_automation, None)
+    @property
+    def current_implement(self) -> Implement:
+        return self.current_navigation.implement
 
-    def setup_simulated_usb_camera(self):
+    @current_implement.setter
+    def current_implement(self, implement: Implement) -> None:
+        self.current_navigation.implement = implement
+        self.request_backup()
+        self.log.info(f'selected implement: {implement.name}')
+
+    @property
+    def current_navigation(self) -> Navigation:
+        return self._current_navigation
+
+    @current_navigation.setter
+    def current_navigation(self, navigation: Navigation) -> None:
+        old_navigation = self._current_navigation
+        if old_navigation is not None:
+            implement = self.current_implement
+            navigation.implement = implement
+        self._current_navigation = navigation
+        self.automator.default_automation = self._current_navigation.start
+        self.AUTOMATION_CHANGED.emit(navigation.name)
+        self.request_backup()
+
+    async def setup_simulated_usb_camera(self):
         self.usb_camera_provider.remove_all_cameras()
-        self.usb_camera_provider.add_camera(SimulatedCam.create_calibrated(id='bottom_cam',
-                                                                           x=0.4, z=0.4,
-                                                                           roll=np.deg2rad(360-150),
-                                                                           pitch=np.deg2rad(0),
-                                                                           yaw=np.deg2rad(90)))
+        camera = SimulatedCam.create_calibrated(id='bottom_cam',
+                                                x=0.4, z=0.4,
+                                                roll=np.deg2rad(360-150),
+                                                pitch=np.deg2rad(0),
+                                                yaw=np.deg2rad(90))
+        self.usb_camera_provider.add_camera(camera)
+        self.odometer.ROBOT_MOVED.register(lambda: camera.update_calibration(self.odometer.prediction))

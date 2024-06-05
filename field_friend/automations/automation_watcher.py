@@ -24,13 +24,13 @@ class AutomationWatcher:
         self.field_friend = system.field_friend
         self.gnss = system.gnss
         self.steerer = system.steerer
-        self.path_recorder = system.path_recorder
+        # self.path_recorder = system.path_recorder
 
         self.try_resume_active: bool = False
         self.incidence_time: float = 0.0
         self.incidence_pose: Pose = Pose()
         self.resume_delay: float = DEFAULT_RESUME_DELAY
-        self.field_polygong: Optional[ShapelyPolygon] = None
+        self.field_polygon: Optional[ShapelyPolygon] = None
 
         self.bumper_watch_active: bool = False
         self.gnss_watch_active: bool = False
@@ -48,15 +48,16 @@ class AutomationWatcher:
         self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
 
     def pause(self, reason: str) -> None:
+        # TODO re-think integration of path recorder
         # dont pause automator if steering is active and path_recorder is recording
-        if reason.startswith('steering'):
-            if self.path_recorder.state == 'recording':
-                return
-            else:
-                if self.automator.is_running:
-                    self.log.info(f'pausing automation because {reason}')
-                    self.automator.pause(because=f'{reason})')
-                return
+        # if reason.startswith('steering'):
+        #     if self.path_recorder.state == 'recording':
+        #         return
+        #     else:
+        #         if self.automator.is_running:
+        #             self.log.info(f'pausing automation because {reason}')
+        #             self.automator.pause(because=f'{reason})')
+        #         return
         if reason.startswith('GNSS') and not self.gnss_watch_active:
             self.log.info(f'not pausing automation because {reason} but GNSS watch is not active')
             return
@@ -104,19 +105,19 @@ class AutomationWatcher:
                 self.resume_delay = DEFAULT_RESUME_DELAY
 
     def start_field_watch(self, field_boundaries: list[rosys.geometry.Point]) -> None:
-        self.field_polygong = ShapelyPolygon([(point.x, point.y) for point in field_boundaries])
+        self.field_polygon = ShapelyPolygon([(point.x, point.y) for point in field_boundaries])
         self.field_watch_active = True
 
     def stop_field_watch(self) -> None:
         self.field_watch_active = False
-        self.field_polygong = None
+        self.field_polygon = None
 
     def check_field_bounds(self) -> None:
-        if not self.field_watch_active or not self.field_polygong:
+        if not self.field_watch_active or not self.field_polygon:
             return
         position = ShapelyPoint(self.odometer.prediction.x, self.odometer.prediction.y)
-        if not self.field_polygong.contains(position):
-            self.log.warning('robot is outside of field boundaries')
+        if not self.field_polygon.contains(position):
+            self.log.warning(f'robot at {position} is outside of field boundaries {self.field_polygon}')
             if self.automator.is_running:
                 self.stop('robot is outside of field boundaries')
                 self.field_watch_active = False
