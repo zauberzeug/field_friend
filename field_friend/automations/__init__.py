@@ -1,7 +1,6 @@
 
 from .automation_watcher import AutomationWatcher
 from .battery_watcher import BatteryWatcher
-from .coin_collecting import CoinCollecting
 from .coverage_planer import CoveragePlanner
 from .field import Field, FieldObstacle, Row
 from .field_provider import FieldProvider
@@ -36,6 +35,5 @@ __all__ = [
     'KpiProvider',
     'find_sequence',
     'BatteryWatcher',
-    'CoinCollecting',
     'AutomationWatcher',
 ]
