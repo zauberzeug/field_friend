@@ -10,8 +10,8 @@ from field_friend.hardware import (
     FieldFriendHardware,
     FieldFriendSimulation,
 )
-from field_friend.navigation.gnss_hardware import GnssHardware
-from field_friend.navigation.gnss_simulation import GnssSimulation
+from field_friend.localization.gnss_hardware import GnssHardware
+from field_friend.localization.gnss_simulation import GnssSimulation
 from field_friend.vision import (
     CalibratableUsbCameraProvider,
     CameraConfigurator,

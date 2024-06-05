@@ -12,7 +12,7 @@ from ...hardware import (
     YAxis,
     ZAxis,
 )
-from ...navigation import Gnss
+from ...localization import Gnss
 
 if TYPE_CHECKING:
     from field_friend.system import System

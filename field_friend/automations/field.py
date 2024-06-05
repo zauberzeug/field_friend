@@ -4,9 +4,7 @@ from typing import Optional
 import rosys
 from shapely.geometry import Polygon
 
-from field_friend.navigation import GeoPoint, GeoPointCollection
-
-from .plant import Plant
+from field_friend.localization import GeoPoint, GeoPointCollection
 
 
 @dataclass(slots=True, kw_only=True)

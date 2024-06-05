@@ -10,7 +10,7 @@ from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Recorder
 from field_friend.automations.navigation import StraightLineNavigation
-from field_friend.navigation import GeoPoint, GnssSimulation
+from field_friend.localization import GnssSimulation
 
 
 async def test_straight_line(system: System):

@@ -6,7 +6,7 @@ import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
 
-from ..navigation import GeoPoint, Gnss
+from ..localization import GeoPoint, Gnss
 from . import Field, FieldObstacle, Row
 
 

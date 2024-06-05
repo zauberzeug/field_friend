@@ -7,7 +7,7 @@ import rosys
 from rosys.testing import forward, helpers
 
 from field_friend.automations import Field
-from field_friend.navigation import GeoPoint, GnssSimulation
+from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
 ROBOT_GEO_START_POSITION = GeoPoint(lat=51.983173401171236, long=7.434163443756093)

@@ -3,8 +3,7 @@ import rosys
 from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import assert_point, forward
 
-from field_friend.navigation import GnssSimulation
-from field_friend.navigation.geo_point import GeoPoint
+from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
 
