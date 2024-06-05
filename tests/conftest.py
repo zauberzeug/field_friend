@@ -27,6 +27,7 @@ async def system(integration, request) -> AsyncGenerator[System, None]:
     assert s.gnss.device is None, 'device should not be created yet'
     await forward(3)
     assert s.gnss.device is not None, 'device should be created'
+    assert s.gnss.current.location.distance(ROBOT_GEO_START_POSITION) == 0
     yield s
 
 
