@@ -61,8 +61,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     async def finish(self) -> None:
         self.system.plant_locator.pause()
-        self.system.automation_watcher.stop_field_watch()
-        self.system.automation_watcher.gnss_watch_active = False
         await self.system.field_friend.stop()
         await super().finish()
 
@@ -150,24 +148,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds
         return False
-
-    def _weighted_angle_combine(self, angle1: float, weight1: float, angle2: float, weight2: float) -> float:
-        # Normalize both angles
-        angle1 = eliminate_2pi(angle1)
-        angle2 = eliminate_2pi(angle2)
-
-        # Combine angles with the weights
-        x = np.cos(angle1) * weight1 + np.cos(angle2) * weight2
-        y = np.sin(angle1) * weight1 + np.sin(angle2) * weight2
-
-        # Compute the resultant angle
-        combined_angle = np.arctan2(y, x)
-
-        # Normalize the resultant angle
-        return eliminate_2pi(combined_angle)
-
-    def settings_ui(self):
-        pass
 
     def reset_kpis(self):
         super().reset_kpis()
