@@ -24,6 +24,7 @@ configuration = {
         'motor_on_expander': False,
         'end_stops_on_expander': True,
         'reversed_direction': False,
+        'end_stops_inverted': True,
     },
     'z_axis': {
         'version': 'z_axis_canopen',
@@ -40,6 +41,7 @@ configuration = {
         'motor_on_expander': False,
         'end_stops_on_expander': True,
         'reversed_direction': False,
+        'end_stops_inverted': True,
     },
     'flashlight': {
         'version': 'flashlight_pwm_v2',
