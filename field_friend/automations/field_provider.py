@@ -32,7 +32,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def backup(self) -> dict:
         return {
             'fields': rosys.persistence.to_dict(self.fields),
-            'active_field': None if self.active_field is None else self.active_field.id,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -52,8 +51,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
             for j, row in enumerate(rows):
                 for point in row.get('points_wgs84', []):
                     f.rows[j].points.append(GeoPoint(lat=point[0], long=point[1]))
-
-        self.active_field = next((f for f in self.fields if f.id == data.get('active_field')), None)
 
     def invalidate(self) -> None:
         self.request_backup()
@@ -194,7 +191,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             del field.points[-1]
         self.invalidate()
 
-    async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+    def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         if new_point is None:
             assert self.gnss.current is not None
             positioning = self.gnss.current.location
@@ -212,8 +209,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
             obstacle.points[index] = new_point
         else:
             obstacle.points.append(new_point)
-        assert self.active_object
-        self.select_object(self.active_object['object'].id, 'Obstacles')
         self.invalidate()
 
     def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[GeoPoint] = None) -> None:
