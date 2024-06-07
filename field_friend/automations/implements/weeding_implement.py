@@ -47,7 +47,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.weeds_to_handle: dict[str, Point] = {}
 
         rosys.on_repeat(self._update_time_and_distance, 0.1)
-        self.system.field_provider.FIELD_SELECTED.register(self.clear)
 
     async def prepare(self) -> bool:
         await super().prepare()
