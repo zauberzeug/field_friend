@@ -18,13 +18,13 @@ class ActiveObject(TypedDict):
 
 class field_planner:
 
-    def __init__(self, active_field: Field | None, active_object: Active_object | None, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, leaflet: leaflet_map) -> None:
+    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, leaflet: leaflet_map) -> None:
         self.log = logging.getLogger('field_friend.field_planner')
         self.field_provider = field_provider
         self.odometer = odometer
         self.gnss = gnss
         self.leaflet_map = leaflet
-        self.active_field: Field | None = active_field
+        self.active_field: Field | None = None
         self.active_object: ActiveObject | None = None
         self.coordinate_type = "WGS84"
         self.COORDINATE_TYPE_CHANGED = rosys.event.Event()
