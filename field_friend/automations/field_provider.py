@@ -90,7 +90,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.invalidate()
 
     def create_row(self, field: Field, points: list[GeoPoint] = []) -> Row:
-        assert not points or len(points) == 2
         row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points=points)
         field.rows.append(row)
         self.invalidate()
