@@ -142,7 +142,6 @@ class leaflet_map:
             ui.notify("No object selected. Point could not be added to the void.")
 
     def update_layers(self) -> None:
-        print(self.active_field)
         for layer in self.field_layers:
             self.m.remove_layer(layer)
         self.field_layers = []
