@@ -13,7 +13,7 @@ configuration = {
         'version': 'y_axis_canopen',
         'name': 'yaxis',
         'can_address': 0x60,
-        'max_speed': 2000,
+        'max_speed': 500,
         'reference_speed': 40,
         'min_position': -0.075,
         'max_position': 0.065,
