@@ -11,7 +11,7 @@ from .geodata_picker import geodata_picker
 from .leaflet_map import leaflet_map
 
 
-class Active_object(TypedDict):
+class ActiveObject(TypedDict):
     object_type: Literal["Obstacles", "Rows", "Outline"]
     object: Row | FieldObstacle
 
@@ -25,7 +25,7 @@ class field_planner:
         self.gnss = gnss
         self.leaflet_map = leaflet
         self.active_field: Field | None = active_field
-        self.active_object: Optional[Active_object] = active_object
+        self.active_object: ActiveObject | None = None
         self.coordinate_type = "WGS84"
         self.COORDINATE_TYPE_CHANGED = rosys.event.Event()
         "switch between displaying cartesian and wgs84 coordinates."
