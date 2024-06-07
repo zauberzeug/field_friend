@@ -298,12 +298,9 @@ class field_planner:
         self.show_object_settings.refresh()
 
     def _set_active_field(self, field_id: str) -> None:
-        field = self.field_provider.get_field(field_id)
-        if field is not None:
-            self.active_field = field
+        self.active_field = self.field_provider.get_field(field_id)
+        if self.active_field is not None:
             self.show_field_settings.refresh()
-        else:
-            self.active_field = None
 
     def _set_active_object(self, object_id: Optional[str] = None, object_type: Optional[Literal["Obstacles", "Rows", "Outline"]] = None) -> None:
         if self.active_field is not None and object_id is not None and object_type is not None:
