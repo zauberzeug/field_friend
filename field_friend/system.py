@@ -63,7 +63,10 @@ class System(rosys.persistence.PersistentModule):
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.field_friend: FieldFriend
         if self.is_real:
-            self.field_friend = FieldFriendHardware()
+            try:
+                self.field_friend = FieldFriendHardware()
+            except Exception:
+                self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             self.usb_camera_provider = CalibratableUsbCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
