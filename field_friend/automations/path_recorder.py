@@ -5,7 +5,7 @@ import rosys
 from rosys.driving import PathSegment
 from rosys.geometry import Spline
 
-from ..navigation import Gnss
+from ..localization import Gnss
 from .path_provider import Path, PathProvider
 
 

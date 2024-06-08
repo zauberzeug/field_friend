@@ -32,8 +32,10 @@ class operation:
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
                         self.implement_settings = ui.row().classes('items-center')
-                    with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row():
+                    with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row().classes('items-center'):
                         self.system.plant_provider.settings_ui()
+                    with ui.expansion('Detections').classes('w-full').bind_value(app.storage.user, 'show_detection_settings'), ui.row().classes('items-center'):
+                        self.system.plant_locator.settings_ui()
 
         with activities:
             self.navigation_selection = ui.select(

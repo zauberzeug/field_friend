@@ -5,7 +5,7 @@ import pytest
 import rosys
 
 from field_friend.automations import FieldProvider
-from field_friend.navigation import GnssSimulation
+from field_friend.localization import GnssSimulation
 
 
 def test_loading_from_old_persistence():

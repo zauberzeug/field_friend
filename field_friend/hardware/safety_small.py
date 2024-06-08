@@ -22,6 +22,7 @@ class SmallSafetyHardware(Safety, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  wheels: Union[rosys.hardware.WheelsHardware, DoubleWheelsHardware],
                  estop: rosys.hardware.EStopHardware,
+                 bumper: Union[rosys.hardware.BumperHardware, None] = None,
                  y_axis: Union[ChainAxisHardware,
                                YAxisStepperHardware, YAxisCanOpenHardware, None] = None,
                  z_axis: Union[TornadoHardware, ZAxisCanOpenHardware, ZAxisStepperHardware, None] = None,
@@ -31,6 +32,10 @@ class SmallSafetyHardware(Safety, rosys.hardware.ModuleHardware):
         lizard_code = f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then {wheels.name}.speed(0, 0); end\n'
+        if isinstance(bumper, rosys.hardware.BumperHardware):
+            lizard_code += 'when ' + \
+                ' or '.join(f'{bumper.name}_{pin}.level == 1' for pin in bumper.pins) + \
+                f' then {wheels.name}.off(); end\n'
 
         super().__init__(wheels=wheels,
                          estop=estop,

@@ -5,15 +5,45 @@ from typing import Any
 import numpy as np
 import rosys
 
-from field_friend.hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
-from field_friend.navigation.gnss_hardware import GnssHardware
-from field_friend.navigation.gnss_simulation import GnssSimulation
-from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from field_friend.hardware import (
+    FieldFriend,
+    FieldFriendHardware,
+    FieldFriendSimulation,
+)
+from field_friend.localization.gnss_hardware import GnssHardware
+from field_friend.localization.gnss_simulation import GnssSimulation
+from field_friend.vision import (
+    CalibratableUsbCameraProvider,
+    CameraConfigurator,
+    SimulatedCam,
+    SimulatedCamProvider,
+)
 
-from .automations import (AutomationWatcher, BatteryWatcher, CoinCollecting, FieldProvider, KpiProvider, Mowing,
-                          PathProvider, PathRecorder, PlantLocator, PlantProvider, Puncher)
-from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import FieldNavigation, FollowCropsNavigation, Navigation, StraightLineNavigation
+from .automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    FieldProvider,
+    KpiProvider,
+    PathProvider,
+    PathRecorder,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+)
+from .automations.implements import (
+    ChopAndScrew,
+    Implement,
+    Recorder,
+    Tornado,
+    WeedingScrew,
+)
+from .automations.navigation import (
+    CoverageNavigation,
+    FollowCropsNavigation,
+    Navigation,
+    RowsOnFieldNavigation,
+    StraightLineNavigation,
+)
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -33,7 +63,10 @@ class System(rosys.persistence.PersistentModule):
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.field_friend: FieldFriend
         if self.is_real:
-            self.field_friend = FieldFriendHardware()
+            try:
+                self.field_friend = FieldFriendHardware()
+            except Exception:
+                self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             self.usb_camera_provider = CalibratableUsbCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
@@ -112,32 +145,29 @@ class System(rosys.persistence.PersistentModule):
         self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
-        self.field_navigation = FieldNavigation(self, self.monitoring)
+        self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
         self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
         self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
+        self.coverage_navigation = CoverageNavigation(self, self.monitoring)
         self.navigation_strategies = {n.name: n for n in [self.field_navigation,
                                                           self.straight_line_navigation,
                                                           self.follow_crops_navigation,
+                                                          self.coverage_navigation,
                                                           ]}
-        self.weeding_implements: list[Implement] = [self.monitoring]
+        implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
             case 'tornado':
-                self.weeding_implements.append(Tornado(self))
+                implements.append(Tornado(self))
             case 'weed_screw':
-                self.weeding_implements.append(WeedingScrew(self))
+                implements.append(WeedingScrew(self))
             case 'dual_mechanism':
-                self.weeding_implements.append(WeedingScrew(self))
-                self.weeding_implements.append(ChopAndScrew(self))
+                implements.append(WeedingScrew(self))
+                implements.append(ChopAndScrew(self))
             case 'none':
-                self.weeding_implements.append(WeedingScrew(self))
+                implements.append(WeedingScrew(self))
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
-        # TODO reactivate other tools
-        # self.coin_collecting = CoinCollecting(self)
-        # self.mowing = Mowing(self, robot_width=width, shape=self.shape)
-        # self.path_recorder = PathRecorder(self.path_provider, self.driver, self.steerer, self.gnss)
-        tools: list[Implement] = self.weeding_implements  # + [self.coin_collecting, self.mowing]
-        self.implements = {t.name: t for t in tools}
+        self.implements = {t.name: t for t in implements}
         self._current_navigation: Navigation = self.straight_line_navigation
         self._current_implement = self._current_navigation
         self.automator.default_automation = self._current_navigation.start

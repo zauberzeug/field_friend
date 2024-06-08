@@ -5,8 +5,7 @@ import rosys
 from nicegui import events, ui
 
 from ...automations import Field, FieldObstacle, FieldProvider, Row
-from ...navigation import Gnss
-from ...navigation.geo_point import GeoPoint
+from ...localization import Gnss
 from .geodata_picker import geodata_picker
 from .leaflet_map import leaflet_map
 

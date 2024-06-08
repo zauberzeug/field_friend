@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 import rosys
 
-from ..navigation import GeoPoint
+from ..localization import GeoPoint
 
 
 @dataclass(slots=True, kw_only=True)

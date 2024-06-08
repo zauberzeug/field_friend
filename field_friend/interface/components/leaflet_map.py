@@ -9,7 +9,7 @@ from nicegui import app, events, ui
 from nicegui.elements.leaflet_layers import GenericLayer, TileLayer
 
 from ...automations import Field, FieldObstacle, FieldProvider, Row
-from ...navigation.geo_point import GeoPoint
+from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
 
 
