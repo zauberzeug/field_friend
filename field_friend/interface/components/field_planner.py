@@ -26,7 +26,6 @@ class field_planner:
         self.active_field: Field | None = None
         self.active_object: ActiveObject | None = None
         self.tab: Literal["Obstacles", "Outline", "Rows"] = "Outline"
-        self.TAB_CHANGED = rosys.event.Event()
 
         with ui.row().classes("w-full").style("height: 100%; max-height:100%; width: 100%;"):
             with ui.card().style("width: 48%; max-width: 48%; max-height: 100%; height: 100%;"):
@@ -41,13 +40,12 @@ class field_planner:
                     self.show_field_table()
             self.show_field_settings()
             self.show_object_settings()
-            self.TAB_CHANGED.register(self.show_field_settings.refresh)
             self.field_provider.FIELDS_CHANGED.register(self.refresh_ui)
 
     def set_tab(self, e: events.ValueChangeEventArguments) -> None:
         self.tab = e.value
         self._set_active_object(None)
-        self.TAB_CHANGED.emit()
+        self.show_field_settings.refresh()
 
     def table_selected(self, selection):
         self.active_object = None
