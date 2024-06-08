@@ -51,19 +51,6 @@ class Tornado(WeedingImplement):
                     outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
                     self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                               if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
-                # if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
-                #     self.log.info('drilling crop with open tornado')
-                #     await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
-            # TODO is this working?
-            if len(self.crops_to_handle) > 1 and self.drill_between_crops:
-                self.log.info('checking for second closest crop')
-                second_closest_crop_position = list(self.crops_to_handle.values())[1]
-                distance_to_next_crop = closest_crop_position.distance(second_closest_crop_position)
-                if distance_to_next_crop > 0.13:
-                    # get the target of half the distance between the two crops
-                    target = closest_crop_position.x + distance_to_next_crop / 2
-                    self.log.info(f'driving to position between two crops: {target}')
-                    await self.system.puncher.drive_and_punch(plant_id=closest_crop_id, x=target, y=0, angle=180)
         except PuncherException as e:
             self.log.error(f'Error while Tornado Workflow: {e}')
         except Exception as e:
