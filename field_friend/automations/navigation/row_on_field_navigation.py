@@ -62,12 +62,10 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         self.gnss.reference = self.field.reference
         await rosys.sleep(0.1)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
-        self.automation_watcher.gnss_watch_active = True
         return True
 
     async def finish(self) -> None:
         await super().finish()
-        self.automation_watcher.gnss_watch_active = False
         self.automation_watcher.stop_field_watch()
 
     async def _drive(self) -> None:
