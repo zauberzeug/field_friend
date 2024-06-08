@@ -1,15 +1,22 @@
 
 import logging
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import rosys
 import rosys.geometry
 from nicegui import app, events, ui
 from nicegui.elements.leaflet_layers import GenericLayer, TileLayer
 
+from ...automations import Field, FieldObstacle, FieldProvider, Row
 from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
+
+
+class Active_object(TypedDict):
+    object_type: Literal["Obstacles", "Rows", "Outline"]
+    object: Row | FieldObstacle
+
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -35,11 +42,8 @@ class leaflet_map:
             'edit': False,
         }
         center_point = GeoPoint(lat=51.983159, long=7.434212)
-        if self.field_provider.active_field is None:
-            center_point = GeoPoint(lat=51.983159, long=7.434212)
-        else:
-            if len(self.field_provider.active_field.points) > 0:
-                center_point = self.field_provider.active_field.points[0]
+        if self.system.gnss.current is not None and self.system.gnss.current.location is not None:
+            center_point = self.system.gnss.current.location
         self.m: ui.leaflet
         if draw_tools:
             self.m = ui.leaflet(center=center_point.tuple,
@@ -56,6 +60,7 @@ class leaflet_map:
         self.obstacle_layers: list = []
         self.row_layers: list = []
         self._active_field: str | None = None
+        self.active_object: Active_object | None = None
         self.update_layers()
         self.field_provider.FIELDS_CHANGED.register(self.update_layers)
         self.zoom_to_robot()
@@ -103,7 +108,7 @@ class leaflet_map:
         ui.button(icon='my_location', on_click=self.zoom_to_robot).props('dense flat') \
             .tooltip('Center map on robot position').classes('ml-0')
         ui.button(on_click=self.zoom_to_field) \
-            .bind_enabled_from(self.field_provider, 'active_field') \
+            .bind_enabled_from(self, 'active_field') \
             .props('icon=polyline dense flat') \
             .tooltip('center map on field boundaries').classes('ml-0')
 
@@ -129,9 +134,9 @@ class leaflet_map:
     def add_point_active_object(self, latlon, dialog) -> None:
         dialog.close()
         self.m.remove_layer(self.drawn_marker)
-        if self.field_provider.active_object is not None and self.field_provider.active_object["object"] is not None:
-            self.field_provider.active_object["object"].points.append(GeoPoint.from_list(latlon))
-            self.field_provider.OBJECT_SELECTED.emit()
+        if self.active_object is not None and self.active_object["object"] is not None:
+            self.active_object["object"].points.append(GeoPoint.from_list(latlon))
+            self.field_provider.invalidate()
             self.update_layers()
         else:
             ui.notify("No object selected. Point could not be added to the void.")
@@ -153,8 +158,6 @@ class leaflet_map:
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
-        if field is None:
-            return
         for obstacle in field.obstacles:
             self.obstacle_layers.append(self.m.generic_layer(name="polygon",
                                                              args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
@@ -186,7 +189,7 @@ class leaflet_map:
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def zoom_to_field(self) -> None:
-        field = self.field_provider.active_field
+        field = self.field_provider.get_field(self.active_field)
         if field is None:
             return
         coords = field.points_as_tuples
