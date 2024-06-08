@@ -87,6 +87,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             if isinstance(camera, SimulatedCam):
                 world_point = camera.calibration.project_from_image(image_point).projection()
             else:
+                # TODO remove this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
                 floor_point = camera.calibration.project_from_image(image_point)
                 if floor_point is None:
                     self.log.error('could not generate floor point of detection, calibration error')

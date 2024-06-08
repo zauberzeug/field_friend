@@ -25,6 +25,7 @@ class SimulatedCam(rosys.vision.SimulatedCamera, rosys.vision.CalibratableCamera
         return camera
 
     def update_calibration(self, pose: rosys.geometry.Pose) -> None:
+        # TODO remove this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
         assert self.mounting is not None
         assert self.calibration is not None
         new_translation = pose.transform3d(rosys.geometry.Point3d.from_tuple(self.mounting.translation))
