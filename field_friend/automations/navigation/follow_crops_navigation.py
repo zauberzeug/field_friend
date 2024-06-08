@@ -21,15 +21,22 @@ class FollowCropsNavigation(Navigation):
         self.plant_provider = system.plant_provider
         self.detector = system.detector
         self.start_position = self.odometer.prediction.point
+        self.flashlight = system.field_friend.flashlight
+        self.plant_locator = system.plant_locator
         self.name = 'Follow Crops'
         self.crop_attraction = 0.8
 
     async def prepare(self) -> bool:
         self.log.info(f'Activating {self.implement.name}...')
+        self.plant_provider.clear()
         await self.implement.activate()
+        await self.flashlight.turn_on()
+        self.plant_locator.resume()
         return True
 
     async def finish(self) -> None:
+        await self.flashlight.turn_off()
+        self.plant_locator.pause()
         await self.implement.deactivate()
 
     async def _drive(self):
