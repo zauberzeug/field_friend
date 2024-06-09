@@ -15,6 +15,8 @@ class FieldCreator:
     def __init__(self, system: 'System'):
         drive_straight = StraightLineNavigation(system, system.monitoring)
         drive_straight.length = 100  # NOTE: for now, every 100 m the user needs to re-start automation
+        drive_straight.linear_speed_limit = 0.6
+        drive_straight.angular_speed_limit = 0.2
         self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
         self.automator = rosys.automation.Automator(system.steerer,

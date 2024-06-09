@@ -20,6 +20,8 @@ class StraightLineNavigation(Navigation):
         self.detector = system.detector
         self.length = 2.0
         self.name = 'Straight Line'
+        self.linear_speed_limit = 0.125
+        self.angular_speed_limit = 0.1
 
     async def prepare(self) -> bool:
         self.log.info(f'Activating {self.implement.name}...')
@@ -32,7 +34,7 @@ class StraightLineNavigation(Navigation):
     async def _drive(self):
         target = self.odometer.prediction.transform(rosys.geometry.Point(x=0.02, y=0))
         self.log.info(f'driving to {target}')
-        with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
+        with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
             await self.driver.drive_to(target)
 
     def _should_finish(self):
@@ -47,7 +49,7 @@ class StraightLineNavigation(Navigation):
                 .polar(randint(-2, 2)*0.01, self.odometer.prediction.yaw+np.pi/2)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
                                                                                 position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
-            for j in range(1, 7):
+            for _ in range(1, 7):
                 p = self.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01,
                                                          self.odometer.prediction.yaw) \
                     .polar(randint(-15, 15)*0.01, self.odometer.prediction.yaw + np.pi/2)
