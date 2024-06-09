@@ -35,6 +35,6 @@ class field_planner_page():
                 with ui.column():
                     leaflet.buttons()
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap; height: 60%; max-height:60%;'):
-                planner = field_planner(self.system.field_provider, self.system.odometer, self.system.gnss, leaflet)
+                planner = field_planner(self.system, leaflet)
                 binding.bind_to(planner, 'active_field', leaflet, 'active_field', lambda f: f.id if f else None)
                 binding.bind_to(planner, 'active_object', leaflet, 'active_object', lambda o: o if o else None)

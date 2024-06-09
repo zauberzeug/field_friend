@@ -82,7 +82,7 @@ class System(rosys.persistence.PersistentModule):
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
         self.small_weed_category_names = ['coin', 'weed',]
-        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', ]
+        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', 'liebstoekel']
         self.plant_locator = PlantLocator(self)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
@@ -109,7 +109,7 @@ class System(rosys.persistence.PersistentModule):
                 (-offset, width/2)
             ],
             height=height)
-        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
+        self.automator = rosys.automation.Automator(self.steerer, on_interrupt=self.field_friend.stop)
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)

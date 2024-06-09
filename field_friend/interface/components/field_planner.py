@@ -1,13 +1,16 @@
 import logging
-from typing import Any, Literal, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
 
 import rosys
 from nicegui import events, ui
 
 from ...automations import Field, FieldObstacle, FieldProvider, Row
 from ...localization import Gnss
-from .geodata_picker import geodata_picker
+from .field_creator import FieldCreator
 from .leaflet_map import leaflet_map
+
+if TYPE_CHECKING:
+    from field_friend.system import System
 
 
 class ActiveObject(TypedDict):
@@ -17,11 +20,11 @@ class ActiveObject(TypedDict):
 
 class field_planner:
 
-    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, leaflet: leaflet_map) -> None:
+    def __init__(self, system: 'System', leaflet: leaflet_map) -> None:
         self.log = logging.getLogger("field_friend.field_planner")
-        self.field_provider = field_provider
-        self.odometer = odometer
-        self.gnss = gnss
+        self.field_provider = system.field_provider
+        self.odometer = system.odometer
+        self.gnss = system.gnss
         self.leaflet_map = leaflet
         self.active_field: Field | None = None
         self.active_object: ActiveObject | None = None
