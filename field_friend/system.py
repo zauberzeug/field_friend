@@ -83,11 +83,7 @@ class System(rosys.persistence.PersistentModule):
         self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
         self.small_weed_category_names = ['coin', 'weed',]
         self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', ]
-        self.plant_locator = PlantLocator(self.usb_camera_provider,
-                                          self.detector,
-                                          self.plant_provider,
-                                          self.odometer,
-                                          )
+        self.plant_locator = PlantLocator(self)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
         if self.field_friend.implement_name == 'tornado':
