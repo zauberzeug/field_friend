@@ -23,10 +23,10 @@ class FieldCreator:
         self.steerer = system.steerer
         self.plant_locator = system.plant_locator
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
-            self.headline = ui.label().classes('text-lg font-bold')
             with ui.row().classes('w-full no-wrap no-gap'):
                 self.row_sight = ui.interactive_image().classes('w-3/5')
                 with ui.column().classes('items-center  w-2/5 p-8'):
+                    self.headline = ui.label().classes('text-lg font-bold')
                     self.content = ui.column().classes('items-center')
                     self.next_button = ui.button('Ready')
         ui.timer(0.1, self.update_front_cam)
@@ -46,14 +46,16 @@ class FieldCreator:
                      'So that the blue line is in the center of the row.') \
                 .classes('text-lg text-center')
         self.next_button.on_click(self.get_infos)
-        self.next_button.text = 'Ready'
+        self.next_button.text = 'Next'
 
     def get_infos(self):
         self.headline.text = 'Plant Information'
         self.row_sight.content = ''
         self.content.clear()
+        crops = self.plant_locator.crop_category_names
+        crops.remove('coin_with_hole')
         with self.content:
-            ui.select(label='Cultivated Crop', options=self.plant_locator.crop_category_names).classes('w-40')
+            ui.select(label='Cultivated Crop', options=crops).classes('w-40')
             ui.number('Crop Spacing', suffix='cm',
                       value=20, step=1, min=1, max=60) \
                 .props('dense outlined').classes('w-40') \

@@ -82,7 +82,7 @@ class System(rosys.persistence.PersistentModule):
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
         self.small_weed_category_names = ['coin', 'weed',]
-        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', 'liebstoekel']
+        self.crop_category_names = ['coin_with_hole', 'sugar_beet', 'onion', 'garlic', 'maize', 'liebstoekel']
         self.plant_locator = PlantLocator(self)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
