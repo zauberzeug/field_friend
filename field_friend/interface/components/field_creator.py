@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 from uuid import uuid4
 
 import rosys
@@ -34,9 +34,10 @@ class FieldCreator:
         self.first_row_start: GeoPoint | None = None
         self.first_row_end: GeoPoint | None = None
         self.last_row_end: GeoPoint | None = None
-        self.row_spacing = 50
+        self.row_spacing = 0.5
         self.padding = 1
         self.padding_bottom = 2
+        self.next: Callable = self.find_first_row
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
@@ -44,12 +45,13 @@ class FieldCreator:
                 with ui.column().classes('items-center  w-2/5 p-8'):
                     self.headline = ui.label().classes('text-lg font-bold')
                     self.content = ui.column().classes('items-center')
-                    self.next_button = ui.button('Ready')
+                    # NOTE: the next function is replaced, hence we need the lambda
+                    ui.button('Next', on_click=lambda: self.next())
         ui.timer(0.1, self.update_front_cam)
         self.open()
 
     def open(self) -> None:
-        self.find_first_row()
+        self.next()
         self.dialog.open()
 
     def find_first_row(self) -> None:
@@ -61,8 +63,7 @@ class FieldCreator:
                      'right before the first crop. '
                      'The blue line should be in the center of the row.') \
                 .classes('text-lg text-center')
-        self.next_button.on_click(self.get_infos)
-        self.next_button.text = 'Next'
+        self.next = self.get_infos
 
     def get_infos(self) -> None:
         assert self.gnss.current is not None
@@ -72,9 +73,9 @@ class FieldCreator:
         self.first_row_start = self.gnss.current.location
 
         self.row_sight.content = ''
-        self.content.clear()
         crops = self.plant_locator.crop_category_names[:]
         crops.remove('coin_with_hole')
+        self.content.clear()
         with self.content:
             ui.select(label='Cultivated Crop', options=crops, clearable=True).classes('w-40') \
                 .bind_value(self.field, 'crop')
@@ -86,8 +87,8 @@ class FieldCreator:
                       value=50, step=5, min=20, max=100) \
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the distance between the rows') \
-                .bind_value(self, 'row_spacing')
-        self.next_button.on_click(self.find_row_ending)
+                .bind_value(self, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
+        self.next = self.find_row_ending
 
     def find_row_ending(self) -> None:
         self.headline.text = 'Find Row Ending'
@@ -98,7 +99,7 @@ class FieldCreator:
             ui.label('Press "Play" to start driving forward. '
                      'At the end of the row, press the "Stop" button.') \
                 .classes('text-lg text-center')
-        self.next_button.on_click(self.drive_to_last_row)
+        self.next = self.drive_to_last_row
 
     def drive_to_last_row(self) -> None:
         assert self.gnss.current is not None
@@ -106,7 +107,6 @@ class FieldCreator:
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location
-        ic(self.gnss.current.location)
 
         self.headline.text = 'Drive to Last Row'
         self.content.clear()
@@ -115,7 +115,7 @@ class FieldCreator:
             ui.label('Drive the robot to the last row on this side, '
                      'right before the first crop.') \
                 .classes('text-lg text-center')
-        self.next_button.on_click(self.confirm_geometry)
+        self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
         assert self.gnss.current is not None
@@ -123,16 +123,15 @@ class FieldCreator:
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.last_row_end = self.gnss.current.location
-        ic(self.gnss.current.location)
 
         assert self.first_row_end is not None
         assert self.last_row_end is not None
         if not self.build_geometry():
             d = self.first_row_end.distance(self.last_row_end)
-            ic(self.first_row_end, self.last_row_end)
             ui.label(f'The distance between first row and last row is {d:.2f} m. '
                      f'Which does not match well with the provided row spacing of {self.row_spacing} cm.') \
                 .classes('text-red')
+
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
         with self.content:
@@ -141,8 +140,7 @@ class FieldCreator:
             ui.label('Press "Play" to start driving forward. '
                      'At the end of the row, press the "Stop" button.') \
                 .classes('w-64 text-lg')
-        self.next_button.text = 'Create Field'
-        self.next_button.on_click(self._apply)
+        self.next = self._apply
 
     def build_geometry(self) -> bool:
         assert self.first_row_start is not None
@@ -150,9 +148,7 @@ class FieldCreator:
         assert self.last_row_end is not None
         self.field.reference = self.first_row_start
         distance = self.first_row_end.distance(self.last_row_end)
-        number_of_rows = distance / (self.row_spacing / 100.0) + 1
-        if 1 - number_of_rows % 1 > 0.1:
-            return False
+        number_of_rows = distance / (self.row_spacing) + 1
         # get AB line
         a = self.first_row_start.cartesian(self.field.reference)
         b = self.first_row_end.cartesian(self.field.reference)
@@ -172,11 +168,12 @@ class FieldCreator:
         top_right = c.polar(self.padding, ab).polar(self.padding, bc)
         bottom_right = d.polar(-self.padding_bottom, ab).polar(self.padding, bc)
         self.field.points = [self.field.reference.shifted(p) for p in [bottom_left, top_left, top_right, bottom_right]]
-        return True
+        return 1 - number_of_rows % 1 < 0.1
 
     def _apply(self) -> None:
         self.dialog.close()
-        # self.system.field_provider.create_field()
+        self.field_provider.fields.append(self.field)
+        self.field_provider.request_backup()
 
     def update_front_cam(self) -> None:
         if self.front_cam is None:
