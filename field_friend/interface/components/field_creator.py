@@ -18,8 +18,8 @@ class FieldCreator:
     def __init__(self, system: 'System'):
         drive_straight = StraightLineNavigation(system, system.monitoring)
         drive_straight.length = 100  # NOTE: for now, every 100 m the user needs to re-start automation
-        drive_straight.linear_speed_limit = 0.6
-        drive_straight.angular_speed_limit = 0.2
+        drive_straight.linear_speed_limit = 2
+        drive_straight.angular_speed_limit = 1
         self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
         self.automator = rosys.automation.Automator(system.steerer,
@@ -35,6 +35,8 @@ class FieldCreator:
         self.first_row_end: GeoPoint | None = None
         self.last_row_end: GeoPoint | None = None
         self.row_spacing = 50
+        self.padding = 1
+        self.padding_bottom = 2
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
@@ -64,10 +66,10 @@ class FieldCreator:
 
     def get_infos(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual == 4:
-            self.first_row_start = self.gnss.current.location
-        else:
-            ui.label('No RTK fix available.').classes('text-red')
+        if self.gnss.current.gps_qual != 4:
+            with self.content:
+                ui.label('No RTK fix available.').classes('text-red')
+        self.first_row_start = self.gnss.current.location
 
         self.row_sight.content = ''
         self.content.clear()
@@ -100,10 +102,11 @@ class FieldCreator:
 
     def drive_to_last_row(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual == 4:
-            self.first_row_end = self.gnss.current.location
-        else:
-            ui.label('No RTK fix available.').classes('text-red')
+        if self.gnss.current.gps_qual != 4:
+            with self.content:
+                ui.label('No RTK fix available.').classes('text-red')
+        self.first_row_end = self.gnss.current.location
+        ic(self.gnss.current.location)
 
         self.headline.text = 'Drive to Last Row'
         self.content.clear()
@@ -116,14 +119,20 @@ class FieldCreator:
 
     def confirm_geometry(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual == 4:
-            self.last_row_end = self.gnss.current.location
-        else:
-            ui.label('No RTK fix available.').classes('text-red')
+        if self.gnss.current.gps_qual != 4:
+            with self.content:
+                ui.label('No RTK fix available.').classes('text-red')
+        self.last_row_end = self.gnss.current.location
+        ic(self.gnss.current.location)
 
+        assert self.first_row_end is not None
+        assert self.last_row_end is not None
         if not self.build_geometry():
-            ui.label('The geometry could not be created.').classes('text-red')
-            return
+            d = self.first_row_end.distance(self.last_row_end)
+            ic(self.first_row_end, self.last_row_end)
+            ui.label(f'The distance between first row and last row is {d:.2f} m. '
+                     f'Which does not match well with the provided row spacing of {self.row_spacing} cm.') \
+                .classes('text-red')
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
         with self.content:
@@ -143,14 +152,14 @@ class FieldCreator:
         distance = self.first_row_end.distance(self.last_row_end)
         number_of_rows = distance / (self.row_spacing / 100.0) + 1
         if 1 - number_of_rows % 1 > 0.1:
-            ui.notification(f'The row spacing of {self.row_spacing} might be incorrect. Please check the distance between the rows.',
-                            type='warning')
             return False
         # get AB line
         a = self.first_row_start.cartesian(self.field.reference)
         b = self.first_row_end.cartesian(self.field.reference)
         c = self.last_row_end.cartesian(self.field.reference)
+        ab = a.direction(b)
         bc = b.direction(c)
+        d = a.polar(distance, bc)
         for i in range(int(number_of_rows)):
             start = a.polar(i * self.row_spacing, bc)
             end = b.polar(i * self.row_spacing, bc)
@@ -158,6 +167,11 @@ class FieldCreator:
                                        points=[self.field.reference.shifted(start),
                                                self.field.reference.shifted(end)]
                                        ))
+        bottom_left = a.polar(-self.padding_bottom, ab).polar(-self.padding, bc)
+        top_left = b.polar(self.padding, ab).polar(-self.padding, bc)
+        top_right = c.polar(self.padding, ab).polar(self.padding, bc)
+        bottom_right = d.polar(-self.padding_bottom, ab).polar(self.padding, bc)
+        self.field.points = [self.field.reference.shifted(p) for p in [bottom_left, top_left, top_right, bottom_right]]
         return True
 
     def _apply(self) -> None:
