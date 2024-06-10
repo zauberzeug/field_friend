@@ -107,7 +107,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 # self.log.info('weed found')
                 await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
-                # self.log.info('crop found')
+                # self.log.info(f'{d.category_name} found')
                 self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
