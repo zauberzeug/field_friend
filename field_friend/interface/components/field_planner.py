@@ -37,6 +37,8 @@ class field_planner:
                         .tooltip("Upload a file with field boundaries. Supported file formats: KML, XML and Shape").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Add field", on_click=self.field_provider.create_field).tooltip("Add a new field") \
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
+                    ui.button("Field Wizard", on_click=lambda: FieldCreator(system)).tooltip("Build a field with rows in a few simple steps") \
+                        .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Clear fields", on_click=self.field_provider.clear_fields).props("outline color=warning") \
                         .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                 with ui.row().style("width: 100%;"):

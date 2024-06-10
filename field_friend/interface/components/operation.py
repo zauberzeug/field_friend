@@ -21,7 +21,6 @@ class operation:
         self.field_provider = system.field_provider
         self.field = None
         self.key_controls = KeyControls(self.system)
-        FieldCreator(system)
 
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):

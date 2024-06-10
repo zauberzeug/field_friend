@@ -33,7 +33,7 @@ class StraightLineNavigation(Navigation):
 
     async def _drive(self):
         target = self.odometer.prediction.transform(rosys.geometry.Point(x=0.02, y=0))
-        self.log.info(f'driving to {target}')
+        # self.log.info(f'driving to {target}')
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
             await self.driver.drive_to(target)
 
