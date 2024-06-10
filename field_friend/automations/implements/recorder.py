@@ -26,8 +26,8 @@ class Recorder(Implement):
 
     async def deactivate(self):
         self.system.plant_locator.pause()
-        self.system.field_friend.flashlight.turn_off()
-        super().deactivate()
+        await self.system.field_friend.flashlight.turn_off()
+        await super().deactivate()
 
     async def observe(self) -> None:
         while True:
