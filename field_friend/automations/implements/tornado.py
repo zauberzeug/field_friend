@@ -19,6 +19,7 @@ class Tornado(WeedingImplement):
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
         self.with_punch_check: bool = False
+        self.field_friend = system.field_friend
 
     async def start_workflow(self) -> None:
         await super().start_workflow()
@@ -88,11 +89,13 @@ class Tornado(WeedingImplement):
     def settings_ui(self):
         super().settings_ui()
 
-        ui.number('Tornado angle', format='%.0f', value=180, step=1, min=1, max=180) \
+        ui.number('Tornado angle', format='%.0f', value=180, step=1, min=0, max=180) \
             .props('dense outlined suffix=°') \
             .classes('w-24') \
             .bind_value(self, 'tornado_angle') \
             .tooltip('Set the angle for the tornado drill')
+        ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
+                                  f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
         ui.checkbox('With punch check', value=True) \
             .bind_value(self, 'with_punch_check') \
             .tooltip('Set the weeding automation to check for punch')
