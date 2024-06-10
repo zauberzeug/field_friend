@@ -5,52 +5,23 @@ from typing import Any
 import numpy as np
 import rosys
 
-from field_friend.hardware import (
-    FieldFriend,
-    FieldFriendHardware,
-    FieldFriendSimulation,
-)
+from field_friend.hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
 from field_friend.localization.gnss_hardware import GnssHardware
 from field_friend.localization.gnss_simulation import GnssSimulation
-from field_friend.vision import (
-    CalibratableUsbCameraProvider,
-    CameraConfigurator,
-    SimulatedCam,
-    SimulatedCamProvider,
-)
+from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
 
-from .automations import (
-    AutomationWatcher,
-    BatteryWatcher,
-    FieldProvider,
-    KpiProvider,
-    PathProvider,
-    PathRecorder,
-    PlantLocator,
-    PlantProvider,
-    Puncher,
-)
-from .automations.implements import (
-    ChopAndScrew,
-    Implement,
-    Recorder,
-    Tornado,
-    WeedingScrew,
-)
-from .automations.navigation import (
-    CoverageNavigation,
-    FollowCropsNavigation,
-    Navigation,
-    RowsOnFieldNavigation,
-    StraightLineNavigation,
-)
+from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PathRecorder,
+                          PlantLocator, PlantProvider, Puncher)
+from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
+from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
+                                     StraightLineNavigation)
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
 
 class System(rosys.persistence.PersistentModule):
 
-    version = 'rb34'  # insert here your field friend version to be simulated
+    version = 'rb36'  # insert here your field friend version to be simulated
 
     def __init__(self) -> None:
         super().__init__()
@@ -119,12 +90,6 @@ class System(rosys.persistence.PersistentModule):
                                           )
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
-        if self.field_friend.implement_name == 'tornado':
-            self.plant_locator.minimum_weed_confidence = 0.8
-            self.plant_locator.minimum_crop_confidence = 0.75
-        else:
-            self.plant_locator.minimum_weed_confidence = 0.45
-            self.plant_locator.minimum_crop_confidence = 0.65
 
         rosys.on_repeat(watch_robot, 1.0)
 
