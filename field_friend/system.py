@@ -50,10 +50,12 @@ from .kpi_generator import generate_kpis
 
 class System(rosys.persistence.PersistentModule):
 
-    version = 'rb28'  # insert here your field friend version to be simulated
+    version = 'unknown'  # This is set in main.py through the environment variable VERSION or ROBOT_ID
 
     def __init__(self) -> None:
         super().__init__()
+        assert self.version is not None
+        assert self.version != 'unknown'
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
