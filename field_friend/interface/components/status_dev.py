@@ -90,14 +90,15 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Bumper:**').style('color: #EDF4FB')
                 bumper_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Motor status:**').style('color: #EDF4FB')
-            l0_status = ui.label()
-            l1_status = ui.label()
-            r0_status = ui.label()
-            r1_status = ui.label()
-            reset_motor_button = ui.button(
-                'Reset motor errors', on_click=robot.wheels.reset_motors).bind_visibility_from(robot.wheels, 'motor_error')
+        if system.is_real:
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Motor status:**').style('color: #EDF4FB')
+                l0_status = ui.label()
+                l1_status = ui.label()
+                r0_status = ui.label()
+                r1_status = ui.label()
+                reset_motor_button = ui.button(
+                    'Reset motor errors', on_click=robot.wheels.reset_motors).bind_visibility_from(robot.wheels, 'motor_error')
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Robot Brain**').style('color: #6E93D6;').classes('w-full text-center')
@@ -300,13 +301,14 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
             #         if robot.implement_name == 'dual_mechanism':
             #             kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
-        if robot.wheels.odrive_version == 6:
-            l0_status.text = 'Error in l0' if robot.wheels.l0_error else 'No error'
-            l1_status.text = 'Error in l1' if robot.wheels.l1_error else 'No error'
-            r0_status.text = 'Error in r0' if robot.wheels.r0_error else 'No error'
-            r1_status.text = 'Error in r1' if robot.wheels.r1_error else 'No error'
-        if robot.wheels.odrive_version == 4:
-            l0_status.text = 'cant read status update odrive to version 0.5.6'
+        if system.is_real:
+            if robot.wheels.odrive_version == 6:
+                l0_status.text = 'Error in l0' if robot.wheels.l0_error else 'No error'
+                l1_status.text = 'Error in l1' if robot.wheels.l1_error else 'No error'
+                r0_status.text = 'Error in r0' if robot.wheels.r0_error else 'No error'
+                r1_status.text = 'Error in r1' if robot.wheels.r1_error else 'No error'
+            if robot.wheels.odrive_version == 4:
+                l0_status.text = 'cant read status update odrive to version 0.5.6'
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
         reference_position_label.text = 'No reference' if system.gnss.reference is None else 'Set'
         gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
