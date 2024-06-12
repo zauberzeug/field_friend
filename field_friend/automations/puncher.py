@@ -55,7 +55,8 @@ class Puncher:
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
         world_target = self.driver.prediction.transform(local_target)
-        await self.driver.drive_to(world_target, backward=axis_distance < 0)
+        with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
+            await self.driver.drive_to(world_target, backward=axis_distance < 0)
 
     async def punch(self,
                     y: float, *,
@@ -106,7 +107,8 @@ class Puncher:
             elif isinstance(self.field_friend.z_axis, ZAxis):
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(-depth)
-                await self.field_friend.z_axis.return_to_reference()
+                # await self.field_friend.z_axis.return_to_reference()
+                await self.field_friend.z_axis.move_to(-0.05)
             self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
             self.kpi_provider.increment_weeding_kpi('punches')
         except Exception as e:
