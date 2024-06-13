@@ -61,7 +61,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
 
     async def _detect_plants(self) -> None:
         if self.is_paused:
-            await asyncio.sleep(0.01)
+            await rosys.sleep(0.01)
             return
         t = rosys.time()
         camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
@@ -74,11 +74,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
             raise DetectorError()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:
-            await asyncio.sleep(0.01)
+            await rosys.sleep(0.01)
             return
         await self.detector.detect(new_image, autoupload=self.autoupload, tags=self.tags + [self.robot_name])
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
-            await asyncio.sleep(0.01 - (rosys.time() - t))
+            await rosys.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
             return
             # raise DetetorError()
