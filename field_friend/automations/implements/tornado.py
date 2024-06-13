@@ -21,7 +21,7 @@ class Tornado(WeedingImplement):
         self.with_punch_check: bool = False
         self.field_friend = system.field_friend
 
-    async def start_workflow(self) -> None:
+    async def start_workflow(self) -> bool:
         await super().start_workflow()
         self.log.info('Performing Tornado Workflow..')
         try:
@@ -31,7 +31,7 @@ class Tornado(WeedingImplement):
             # fist check if the closest crop is in the working area
             if closest_crop_position.x >= self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
                 self.log.info('closest crop is out of working area')
-                return
+                return True
             self.log.info(f'target next crop at {closest_crop_position}')
             if self.system.field_friend.can_reach(closest_crop_position) \
                     and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
@@ -52,8 +52,11 @@ class Tornado(WeedingImplement):
                     outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
                     self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                               if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
+
+            return True
         except PuncherException as e:
             self.log.error(f'Error while Tornado Workflow: {e}')
+            return True
         except Exception as e:
             raise ImplementException(f'Error while tornado Workflow: {e}') from e
 

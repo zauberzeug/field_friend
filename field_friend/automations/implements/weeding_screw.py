@@ -18,14 +18,14 @@ class WeedingScrew(WeedingImplement):
         self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
 
-    async def start_workflow(self) -> None:
+    async def start_workflow(self) -> bool:
         await super().start_workflow()
         try:
             self._keep_crops_safe()
             weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
                               if position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE and self.system.field_friend.can_reach(position)}
             if not weeds_in_range:
-                return
+                return True
             self.log.info(f'Weeds in range {[f"{p.x:.3f},{p.y:.3f}" for p in weeds_in_range.values()]}')
             next_weed_id, next_weed_position = list(weeds_in_range.items())[0]
             next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
@@ -52,6 +52,7 @@ class WeedingScrew(WeedingImplement):
                 self.system.detector.simulated_objects = [
                     obj for obj in self.system.detector.simulated_objects
                     if obj.position.projection().distance(screw_world_position) > self.system.field_friend.DRILL_RADIUS]
+            return False
         except Exception as e:
             raise ImplementException(f'Error while Weed Screw Workflow: {e}') from e
 
