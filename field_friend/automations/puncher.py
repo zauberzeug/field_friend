@@ -115,7 +115,7 @@ class Puncher:
                 else:
                     rest_position = 'reference'
                     await self.field_friend.z_axis.return_to_reference()
-            self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position {rest_position}')
+            self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
             self.kpi_provider.increment_weeding_kpi('punches')
         except Exception as e:
             raise PuncherException(f'punching failed because: {e}') from e
