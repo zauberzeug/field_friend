@@ -45,7 +45,7 @@ class AutomationWatcher:
         self.gnss.RTK_FIX_LOST.register(lambda: self.pause('GNSS RTK fix lost'))
 
         self.steerer.STEERING_STARTED.register(lambda: self.pause('steering started'))
-        self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
+        # self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
 
     def pause(self, reason: str) -> None:
         # TODO re-think integration of path recorder
