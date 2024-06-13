@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 import numpy as np
@@ -107,9 +108,14 @@ class Puncher:
             elif isinstance(self.field_friend.z_axis, ZAxis):
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(-depth)
-                # await self.field_friend.z_axis.return_to_reference()
-                await self.field_friend.z_axis.move_to(-0.05)
-            self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
+                if os.environ.get('Z_AXIS_REST_POSITION'):
+                    target = float(os.environ.get('Z_AXIS_REST_POSITION', '0'))
+                    await self.field_friend.z_axis.move_to(target)
+                    rest_position = f'custom position {target}'
+                else:
+                    rest_position = 'reference'
+                    await self.field_friend.z_axis.return_to_reference()
+            self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position {rest_position}')
             self.kpi_provider.increment_weeding_kpi('punches')
         except Exception as e:
             raise PuncherException(f'punching failed because: {e}') from e
