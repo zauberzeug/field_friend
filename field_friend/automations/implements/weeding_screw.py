@@ -28,6 +28,7 @@ class WeedingScrew(WeedingImplement):
                 return
             self.log.info(f'Weeds in range {[f"{p.x:.3f},{p.y:.3f}" for p in weeds_in_range.values()]}')
             next_weed_id, next_weed_position = list(weeds_in_range.items())[0]
+            next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
             weed_world_position = self.system.odometer.prediction.transform(next_weed_position)
             self.log.info(f'Targeting weed at world: {weed_world_position}, local: {next_weed_position}')
             await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
