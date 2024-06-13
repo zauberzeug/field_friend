@@ -49,7 +49,6 @@ class Navigation(rosys.persistence.PersistentModule):
                 if not self._should_finish():
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
-                    await self._drive()
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')

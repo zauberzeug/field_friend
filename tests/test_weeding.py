@@ -45,6 +45,19 @@ async def test_weeding_screw_only_targets_big_weed(system: System, detector: ros
     assert detector.simulated_objects[0].category_name == 'weed'
 
 
+async def test_weeding_screw_does_not_skip_close_weed(system: System, detector: rosys.vision.DetectorSimulation):
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
+                                                                   position=rosys.geometry.Point3d(x=0.2, y=0, z=0)))
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
+                                                                   position=rosys.geometry.Point3d(x=0.2+system.field_friend.DRILL_RADIUS-0.01, y=0.05, z=0)))
+    system.log.info(system.field_friend.DRILL_RADIUS)
+    system.current_implement = system.implements['Weed Screw']
+    system.current_navigation = system.straight_line_navigation
+    system.automator.start()
+    await forward(40)
+    assert len(detector.simulated_objects) == 0
+
+
 @pytest.mark.parametrize('system', ['rb28'], indirect=True)
 async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',

@@ -129,7 +129,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         }
         upcoming_crop_positions = {
             c: pos for c, pos in relative_crop_positions.items()
-            if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS < pos.x < 0.3
+            if self.system.field_friend.WORK_X < pos.x < 0.3
         }
         # Sort the upcoming_crop_positions dictionary by the .x attribute of its values
         sorted_crops = dict(sorted(upcoming_crop_positions.items(), key=lambda item: item[1].x))
@@ -142,7 +142,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         }
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()
-            if self.system.field_friend.WORK_X+self.system.field_friend.DRILL_RADIUS < pos.x < 0.4
+            if self.system.field_friend.WORK_X < pos.x < 0.4
         }
         # Sort the upcoming_weed_positions dictionary by the .x attribute of its values
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
