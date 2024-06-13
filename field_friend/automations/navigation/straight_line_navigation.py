@@ -1,5 +1,5 @@
 from random import randint
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
@@ -64,3 +64,11 @@ class StraightLineNavigation(Navigation):
             .bind_value(self, 'length') \
             .tooltip('Length to drive in meters')
         super().settings_ui()
+
+    def backup(self) -> dict:
+        return {
+            'length': self.length,
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.length = data.get('length', self.length)

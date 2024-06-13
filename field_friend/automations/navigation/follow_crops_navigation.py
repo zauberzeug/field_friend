@@ -46,10 +46,20 @@ class FollowCropsNavigation(Navigation):
             # Fit a line using least squares
             A = np.vstack([points_array[:, 0], np.ones(len(points_array))]).T
             m, c = np.linalg.lstsq(A, points_array[:, 1], rcond=None)[0]
-            yaw_of_row = np.arctan(m)
+            yaw = np.arctan(m)
             # flip if it is pointing backwards
-            if np.abs(yaw_of_row - self.odometer.prediction.yaw) > math.pi / 2:
-                yaw_of_row = yaw_of_row + math.pi
+            if np.abs(yaw - self.odometer.prediction.yaw) > math.pi / 2:
+                yaw = yaw + math.pi
+
+            # Calculate a point 0.3 meters in front of the robot along the line
+            x_front = self.odometer.prediction.point.x + 0.3 * np.cos(yaw)
+            y_front = m * x_front + c
+            point_front = np.array([x_front, y_front])
+
+            # Calculate the desired yaw angle from the robot's current position to the front point
+            delta_x = point_front[0] - self.odometer.prediction.point.x
+            delta_y = point_front[1] - self.odometer.prediction.point.y
+            yaw_of_row = np.arctan2(delta_y, delta_x)
         else:
             yaw_of_row = self.odometer.prediction.yaw
         target_yaw = self.combine_angles(yaw_of_row, self.crop_attraction, self.odometer.prediction.yaw)
