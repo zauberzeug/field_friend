@@ -75,10 +75,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
-        await rosys.automation.parallelize(
-            await self.puncher.field_friend.y_axis.return_to_reference(),
-            await self.puncher.field_friend.z_axis.return_to_reference()
-        )
+        await self.puncher.field_friend.z_axis.return_to_reference()
 
     async def observe(self) -> None:
         self.log.info('checking for plants...')
