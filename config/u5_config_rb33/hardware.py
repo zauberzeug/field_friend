@@ -32,7 +32,7 @@ configuration = {
         'version': 'z_axis_canopen',
         'name': 'zaxis',
         'can_address': 0x60,
-        'max_speed': 2000,
+        'max_speed': 400,
         'reference_speed': 30,
         'min_position': -0.197,
         'max_position': 0.0,
