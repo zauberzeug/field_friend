@@ -85,6 +85,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown Flashlight version: {config_hardware["flashlight"]["version"]}')
 
+        imu = rosys.hardware.ImuSimulation(offset_rotation=rosys.geometry.Rotation.from_euler(0, 0, 0))
         estop = rosys.hardware.EStopSimulation()
 
         bumper: rosys.hardware.BumperSimulation | None
@@ -105,4 +106,5 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                          bumper=bumper,
                          bms=bms,
                          safety=safety,
+                         imu=imu,
                          modules=active_modules)

@@ -37,6 +37,7 @@ class FieldFriend(rosys.hardware.Robot):
             bumper: Union[rosys.hardware.Bumper, None],
             bms: rosys.hardware.Bms,
             safety: Safety,
+            imu: rosys.hardware.Imu,
             **kwargs) -> None:
         super().__init__(**kwargs)
         self.tool = tool
@@ -48,6 +49,7 @@ class FieldFriend(rosys.hardware.Robot):
         self.bumper = bumper
         self.bms = bms
         self.safety = safety
+        self.imu = imu
         rosys.on_shutdown(self.stop)
         if self.estop:
             self.estop.ESTOP_TRIGGERED.register(self.stop)

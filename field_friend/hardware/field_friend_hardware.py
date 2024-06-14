@@ -322,13 +322,19 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             bumper = None
 
-        self.imu: IMUHardware | None
+        self.imu: rosys.hardware.ImuHardware | None
         if 'imu' in config_hardware:
-            self.imu = IMUHardware(robot_brain,
-                                   name=config_hardware['imu']['name'],
-                                   )
+            self.imu = rosys.hardware.ImuHardware(robot_brain=robot_brain,
+                                                  name='imu',
+                                                  offset_rotation=rosys.geometry.Rotation.from_euler(
+                                                      config_hardware['imu']['offset_roll'], config_hardware['imu']['offset_pitch'], config_hardware['imu']['offset_yaw']),
+                                                  )
+            if 'roll_limit' in config_params:
+                self.ROLL_LIMIT: float = config_params['roll_limit']
+            if 'pitch_limit' in config_params:
+                self.PITCH_LIMIT: float = config_params['pitch_limit']
         else:
-            self.imu = None
+            imu = None
 
         eyes: LedEyesHardware | None
         if 'eyes' in config_hardware:
@@ -368,6 +374,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          estop=estop,
                          bumper=bumper,
                          bms=bms,
+                         imu=imu,
                          safety=safety,
                          flashlight=flashlight,
                          modules=active_modules,
