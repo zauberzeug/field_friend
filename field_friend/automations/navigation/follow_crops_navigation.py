@@ -24,7 +24,7 @@ class FollowCropsNavigation(Navigation):
         self.flashlight = system.field_friend.flashlight
         self.plant_locator = system.plant_locator
         self.name = 'Follow Crops'
-        self.crop_attraction = 0.8
+        self.crop_attraction = 0.5
 
     async def prepare(self) -> bool:
         self.log.info(f'Activating {self.implement.name}...')
