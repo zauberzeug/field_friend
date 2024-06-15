@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class WeedingScrew(WeedingImplement):
 
     def __init__(self, system: 'System') -> None:
-        super().__init__('Weed Screw', system)
+        super().__init__('Weed Screw', system, 'weeding_screw')
         self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
 
