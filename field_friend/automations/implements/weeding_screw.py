@@ -1,5 +1,4 @@
 
-from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 import rosys
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
 class WeedingScrew(WeedingImplement):
 
     def __init__(self, system: 'System') -> None:
-        super().__init__('Weed Screw', system)
+        super().__init__('Weed Screw', system, 'weeding_screw')
         self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
         self.weed_screw_depth: float = 0.13
@@ -90,11 +89,12 @@ class WeedingScrew(WeedingImplement):
                                   f'by {offset} to safe {crop.id} at {crop_position}')
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'weed_screw_depth': self.weed_screw_depth,
             'crop_safety_distance': self.crop_safety_distance,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)

@@ -55,10 +55,10 @@ class Tornado(WeedingImplement):
 
             return True
         except PuncherException as e:
-            self.log.error(f'Error while Tornado Workflow: {e}')
+            self.log.error('Error in Tornado Workflow')
             return True
-        except Exception as e:
-            raise ImplementException(f'Error while tornado Workflow: {e}') from e
+        except Exception:
+            raise ImplementException('Error while tornado Workflow') from e
 
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()

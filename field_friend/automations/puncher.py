@@ -69,6 +69,7 @@ class Puncher:
                     with_punch_check: bool = False,
                     ) -> None:
         self.log.info(f'Punching at {y} with depth {depth}...')
+        rest_position = 'reference'
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             self.log.warning('no y or z axis')
@@ -113,7 +114,6 @@ class Puncher:
                     await self.field_friend.z_axis.move_to(target)
                     rest_position = f'custom position {target}'
                 else:
-                    rest_position = 'reference'
                     await self.field_friend.z_axis.return_to_reference()
             self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
             self.kpi_provider.increment_weeding_kpi('punches')
@@ -173,7 +173,7 @@ class Puncher:
         self.kpi_provider.increment_weeding_kpi('chops')
 
     async def tornado_drill(self, angle: float = 180, turns: float = 2, with_open_drill=False) -> None:
-        self.log.info(f'Drilling with tornado at {angle}...')
+        self.log.info(f'Drilling with tornado at {angle}°...')
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise PuncherException('tornado drill is only available for tornado axis')
         try:
