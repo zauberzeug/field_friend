@@ -2,6 +2,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Optional
 
 import rosys
+from nicegui import ui
 from rosys.geometry import Point, Pose
 
 from ...hardware import ChainAxis
@@ -28,6 +29,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system = system
         self.kpi_provider = system.kpi_provider
         self.puncher = system.puncher
+        self.cultivated_crop: str | None = None
 
         # dual mechanism
         self.with_drilling: bool = False
@@ -122,6 +124,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         relative_crop_positions = {
             c.id: self.system.odometer.prediction.relative_point(c.position)
             for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point)
+            if self.cultivated_crop is None or c.type == self.cultivated_crop
+            and c.position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE
         }
         upcoming_crop_positions = {
             c: pos for c, pos in relative_crop_positions.items()
@@ -135,6 +139,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             w.id: self.system.odometer.prediction.relative_point(w.position)
             for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
             if w.type in self.relevant_weeds
+            and w.position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE
         }
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()
@@ -154,12 +159,14 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_drilling': self.with_drilling,
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
+            'cultivated_crop': self.cultivated_crop,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         self.with_drilling = data.get('with_drilling', self.with_drilling)
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
+        self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
@@ -183,3 +190,9 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         if passed_time > 1:
             self.kpi_provider.increment_weeding_kpi('time')
             self.start_time = rosys.time()
+
+    def settings_ui(self):
+        super().settings_ui()
+        ui.select(self.system.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
+            .bind_value(self, 'cultivated_crop').props('clearable') \
+            .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
