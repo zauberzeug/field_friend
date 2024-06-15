@@ -22,7 +22,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
         Implement.__init__(self, name)
-        rosys.persistence.PersistentModule.__init__(self, persistence_key=f'field_friend.automations.{persistence_key}')
+        rosys.persistence.PersistentModule.__init__(self,
+                                                    persistence_key=f'field_friend.automations.implements.{persistence_key}')
 
         self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
         self.log = logging.getLogger('field_friend.weeding')
@@ -159,16 +160,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_drilling': self.with_drilling,
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
-            'weed_screw_depth': self.weed_screw_depth,
-            'crop_safety_distance': self.crop_safety_distance,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         self.with_drilling = data.get('with_drilling', self.with_drilling)
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
-        self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
-        self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
 
     def clear(self) -> None:
         self.crops_to_handle = {}

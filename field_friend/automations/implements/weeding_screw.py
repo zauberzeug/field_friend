@@ -1,6 +1,5 @@
 
-from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
@@ -17,6 +16,8 @@ class WeedingScrew(WeedingImplement):
         super().__init__('Weed Screw', system, 'weeding_screw')
         self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
+        self.weed_screw_depth: float = 0.13
+        self.crop_safety_distance: float = 0.01
 
     async def start_workflow(self) -> bool:
         await super().start_workflow()
@@ -86,3 +87,14 @@ class WeedingScrew(WeedingImplement):
                     self.weeds_to_handle[weed] = safe_weed_position
                     self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
                                   f'by {offset} to safe {crop.id} at {crop_position}')
+
+    def backup(self) -> dict:
+        return super().backup() | {
+            'weed_screw_depth': self.weed_screw_depth,
+            'crop_safety_distance': self.crop_safety_distance,
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
+        self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
+        self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
