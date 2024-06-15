@@ -54,10 +54,10 @@ class Tornado(WeedingImplement):
                                                               if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
 
             return True
-        except PuncherException as e:
+        except PuncherException:
             self.log.error('Error in Tornado Workflow')
             return True
-        except Exception:
+        except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
     def _has_plants_to_handle(self) -> bool:
