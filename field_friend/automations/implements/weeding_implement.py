@@ -42,7 +42,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.state: str = 'idle'
         self.start_time: Optional[float] = None
         self.last_pose: Optional[Pose] = None
-        self.drived_distance: float = 0.0
+        self.driven_distance: float = 0.0
         self.crops_to_handle: dict[str, Point] = {}
         self.weeds_to_handle: dict[str, Point] = {}
 
@@ -182,11 +182,11 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             self.start_time = rosys.time()
         if self.last_pose is None:
             self.last_pose = self.system.odometer.prediction
-            self.drived_distance = 0.0
-        self.drived_distance += self.system.odometer.prediction.distance(self.last_pose)
-        if self.drived_distance > 1:
+            self.driven_distance = 0.0
+        self.driven_distance += self.system.odometer.prediction.distance(self.last_pose)
+        if self.driven_distance > 1:
             self.kpi_provider.increment_weeding_kpi('distance')
-            self.drived_distance -= 1
+            self.driven_distance -= 1
         self.last_pose = self.system.odometer.prediction
         passed_time = rosys.time() - self.start_time
         if passed_time > 1:
