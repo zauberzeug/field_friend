@@ -33,10 +33,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.with_chopping: bool = False
         self.chop_if_no_crops: bool = False
 
-        # tool settings
-        self.weed_screw_depth: float = 0.13
-        self.crop_safety_distance: float = 0.01
-
         self.state: str = 'idle'
         self.start_time: Optional[float] = None
         self.last_pose: Optional[Pose] = None
@@ -157,16 +153,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_drilling': self.with_drilling,
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
-            'weed_screw_depth': self.weed_screw_depth,
-            'crop_safety_distance': self.crop_safety_distance,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         self.with_drilling = data.get('with_drilling', self.with_drilling)
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
-        self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
-        self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
