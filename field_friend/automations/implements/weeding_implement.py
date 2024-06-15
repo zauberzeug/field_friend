@@ -1,10 +1,8 @@
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
-import numpy as np
 import rosys
 from rosys.geometry import Point, Pose
-from rosys.helpers import eliminate_2pi
 
 from ...hardware import ChainAxis
 from .implement import Implement
