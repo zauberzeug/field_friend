@@ -7,7 +7,7 @@ from nicegui import ui
 from rosys.geometry import Pose, Spline
 
 from ..field import Field, Row
-from ..implements.implement import Implement
+from ..implements import Implement, WeedingImplement
 from .follow_crops_navigation import FollowCropsNavigation
 
 if TYPE_CHECKING:
@@ -136,7 +136,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
 
     def settings_ui(self) -> None:
         field_selection = ui.select(
-            {f.id: f.name for f in self.field_provider.fields},
+            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
             on_change=lambda args: self._set_field(args.value),
             label='Field')\
             .classes('w-32') \
@@ -149,7 +149,12 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         if field is not None:
             self.field = field
             self.gnss.reference = field.points[0]
+            if isinstance(self.implement, WeedingImplement):
+                self.implement.cultivated_crop = field.crop
             self.clear()
+        else:
+            if isinstance(self.implement, WeedingImplement):
+                self.implement.cultivated_crop = None
 
     def create_simulation(self) -> None:
         self.detector.simulated_objects.clear()
