@@ -143,7 +143,8 @@ class leaflet_map:
 
     def update_layers(self) -> None:
         for layer in self.field_layers:
-            self.m.remove_layer(layer)
+            if layer in self.m.layers:
+                self.m.remove_layer(layer)
         self.field_layers = []
         for field in self.field_provider.fields:
             color = '#6E93D6' if field.id == self.active_field else '#999'

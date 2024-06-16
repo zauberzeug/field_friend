@@ -117,5 +117,4 @@ configuration = {
         'tx_pin': 33,
         'baud': 1_000_000,
     },
-    'small_safety': {},
 }
