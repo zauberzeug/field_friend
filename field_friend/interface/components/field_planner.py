@@ -100,11 +100,11 @@ class field_planner:
         with ui.card().style("width: 25%; max-height: 100%; height: 100%;"):
             if self.active_field is None:
                 with ui.column().style("display: block; margin: auto;"):
-                    ui.icon("fence").props("size=lg color=primary").style("display: block; margin: auto;")
+                    ui.icon("polyline").props("size=lg color=primary").style("display: block; margin: auto;")
                     ui.label("select a field").style("display: block; margin: auto; color: #6E93D6;")
             else:
                 with ui.row().style("width: 100%"):
-                    ui.icon("fence").props("size=lg color=primary") \
+                    ui.icon("polyline").props("size=lg color=primary") \
                         .style("display:block; margin-top:auto; margin-bottom: auto;")
                     ui.input(value=f"{self.active_field.name}") \
                         .on("blur", self.field_provider.invalidate).bind_value(self.active_field, "name").classes("w-32")
