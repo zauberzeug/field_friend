@@ -3,7 +3,15 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado, YAxis, ZAxis
+from ...hardware import (
+    ChainAxis,
+    FieldFriend,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+    YAxis,
+    ZAxis,
+)
 from ...localization import Gnss
 
 if TYPE_CHECKING:
