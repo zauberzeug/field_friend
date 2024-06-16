@@ -91,12 +91,13 @@ class System(rosys.persistence.PersistentModule):
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.8
+        self.driver.parameters.angular_speed_limit = 0.2
         self.driver.parameters.can_drive_backwards = True
         self.driver.parameters.minimum_turning_radius = 0.01
         self.driver.parameters.hook_offset = 0.45
         self.driver.parameters.carrot_distance = 0.15
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
+        self.driver.parameters.hook_bending_factor = 0.25
 
         self.kpi_provider = KpiProvider(self.plant_provider)
         if not self.is_real:
