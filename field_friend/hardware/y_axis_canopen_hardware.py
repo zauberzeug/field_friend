@@ -114,7 +114,7 @@ class YAxisCanOpenHardware(YAxis, rosys.hardware.ModuleHardware):
             await rosys.sleep(1)
             self.log.info('activating velocity mode')
             await self.robot_brain.send(
-                f'{self.name}.speed(0, 0);'
+                f'{self.name}_motor.enter_pv_mode();'
             )
             await rosys.sleep(1)
 

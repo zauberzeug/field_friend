@@ -3,15 +3,7 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-from ...hardware import (
-    ChainAxis,
-    FieldFriend,
-    FlashlightPWMHardware,
-    FlashlightPWMHardwareV2,
-    Tornado,
-    YAxis,
-    ZAxis,
-)
+from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado, YAxis, ZAxis
 from ...localization import Gnss
 
 if TYPE_CHECKING:
@@ -224,8 +216,8 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 'N'
 
             if automator.is_running:
-                if system.field_provider.active_field is not None:
-                    current_field_label.text = system.field_provider.active_field.name
+                # if system.field_provider.active_field is not None:
+                #     current_field_label.text = system.field_provider.active_field.name
                 kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time}s'
                 kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance}m'
 
