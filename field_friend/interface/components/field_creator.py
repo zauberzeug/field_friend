@@ -174,6 +174,7 @@ class FieldCreator:
         self.dialog.close()
         self.field_provider.fields.append(self.field)
         self.field_provider.request_backup()
+        self.field_provider.FIELDS_CHANGED.emit()
 
     def update_front_cam(self) -> None:
         if self.front_cam is None:
