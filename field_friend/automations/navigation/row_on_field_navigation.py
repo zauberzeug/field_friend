@@ -57,6 +57,8 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         if self.state == self.State.FOLLOWING_ROW:
             if self.current_row.line_segment(self.field.reference).distance(self.odometer.prediction.point) > 0.1:
                 self.clear()
+        else:
+            self.plant_provider.clear()
 
         # NOTE: it's useful to set the reference point to the reference of the field; that way the cartesian coordinates are simpler to comprehend
         self.gnss.reference = self.field.reference
@@ -76,6 +78,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
             await self._drive_to_row(self.current_row)
             self.state = self.State.FOLLOWING_ROW
             self.log.info(f'Following "{self.current_row.name}"...')
+            self.plant_provider.clear()
         if self.state == self.State.FOLLOWING_ROW:
             if not self.implement.is_active:
                 await self.implement.activate()
@@ -148,7 +151,6 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         field = self.field_provider.get_field(field_id)
         if field is not None:
             self.field = field
-            self.gnss.reference = field.points[0]
             self.clear()
 
     def create_simulation(self) -> None:

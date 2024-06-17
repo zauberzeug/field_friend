@@ -59,9 +59,16 @@ class Gnss(ABC):
         return self._reference
 
     @reference.setter
-    def reference(self, reference: Optional[GeoPoint]) -> None:
+    def reference(self, reference: GeoPoint) -> None:
+        assert reference is not None
+        if self._reference is not None:
+            relative_location_of_new_reference = reference.cartesian(self._reference)
+            new_position = self.odometer.prediction.point + relative_location_of_new_reference
+            self.odometer.history.clear()
+            self.odometer.prediction = rosys.geometry.Pose(x=new_position.x, y=new_position.y,
+                                                           yaw=self.odometer.prediction.yaw,
+                                                           time=rosys.time())
         self._reference = reference
-        self.current = None
 
     @abstractmethod
     async def try_connection(self) -> None:
