@@ -19,7 +19,8 @@ class SimulatedCam(rosys.vision.SimulatedCamera, rosys.vision.CalibratableCamera
                           roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
                           **kwargs) -> Self:
         camera = cls(**kwargs)
-        camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw)
+        camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z,
+                                       roll=roll, pitch=pitch, yaw=yaw, focal_length=750)
         assert camera.calibration is not None
         camera.mounting = deepcopy(camera.calibration.extrinsics)
         return camera
