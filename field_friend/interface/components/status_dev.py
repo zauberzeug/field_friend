@@ -5,16 +5,8 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ...hardware import (
-    ChainAxis,
-    FieldFriend,
-    FieldFriendHardware,
-    FlashlightPWMHardware,
-    FlashlightPWMHardwareV2,
-    Tornado,
-    YAxis,
-    ZAxis,
-)
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
+                         Tornado, YAxis, ZAxis)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -71,9 +63,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         with ui.row().classes('place-items-center'):
             ui.markdown('**Tool:**').style('color: #EDF4FB')
             ui.label(robot.implement_name)
-            if robot.implement_name == 'tornado':
-                tornado_diameters = robot.tornado_diameters(system.weeding.tornado_angle)
-                tornado_label = ui.label(f'Inner: {tornado_diameters[0]:.4f}m, Outer: {tornado_diameters[1]:.4f}m')
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
@@ -182,9 +171,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             odometry_label = ui.label()
 
     def update_status() -> None:
-        if robot.implement_name == 'tornado':
-            tornado_diameters = robot.tornado_diameters(system.weeding.tornado_angle)
-            tornado_label.set_text(f'Inner: {tornado_diameters[0]:.4f}m, Outer: {tornado_diameters[1]:.4f}m')
         bms_flags = [
             f'{robot.bms.state.short_string}',
             'charging' if robot.bms.state.is_charging else ''
@@ -278,8 +264,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             'N'
 
         if system.automator.is_running:
-            if system.field_provider.active_field is not None:
-                current_field_label.text = system.field_provider.active_field.name
+            # if system.field_provider.active_field is not None:
+            #     current_field_label.text = system.field_provider.active_field.name
             kpi_fieldtime_label.text = f'{timedelta(seconds=system.kpi_provider.current_weeding_kpis.time)}'
             kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance:.0f}m'
 

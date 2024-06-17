@@ -61,7 +61,6 @@ class Gnss(ABC):
     @reference.setter
     def reference(self, reference: Optional[GeoPoint]) -> None:
         self._reference = reference
-        self.current = None
 
     @abstractmethod
     async def try_connection(self) -> None:
