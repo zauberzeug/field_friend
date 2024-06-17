@@ -64,9 +64,10 @@ class Gnss(ABC):
         if self._reference is not None:
             relative_location_of_new_reference = reference.cartesian(self._reference)
             new_position = self.odometer.prediction.point + relative_location_of_new_reference
-            self.odometer.handle_detection(rosys.geometry.Pose(x=new_position.x, y=new_position.y,
-                                                               yaw=self.odometer.prediction.yaw,
-                                                               time=rosys.time()))
+            self.odometer.history.clear()
+            self.odometer.prediction = rosys.geometry.Pose(x=new_position.x, y=new_position.y,
+                                                           yaw=self.odometer.prediction.yaw,
+                                                           time=rosys.time())
         self._reference = reference
         self.current = None
 
