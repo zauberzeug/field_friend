@@ -69,7 +69,6 @@ class Gnss(ABC):
                                                            yaw=self.odometer.prediction.yaw,
                                                            time=rosys.time())
         self._reference = reference
-        self.current = None
 
     @abstractmethod
     async def try_connection(self) -> None:
