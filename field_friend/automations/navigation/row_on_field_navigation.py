@@ -151,12 +151,6 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         field = self.field_provider.get_field(field_id)
         if field is not None:
             self.field = field
-            new_reference = field.points[0]
-            relative_location_of_new_reference = new_reference.cartesian(self.gnss.reference)
-            new_position = self.odometer.prediction.point + relative_location_of_new_reference
-            self.odometer.handle_detection(Pose(x=new_position.x, y=new_position.y,
-                                           yaw=self.odometer.prediction.yaw, time=rosys.time()))
-            self.gnss.reference = new_reference
             self.clear()
 
     def create_simulation(self) -> None:
