@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
@@ -8,12 +8,15 @@ from rosys.vision import Autoupload
 
 from ..vision import SimulatedCam
 from .plant import Plant
-from .plant_provider import PlantProvider
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
 CROP_CATEGORY_NAME = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
 MINIMUM_WEED_CONFIDENCE = 0.8
 MINIMUM_CROP_CONFIDENCE = 0.75
+
+
+if TYPE_CHECKING:
+    from system import System
 
 
 class DetectorError(Exception):
@@ -22,18 +25,15 @@ class DetectorError(Exception):
 
 class PlantLocator(rosys.persistence.PersistentModule):
 
-    def __init__(self,
-                 camera_provider: rosys.vision.CameraProvider,
-                 detector: rosys.vision.Detector,
-                 plant_provider: PlantProvider,
-                 odometer: rosys.driving.Odometer,
-                 ) -> None:
+    def __init__(self, system: 'System') -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.plant_detection')
-        self.camera_provider = camera_provider
-        self.detector = detector
-        self.plant_provider = plant_provider
-        self.odometer = odometer
+        self.camera_provider = system.usb_camera_provider
+        self.detector = system.detector
+        self.plant_provider = system.plant_provider
+        self.odometer = system.odometer
+        self.robot_name = system.version
+        self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
@@ -48,6 +48,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
             'autoupload': self.autoupload.value,
+            'tags': self.tags,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -56,6 +57,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
             if 'autoupload' in data else Autoupload.DISABLED
         self.log.info(f'self.autoupload: {self.autoupload}')
+        self.tags = data.get('tags', self.tags)
 
     async def _detect_plants(self) -> None:
         if self.is_paused:
@@ -74,7 +76,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         if new_image is None or new_image.detections:
             await asyncio.sleep(0.01)
             return
-        await self.detector.detect(new_image, autoupload=self.autoupload, tags=['kiebitz'])
+        await self.detector.detect(new_image, autoupload=self.autoupload, tags=self.tags + [self.robot_name])
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
             await asyncio.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
@@ -105,7 +107,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 # self.log.info('weed found')
                 await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
-                # self.log.info('crop found')
+                # self.log.info(f'{d.category_name} found')
                 self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
@@ -139,3 +141,24 @@ class PlantLocator(rosys.persistence.PersistentModule):
         ui.select(options, label='Autoupload', on_change=self.backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
+
+        @ui.refreshable
+        def chips():
+            with ui.row().classes('gap-0'):
+                ui.chip(self.robot_name).props('outline')
+                for tag in self.tags:
+                    ui.chip(tag, removable=True).props('outline') \
+                        .on('remove', lambda t=tag: (self.tags.remove(t), chips.refresh(), self.request_backup()))
+
+        def add_chip():
+            self.tags.append(label_input.value)
+            self.request_backup()
+            chips.refresh()
+            label_input.value = ''
+
+        with ui.row().classes('items-center'):
+            chips()
+            label_input = ui.input().on('keydown.enter', add_chip).classes('w-24').props('dense') \
+                .tooltip('Add a tag for the Learning Loop')
+            with label_input.add_slot('append'):
+                ui.button(icon='add', on_click=add_chip).props('round dense flat')
