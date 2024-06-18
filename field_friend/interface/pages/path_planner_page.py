@@ -26,5 +26,5 @@ class path_planner_page():
                 'h-full w-full')
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                operation(self.system, leaflet_map_path)
+                operation(self.system)
                 path_planner(self.system.path_provider, self.system.path_recorder, self.system.automator)

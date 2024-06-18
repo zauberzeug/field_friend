@@ -73,15 +73,17 @@ class GnssHardware(Gnss):
                     return None
                 try:
                     msg = pynmea2.parse(line)
+                    # self.log.info(f'GNSS message: {msg}')
                     if not hasattr(msg, 'sentence_type'):
                         self.log.debug(f'No sentence type: {msg}')
                         return None
-                    if msg.sentence_type in self.TYPES_NEEDED:
-                        types_seen.add(msg.sentence_type)
-                    if msg.sentence_type == 'GGA' and getattr(msg, 'gps_qual', 0) > 0:
+                    gps_qual = getattr(msg, 'gps_qual', 0)
+                    if msg.sentence_type == 'GGA' and gps_qual is not None and gps_qual > 0:
                         data['gps_qual'] = msg.gps_qual
                         data['altitude'] = msg.altitude
                         data['separation'] = msg.geo_sep
+                        types_seen.add(msg.sentence_type)
+                        gga = msg
                     if msg.sentence_type == 'GNS' and getattr(msg, 'mode_indicator', None):
                         if isinstance(msg.timestamp, datetime.time):
                             dt = datetime.datetime.combine(datetime.date.today(), msg.timestamp)
@@ -91,9 +93,11 @@ class GnssHardware(Gnss):
                             data['timestamp'] = msg.timestamp
                         data['location'] = GeoPoint(lat=msg.latitude, long=msg.longitude)
                         data['mode'] = msg.mode_indicator
+                        types_seen.add(msg.sentence_type)
                         # print(f'The GNSS message: {msg.mode_indicator}')
                     if msg.sentence_type == 'HDT' and getattr(msg, 'heading', None):
                         data['heading'] = float(msg.heading) if msg.heading else None
+                        types_seen.add(msg.sentence_type)
                 except pynmea2.ParseError as e:
                     self.log.info(f'Parse error: {e}')
                     continue
@@ -101,4 +105,11 @@ class GnssHardware(Gnss):
             self.log.info(f'Device error: {e}')
             self.device = None
             return None
-        return GNSSRecord(**data)
+        if data.get('location') is None:
+            self.log.warning('No location in GNSS data -- maybe it was provided in GGA message?')
+            return None
+        try:
+            return GNSSRecord(**data)
+        except Exception:
+            self.log.exception(f'Could not create GNSS record from msg: {gga.__dict__} resulting in data: {data}')
+            return None

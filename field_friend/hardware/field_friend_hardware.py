@@ -40,17 +40,17 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
         self.ANTENNA_OFFSET: float = config_params['antenna_offset']
-        tool: str = config_params['tool']
-        if tool in ['tornado', 'weed_screw', 'none']:
+        implement: str = config_params['tool']
+        if implement in ['tornado', 'weed_screw', 'none']:
             self.WORK_X: float = config_params['work_x']
             self.DRILL_RADIUS: float = config_params['drill_radius']
-        elif tool in ['dual_mechanism']:
+        elif implement in ['dual_mechanism']:
             self.WORK_X_CHOP: float = config_params['work_x_chop']
             self.WORK_X: float = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS: float = config_params['chop_radius']
         else:
-            raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
+            raise NotImplementedError(f'Unknown FieldFriend implement: {implement}')
 
         communication = rosys.hardware.SerialCommunication()
         robot_brain = rosys.hardware.RobotBrain(communication)
@@ -131,6 +131,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
                                           end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
                                           reversed_direction=config_hardware['y_axis']['reversed_direction'],
+                                          end_stops_inverted=config_hardware['y_axis']['end_stops_inverted'],
                                           )
         elif config_hardware['y_axis']['version'] == 'y_axis_canopen':
             y_axis = YAxisCanOpenHardware(robot_brain,
@@ -149,6 +150,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
                                           end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
                                           reversed_direction=config_hardware['y_axis']['reversed_direction'],
+                                          end_stops_inverted=config_hardware['y_axis']['end_stops_inverted'],
+                                          acceleration=config_hardware['y_axis']['acceleration'],
+                                          quick_stop_deceleration=config_hardware['y_axis']['quick_stop_deceleration'],
                                           )
         elif config_hardware['y_axis']['version'] == 'none':
             y_axis = None
@@ -174,6 +178,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
                                           end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
                                           reversed_direction=config_hardware['z_axis']['reversed_direction'],
+                                          end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
                                           )
         elif config_hardware['z_axis']['version'] == 'tornado':
             z_axis = TornadoHardware(robot_brain,
@@ -246,7 +251,11 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           end_b_pin=config_hardware['z_axis']['end_b_pin'],
                                           motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
                                           end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
-                                          reversed_direction=config_hardware['z_axis']['reversed_direction'],)
+                                          reversed_direction=config_hardware['z_axis']['reversed_direction'],
+                                          end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
+                                          acceleration=config_hardware['z_axis']['acceleration'],
+                                          quick_stop_deceleration=config_hardware['z_axis']['quick_stop_deceleration'],
+                                          )
         elif config_hardware['z_axis']['version'] == 'none':
             z_axis = None
         else:
@@ -352,7 +361,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         safety: SafetyHardware | SmallSafetyHardware
         if 'small_safety' in config_hardware:
-            safety = SmallSafetyHardware(robot_brain, wheels=wheels, estop=estop,
+            safety = SmallSafetyHardware(robot_brain, wheels=wheels, estop=estop, bumper=bumper,
                                          y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         else:
             safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
@@ -361,7 +370,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis,
                    z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, eyes, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
-        super().__init__(tool=tool,
+        super().__init__(implement_name=implement,
                          wheels=wheels,
                          y_axis=y_axis,
                          z_axis=z_axis,

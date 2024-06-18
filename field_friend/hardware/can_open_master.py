@@ -10,8 +10,23 @@ class CanOpenMasterHardware(rosys.hardware.ModuleHardware):
                  sync_interval: int = 5
                  ) -> None:
         self.name = name
+        self.error = False
         lizard_code = remove_indentation(f'''
             {name} = CanOpenMaster({can.name})
             {name}.sync_interval = {sync_interval}
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        self.message_hooks['error'] = self._on_error
+        rosys.on_repeat(self.restart_core, 6)
+
+    def _on_error(self, line: str) -> None:
+        if 'twai' in line and not self.error:
+            # TODO: find a better to fix it
+            self.error = True
+
+    async def restart_core(self) -> None:
+        if self.error:
+            self.log.info('Restarting core...')
+            await self.robot_brain.send('core.restart()')
+            await rosys.sleep(3)
+            self.error = False

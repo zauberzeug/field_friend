@@ -7,13 +7,13 @@ from shapely.geometry import LineString, MultiLineString, Polygon
 from shapely.ops import unary_union
 
 if TYPE_CHECKING:
-    from ..automations import Mowing
+    from ..automations import CoverageNavigation
 
 
 class CoveragePlanner:
     OBSTACLE_PADDING = 0.7
 
-    def __init__(self, mowing: 'Mowing') -> None:
+    def __init__(self, mowing: 'CoverageNavigation') -> None:
         self.log = logging.getLogger('field_friend.coverage_planner')
         self.mowing = mowing
 

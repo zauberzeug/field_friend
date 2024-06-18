@@ -96,7 +96,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [wheels, y_axis, z_axis, flashlight, bumper, bms, estop, safety]
         active_modules = [module for module in modules if module is not None]
-        super().__init__(tool=tool,
+        super().__init__(implement_name=tool,
                          wheels=wheels,
                          flashlight=flashlight,
                          y_axis=y_axis,

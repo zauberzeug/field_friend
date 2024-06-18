@@ -5,11 +5,11 @@ import rosys
 from rosys.driving import PathSegment
 from rosys.geometry import Spline
 
-from ..navigation import GeoPoint, Gnss
+from ..localization import Gnss
 from .path_provider import Path, PathProvider
 
 
-class PathRecorder:
+class PathRecorder():
 
     def __init__(self, path_provider: PathProvider, driver: rosys.driving.Driver, steerer: rosys.driving.Steerer, gnss: Gnss) -> None:
         self.log = logging.getLogger('field_friend.path_recorder')

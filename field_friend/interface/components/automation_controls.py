@@ -18,16 +18,8 @@ class automation_controls:
         async def start() -> None:
             if not await self.can_start():
                 return
-
-            current_automation = next(key for key, value in system.automations.items()
-                                      if value == system.automator.default_automation)
-            if current_automation == 'weeding' or current_automation == 'monitoring' or current_automation == 'collecting (demo)':
-                if system.weeding.continue_canceled_weeding is not True:
-                    system.kpi_provider.clear_weeding_kpis()
-            elif current_automation == 'mowing':
-                if system.mowing.continue_mowing is not True:
-                    system.kpi_provider.clear_mowing_kpis()
             system.automator.start()
+
         self.log = logging.getLogger('field_friend.automation_controls')
         self.system = system
         play_button = ui.button(on_click=start) \
@@ -38,6 +30,13 @@ class automation_controls:
             .props('icon=play_arrow outline').tooltip('resume automation')
         stop_button = ui.button(on_click=lambda: system.automator.stop(because='stop button was pressed')) \
             .props('icon=stop outline').tooltip('stop automation')
+
+        with ui.dialog() as self.dialog, ui.card():
+            self.dialog_label = ui.label('Do you want to continue the canceled automation').classes('text-lg')
+            with ui.row():
+                ui.button('Yes', on_click=lambda: self.dialog.submit('Yes'))
+                ui.button('No', on_click=lambda: self.dialog.submit('No'))
+                ui.button('Cancel', on_click=lambda: self.dialog.submit('Cancel'))
 
         with ui.dialog() as self.dialog, ui.card():
             self.dialog_label = ui.label('Do you want to continue the canceled automation').classes('text-lg')
@@ -57,11 +56,6 @@ class automation_controls:
         ui.timer(config.ui_update_interval, refresh)
 
     async def can_start(self) -> bool:
-        self.log.info('Checking if automation can be started')
-        if self.system.get_current_automation_id() == 'mowing':
-            return await self.can_mowing_start()
-        elif self.system.get_current_automation_id() == 'weeding':
-            return await self.can_weeding_start()
         return True
 
     async def can_mowing_start(self) -> bool:

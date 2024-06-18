@@ -113,13 +113,24 @@ class Network:
                     continue
                 if self._try_step((i - di, j - dj, k - dk), (i, j, k), (i + di, j + dj, k + dk), straight=True):
                     return True
-            if j == -3 and self._try_step((i, j + 1, k), (i, j, k), (i + 0.5, j - 0.5, k + 0.5), straight=False):
+            # for calibration pattern version 1.0
+            # if j == -3 and self._try_step((i, j + 1, k), (i, j, k), (i + 0.5, j - 0.5, k + 0.5), straight=False):
+            #     return True
+            # if j == -3.5 and self._try_step((i - 0.5, j + 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
+            #     return True
+            # if j == 3 and self._try_step((i, j - 1, k), (i, j, k), (i + 0.5, j + 0.5, k + 0.5), straight=False):
+            #     return True
+            # if j == 3.5 and self._try_step((i - 0.5, j - 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
+            #     return True
+
+            # for calibration pattern version 2.0
+            if j == -3 and self._try_step((i, j + 1, k), (i, j, k), (i + 0.5, j - 0.4, k + 0.6), straight=False):
                 return True
-            if j == -3.5 and self._try_step((i - 0.5, j + 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
+            if j == -3.4 and self._try_step((i - 0.5, j + 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
                 return True
-            if j == 3 and self._try_step((i, j - 1, k), (i, j, k), (i + 0.5, j + 0.5, k + 0.5), straight=False):
+            if j == 3 and self._try_step((i, j - 1, k), (i, j, k), (i + 0.5, j + 0.4, k + 0.6), straight=False):
                 return True
-            if j == 3.5 and self._try_step((i - 0.5, j - 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
+            if j == 3.4 and self._try_step((i - 0.5, j - 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
                 return True
         return False
 
