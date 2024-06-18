@@ -4,9 +4,7 @@ from typing import Optional
 import rosys
 from shapely.geometry import Polygon
 
-from field_friend.navigation import GeoPoint, GeoPointCollection
-
-from .plant import Plant
+from field_friend.localization import GeoPoint, GeoPointCollection
 
 
 @dataclass(slots=True, kw_only=True)
@@ -17,7 +15,6 @@ class FieldObstacle(GeoPointCollection):
 @dataclass(slots=True, kw_only=True)
 class Row(GeoPointCollection):
     reverse: bool = False
-    crops: list[Plant] = field(default_factory=list)
 
     def reversed(self):
         return Row(
@@ -26,8 +23,9 @@ class Row(GeoPointCollection):
             points=list(reversed(self.points)),
         )
 
-    def clear_crops(self):
-        self.crops.clear()
+    def line_segment(self, reference: GeoPoint) -> rosys.geometry.LineSegment:
+        return rosys.geometry.LineSegment(point1=self.points[0].cartesian(reference),
+                                          point2=self.points[-1].cartesian(reference))
 
 
 @dataclass(slots=True, kw_only=True)

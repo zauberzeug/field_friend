@@ -1,16 +1,22 @@
 
 import logging
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import rosys
 import rosys.geometry
 from nicegui import app, events, ui
 from nicegui.elements.leaflet_layers import GenericLayer, TileLayer
 
-from ...automations import Field
-from ...navigation.geo_point import GeoPoint
+from ...automations import Field, FieldObstacle, FieldProvider, Row
+from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
+
+
+class Active_object(TypedDict):
+    object_type: Literal["Obstacles", "Rows", "Outline"]
+    object: Row | FieldObstacle
+
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -36,11 +42,8 @@ class leaflet_map:
             'edit': False,
         }
         center_point = GeoPoint(lat=51.983159, long=7.434212)
-        if self.field_provider.active_field is None:
-            center_point = GeoPoint(lat=51.983159, long=7.434212)
-        else:
-            if len(self.field_provider.active_field.points) > 0:
-                center_point = self.field_provider.active_field.points[0]
+        if self.system.gnss.current is not None and self.system.gnss.current.location is not None:
+            center_point = self.system.gnss.current.location
         self.m: ui.leaflet
         if draw_tools:
             self.m = ui.leaflet(center=center_point.tuple,
@@ -56,11 +59,11 @@ class leaflet_map:
         self.drawn_marker = None
         self.obstacle_layers: list = []
         self.row_layers: list = []
+        self._active_field: str | None = None
+        self.active_object: Active_object | None = None
         self.update_layers()
-        self.highlight_active_field()
         self.field_provider.FIELDS_CHANGED.register(self.update_layers)
-        self.field_provider.FIELD_SELECTED.register(self.highlight_active_field)
-        self.field_provider.FIELDS_CHANGED.register(self.highlight_active_field)
+        self.zoom_to_robot()
 
         def handle_draw(e: events.GenericEventArguments):
             if e.args['layerType'] == 'marker':
@@ -105,7 +108,7 @@ class leaflet_map:
         ui.button(icon='my_location', on_click=self.zoom_to_robot).props('dense flat') \
             .tooltip('Center map on robot position').classes('ml-0')
         ui.button(on_click=self.zoom_to_field) \
-            .bind_enabled_from(self.field_provider, 'active_field') \
+            .bind_enabled_from(self, 'active_field') \
             .props('icon=polyline dense flat') \
             .tooltip('center map on field boundaries').classes('ml-0')
 
@@ -131,41 +134,46 @@ class leaflet_map:
     def add_point_active_object(self, latlon, dialog) -> None:
         dialog.close()
         self.m.remove_layer(self.drawn_marker)
-        if self.field_provider.active_object is not None and self.field_provider.active_object["object"] is not None:
-            self.field_provider.active_object["object"].points.append(GeoPoint.from_list(latlon))
-            self.field_provider.OBJECT_SELECTED.emit()
-            self.highlight_active_field()
+        if self.active_object is not None and self.active_object["object"] is not None:
+            self.active_object["object"].points.append(GeoPoint.from_list(latlon))
+            self.field_provider.invalidate()
+            self.update_layers()
         else:
             ui.notify("No object selected. Point could not be added to the void.")
 
     def update_layers(self) -> None:
         for layer in self.field_layers:
-            self.m.remove_layer(layer)
+            if layer in self.m.layers:
+                self.m.remove_layer(layer)
         self.field_layers = []
         for field in self.field_provider.fields:
-            color = '#6E93D6' if field == self.field_provider.active_field else '#999'
+            color = '#6E93D6' if field.id == self.active_field else '#999'
             self.field_layers.append(self.m.generic_layer(name="polygon",
                                                           args=[field.points_as_tuples, {'color': color}]))
-
-    def highlight_active_field(self) -> None:
-        if self.field_provider.active_field is None:
+        field = self.field_provider.get_field(self.active_field)
+        if field is None:
             return
-        active_index = self.field_provider.fields.index(self.field_provider.active_field)
-        for i, layer in enumerate(self.field_layers):
-            color = '#6E93D6' if i == active_index else '#999'
-            layer.run_method(':setStyle', "{'color': '" + color + "'}")
         for layer in self.obstacle_layers:
             self.m.remove_layer(layer)
         self.obstacle_layers = []
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
-        for obstacle in self.field_provider.active_field.obstacles:
-            self.obstacle_layers.append(
-                self.m.generic_layer(name="polygon", args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
-        for row in self.field_provider.active_field.rows:
-            self.row_layers.append(
-                self.m.generic_layer(name="polyline", args=[row.points_as_tuples, {'color': '#F2C037'}]))
+        for obstacle in field.obstacles:
+            self.obstacle_layers.append(self.m.generic_layer(name="polygon",
+                                                             args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
+        for row in field.rows:
+            self.row_layers.append(self.m.generic_layer(name="polyline",
+                                                        args=[row.points_as_tuples, {'color': '#F2C037'}]))
+
+    @property
+    def active_field(self) -> str | None:
+        return self._active_field
+
+    @active_field.setter
+    def active_field(self, field_id: str | None) -> None:
+        self._active_field = field_id
+        self.update_layers()
 
     def update_robot_position(self, position: GeoPoint) -> None:
         if self.robot_marker is None:
@@ -175,12 +183,14 @@ class leaflet_map:
         self.robot_marker.move(*position.tuple)
 
     def zoom_to_robot(self) -> None:
-        assert self.gnss.current is not None
+        if self.gnss.current is None:
+            self.log.warning('No GNSS position available, could not zoom to robot')
+            return
         self.m.set_center(self.gnss.current.location.tuple)
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def zoom_to_field(self) -> None:
-        field = self.field_provider.active_field
+        field = self.field_provider.get_field(self.active_field)
         if field is None:
             return
         coords = field.points_as_tuples

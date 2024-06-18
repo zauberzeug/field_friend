@@ -1,20 +1,19 @@
 
 from .automation_watcher import AutomationWatcher
 from .battery_watcher import BatteryWatcher
-from .coin_collecting import CoinCollecting
 from .coverage_planer import CoveragePlanner
 from .field import Field, FieldObstacle, Row
 from .field_provider import FieldProvider
+from .implements.implement import Implement
 from .kpi_provider import KpiProvider
-from .mowing import Mowing
+from .navigation.coverage_navigation import CoverageNavigation
 from .path_provider import Path, PathProvider
 from .path_recorder import PathRecorder
 from .plant import Plant
 from .plant_locator import DetectorError, PlantLocator
 from .plant_provider import PlantProvider
-from .puncher import Puncher
+from .puncher import Puncher, PuncherException
 from .sequence import find_sequence
-from .weeding import Weeding
 
 __all__ = [
     'CoveragePlanner',
@@ -22,7 +21,8 @@ __all__ = [
     'Field',
     'FieldObstacle',
     'FieldProvider',
-    'Mowing',
+    'Implement',
+    'CoverageNavigation',
     'Path',
     'PathProvider',
     'PathRecorder',
@@ -30,11 +30,10 @@ __all__ = [
     'PlantProvider',
     'Plant',
     'Puncher',
+    'PuncherException',
     'Row',
     'KpiProvider',
     'find_sequence',
-    'Weeding',
     'BatteryWatcher',
-    'CoinCollecting',
     'AutomationWatcher',
 ]

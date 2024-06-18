@@ -6,13 +6,8 @@ import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
 
-from ..navigation import GeoPoint, Gnss
+from ..localization import GeoPoint, Gnss
 from . import Field, FieldObstacle, Row
-
-
-class Active_object(TypedDict):
-    object_type: Literal["Obstacles", "Rows", "Outline"]
-    object: Union[Row, FieldObstacle]
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
@@ -22,24 +17,21 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.field_provider')
         self.gnss = gnss
         self.fields: list[Field] = []
-        self.active_field: Optional[Field] = None
-        self.active_object: Optional[Active_object] = None
-
-        self.FIELD_SELECTED = rosys.event.Event()
-        """The currently selected field has changed"""
-
-        self.OBJECT_SELECTED = rosys.event.Event()
-        """a row or obstacle has been selected or deselected."""
 
         self.FIELDS_CHANGED = rosys.event.Event()
         """The dict of fields has changed."""
 
         self.needs_backup: bool = False
 
+    def get_field(self, id_: str | None) -> Field | None:
+        for field in self.fields:
+            if field.id == id_:
+                return field
+        return None
+
     def backup(self) -> dict:
         return {
             'fields': rosys.persistence.to_dict(self.fields),
-            'active_field': None if self.active_field is None else self.active_field.id,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -60,8 +52,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
                 for point in row.get('points_wgs84', []):
                     f.rows[j].points.append(GeoPoint(lat=point[0], long=point[1]))
 
-        self.active_field = next((f for f in self.fields if f.id == data.get('active_field')), None)
-
     def invalidate(self) -> None:
         self.request_backup()
         self.FIELDS_CHANGED.emit()
@@ -77,16 +67,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def remove_field(self, field: Field) -> None:
         self.fields.remove(field)
-        self.active_field = None
-        self.active_object = None
-        self.OBJECT_SELECTED.emit()
+        self.FIELDS_CHANGED.emit()
         self.invalidate()
 
     def clear_fields(self) -> None:
         self.fields.clear()
-        self.active_field = None
-        self.active_object = None
-        self.OBJECT_SELECTED.emit()
+        self.FIELDS_CHANGED.emit()
         self.invalidate()
 
     def set_reference(self, field: Field, point: GeoPoint) -> None:
@@ -101,12 +87,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def remove_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
         field.obstacles.remove(obstacle)
-        self.active_object = None
-        self.OBJECT_SELECTED.emit()
         self.invalidate()
 
     def create_row(self, field: Field, points: list[GeoPoint] = []) -> Row:
-        assert not points or len(points) == 2
         row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points=points)
         field.rows.append(row)
         self.invalidate()
@@ -114,32 +97,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def remove_row(self, field: Field, row: Row) -> None:
         field.rows.remove(row)
-        self.active_object = None
-        self.OBJECT_SELECTED.emit()
         self.invalidate()
-
-    def select_field(self, field: Optional[Field] = None) -> None:
-        self.active_field = field
-        self.FIELD_SELECTED.emit()
-        self.active_object = None
-        self.OBJECT_SELECTED.emit()
-        self.invalidate()
-
-    def select_object(self, object_id: Optional[str] = None, object_type: Optional[Literal["Obstacles", "Rows", "Outline"]] = None) -> None:
-        if self.active_field is not None and object_id is not None and object_type is not None:
-            if object_type == "Obstacles":
-                for obstacle in self.active_field.obstacles:
-                    if object_id == obstacle.id:
-                        self.active_object = {'object_type': object_type, 'object': obstacle}
-            elif object_type == "Rows":
-                for row in self.active_field.rows:
-                    if object_id == row.id:
-                        self.active_object = {'object_type': object_type, 'object': row}
-            else:
-                self.active_object = None
-        else:
-            self.active_object = None
-        self.OBJECT_SELECTED.emit()
 
     def is_polygon(self, field: Field) -> bool:
         try:
@@ -232,7 +190,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             del field.points[-1]
         self.invalidate()
 
-    async def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+    def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         if new_point is None:
             assert self.gnss.current is not None
             positioning = self.gnss.current.location
@@ -250,8 +208,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
             obstacle.points[index] = new_point
         else:
             obstacle.points.append(new_point)
-        assert self.active_object
-        self.select_object(self.active_object['object'].id, 'Obstacles')
         self.invalidate()
 
     def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[GeoPoint] = None) -> None:
@@ -261,8 +217,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
                 del obstacle.points[index]
             else:
                 del obstacle.points[-1]
-            assert self.active_object
-            self.select_object(self.active_object['object'].id, 'Obstacles')
             self.invalidate()
 
     def add_row_point(self, field: Field, row: Row, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
@@ -283,8 +237,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
             row.points[index] = new_point
         else:
             row.points.append(new_point)
-        assert self.active_object
-        self.select_object(self.active_object['object'].id, 'Rows')
         self.invalidate()
 
     def remove_row_point(self, row: Row, point: Optional[GeoPoint] = None) -> None:
@@ -294,8 +246,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
                 del row.points[index]
             else:
                 del row.points[-1]
-            assert self.active_object
-            self.select_object(self.active_object['object'].id, 'Rows')
             self.invalidate()
 
     def move_row(self, field: Field, row: Row, next: bool = False) -> None:

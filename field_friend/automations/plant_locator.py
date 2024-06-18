@@ -3,8 +3,10 @@ import logging
 from typing import Any
 
 import rosys
+from nicegui import ui
 from rosys.vision import Autoupload
 
+from ..vision import SimulatedCam
 from .plant import Plant
 from .plant_provider import PlantProvider
 
@@ -51,8 +53,8 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def restore(self, data: dict[str, Any]) -> None:
         self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
-        self.autoupload = Autoupload(data.get('autoupload', self.autoupload)
-                                     ) if 'autoupload' in data else Autoupload.DISABLED
+        self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
+            if 'autoupload' in data else Autoupload.DISABLED
         self.log.info(f'self.autoupload: {self.autoupload}')
 
     async def _detect_plants(self) -> None:
@@ -64,6 +66,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         if not camera:
             self.log.error('no connected camera found')
             return
+        assert isinstance(camera, rosys.vision.CalibratableCamera)
         if camera.calibration is None:
             self.log.error('no calibration found')
             raise DetectorError()
@@ -80,37 +83,59 @@ class PlantLocator(rosys.persistence.PersistentModule):
 
         # self.log.info(f'{[point.category_name for point in new_image.detections.points]} detections found')
         for d in new_image.detections.points:
+            image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
+            if isinstance(camera, SimulatedCam):
+                world_point = camera.calibration.project_from_image(image_point).projection()
+            else:
+                # TODO remove this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
+                floor_point = camera.calibration.project_from_image(image_point)
+                if floor_point is None:
+                    self.log.error('could not generate floor point of detection, calibration error')
+                    continue
+                world_point = self.odometer.prediction.transform(floor_point.projection())
+            if world_point is None:
+                self.log.error('could not generate world point of detection, calibration error')
+                continue
+            plant = Plant(type=d.category_name,
+                          detection_time=rosys.time(),
+                          detection_image=new_image)
+            plant.positions.append(world_point)
+            plant.confidences.append(d.confidence)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
-                image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = camera.calibration.project_from_image(image_point)
-                if floor_point is None:
-                    self.log.error('could not generate floor point of detection, calibration error')
-                    continue
-                world_point = self.odometer.prediction.transform(floor_point.projection())
-                weed = Plant(position=world_point, type_=d.category_name, confidence=d.confidence,
-                             detection_time=rosys.time(), detection_image=new_image)
-                await self.plant_provider.add_weed(weed)
+                await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info('crop found')
-                image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-                floor_point = camera.calibration.project_from_image(image_point)
-                if floor_point is None:
-                    self.log.error('could not generate floor point of detection, calibration error')
-                    continue
-                world_point = self.odometer.prediction.transform(floor_point.projection())
-                crop = Plant(position=world_point, type_=d.category_name,
-                             detection_time=rosys.time(), confidence=d.confidence, detection_image=new_image)
-                await self.plant_provider.add_crop(crop)
+                self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
             # else:
             #     self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
 
     def pause(self) -> None:
+        if self.is_paused:
+            return
         self.log.info('pausing plant detection')
         self.is_paused = True
 
     def resume(self) -> None:
+        if not self.is_paused:
+            return
         self.log.info('resuming plant detection')
         self.is_paused = False
+
+    def settings_ui(self) -> None:
+        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'minimum_weed_confidence') \
+            .tooltip('Set the minimum weed confidence for the weeding automation')
+        ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'minimum_crop_confidence') \
+            .tooltip('Set the minimum crop confidence for the weeding automation')
+        options = [autoupload for autoupload in rosys.vision.Autoupload]
+        ui.select(options, label='Autoupload', on_change=self.backup) \
+            .bind_value(self, 'autoupload') \
+            .classes('w-24').tooltip('Set the autoupload for the weeding automation')
