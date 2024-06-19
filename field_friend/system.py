@@ -130,10 +130,8 @@ class System(rosys.persistence.PersistentModule):
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}
         self._current_navigation: Navigation = self.straight_line_navigation
-        self._current_implement = self._current_navigation
         self.automator.default_automation = self._current_navigation.start
         self.info = Info(self)
-        self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
 
@@ -153,12 +151,12 @@ class System(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        implement = self.implements.get(data.get('implement', None), None)
-        if implement is not None:
-            self.current_implement = implement
         navigation = self.navigation_strategies.get(data.get('navigation', None), None)
         if navigation is not None:
             self.current_navigation = navigation
+        implement = self.implements.get(data.get('implement', None), None)
+        if implement is not None:
+            self.current_implement = implement
 
     @property
     def current_implement(self) -> Implement:
