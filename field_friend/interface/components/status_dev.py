@@ -81,7 +81,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.markdown('**Battery:**').style('color: #EDF4FB')
             bms_label = ui.label()
             if hasattr(robot, 'battery_control'):
-                battery_control_label = ui.label('')
+                battery_control_label = ui.label('').tooltip('Battery Box out connectors 1-4')
 
         with ui.row().classes('place-items-center'):
             ui.markdown('**Axis:**').style('color: #EDF4FB')
@@ -232,7 +232,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             z_axis_flags = ['no z-axis']
         bms_label.text = ', '.join(flag for flag in bms_flags if flag)
         if hasattr(robot, 'battery_control') and robot.battery_control is not None:
-            battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
+            battery_control_label.text = 'Out 1..4 is on' if robot.battery_control.status else 'Out 1..4 is off'
 
         y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
         z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
