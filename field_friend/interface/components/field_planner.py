@@ -54,7 +54,6 @@ class field_planner:
 
     def table_selected(self, selection):
         self.active_object = None
-        self.active_object = None
         if len(selection.selection) > 0:
             if self.active_field is not None and (selection.selection[0]["id"] == self.active_field.id):
                 return
