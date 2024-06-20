@@ -49,7 +49,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
                 with ui.row().bind_visibility_from(robot.z_axis, 'end_b'):
                     ui.icon('report').props('size=md').classes('text-red')
-                    ui.label('Z-axis in end bottom pisition, error!').classes('text-red mt-1')
+                    ui.label('Z-axis in end bottom position, error!').classes('text-red mt-1')
 
                 with ui.row().bind_visibility_from(robot.z_axis, 'alarm'):
                     ui.icon('report').props('size=md').classes('text-yellow')

@@ -25,6 +25,7 @@ class StraightLineNavigation(Navigation):
 
     async def prepare(self) -> bool:
         self.log.info(f'Activating {self.implement.name}...')
+        self.plant_provider.clear()
         await self.implement.activate()
         return True
 

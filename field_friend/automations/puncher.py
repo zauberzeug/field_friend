@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 import numpy as np
@@ -55,7 +56,8 @@ class Puncher:
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
         world_target = self.driver.prediction.transform(local_target)
-        await self.driver.drive_to(world_target, backward=axis_distance < 0)
+        with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
+            await self.driver.drive_to(world_target, backward=axis_distance < 0)
 
     async def punch(self,
                     y: float, *,
@@ -67,6 +69,7 @@ class Puncher:
                     with_punch_check: bool = False,
                     ) -> None:
         self.log.info(f'Punching at {y} with depth {depth}...')
+        rest_position = 'reference'
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             self.log.warning('no y or z axis')
@@ -106,8 +109,13 @@ class Puncher:
             elif isinstance(self.field_friend.z_axis, ZAxis):
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(-depth)
-                await self.field_friend.z_axis.return_to_reference()
-            self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
+                if os.environ.get('Z_AXIS_REST_POSITION'):
+                    target = float(os.environ.get('Z_AXIS_REST_POSITION', '0'))
+                    await self.field_friend.z_axis.move_to(target)
+                    rest_position = f'custom position {target}'
+                else:
+                    await self.field_friend.z_axis.return_to_reference()
+            self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
             self.kpi_provider.increment_weeding_kpi('punches')
         except Exception as e:
             raise PuncherException(f'punching failed because: {e}') from e
@@ -165,7 +173,7 @@ class Puncher:
         self.kpi_provider.increment_weeding_kpi('chops')
 
     async def tornado_drill(self, angle: float = 180, turns: float = 2, with_open_drill=False) -> None:
-        self.log.info(f'Drilling with tornado at {angle}...')
+        self.log.info(f'Drilling with tornado at {angle}°...')
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise PuncherException('tornado drill is only available for tornado axis')
         try:

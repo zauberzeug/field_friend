@@ -83,9 +83,14 @@ class System(rosys.persistence.PersistentModule):
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
-        self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
+        self.big_weed_category_names = ['big_weed', 'thistle', 'orache', 'kamille', ]
         self.small_weed_category_names = ['coin', 'weed',]
-        self.crop_category_names = ['coin_with_hole', 'sugar_beet', 'onion', 'garlic', 'maize', 'liebstoekel']
+        self.crop_category_names = [
+            'coin_with_hole', 'sugar_beet', 'onion', 'garlic', 'maize', 'liebstoekel',
+            'red_beet', 'kohlrabi', 'schnittlauch', 'petersilie', 'bohnenkraut', 'sauerampfer',
+            'oregano', 'pimpinelle', 'borrietsch', 'estragon', 'zitronenmelisse', 'pfefferminze',
+            'marokanische_minze',
+        ]
         self.plant_locator = PlantLocator(self)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names

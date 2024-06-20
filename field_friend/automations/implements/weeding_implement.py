@@ -22,7 +22,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
         Implement.__init__(self, name)
-        rosys.persistence.PersistentModule.__init__(self, persistence_key=f'field_friend.automations.{persistence_key}')
+        rosys.persistence.PersistentModule.__init__(self,
+                                                    persistence_key=f'field_friend.automations.implements.{persistence_key}')
 
         self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
         self.log = logging.getLogger('field_friend.weeding')
@@ -75,6 +76,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
+        await self.puncher.field_friend.z_axis.return_to_reference()
 
     async def observe(self) -> None:
         self.log.info('checking for plants...')
@@ -83,11 +85,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                 return
             await rosys.sleep(0.2)
 
-    async def start_workflow(self) -> None:
+    async def start_workflow(self) -> bool:
         await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
-            return
+            return True
         self.log.info(f'Handling plants with {self.name}...')
+        return True
 
     async def stop_workflow(self) -> None:
         self.log.info('workflow completed')
@@ -128,7 +131,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         }
         upcoming_crop_positions = {
             c: pos for c, pos in relative_crop_positions.items()
-            if self.system.field_friend.WORK_X + self.system.field_friend.DRILL_RADIUS < pos.x < 0.3
+            if self.system.field_friend.WORK_X < pos.x < 0.3
         }
         # Sort the upcoming_crop_positions dictionary by the .x attribute of its values
         sorted_crops = dict(sorted(upcoming_crop_positions.items(), key=lambda item: item[1].x))
@@ -141,7 +144,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         }
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()
-            if self.system.field_friend.WORK_X+self.system.field_friend.DRILL_RADIUS < pos.x < 0.4
+            if self.system.field_friend.WORK_X < pos.x < 0.4
         }
         # Sort the upcoming_weed_positions dictionary by the .x attribute of its values
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
@@ -157,16 +160,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_drilling': self.with_drilling,
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
-            'weed_screw_depth': self.weed_screw_depth,
-            'crop_safety_distance': self.crop_safety_distance,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         self.with_drilling = data.get('with_drilling', self.with_drilling)
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
-        self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
-        self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
 
     def clear(self) -> None:
         self.crops_to_handle = {}

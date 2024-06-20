@@ -61,7 +61,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
 
     async def _detect_plants(self) -> None:
         if self.is_paused:
-            await asyncio.sleep(0.01)
+            await rosys.sleep(0.01)
             return
         t = rosys.time()
         camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
@@ -74,11 +74,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
             raise DetectorError()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:
-            await asyncio.sleep(0.01)
+            await rosys.sleep(0.01)
             return
         await self.detector.detect(new_image, autoupload=self.autoupload, tags=self.tags + [self.robot_name])
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
-            await asyncio.sleep(0.01 - (rosys.time() - t))
+            await rosys.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
             return
             # raise DetetorError()
@@ -132,18 +132,18 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.is_paused = False
 
     def settings_ui(self) -> None:
-        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0) \
+        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_weed_confidence') \
             .tooltip('Set the minimum weed confidence for the weeding automation')
-        ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0) \
+        ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_crop_confidence') \
             .tooltip('Set the minimum crop confidence for the weeding automation')
         options = [autoupload for autoupload in rosys.vision.Autoupload]
-        ui.select(options, label='Autoupload', on_change=self.backup) \
+        ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
 
