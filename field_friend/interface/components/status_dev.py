@@ -251,12 +251,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         cpu_label.text = f'{psutil.cpu_percent():.0f}%'
         ram_label.text = f'{psutil.virtual_memory().percent:.0f}%'
 
-        def get_jetson_cpu_temperature():
-            with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
-                temp = f.read().strip()
-            return float(temp) / 1000.0  # Convert from milli °C to °C
         if isinstance(robot, FieldFriendHardware):
-            temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
+            temperature_label.text = f'{system.get_jetson_cpu_temperature()}°C'
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
