@@ -12,7 +12,6 @@ services:
       - /run/udev:/run/udev:ro # to get the device identifiers
       - /etc/hostname:/mnt/host_hostname:ro #to get the hostname into the docker
     environment:
-      - ROBOT_ID=Field Friend
       - TZ=Europe/Amsterdam
     hostname: docker
     cap_add:

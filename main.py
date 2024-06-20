@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-import rosys
+import os
+
+from dotenv import load_dotenv
 from nicegui import app, ui
 from rosys.analysis import logging_page
 
@@ -12,7 +14,18 @@ logger = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
 
 
+load_dotenv('.env')
+
+
 def startup() -> None:
+    robot_id = os.environ.get('ROBOT_ID')
+    if robot_id is None:
+        msg = 'The ROBOT_ID environment variable is not set. Please set it in the .env file.'
+        logger.warning(msg)
+        ui.label(msg).classes('text-xl')
+        return
+    logger.info(f'Starting Field Friend for robot {robot_id}')
+    System.version = os.environ.get('VERSION') or robot_id
     system = System()
 
     def page_wrapper() -> None:
@@ -37,10 +50,12 @@ def startup() -> None:
 
 app.on_startup(startup)
 
-ui.run(title='Field Friend',
-       port=80,
-       storage_secret='feldfreund',
-       favicon='assets/favicon.ico',
-       binding_refresh_interval=0.3,
-       reconnect_timeout=10,
-       )
+ui.run(
+    title='Field Friend',
+    port=int(os.environ.get('PORT', '80')),
+    storage_secret='feldfreund',
+    favicon='assets/favicon.ico',
+    binding_refresh_interval=0.3,
+    reconnect_timeout=10,
+    on_air=os.environ.get('ON_AIR_TOKEN'),
+)
