@@ -85,6 +85,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
 
         # self.log.info(f'{[point.category_name for point in new_image.detections.points]} detections found')
         for d in new_image.detections.points:
+            if isinstance(self.detector, rosys.vision.DetectorSimulation):
+                # NOTE we drop detections at the edge of the vision because in reality they are blocked by the chassis
+                dead_zone = 80
+                if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
+                    continue
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
             if isinstance(camera, SimulatedCam):
                 world_point = camera.calibration.project_from_image(image_point).projection()

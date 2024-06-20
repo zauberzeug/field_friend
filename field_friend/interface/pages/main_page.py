@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING
 
+import rosys
 from nicegui import binding, ui
 
-from ..components import automation_controls, camera_card, leaflet_map, operation, robot_scene
+from field_friend.system import System
 
-if TYPE_CHECKING:
-    from field_friend.system import System
+from ..components import camera_card, leaflet_map, operation, robot_scene
 
 
 class main_page():
@@ -50,4 +50,4 @@ class main_page():
                                 .bind_visibility_from(self.system.field_friend.estop, 'is_soft_estop_active', value=True)
                         ui.space()
                         with ui.row():
-                            automation_controls(self.system)
+                            rosys.automation.automation_controls(self.system.automator)

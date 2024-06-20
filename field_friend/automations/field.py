@@ -34,6 +34,7 @@ class Field(GeoPointCollection):
     visualized: bool = False
     obstacles: list[FieldObstacle] = field(default_factory=list)
     rows: list[Row] = field(default_factory=list)
+    crop: str | None = None
 
     @property
     def outline(self) -> list[rosys.geometry.Point]:

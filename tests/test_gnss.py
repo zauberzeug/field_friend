@@ -1,4 +1,8 @@
 
+from copy import deepcopy
+
+
+import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import assert_point, forward
@@ -71,3 +75,20 @@ async def test_record_is_none(gnss_driving: System, gnss: GnssSimulation):
     await forward(5)
     # robot should have stopped driving
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))
+
+
+async def test_changing_reference(gnss_driving: System):
+    assert gnss_driving.gnss.current is not None
+    assert gnss_driving.gnss.reference is not None
+    assert gnss_driving.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert gnss_driving.gnss.reference.distance(ROBOT_GEO_START_POSITION) < 0.01
+    await forward(x=2.0, tolerance=0.001)
+    gnss_driving.automator.pause('changing reference point')
+    await forward(2)
+    assert gnss_driving.gnss.current.location.distance(ROBOT_GEO_START_POSITION) == pytest.approx(2.0, 0.1)
+    location = deepcopy(gnss_driving.gnss.current.location)
+    gnss_driving.gnss.reference = gnss_driving.gnss.reference.shifted(rosys.geometry.Point(x=-3.0, y=0.0))
+    await forward(2)
+    assert gnss_driving.odometer.prediction.point.x == pytest.approx(5.0)
+    assert gnss_driving.odometer.prediction.point.y == pytest.approx(0.0)
+    assert location == gnss_driving.gnss.current.location

@@ -21,7 +21,7 @@ from .kpi_generator import generate_kpis
 
 class System(rosys.persistence.PersistentModule):
 
-    version = 'rb36'  # insert here your field friend version to be simulated
+    version = 'rb28'  # insert here your field friend version to be simulated
 
     def __init__(self) -> None:
         super().__init__()
@@ -62,12 +62,13 @@ class System(rosys.persistence.PersistentModule):
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.8
+        self.driver.parameters.angular_speed_limit = 0.2
         self.driver.parameters.can_drive_backwards = True
         self.driver.parameters.minimum_turning_radius = 0.01
         self.driver.parameters.hook_offset = 0.45
         self.driver.parameters.carrot_distance = 0.15
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
+        self.driver.parameters.hook_bending_factor = 0.25
 
         self.kpi_provider = KpiProvider(self.plant_provider)
         if not self.is_real:
@@ -82,7 +83,7 @@ class System(rosys.persistence.PersistentModule):
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
         self.small_weed_category_names = ['coin', 'weed',]
-        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', ]
+        self.crop_category_names = ['coin_with_hole', 'sugar_beet', 'onion', 'garlic', 'maize', 'liebstoekel']
         self.plant_locator = PlantLocator(self)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
@@ -103,7 +104,7 @@ class System(rosys.persistence.PersistentModule):
                 (-offset, width/2)
             ],
             height=height)
-        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
+        self.automator = rosys.automation.Automator(self.steerer, on_interrupt=self.field_friend.stop)
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
@@ -130,8 +131,10 @@ class System(rosys.persistence.PersistentModule):
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}
         self._current_navigation: Navigation = self.straight_line_navigation
+        self._current_implement = self._current_navigation
         self.automator.default_automation = self._current_navigation.start
         self.info = Info(self)
+        self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
 
@@ -151,12 +154,12 @@ class System(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        navigation = self.navigation_strategies.get(data.get('navigation', None), None)
-        if navigation is not None:
-            self.current_navigation = navigation
         implement = self.implements.get(data.get('implement', None), None)
         if implement is not None:
             self.current_implement = implement
+        navigation = self.navigation_strategies.get(data.get('navigation', None), None)
+        if navigation is not None:
+            self.current_navigation = navigation
 
     @property
     def current_implement(self) -> Implement:

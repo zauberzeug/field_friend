@@ -26,6 +26,9 @@ configuration = {
         'motor_on_expander': False,
         'end_stops_on_expander': True,
         'reversed_direction': False,
+        'end_stops_inverted': True,
+        'acceleration': 1000,
+        'quick_stop_deceleration': 4000,
     },
     'z_axis': {
         'version': 'tornado',

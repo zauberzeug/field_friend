@@ -1,13 +1,16 @@
 import logging
-from typing import Any, Literal, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
 
 import rosys
 from nicegui import events, ui
 
 from ...automations import Field, FieldObstacle, FieldProvider, Row
 from ...localization import Gnss
-from .geodata_picker import geodata_picker
+from .field_creator import FieldCreator
 from .leaflet_map import leaflet_map
+
+if TYPE_CHECKING:
+    from field_friend.system import System
 
 
 class ActiveObject(TypedDict):
@@ -17,16 +20,15 @@ class ActiveObject(TypedDict):
 
 class field_planner:
 
-    def __init__(self, field_provider: FieldProvider, odometer: rosys.driving.Odometer, gnss: Gnss, leaflet: leaflet_map) -> None:
+    def __init__(self, system: 'System', leaflet: leaflet_map) -> None:
         self.log = logging.getLogger("field_friend.field_planner")
-        self.field_provider = field_provider
-        self.odometer = odometer
-        self.gnss = gnss
+        self.field_provider = system.field_provider
+        self.odometer = system.odometer
+        self.gnss = system.gnss
         self.leaflet_map = leaflet
         self.active_field: Field | None = None
         self.active_object: ActiveObject | None = None
         self.tab: Literal["Obstacles", "Outline", "Rows"] = "Outline"
-        self.TAB_CHANGED = rosys.event.Event()
 
         with ui.row().classes("w-full").style("height: 100%; max-height:100%; width: 100%;"):
             with ui.card().style("width: 48%; max-width: 48%; max-height: 100%; height: 100%;"):
@@ -35,19 +37,20 @@ class field_planner:
                         .tooltip("Upload a file with field boundaries. Supported file formats: KML, XML and Shape").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Add field", on_click=self.field_provider.create_field).tooltip("Add a new field") \
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
+                    ui.button("Field Wizard", on_click=lambda: FieldCreator(system)).tooltip("Build a field with rows in a few simple steps") \
+                        .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Clear fields", on_click=self.field_provider.clear_fields).props("outline color=warning") \
                         .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                 with ui.row().style("width: 100%;"):
                     self.show_field_table()
             self.show_field_settings()
             self.show_object_settings()
-            self.TAB_CHANGED.register(self.show_field_settings.refresh)
             self.field_provider.FIELDS_CHANGED.register(self.refresh_ui)
 
     def set_tab(self, e: events.ValueChangeEventArguments) -> None:
         self.tab = e.value
         self._set_active_object(None)
-        self.TAB_CHANGED.emit()
+        self.show_field_settings.refresh()
 
     def table_selected(self, selection):
         self.active_object = None
