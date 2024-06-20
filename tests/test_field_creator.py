@@ -36,4 +36,4 @@ def test_wrong_row_spacing(system: System):
     field_creator.last_row_end = field_creator.first_row_start.shifted(Point(x=10, y=10))
     field_creator.row_spacing = 45
     assert not field_creator.build_geometry()
-    assert len(field_creator.field.rows) == 0
+    assert len(field_creator.field.rows) == 1, 'the row should still be there even if the spacing is wrong'
