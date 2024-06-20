@@ -33,7 +33,6 @@ async def test_keep_crops_safe(system: System, detector: rosys.vision.DetectorSi
 
 
 @pytest.mark.skip(reason='Needs to be rewritten to ignore specific weeds')
-@pytest.mark.skip(reason='Needs to be rewritten to ignore specific weeds')
 async def test_weeding_screw_only_targets_big_weed(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
