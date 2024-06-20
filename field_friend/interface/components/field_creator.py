@@ -143,6 +143,11 @@ class FieldCreator:
         self.next = self._apply
 
     def build_geometry(self) -> bool:
+        """Build the geometry of the field based on the given points.
+
+        Returns True if the row spacing matches the distance between the first and last row, False otherwise.
+        Will create rows in any case to make testing easier.
+        """
         assert self.first_row_start is not None
         assert self.first_row_end is not None
         assert self.last_row_end is not None

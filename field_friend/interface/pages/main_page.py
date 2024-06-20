@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import binding, ui
 
-from ..components import camera_card, leaflet_map, operation, robot_scene
-
 from field_friend.system import System
+
+from ..components import camera_card, leaflet_map, operation, robot_scene
 
 
 class main_page():
