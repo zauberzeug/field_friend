@@ -81,7 +81,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.markdown('**Battery:**').style('color: #EDF4FB')
             bms_label = ui.label()
             if hasattr(robot, 'battery_control'):
-                battery_control_label = ui.label('')
+                battery_control_label = ui.label('').tooltip('Battery Box out connectors 1-4')
 
         with ui.row().classes('place-items-center'):
             ui.markdown('**Axis:**').style('color: #EDF4FB')
@@ -232,7 +232,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             z_axis_flags = ['no z-axis']
         bms_label.text = ', '.join(flag for flag in bms_flags if flag)
         if hasattr(robot, 'battery_control') and robot.battery_control is not None:
-            battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
+            battery_control_label.text = 'Out 1..4 is on' if robot.battery_control.status else 'Out 1..4 is off'
 
         y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
         z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
@@ -251,12 +251,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         cpu_label.text = f'{psutil.cpu_percent():.0f}%'
         ram_label.text = f'{psutil.virtual_memory().percent:.0f}%'
 
-        def get_jetson_cpu_temperature():
-            with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
-                temp = f.read().strip()
-            return float(temp) / 1000.0  # Convert from milli °C to °C
         if isinstance(robot, FieldFriendHardware):
-            temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
+            temperature_label.text = f'{system.get_jetson_cpu_temperature()}°C'
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'

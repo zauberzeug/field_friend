@@ -3,6 +3,7 @@ import os
 from typing import Any
 
 import numpy as np
+import psutil
 import rosys
 
 from field_friend.hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
@@ -150,6 +151,7 @@ class System(rosys.persistence.PersistentModule):
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
+            rosys.on_repeat(self.log_status, 60*5)
 
     def restart(self) -> None:
         os.utime('main.py')
@@ -203,3 +205,12 @@ class System(rosys.persistence.PersistentModule):
         self.usb_camera_provider.add_camera(camera)
         # TODO rework this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
         self.odometer.ROBOT_MOVED.register(lambda: camera.update_calibration(self.odometer.prediction))
+
+    def get_jetson_cpu_temperature(self):
+        with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
+            temp = f.read().strip()
+        return float(temp) / 1000.0  # Convert from milli °C to °C
+
+    def log_status(self):
+        msg = f'cpu: {psutil.cpu_percent():.0f}%  mem: {psutil.virtual_memory().percent:.0f}% temp: {self.get_jetson_cpu_temperature():.1f}°C'
+        self.log.info(msg)
