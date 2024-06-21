@@ -27,8 +27,12 @@ class Implement(abc.ABC):
     async def observe(self) -> None:
         """Run a custom observation in a loop; exiting will stop the robot and execute the perform_workflow method."""
 
-    async def start_workflow(self) -> None:
-        """Called after robot has stopped via observation to perform it's workflow on a specific point on the ground"""
+    async def start_workflow(self) -> bool:
+        """Called after robot has stopped via observation to perform it's workflow on a specific point on the ground
+
+        Returns True if the robot can drive forward, if the implement whishes to stay at the current location, return False
+        """
+        return True
 
     async def stop_workflow(self) -> None:
         """Called after workflow has been performed to stop the workflow"""

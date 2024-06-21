@@ -19,12 +19,14 @@ class SimulatedCam(rosys.vision.SimulatedCamera, rosys.vision.CalibratableCamera
                           roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
                           **kwargs) -> Self:
         camera = cls(**kwargs)
-        camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw)
+        camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z,
+                                       roll=roll, pitch=pitch, yaw=yaw, focal_length=750)
         assert camera.calibration is not None
         camera.mounting = deepcopy(camera.calibration.extrinsics)
         return camera
 
     def update_calibration(self, pose: rosys.geometry.Pose) -> None:
+        # TODO remove this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
         assert self.mounting is not None
         assert self.calibration is not None
         new_translation = pose.transform3d(rosys.geometry.Point3d.from_tuple(self.mounting.translation))

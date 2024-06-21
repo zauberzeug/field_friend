@@ -96,7 +96,8 @@ class PunchDialog(ui.dialog):
             image_view.set_content(self.to_svg(image.detections, target_point, confidence))
 
     def update_live_view(self) -> None:
-        assert self.camera is not None
+        if self.camera is None:
+            return
         self.update_content(self.live_image_view, self.camera.latest_detected_image)
 
     def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point], confidence: Optional[float], color: str = 'red') -> str:

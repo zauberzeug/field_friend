@@ -1,10 +1,15 @@
 {
     "use_field_planning": true,
-    "start_row_id": "b5b278aa-af86-4ad2-aad9-a20b7e09ae75",
-    "end_row_id": "b5b278aa-af86-4ad2-aad9-a20b7e09ae75",
+    "start_row_id": null,
+    "end_row_id": null,
     "minimum_turning_radius": 1.8,
     "turn_offset": 1.0,
+    "drive_backwards_to_start": true,
+    "drive_to_start": true,
     "only_monitoring": false,
+    "crop_confidence_threshold": 0.8,
+    "weed_confidence_threshold": 0.8,
+    "with_punch_check": false,
     "drill_with_open_tornado": false,
     "drill_between_crops": false,
     "with_drilling": false,
@@ -18,52 +23,7 @@
     "linear_speed_between_rows": 0.3,
     "angular_speed_between_rows": 0.8,
     "sorted_weeding_rows": [],
-    "field": {
-        "id": "8c03eee7-0e38-4631-9f0d-0a12093c1136",
-        "name": "field_1",
-        "points": [
-            {
-                "lat": 51.983051981357704,
-                "long": 7.434361841651423
-            },
-            {
-                "lat": 51.98310476777581,
-                "long": 7.434305516193765
-            },
-            {
-                "lat": 51.98315920370432,
-                "long": 7.434420849273772
-            },
-            {
-                "lat": 51.98307837457452,
-                "long": 7.43447181040213
-            }
-        ],
-        "reference": {
-            "lat": 51.983051981357704,
-            "long": 7.434361841651423
-        },
-        "visualized": false,
-        "obstacles": [],
-        "rows": [
-            {
-                "id": "b5b278aa-af86-4ad2-aad9-a20b7e09ae75",
-                "name": "row_1",
-                "points": [
-                    {
-                        "lat": 51.98308566666667,
-                        "long": 7.434426511666667
-                    },
-                    {
-                        "lat": 51.983132855,
-                        "long": 7.434380535
-                    }
-                ],
-                "reverse": false,
-                "crops": []
-            }
-        ]
-    },
+    "field": null,
     "weeding_plan": [],
     "turn_paths": [],
     "current_row": null,

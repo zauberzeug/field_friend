@@ -19,8 +19,9 @@ class Tornado(WeedingImplement):
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
         self.with_punch_check: bool = False
+        self.field_friend = system.field_friend
 
-    async def start_workflow(self) -> None:
+    async def start_workflow(self) -> bool:
         await super().start_workflow()
         self.log.info('Performing Tornado Workflow..')
         try:
@@ -30,7 +31,7 @@ class Tornado(WeedingImplement):
             # fist check if the closest crop is in the working area
             if closest_crop_position.x >= self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
                 self.log.info('closest crop is out of working area')
-                return
+                return True
             self.log.info(f'target next crop at {closest_crop_position}')
             if self.system.field_friend.can_reach(closest_crop_position) \
                     and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
@@ -51,23 +52,13 @@ class Tornado(WeedingImplement):
                     outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
                     self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                               if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
-                # if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
-                #     self.log.info('drilling crop with open tornado')
-                #     await self.system.puncher.punch(plant_id=closest_crop_id, y=closest_crop_position.y, angle=0)
-            # TODO is this working?
-            if len(self.crops_to_handle) > 1 and self.drill_between_crops:
-                self.log.info('checking for second closest crop')
-                second_closest_crop_position = list(self.crops_to_handle.values())[1]
-                distance_to_next_crop = closest_crop_position.distance(second_closest_crop_position)
-                if distance_to_next_crop > 0.13:
-                    # get the target of half the distance between the two crops
-                    target = closest_crop_position.x + distance_to_next_crop / 2
-                    self.log.info(f'driving to position between two crops: {target}')
-                    await self.system.puncher.drive_and_punch(plant_id=closest_crop_id, x=target, y=0, angle=180)
-        except PuncherException as e:
-            self.log.error(f'Error while Tornado Workflow: {e}')
+
+            return True
+        except PuncherException:
+            self.log.error('Error in Tornado Workflow')
+            return True
         except Exception as e:
-            raise ImplementException(f'Error while tornado Workflow: {e}') from e
+            raise ImplementException('Error while tornado Workflow') from e
 
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()
@@ -101,11 +92,13 @@ class Tornado(WeedingImplement):
     def settings_ui(self):
         super().settings_ui()
 
-        ui.number('Tornado angle', format='%.0f', value=180, step=1, min=1, max=180) \
+        ui.number('Tornado angle', format='%.0f', value=180, step=1, min=0, max=180) \
             .props('dense outlined suffix=°') \
             .classes('w-24') \
             .bind_value(self, 'tornado_angle') \
             .tooltip('Set the angle for the tornado drill')
+        ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
+                                  f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
         ui.checkbox('With punch check', value=True) \
             .bind_value(self, 'with_punch_check') \
             .tooltip('Set the weeding automation to check for punch')

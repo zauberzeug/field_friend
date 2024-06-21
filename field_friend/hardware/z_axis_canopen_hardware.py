@@ -113,6 +113,11 @@ class ZAxisCanOpenHardware(ZAxis, rosys.hardware.ModuleHardware):
                 f'{self.name}_motor.position_offset = 0;'
             )
             await rosys.sleep(1)
+            self.log.info('activating velocity mode')
+            await self.robot_brain.send(
+                f'{self.name}_motor.enter_pv_mode();'
+            )
+            await rosys.sleep(1)
 
             # if in end b stop, move out
             if self.end_b:

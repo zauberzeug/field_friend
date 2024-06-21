@@ -19,6 +19,8 @@ log = logging.getLogger('field_friend.testing')
 async def system(integration, request) -> AsyncGenerator[System, None]:
     System.version = getattr(request, 'param', 'rb34')
     s = System()
+    assert isinstance(s.detector, rosys.vision.DetectorSimulation)
+    s.detector.detection_delay = 0.1
     s.gnss.reference = ROBOT_GEO_START_POSITION
     helpers.odometer = s.odometer
     helpers.driver = s.driver

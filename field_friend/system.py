@@ -3,57 +3,31 @@ import os
 from typing import Any
 
 import numpy as np
+import psutil
 import rosys
 
-from field_friend.hardware import (
-    FieldFriend,
-    FieldFriendHardware,
-    FieldFriendSimulation,
-)
+from field_friend.hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
 from field_friend.localization.gnss_hardware import GnssHardware
 from field_friend.localization.gnss_simulation import GnssSimulation
-from field_friend.vision import (
-    CalibratableUsbCameraProvider,
-    CameraConfigurator,
-    SimulatedCam,
-    SimulatedCamProvider,
-)
+from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
 
-from .automations import (
-    AutomationWatcher,
-    BatteryWatcher,
-    FieldProvider,
-    KpiProvider,
-    PathProvider,
-    PathRecorder,
-    PlantLocator,
-    PlantProvider,
-    Puncher,
-)
-from .automations.implements import (
-    ChopAndScrew,
-    Implement,
-    Recorder,
-    Tornado,
-    WeedingScrew,
-)
-from .automations.navigation import (
-    CoverageNavigation,
-    FollowCropsNavigation,
-    Navigation,
-    RowsOnFieldNavigation,
-    StraightLineNavigation,
-)
+from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PathRecorder,
+                          PlantLocator, PlantProvider, Puncher)
+from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
+from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
+                                     StraightLineNavigation)
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
 
 class System(rosys.persistence.PersistentModule):
 
-    version = 'rb34'  # insert here your field friend version to be simulated
+    version = 'unknown'  # This is set in main.py through the environment variable VERSION or ROBOT_ID
 
     def __init__(self) -> None:
         super().__init__()
+        assert self.version is not None
+        assert self.version != 'unknown'
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
@@ -63,7 +37,10 @@ class System(rosys.persistence.PersistentModule):
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.field_friend: FieldFriend
         if self.is_real:
-            self.field_friend = FieldFriendHardware()
+            try:
+                self.field_friend = FieldFriendHardware()
+            except Exception:
+                self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             self.usb_camera_provider = CalibratableUsbCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
@@ -88,12 +65,13 @@ class System(rosys.persistence.PersistentModule):
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.8
+        self.driver.parameters.angular_speed_limit = 0.2
         self.driver.parameters.can_drive_backwards = True
         self.driver.parameters.minimum_turning_radius = 0.01
         self.driver.parameters.hook_offset = 0.45
         self.driver.parameters.carrot_distance = 0.15
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
+        self.driver.parameters.hook_bending_factor = 0.25
 
         self.kpi_provider = KpiProvider(self.plant_provider)
         if not self.is_real:
@@ -106,22 +84,17 @@ class System(rosys.persistence.PersistentModule):
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
-        self.big_weed_category_names = ['big_weed', 'thistle', 'orache',]
+        self.big_weed_category_names = ['big_weed', 'thistle', 'orache', 'kamille', ]
         self.small_weed_category_names = ['coin', 'weed',]
-        self.crop_category_names = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', 'maize', ]
-        self.plant_locator = PlantLocator(self.usb_camera_provider,
-                                          self.detector,
-                                          self.plant_provider,
-                                          self.odometer,
-                                          )
+        self.crop_category_names = [
+            'coin_with_hole', 'sugar_beet', 'onion', 'garlic', 'maize', 'liebstoekel',
+            'red_beet', 'kohlrabi', 'schnittlauch', 'petersilie', 'bohnenkraut', 'sauerampfer',
+            'oregano', 'pimpinelle', 'borrietsch', 'estragon', 'zitronenmelisse', 'pfefferminze',
+            'marokanische_minze',
+        ]
+        self.plant_locator = PlantLocator(self)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
         self.plant_locator.crop_category_names = self.crop_category_names
-        if self.field_friend.implement_name == 'tornado':
-            self.plant_locator.minimum_weed_confidence = 0.8
-            self.plant_locator.minimum_crop_confidence = 0.75
-        else:
-            self.plant_locator.minimum_weed_confidence = 0.45
-            self.plant_locator.minimum_crop_confidence = 0.65
 
         rosys.on_repeat(watch_robot, 1.0)
 
@@ -139,7 +112,7 @@ class System(rosys.persistence.PersistentModule):
                 (-offset, width/2)
             ],
             height=height)
-        self.automator = rosys.automation.Automator(None, on_interrupt=self.field_friend.stop)
+        self.automator = rosys.automation.Automator(self.steerer, on_interrupt=self.field_friend.stop)
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
@@ -178,6 +151,7 @@ class System(rosys.persistence.PersistentModule):
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
+            rosys.on_repeat(self.log_status, 60*5)
 
     def restart(self) -> None:
         os.utime('main.py')
@@ -229,4 +203,14 @@ class System(rosys.persistence.PersistentModule):
                                                 pitch=np.deg2rad(0),
                                                 yaw=np.deg2rad(90))
         self.usb_camera_provider.add_camera(camera)
+        # TODO rework this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
         self.odometer.ROBOT_MOVED.register(lambda: camera.update_calibration(self.odometer.prediction))
+
+    def get_jetson_cpu_temperature(self):
+        with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
+            temp = f.read().strip()
+        return float(temp) / 1000.0  # Convert from milli °C to °C
+
+    def log_status(self):
+        msg = f'cpu: {psutil.cpu_percent():.0f}%  mem: {psutil.virtual_memory().percent:.0f}% temp: {self.get_jetson_cpu_temperature():.1f}°C'
+        self.log.info(msg)

@@ -253,6 +253,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
                                           end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
                                           reversed_direction=config_hardware['z_axis']['reversed_direction'],
+                                          end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
                                           acceleration=config_hardware['z_axis']['acceleration'],
                                           quick_stop_deceleration=config_hardware['z_axis']['quick_stop_deceleration'],
                                           )

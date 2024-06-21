@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 import pytest
 import rosys
@@ -10,7 +8,6 @@ from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Recorder
 from field_friend.automations.navigation import StraightLineNavigation
-from field_friend.localization import GnssSimulation
 
 
 async def test_straight_line(system: System):
@@ -42,7 +39,7 @@ async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimul
     assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=1.0)
 
 
-async def test_start_approaching_first_row(system: System, field: Field):
+async def test_approaching_first_row(system: System, field: Field):
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
     assert system.gnss.current
@@ -51,13 +48,31 @@ async def test_start_approaching_first_row(system: System, field: Field):
     await forward(x=1.5, y=-6.05)
     assert system.field_navigation.current_row == field.rows[0]
     assert system.field_navigation.state == system.field_navigation.State.APPROACHING_ROW_START
+    assert system.field_navigation.automation_watcher.field_watch_active
     await forward(5)
     assert system.automator.is_running
     assert system.field_navigation.current_row == field.rows[0]
     assert system.field_navigation.state == system.field_navigation.State.FOLLOWING_ROW
+    assert system.field_navigation.automation_watcher.field_watch_active
 
 
-async def test_resuming_after_automation_stop(system: System, field: Field):
+async def test_not_approaching_first_row_when_outside_field(system: System, field: Field):
+    async def drive_away():
+        await system.driver.drive_to(rosys.geometry.Point(x=-5, y=0))
+    system.automator.start(drive_away())
+    await forward(22)
+    assert not system.automator.is_running
+
+    system.field_navigation.field = field
+    system.current_navigation = system.field_navigation
+    system.automator.start()
+    await forward(2)
+    assert system.field_navigation.current_row == field.rows[0]
+    assert system.field_navigation.state == system.field_navigation.State.APPROACHING_ROW_START
+    assert not system.automator.is_running, 'should have been stopped because robot is outside of field boundaries'
+
+
+async def test_resuming_field_navigation_after_automation_stop(system: System, field: Field):
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
     system.automator.start()
@@ -80,3 +95,4 @@ async def test_coverage_navigation(system: System, field: Field):
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
     system.automator.start()
+    # TODO implement test

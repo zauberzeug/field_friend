@@ -7,7 +7,7 @@ from nicegui import ui
 from rosys.geometry import Pose, Spline
 
 from ..field import Field, Row
-from ..implements.implement import Implement
+from ..implements import Implement, WeedingImplement
 from .follow_crops_navigation import FollowCropsNavigation
 
 if TYPE_CHECKING:
@@ -57,17 +57,17 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         if self.state == self.State.FOLLOWING_ROW:
             if self.current_row.line_segment(self.field.reference).distance(self.odometer.prediction.point) > 0.1:
                 self.clear()
+        else:
+            self.plant_provider.clear()
 
         # NOTE: it's useful to set the reference point to the reference of the field; that way the cartesian coordinates are simpler to comprehend
         self.gnss.reference = self.field.reference
         await rosys.sleep(0.1)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
-        self.automation_watcher.gnss_watch_active = True
         return True
 
     async def finish(self) -> None:
         await super().finish()
-        self.automation_watcher.gnss_watch_active = False
         self.automation_watcher.stop_field_watch()
 
     async def _drive(self) -> None:
@@ -78,6 +78,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
             await self._drive_to_row(self.current_row)
             self.state = self.State.FOLLOWING_ROW
             self.log.info(f'Following "{self.current_row.name}"...')
+            self.plant_provider.clear()
         if self.state == self.State.FOLLOWING_ROW:
             if not self.implement.is_active:
                 await self.implement.activate()
@@ -138,7 +139,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
 
     def settings_ui(self) -> None:
         field_selection = ui.select(
-            {f.id: f.name for f in self.field_provider.fields},
+            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
             on_change=lambda args: self._set_field(args.value),
             label='Field')\
             .classes('w-32') \
@@ -150,8 +151,12 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         field = self.field_provider.get_field(field_id)
         if field is not None:
             self.field = field
-            self.gnss.reference = field.points[0]
+            if isinstance(self.implement, WeedingImplement):
+                self.implement.cultivated_crop = field.crop
             self.clear()
+        else:
+            if isinstance(self.implement, WeedingImplement):
+                self.implement.cultivated_crop = None
 
     def create_simulation(self) -> None:
         self.detector.simulated_objects.clear()
