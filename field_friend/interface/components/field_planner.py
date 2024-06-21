@@ -25,13 +25,14 @@ class field_planner:
         self.field_provider = system.field_provider
         self.odometer = system.odometer
         self.gnss = system.gnss
+        self.cultivatable_crops = system.crop_category_names
         self.leaflet_map = leaflet
         self.active_field: Field | None = None
         self.active_object: ActiveObject | None = None
-        self.tab: Literal["Obstacles", "Outline", "Rows"] = "Outline"
+        self.tab: Literal["Plants", "Obstacles", "Outline", "Rows"] = "Plants"
 
         with ui.row().classes("w-full").style("height: 100%; max-height:100%; width: 100%;"):
-            with ui.card().style("width: 48%; max-width: 48%; max-height: 100%; height: 100%;"):
+            with ui.card().style("width: 40%; max-width: 40%; max-height: 100%; height: 100%;"):
                 with ui.row():
                     ui.button("Upload Field", on_click=lambda field_provider=self.field_provider: geodata_picker(field_provider)) \
                         .tooltip("Upload a file with field boundaries. Supported file formats: KML, XML and Shape").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
@@ -97,24 +98,34 @@ class field_planner:
 
     @ui.refreshable
     def show_field_settings(self) -> None:
-        with ui.card().style("width: 25%; max-height: 100%; height: 100%;"):
+        with ui.card().classes('col-grow').style("max-height: 100%; height: 100%;"):
             if self.active_field is None:
                 with ui.column().style("display: block; margin: auto;"):
-                    ui.icon("fence").props("size=lg color=primary").style("display: block; margin: auto;")
+                    ui.icon("polyline").props("size=lg color=primary").style("display: block; margin: auto;")
                     ui.label("select a field").style("display: block; margin: auto; color: #6E93D6;")
             else:
                 with ui.row().style("width: 100%"):
-                    ui.icon("fence").props("size=lg color=primary") \
+                    ui.icon("polyline").props("size=lg color=primary") \
                         .style("display:block; margin-top:auto; margin-bottom: auto;")
                     ui.input(value=f"{self.active_field.name}") \
-                        .on("blur", self.field_provider.invalidate).bind_value(self.active_field, "name").classes("w-32")
+                        .on("blur", self.field_provider.request_backup) \
+                        .bind_value(self.active_field, "name") \
+                        .classes("w-32")
                     ui.button(on_click=lambda field=self.active_field: self.field_provider.remove_field(field)) \
-                        .props("icon=delete color=warning fab-mini flat").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;").tooltip("Delete field")
+                        .props("icon=delete color=warning fab-mini flat") \
+                        .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;") \
+                        .tooltip("Delete field")
                 with ui.tabs().style("width: 100%;") as self.tabs:
+                    ui.tab("Plants", "Plants")
                     ui.tab("Outline", "Outline")
                     ui.tab("Obstacles", "Obstacles")
                     ui.tab("Rows", "Rows")
                 with ui.tab_panels(self.tabs, value=f"{self.tab}", on_change=self.set_tab).style("width: 100%;") as self.panels:
+                    with ui.tab_panel("Plants").style("width: 100%;"):
+                        ui.select(self.cultivatable_crops, label="Cultivated Crop", on_change=self.field_provider.request_backup) \
+                            .classes("w-40").props('clearable') \
+                            .bind_value(self.active_field, "crop") \
+                            .tooltip('Set the cultivated crop which should be kept safe')
                     with ui.tab_panel("Outline").style("width: 100%;"):
                         for geo_point in self.active_field.points:
                             with ui.row().style("width: 100%;"):
@@ -255,8 +266,7 @@ class field_planner:
 
     def _set_active_field(self, field_id: str) -> None:
         self.active_field = self.field_provider.get_field(field_id)
-        if self.active_field is not None:
-            self.show_field_settings.refresh()
+        self.show_field_settings.refresh()
 
     def _set_active_object(self, object_id: Optional[str] = None, object_type: Optional[Literal["Obstacles", "Rows", "Outline"]] = None) -> None:
         if (self.active_field is not None and object_id is not None and object_type is not None):
