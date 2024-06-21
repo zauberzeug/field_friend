@@ -61,7 +61,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                 axis_offset=config_hardware['z_axis']['axis_offset'],
             )
 
-        elif config_hardware['z_axis']['version'] == 'tornado':
+        elif config_hardware['z_axis']['version'] in ['tornado', 'tornado v1.1']:
             z_axis = TornadoSimulation(min_position=config_hardware['z_axis']['min_position'],
                                        m_per_tick=config_hardware['z_axis']['m_per_tick'],
                                        is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
