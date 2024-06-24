@@ -70,13 +70,13 @@ class WeedingScrew(WeedingImplement):
 
     def settings_ui(self):
         super().settings_ui()
-        ui.number('Drill depth', value=0.02, format='%.2f', step=0.01,
+        ui.number('Drill depth', format='%.2f', step=0.01,
                   min=self.system.field_friend.z_axis.max_position, max=self.system.field_friend.z_axis.min_position*-1) \
             .props('dense outlined suffix=°') \
             .classes('w-24') \
             .bind_value(self, 'weed_screw_depth') \
             .tooltip('Set the drill depth for the weeding automation')
-        ui.number('Crop safety distance', value=0.01, step=0.001, min=0.001, max=0.05, format='%.3f') \
+        ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f') \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \

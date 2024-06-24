@@ -92,19 +92,19 @@ class Tornado(WeedingImplement):
     def settings_ui(self):
         super().settings_ui()
 
-        ui.number('Tornado angle', format='%.0f', value=180, step=1, min=0, max=180) \
+        ui.number('Tornado angle', format='%.0f', step=1, min=0, max=180) \
             .props('dense outlined suffix=°') \
             .classes('w-24') \
             .bind_value(self, 'tornado_angle') \
             .tooltip('Set the angle for the tornado drill')
         ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
                                   f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
-        ui.checkbox('With punch check', value=True) \
+        ui.checkbox('With punch check') \
             .bind_value(self, 'with_punch_check') \
             .tooltip('Set the weeding automation to check for punch')
-        ui.checkbox('Drill 2x with open torando', value=False,) \
+        ui.checkbox('Drill 2x with open torando') \
             .bind_value(self, 'drill_with_open_tornado') \
             .tooltip('Set the weeding automation to drill a second time with open tornado')
-        ui.checkbox('Drill between crops', value=False) \
+        ui.checkbox('Drill between crops') \
             .bind_value(self, 'drill_between_crops') \
             .tooltip('Set the weeding automation to drill between crops')
