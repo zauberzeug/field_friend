@@ -49,8 +49,10 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             {name}_front.width = {width}
             {name}.shadow({name}_front)
         ''')
-        core_message_fields = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3',
-                               {'l0.motor_error_flag', 'r0.motor_error_flag', 'l1.motor_error_flag', 'r1.motor_error_flag' if self.odrive_version == 6 else ''}]
+        core_message_fields = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3']
+        if self.odrive_version == 6:
+            core_message_fields.extend(['l0.motor_error_flag', 'r0.motor_error_flag',
+                                       'l1.motor_error_flag', 'r1.motor_error_flag'])
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def drive(self, linear: float, angular: float) -> None:
