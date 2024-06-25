@@ -20,20 +20,16 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
 
 
 class PlantProvider(rosys.persistence.PersistentModule):
-    def __init__(self,
-                 match_distance: float = 0.07,
-                 crop_spacing: float = 0.18,
-                 prediction_confidence: float = 0.3,
-                 persistence_key: str = 'plant_provider',
-                 ) -> None:
+    def __init__(self, persistence_key: str = 'plant_provider') -> None:
         super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
         self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 
-        self.match_distance = match_distance
-        self.crop_spacing = crop_spacing
-        self.prediction_confidence = prediction_confidence
+        self.match_distance: float = 0.07
+        self.crop_spacing: float = 0.18
+        self.predict_crop_position: bool = True
+        self.prediction_confidence: float = 0.3
         self.crop_confidence_threshold: float = 0.8
         self.weed_confidence_threshold: float = 0.8
 
@@ -52,16 +48,17 @@ class PlantProvider(rosys.persistence.PersistentModule):
         data = {
             'match_distance': self.match_distance,
             'crop_spacing': self.crop_spacing,
+            'predict_crop_position': self.predict_crop_position,
             'prediction_confidence': self.prediction_confidence,
             'crop_confidence_threshold': self.crop_confidence_threshold,
             'weed_confidence_threshold': self.weed_confidence_threshold,
-
         }
         return data
 
     def restore(self, data: dict[str, Any]) -> None:
         self.match_distance = data.get('match_distance', self.match_distance)
         self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
+        self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)
         self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
         self.crop_confidence_threshold = data.get('crop_confidence_threshold', self.crop_confidence_threshold)
         self.weed_confidence_threshold = data.get('weed_confidence_threshold', self.weed_confidence_threshold)
@@ -115,6 +112,8 @@ class PlantProvider(rosys.persistence.PersistentModule):
         self.clear_crops()
 
     def _add_crop_prediction(self, plant: Plant) -> None:
+        if not self.predict_crop_position:
+            return
         sorted_crops = sorted(self.crops, key=lambda crop: crop.position.distance(plant.position))
         if len(sorted_crops) < 2:
             return
@@ -136,28 +135,31 @@ class PlantProvider(rosys.persistence.PersistentModule):
         return [w for w in self.weeds if w.position.distance(point) <= max_distance and len(w.positions) >= 3 and w.confidence > self.weed_confidence_threshold]
 
     def settings_ui(self) -> None:
-        ui.number('Combined crop confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+        ui.number('Combined crop confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f') \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'crop_confidence_threshold') \
             .tooltip('Needed crop confidence for punshing')
-        ui.number('Combined weed confidence threshold', value=0.8, step=0.05, min=0.05, max=5.00, format='%.2f') \
+        ui.number('Combined weed confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f') \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'weed_confidence_threshold') \
             .tooltip('Needed weed confidence for punshing')
-        ui.number('Crop match distance', value=0.07, step=0.01, min=0.01, max=0.10, format='%.2f') \
+        ui.number('Crop match distance', step=0.01, min=0.01, max=0.10, format='%.2f') \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'match_distance') \
             .tooltip('Maximum distance for a detection to be considered the same plant')
-        ui.number('Crop spacing', value=0.18, step=0.01, min=0.01, max=1.00, format='%.2f') \
+        ui.number('Crop spacing', step=0.01, min=0.01, max=1.00, format='%.2f') \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'crop_spacing') \
-            .tooltip('Spacing between crops')
-        ui.number('Crop prediction confidence', value=0.3, step=0.05, min=0.05, max=1.00, format='%.2f') \
+            .tooltip('Spacing between crops needed for crop position prediction')
+        ui.number('Crop prediction confidence', step=0.05, min=0.05, max=1.00, format='%.2f') \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'prediction_confidence') \
             .tooltip('Confidence of the crop prediction')
+        ui.checkbox('Crop Prediction') \
+            .bind_value(self, 'predict_crop_position') \
+            .tooltip('Provides a confidence boost for crop detections that match the expected crop spacing')
