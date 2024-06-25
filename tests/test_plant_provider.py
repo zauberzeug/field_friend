@@ -26,3 +26,35 @@ def create_crop(x: float, y: float) -> Plant:
         plant.positions.append(rosys.geometry.Point(x=x, y=y))
         plant.confidences.append(0.9)
     return plant
+
+
+def test_crop_prediction():
+    plant_provider = PlantProvider()
+    plant_provider.predict_crop_position = False
+    confidence = 0.4
+
+    plant = Plant(type='maize', detection_time=rosys.time())
+    plant.positions.append(rosys.geometry.Point(x=0, y=0))
+    plant.confidences.append(confidence)
+    plant_provider.add_crop(plant)
+    assert plant_provider.crops[0].confidence == confidence
+
+    plant = Plant(type='maize', detection_time=rosys.time())
+    plant.positions.append(rosys.geometry.Point(x=plant_provider.crop_spacing, y=0))
+    plant.confidences.append(confidence)
+    plant_provider.add_crop(plant)
+    assert plant_provider.crops[1].confidence == confidence
+
+    plant_provider.predict_crop_position = True
+    plant = Plant(type='maize', detection_time=rosys.time())
+    plant.positions.append(rosys.geometry.Point(x=2 * plant_provider.crop_spacing, y=0))
+    plant.confidences.append(confidence)
+    plant_provider.add_crop(plant)
+    assert plant_provider.crops[2].confidence == (confidence + plant_provider.prediction_confidence)
+
+    plant_provider.predict_crop_position = False
+    plant = Plant(type='maize', detection_time=rosys.time())
+    plant.positions.append(rosys.geometry.Point(x=3 * plant_provider.crop_spacing, y=0))
+    plant.confidences.append(confidence)
+    plant_provider.add_crop(plant)
+    assert plant_provider.crops[3].confidence == confidence
