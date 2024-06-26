@@ -11,7 +11,7 @@ class field_object(Group):
 
         self.field_provider = field_provider
         self.update(active_field)
-        self.field_provider.FIELDS_CHANGED.register(lambda: self.update(active_field))
+        self.field_provider.FIELDS_CHANGED.register_ui(lambda: self.update(active_field))
 
     def create_fence(self, start, end):
         height = 0.12
