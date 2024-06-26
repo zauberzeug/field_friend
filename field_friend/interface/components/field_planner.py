@@ -46,7 +46,7 @@ class field_planner:
                     self.show_field_table()
             self.show_field_settings()
             self.show_object_settings()
-            self.field_provider.FIELDS_CHANGED.register(self.refresh_ui)
+            self.field_provider.FIELDS_CHANGED.register_ui(self.refresh_ui)
 
     def set_tab(self, e: events.ValueChangeEventArguments) -> None:
         self.tab = e.value

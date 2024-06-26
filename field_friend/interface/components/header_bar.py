@@ -61,7 +61,7 @@ class header_bar:
                     self.drawer_icon = "chevron_right"
                 ui.button(on_click=handle_toggle).props(f'icon={self.drawer_icon} flat color=white')
             change_drawer_icon()
-            self.STATUS_DRAWER_TOGGLED.register(change_drawer_icon.refresh)
+            self.STATUS_DRAWER_TOGGLED.register_ui(change_drawer_icon.refresh)
 
     def _show_battery(self, robot: FieldFriend) -> ui.row:
         with ui.row().classes('items-center gap-1') as row:
