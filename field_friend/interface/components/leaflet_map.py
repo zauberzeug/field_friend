@@ -95,7 +95,7 @@ class leaflet_map:
 
         with self.m as m:
             m.on('draw:created', handle_draw)
-        self.gnss.ROBOT_GNSS_POSITION_CHANGED.register(self.update_robot_position)
+        self.gnss.ROBOT_GNSS_POSITION_CHANGED.register_ui(self.update_robot_position)
 
     def buttons(self) -> None:
         """Builds additional buttons to interact with the map."""
