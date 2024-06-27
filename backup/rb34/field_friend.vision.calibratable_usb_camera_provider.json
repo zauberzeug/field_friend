@@ -1,0 +1,119 @@
+{
+    "cameras": {
+        "32e4-9230-platform-3610000.xhci-usb-0:2.2:1.0": {
+            "id": "32e4-9230-platform-3610000.xhci-usb-0:2.2:1.0",
+            "name": "32e4-9230-platform-3610000.xhci-usb-0:2.2:1.0",
+            "connect_after_init": true,
+            "streaming": true,
+            "focal_length": 1830,
+            "calibration": {
+                "intrinsics": {
+                    "matrix": [
+                        [
+                            707.8628964548316,
+                            0.0,
+                            622.7116025511204
+                        ],
+                        [
+                            0.0,
+                            698.0094577888816,
+                            356.3120071206727
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    ],
+                    "distortion": [
+                        -0.4530718200220011,
+                        0.4029088806879862,
+                        -0.0051624054013071725,
+                        2.3421262828219466e-06,
+                        -0.1989068783821379
+                    ],
+                    "rotation": {
+                        "R": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ]
+                    },
+                    "size": {
+                        "width": 1280,
+                        "height": 720
+                    }
+                },
+                "extrinsics": {
+                    "rotation": {
+                        "R": [
+                            [
+                                -0.004912368587131732,
+                                0.8320548047150914,
+                                -0.5546716781893549
+                            ],
+                            [
+                                0.9999876614439075,
+                                0.0036776933501039277,
+                                -0.003339390897729177
+                            ],
+                            [
+                                -0.0007386438989094476,
+                                -0.5546812386606867,
+                                -0.8320626045454975
+                            ]
+                        ]
+                    },
+                    "translation": [
+                        0.2748761264090155,
+                        0.0047265743642995964,
+                        0.2958801067726487
+                    ]
+                }
+            },
+            "auto_exposure": true,
+            "exposure": false,
+            "width": 1280,
+            "height": 720,
+            "fps": 9
+        },
+        "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0": {
+            "id": "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0",
+            "name": "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0",
+            "connect_after_init": true,
+            "streaming": false,
+            "focal_length": null,
+            "calibration": null,
+            "auto_exposure": true,
+            "exposure": false,
+            "width": 1280,
+            "height": 720,
+            "fps": 9
+        },
+        "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0": {
+            "id": "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0",
+            "name": "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0",
+            "connect_after_init": true,
+            "streaming": true,
+            "focal_length": null,
+            "calibration": null,
+            "auto_exposure": true,
+            "exposure": false,
+            "width": 1280,
+            "height": 720,
+            "fps": 9
+        }
+    }
+}

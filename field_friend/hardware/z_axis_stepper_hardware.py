@@ -25,6 +25,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
                  end_b_pin: int = 22,
                  motor_on_expander: bool = True,
                  end_stops_on_expander: bool = True,
+                 end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
                  ) -> None:
         self.name = name
@@ -34,12 +35,14 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
             {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
+            {name}_end_t.inverted = {str(end_stops_inverted).lower()}
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
+            {name}_end_b.inverted = {str(end_stops_inverted).lower()}
             {name} =  {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
         ''')
         core_message_fields = [
-            f'{name}_end_t.level',
-            f'{name}_end_b.level',
+            f'{name}_end_t.active',
+            f'{name}_end_b.active',
             f'{name}_motor.idle',
             f'{name}_motor.position',
             f'{name}_alarm.level',
@@ -95,7 +98,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             if self.end_b:
                 self.log.info('already in end b stop, moving out of it')
                 velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
-                await self.robot_brain.send(f'{self.name}.speed({velocity});')
+                await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
                 while self.end_b:
                     await rosys.sleep(0.2)
                 await self.robot_brain.send(f'{self.name}.stop();')
@@ -104,7 +107,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             if not self.end_t:
                 self.log.info('moving to end t stop')
                 velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
-                await self.robot_brain.send(f'{self.name}.speed({velocity});')
+                await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
                 while not self.end_t:
                     await rosys.sleep(0.2)
                 await self.robot_brain.send(f'{self.name}.stop();')
@@ -112,7 +115,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             # move out of end t stop
             self.log.info('moving out of end t stop')
             velocity = self.reference_speed * (1 if self.reversed_direction else -1)
-            await self.robot_brain.send(f'{self.name}.speed({velocity});')
+            await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
             while self.end_t:
                 await rosys.sleep(0.2)
             await self.robot_brain.send(f'{self.name}.stop();')
@@ -120,7 +123,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             # move slowly to end t stop
             self.log.info('moving slowly to end t stop')
             velocity = round(self.reference_speed/2) * (-1 if self.reversed_direction else 1)
-            await self.robot_brain.send(f'{self.name}.speed({velocity});')
+            await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
             while not self.end_t:
                 await rosys.sleep(0.2)
             await self.robot_brain.send(f'{self.name}.stop();')
@@ -128,7 +131,7 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             # move slowly out of end t stop
             self.log.info('moving slowly out of end t stop')
             velocity = round(self.reference_speed/2) * (1 if self.reversed_direction else -1)
-            await self.robot_brain.send(f'{self.name}.speed({velocity});')
+            await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
             while self.end_t:
                 await rosys.sleep(0.2)
             await self.robot_brain.send(f'{self.name}.stop();')
@@ -149,12 +152,12 @@ class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
             await self.stop()
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.end_t = int(words.pop(0)) == 0
-        self.end_b = int(words.pop(0)) == 0
+        self.end_t = words.pop(0) == 'true'
+        self.end_b = words.pop(0) == 'true'
         if self.end_b:
             self.is_referenced = False
         self.idle = words.pop(0) == 'true'
         self.steps = int(words.pop(0))
-        self.alarm = int(words.pop(0)) == 0
+        self.alarm = words.pop(0) == 'true'
         if self.alarm:
             self.is_referenced = False

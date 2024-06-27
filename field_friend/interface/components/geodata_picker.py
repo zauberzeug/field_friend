@@ -95,9 +95,5 @@ class geodata_picker(ui.dialog):
             return
         if len(coordinates) > 1 and coordinates[0] == coordinates[-1]:
             coordinates.pop()
-        reference_point = coordinates[0]
-        new_id = str(uuid.uuid4())
-        field = Field(id=f'{new_id}', name=f'field_{len(self.field_provider.fields)+1}', outline_wgs84=coordinates,
-                      reference_lat=reference_point[0], reference_lon=reference_point[1])
-        self.field_provider.add_field(field)
+        self.field_provider.create_field(points=coordinates)
         return

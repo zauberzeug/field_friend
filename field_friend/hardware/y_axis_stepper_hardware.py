@@ -25,6 +25,7 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
                  end_l_pin: int = 21,
                  motor_on_expander: bool = False,
                  end_stops_on_expander: bool = True,
+                 end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
                  ) -> None:
         self.name = name
@@ -33,15 +34,17 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
+            {name}_end_l.inverted = {str(end_stops_inverted).lower()}
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
+            {name}_end_r.inverted = {str(end_stops_inverted).lower()}
             {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_l" if reversed_direction else name + "_end_r"}, {name + "_end_r" if reversed_direction else name + "_end_l"})
         ''')
         core_message_fields = [
-            f'{name}_end_l.level',
-            f'{name}_end_r.level',
+            f'{name}_end_l.active',
+            f'{name}_end_r.active',
             f'{name}_motor.idle',
             f'{name}_motor.position',
-            f'{name}_alarm.level'
+            f'{name}_alarm.active'
         ]
         super().__init__(
             max_speed=max_speed,
@@ -140,12 +143,12 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
             await self.stop()
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.end_l = int(words.pop(0)) == 0
-        self.end_r = int(words.pop(0)) == 0
+        self.end_l = words.pop(0) == 'true'
+        self.end_r = words.pop(0) == 'true'
         if self.end_l or self.end_r:
             self.is_referenced = False
         self.idle = words.pop(0) == 'true'
         self.steps = int(words.pop(0))
-        self.alarm = int(words.pop(0)) == 0
+        self.alarm = words.pop(0) == 'true'
         if self.alarm:
             self.is_referenced = False

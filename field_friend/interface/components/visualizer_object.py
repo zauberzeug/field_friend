@@ -1,32 +1,38 @@
-from typing import Optional
+from typing import TYPE_CHECKING
 
+import rosys
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Curve
-from rosys.automation import Automator
-from rosys.driving import PathSegment
 
-from ...automations import Mowing, PathProvider, Weeding
+if TYPE_CHECKING:
+    from ... import System
 
 
 class visualizer_object(Object3D):
-    def __init__(
-            self, automator: Automator, path_provider: Optional[PathProvider],
-            mowing: Optional[Mowing] = None, weeding: Optional[Weeding] = None) -> None:
+    def __init__(self, system: 'System') -> None:
         super().__init__('group')
-        self.mowing = mowing
-        self.path_provider = path_provider
-        self.automator = automator
-        self.weeding = weeding
+        self.system = system
+        self.system.path_provider.SHOW_PATH.register_ui(self.update_path)
+        # self.system.mowing.MOWING_STARTED.register_ui(self.refresh)
+        # self.system.weeding.PATH_PLANNED.register_ui(self.refresh)
+        self.system.AUTOMATION_CHANGED.register_ui(lambda _: self.refresh())
+        self.refresh()
 
-        if self.path_provider:
-            self.path_provider.SHOW_PATH.register_ui(self.update_path)
-        if self.mowing:
-            self.mowing.MOWING_STARTED.register_ui(self.update_path)
-        if self.weeding:
-            self.weeding.PATH_PLANNED.register_ui(self.update_path)
+    def refresh(self) -> None:
+        automation = self.system.current_implement
+        # TODO visualization should be part of tool and navigation strategy
+        # if automation == 'weeding':
+        #     segments = self.system.weeding.weeding_plan + self.system.weeding.turn_paths
+        # elif automation == 'mowing':
+        #     segments = self.system.mowing.paths
+        # else:
+        segments = []
+        self.update_path([path_segment for path in segments for path_segment in path])
 
-    def update_path(self, path: list[PathSegment], height: float = 0.2) -> None:
-        [obj.delete() for obj in list(self.scene.objects.values()) if obj.name == 'path']
+    def update_path(self, path: list[rosys.driving.PathSegment], height: float = 0.02) -> None:
+        for obj in list(self.scene.objects.values()):
+            if obj.name == 'path':
+                obj.delete()
         for segment in path:
             Curve(
                 [segment.spline.start.x, segment.spline.start.y, height],

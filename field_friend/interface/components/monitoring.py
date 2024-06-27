@@ -104,8 +104,8 @@ class monitoring:
                 self.weeds_count_label = ui.label().style(text_style)
                 self.weeds_label = ui.label('Weeds').classes('text-2xl text-bold')
 
-        ui.timer(0.5, self.update_monitor_content)
-        ui.timer(0.5, self.update_bottom_view)
+        ui.timer(0.1, self.update_monitor_content)
+        ui.timer(0.1, self.update_bottom_view)
 
     async def update_monitor_content(self):
         for camera in self.mjpg_camera_provider.cameras.values():
@@ -138,6 +138,8 @@ class monitoring:
         person_count = 0
         animal_count = 0
         for camera in self.mjpg_camera_provider.cameras.values():
+            if not camera.streaming:
+                camera.streaming = True
             image = camera.latest_captured_image
             if not image:
                 continue

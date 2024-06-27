@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 import numpy as np
@@ -19,7 +20,6 @@ class Puncher:
         self.POSSIBLE_PUNCH = rosys.event.Event()
         '''Event that is emitted when a punch is possible.'''
         self.punch_allowed: str = 'waiting'
-        self.with_punch_check: bool = False
         self.field_friend = field_friend
         self.driver = driver
         self.kpi_provider = kpi_provider
@@ -31,7 +31,7 @@ class Puncher:
             return False
         try:
             if self.field_friend.estop.active:
-                rosys.notify('Estop active, relaese first', 'negative')
+                rosys.notify('Estop active, release first', 'negative')
                 return False
             if not await self.field_friend.z_axis.try_reference():
                 return False
@@ -56,10 +56,20 @@ class Puncher:
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
         world_target = self.driver.prediction.transform(local_target)
-        await self.driver.drive_to(world_target, backward=axis_distance < 0)
+        with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
+            await self.driver.drive_to(world_target, backward=axis_distance < 0)
 
-    async def punch(self, y: float, *, depth: float = 0.01, angle: float = 180, turns: float = 2.0, plant_id: Optional[str] = None) -> None:
+    async def punch(self,
+                    y: float, *,
+                    depth: float = 0.01,
+                    angle: float = 180,
+                    turns: float = 2.0,
+                    plant_id: Optional[str] = None,
+                    with_open_tornado: bool = False,
+                    with_punch_check: bool = False,
+                    ) -> None:
         self.log.info(f'Punching at {y} with depth {depth}...')
+        rest_position = 'reference'
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             self.log.warning('no y or z axis')
@@ -85,7 +95,7 @@ class Puncher:
 
             if isinstance(self.field_friend.z_axis, Tornado):
                 await self.field_friend.y_axis.move_to(y)
-                if self.with_punch_check and plant_id is not None:
+                if with_punch_check and plant_id is not None:
                     self.punch_allowed = 'waiting'
                     self.POSSIBLE_PUNCH.emit(plant_id)
                     while self.punch_allowed == 'waiting':
@@ -94,13 +104,18 @@ class Puncher:
                         self.log.warning('punch was not allowed')
                         return
                     self.log.info('punching was allowed')
-                await self.tornado_drill(angle=angle, turns=turns)
+                await self.tornado_drill(angle=angle, turns=turns, with_open_drill=with_open_tornado)
 
             elif isinstance(self.field_friend.z_axis, ZAxis):
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(-depth)
-                await self.field_friend.z_axis.return_to_reference()
-            self.log.info(f'punched successfully at {y:.2f} with depth {depth}')
+                if os.environ.get('Z_AXIS_REST_POSITION'):
+                    target = float(os.environ.get('Z_AXIS_REST_POSITION', '0'))
+                    await self.field_friend.z_axis.move_to(target)
+                    rest_position = f'custom position {target}'
+                else:
+                    await self.field_friend.z_axis.return_to_reference()
+            self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
             self.kpi_provider.increment_weeding_kpi('punches')
         except Exception as e:
             raise PuncherException(f'punching failed because: {e}') from e
@@ -121,7 +136,17 @@ class Puncher:
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         await self.field_friend.y_axis.stop()
 
-    async def drive_and_punch(self, x: float, y: float, depth: float = 0.05, angle: float = 180, turns: float = 2.0, backwards_allowed: bool = True, plant_id: Optional[str] = None) -> None:
+    async def drive_and_punch(self,
+                              x: float,
+                              y: float,
+                              depth: float = 0.05,
+                              angle: float = 180,
+                              turns: float = 2.0,
+                              backwards_allowed: bool = True,
+                              plant_id: Optional[str] = None,
+                              with_open_tornado: bool = False,
+                              with_punch_check: bool = False,
+                              ) -> None:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             return
@@ -131,7 +156,8 @@ class Puncher:
                 self.log.warning(f'target x: {x} is behind')
                 return
             await self.drive_to_punch(x)
-            await self.punch(y=y, depth=depth, angle=angle, turns=turns, plant_id=plant_id)
+            await self.punch(y=y, depth=depth, angle=angle, turns=turns,
+                             plant_id=plant_id, with_open_tornado=with_open_tornado, with_punch_check=with_punch_check)
             # await self.clear_view()
         except Exception as e:
             raise PuncherException('drive and punch failed') from e
@@ -146,8 +172,8 @@ class Puncher:
         await self.field_friend.y_axis.stop()
         self.kpi_provider.increment_weeding_kpi('chops')
 
-    async def tornado_drill(self, angle: float = 180, turns: float = 2) -> None:
-        self.log.info(f'Drilling with tornado at {angle}...')
+    async def tornado_drill(self, angle: float = 180, turns: float = 2, with_open_drill=False) -> None:
+        self.log.info(f'Drilling with tornado at {angle}°...')
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise PuncherException('tornado drill is only available for tornado axis')
         try:
@@ -164,6 +190,13 @@ class Puncher:
             await rosys.sleep(2)
             await self.field_friend.z_axis.turn_by(turns)
             await rosys.sleep(2)
+
+            if with_open_drill:
+                self.log.info('Drilling again with open drill...')
+                await self.field_friend.z_axis.turn_knifes_to(0)
+                await rosys.sleep(2)
+                await self.field_friend.z_axis.turn_by(turns)
+                await rosys.sleep(2)
 
             await self.field_friend.z_axis.return_to_reference()
             await rosys.sleep(0.5)

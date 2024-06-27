@@ -1,0 +1,7 @@
+{
+    "with_drilling": false,
+    "with_chopping": false,
+    "chop_if_no_crops": false,
+    "weed_screw_depth": 0.15,
+    "crop_safety_distance": 0.03
+}

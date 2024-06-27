@@ -8,14 +8,14 @@ from .field_friend_object import field_friend_object
 from .field_object import field_object
 from .plant_object import plant_objects
 from .visualizer_object import visualizer_object
-
+from ...automations import Field
 if TYPE_CHECKING:
     from field_friend.system import System
 
 
 class robot_scene:
 
-    def __init__(self, system: 'System'):
+    def __init__(self, system: 'System', active_field: Field | None):
         self.log = logging.getLogger('field_friend.robot_scene')
         self.system = system
         self.scene_card = ui.card()
@@ -34,11 +34,8 @@ class robot_scene:
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system.plant_provider,
                               self.system.big_weed_category_names + self.system.small_weed_category_names)
-                visualizer_object(self.system.automator,
-                                  self.system.path_provider,
-                                  self.system.mowing,
-                                  self.system.weeding)
-                field_object(self.system.field_provider)
+                visualizer_object(self.system)
+                field_object(self.system.field_provider, self.system.field_navigation.field)
                 self.scene.move_camera(-0.5, -1, 2)
 
         ui.timer(rosys.config.ui_update_interval, self.update)

@@ -61,7 +61,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                 axis_offset=config_hardware['z_axis']['axis_offset'],
             )
 
-        elif config_hardware['z_axis']['version'] == 'tornado':
+        elif config_hardware['z_axis']['version'] in ['tornado', 'tornado v1.1']:
             z_axis = TornadoSimulation(min_position=config_hardware['z_axis']['min_position'],
                                        m_per_tick=config_hardware['z_axis']['m_per_tick'],
                                        is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
@@ -96,7 +96,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
         modules = [wheels, y_axis, z_axis, flashlight, bumper, bms, estop, safety]
         active_modules = [module for module in modules if module is not None]
-        super().__init__(tool=tool,
+        super().__init__(implement_name=tool,
                          wheels=wheels,
                          flashlight=flashlight,
                          y_axis=y_axis,

@@ -42,15 +42,15 @@ class CameraConfigurator:
                 pass
             else:
                 # only set parameters that have changed
-                for parameter, value in self.config['parameters'].items():
-                    self.log.info(f'parameter, value {parameter}, {value}')
-                    if camera.parameters[parameter] != value:
-                        self.log.info(f'{camera.parameters[parameter]} != {value}')
-                        camera.set_parameters({parameter: value})
+                for name, value in self.config['parameters'].items():
+                    self.log.info(f'parameter {name} with value {value}')
+                    if camera.parameters[name] != value:
+                        self.log.info(f'{camera.parameters[name]} != {value}')
+                        await camera.set_parameters({name: value})
                         parameters_changed = True
-                    else:
-                        self.log.info(f'{camera.parameters[parameter]} = {value}')
-
+            if not camera.streaming:
+                camera.streaming = True
+                parameters_changed = True
             if 'crop' in self.config:
                 # Fetch new cropping parameters
                 left = self.config['crop']['left']

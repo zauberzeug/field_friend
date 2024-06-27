@@ -7,13 +7,13 @@ from shapely.geometry import LineString, MultiLineString, Polygon
 from shapely.ops import unary_union
 
 if TYPE_CHECKING:
-    from ..automations import Mowing
+    from ..automations import CoverageNavigation
 
 
 class CoveragePlanner:
     OBSTACLE_PADDING = 0.7
 
-    def __init__(self, mowing: 'Mowing') -> None:
+    def __init__(self, mowing: 'CoverageNavigation') -> None:
         self.log = logging.getLogger('field_friend.coverage_planner')
         self.mowing = mowing
 
@@ -26,8 +26,8 @@ class CoveragePlanner:
         return (inner_lanes, outer_lanes)
 
     def _determine_area_and_distance(self) -> None:
-        self.min_x = self.field.outline[0].x
-        self.min_y = self.field.outline[0].y
+        assert self.field is not None
+        self.min_x, self.min_y = self.field.outline[0].tuple
         translated_field = Polygon([(point.x - self.min_x, point.y - self.min_y) for point in self.field.outline])
 
         # Determine the unit vector direction of the first line of the polygon
@@ -139,8 +139,8 @@ class CoveragePlanner:
         outer_lanes_groups = []
         for i in range(self.mowing.num_outer_lanes):
             outer_lanes = []
-            padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]
-                                     ).buffer(-self.mowing.padding-self.mowing.lane_distance*i)
+            padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]) \
+                .buffer(-self.mowing.padding-self.mowing.lane_distance*i)
             outline_coords = list(padded_polygon.exterior.coords)
             for i in range(len(outline_coords) - 1):
                 p1 = outline_coords[i]

@@ -1,66 +1,37 @@
 import logging
-import uuid
-from collections import deque
-from dataclasses import dataclass
-from typing import Optional
+from typing import Any
 
+import numpy as np
 import rosys
-from rosys.geometry import Point
-from rosys.vision import Image
+from nicegui import ui
+from rosys.geometry import Point, Pose
 
-
-@dataclass(slots=True, kw_only=True)
-class Plant:
-    id: str = ...
-    type: str
-    positions: deque[Point]
-    detection_time: float
-    confidence: float = 0.0
-    detection_image: Optional[Image] = None
-
-    def __init__(self, type: str, position: Point, detection_time: float, id: str = ..., confidence: float = 0.0, max_positions: int = 20, detection_image: Optional[Image] = None) -> None:
-        self.id = id
-        self.type = type
-        self.positions = deque([position], maxlen=max_positions)
-        self.detection_time = detection_time
-        self.confidence = confidence
-        self.detection_image = detection_image
-
-    def __post_init__(self) -> None:
-        """Generate a unique ID if not already loaded from persistence"""
-        if self.id == ...:
-            self.id = str(uuid.uuid4())
-
-    @property
-    def position(self) -> Point:
-        """Calculate the middle position of all points"""
-        total_x = sum(point.x for point in self.positions)
-        total_y = sum(point.y for point in self.positions)
-
-        middle_x = total_x / len(self.positions)
-        middle_y = total_y / len(self.positions)
-
-        return Point(x=middle_x, y=middle_y)
+from .plant import Plant
 
 
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
     for p in plants:
         if p.position.distance(plant.position) < distance and p.type == plant.type:
-            # Update the confidence
-            p.confidence = max(p.confidence, plant.confidence)  # Optionally updating confidence to the higher one
-            # Add the new position to the positions list
+            p.confidences.append(plant.confidence)
             p.positions.append(plant.position)
             p.detection_image = plant.detection_image
             return True
     return False
 
 
-class PlantProvider:
-
-    def __init__(self) -> None:
+class PlantProvider(rosys.persistence.PersistentModule):
+    def __init__(self, persistence_key: str = 'plant_provider') -> None:
+        super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
         self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
+
+        self.match_distance: float = 0.07
+        self.crop_spacing: float = 0.18
+        self.predict_crop_position: bool = True
+        self.prediction_confidence: float = 0.3
+        self.crop_confidence_threshold: float = 0.8
+        self.weed_confidence_threshold: float = 0.8
 
         self.PLANTS_CHANGED = rosys.event.Event()
         """The collection of plants has changed."""
@@ -72,6 +43,25 @@ class PlantProvider:
         """A new crop has been added."""
 
         rosys.on_repeat(self.prune, 10.0)
+
+    def backup(self) -> dict:
+        data = {
+            'match_distance': self.match_distance,
+            'crop_spacing': self.crop_spacing,
+            'predict_crop_position': self.predict_crop_position,
+            'prediction_confidence': self.prediction_confidence,
+            'crop_confidence_threshold': self.crop_confidence_threshold,
+            'weed_confidence_threshold': self.weed_confidence_threshold,
+        }
+        return data
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.match_distance = data.get('match_distance', self.match_distance)
+        self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
+        self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)
+        self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
+        self.crop_confidence_threshold = data.get('crop_confidence_threshold', self.crop_confidence_threshold)
+        self.weed_confidence_threshold = data.get('weed_confidence_threshold', self.weed_confidence_threshold)
 
     def prune(self) -> None:
         weeds_max_age = 10.0
@@ -101,9 +91,10 @@ class PlantProvider:
         self.weeds.clear()
         self.PLANTS_CHANGED.emit()
 
-    async def add_crop(self, crop: Plant) -> None:
-        if check_if_plant_exists(crop, self.crops, 0.07):
+    def add_crop(self, crop: Plant) -> None:
+        if check_if_plant_exists(crop, self.crops, self.match_distance):
             return
+        self._add_crop_prediction(crop)
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_CROP.emit()
@@ -119,3 +110,56 @@ class PlantProvider:
     def clear(self) -> None:
         self.clear_weeds()
         self.clear_crops()
+
+    def _add_crop_prediction(self, plant: Plant) -> None:
+        if not self.predict_crop_position:
+            return
+        sorted_crops = sorted(self.crops, key=lambda crop: crop.position.distance(plant.position))
+        if len(sorted_crops) < 2:
+            return
+        crop_1 = sorted_crops[0]
+        crop_2 = sorted_crops[1]
+
+        yaw = crop_2.position.direction(crop_1.position)
+        prediction = crop_1.position.polar(self.crop_spacing, yaw)
+
+        if plant.position.distance(prediction) > self.match_distance:
+            return
+        plant.positions.append(prediction)
+        plant.confidences.append(self.prediction_confidence)
+
+    def get_relevant_crops(self, point: Point, *, max_distance=0.5) -> list[Plant]:
+        return [c for c in self.crops if c.position.distance(point) <= max_distance and len(c.positions) >= 3 and c.confidence > self.crop_confidence_threshold]
+
+    def get_relevant_weeds(self, point: Point, *, max_distance=0.5) -> list[Plant]:
+        return [w for w in self.weeds if w.position.distance(point) <= max_distance and len(w.positions) >= 3 and w.confidence > self.weed_confidence_threshold]
+
+    def settings_ui(self) -> None:
+        ui.number('Combined crop confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f') \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'crop_confidence_threshold') \
+            .tooltip('Needed crop confidence for punshing')
+        ui.number('Combined weed confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f') \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'weed_confidence_threshold') \
+            .tooltip('Needed weed confidence for punshing')
+        ui.number('Crop match distance', step=0.01, min=0.01, max=0.10, format='%.2f') \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'match_distance') \
+            .tooltip('Maximum distance for a detection to be considered the same plant')
+        ui.number('Crop spacing', step=0.01, min=0.01, max=1.00, format='%.2f') \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'crop_spacing') \
+            .tooltip('Spacing between crops needed for crop position prediction')
+        ui.number('Crop prediction confidence', step=0.05, min=0.05, max=1.00, format='%.2f') \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'prediction_confidence') \
+            .tooltip('Confidence of the crop prediction')
+        ui.checkbox('Crop Prediction') \
+            .bind_value(self, 'predict_crop_position') \
+            .tooltip('Provides a confidence boost for crop detections that match the expected crop spacing')

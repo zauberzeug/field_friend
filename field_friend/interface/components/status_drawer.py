@@ -4,7 +4,7 @@ import rosys
 from nicegui import ui
 
 from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado, YAxis, ZAxis
-from ...navigation import Gnss
+from ...localization import Gnss
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -49,7 +49,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
                 with ui.row().bind_visibility_from(robot.z_axis, 'end_b'):
                     ui.icon('report').props('size=md').classes('text-red')
-                    ui.label('Z-axis in end bottom pisition, error!').classes('text-red mt-1')
+                    ui.label('Z-axis in end bottom position, error!').classes('text-red mt-1')
 
                 with ui.row().bind_visibility_from(robot.z_axis, 'alarm'):
                     ui.icon('report').props('size=md').classes('text-yellow')
@@ -74,7 +74,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
         with ui.row().classes('place-items-center'):
             ui.markdown('**Tool:**').style('color: #6E93D6')
-            ui.label(robot.tool)
+            ui.label(robot.implement_name)
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
@@ -204,38 +204,38 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-            direction_flag = 'N' if gnss.record.heading <= 23 else \
-                'NE' if gnss.record.heading <= 68 else \
-                'E' if gnss.record.heading <= 113 else \
-                'SE' if gnss.record.heading <= 158 else \
-                'S' if gnss.record.heading <= 203 else \
-                'SW' if gnss.record.heading <= 248 else \
-                'W' if gnss.record.heading <= 293 else \
-                'NW' if gnss.record.heading <= 338 else \
+            direction_flag = '?' if gnss.current is None or gnss.current.heading is None else \
+                'N' if gnss.current.heading <= 23 else \
+                'NE' if gnss.current.heading <= 68 else \
+                'E' if gnss.current.heading <= 113 else \
+                'SE' if gnss.current.heading <= 158 else \
+                'S' if gnss.current.heading <= 203 else \
+                'SW' if gnss.current.heading <= 248 else \
+                'W' if gnss.current.heading <= 293 else \
+                'NW' if gnss.current.heading <= 338 else \
                 'N'
 
             if automator.is_running:
-                if system.field_provider.active_field is not None:
-                    current_field_label.text = system.field_provider.active_field.name
                 kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time}s'
                 kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance}m'
 
-                current_automation = next(key for key, value in system.automations.items()
-                                          if value == system.automator.default_automation)
-                if current_automation == 'weeding' or current_automation == 'monitoring':
-                    if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
-                        current_row_label.text = system.field_provider.active_object['object'].name
-                    kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
-                    kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
-                    kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
-                    if current_automation == 'weeding':
-                        kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
+                # TODO reimplement with navigation and tools
+                # current_automation = next(key for key, value in system.tools.items()
+                #                           if value == system.automator.default_automation)
+                # if current_automation == 'weeding' or current_automation == 'monitoring':
+                #     if system.field_provider.active_object is not None and system.field_provider.active_object['object'] is not None:
+                #         current_row_label.text = system.field_provider.active_object['object'].name
+                #     kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
+                #     kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+                #     kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
+                #     if current_automation == 'weeding':
+                #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
 
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
-            reference_position_label.text = 'No reference' if gnss.reference_lat is None else 'Set'
-            gnss_label.text = f'lat: {gnss.record.latitude:.6f}, lon: {gnss.record.longitude:.6f}'
-            heading_label.text = f'{gnss.record.heading:.2f}° ' + direction_flag
-            rtk_fix_label.text = f'gps_qual: {gnss.record.gps_qual}, mode: {gnss.record.mode}'
+            reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'
+            gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
+            heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
+            rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
             odometry_label.text = str(odometer.prediction)
 
         ui.timer(rosys.config.ui_update_interval, update_status)
