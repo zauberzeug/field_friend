@@ -92,18 +92,19 @@ class Puncher:
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
+                
+            if with_punch_check and plant_id is not None:
+                self.punch_allowed = 'waiting'
+                self.POSSIBLE_PUNCH.emit(plant_id)
+                while self.punch_allowed == 'waiting':
+                    await rosys.sleep(0.1)
+                if self.punch_allowed == 'not_allowed':
+                    self.log.warning('punch was not allowed')
+                    return
+                self.log.info('punching was allowed')
 
             if isinstance(self.field_friend.z_axis, Tornado):
                 await self.field_friend.y_axis.move_to(y)
-                if with_punch_check and plant_id is not None:
-                    self.punch_allowed = 'waiting'
-                    self.POSSIBLE_PUNCH.emit(plant_id)
-                    while self.punch_allowed == 'waiting':
-                        await rosys.sleep(0.1)
-                    if self.punch_allowed == 'not_allowed':
-                        self.log.warning('punch was not allowed')
-                        return
-                    self.log.info('punching was allowed')
                 await self.tornado_drill(angle=angle, turns=turns, with_open_drill=with_open_tornado)
 
             elif isinstance(self.field_friend.z_axis, ZAxis):

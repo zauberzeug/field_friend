@@ -30,6 +30,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.kpi_provider = system.kpi_provider
         self.puncher = system.puncher
         self.cultivated_crop: str | None = None
+        self.with_punch_check: bool = False
 
         # dual mechanism
         self.with_drilling: bool = False
@@ -160,6 +161,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
             'cultivated_crop': self.cultivated_crop,
+            'with_punch_check': self.with_punch_check,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -167,6 +169,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
         self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
+        self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
@@ -196,3 +199,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         ui.select(self.system.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \
             .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
+        ui.checkbox('With punch check', value=True) \
+            .bind_value(self, 'with_punch_check') \
+            .tooltip('Set the weeding automation to check for punch')
