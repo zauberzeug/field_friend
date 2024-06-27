@@ -19,6 +19,7 @@ class WeedingScrew(WeedingImplement):
         self.weed_screw_depth: float = 0.13
         self.crop_safety_distance: float = 0.01
         self.max_crop_distance: float = 0.08
+        self.with_punch_check = False
 
     async def start_workflow(self) -> bool:
         await super().start_workflow()
@@ -42,6 +43,7 @@ class WeedingScrew(WeedingImplement):
                                                           x=next_weed_position.x,
                                                           y=next_weed_position.y,
                                                           depth=self.weed_screw_depth,
+                                                          with_punch_check=self.with_punch_check,
                                                           backwards_allowed=False)
                 punched_weeds = [weed_id for weed_id, position in weeds_in_range.items()
                                  if position.distance(next_weed_position) <= self.system.field_friend.DRILL_RADIUS
@@ -81,6 +83,9 @@ class WeedingScrew(WeedingImplement):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
+        ui.checkbox('With punch check') \
+            .bind_value(self, 'with_punch_check') \
+            .tooltip('Set the weeding automation to check for punch')
 
     def _keep_crops_safe(self) -> None:
         self.log.info('Keeping crops safe...')
@@ -100,6 +105,7 @@ class WeedingScrew(WeedingImplement):
             'weed_screw_depth': self.weed_screw_depth,
             'crop_safety_distance': self.crop_safety_distance,
             'max_crop_distance': self.max_crop_distance,
+            'with_punch_check': self.with_punch_check,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -107,3 +113,4 @@ class WeedingScrew(WeedingImplement):
         self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
         self.max_crop_distance = data.get('max_crop_distance', self.max_crop_distance)
+        self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
