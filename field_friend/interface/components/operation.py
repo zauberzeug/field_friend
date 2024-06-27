@@ -57,9 +57,7 @@ class operation:
             self.implement_selection.value = self.system.current_implement.name
 
         self.system.puncher.POSSIBLE_PUNCH.register_ui(self.can_punch)
-        self.punch_dialog = PunchDialog(self.system.usb_camera_provider,
-                                        self.system.plant_locator,
-                                        self.system.odometer)
+        self.punch_dialog = PunchDialog(self.system)
 
     async def can_punch(self, plant_id: str) -> None:
         self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)

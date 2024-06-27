@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
@@ -8,24 +9,24 @@ from rosys.vision import Image
 
 from ...automations import PlantLocator
 from ...automations.plant import Plant
+from ...vision import CalibratableUsbCameraProvider, SimulatedCamProvider
+
+if TYPE_CHECKING:
+    from field_friend.system import System
 
 
 class PunchDialog(ui.dialog):
-    def __init__(self, camera_provider: rosys.vision.CameraProvider,
-                 plant_locator: PlantLocator,
-                 odometer: Odometer,
-                 shrink_factor: int = 1,
-                 timeout: float = 20.0,
-                 ui_update_rate: float = 0.2) -> None:
+    def __init__(self, system: 'System', shrink_factor: int = 1, timeout: float = 20.0, ui_update_rate: float = 0.2) -> None:
         super().__init__()
+        self.camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider = system.usb_camera_provider
+        self.plant_locator: PlantLocator = system.plant_locator
+        self.odometer: Odometer = system.odometer
+        self.shrink_factor: int = shrink_factor
+        self.timeout: float = timeout
+        self._duration_left: float = timeout
+        self.ui_update_rate: float = ui_update_rate
+
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
-        self.camera_provider = camera_provider
-        self.plant_locator = plant_locator
-        self.odometer = odometer
-        self.shrink_factor = shrink_factor
-        self.timeout = timeout
-        self._duration_left = timeout
-        self.ui_update_rate = ui_update_rate
         self.static_image_view: Optional[ui.interactive_image] = None
         self.live_image_view: Optional[ui.interactive_image] = None
         self.target_plant: Optional[Plant] = None
