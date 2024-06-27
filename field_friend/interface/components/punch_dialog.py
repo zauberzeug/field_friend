@@ -92,7 +92,6 @@ class PunchDialog(ui.dialog):
                 relative_point = self.odometer.prediction.relative_point(self.target_plant.position)
                 target_point = self.camera.calibration.project_to_image(
                     Point3d(x=relative_point.x, y=relative_point.y, z=0))
-                ic(f'target plant : {self.target_plant.position} and target point : {target_point}')
             image_view.set_content(self.to_svg(image.detections, target_point, confidence))
 
     def update_live_view(self) -> None:
