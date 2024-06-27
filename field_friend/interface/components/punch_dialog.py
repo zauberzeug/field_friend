@@ -6,6 +6,7 @@ from nicegui import ui
 from rosys.driving import Odometer
 from rosys.geometry import Point3d
 from rosys.vision import Image
+from rosys.automation import Automator, automation_controls
 
 from ...automations import PlantLocator
 from ...automations.plant import Plant
@@ -21,6 +22,7 @@ class PunchDialog(ui.dialog):
         self.camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider = system.usb_camera_provider
         self.plant_locator: PlantLocator = system.plant_locator
         self.odometer: Odometer = system.odometer
+        self.automator: Automator = system.automator
         self.shrink_factor: int = shrink_factor
         self.timeout: float = timeout
         self._duration_left: float = timeout
@@ -41,13 +43,14 @@ class PunchDialog(ui.dialog):
                     ui.label('Live').classes('text-lg')
                     self.live_image_view = ui.interactive_image('')
             self.label = ui.label('Do you want to punch at the current position?').classes('text-lg')
-            with ui.row():
+            with ui.row().classes('w-full'):
                 # TODO: doesn't load properly on first open
                 ui.circular_progress(min=0.0, max=self.timeout,
                                      show_value=False, size='lg').bind_value_from(self, '_duration_left')
                 ui.button('Yes', on_click=lambda: self.submit('Yes'))
                 ui.button('No', on_click=lambda: self.submit('No'))
-                ui.button('Cancel', on_click=lambda: self.submit('Cancel'))
+                ui.space()
+                automation_controls(self.automator)
 
     def open(self) -> None:
         self._duration_left = self.timeout
