@@ -99,7 +99,7 @@ class PunchDialog(ui.dialog):
             return
         self.update_content(self.live_image_view, self.camera.latest_detected_image)
 
-    def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point], confidence: Optional[float], color: str = 'red') -> str:
+    def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point], confidence: Optional[float], color: str = 'blue') -> str:
         svg = ''
         cross_size = 20
         for point in detections.points:
