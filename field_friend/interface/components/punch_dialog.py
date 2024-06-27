@@ -132,7 +132,7 @@ class PunchDialog(ui.dialog):
                     '''
         if target_point and confidence:
             svg += f'''<circle cx="{target_point.x / self.shrink_factor}" cy="{target_point.y /
-                                                                               self.shrink_factor}" r="18" stroke-width="8" stroke="{color}" fill="none" />'''
+                                                                               self.shrink_factor}" r="20" stroke-width="8" stroke="{color}" fill="none" />'''
             svg += f'''<text x="{target_point.x / self.shrink_factor+20}" y="{target_point.y /
                                                                               self.shrink_factor-20}" font-size="20" fill="{color}">{confidence}</text>'''
         return svg
