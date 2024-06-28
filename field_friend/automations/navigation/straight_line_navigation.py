@@ -22,11 +22,11 @@ class StraightLineNavigation(Navigation):
         self.name = 'Straight Line'
         self.linear_speed_limit = 0.125
         self.angular_speed_limit = 0.1
-        self.target: rosys.geometry.Point
+        self.target: rosys.geometry.Pose
 
     async def prepare(self) -> bool:
-        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=self.length, y=0))
-        self.log.info(f'Setting target position to {self.target}')
+        self.target = self.odometer.prediction + rosys.geometry.PoseStep(linear=self.length, angular=0, time=0)
+        self.log.info(f'Setting target pose to {self.target}')
         self.log.info(f'Activating {self.implement.name}...')
         self.plant_provider.clear()
         await self.implement.activate()
@@ -37,10 +37,10 @@ class StraightLineNavigation(Navigation):
 
     async def _drive(self):
         factor: float = 0.02 / self.odometer.prediction.distance(self.target)
-        local_target: rosys.geometry.Point = self.odometer.prediction.interpolate(self.target, factor)
-        # self.log.info(f'driving to {target}')
+        local_target: rosys.geometry.Pose = self.odometer.prediction.interpolate(self.target, factor)
+        # self.log.info(f'driving from {self.odometer.prediction} to local target {local_target} with factor {factor} and distance {self.odometer.prediction.distance(self.target)}')
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.drive_to(local_target)
+            await self.driver.drive_to(local_target.point)
 
     def _should_finish(self):
         distance = self.odometer.prediction.point.distance(self.start_position)
