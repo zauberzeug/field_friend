@@ -56,7 +56,7 @@ class operation:
                 .bind_value_from(self.system, 'current_implement', lambda i: i.name)
             self.implement_selection.value = self.system.current_implement.name
 
-        self.system.puncher.POSSIBLE_PUNCH.register(self.can_punch)
+        self.system.puncher.POSSIBLE_PUNCH.register_ui(self.can_punch)
         self.punch_dialog = PunchDialog(self.system.usb_camera_provider,
                                         self.system.plant_locator,
                                         self.system.odometer)

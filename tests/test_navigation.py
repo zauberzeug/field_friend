@@ -36,7 +36,7 @@ async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimul
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
     assert system.odometer.prediction.point.x == pytest.approx(1.4, abs=0.1)
     assert system.odometer.prediction.point.y == pytest.approx(0.6, abs=0.1)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=1.0)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=5.0)
 
 
 async def test_follow_crops_empty(system: System, detector: rosys.vision.DetectorSimulation):

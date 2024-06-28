@@ -70,7 +70,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             return
         assert isinstance(camera, rosys.vision.CalibratableCamera)
         if camera.calibration is None:
-            self.log.error('no calibration found')
+            self.log.error(f'no calibration found for camera {camera.name}')
             raise DetectorError()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:
