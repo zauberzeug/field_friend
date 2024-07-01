@@ -8,6 +8,8 @@ from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point
 
+from field_friend.automations.implements.weeding_implement import WeedingImplement
+
 from ...automations import PlantLocator, Puncher
 from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
 from .calibration_dialog import calibration_dialog
@@ -33,6 +35,7 @@ class camera_card:
         self.image_view: Optional[ui.interactive_image] = None
         self.calibration_dialog = calibration_dialog(self.camera_provider)
         self.plant_provider = system.plant_provider
+        self.system = system
         self.camera_card = ui.card()
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
@@ -111,18 +114,15 @@ class camera_card:
             url = f'{active_camera.get_latest_image_url()}?shrink={self.shrink_factor}'
         else:
             url = active_camera.get_latest_image_url()
-        if self.image_view is None:
+        if self.image_view is None or self.camera.calibration is None:
             return
         self.image_view.set_source(url)
         image = active_camera.latest_detected_image
         svg = ''
         if image and image.detections:
             svg += self.to_svg(image.detections)
-        svg += self.plant_provider.build_status_svg(active_camera.calibration, self.shrink_factor)
-        tool_3d = self.odometer.prediction.point_3d() + \
-            rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0)
-        tool_2d = active_camera.calibration.project_to_image(tool_3d) / self.shrink_factor
-        svg += f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" fill="black"/>'
+        svg += self.build_svg_for_plant_provider()
+        svg += self.build_svg_for_implement()
         self.image_view.set_content(svg)
 
     def on_mouse_move(self, e: MouseEventArguments):
@@ -186,7 +186,33 @@ class camera_card:
                 svg += f'''<line x1="{int(point.x / self.shrink_factor) - cross_size}" y1="{int(point.y / self.shrink_factor)}" x2="{int(point.x / self.shrink_factor) + cross_size}" y2="{int(point.y / self.shrink_factor)}" stroke="red" stroke-width="8" 
     transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/><line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - cross_size}" x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + cross_size}" stroke="red" stroke-width="8" 
     transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
+        return svg
 
+    def build_svg_for_implement(self) -> str:
+        if not isinstance(self.system.current_implement, WeedingImplement) or self.camera is None or self.camera.calibration is None:
+            return ''
+        tool_3d = self.odometer.prediction.point_3d() + \
+            rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0)
+        tool_2d = self.camera.calibration.project_to_image(tool_3d) / self.shrink_factor
+        svg = f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" fill="black"/>'
+        for plant in self.system.current_implement.weeds_to_handle.values():
+            position_3d = self.odometer.prediction.point_3d() + rosys.geometry.Point3d(x=plant.x, y=plant.y, z=0)
+            screen = self.camera.calibration.project_to_image(position_3d)
+            if screen is not None:
+                svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="6" stroke="blue" fill="transparent" stroke-width="2" />'
+        return svg
+
+    def build_svg_for_plant_provider(self) -> str:
+        if self.camera is None or self.camera.calibration is None:
+            return ''
+        position = rosys.geometry.Point(x=self.camera.calibration.extrinsics.translation[0],
+                                        y=self.camera.calibration.extrinsics.translation[1])
+        svg = ''
+        for plant in self.plant_provider.get_relevant_weeds(position):
+            position_3d = rosys.geometry.Point3d(x=plant.position.x, y=plant.position.y, z=0)
+            screen = self.camera.calibration.project_to_image(position_3d)
+            if screen is not None:
+                svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="5" fill="white" />'
         return svg
 
     # async def save_last_image(self) -> None:
