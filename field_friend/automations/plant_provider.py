@@ -94,7 +94,8 @@ class PlantProvider(rosys.persistence.PersistentModule):
     def add_crop(self, crop: Plant) -> None:
         if check_if_plant_exists(crop, self.crops, self.match_distance):
             return
-        self._add_crop_prediction(crop)
+        if not self.predict_crop_position:
+            self._add_crop_prediction(crop)
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_CROP.emit()
@@ -112,8 +113,6 @@ class PlantProvider(rosys.persistence.PersistentModule):
         self.clear_crops()
 
     def _add_crop_prediction(self, plant: Plant) -> None:
-        if not self.predict_crop_position:
-            return
         sorted_crops = sorted(self.crops, key=lambda crop: crop.position.distance(plant.position))
         if len(sorted_crops) < 2:
             return
@@ -163,3 +162,14 @@ class PlantProvider(rosys.persistence.PersistentModule):
         ui.checkbox('Crop Prediction') \
             .bind_value(self, 'predict_crop_position') \
             .tooltip('Provides a confidence boost for crop detections that match the expected crop spacing')
+
+    def build_status_svg(self, calibration: rosys.vision.Calibration, shrink=1) -> str:
+        position = rosys.geometry.Point(x=calibration.extrinsics.translation[0],
+                                        y=calibration.extrinsics.translation[1])
+        svg = ''
+        for plant in self.get_relevant_weeds(position):
+            position_3d = rosys.geometry.Point3d(x=plant.position.x, y=plant.position.y, z=0)
+            screen = calibration.project_to_image(position_3d)
+            if screen is not None:
+                svg += f'<circle cx="{int(screen.x/shrink)}" cy="{int(screen.y/shrink)}" r="5" fill="white" />'
+        return svg
