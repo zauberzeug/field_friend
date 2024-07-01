@@ -42,6 +42,7 @@ class WeedingScrew(WeedingImplement):
                                                           x=next_weed_position.x,
                                                           y=next_weed_position.y,
                                                           depth=self.weed_screw_depth,
+                                                          with_punch_check=self.with_punch_check,
                                                           backwards_allowed=False)
                 punched_weeds = [weed_id for weed_id, position in weeds_in_range.items()
                                  if position.distance(next_weed_position) <= self.system.field_friend.DRILL_RADIUS
