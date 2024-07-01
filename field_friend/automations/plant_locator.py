@@ -1,9 +1,11 @@
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
+import aiohttp
 
 import rosys
 from nicegui import ui
+from nicegui.events import ValueChangeEventArguments
 from rosys.vision import Autoupload
 
 from ..vision import SimulatedCam
@@ -36,11 +38,13 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
+        self.upload_images: bool = False 
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
+        ui.timer(1.0, self.toggle_upload, once=True)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
@@ -48,6 +52,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
             'autoupload': self.autoupload.value,
+            'upload_images': self.upload_images,
             'tags': self.tags,
         }
 
@@ -57,6 +62,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
             if 'autoupload' in data else Autoupload.DISABLED
         self.log.info(f'self.autoupload: {self.autoupload}')
+        self.upload_images = data.get('upload_images', self.upload_images)
         self.tags = data.get('tags', self.tags)
 
     async def _detect_plants(self) -> None:
@@ -131,6 +137,42 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.log.info('resuming plant detection')
         self.is_paused = False
 
+    async def get_outbox_mode(self, port: int) -> bool:
+        url = f'http://localhost:{port}/outbox_mode'
+        async with aiohttp.ClientSession() as session:
+            try:
+                response = await session.get(url)
+            except aiohttp.client_exceptions.ClientConnectorError:
+                self.log.error(f'Could not connect to Detector on port {port}. Is it running?')
+                return False
+        response_text = await response.text()
+        return response_text == 'continous_upload'
+    
+    async def set_outbox_mode(self, value: bool, port: int) -> bool:
+        url = f'http://localhost:{port}/outbox_mode'
+        # continous_upload
+        # stopped
+        async with aiohttp.request('PUT', url, data='continous_upload' if value else 'stopped') as response:
+            if response.status != 200:
+                return False
+            return True
+
+    async def toggle_upload(self) -> None:        
+        # print("self.upload_images", self.upload_images)
+        await self.set_outbox_mode(value=self.upload_images, port=8004)
+        # put_responses = await asyncio.gather()
+        # outbox_mode = all(put_responses)
+        # print('put_responses', put_responses)
+
+        # get_responses = await asyncio.gather(self.get_outbox_mode(port=8004))
+        # print("get_responses1", get_responses)
+        # if all(response == 'continous_upload' for response in get_responses) == self.upload_images:
+        # set_outbox_mode(value=event.value, port=8005)
+            
+
+        # get_responses = await asyncio.gather(self.get_outbox_mode(port=8004))
+        # print("get_responses2", get_responses)
+
     def settings_ui(self) -> None:
         ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
             .props('dense outlined') \
@@ -146,6 +188,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
+        async def set_upload_images():
+            self.upload_images = await self.get_outbox_mode(8004)
+            self.request_backup()
+        ui.button(icon='refresh', on_click=set_upload_images)
+        ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images').on('click', self.toggle_upload)
 
         @ui.refreshable
         def chips():
