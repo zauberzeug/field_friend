@@ -138,21 +138,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.is_paused = False
 
     async def get_outbox_mode(self, port: int) -> bool:
-        url = f'http://localhost:{port}/outbox_mode'
-        async with aiohttp.ClientSession() as session:
-            try:
-                response = await session.get(url)
-            except aiohttp.client_exceptions.ClientConnectorError:
-                self.log.error(f'Could not connect to Detector on port {port}. Is it running?')
-                return False
-        response_text = await response.text()
-        return response_text == 'continous_upload'
+        return response_text == 'continuous_upload'
     
     async def set_outbox_mode(self, value: bool, port: int) -> bool:
         url = f'http://localhost:{port}/outbox_mode'
-        # continous_upload
-        # stopped
-        async with aiohttp.request('PUT', url, data='continous_upload' if value else 'stopped') as response:
+        async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
             if response.status != 200:
                 return False
             return True
