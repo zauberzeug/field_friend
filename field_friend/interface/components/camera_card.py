@@ -37,6 +37,7 @@ class camera_card:
         self.plant_provider = system.plant_provider
         self.system = system
         self.camera_card = ui.card()
+        self.show_weeds_to_handle = False
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
@@ -80,6 +81,9 @@ class camera_card:
                             .tooltip('Pause plant locator').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                     with ui.menu_item():
                         self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
+                            .tooltip('Show the mapping between camera and world coordinates')
+                    with ui.menu_item():
+                        ui.checkbox('Show weeds to handle').bind_value_to(self, 'show_weeds_to_handle') \
                             .tooltip('Show the mapping between camera and world coordinates')
                     with ui.menu_item():
                         ui.button('calibrate', on_click=self.calibrate) \
@@ -202,12 +206,13 @@ class camera_card:
             rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.max_position, z=0)
         max_tool_2d = self.camera.calibration.project_to_image(max_tool_3d) / self.shrink_factor
         svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="2" />'
-        for i, plant in enumerate(self.system.current_implement.weeds_to_handle.values()):
-            position_3d = self.odometer.prediction.point_3d() + rosys.geometry.Point3d(x=plant.x, y=plant.y, z=0)
-            screen = self.camera.calibration.project_to_image(position_3d)
-            if screen is not None:
-                svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="6" stroke="blue" fill="transparent" stroke-width="2" />'
-                svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+7}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
+        if self.show_weeds_to_handle:
+            for i, plant in enumerate(self.system.current_implement.weeds_to_handle.values()):
+                position_3d = self.odometer.prediction.point_3d() + rosys.geometry.Point3d(x=plant.x, y=plant.y, z=0)
+                screen = self.camera.calibration.project_to_image(position_3d)
+                if screen is not None:
+                    svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="6" stroke="blue" fill="transparent" stroke-width="2" />'
+                    svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+4}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
         return svg
 
     def build_svg_for_plant_provider(self) -> str:
