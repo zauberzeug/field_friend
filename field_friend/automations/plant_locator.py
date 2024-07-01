@@ -138,30 +138,29 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.is_paused = False
 
     async def get_outbox_mode(self, port: int) -> bool:
+        url = f'http://localhost:{port}/outbox_mode'            
+        async with aiohttp.request('GET', url) as response:
+            if response.status != 200:
+                self.log.error(f'Could not get outbox mode on port {port} - status code: {response.status}')
+                return None
+            response_text = await response.text()
         return response_text == 'continuous_upload'
     
     async def set_outbox_mode(self, value: bool, port: int) -> bool:
         url = f'http://localhost:{port}/outbox_mode'
         async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
             if response.status != 200:
-                return False
-            return True
+                self.log.error(f'Could not set outbox mode to {value} on port {port} - status code: {response.status}')
 
     async def toggle_upload(self) -> None:        
-        # print("self.upload_images", self.upload_images)
         await self.set_outbox_mode(value=self.upload_images, port=8004)
-        # put_responses = await asyncio.gather()
-        # outbox_mode = all(put_responses)
-        # print('put_responses', put_responses)
 
-        # get_responses = await asyncio.gather(self.get_outbox_mode(port=8004))
-        # print("get_responses1", get_responses)
-        # if all(response == 'continous_upload' for response in get_responses) == self.upload_images:
-        # set_outbox_mode(value=event.value, port=8005)
-            
-
-        # get_responses = await asyncio.gather(self.get_outbox_mode(port=8004))
-        # print("get_responses2", get_responses)
+    async def set_upload_images(self) -> None:
+        outbox_mode = await self.get_outbox_mode(8004)
+        if outbox_mode is None:
+            return
+        self.upload_images = outbox_mode
+        self.request_backup()
 
     def settings_ui(self) -> None:
         ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
@@ -178,10 +177,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
-        async def set_upload_images():
-            self.upload_images = await self.get_outbox_mode(8004)
-            self.request_backup()
-        ui.button(icon='refresh', on_click=set_upload_images)
+        ui.button(icon='refresh', on_click=self.set_upload_images)
         ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images').on('click', self.toggle_upload)
 
         @ui.refreshable
