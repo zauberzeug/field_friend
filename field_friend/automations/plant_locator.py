@@ -76,7 +76,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         if new_image is None or new_image.detections:
             await rosys.sleep(0.01)
             return
-        await self.detector.detect(new_image, autoupload=self.autoupload, tags=self.tags + [self.robot_name])
+        await self.detector.detect(new_image, autoupload=self.autoupload, tags=self.tags + [self.robot_name, 'autoupload'])
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
             await rosys.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
