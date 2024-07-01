@@ -70,13 +70,11 @@ async def test_follow_crops_sinus(system: System, detector: rosys.vision.Detecto
 
 
 async def test_follow_crops_right(system: System, detector: rosys.vision.DetectorSimulation):
-    for i in range(2):
-        x = i/2
+    for i in range(3):
+        x = i*0.4
         y = i/10
         p = rosys.geometry.Point3d(x=x, y=y, z=0)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
-    p = rosys.geometry.Point3d(x=1.5, y=0, z=0)
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.current_navigation = system.follow_crops_navigation
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
@@ -84,15 +82,15 @@ async def test_follow_crops_right(system: System, detector: rosys.vision.Detecto
     assert system.automator.is_running
     await forward(50)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(2.0, abs=0.1)
+    assert system.odometer.prediction.point.x == pytest.approx(1.7, abs=0.1)
     assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.01)
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
 
 
 async def test_follow_crops_left(system: System, detector: rosys.vision.DetectorSimulation):
-    for i in range(2):
-        x = i/10
-        y = 0
+    for i in range(3):
+        x = i*0.4
+        y = -(i/10)
         p = rosys.geometry.Point3d(x=x, y=y, z=0)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.current_navigation = system.follow_crops_navigation
@@ -102,7 +100,7 @@ async def test_follow_crops_left(system: System, detector: rosys.vision.Detector
     assert system.automator.is_running
     await forward(50)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(0.7, abs=0.1)
+    assert system.odometer.prediction.point.x == pytest.approx(1.7, abs=0.1)
     assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.01)
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
 
