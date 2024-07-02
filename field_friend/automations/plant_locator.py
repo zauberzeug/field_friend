@@ -148,14 +148,13 @@ class PlantLocator(rosys.persistence.PersistentModule):
             response_text = await response.text()
         return response_text == 'continuous_upload'
     
-    async def set_outbox_mode(self, value: bool, port: int) -> bool:
+    async def set_outbox_mode(self, value: bool, port: int) -> None:
         url = f'http://localhost:{port}/outbox_mode'
         async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
             if response.status != 200:
                 self.log.error(f'Could not set outbox mode to {value} on port {port} - status code: {response.status}')
-                return False
+                return
             self.log.info(f'Outbox_mode was set to {value} on port {port}')
-            return True
 
     def settings_ui(self) -> None:
         ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
