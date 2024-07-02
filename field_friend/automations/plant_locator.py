@@ -45,7 +45,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         if isinstance(self.detector, rosys.vision.DetectorHardware):
-            rosys.on_repeat(self.update_outbox_mode, 1.0)
+            rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port), 1.0)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
@@ -139,6 +139,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.is_paused = False
 
     async def get_outbox_mode(self, port: int) -> bool:
+        # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
         url = f'http://localhost:{port}/outbox_mode'            
         async with aiohttp.request('GET', url) as response:
             if response.status != 200:
@@ -155,14 +156,6 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 return False
             self.log.info(f'Outbox_mode was set to {value} on port {port}')
             return True
-
-    async def update_outbox_mode(self) -> None:
-        outbox_mode = await self.get_outbox_mode(self.detector.port)
-        if outbox_mode is None:
-            return
-        if outbox_mode != self.upload_images:
-            self.log.warning(f'Outbox_mode out of sync. Setting outbox_mode to {self.upload_images}')
-            await self.set_outbox_mode(value=self.upload_images, port=self.detector.port)
 
     def settings_ui(self) -> None:
         ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
