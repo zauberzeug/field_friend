@@ -15,6 +15,7 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
             p.confidences.append(plant.confidence)
             p.positions.append(plant.position)
             p.detection_image = plant.detection_image
+            p.detection_time = plant.detection_time
             return True
     return False
 
