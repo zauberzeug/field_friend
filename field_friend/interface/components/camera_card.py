@@ -31,9 +31,9 @@ class camera_card:
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
         self.system = system
-        self.punching_enabled = False
-        self.shrink_factor = 2
-        self.show_weeds_to_handle = False
+        self.punching_enabled: bool = False
+        self.shrink_factor: float = 2.0
+        self.show_weeds_to_handle: bool = False
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.image_view: Optional[ui.interactive_image] = None
         self.calibration_dialog = calibration_dialog(self.camera_provider)
