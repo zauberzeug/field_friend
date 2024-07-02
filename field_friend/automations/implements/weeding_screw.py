@@ -44,7 +44,6 @@ class WeedingScrew(WeedingImplement):
                     continue
                 self.log.info(f'Targeting weed at world: {weed_world_position}, local: {next_weed_position}')
                 self.last_punches.append(weed_world_position)
-                self.log.warning(f'len(self.last_punches): {len(self.last_punches)} - {self.last_punches}')
                 await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
                                                           x=next_weed_position.x,
                                                           y=next_weed_position.y,
