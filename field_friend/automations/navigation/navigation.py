@@ -47,10 +47,8 @@ class Navigation(rosys.persistence.PersistentModule):
                     return_when_first_completed=True
                 )
                 if not self._should_finish():
-                    should_advance = await self.implement.start_workflow()
+                    await self.implement.start_workflow()
                     await self.implement.stop_workflow()
-                    if should_advance:
-                        await self._drive()
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
@@ -69,7 +67,8 @@ class Navigation(rosys.persistence.PersistentModule):
     async def finish(self) -> None:
         """Executed after the navigation is done"""
 
-    async def _proceed(self):
+    async def _proceed(self) -> None:
+        await rosys.sleep(0.1)
         while not self._should_finish():
             await self._drive()
 
