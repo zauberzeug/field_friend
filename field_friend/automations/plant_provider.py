@@ -162,14 +162,3 @@ class PlantProvider(rosys.persistence.PersistentModule):
         ui.checkbox('Crop Prediction') \
             .bind_value(self, 'predict_crop_position') \
             .tooltip('Provides a confidence boost for crop detections that match the expected crop spacing')
-
-    def build_status_svg(self, calibration: rosys.vision.Calibration, shrink=1) -> str:
-        position = rosys.geometry.Point(x=calibration.extrinsics.translation[0],
-                                        y=calibration.extrinsics.translation[1])
-        svg = ''
-        for plant in self.get_relevant_weeds(position):
-            position_3d = rosys.geometry.Point3d(x=plant.position.x, y=plant.position.y, z=0)
-            screen = calibration.project_to_image(position_3d)
-            if screen is not None:
-                svg += f'<circle cx="{int(screen.x/shrink)}" cy="{int(screen.y/shrink)}" r="5" fill="white" />'
-        return svg
