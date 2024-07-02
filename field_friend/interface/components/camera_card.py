@@ -22,22 +22,22 @@ class camera_card:
 
     def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.camera_card')
-        self.camera: Optional[rosys.vision.CalibratableCamera] = None
-        self.camera_provider = system.usb_camera_provider
         self.automator = system.automator
+        self.camera_provider = system.usb_camera_provider
         self.detector = system.detector
-        self.plant_locator = system.plant_locator
-        self.punching_enabled = False
-        self.puncher = system.puncher
         self.field_friend = system.field_friend
         self.odometer = system.odometer
+        self.plant_locator = system.plant_locator
+        self.plant_provider = system.plant_provider
+        self.puncher = system.puncher
+        self.system = system
+        self.punching_enabled = False
         self.shrink_factor = 2
+        self.show_weeds_to_handle = False
+        self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.image_view: Optional[ui.interactive_image] = None
         self.calibration_dialog = calibration_dialog(self.camera_provider)
-        self.plant_provider = system.plant_provider
-        self.system = system
         self.camera_card = ui.card()
-        self.show_weeds_to_handle = False
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
