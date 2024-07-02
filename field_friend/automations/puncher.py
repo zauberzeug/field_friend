@@ -49,7 +49,7 @@ class Puncher:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             return
-        self.log.info(f'Driving to punch at {local_target_x}...')
+        self.log.info(f'Driving to punch at {local_target_x:.2f}...')
         work_x = self.field_friend.WORK_X
         if local_target_x < work_x:
             self.log.info(f'Target: {local_target_x} is behind')

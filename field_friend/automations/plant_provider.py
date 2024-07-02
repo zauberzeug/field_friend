@@ -15,6 +15,7 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
             p.confidences.append(plant.confidence)
             p.positions.append(plant.position)
             p.detection_image = plant.detection_image
+            p.detection_time = plant.detection_time
             return True
     return False
 
@@ -94,7 +95,8 @@ class PlantProvider(rosys.persistence.PersistentModule):
     def add_crop(self, crop: Plant) -> None:
         if check_if_plant_exists(crop, self.crops, self.match_distance):
             return
-        self._add_crop_prediction(crop)
+        if not self.predict_crop_position:
+            self._add_crop_prediction(crop)
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_CROP.emit()
@@ -112,8 +114,6 @@ class PlantProvider(rosys.persistence.PersistentModule):
         self.clear_crops()
 
     def _add_crop_prediction(self, plant: Plant) -> None:
-        if not self.predict_crop_position:
-            return
         sorted_crops = sorted(self.crops, key=lambda crop: crop.position.distance(plant.position))
         if len(sorted_crops) < 2:
             return
