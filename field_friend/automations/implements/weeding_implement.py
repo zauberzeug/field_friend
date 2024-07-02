@@ -124,13 +124,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             c.id: self.system.odometer.prediction.relative_point(c.position)
             for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point)
             if self.cultivated_crop is None or c.type == self.cultivated_crop
-            and c.position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE
         }
         upcoming_crop_positions = {
             c: pos for c, pos in relative_crop_positions.items()
             if self.system.field_friend.WORK_X < pos.x < 0.3
         }
-        # Sort the upcoming_crop_positions dictionary by the .x attribute of its values
+        # Sort the upcoming positions so nearest comes first
         sorted_crops = dict(sorted(upcoming_crop_positions.items(), key=lambda item: item[1].x))
         self.crops_to_handle = sorted_crops
 
@@ -138,13 +137,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             w.id: self.system.odometer.prediction.relative_point(w.position)
             for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
             if w.type in self.relevant_weeds
-            and w.position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE
         }
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()
             if self.system.field_friend.WORK_X < pos.x < 0.4
         }
-        # Sort the upcoming_weed_positions dictionary by the .x attribute of its values
+        # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds
         return False
