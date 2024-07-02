@@ -44,7 +44,8 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
-        ui.timer(1.0, self.toggle_upload, once=True)
+        if isinstance(self.detector, rosys.vision.DetectorHardware):
+            rosys.on_repeat(self.update_outbox_mode, 1.0)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
@@ -151,16 +152,17 @@ class PlantLocator(rosys.persistence.PersistentModule):
         async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
             if response.status != 200:
                 self.log.error(f'Could not set outbox mode to {value} on port {port} - status code: {response.status}')
+                return False
+            self.log.info(f'Outbox_mode was set to {value} on port {port}')
+            return True
 
-    async def toggle_upload(self) -> None:        
-        await self.set_outbox_mode(value=self.upload_images, port=8004)
-
-    async def set_upload_images(self) -> None:
-        outbox_mode = await self.get_outbox_mode(8004)
+    async def update_outbox_mode(self) -> None:
+        outbox_mode = await self.get_outbox_mode(self.detector.port)
         if outbox_mode is None:
             return
-        self.upload_images = outbox_mode
-        self.request_backup()
+        if outbox_mode != self.upload_images:
+            self.log.warning(f'Outbox_mode out of sync. Setting outbox_mode to {self.upload_images}')
+            await self.set_outbox_mode(value=self.upload_images, port=self.detector.port)
 
     def settings_ui(self) -> None:
         ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
@@ -177,8 +179,8 @@ class PlantLocator(rosys.persistence.PersistentModule):
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
-        ui.button(icon='refresh', on_click=self.set_upload_images)
-        ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images').on('click', self.toggle_upload)
+        if isinstance(self.detector, rosys.vision.DetectorHardware):
+            ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images').on('click', lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port))        
 
         @ui.refreshable
         def chips():
