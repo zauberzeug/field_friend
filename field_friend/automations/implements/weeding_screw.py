@@ -19,6 +19,7 @@ class WeedingScrew(WeedingImplement):
         self.weed_screw_depth: float = 0.13
         self.crop_safety_distance: float = 0.01
         self.max_crop_distance: float = 0.08
+        self.last_punches: list[rosys.geometry.Point] = []
 
     async def start_workflow(self) -> bool:
         await super().start_workflow()
@@ -31,13 +32,19 @@ class WeedingScrew(WeedingImplement):
                 return True
             self.log.info(f'Weeds in range {[f"{p.x:.3f},{p.y:.3f}" for p in weeds_in_range.values()]}')
             for next_weed_id, next_weed_position in weeds_in_range.items():
+                # next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
                 weed_world_position = self.system.odometer.prediction.transform(next_weed_position)
                 crops = self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point)
                 if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
                     self.log.info('Skipping weed because it is to far from the cultivated crops')
                     continue
-                next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
+                if any(p.distance(weed_world_position) < self.crop_safety_distance for p in self.last_punches):
+                    self.log.info('Skipping weed because it was already punched')
+                    continue
                 self.log.info(f'Targeting weed at world: {weed_world_position}, local: {next_weed_position}')
+                self.last_punches.append(weed_world_position)
+                if len(self.last_punches) > 5:
+                    self.last_punches.pop(0)
                 await self.system.puncher.drive_and_punch(plant_id=next_weed_id,
                                                           x=next_weed_position.x,
                                                           y=next_weed_position.y,
