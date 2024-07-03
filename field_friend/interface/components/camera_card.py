@@ -22,6 +22,18 @@ class camera_card:
 
     def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.camera_card')
+        self.automator = system.automator
+        self.camera_provider = system.usb_camera_provider
+        self.detector = system.detector
+        self.field_friend = system.field_friend
+        self.odometer = system.odometer
+        self.plant_locator = system.plant_locator
+        self.plant_provider = system.plant_provider
+        self.puncher = system.puncher
+        self.system = system
+        self.punching_enabled: bool = False
+        self.shrink_factor: float = 2.0
+        self.show_weeds_to_handle: bool = False
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.camera_provider = system.usb_camera_provider
         self.automator = system.automator

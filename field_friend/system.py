@@ -119,7 +119,7 @@ class System(rosys.persistence.PersistentModule):
             'coin_with_hole', 'sugar_beet', 'onion', 'garlic', 'maize', 'liebstoekel',
             'red_beet', 'kohlrabi', 'schnittlauch', 'petersilie', 'bohnenkraut', 'sauerampfer',
             'oregano', 'pimpinelle', 'borrietsch', 'estragon', 'zitronenmelisse', 'pfefferminze',
-            'marokanische_minze',
+            'marokanische_minze', 'thymian',
         ]
         self.plant_locator = PlantLocator(self)
         self.plant_locator.weed_category_names = self.big_weed_category_names + self.small_weed_category_names
