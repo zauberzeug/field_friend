@@ -154,7 +154,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             if response.status != 200:
                 self.log.error(f'Could not set outbox mode to {value} on port {port} - status code: {response.status}')
                 return
-            self.log.info(f'Outbox_mode was set to {value} on port {port}')
+            self.log.debug(f'Outbox_mode was set to {value} on port {port}')
 
     def settings_ui(self) -> None:
         ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
