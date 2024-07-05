@@ -74,7 +74,10 @@ class KpiProvider(KpiLogger):
 
     def increment_weeding_kpi(self, indicator: str) -> None:
         self.increment(indicator)
-        new_value = getattr(self.current_weeding_kpis, indicator)+1
+        if getattr(self.current_weeding_kpis, indicator) is None:
+            new_value = 1
+        else:
+            new_value = getattr(self.current_weeding_kpis, indicator)+1
         setattr(self.current_weeding_kpis, indicator, new_value)
         self.WEEDING_KPIS_UPDATED.emit()
         self.invalidate()
