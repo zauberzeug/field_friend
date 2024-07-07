@@ -20,9 +20,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-asyncio
-      - name: Add project root to PYTHONPATH
-        run: pwd; ls -l
       - name: run pytests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest -sv
+        run: pytest
