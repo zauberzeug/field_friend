@@ -25,4 +25,4 @@ jobs:
       - name: run pytests
         env:
           PYTHONPATH: ${{ github.workspace }}
-      run: pytest -sv
+        run: pytest -sv
