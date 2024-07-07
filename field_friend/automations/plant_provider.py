@@ -95,7 +95,7 @@ class PlantProvider(rosys.persistence.PersistentModule):
     def add_crop(self, crop: Plant) -> None:
         if check_if_plant_exists(crop, self.crops, self.match_distance):
             return
-        if not self.predict_crop_position:
+        if self.predict_crop_position:
             self._add_crop_prediction(crop)
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
