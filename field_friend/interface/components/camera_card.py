@@ -207,6 +207,8 @@ class camera_card:
     def build_svg_for_implement(self) -> str:
         if not isinstance(self.system.current_implement, WeedingImplement) or self.camera is None or self.camera.calibration is None:
             return ''
+        if self.system.is_real:
+            return ''  # NOTE: until https://github.com/zauberzeug/rosys/discussions/130 is resolved and integrated real robots will have problems with reverse projection
         tool_3d = self.odometer.prediction.point_3d() + \
             rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0)
         tool_2d = self.camera.calibration.project_to_image(tool_3d) / self.shrink_factor
@@ -230,6 +232,8 @@ class camera_card:
     def build_svg_for_plant_provider(self) -> str:
         if self.camera is None or self.camera.calibration is None:
             return ''
+        if self.system.is_real:
+            return ''  # NOTE: until https://github.com/zauberzeug/rosys/discussions/130 is resolved and integrated real robots will have problems with reverse projection
         position = rosys.geometry.Point(x=self.camera.calibration.extrinsics.translation[0],
                                         y=self.camera.calibration.extrinsics.translation[1])
         svg = ''
