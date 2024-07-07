@@ -56,11 +56,11 @@ async def test_approaching_first_row(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-async def test_not_approaching_first_row_when_outside_field(system: System, field: Field):
+async def test_approaching_first_row_when_outside_of_field(system: System, field: Field):
     async def drive_away():
         await system.driver.drive_to(rosys.geometry.Point(x=-5, y=0))
     system.automator.start(drive_away())
-    await forward(22)
+    await forward(50)
     assert not system.automator.is_running
 
     system.field_navigation.field = field
