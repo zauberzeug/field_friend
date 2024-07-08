@@ -79,17 +79,19 @@ class WeedingScrew(WeedingImplement):
     def settings_ui(self):
         super().settings_ui()
         ui.number('Drill depth', format='%.2f', step=0.01,
-                  min=self.system.field_friend.z_axis.max_position, max=self.system.field_friend.z_axis.min_position*-1) \
+                  min=self.system.field_friend.z_axis.max_position,
+                  max=self.system.field_friend.z_axis.min_position*-1,
+                  on_change=self.request_backup) \
             .props('dense outlined suffix=°') \
             .classes('w-24') \
             .bind_value(self, 'weed_screw_depth') \
             .tooltip('Set the drill depth for the weeding automation')
-        ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f') \
+        ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
-        ui.number('Maximum weed distance from crop', step=0.001, min=0.001, max=1.00, format='%.3f') \
+        ui.number('Maximum weed distance from crop', step=0.001, min=0.001, max=1.00, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'max_crop_distance') \
