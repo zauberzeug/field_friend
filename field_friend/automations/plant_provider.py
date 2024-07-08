@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 import numpy as np
+
 import rosys
 from nicegui import ui
 from rosys.geometry import Point, Pose
@@ -129,7 +130,7 @@ class PlantProvider(rosys.persistence.PersistentModule):
         plant.confidences.append(self.prediction_confidence)
 
     def get_relevant_crops(self, point: Point, *, max_distance=0.5) -> list[Plant]:
-        return [c for c in self.crops if c.position.distance(point) <= max_distance and len(c.positions) >= 3 and c.confidence > self.crop_confidence_threshold]
+        return [c for c in self.crops if c.position.distance(point) <= max_distance and c.confidence > self.crop_confidence_threshold]
 
     def get_relevant_weeds(self, point: Point, *, max_distance=0.5) -> list[Plant]:
         return [w for w in self.weeds if w.position.distance(point) <= max_distance and len(w.positions) >= 3 and w.confidence > self.weed_confidence_threshold]
