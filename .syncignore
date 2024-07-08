@@ -12,3 +12,4 @@ sync.sh
 nicegui
 rosys
 .nicegui
+.venv

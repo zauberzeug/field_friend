@@ -1,8 +1,8 @@
 {
-    "minimum_weed_confidence": 0.45,
+    "minimum_weed_confidence": 0.05,
     "minimum_crop_confidence": 0.2,
-    "autoupload": "filtered",
+    "autoupload": "disabled",
     "tags": [
-        "Kiebitz"
+        "kiebitz"
     ]
 }
