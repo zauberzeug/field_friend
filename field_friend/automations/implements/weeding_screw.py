@@ -89,6 +89,11 @@ class WeedingScrew(WeedingImplement):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
+        ui.number('Maximum weed distance from crop', step=0.001, min=0.001, max=1.00, format='%.3f') \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'max_crop_distance') \
+            .tooltip('Set the maximum distance a weed can be away from a crop to be considered for weeding')
 
     def _keep_crops_safe(self) -> None:
         self.log.info('Keeping crops safe...')
