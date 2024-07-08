@@ -1,5 +1,6 @@
 import logging
 
+import rosys
 from nicegui.elements.scene_objects import Group, Sphere
 
 from ...automations import PlantProvider
@@ -17,7 +18,10 @@ class plant_objects(Group):
         self.plant_provider.PLANTS_CHANGED.register_ui(self.update)
 
     def update(self) -> None:
-        in_world = {p.id: p for p in self.plant_provider.weeds+self.plant_provider.crops}
+        origin = rosys.geometry.Point(x=0, y=0)
+        in_world = {p.id: p for p in
+                    self.plant_provider.get_relevant_weeds(origin, max_distance=1000) +
+                    self.plant_provider.get_relevant_crops(origin, max_distance=1000)}
         rendered = {o.name.split(':')[1]: o for o in self.scene.objects.values()
                     if o.name and o.name.startswith('plant_')}
         for id, obj in rendered.items():

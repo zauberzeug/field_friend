@@ -3,7 +3,7 @@
     "with_chopping": false,
     "chop_if_no_crops": false,
     "cultivated_crop": null,
-    "weed_screw_depth": 0.13,
-    "crop_safety_distance": 0.01,
+    "weed_screw_depth": 0.14,
+    "crop_safety_distance": 0.02,
     "max_crop_distance": 0.08
 }
