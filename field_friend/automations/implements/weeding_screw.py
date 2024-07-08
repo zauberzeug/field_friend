@@ -72,7 +72,9 @@ class WeedingScrew(WeedingImplement):
 
     def _has_plants_to_handle(self) -> bool:
         super()._has_plants_to_handle()
-        return any(self.weeds_to_handle)
+        if not any(self.weeds_to_handle) or (self.cultivated_crop and not any(self.crops_to_handle)):
+            return False
+        return True
 
     def settings_ui(self):
         super().settings_ui()
