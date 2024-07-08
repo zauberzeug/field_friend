@@ -77,6 +77,26 @@ async def test_weeding_screw_focus_on_weed_close_to_crop(system: System, detecto
     assert detector.simulated_objects[1].position.x == 0.1
 
 
+async def test_weeding_screw_move_when_no_weeds_close_to_crop(system: System, detector: rosys.vision.DetectorSimulation):
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.2, y=-0.05, z=0)))
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=1.290, y=-0.04, z=0)))
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
+                                                                   position=rosys.geometry.Point3d(x=1.285, y=0, z=0)))
+    assert detector.simulated_objects[1].category_name == 'weed'
+    system.current_implement = system.implements['Weed Screw']
+    system.current_navigation = system.straight_line_navigation
+    system.current_navigation.length = 1.5
+    assert isinstance(system.current_implement, WeedingScrew)
+    system.current_implement.cultivated_crop = 'maize'
+    system.automator.start()
+    await forward(50)
+    assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
+    assert len(detector.simulated_objects) == 2
+    assert detector.simulated_objects[1].category_name == 'maize'
+
+
 @pytest.mark.parametrize('system', ['rb28'], indirect=True)
 async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
