@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class FollowCropsNavigation(Navigation):
-    DRIVE_DISTANCE = 0.02
+    DRIVE_DISTANCE = 0.5
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
