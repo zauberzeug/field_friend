@@ -1,4 +1,5 @@
 
+from collections import deque
 from typing import TYPE_CHECKING, Any
 
 import rosys
@@ -20,12 +21,21 @@ class Tornado(WeedingImplement):
         self.drill_between_crops: bool = False
         self.with_punch_check: bool = False
         self.field_friend = system.field_friend
+        self.next_crop_id: str = ''
+        self.punched_crops: deque[str] = deque(maxlen=20)
 
     async def start_workflow(self) -> bool:
         await super().start_workflow()
         self.log.info('Performing Tornado Workflow..')
         try:
-            closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+            # TODO: do we need to set self.next_crop_id = '' on every return?
+            if self.next_crop_id in self.punched_crops:
+                self.log.info(f'crop {self.next_crop_id} already punched')
+                return True
+            if not self.next_crop_id in self.crops_to_handle:
+                self.log.error('next crop not found in crops_to_handle')
+                return True
+            closest_crop_position = self.crops_to_handle[self.next_crop_id]
             target_world_position = self.system.odometer.prediction.transform(closest_crop_position)
             self.log.info(f'closest crop position: relative={closest_crop_position} world={target_world_position}')
             # fist check if the closest crop is in the working area
@@ -33,25 +43,28 @@ class Tornado(WeedingImplement):
                 self.log.info('closest crop is out of working area')
                 return True
             self.log.info(f'target next crop at {closest_crop_position}')
-            if self.system.field_friend.can_reach(closest_crop_position) \
-                    and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
-                self.log.info('drilling crop')
-                open_drill = False
-                if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
-                    open_drill = True
-                await self.system.puncher.drive_and_punch(plant_id=closest_crop_id,
-                                                          x=closest_crop_position.x,
-                                                          y=closest_crop_position.y,
-                                                          angle=self.tornado_angle,
-                                                          with_open_tornado=open_drill,
-                                                          with_punch_check=self.with_punch_check)
-                # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
-                if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
-                    # remove the simulated weeds
-                    inner_radius = 0.025  # TODO compute inner radius according to tornado angle
-                    outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
-                    self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
-                                                              if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
+            if not self.system.field_friend.can_reach(closest_crop_position):
+                self.log.info('target crop is not reachable')
+                return True
+            if self._crops_in_drill_range(self.next_crop_id, closest_crop_position, self.tornado_angle):
+                self.log.info('crops in drill range')
+                return True
+            self.log.info('drilling crop')
+            open_drill = False
+            if self.drill_with_open_tornado and not self._crops_in_drill_range(self.next_crop_id, closest_crop_position, 0):
+                open_drill = True
+            await self.system.puncher.punch(y=closest_crop_position.y, plant_id=self.next_crop_id, angle=self.tornado_angle,
+                                                        with_open_tornado=open_drill,
+                                                        with_punch_check=self.with_punch_check)
+            self.punched_crops.append(self.next_crop_id)
+            self.next_crop_id = ''
+            # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
+            if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
+                # remove the simulated weeds
+                inner_radius = 0.025  # TODO compute inner radius according to tornado angle
+                outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
+                self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
+                                                            if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
 
             return True
         except PuncherException:
@@ -59,10 +72,17 @@ class Tornado(WeedingImplement):
             return True
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
-
-    def _has_plants_to_handle(self) -> bool:
+    
+    def get_stretch(self) -> float:
         super()._has_plants_to_handle()
-        return any(self.crops_to_handle)
+        if len(self.crops_to_handle) == 0:
+            return self.WORKING_DISTANCE
+        self.crops_to_handle = {crop_id: crop_position for crop_id, crop_position in self.crops_to_handle.items() if crop_id not in self.punched_crops}
+        if len(self.crops_to_handle) == 0:
+            return self.WORKING_DISTANCE
+        closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+        self.next_crop_id = closest_crop_id
+        return closest_crop_position.x - self.system.field_friend.WORK_X
 
     def _crops_in_drill_range(self, crop_id: str, crop_position: rosys.geometry.Point, angle: float) -> bool:
         inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
