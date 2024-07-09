@@ -26,6 +26,9 @@ class WeedingScrew(WeedingImplement):
     async def start_workflow(self) -> bool:
         await super().start_workflow()
         try:
+            if self.next_weed_id not in self.weeds_to_handle:
+                self.log.error('next weed not found in weeds_to_handle')
+                return True
             next_weed_position = self.weeds_to_handle[self.next_weed_id]
             weed_world_position = self.system.odometer.prediction.transform(next_weed_position)
             self.last_punches.append(weed_world_position)
