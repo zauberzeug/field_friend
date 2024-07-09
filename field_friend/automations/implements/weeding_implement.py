@@ -74,7 +74,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
     async def observe(self) -> None:
-        while self.implement.get_stretch() > 0.05:
+        while self.get_stretch() > 0.05:
             await rosys.sleep(0.1)
 
     async def start_workflow(self) -> bool:
