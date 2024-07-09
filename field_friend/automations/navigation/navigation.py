@@ -47,7 +47,12 @@ class Navigation(rosys.persistence.PersistentModule):
                     return_when_first_completed=True
                 )
                 if not self._should_finish():
-                    await self._drive(self.implement.get_stretch())
+                    distance = self.implement.get_stretch()
+                    if distance <= 0:
+                        self.log.warning('target distance is 0, skipping..')
+                        await self._drive(0.02)
+                        continue
+                    await self._drive(distance)
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
         except WorkflowException as e:
