@@ -108,7 +108,7 @@ async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_th
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
                                                                    position=rosys.geometry.Point3d(x=0.3, y=0, z=0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.4, y=0, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=0.34, y=0, z=0)))
     assert len(detector.simulated_objects) == 5
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
