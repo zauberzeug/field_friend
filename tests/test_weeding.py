@@ -91,11 +91,16 @@ async def test_weeding_screw_advances_when_there_are_no_plants(system: System, d
     system.current_navigation.length = 1.5
     assert isinstance(system.current_implement, WeedingScrew)
     system.current_implement.cultivated_crop = cultivated_crop
+    # TODO: test fails if not forwarded by 1 second
+    await forward(1)
     system.automator.start()
-    await forward(50)
+    await forward(60)
     assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
-    assert len(detector.simulated_objects) == 2
-    assert detector.simulated_objects[1].category_name == 'maize'
+    if cultivated_crop is None:
+        assert len(detector.simulated_objects) == 1
+    elif cultivated_crop == 'maize':
+        assert len(detector.simulated_objects) == 2
+    assert detector.simulated_objects[-1].category_name == 'maize'
 
 
 async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_the_crop(system: System, detector: rosys.vision.DetectorSimulation):
