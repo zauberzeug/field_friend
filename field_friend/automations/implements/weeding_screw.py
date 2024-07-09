@@ -18,7 +18,6 @@ class WeedingScrew(WeedingImplement):
         self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
         self.weed_screw_depth: float = 0.13
-        self.crop_safety_distance: float = 0.01
         self.max_crop_distance: float = 0.08
         self.last_punches: deque[rosys.geometry.Point] = deque(maxlen=5)
         self.next_weed_id: str = ''
@@ -89,11 +88,6 @@ class WeedingScrew(WeedingImplement):
             .classes('w-24') \
             .bind_value(self, 'weed_screw_depth') \
             .tooltip('Set the drill depth for the weeding automation')
-        ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \
-            .props('dense outlined suffix=m') \
-            .classes('w-24') \
-            .bind_value(self, 'crop_safety_distance') \
-            .tooltip('Set the crop safety distance for the weeding automation')
         ui.number('Maximum weed distance from crop', step=0.001, min=0.001, max=1.00, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
@@ -103,12 +97,10 @@ class WeedingScrew(WeedingImplement):
     def backup(self) -> dict:
         return super().backup() | {
             'weed_screw_depth': self.weed_screw_depth,
-            'crop_safety_distance': self.crop_safety_distance,
             'max_crop_distance': self.max_crop_distance,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         super().restore(data)
         self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
-        self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
         self.max_crop_distance = data.get('max_crop_distance', self.max_crop_distance)

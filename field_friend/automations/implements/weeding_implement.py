@@ -30,6 +30,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.kpi_provider = system.kpi_provider
         self.puncher = system.puncher
         self.cultivated_crop: str | None = None
+        self.crop_safety_distance: float = 0.01
 
         # dual mechanism
         self.with_drilling: bool = False
@@ -166,6 +167,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
             'cultivated_crop': self.cultivated_crop,
+            'crop_safety_distance': self.crop_safety_distance,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -173,6 +175,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
         self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
+        self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
@@ -202,3 +205,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         ui.select(self.system.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \
             .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
+        ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'crop_safety_distance') \
+            .tooltip('Set the crop safety distance for the weeding automation')
