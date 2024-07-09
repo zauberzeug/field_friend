@@ -33,6 +33,7 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
+            {name}_alarm.inverted = true 
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_l.inverted = {str(end_stops_inverted).lower()}
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
@@ -68,8 +69,10 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
         try:
             await super().move_to(position, speed)
         except RuntimeError as error:
-            self.log.info(f'could not move yaxis to {position} because of {error}')
-            raise Exception(f'could not move yaxis to {position} because of {error}')
+            self.log.info(
+                f'could not move yaxis to {position} because of {error}')
+            raise Exception(
+                f'could not move yaxis to {position} because of {error}')
         steps = self.compute_steps(position)
         await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 250000);')
         await rosys.sleep(0.2)
@@ -92,7 +95,8 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
             # if in end l stop, move out first
             if self.end_l:
                 self.log.info('already in end_l moving out of end_l stop')
-                velocity = self.reference_speed * (1 if self.reversed_direction else -1)
+                velocity = self.reference_speed * \
+                    (1 if self.reversed_direction else -1)
                 await self.robot_brain.send(f'{self.name}.speed({velocity});')
                 while self.end_l:
                     await rosys.sleep(0.2)
@@ -101,7 +105,8 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
             # if to end r stop if not already there
             if not self.end_r:
                 self.log.info('moving to end_r stop')
-                velocity = self.reference_speed * (1 if self.reversed_direction else -1)
+                velocity = self.reference_speed * \
+                    (1 if self.reversed_direction else -1)
                 await self.robot_brain.send(f'{self.name}.speed({velocity});')
                 while not self.end_r:
                     await rosys.sleep(0.2)
@@ -109,7 +114,8 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
 
             # move out of end r stop
             self.log.info('moving out of end_r stop')
-            velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
+            velocity = self.reference_speed * \
+                (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(f'{self.name}.speed({velocity});')
             while self.end_r:
                 await rosys.sleep(0.2)
@@ -117,14 +123,16 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
 
             # move slowly to end r stop
             self.log.info('moving slowly to end_r stop')
-            velocity = round(self.reference_speed / 2) * (1 if self.reversed_direction else -1)
+            velocity = round(self.reference_speed / 2) * \
+                (1 if self.reversed_direction else -1)
             await self.robot_brain.send(f'{self.name}.speed({velocity});')
             while not self.end_r:
                 await rosys.sleep(0.2)
 
             # move slowly out of end r stop
             self.log.info('moving slowly out of end_r stop')
-            velocity = round(self.reference_speed / 2) * (-1 if self.reversed_direction else 1)
+            velocity = round(self.reference_speed / 2) * \
+                (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(f'{self.name}.speed({velocity});')
             while self.end_r:
                 await rosys.sleep(0.2)
@@ -150,5 +158,6 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
         self.idle = words.pop(0) == 'true'
         self.steps = int(words.pop(0))
         self.alarm = words.pop(0) == 'true'
+        # self.alarm = int(words.pop(0)) == 0
         if self.alarm:
             self.is_referenced = False
