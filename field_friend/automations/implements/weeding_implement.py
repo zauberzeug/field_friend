@@ -139,39 +139,23 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             w: pos for w, pos in relative_weed_positions.items()
             if self.system.field_friend.WORK_X < pos.x < 0.4
         }
-        self.weeds_to_handle = upcoming_weed_positions
-        self._keep_crops_safe()
 
-        # for crop, crop_position in sorted_crops.items():
-        #     # crop_position = self.system.odometer.prediction.relative_point(crop.position)
-        #     for weed, weed_position in upcoming_weed_positions.items():
-        #         offset = self.system.field_friend.DRILL_RADIUS + \
-        #             self.crop_safety_distance - crop_position.distance(weed_position)
-        #         if offset > 0:
-        #             safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
-        #             # self.weeds_to_handle[weed] = safe_weed_position
-        #             upcoming_weed_positions[weed] = safe_weed_position
-        #             self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
-        #                           f'by {offset} to safe {crop} at {crop_position}') 
-
-        # Sort the upcoming positions so nearest comes first
-        sorted_weeds = dict(sorted(self.weeds_to_handle.items(), key=lambda item: item[1].x))
-        self.weeds_to_handle = sorted_weeds
-        return False
-    
-    def _keep_crops_safe(self) -> None:
-        # self.log.info('Keeping crops safe...')
-        for crop in self.system.plant_provider.crops:
-            crop_position = self.system.odometer.prediction.relative_point(crop.position)
-            for weed, weed_position in self.weeds_to_handle.items():
+        # TODO: is not gonna work for tornado because of crop_safety_distance
+        for crop, crop_position in sorted_crops.items():
+            for weed, weed_position in upcoming_weed_positions.items():
                 offset = self.system.field_friend.DRILL_RADIUS + \
                     self.crop_safety_distance - crop_position.distance(weed_position)
                 if offset > 0:
                     safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
-                    self.weeds_to_handle[weed] = safe_weed_position
+                    upcoming_weed_positions[weed] = safe_weed_position
                     self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
-                                  f'by {offset} to safe {crop.id} at {crop_position}')
+                                  f'by {offset} to safe {crop} at {crop_position}') 
 
+        # Sort the upcoming positions so nearest comes first
+        sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
+        self.weeds_to_handle = sorted_weeds
+        return False
+    
     def reset_kpis(self):
         super().reset_kpis()
         self.kpi_provider.clear_weeding_kpis()
