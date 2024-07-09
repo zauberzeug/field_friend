@@ -136,9 +136,10 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point, max_distance=0.5)
             if w.type in self.relevant_weeds
         }
+        # TODO: -0.005 really needed?
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()
-            if self.system.field_friend.WORK_X < pos.x < 0.4
+            if self.system.field_friend.WORK_X - 0.005 < pos.x < 0.4
         }
 
         # TODO: is not gonna work for tornado because of crop_safety_distance
