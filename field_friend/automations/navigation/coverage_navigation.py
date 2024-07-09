@@ -124,8 +124,8 @@ class CoverageNavigation(Navigation):
 
         return True
 
-    async def _drive(self) -> None:
-        return await super()._drive()
+    async def _drive(self, distance: float) -> None:
+        return await super()._drive(distance)
 
     def _should_finish(self) -> bool:
         return False
