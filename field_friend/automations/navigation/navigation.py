@@ -47,6 +47,7 @@ class Navigation(rosys.persistence.PersistentModule):
                     return_when_first_completed=True
                 )
                 if not self._should_finish():
+                    await self._drive(self.implement.get_stretch())
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
         except WorkflowException as e:
@@ -70,10 +71,10 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _proceed(self) -> None:
         await rosys.sleep(0.1)
         while not self._should_finish():
-            await self._drive()
+            await self._drive(0.02)
 
     @abc.abstractmethod
-    async def _drive(self) -> None:
+    async def _drive(self, distance: float) -> None:
         """Drives the vehicle forward
 
         This should only advance the robot by a small distance, e.g. 2 cm 
