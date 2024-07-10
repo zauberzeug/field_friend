@@ -32,8 +32,6 @@ class Navigation(rosys.persistence.PersistentModule):
 
     async def start(self) -> None:
         try:
-            if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
-                self.create_simulation()
             if not await self.implement.prepare():
                 self.log.error('Tool-Preparation failed')
                 return
@@ -41,6 +39,8 @@ class Navigation(rosys.persistence.PersistentModule):
                 self.log.error('Preparation failed')
                 return
             self.start_position = self.odometer.prediction.point
+            if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
+                self.create_simulation()
             while not self._should_finish():
                 await rosys.automation.parallelize(
                     self.implement.observe(),
