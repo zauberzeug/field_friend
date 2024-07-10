@@ -42,20 +42,13 @@ class Navigation(rosys.persistence.PersistentModule):
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             while not self._should_finish():
-                await rosys.automation.parallelize(
-                    self.implement.observe(),
-                    self._proceed(),
-                    return_when_first_completed=True
-                )
-                if not self._should_finish():
-                    distance = self.implement.get_stretch()
-                    if distance <= 0:
-                        self.log.warning('target distance is 0, skipping..')
-                        await self._drive(0.02)
-                        continue
-                    await self._drive(distance)
-                    await self.implement.start_workflow()
-                    await self.implement.stop_workflow()
+                distance = self.implement.get_stretch()
+                if distance > 0.05:  # we do not want to drive to long without observing
+                    await self._drive(0.02)
+                    continue
+                await self._drive(distance)
+                await self.implement.start_workflow()
+                await self.implement.stop_workflow()
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
@@ -77,11 +70,6 @@ class Navigation(rosys.persistence.PersistentModule):
 
     async def finish(self) -> None:
         """Executed after the navigation is done"""
-
-    async def _proceed(self) -> None:
-        await rosys.sleep(0.1)
-        while not self._should_finish():
-            await self._drive(0.02)
 
     @abc.abstractmethod
     async def _drive(self, distance: float) -> None:

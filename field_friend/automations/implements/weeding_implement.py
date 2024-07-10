@@ -74,10 +74,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
-    async def observe(self) -> None:
-        while self.get_stretch() > 0.05:
-            await rosys.sleep(0.1)
-
     async def start_workflow(self) -> bool:
         await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
@@ -125,7 +121,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         }
         upcoming_crop_positions = {
             c: pos for c, pos in relative_crop_positions.items()
-            if self.system.field_friend.WORK_X < pos.x < 0.3
+            if self.system.field_friend.WORK_X - self.system.field_friend.DRILL_RADIUS < pos.x < 0.3
         }
         # Sort the upcoming positions so nearest comes first
         sorted_crops = dict(sorted(upcoming_crop_positions.items(), key=lambda item: item[1].x))
@@ -133,15 +129,15 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
         relative_weed_positions = {
             w.id: self.system.odometer.prediction.relative_point(w.position)
-            for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point, max_distance=0.5)
+            for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
             if w.type in self.relevant_weeds
         }
-        # TODO: -0.005 really needed?
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()
-            if self.system.field_friend.WORK_X - 0.005 < pos.x < 0.4
+            if self.system.field_friend.WORK_X - self.system.field_friend.DRILL_RADIUS < pos.x < 0.4
         }
 
+        # keep crops safe by pushing weeds away so the implement does not accidentally hit a crop
         # TODO: is not gonna work for tornado because of crop_safety_distance
         for crop, crop_position in sorted_crops.items():
             for weed, weed_position in upcoming_weed_positions.items():
@@ -151,13 +147,13 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                     safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
                     upcoming_weed_positions[weed] = safe_weed_position
                     self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
-                                  f'by {offset} to safe {crop} at {crop_position}') 
+                                  f'by {offset} to safe {crop} at {crop_position}')
 
         # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds
         return False
-    
+
     def reset_kpis(self):
         super().reset_kpis()
         self.kpi_provider.clear_weeding_kpis()
