@@ -68,6 +68,10 @@ class Navigation(rosys.persistence.PersistentModule):
         """Prepares the navigation for the start of the automation
 
         Returns true if all preparations were successful, otherwise false."""
+        self.plant_provider.clear()
+        if isinstance(self.detector, rosys.vision.DetectorSimulation):
+            self.detector.simulated_objects = []
+        self.log.info('clearing plant provider')
         return True
 
     async def finish(self) -> None:

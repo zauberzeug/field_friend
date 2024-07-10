@@ -24,12 +24,13 @@ class StraightLineNavigation(Navigation):
         self.angular_speed_limit = 0.1
 
     async def prepare(self) -> bool:
+        await super().prepare()
         self.log.info(f'Activating {self.implement.name}...')
-        self.plant_provider.clear()
         await self.implement.activate()
         return True
 
     async def finish(self) -> None:
+        await super().finish()
         await self.implement.deactivate()
 
     async def _drive(self, distance: float):
