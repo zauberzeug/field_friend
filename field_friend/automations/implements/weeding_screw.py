@@ -1,5 +1,4 @@
 
-from collections import deque
 from typing import TYPE_CHECKING, Any
 
 import rosys
@@ -19,8 +18,6 @@ class WeedingScrew(WeedingImplement):
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
         self.weed_screw_depth: float = 0.13
         self.max_crop_distance: float = 0.08
-        self.last_punches: deque[rosys.geometry.Point] = deque(maxlen=5)
-        self.next_punch_y_position: float = 0
 
     async def start_workflow(self) -> bool:
         await super().start_workflow()

@@ -1,3 +1,4 @@
+from collections import deque
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -43,6 +44,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.driven_distance: float = 0.0
         self.crops_to_handle: dict[str, Point] = {}
         self.weeds_to_handle: dict[str, Point] = {}
+        self.last_punches: deque[rosys.geometry.Point] = deque(maxlen=5)
+        self.next_punch_y_position: float = 0
 
         rosys.on_repeat(self._update_time_and_distance, 0.1)
 
