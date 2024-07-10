@@ -32,7 +32,7 @@ class Tornado(WeedingImplement):
             if self.next_crop_id in self.punched_crops:
                 self.log.info(f'crop {self.next_crop_id} already punched')
                 return True
-            if not self.next_crop_id in self.crops_to_handle:
+            if self.next_crop_id not in self.crops_to_handle:
                 self.log.error('next crop not found in crops_to_handle')
                 return True
             closest_crop_position = self.crops_to_handle[self.next_crop_id]
@@ -54,8 +54,8 @@ class Tornado(WeedingImplement):
             if self.drill_with_open_tornado and not self._crops_in_drill_range(self.next_crop_id, closest_crop_position, 0):
                 open_drill = True
             await self.system.puncher.punch(y=closest_crop_position.y, plant_id=self.next_crop_id, angle=self.tornado_angle,
-                                                        with_open_tornado=open_drill,
-                                                        with_punch_check=self.with_punch_check)
+                                            with_open_tornado=open_drill,
+                                            with_punch_check=self.with_punch_check)
             self.punched_crops.append(self.next_crop_id)
             self.next_crop_id = ''
             # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
@@ -64,7 +64,7 @@ class Tornado(WeedingImplement):
                 inner_radius = 0.025  # TODO compute inner radius according to tornado angle
                 outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
-                                                            if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
+                                                          if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
 
             return True
         except PuncherException:
@@ -72,12 +72,13 @@ class Tornado(WeedingImplement):
             return True
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
-    
+
     def get_stretch(self) -> float:
         super()._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
             return self.WORKING_DISTANCE
-        self.crops_to_handle = {crop_id: crop_position for crop_id, crop_position in self.crops_to_handle.items() if crop_id not in self.punched_crops}
+        self.crops_to_handle = {crop_id: crop_position for crop_id,
+                                crop_position in self.crops_to_handle.items() if crop_id not in self.punched_crops}
         if len(self.crops_to_handle) == 0:
             return self.WORKING_DISTANCE
         closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
