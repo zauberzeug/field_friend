@@ -26,6 +26,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
         self.implement = implement
+        self.detector = system.detector
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
 
