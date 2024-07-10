@@ -63,7 +63,7 @@ class Navigation(rosys.persistence.PersistentModule):
 
         Returns true if all preparations were successful, otherwise false."""
         self.plant_provider.clear()
-        if isinstance(self.detector, rosys.vision.DetectorSimulation):
+        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects = []
         self.log.info('clearing plant provider')
         return True
