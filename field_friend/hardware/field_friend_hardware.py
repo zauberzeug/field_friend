@@ -115,6 +115,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                        end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
                                        )
         elif config_hardware['y_axis']['version'] == 'y_axis_stepper':
+            try:
+                alarm_inverted: bool = config_hardware['y_axis']['alarm_inverted']
+            except KeyError:
+                raise KeyError('\'alarm_inverted\' not found in config_hardware[\'y_axis\']. U4 has an inverted motor alarm input. Check your robot\'s setup.')
             y_axis = YAxisStepperHardware(robot_brain,
                                           expander=expander,
                                           name=config_hardware['y_axis']['name'],
@@ -127,6 +131,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           step_pin=config_hardware['y_axis']['step_pin'],
                                           dir_pin=config_hardware['y_axis']['dir_pin'],
                                           alarm_pin=config_hardware['y_axis']['alarm_pin'],
+                                          alarm_inverted=alarm_inverted,
                                           end_r_pin=config_hardware['y_axis']['end_r_pin'],
                                           end_l_pin=config_hardware['y_axis']['end_l_pin'],
                                           motor_on_expander=config_hardware['y_axis']['motor_on_expander'],

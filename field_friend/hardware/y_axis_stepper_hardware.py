@@ -21,6 +21,7 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
                  step_pin: int = 5,
                  dir_pin: int = 4,
                  alarm_pin: int = 36,
+                 alarm_inverted: bool = True,
                  end_r_pin: int = 19,
                  end_l_pin: int = 21,
                  motor_on_expander: bool = False,
@@ -33,7 +34,7 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
-            {name}_alarm.inverted = true 
+            {name}_alarm.inverted = {str(alarm_inverted).lower()} 
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_l.inverted = {str(end_stops_inverted).lower()}
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
@@ -158,6 +159,5 @@ class YAxisStepperHardware(YAxis, rosys.hardware.ModuleHardware):
         self.idle = words.pop(0) == 'true'
         self.steps = int(words.pop(0))
         self.alarm = words.pop(0) == 'true'
-        # self.alarm = int(words.pop(0)) == 0
         if self.alarm:
             self.is_referenced = False
