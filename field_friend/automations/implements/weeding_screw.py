@@ -25,7 +25,7 @@ class WeedingScrew(WeedingImplement):
             punch_position = self.system.odometer.prediction.transform(
                 rosys.geometry.Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
             self.last_punches.append(punch_position)
-            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.weed_screw_depth,)
+            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.weed_screw_depth)
             punched_weeds = [weed.id for weed in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
                              if weed.position.distance(punch_position) <= self.system.field_friend.DRILL_RADIUS]
             for weed_id in punched_weeds:
