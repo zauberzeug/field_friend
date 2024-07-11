@@ -1,5 +1,5 @@
-from collections import deque
 import logging
+from collections import deque
 from typing import TYPE_CHECKING, Any, Optional
 
 import rosys
@@ -32,6 +32,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.puncher = system.puncher
         self.cultivated_crop: str | None = None
         self.crop_safety_distance: float = 0.01
+        self.with_punch_check: bool = False
 
         # dual mechanism
         self.with_drilling: bool = False
@@ -168,6 +169,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'chop_if_no_crops': self.chop_if_no_crops,
             'cultivated_crop': self.cultivated_crop,
             'crop_safety_distance': self.crop_safety_distance,
+            'with_punch_check': self.with_punch_check,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -176,6 +178,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
         self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
+        self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
@@ -210,3 +213,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
+        ui.checkbox('With punch check', value=True) \
+            .bind_value(self, 'with_punch_check') \
+            .tooltip('Set the weeding automation to check for punch')

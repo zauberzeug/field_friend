@@ -19,7 +19,6 @@ class Tornado(WeedingImplement):
         self.tornado_angle: float = 30.0
         self.drill_with_open_tornado: bool = False
         self.drill_between_crops: bool = False
-        self.with_punch_check: bool = False
         self.field_friend = system.field_friend
 
     async def start_workflow(self) -> bool:
@@ -114,7 +113,6 @@ class Tornado(WeedingImplement):
         return super().backup() | {
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
-            'with_punch_check': self.with_punch_check,
             'tornado_angle': self.tornado_angle,
         }
 
@@ -122,12 +120,10 @@ class Tornado(WeedingImplement):
         super().restore(data)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
-        self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
         self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
 
     def settings_ui(self):
         super().settings_ui()
-
         ui.number('Tornado angle', format='%.0f', step=1, min=0, max=180) \
             .props('dense outlined suffix=°') \
             .classes('w-24') \
@@ -135,10 +131,7 @@ class Tornado(WeedingImplement):
             .tooltip('Set the angle for the tornado drill')
         ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
                                   f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
-        ui.checkbox('With punch check') \
-            .bind_value(self, 'with_punch_check') \
-            .tooltip('Set the weeding automation to check for punch')
-        ui.checkbox('Drill 2x with open torando') \
+        ui.checkbox('Drill 2x with open tornado') \
             .bind_value(self, 'drill_with_open_tornado') \
             .tooltip('Set the weeding automation to drill a second time with open tornado')
         ui.checkbox('Drill between crops') \

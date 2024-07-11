@@ -1,32 +1,34 @@
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import rosys
-from icecream import ic
 from nicegui import ui
 from rosys.driving import Odometer
 from rosys.geometry import Point3d
 from rosys.vision import Image
+from rosys.automation import Automator, automation_controls
 
 from ...automations import PlantLocator
 from ...automations.plant import Plant
+from ...vision import CalibratableUsbCameraProvider, SimulatedCamProvider
+
+if TYPE_CHECKING:
+    from field_friend.system import System
 
 
 class PunchDialog(ui.dialog):
-    def __init__(self, camera_provider: rosys.vision.CameraProvider,
-                 plant_locator: PlantLocator,
-                 odometer: Odometer,
-                 shrink_factor: int = 1,
-                 timeout: float = 20.0,
-                 ui_update_rate: float = 0.2) -> None:
+    def __init__(self, system: 'System', shrink_factor: int = 1, timeout: float = 20.0, ui_update_rate: float = 0.2) -> None:
         super().__init__()
+        self.camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider = system.usb_camera_provider
+        self.plant_locator: PlantLocator = system.plant_locator
+        self.odometer: Odometer = system.odometer
+        self.automator: Automator = system.automator
+        self.shrink_factor: int = shrink_factor
+        self.timeout: float = timeout
+        self._duration_left: float = timeout
+        self.ui_update_rate: float = ui_update_rate
+
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
-        self.camera_provider = camera_provider
-        self.plant_locator = plant_locator
-        self.odometer = odometer
-        self.shrink_factor = shrink_factor
-        self.timeout = timeout
-        self._duration_left = timeout
-        self.ui_update_rate = ui_update_rate
         self.static_image_view: Optional[ui.interactive_image] = None
         self.live_image_view: Optional[ui.interactive_image] = None
         self.target_plant: Optional[Plant] = None
@@ -41,13 +43,14 @@ class PunchDialog(ui.dialog):
                     ui.label('Live').classes('text-lg')
                     self.live_image_view = ui.interactive_image('')
             self.label = ui.label('Do you want to punch at the current position?').classes('text-lg')
-            with ui.row():
+            with ui.row().classes('w-full'):
                 # TODO: doesn't load properly on first open
                 ui.circular_progress(min=0.0, max=self.timeout,
                                      show_value=False, size='lg').bind_value_from(self, '_duration_left')
                 ui.button('Yes', on_click=lambda: self.submit('Yes'))
                 ui.button('No', on_click=lambda: self.submit('No'))
-                ui.button('Cancel', on_click=lambda: self.submit('Cancel'))
+                ui.space()
+                automation_controls(self.automator)
 
     def open(self) -> None:
         self._duration_left = self.timeout
@@ -92,7 +95,6 @@ class PunchDialog(ui.dialog):
                 relative_point = self.odometer.prediction.relative_point(self.target_plant.position)
                 target_point = self.camera.calibration.project_to_image(
                     Point3d(x=relative_point.x, y=relative_point.y, z=0))
-                ic(f'target plant : {self.target_plant.position} and target point : {target_point}')
             image_view.set_content(self.to_svg(image.detections, target_point, confidence))
 
     def update_live_view(self) -> None:
@@ -100,7 +102,7 @@ class PunchDialog(ui.dialog):
             return
         self.update_content(self.live_image_view, self.camera.latest_detected_image)
 
-    def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point], confidence: Optional[float], color: str = 'red') -> str:
+    def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point], confidence: Optional[float], color: str = 'blue') -> str:
         svg = ''
         cross_size = 20
         for point in detections.points:
@@ -134,7 +136,7 @@ class PunchDialog(ui.dialog):
                     '''
         if target_point and confidence:
             svg += f'''<circle cx="{target_point.x / self.shrink_factor}" cy="{target_point.y /
-                                                                               self.shrink_factor}" r="18" stroke-width="8" stroke="{color}" fill="none" />'''
+                                                                               self.shrink_factor}" r="20" stroke-width="8" stroke="{color}" fill="none" />'''
             svg += f'''<text x="{target_point.x / self.shrink_factor+20}" y="{target_point.y /
                                                                               self.shrink_factor-20}" font-size="20" fill="{color}">{confidence}</text>'''
         return svg
