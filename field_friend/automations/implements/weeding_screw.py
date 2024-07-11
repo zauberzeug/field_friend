@@ -25,10 +25,7 @@ class WeedingScrew(WeedingImplement):
             punch_position = self.system.odometer.prediction.transform(
                 rosys.geometry.Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
             self.last_punches.append(punch_position)
-            await self.system.puncher.punch(y=self.next_punch_y_position,
-                                            depth=self.weed_screw_depth,
-                                            plant_id=self.next_punch_y_position,
-                                            with_punch_check=self.with_punch_check)
+            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.weed_screw_depth,)
             punched_weeds = [weed.id for weed in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
                              if weed.position.distance(punch_position) <= self.system.field_friend.DRILL_RADIUS]
             for weed_id in punched_weeds:
@@ -44,7 +41,8 @@ class WeedingScrew(WeedingImplement):
         except Exception as e:
             raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
 
-    def get_stretch(self) -> float:
+    async def get_stretch(self, max_distance: float) -> float:
+        await super().get_stretch(max_distance)
         super()._has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
                           if self.system.field_friend.can_reach(position)}
@@ -70,8 +68,11 @@ class WeedingScrew(WeedingImplement):
                 stretch = 0
             self.log.info(f'Targeting weed {next_weed_id} which is {stretch} away at world: '
                           f'{weed_world_position}, local: {next_weed_position}')
-            self.next_punch_y_position = next_weed_position.y
-            return stretch
+            if stretch < max_distance and await self.ask_for_punch(next_weed_id):
+                self.next_punch_y_position = next_weed_position.y
+                return stretch
+            else:
+                break
         return self.WORKING_DISTANCE
 
     def settings_ui(self):

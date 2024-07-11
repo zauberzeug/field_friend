@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections import deque
 from typing import TYPE_CHECKING, Any, Optional
@@ -8,6 +9,7 @@ from rosys.geometry import Point, Pose
 
 from ...hardware import ChainAxis
 from .implement import Implement
+from .punch_dialog import PunchDialog
 
 if TYPE_CHECKING:
     from system import System
@@ -48,6 +50,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.last_punches: deque[rosys.geometry.Point] = deque(maxlen=5)
         self.next_punch_y_position: float = 0
 
+        self.punch_dialog: PunchDialog | None = None
         rosys.on_repeat(self._update_time_and_distance, 0.1)
 
     async def prepare(self) -> bool:
@@ -216,3 +219,19 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         ui.checkbox('With punch check', value=True) \
             .bind_value(self, 'with_punch_check') \
             .tooltip('Set the weeding automation to check for punch')
+        self.punch_dialog = PunchDialog(self.system)
+
+    async def ask_for_punch(self, plant_id: str | None = None) -> bool:
+        if not self.with_punch_check or plant_id is None or self.punch_dialog is None:
+            return True
+        self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)
+        result: str | None = None
+        try:
+            result = await asyncio.wait_for(self.punch_dialog, timeout=self.punch_dialog.timeout)
+            if result == 'Yes':
+                self.log.info('punching was allowed')
+                return True
+        except asyncio.TimeoutError:
+            self.punch_dialog.close()
+        self.log.warning('punch was not allowed')
+        return False
