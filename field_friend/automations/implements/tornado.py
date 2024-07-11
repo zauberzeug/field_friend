@@ -75,7 +75,7 @@ class Tornado(WeedingImplement):
 
         # for p in self.last_punches:
         #     self.log.info(f'Last punch: {p} - {p.distance(closest_crop_world_position)} - {self.crop_safety_distance} - {closest_crop_world_position}')
-        if any(p.distance(closest_crop_world_position) < self.crop_safety_distance for p in self.last_punches):
+        if any(p.distance(closest_crop_world_position) < self.field_friend.DRILL_RADIUS for p in self.last_punches):
             self.log.info('Skipping weed because it was already punched')
             return self.WORKING_DISTANCE
         if not self.system.field_friend.can_reach(closest_crop_position):
