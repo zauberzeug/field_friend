@@ -70,16 +70,8 @@ class PunchDialog(ui.dialog):
     def setup_camera(self) -> None:
         cameras = list(self.camera_provider.cameras.values())
         active_camera = next((camera for camera in cameras if camera.is_connected), None)
-        if not active_camera:
-            if self.camera:
-                self.camera = None
-                self.camera_card.clear()
-                with self.camera_card:
-                    ui.label('no camera available').classes('text-center')
-                    ui.image('assets/field_friend.webp').classes('w-full')
-            return
-        if self.camera is None or self.camera != active_camera:
-            self.camera = active_camera
+        assert active_camera is not None
+        self.camera = active_camera
 
     def update_content(self, image_view: ui.interactive_image, image: Image, draw_target: bool = False) -> None:
         self._duration_left -= self.ui_update_rate
@@ -106,6 +98,7 @@ class PunchDialog(ui.dialog):
 
     def update_live_view(self) -> None:
         if self.camera is None:
+            self.live_image_view.set_source('assets/field_friend.webp')
             return
         self.update_content(self.live_image_view, self.camera.latest_detected_image)
 
