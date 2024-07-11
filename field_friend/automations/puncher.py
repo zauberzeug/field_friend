@@ -17,8 +17,6 @@ class PuncherException(Exception):
 
 class Puncher:
     def __init__(self, field_friend: FieldFriend, driver: Driver, kpi_provider: KpiProvider) -> None:
-        self.POSSIBLE_PUNCH = rosys.event.Event()
-        '''Event that is emitted when a punch is possible.'''
         self.punch_allowed: str = 'waiting'
         self.field_friend = field_friend
         self.driver = driver
@@ -64,9 +62,7 @@ class Puncher:
                     depth: float = 0.01,
                     angle: float = 180,
                     turns: float = 2.0,
-                    plant_id: Optional[str] = None,
                     with_open_tornado: bool = False,
-                    with_punch_check: bool = False,
                     ) -> None:
         self.log.info(f'Punching at {y} with depth {depth}...')
         rest_position = 'reference'
@@ -92,16 +88,6 @@ class Puncher:
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
-                
-            if with_punch_check and plant_id is not None:
-                self.punch_allowed = 'waiting'
-                self.POSSIBLE_PUNCH.emit(plant_id)
-                while self.punch_allowed == 'waiting':
-                    await rosys.sleep(0.1)
-                if self.punch_allowed == 'not_allowed':
-                    self.log.warning('punch was not allowed')
-                    return
-                self.log.info('punching was allowed')
 
             if isinstance(self.field_friend.z_axis, Tornado):
                 await self.field_friend.y_axis.move_to(y)
@@ -119,7 +105,7 @@ class Puncher:
             self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
             self.kpi_provider.increment_weeding_kpi('punches')
         except Exception as e:
-            raise PuncherException(f'punching failed because: {e}') from e
+            raise PuncherException('punching failed') from e
         finally:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()

@@ -24,7 +24,7 @@ class Implement(abc.ABC):
         """Deactivate the implement (for example to stop weeding at the row's end)"""
         self.is_active = False
 
-    def get_stretch(self) -> float:
+    async def get_stretch(self, max_distance: float) -> float:
         """Return the stretch which the implement thinks is safe to drive forward."""
         return 0.02
 

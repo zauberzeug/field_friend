@@ -33,10 +33,7 @@ class Tornado(WeedingImplement):
             open_drill = False
             if self.drill_with_open_tornado:
                 open_drill = True
-            await self.system.puncher.punch(y=self.next_punch_y_position,
-                                            angle=self.tornado_angle,
-                                            with_open_tornado=open_drill,
-                                            with_punch_check=self.with_punch_check)
+            await self.system.puncher.punch(y=self.next_punch_y_position, angle=self.tornado_angle, with_open_tornado=open_drill)
             # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
                 # remove the simulated weeds
@@ -55,7 +52,8 @@ class Tornado(WeedingImplement):
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
-    def get_stretch(self) -> float:
+    async def get_stretch(self, max_distance: float) -> float:
+        await super().get_stretch(max_distance)
         super()._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
             return self.WORKING_DISTANCE
@@ -85,8 +83,10 @@ class Tornado(WeedingImplement):
             stretch = 0
         self.log.info(f'Targeting crop {closest_crop_id} which is {stretch} away at world: '
                       f'{closest_crop_world_position}, local: {closest_crop_position}')
-        self.next_punch_y_position = closest_crop_position.y
-        return stretch
+        if stretch < max_distance and await self.ask_for_punch(closest_crop_id):
+            self.next_punch_y_position = closest_crop_position.y
+            return stretch
+        return self.WORKING_DISTANCE
 
     def _crops_in_drill_range(self, crop_id: str, crop_position: rosys.geometry.Point, angle: float) -> bool:
         inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
