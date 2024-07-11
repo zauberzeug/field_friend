@@ -42,7 +42,7 @@ class WeedingScrew(WeedingImplement):
                     if obj.position.projection().distance(punch_position) > self.system.field_friend.DRILL_RADIUS]
             return True  # NOTE no weeds to work on at this position -> advance robot
         except Exception as e:
-            raise ImplementException(f'Error while Weed Screw Workflow: {e}') from e
+            raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
 
     def get_stretch(self) -> float:
         super()._has_plants_to_handle()
