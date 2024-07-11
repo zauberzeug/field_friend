@@ -66,7 +66,7 @@ class WeedingScrew(WeedingImplement):
             if stretch < 0:
                 stretch = 0
             self.log.info(f'Targeting weed {next_weed_id} which is {stretch} away at world: '
-                          '{weed_world_position}, local: {next_weed_position}')
+                          f'{weed_world_position}, local: {next_weed_position}')
             self.next_punch_y_position = next_weed_position.y
             return stretch
         return self.WORKING_DISTANCE
