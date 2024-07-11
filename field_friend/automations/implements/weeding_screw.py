@@ -56,7 +56,7 @@ class WeedingScrew(WeedingImplement):
             if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
                 self.log.info('Skipping weed because it is to far from the cultivated crops')
                 continue
-            if any(p.distance(weed_world_position) < self.crop_safety_distance for p in self.last_punches):
+            if any(p.distance(weed_world_position) < self.system.field_friend.DRILL_RADIUS for p in self.last_punches):
                 self.log.info('Skipping weed because it was already punched')
                 continue
             stretch = next_weed_position.x - self.system.field_friend.WORK_X
