@@ -5,16 +5,8 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ...hardware import (
-    ChainAxis,
-    FieldFriend,
-    FieldFriendHardware,
-    FlashlightPWMHardware,
-    FlashlightPWMHardwareV2,
-    Tornado,
-    YAxis,
-    ZAxis,
-)
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
+                         Tornado, YAxis, ZAxis)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -41,7 +33,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
 
                 with ui.row().bind_visibility_from(robot.z_axis, 'end_b'):
                     ui.icon('report').props('size=md').classes('text-red')
-                    ui.label('Z-axis in end bottom pisition, error!').classes('text-red mt-1')
+                    ui.label('Z-axis in end bottom position, error!').classes('text-red mt-1')
 
                 with ui.row().bind_visibility_from(robot.z_axis, 'alarm'):
                     ui.icon('report').props('size=md').classes('text-yellow')
@@ -70,10 +62,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
 
         with ui.row().classes('place-items-center'):
             ui.markdown('**Tool:**').style('color: #EDF4FB')
-            ui.label(robot.tool)
-            if robot.tool == 'tornado':
-                tornado_diameters = robot.tornado_diameters(system.weeding.tornado_angle)
-                tornado_label = ui.label(f'Inner: {tornado_diameters[0]:.4f}m, Outer: {tornado_diameters[1]:.4f}m')
+            ui.label(robot.implement_name)
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
@@ -84,7 +73,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.markdown('**Battery:**').style('color: #EDF4FB')
             bms_label = ui.label()
             if hasattr(robot, 'battery_control'):
-                battery_control_label = ui.label('')
+                battery_control_label = ui.label('').tooltip('Battery Box out connectors 1-4')
 
         with ui.row().classes('place-items-center'):
             ui.markdown('**Axis:**').style('color: #EDF4FB')
@@ -98,6 +87,15 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Bumper:**').style('color: #EDF4FB')
                 bumper_label = ui.label()
+        if system.is_real:
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Motor status:**').style('color: #EDF4FB')
+                l0_status = ui.label()
+                l1_status = ui.label()
+                r0_status = ui.label()
+                r1_status = ui.label()
+                reset_motor_button = ui.button(
+                    'Reset motor errors', on_click=robot.wheels.reset_motors).bind_visibility_from(robot.wheels, 'motor_error')
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Robot Brain**').style('color: #6E93D6;').classes('w-full text-center')
@@ -153,7 +151,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         with ui.row().classes('place-items-center'):
             ui.markdown('**Punches:**').style('color: #EDF4FB')
             kpi_punches_label = ui.label()
-        if robot.tool == 'dual_mechanism':
+        if robot.implement_name == 'dual_mechanism':
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Chops:**').style('color: #EDF4FB')
                 kpi_chops_label = ui.label()
@@ -182,9 +180,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             odometry_label = ui.label()
 
     def update_status() -> None:
-        if robot.tool == 'tornado':
-            tornado_diameters = robot.tornado_diameters(system.weeding.tornado_angle)
-            tornado_label.set_text(f'Inner: {tornado_diameters[0]:.4f}m, Outer: {tornado_diameters[1]:.4f}m')
         bms_flags = [
             f'{robot.bms.state.short_string}',
             'charging' if robot.bms.state.is_charging else ''
@@ -238,7 +233,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             z_axis_flags = ['no z-axis']
         bms_label.text = ', '.join(flag for flag in bms_flags if flag)
         if hasattr(robot, 'battery_control') and robot.battery_control is not None:
-            battery_control_label.text = 'Ready' if robot.battery_control.status else 'Not ready'
+            battery_control_label.text = 'Out 1..4 is on' if robot.battery_control.status else 'Out 1..4 is off'
 
         y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
         z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
@@ -257,12 +252,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         cpu_label.text = f'{psutil.cpu_percent():.0f}%'
         ram_label.text = f'{psutil.virtual_memory().percent:.0f}%'
 
-        def get_jetson_cpu_temperature():
-            with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
-                temp = f.read().strip()
-            return float(temp) / 1000.0  # Convert from milli °C to °C
         if isinstance(robot, FieldFriendHardware):
-            temperature_label.text = f'{get_jetson_cpu_temperature()}°C'
+            temperature_label.text = f'{system.get_jetson_cpu_temperature()}°C'
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
@@ -278,29 +269,34 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             'N'
 
         if system.automator.is_running:
-            if system.field_provider.active_field is not None:
-                current_field_label.text = system.field_provider.active_field.name
             kpi_fieldtime_label.text = f'{timedelta(seconds=system.kpi_provider.current_weeding_kpis.time)}'
             kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance:.0f}m'
 
-            current_automation = next(key for key, value in system.automations.items()
-                                      if value == system.automator.default_automation)
-            if current_automation == 'weeding' or current_automation == 'monitoring':
-                if current_automation == 'weeding':
-                    current_row_label.text = system.weeding.current_row.name if system.weeding.current_row is not None else 'No row'
-                    worked_area_label.text = f'{system.weeding.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.weeding.field.area():.2f}m²' if system.weeding.field is not None else 'No field'
-                elif current_automation == 'monitoring':
-                    current_row_label.text = system.monitoring.current_row.name if system.monitoring.current_row is not None else 'No row'
-                    worked_area_label.text = f'{system.monitoring.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.monitoring.field.area():.2f}m²' if system.monitoring.field is not None else 'No field'
-                kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
-                kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
-                kpi_weeds_removed_label.text = system.kpi_provider.current_weeding_kpis.weeds_removed
-                kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
-                if current_automation == 'weeding':
-                    kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
-                    if robot.tool == 'dual_mechanism':
-                        kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
-
+            # current_automation = next(key for key, value in system.implements.items()
+            #                           if value == system.automator.default_automation)
+            # if current_automation == 'weeding' or current_automation == 'monitoring':
+            #     if current_automation == 'weeding':
+            #         current_row_label.text = system.weeding.current_row.name if system.weeding.current_row is not None else 'No row'
+            #         worked_area_label.text = f'{system.weeding.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.weeding.field.area():.2f}m²' if system.weeding.field is not None else 'No field'
+            #     elif current_automation == 'monitoring':
+            #         current_row_label.text = system.monitoring.current_row.name if system.monitoring.current_row is not None else 'No row'
+            #         worked_area_label.text = f'{system.monitoring.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.monitoring.field.area():.2f}m²' if system.monitoring.field is not None else 'No field'
+            #     kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
+            #     kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
+            #     kpi_weeds_removed_label.text = system.kpi_provider.current_weeding_kpis.weeds_removed
+            #     kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
+            #     if current_automation == 'weeding':
+            #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
+            #         if robot.implement_name == 'dual_mechanism':
+            #             kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
+        if system.is_real:
+            if robot.wheels.odrive_version == 6:
+                l0_status.text = 'Error in l0' if robot.wheels.l0_error else 'No error'
+                l1_status.text = 'Error in l1' if robot.wheels.l1_error else 'No error'
+                r0_status.text = 'Error in r0' if robot.wheels.r0_error else 'No error'
+                r1_status.text = 'Error in r1' if robot.wheels.r1_error else 'No error'
+            if robot.wheels.odrive_version == 4:
+                l0_status.text = 'cant read status update odrive to version 0.5.6'
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
         reference_position_label.text = 'No reference' if system.gnss.reference is None else 'Set'
         gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'

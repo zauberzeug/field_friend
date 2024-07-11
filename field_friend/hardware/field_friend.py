@@ -1,3 +1,4 @@
+import logging
 from typing import Union
 
 import numpy as np
@@ -28,7 +29,7 @@ class FieldFriend(rosys.hardware.Robot):
 
     def __init__(
             self, *,
-            tool: str,
+            implement_name: str,
             wheels: rosys.hardware.Wheels,
             flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, None],
             y_axis: Union[YAxis, ChainAxis, None],
@@ -40,7 +41,8 @@ class FieldFriend(rosys.hardware.Robot):
             imu: rosys.hardware.Imu,
             **kwargs) -> None:
         super().__init__(**kwargs)
-        self.tool = tool
+        self.log = logging.getLogger('field_friend.field_friend')
+        self.implement_name = implement_name
         self.wheels = wheels
         self.flashlight = flashlight
         self.y_axis = y_axis
@@ -66,15 +68,15 @@ class FieldFriend(rosys.hardware.Robot):
 
         The point is given in local coordinates, i.e. the origin is the center of the tool.
         """
-        if self.tool in ['weed_screw', 'tornado'] and isinstance(self.y_axis, YAxis):
+        if self.implement_name in ['weed_screw', 'tornado'] and isinstance(self.y_axis, YAxis):
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
-        elif self.tool in ['dual_mechanism'] and isinstance(self.y_axis, ChainAxis):
+        elif self.implement_name in ['dual_mechanism'] and isinstance(self.y_axis, ChainAxis):
             if second_tool:
                 return self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
             else:
                 return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         else:
-            raise NotImplementedError(f'Tool {self.tool} is not implemented for reachability check')
+            raise NotImplementedError(f'Tool {self.implement_name} is not implemented for reachability check')
 
     def tornado_diameters(self, angle: float) -> tuple:
         angle = np.clip(angle, 0, 180)

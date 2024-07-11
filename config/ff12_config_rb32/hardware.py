@@ -13,7 +13,7 @@ configuration = {
         'version': 'y_axis_canopen',
         'name': 'yaxis',
         'can_address': 0x60,
-        'max_speed': 2000,
+        'max_speed': 500,
         'reference_speed': 40,
         'min_position': -0.075,
         'max_position': 0.065,
@@ -24,6 +24,9 @@ configuration = {
         'motor_on_expander': False,
         'end_stops_on_expander': True,
         'reversed_direction': False,
+        'end_stops_inverted': True,
+        'acceleration': 1000,
+        'quick_stop_deceleration': 4000,
     },
     'z_axis': {
         'version': 'tornado',

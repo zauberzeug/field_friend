@@ -1,18 +1,17 @@
 import numpy as np
 from nicegui.elements.scene_objects import Box, Curve, Cylinder, Extrusion, Group
 from rosys.geometry import Spline
-
-from ...automations import FieldProvider
+from ...automations import FieldProvider, Field
 
 
 class field_object(Group):
 
-    def __init__(self, field_provider: FieldProvider) -> None:
+    def __init__(self, field_provider: FieldProvider, active_field: Field | None) -> None:
         super().__init__()
 
         self.field_provider = field_provider
-        self.update()
-        self.field_provider.FIELD_SELECTED.register(self.update)
+        self.update(active_field)
+        self.field_provider.FIELDS_CHANGED.register_ui(lambda: self.update(active_field))
 
     def create_fence(self, start, end):
         height = 0.12
@@ -39,12 +38,12 @@ class field_object(Group):
         Cylinder(0.1, 0.1, 1.0).move(x=end[0], y=end[1], z=0.5).with_name(
             'field_').material('#8b4513').rotate(np.pi/2, 0, 0)
 
-    def update(self) -> None:
+    def update(self, active_field: Field | None) -> None:
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('obstacle_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
-        if self.field_provider.active_field and self.field_provider.active_field.reference is not None:
-            field = self.field_provider.active_field
+        if active_field and active_field.reference is not None:
+            field = active_field
             outline = [[point.x, point.y] for point in field.outline]
             if len(outline) > 1:  # Make sure there are at least two points to form a segment
                 for i in range(len(outline)):
@@ -75,8 +74,3 @@ class field_object(Group):
                 for point in row_points:
                     Cylinder(0.04, 0.04, 0.7).move(x=point.x, y=point.y, z=0.35).material(
                         'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)
-                for crop in row.crops:
-                    Extrusion([[0, 0], [0.03, -0.02], [0.1, 0], [0.03, 0.02], ], 0.01).move(x=crop.position.x, y=crop.position.y,
-                                                                                            z=0.0).rotate(0, -np.pi/8, 0).material('green').with_name(f'row_{row.id}_crop')
-                    Extrusion([[0, 0], [0.03, -0.02], [0.1, 0], [0.03, 0.02], ], 0.01).move(x=crop.position.x, y=crop.position.y,
-                                                                                            z=0.0).rotate(0, -np.pi/8, np.pi).material('green').with_name(f'row_{row.id}_crop')

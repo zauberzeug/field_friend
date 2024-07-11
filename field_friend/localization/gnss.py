@@ -47,12 +47,28 @@ class Gnss(ABC):
 
         self.current: Optional[GNSSRecord] = None
         self.device: str | None = None
-        self.reference: Optional[GeoPoint] = None
+        self._reference: Optional[GeoPoint] = None
         self.antenna_offset = antenna_offset
 
         self.needs_backup = False
         rosys.on_repeat(self.update, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
+
+    @property
+    def reference(self) -> Optional[GeoPoint]:
+        return self._reference
+
+    @reference.setter
+    def reference(self, reference: GeoPoint) -> None:
+        assert reference is not None
+        if self._reference is not None:
+            relative_location_of_new_reference = reference.cartesian(self._reference)
+            new_position = self.odometer.prediction.point + relative_location_of_new_reference
+            self.odometer.history.clear()
+            self.odometer.prediction = rosys.geometry.Pose(x=new_position.x, y=new_position.y,
+                                                           yaw=self.odometer.prediction.yaw,
+                                                           time=rosys.time())
+        self._reference = reference
 
     @abstractmethod
     async def try_connection(self) -> None:
@@ -111,12 +127,12 @@ class Gnss(ABC):
         # correct the gnss coordinate by antenna offset
         self.current.location = get_new_position(self.current.location, self.antenna_offset, yaw+np.pi/2)
         cartesian_coordinates = self.current.location.cartesian(self.reference)
+        distance = self.odometer.prediction.point.distance(cartesian_coordinates)
+        if distance > 1:
+            self.log.warning(f'GNSS distance to prediction too high: {distance:.2f}m!!')
         pose = rosys.geometry.Pose(
             x=cartesian_coordinates.x,
             y=cartesian_coordinates.y,
             yaw=yaw,
             time=self.current.timestamp)
-        distance = self.odometer.prediction.distance(pose)
-        if distance > 1:
-            self.log.warning(f'GNSS distance to prediction too high: {distance:.2f}m!!')
         self.ROBOT_POSE_LOCATED.emit(pose)

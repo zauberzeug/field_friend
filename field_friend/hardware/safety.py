@@ -53,16 +53,11 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         # implement lizard stop method for available hardware
         lizard_code = f'let stop do {wheels.name}.speed(0, 0);'
         if y_axis is not None:
-            if isinstance(y_axis, YAxisCanOpenHardware):
-                lizard_code += f'{y_axis.name}_motor.set_ctrl_enable(false);'
-            else:
-                lizard_code += f' {y_axis.name}.stop();'
+            lizard_code += f' {y_axis.name}.stop();'
         if z_axis is not None:
-            if isinstance(z_axis, ZAxisCanOpenHardware):
-                lizard_code += f'{z_axis.name}_motor.set_ctrl_enable(false);'
-            elif isinstance(z_axis, TornadoHardware):
-                lizard_code += f'{z_axis.name}_z.speed(0);'
-                lizard_code += f'{z_axis.name}_turn.speed(0);'
+            if isinstance(z_axis, TornadoHardware):
+                lizard_code += f'{z_axis.name}_z.stop();'
+                lizard_code += f'{z_axis.name}_motor_turn.speed(0);'
             else:
                 lizard_code += f' {z_axis.name}.stop();'
         if isinstance(flashlight, FlashlightHardware):
@@ -83,10 +78,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         if isinstance(y_axis, ChainAxisHardware):
             lizard_code += f'when {y_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); end\n'
         if isinstance(z_axis, TornadoHardware):
-            if isinstance(y_axis, YAxisStepperHardware):
-                lizard_code += f'when {z_axis.name}_ref_knife_ground.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
-            elif isinstance(y_axis, YAxisCanOpenHardware):
-                lizard_code += f'when {z_axis.name}_ref_knife_ground.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}_motor.set_ctrl_enable(false); end\n'
+            if isinstance(y_axis, YAxisStepperHardware) or isinstance(y_axis, YAxisCanOpenHardware):
+                lizard_code += f'when {z_axis.name}_ref_knife_ground.active == false then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
 
         # implement watchdog for rosys modules
         lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'

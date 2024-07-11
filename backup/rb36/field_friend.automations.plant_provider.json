@@ -1,0 +1,5 @@
+{
+    "match_distance": 0.07,
+    "crop_spacing": 0.18,
+    "prediction_confidence": 0.3
+}

@@ -1,7 +1,8 @@
 import uuid
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
+from uuid import uuid4
 
 from rosys.geometry import Point
 from rosys.vision import Image
@@ -9,25 +10,12 @@ from rosys.vision import Image
 
 @dataclass(slots=True, kw_only=True)
 class Plant:
-    id: str = ...
+    id: str = field(default_factory=lambda: str(uuid4()))
     type: str
-    positions: deque[Point]
+    positions: deque[Point] = field(default_factory=lambda: deque(maxlen=20))
     detection_time: float
-    confidences: deque[float]
+    confidences: deque[float] = field(default_factory=lambda: deque(maxlen=20))
     detection_image: Optional[Image] = None
-
-    def __init__(self, type_: str, position: Point, detection_time: float, id_: str = ..., confidence: float = 0.0, max_positions: int = 20, detection_image: Optional[Image] = None) -> None:
-        self.id = id_
-        self.type = type_
-        self.positions = deque([position], maxlen=max_positions)
-        self.detection_time = detection_time
-        self.confidences = deque([confidence], maxlen=max_positions)
-        self.detection_image = detection_image
-
-    def __post_init__(self) -> None:
-        """Generate a unique ID if not already loaded from persistence"""
-        if self.id == ...:
-            self.id = str(uuid.uuid4())
 
     @property
     def position(self) -> Point:
