@@ -16,6 +16,7 @@ class WorkflowException(Exception):
 
 
 class Navigation(rosys.persistence.PersistentModule):
+    MAX_STRETCH_DISTANCE = 0.05
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__()
@@ -42,9 +43,8 @@ class Navigation(rosys.persistence.PersistentModule):
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             while not self._should_finish():
-                max = 0.05
-                distance = await self.implement.get_stretch(max)
-                if distance > max:  # we do not want to drive to long without observing
+                distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
+                if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
                     await self._drive(0.02)
                     continue
                 await self._drive(distance)
