@@ -31,9 +31,10 @@ class Tornado(WeedingImplement):
             self.last_punches.append(punch_position)
             self.log.info(f'Drilling crop at {punch_position} with angle {self.tornado_angle}°')
             open_drill = False
-            if self.drill_with_open_tornado: # and not self._crops_in_drill_range(self.next_crop_id, punch_position, 0):
+            if self.drill_with_open_tornado:
                 open_drill = True
-            await self.system.puncher.punch(y=punch_position.y, angle=self.tornado_angle,
+            await self.system.puncher.punch(y=self.next_punch_y_position,
+                                            angle=self.tornado_angle,
                                             with_open_tornado=open_drill,
                                             with_punch_check=self.with_punch_check)
             # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
@@ -41,23 +42,11 @@ class Tornado(WeedingImplement):
                 # remove the simulated weeds
                 inner_radius = 0.025  # TODO compute inner radius according to tornado angle
                 outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
-
                 # inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(self.tornado_angle)
                 # inner_radius = inner_diameter / 2
                 # outer_radius = outer_diameter / 2
-
-                target_world_position = self.system.odometer.prediction.transform(punch_position)
-                self.log.info(f'removing weeds at screw world position {target_world_position}')
-                self.log.info(f'simulated_objects1: {len(self.system.detector.simulated_objects)}')
-                for obj in self.system.detector.simulated_objects:
-                    distance = obj.position.projection().distance(target_world_position)
-                    if distance > 0.1:
-                        continue
-                    if (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius):
-                        continue
-                    self.log.info(f'{obj} - {distance} - {inner_radius} - {outer_radius}')
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
-                                                          if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
+                                                          if not (inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius)]
                 self.log.info(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
             return True
         except PuncherException:
@@ -87,15 +76,15 @@ class Tornado(WeedingImplement):
         if self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
             self.log.info('Crops in drill range')
             return self.WORKING_DISTANCE
-        
+
         stretch = closest_crop_position.x - self.system.field_friend.WORK_X
         if stretch < - self.system.field_friend.DRILL_RADIUS:
             self.log.info(f'Skipping crop {closest_crop_id} because it is behind the robot')
             return self.WORKING_DISTANCE
         if stretch < 0:
             stretch = 0
-        self.log.info(f'Targeting crop {closest_crop_id} which is {stretch} away at world: ' \
-                        f'{closest_crop_world_position}, local: {closest_crop_position}')
+        self.log.info(f'Targeting crop {closest_crop_id} which is {stretch} away at world: '
+                      f'{closest_crop_world_position}, local: {closest_crop_position}')
         self.next_punch_y_position = closest_crop_position.y
         return stretch
 
