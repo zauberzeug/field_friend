@@ -78,7 +78,7 @@ class PlantProvider(rosys.persistence.PersistentModule):
         raise ValueError(f'Plant with ID {plant_id} not found')
 
     async def add_weed(self, weed: Plant) -> None:
-        if check_if_plant_exists(weed, self.weeds, 0.04):
+        if check_if_plant_exists(weed, self.weeds, 0.02):
             return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()
