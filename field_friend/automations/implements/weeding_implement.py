@@ -145,7 +145,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         }
 
         # keep crops safe by pushing weeds away so the implement does not accidentally hit a crop
-        # TODO: is not gonna work for tornado because of crop_safety_distance
         for crop, crop_position in sorted_crops.items():
             for weed, weed_position in upcoming_weed_positions.items():
                 offset = self.system.field_friend.DRILL_RADIUS + \
