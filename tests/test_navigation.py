@@ -56,11 +56,11 @@ async def test_approaching_first_row(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-async def test_not_approaching_first_row_when_outside_field(system: System, field: Field):
+async def test_approaching_first_row_when_outside_of_field(system: System, field: Field):
     async def drive_away():
         await system.driver.drive_to(rosys.geometry.Point(x=-5, y=0))
     system.automator.start(drive_away())
-    await forward(22)
+    await forward(50)
     assert not system.automator.is_running
 
     system.field_navigation.field = field
@@ -78,8 +78,9 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     system.automator.start()
     assert field.reference
     await forward(1)  # update gnss reference to use the fields reference
-    point = rosys.geometry.Point(x=1.50, y=-6.1)
+    point = rosys.geometry.Point(x=1.54, y=-6.1)
     await forward(x=point.x, y=point.y, tolerance=0.01)  # drive until we are on first row
+    await forward(2)
     assert system.field_navigation.state == system.field_navigation.State.FOLLOWING_ROW
     system.automator.stop(because='test')
     await forward(2)
