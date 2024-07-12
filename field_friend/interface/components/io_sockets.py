@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import rosys
-from nicegui import background_tasks, ui
+from nicegui import ui
 
 from .status_bulb import StatusBulb as status_bulb
 
@@ -18,13 +18,12 @@ class io_sockets:
 
     def __init__(self, system: System) -> None:
         self.system = system
-        if isinstance(system.field_friend, rosys.hardware.RobotHardware):
-            self.robot_brain = system.field_friend.robot_brain
         with ui.card().style('min-width: 200px; background-color: #3E63A6') as bumper_card:
             ui.markdown('**Bumper**').classes('w-full text-center')
             ui.separator()
             if self.system.field_friend.bumper is not None:
                 with ui.row():
+                   # TODO test the bumpers because U3 have no Bumpers
                     status_bulb(True).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
                                                            lambda active_bumpers: True if 'front_top' in active_bumpers else False)
                     status_bulb(False).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
@@ -119,13 +118,19 @@ class io_sockets:
             ui.separator()
             if self.system.field_friend.wheels is not None:
                 if self.system.is_real:
-                    # TODO: can messages testen
                     with ui.row():
-                        if self.system.field_friend.wheels:
-                            status_bulb(True)
-                        else:
-                            status_bulb(False)
-                        ui.label('Moving')
+                        print(self.system.field_friend.wheels.linear_target_speed)
+                        status_bulb(True).bind_visibility_from(
+                            self.system.field_friend.wheels, 'linear_target_speed', lambda x: x > 0 or x < 0)
+                        status_bulb(False).bind_visibility_from(
+                            self.system.field_friend.wheels, 'linear_target_speed', lambda x: x == 0)
+                        ui.label('Forward/Backwards')
+                    with ui.row():
+                        status_bulb(True).bind_visibility_from(
+                            self.system.field_friend.wheels, 'angular_target_speed', lambda x: x > 0 or x < 0)
+                        status_bulb(False).bind_visibility_from(
+                            self.system.field_friend.wheels, 'angular_target_speed', lambda x: x == 0)
+                        ui.label('Turning')
                 else:
                     with ui.row():
                         if self.system.field_friend.wheels:
@@ -149,30 +154,20 @@ class io_sockets:
                 ui.icon("link_off").props("size=lg").style(
                     "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
         with ui.card().style('min-width: 200px; background-color: #3E63A6') as batterie_control_card:
-            ui.markdown('**Battery-Control**').classes('w-full text-center')
+            ui.markdown('**Battery**').classes('w-full text-center')
             ui.separator()
-            if self.system.is_real and self.system.field_friend.battery_control is not None:
+            if self.system.is_real:
                 with ui.row():
-                    status_bulb(True).bind_visibility_from(self.system.field_friend.battery_control, 'status')
+                    status_bulb(True).bind_visibility_from(
+                        self.system.field_friend.bms.state, 'percentage', lambda x: x < 20)
                     status_bulb(False).bind_visibility_from(
-                        self.system.field_friend.battery_control, 'status', lambda x: not x)
-                    ui.label('Status')
+                        self.system.field_friend.bms.state, 'percentage', lambda x: x >= 20)
+                    ui.label('Battery Low (< 20%)')
+                with ui.row():
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.bms.state, 'is_charging')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.bms.state, 'is_charging', lambda x: not x)
+                    ui.label('Is Charging')
             else:
                 ui.icon("link_off").props("size=lg").style(
                     "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
-        if self.system.is_real:
-            with ui.card().style('min-width: 200px; background-color: #3E63A6') as batterie_control_card:
-                ui.markdown('**Expander**').classes('w-full text-center')
-                ui.separator()
-                with ui.row():
-                    # TODO add check if the enable pin of expander is active
-                    if True:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
-                    ui.label('Enabled')
-
-    def set_modules(self) -> None:
-        self.module_row.clear()
-        with self.module_row:
-            ui.label('Get Modules')

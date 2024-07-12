@@ -13,9 +13,6 @@ class io_page():
 
     def __init__(self, page_wrapper, system: 'System') -> None:
         self.system = system
-        if isinstance(system.field_friend, rosys.hardware.RobotHardware):
-            print(self.system.field_friend.robot_brain)
-        # self.hardwaremanager = HardwareManager(self.system.field_friend.robot_brain)
 
         @ui.page('/io')
         def page() -> None:
@@ -30,24 +27,22 @@ class io_page():
                 ui.markdown('**E-Stops**').classes('w-full text-center')
                 ui.separator()
                 with ui.row():
-                    if self.system.field_friend.estop.is_soft_estop_active:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.estop, 'is_soft_estop_active')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.estop, 'is_soft_estop_active', lambda x: not x)
                     ui.label('Soft E-Stop')
                 if self.system.is_real:
                     with ui.row():
+                        # TODO: Need to test this, because not sure if '1' and '2' are correct)
+                        status_bulb(True).bind_visibility_from(self.system.field_friend.estop,
+                                                               'pressed_estops', lambda pressed_estops: '1' in pressed_estops)
+                        status_bulb(False).bind_visibility_from(
+                            self.system.field_friend.estop, 'pressed_estops', lambda pressed_estops: '1' not in pressed_estops or not pressed_estops)
                         ui.label('Hard E-Stop 1')
-                        if self.system.field_friend.estop.pressed_estops:
-                            status_bulb(True)
-                        else:
-                            status_bulb(False)
                     with ui.row():
+                        status_bulb(True).bind_visibility_from(self.system.field_friend.estop,
+                                                               'pressed_estops', lambda pressed_estops: '2' in pressed_estops)
+                        status_bulb(False).bind_visibility_from(
+                            self.system.field_friend.estop, 'pressed_estops', lambda pressed_estops: '2' not in pressed_estops or not pressed_estops)
                         ui.label('Hard E-Stop 2')
-                        if self.system.field_friend.estop.pressed_estops:
-                            status_bulb(True)
-                        else:
-                            status_bulb(False)
-                print(self.system.field_friend.estop.pressed_estops)
-                print(self.system.field_friend.estop.is_soft_estop_active)
             io_sockets(self.system)
