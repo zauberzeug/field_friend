@@ -1,3 +1,4 @@
+import asyncio
 from random import randint
 from typing import TYPE_CHECKING, Any
 
@@ -34,10 +35,17 @@ class StraightLineNavigation(Navigation):
         await self.implement.deactivate()
 
     async def _drive(self, distance: float):
-        target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
-        # self.log.info(f'driving to {target}')
+        origin = self.odometer.prediction.point
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.drive_to(target)
+            deadline = rosys.time() + 2
+            try:
+                while self.odometer.prediction.point.distance(origin) < distance:
+                    if rosys.time() >= deadline:
+                        raise Exception('Driving Timeout')
+                    await self.driver.wheels.drive(*self.driver._throttle(1, 0.002))
+                    await asyncio.sleep(0)
+            finally:
+                await self.driver.wheels.stop()
 
     def _should_finish(self):
         distance = self.odometer.prediction.point.distance(self.start_position)
