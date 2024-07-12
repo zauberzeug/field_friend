@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import background_tasks, ui
 
-from .status_bulb import status_bulb
+from .status_bulb import StatusBulb as status_bulb
 
 if TYPE_CHECKING:
     from ...system import System
@@ -25,132 +25,141 @@ class io_sockets:
             ui.separator()
             if self.system.field_friend.bumper is not None:
                 with ui.row():
-                    if 'front_top' in self.system.field_friend.bumper.active_bumpers:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
+                                                           lambda active_bumpers: True if 'front_top' in active_bumpers else False)
+                    status_bulb(False).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
+                                                            lambda active_bumpers: not (True if 'front_top' in active_bumpers else False))
                     ui.label('Front Top Bumper')
                 with ui.row():
-                    if 'front_bottom' in self.system.field_friend.bumper.active_bumpers:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
+                                                           lambda active_bumpers: True if 'front_bottom' in active_bumpers else False)
+                    status_bulb(False).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
+                                                            lambda active_bumpers: not (True if 'front_bottom' in active_bumpers else False))
                     ui.label('Front Bottom Bumper')
                 with ui.row():
-                    if 'back' in self.system.field_friend.bumper.active_bumpers:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
+                                                           lambda active_bumpers: True if 'back' in active_bumpers else False)
+                    status_bulb(False).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
+                                                            lambda active_bumpers: not (True if 'back' in active_bumpers else False))
                     ui.label('Back Bumper')
-        if self.system.field_friend.y_axis is not None:
-            with ui.card().style('min-width: 200px; background-color: #3E63A6') as y_axis_card:
-                ui.markdown('**Y-Axis**').classes('w-full text-center')
-                ui.separator()
+            else:
+                ui.icon("link_off").props("size=lg").style(
+                    "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+        with ui.card().style('min-width: 200px; background-color: #3E63A6') as y_axis_card:
+            ui.markdown('**Y-Axis**').classes('w-full text-center')
+            ui.separator()
+            if self.system.field_friend.y_axis is not None:
                 with ui.row():
-                    if self.system.field_friend.y_axis.alarm:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.y_axis, 'alarm')
+                    status_bulb(False).bind_visibility_from(self.system.field_friend.y_axis, 'alarm', lambda x: not x)
                     ui.label('Alarm')
                 with ui.row():
-                    if self.system.field_friend.y_axis.end_l:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.y_axis, 'end_l')
+                    status_bulb(False).bind_visibility_from(self.system.field_friend.y_axis, 'end_l', lambda x: not x)
                     ui.label('Left End Switch')
                 with ui.row():
-                    if self.system.field_friend.y_axis.end_r:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.y_axis, 'end_r')
+                    status_bulb(False).bind_visibility_from(self.system.field_friend.y_axis, 'end_r', lambda x: not x)
                     ui.label('Right End Switch')
                 with ui.row():
+                    # TODO check if this is correct
                     if self.system.field_friend.y_axis.steps:
                         status_bulb(True)
                     else:
                         status_bulb(False)
                     ui.label('Step')
                 with ui.row():
+                    # TODO add this
                     # if self.system.field_friend.y_axis.direction:
                     #     status_bulb(True)
                     # else:
                     #     status_bulb(False)
                     ui.label('Direction')
-        if self.system.field_friend.z_axis is not None:
-            with ui.card().style('min-width: 200px; background-color: #3E63A6') as z_axis_card:
-                ui.markdown('**Z-Axis**').classes('w-full text-center')
-                ui.separator()
+            else:
+                ui.icon("link_off").props("size=lg").style(
+                    "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+        with ui.card().style('min-width: 200px; background-color: #3E63A6') as z_axis_card:
+            ui.markdown('**Z-Axis**').classes('w-full text-center')
+            ui.separator()
+            if self.system.field_friend.z_axis is not None:
                 with ui.row():
-                    if self.system.field_friend.z_axis.end_top:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.z_axis, 'end_top')
+                    status_bulb(False).bind_visibility_from(self.system.field_friend.z_axis, 'end_top', lambda x: not x)
                     ui.label('End Top Switch')
                 with ui.row():
-                    if self.system.field_friend.z_axis.end_bottom:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.z_axis, 'end_bottom')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.z_axis, 'end_bottom', lambda x: not x)
                     ui.label('End Bottom Switch')
                 with ui.row():
-                    if self.system.field_friend.z_axis.ref_motor:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.z_axis, 'ref_motor')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.z_axis, 'ref_motor', lambda x: not x)
                     ui.label('Ref Motor')
                 with ui.row():
-                    if self.system.field_friend.z_axis.ref_gear:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.z_axis, 'ref_gear')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.z_axis, 'ref_gear', lambda x: not x)
                     ui.label('Ref Gear')
                 with ui.row():
-                    if self.system.field_friend.z_axis.ref_knife_stop:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.z_axis, 'ref_knife_stop')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.z_axis, 'ref_knife_stop', lambda x: not x)
                     ui.label('Ref Knife Stop')
                 with ui.row():
-                    if self.system.field_friend.z_axis.ref_knife_ground:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.z_axis, 'ref_knife_ground')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.z_axis, 'ref_knife_ground', lambda x: not x)
                     ui.label('Ref Knife Ground')
+            else:
+                ui.icon("link_off").props("size=lg").style(
+                    "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+        with ui.card().style('min-width: 200px; background-color: #3E63A6') as wheels_card:
+            ui.markdown('**Wheels**').classes('w-full text-center')
+            ui.separator()
             if self.system.field_friend.wheels is not None:
-                with ui.card().style('min-width: 200px; background-color: #3E63A6') as wheels_card:
-                    ui.markdown('**Wheels**').classes('w-full text-center')
-                    ui.separator()
-                    if self.system.is_real:
-                        # TODO: can messages testen
-                        with ui.row():
-                            if self.system.field_friend.wheels:
-                                status_bulb(True)
-                            else:
-                                status_bulb(False)
-                            ui.label('Moving')
-                    else:
-                        with ui.row():
-                            if self.system.field_friend.wheels:
-                                status_bulb(True)
-                            else:
-                                status_bulb(False)
-                            ui.label('Connected')
-            with ui.card().style('min-width: 200px; background-color: #3E63A6') as flashlight_card:
-                ui.markdown('**Flashlight**').classes('w-full text-center')
-                ui.separator()
-                if self.system.field_friend.flashlight is not None:
+                if self.system.is_real:
+                    # TODO: can messages testen
                     with ui.row():
-                        if self.system.field_friend.flashlight.is_active:
+                        if self.system.field_friend.wheels:
                             status_bulb(True)
                         else:
                             status_bulb(False)
-                        ui.label('Turned On')
+                        ui.label('Moving')
                 else:
-                    ui.icon("link_off").props("size=lg").style(
-                        "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+                    with ui.row():
+                        if self.system.field_friend.wheels:
+                            status_bulb(True).bind_visibility_from(self.system.field_friend.wheels)
+                        else:
+                            status_bulb(False)
+                        ui.label('Connected')
+            else:
+                ui.icon("link_off").props("size=lg").style(
+                    "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+        with ui.card().style('min-width: 200px; background-color: #3E63A6') as flashlight_card:
+            ui.markdown('**Flashlight**').classes('w-full text-center')
+            ui.separator()
+            if self.system.field_friend.flashlight is not None:
+                with ui.row():
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.flashlight, 'is_active')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.flashlight, 'is_active', lambda x: not x)
+                    ui.label('Turned On')
+            else:
+                ui.icon("link_off").props("size=lg").style(
+                    "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
         with ui.card().style('min-width: 200px; background-color: #3E63A6') as batterie_control_card:
             ui.markdown('**Battery-Control**').classes('w-full text-center')
             ui.separator()
+            if self.system.is_real and self.system.field_friend.battery_control is not None:
+                with ui.row():
+                    status_bulb(True).bind_visibility_from(self.system.field_friend.battery_control, 'status')
+                    status_bulb(False).bind_visibility_from(
+                        self.system.field_friend.battery_control, 'status', lambda x: not x)
+                    ui.label('Status')
+            else:
+                ui.icon("link_off").props("size=lg").style(
+                    "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
         if self.system.is_real:
             with ui.card().style('min-width: 200px; background-color: #3E63A6') as batterie_control_card:
                 ui.markdown('**Expander**').classes('w-full text-center')
