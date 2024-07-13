@@ -36,16 +36,16 @@ class StraightLineNavigation(Navigation):
 
     async def _drive(self, distance: float):
         origin = self.odometer.prediction.point
+        deadline = rosys.time() + 2
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            deadline = rosys.time() + 2
-            try:
-                while self.odometer.prediction.point.distance(origin) < distance:
-                    if rosys.time() >= deadline:
-                        raise Exception('Driving Timeout')
-                    await self.driver.wheels.drive(*self.driver._throttle(1, 0.002))
-                    await asyncio.sleep(0)
-            finally:
-                await self.driver.wheels.stop()
+            await self.driver.wheels.drive(*self.driver._throttle(1, 0.001))  # pylint: disable=protected-access
+        try:
+            while self.odometer.prediction.point.distance(origin) < distance:
+                if rosys.time() >= deadline:
+                    raise TimeoutError('Driving Timeout')
+                await asyncio.sleep(0)
+        finally:
+            await self.driver.wheels.stop()
 
     def _should_finish(self):
         distance = self.odometer.prediction.point.distance(self.start_position)
