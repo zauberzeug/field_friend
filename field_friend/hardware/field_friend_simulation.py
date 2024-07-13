@@ -37,7 +37,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             self.CHOP_RADIUS = config_params['chop_radius']
         else:
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
-        wheels = rosys.hardware.WheelsSimulation()
+        wheels = rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
 
         y_axis: YAxisSimulation | ChainAxisSimulation | None
         if config_hardware['y_axis']['version'] == 'chain_axis':
