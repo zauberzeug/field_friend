@@ -22,6 +22,53 @@ async def test_straight_line(system: System):
     assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
 
 
+async def test_driving_to_exact_positions(system: System):
+    class Stopper(Implement):
+        def __init__(self, system: System) -> None:
+            super().__init__('Stopper')
+            self.system = system
+            self.current_stretch = 0.0
+            self.workflow_started = False
+
+        async def get_stretch(self, max_distance: float) -> float:
+            self.current_stretch = random.uniform(0.02, max_distance)
+            return self.current_stretch
+
+        async def start_workflow(self) -> bool:
+            self.workflow_started = True
+            deadline = rosys.time() + 1
+            while self.workflow_started and rosys.time() < deadline:
+                await rosys.sleep(0.1)
+            self.workflow_started = False
+            return True
+
+    system.current_implement = stopper = Stopper(system)
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.linear_speed_limit = 0.05  # drive really slow so we can archive the accuracy tested below
+    system.automator.start()
+
+    await forward(until=lambda: system.automator.is_running, dt=0.01)
+    for _ in range(20):
+        old_position = system.odometer.prediction.point
+        await forward(until=lambda: stopper.workflow_started and system.automator.is_running, dt=0.01)
+        distance = old_position.distance(system.odometer.prediction.point)
+        assert distance == pytest.approx(stopper.current_stretch, abs=0.001)
+        stopper.workflow_started = False
+        await forward(0.1)  # give robot time to update position
+
+
+async def test_driving_straight_line_with_slippage(system: System):
+    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = 1.0
+    system.field_friend.wheels.slip_factor_right = 0.05
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.odometer.prediction.point.x == pytest.approx(1.0, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.1)
+
+
 async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(10):
         x = i/10.0
@@ -97,50 +144,3 @@ async def test_coverage_navigation(system: System, field: Field):
     system.current_navigation = system.field_navigation
     system.automator.start()
     # TODO implement test
-
-
-async def test_driving_to_exact_positions(system: System):
-    class Stopper(Implement):
-        def __init__(self, system: System) -> None:
-            super().__init__('Stopper')
-            self.system = system
-            self.current_stretch = 0.0
-            self.workflow_started = False
-
-        async def get_stretch(self, max_distance: float) -> float:
-            self.current_stretch = random.uniform(0.02, max_distance)
-            return self.current_stretch
-
-        async def start_workflow(self) -> bool:
-            self.workflow_started = True
-            deadline = rosys.time() + 1
-            while self.workflow_started and rosys.time() < deadline:
-                await rosys.sleep(0.1)
-            self.workflow_started = False
-            return True
-
-    system.current_implement = stopper = Stopper(system)
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.linear_speed_limit = 0.05  # drive really slow so we can archive the accuracy tested below
-    system.automator.start()
-
-    await forward(until=lambda: system.automator.is_running, dt=0.01)
-    for _ in range(20):
-        old_position = system.odometer.prediction.point
-        await forward(until=lambda: stopper.workflow_started and system.automator.is_running, dt=0.01)
-        distance = old_position.distance(system.odometer.prediction.point)
-        assert distance == pytest.approx(stopper.current_stretch, abs=0.001)
-        stopper.workflow_started = False
-        await forward(0.1)  # give robot time to update position
-
-
-async def test_driving_straight_line_with_slippage(system: System):
-    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.length = 1.0
-    system.field_friend.wheels.slip_factor_right = 0.05
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.point.x == pytest.approx(1.0, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.1)
