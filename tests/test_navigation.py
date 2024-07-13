@@ -16,9 +16,8 @@ async def test_straight_line(system: System):
     assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
-    await forward(2)
-    assert system.automator.is_running
-    await forward(55)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert not system.automator.is_running, 'automation should stop after default length'
     assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
 
@@ -133,3 +132,15 @@ async def test_driving_to_exact_positions(system: System):
         assert distance == pytest.approx(stopper.current_stretch, abs=0.001)
         stopper.workflow_started = False
         await forward(0.1)  # give robot time to update position
+
+
+async def test_driving_straight_line_with_slippage(system: System):
+    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = 1.0
+    system.field_friend.wheels.slip_factor_right = 0.05
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.odometer.prediction.point.x == pytest.approx(1.0, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.1)

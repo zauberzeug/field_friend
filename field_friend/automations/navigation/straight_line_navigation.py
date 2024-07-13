@@ -23,10 +23,14 @@ class StraightLineNavigation(Navigation):
         self.name = 'Straight Line'
         self.linear_speed_limit = 0.125
         self.angular_speed_limit = 0.1
+        self.target: rosys.geometry.Point
+        self.path: rosys.geometry.Line
 
     async def prepare(self) -> bool:
         await super().prepare()
         self.log.info(f'Activating {self.implement.name}...')
+        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=self.length, y=0))
+        self.path = rosys.geometry.Line.from_points(self.odometer.prediction.point, self.target)
         await self.implement.activate()
         return True
 
@@ -35,15 +39,19 @@ class StraightLineNavigation(Navigation):
         await self.implement.deactivate()
 
     async def _drive(self, distance: float):
-        origin = self.odometer.prediction.point
+        start_position = self.odometer.prediction.point
+        closest_point = self.path.foot_point(start_position)
+        local_target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=start_position.direction(self.target), time=0) \
+            .transform(rosys.geometry.Point(x=0.5, y=0))
+        yaw = start_position.direction(local_target)
         deadline = rosys.time() + 2
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.wheels.drive(*self.driver._throttle(1, 0.001))  # pylint: disable=protected-access
+            await self.driver.wheels.drive(*self.driver._throttle(1, yaw))  # pylint: disable=protected-access
         try:
-            while self.odometer.prediction.point.distance(origin) < distance:
+            while self.odometer.prediction.point.distance(start_position) < distance:
                 if rosys.time() >= deadline:
                     raise TimeoutError('Driving Timeout')
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.01)
         finally:
             await self.driver.wheels.stop()
 
