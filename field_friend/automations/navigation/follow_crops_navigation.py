@@ -53,15 +53,14 @@ class FollowCropsNavigation(Navigation):
             # Calculate a point 0.3 meters in front of the robot along the line
             x_front = self.odometer.prediction.point.x + 0.3 * np.cos(yaw)
             y_front = m * x_front + c
-            point_front = np.array([x_front, y_front])
 
             # Calculate the desired yaw angle from the robot's current position to the front point
-            delta_x = point_front[0] - self.odometer.prediction.point.x
-            delta_y = point_front[1] - self.odometer.prediction.point.y
-            yaw_of_row = np.arctan2(delta_y, delta_x)
+            delta_x = x_front - self.odometer.prediction.point.x
+            delta_y = y_front - self.odometer.prediction.point.y
+            target_yaw = np.arctan2(delta_y, delta_x)
         else:
-            yaw_of_row = self.odometer.prediction.yaw
-        target_yaw = self.combine_angles(yaw_of_row, self.crop_attraction, self.odometer.prediction.yaw)
+            target_yaw = self.odometer.prediction.yaw
+        target_yaw = self.combine_angles(target_yaw, self.crop_attraction, self.odometer.prediction.yaw)
         # self.log.info(f'following crops with target yaw {target_yaw}')
         target = self.odometer.prediction.point.polar(distance, target_yaw)
         # self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
