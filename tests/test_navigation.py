@@ -1,5 +1,6 @@
 import random
 
+import numpy as np
 import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
@@ -84,6 +85,21 @@ async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimul
     assert system.odometer.prediction.point.x == pytest.approx(1.4, abs=0.1)
     assert system.odometer.prediction.point.y == pytest.approx(0.6, abs=0.1)
     assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=5.0)
+
+
+async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
+    for i in range(10):
+        x = i/10.0
+        p = rosys.geometry.Point3d(x=x, y=np.sin(x/2), z=0)
+        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
+    system.current_navigation = system.follow_crops_navigation
+    system.field_friend.wheels.slip_factor_right = 0.05
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.odometer.prediction.point.x == pytest.approx(1.37, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0.6, abs=0.1)
 
 
 async def test_approaching_first_row(system: System, field: Field):
