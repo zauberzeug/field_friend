@@ -21,8 +21,6 @@ class StraightLineNavigation(Navigation):
         self.detector = system.detector
         self.length = 2.0
         self.name = 'Straight Line'
-        self.linear_speed_limit = 0.125
-        self.angular_speed_limit = 0.1
         self.origin: rosys.geometry.Point
         self.target: rosys.geometry.Point
 
@@ -43,20 +41,7 @@ class StraightLineNavigation(Navigation):
         closest_point = rosys.geometry.Line.from_points(self.origin, self.target).foot_point(start_position)
         local_target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=start_position.direction(self.target), time=0) \
             .transform(rosys.geometry.Point(x=1, y=0))
-        await self._drive_with_yaw(distance, start_position.direction(local_target))
-
-    async def _drive_with_yaw(self, distance: float, yaw: float):
-        deadline = rosys.time() + 2
-        start_position = self.odometer.prediction.point
-        with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.wheels.drive(*self.driver._throttle(1, yaw))  # pylint: disable=protected-access
-        try:
-            while self.odometer.prediction.point.distance(start_position) < distance:
-                if rosys.time() >= deadline:
-                    raise TimeoutError('Driving Timeout')
-                await rosys.sleep(0.01)
-        finally:
-            await self.driver.wheels.stop()
+        await self._drive_to_yaw(distance, start_position.direction(local_target))
 
     def _should_finish(self):
         end_pose = rosys.geometry.Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)

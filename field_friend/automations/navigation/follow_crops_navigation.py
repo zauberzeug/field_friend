@@ -50,22 +50,14 @@ class FollowCropsNavigation(Navigation):
             if np.abs(yaw - self.odometer.prediction.yaw) > math.pi / 2:
                 yaw = yaw + math.pi
 
-            # Calculate a point 0.3 meters in front of the robot along the line
-            x_front = self.odometer.prediction.point.x + 0.3 * np.cos(yaw)
-            y_front = m * x_front + c
-
-            # Calculate the desired yaw angle from the robot's current position to the front point
-            delta_x = x_front - self.odometer.prediction.point.x
-            delta_y = y_front - self.odometer.prediction.point.y
-            target_yaw = np.arctan2(delta_y, delta_x)
+            fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
+            closest_point = fitted_line.foot_point(self.odometer.prediction.point)
+            front_point = closest_point.polar(0.3, yaw)
+            target_yaw = self.odometer.prediction.point.direction(front_point)
         else:
             target_yaw = self.odometer.prediction.yaw
         target_yaw = self.combine_angles(target_yaw, self.crop_attraction, self.odometer.prediction.yaw)
-        # self.log.info(f'following crops with target yaw {target_yaw}')
-        target = self.odometer.prediction.point.polar(distance, target_yaw)
-        # self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
-        with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
-            await self.driver.drive_to(target)
+        await self._drive_to_yaw(distance, target_yaw)
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
         weight1 = influence
@@ -82,7 +74,8 @@ class FollowCropsNavigation(Navigation):
     def create_simulation(self):
         for i in range(100):
             x = i/10.0
-            p = rosys.geometry.Point3d(x=x, y=np.sin(x/2), z=0)
+            p = rosys.geometry.Point3d(x=x, y=(x/4) ** 3, z=0)
+            p = self.odometer.prediction.transform3d(p)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
 
     def _should_finish(self) -> bool:
