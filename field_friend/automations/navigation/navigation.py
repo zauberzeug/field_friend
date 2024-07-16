@@ -16,6 +16,8 @@ class WorkflowException(Exception):
 
 
 class Navigation(rosys.persistence.PersistentModule):
+    MAX_STRETCH_DISTANCE = 0.05
+    DEFAULT_DRIVE_DISTANCE = 0.02
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__()
@@ -26,13 +28,12 @@ class Navigation(rosys.persistence.PersistentModule):
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
         self.implement = implement
+        self.detector = system.detector
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
 
     async def start(self) -> None:
         try:
-            if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
-                self.create_simulation()
             if not await self.implement.prepare():
                 self.log.error('Tool-Preparation failed')
                 return
@@ -40,17 +41,16 @@ class Navigation(rosys.persistence.PersistentModule):
                 self.log.error('Preparation failed')
                 return
             self.start_position = self.odometer.prediction.point
+            if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
+                self.create_simulation()
             while not self._should_finish():
-                await rosys.automation.parallelize(
-                    self.implement.observe(),
-                    self._proceed(),
-                    return_when_first_completed=True
-                )
-                if not self._should_finish():
-                    should_advance = await self.implement.start_workflow()
-                    await self.implement.stop_workflow()
-                    if should_advance:
-                        await self._drive()
+                distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
+                if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
+                    await self._drive(self.DEFAULT_DRIVE_DISTANCE)
+                    continue
+                await self._drive(distance)
+                await self.implement.start_workflow()
+                await self.implement.stop_workflow()
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
@@ -64,17 +64,17 @@ class Navigation(rosys.persistence.PersistentModule):
         """Prepares the navigation for the start of the automation
 
         Returns true if all preparations were successful, otherwise false."""
+        self.plant_provider.clear()
+        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
+            self.detector.simulated_objects = []
+        self.log.info('clearing plant provider')
         return True
 
     async def finish(self) -> None:
         """Executed after the navigation is done"""
 
-    async def _proceed(self):
-        while not self._should_finish():
-            await self._drive()
-
     @abc.abstractmethod
-    async def _drive(self) -> None:
+    async def _drive(self, distance: float) -> None:
         """Drives the vehicle forward
 
         This should only advance the robot by a small distance, e.g. 2 cm 

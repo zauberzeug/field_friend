@@ -58,7 +58,7 @@ async def test_approaching_first_row(system: System, field: Field):
 
 async def test_approaching_first_row_when_outside_of_field(system: System, field: Field):
     async def drive_away():
-        await system.driver.drive_to(rosys.geometry.Point(x=-5, y=0))
+        await system.driver.drive_to(rosys.geometry.Point(x=-5, y=0), backward=True)
     system.automator.start(drive_away())
     await forward(50)
     assert not system.automator.is_running

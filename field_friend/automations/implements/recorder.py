@@ -27,7 +27,3 @@ class Recorder(Implement):
         self.system.plant_locator.pause()
         await self.system.field_friend.flashlight.turn_off()
         await super().deactivate()
-
-    async def observe(self) -> None:
-        while True:
-            await rosys.sleep(0.5)

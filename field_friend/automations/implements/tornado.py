@@ -1,4 +1,5 @@
 
+from collections import deque
 from typing import TYPE_CHECKING, Any
 
 import rosys
@@ -20,53 +21,75 @@ class Tornado(WeedingImplement):
         self.drill_between_crops: bool = False
         self.field_friend = system.field_friend
 
-    async def start_workflow(self) -> bool:
+    async def start_workflow(self) -> None:
         await super().start_workflow()
         self.log.info('Performing Tornado Workflow..')
         try:
-            closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
-            target_world_position = self.system.odometer.prediction.transform(closest_crop_position)
-            self.log.info(f'closest crop position: relative={closest_crop_position} world={target_world_position}')
-            # fist check if the closest crop is in the working area
-            if closest_crop_position.x >= self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
-                self.log.info('closest crop is out of working area')
-                return True
-            self.log.info(f'target next crop at {closest_crop_position}')
-            if self.system.field_friend.can_reach(closest_crop_position) \
-                    and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
-                self.log.info('drilling crop')
-                open_drill = False
-                if self.drill_with_open_tornado and not self._crops_in_drill_range(closest_crop_id, closest_crop_position, 0):
-                    open_drill = True
-                await self.system.puncher.drive_and_punch(plant_id=closest_crop_id,
-                                                          x=closest_crop_position.x,
-                                                          y=closest_crop_position.y,
-                                                          angle=self.tornado_angle,
-                                                          with_open_tornado=open_drill,
-                                                          with_punch_check=self.with_punch_check)
-                # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
-                if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
-                    # remove the simulated weeds
-                    inner_radius = 0.025  # TODO compute inner radius according to tornado angle
-                    outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
-                    self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
-                                                              if not (inner_radius <= obj.position.projection().distance(target_world_position) <= outer_radius)]
-
-            return True
+            # TODO: do we need to set self.next_crop_id = '' on every return?
+            punch_position = self.system.odometer.prediction.transform(
+                rosys.geometry.Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
+            self.last_punches.append(punch_position)
+            self.log.info(f'Drilling crop at {punch_position} with angle {self.tornado_angle}°')
+            open_drill = False
+            if self.drill_with_open_tornado:
+                open_drill = True
+            await self.system.puncher.punch(y=self.next_punch_y_position, angle=self.tornado_angle, with_open_tornado=open_drill)
+            # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
+            if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
+                # remove the simulated weeds
+                inner_radius = 0.025  # TODO compute inner radius according to tornado angle
+                outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
+                # inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(self.tornado_angle)
+                # inner_radius = inner_diameter / 2
+                # outer_radius = outer_diameter / 2
+                self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
+                                                          if not (inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius)]
+                self.log.info(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
         except PuncherException:
             self.log.error('Error in Tornado Workflow')
-            return True
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
-    def _has_plants_to_handle(self) -> bool:
+    async def get_stretch(self, max_distance: float) -> float:
+        await super().get_stretch(max_distance)
         super()._has_plants_to_handle()
-        return any(self.crops_to_handle)
+        if len(self.crops_to_handle) == 0:
+            return self.WORKING_DISTANCE
+        closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+        closest_crop_world_position = self.system.odometer.prediction.transform(closest_crop_position)
+
+        # for p in self.last_punches:
+        #     self.log.info(f'Last punch: {p} - {p.distance(closest_crop_world_position)} - {self.crop_safety_distance} - {closest_crop_world_position}')
+        if any(p.distance(closest_crop_world_position) < self.field_friend.DRILL_RADIUS for p in self.last_punches):
+            self.log.info('Skipping weed because it was already punched')
+            return self.WORKING_DISTANCE
+        if not self.system.field_friend.can_reach(closest_crop_position):
+            self.log.info('Target crop is not reachable')
+            return self.WORKING_DISTANCE
+        if closest_crop_position.x >= self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
+            self.log.info('Closest crop is out of working area')
+            return self.WORKING_DISTANCE
+        if self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
+            self.log.info('Crops in drill range')
+            return self.WORKING_DISTANCE
+
+        stretch = closest_crop_position.x - self.system.field_friend.WORK_X
+        if stretch < - self.system.field_friend.DRILL_RADIUS:
+            self.log.info(f'Skipping crop {closest_crop_id} because it is behind the robot')
+            return self.WORKING_DISTANCE
+        if stretch < 0:
+            stretch = 0
+        self.log.info(f'Targeting crop {closest_crop_id} which is {stretch} away at world: '
+                      f'{closest_crop_world_position}, local: {closest_crop_position}')
+        if stretch < max_distance and await self.ask_for_punch(closest_crop_id):
+            self.next_punch_y_position = closest_crop_position.y
+            return stretch
+        return self.WORKING_DISTANCE
 
     def _crops_in_drill_range(self, crop_id: str, crop_position: rosys.geometry.Point, angle: float) -> bool:
         inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
+        crop_world_position = self.system.odometer.prediction.transform(crop_position)
         for crop in self.system.plant_provider.crops:
-            crop_world_position = self.system.odometer.prediction.transform(crop_position)
             if crop.id != crop_id:
                 distance = crop_world_position.distance(crop.position)
                 if distance >= inner_diameter/2 and distance <= outer_diameter/2:

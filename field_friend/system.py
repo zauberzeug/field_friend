@@ -6,16 +6,45 @@ import numpy as np
 import psutil
 import rosys
 
-from field_friend.hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
+from field_friend.hardware import (
+    FieldFriend,
+    FieldFriendHardware,
+    FieldFriendSimulation,
+)
 from field_friend.localization.gnss_hardware import GnssHardware
 from field_friend.localization.gnss_simulation import GnssSimulation
-from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from field_friend.vision import (
+    CalibratableUsbCameraProvider,
+    CameraConfigurator,
+    SimulatedCam,
+    SimulatedCamProvider,
+)
 
-from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PathRecorder,
-                          PlantLocator, PlantProvider, Puncher)
-from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
-                                     StraightLineNavigation)
+from .automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    FieldProvider,
+    KpiProvider,
+    PathProvider,
+    PathRecorder,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+)
+from .automations.implements import (
+    ChopAndScrew,
+    Implement,
+    Recorder,
+    Tornado,
+    WeedingScrew,
+)
+from .automations.navigation import (
+    CoverageNavigation,
+    FollowCropsNavigation,
+    Navigation,
+    RowsOnFieldNavigation,
+    StraightLineNavigation,
+)
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -201,7 +230,9 @@ class System(rosys.persistence.PersistentModule):
                                                 x=0.4, z=0.4,
                                                 roll=np.deg2rad(360-150),
                                                 pitch=np.deg2rad(0),
-                                                yaw=np.deg2rad(90))
+                                                yaw=np.deg2rad(90),
+                                                color='#cccccc',
+                                                )
         self.usb_camera_provider.add_camera(camera)
         # TODO rework this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
         self.odometer.ROBOT_MOVED.register(lambda: camera.update_calibration(self.odometer.prediction))

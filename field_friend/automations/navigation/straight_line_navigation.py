@@ -24,16 +24,17 @@ class StraightLineNavigation(Navigation):
         self.angular_speed_limit = 0.1
 
     async def prepare(self) -> bool:
+        await super().prepare()
         self.log.info(f'Activating {self.implement.name}...')
-        self.plant_provider.clear()
         await self.implement.activate()
         return True
 
     async def finish(self) -> None:
+        await super().finish()
         await self.implement.deactivate()
 
-    async def _drive(self):
-        target = self.odometer.prediction.transform(rosys.geometry.Point(x=0.02, y=0))
+    async def _drive(self, distance: float):
+        target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
         # self.log.info(f'driving to {target}')
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
             await self.driver.drive_to(target)

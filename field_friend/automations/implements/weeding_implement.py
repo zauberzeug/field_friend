@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from collections import deque
 from typing import TYPE_CHECKING, Any, Optional
 
 import rosys
@@ -7,6 +9,7 @@ from rosys.geometry import Point, Pose
 
 from ...hardware import ChainAxis
 from .implement import Implement
+from .punch_dialog import PunchDialog
 
 if TYPE_CHECKING:
     from system import System
@@ -30,6 +33,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.kpi_provider = system.kpi_provider
         self.puncher = system.puncher
         self.cultivated_crop: str | None = None
+        self.crop_safety_distance: float = 0.01
         self.with_punch_check: bool = False
 
         # dual mechanism
@@ -43,7 +47,10 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.driven_distance: float = 0.0
         self.crops_to_handle: dict[str, Point] = {}
         self.weeds_to_handle: dict[str, Point] = {}
+        self.last_punches: deque[rosys.geometry.Point] = deque(maxlen=5)
+        self.next_punch_y_position: float = 0
 
+        self.punch_dialog: PunchDialog | None = None
         rosys.on_repeat(self._update_time_and_distance, 0.1)
 
     async def prepare(self) -> bool:
@@ -74,19 +81,11 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
-    async def observe(self) -> None:
-        self.log.info('checking for plants...')
-        while True:
-            if self._has_plants_to_handle():
-                return
-            await rosys.sleep(0.2)
-
-    async def start_workflow(self) -> bool:
+    async def start_workflow(self) -> None:
         await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
-            return True
+            return
         self.log.info(f'Handling plants with {self.name}...')
-        return True
 
     async def stop_workflow(self) -> None:
         self.log.info('workflow completed')
@@ -125,13 +124,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             c.id: self.system.odometer.prediction.relative_point(c.position)
             for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point)
             if self.cultivated_crop is None or c.type == self.cultivated_crop
-            and c.position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE
         }
         upcoming_crop_positions = {
             c: pos for c, pos in relative_crop_positions.items()
-            if self.system.field_friend.WORK_X < pos.x < 0.3
+            if self.system.field_friend.WORK_X - self.system.field_friend.DRILL_RADIUS < pos.x < 0.3
         }
-        # Sort the upcoming_crop_positions dictionary by the .x attribute of its values
+        # Sort the upcoming positions so nearest comes first
         sorted_crops = dict(sorted(upcoming_crop_positions.items(), key=lambda item: item[1].x))
         self.crops_to_handle = sorted_crops
 
@@ -139,13 +137,24 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             w.id: self.system.odometer.prediction.relative_point(w.position)
             for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
             if w.type in self.relevant_weeds
-            and w.position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE
         }
         upcoming_weed_positions = {
             w: pos for w, pos in relative_weed_positions.items()
-            if self.system.field_friend.WORK_X < pos.x < 0.4
+            if self.system.field_friend.WORK_X - self.system.field_friend.DRILL_RADIUS < pos.x < 0.4
         }
-        # Sort the upcoming_weed_positions dictionary by the .x attribute of its values
+
+        # keep crops safe by pushing weeds away so the implement does not accidentally hit a crop
+        for crop, crop_position in sorted_crops.items():
+            for weed, weed_position in upcoming_weed_positions.items():
+                offset = self.system.field_friend.DRILL_RADIUS + \
+                    self.crop_safety_distance - crop_position.distance(weed_position)
+                if offset > 0:
+                    safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
+                    upcoming_weed_positions[weed] = safe_weed_position
+                    self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
+                                  f'by {offset} to safe {crop} at {crop_position}')
+
+        # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds
         return False
@@ -160,6 +169,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
             'cultivated_crop': self.cultivated_crop,
+            'crop_safety_distance': self.crop_safety_distance,
             'with_punch_check': self.with_punch_check,
         }
 
@@ -168,6 +178,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
         self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
+        self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
         self.with_punch_check = data.get('with_punch_check', self.with_punch_check)
 
     def clear(self) -> None:
@@ -198,6 +209,27 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         ui.select(self.system.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \
             .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
+        ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'crop_safety_distance') \
+            .tooltip('Set the crop safety distance for the weeding automation')
         ui.checkbox('With punch check', value=True) \
             .bind_value(self, 'with_punch_check') \
             .tooltip('Set the weeding automation to check for punch')
+        self.punch_dialog = PunchDialog(self.system)
+
+    async def ask_for_punch(self, plant_id: str | None = None) -> bool:
+        if not self.with_punch_check or plant_id is None or self.punch_dialog is None:
+            return True
+        self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)
+        result: str | None = None
+        try:
+            result = await asyncio.wait_for(self.punch_dialog, timeout=self.punch_dialog.timeout)
+            if result == 'Yes':
+                self.log.info('punching was allowed')
+                return True
+        except asyncio.TimeoutError:
+            self.punch_dialog.close()
+        self.log.warning('punch was not allowed')
+        return False
