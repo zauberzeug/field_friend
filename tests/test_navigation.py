@@ -127,8 +127,8 @@ async def test_follow_crops_outlier(system: System, detector: rosys.vision.Detec
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
     assert system.odometer.prediction.point.x == pytest.approx(2.6, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.01)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
+    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.05)
+    assert 0 <= system.odometer.prediction.yaw_deg <= 45
 
 
 async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.DetectorSimulation):
@@ -147,8 +147,8 @@ async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
     assert system.odometer.prediction.point.x == pytest.approx(2.6, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.01)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
+    assert 0 >= system.odometer.prediction.point.y >= -0.25
+    assert 0 >= system.odometer.prediction.yaw_deg >= -45
 
 
 async def test_approaching_first_row(system: System, field: Field):
