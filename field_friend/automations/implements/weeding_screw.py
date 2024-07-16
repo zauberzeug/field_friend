@@ -19,7 +19,7 @@ class WeedingScrew(WeedingImplement):
         self.weed_screw_depth: float = 0.13
         self.max_crop_distance: float = 0.08
 
-    async def start_workflow(self) -> bool:
+    async def start_workflow(self) -> None:
         await super().start_workflow()
         try:
             punch_position = self.system.odometer.prediction.transform(
@@ -37,7 +37,7 @@ class WeedingScrew(WeedingImplement):
                 self.system.detector.simulated_objects = [
                     obj for obj in self.system.detector.simulated_objects
                     if obj.position.projection().distance(punch_position) > self.system.field_friend.DRILL_RADIUS]
-            return True  # NOTE no weeds to work on at this position -> advance robot
+            # NOTE no weeds to work on at this position -> advance robot
         except Exception as e:
             raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
 

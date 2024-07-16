@@ -21,7 +21,7 @@ class Tornado(WeedingImplement):
         self.drill_between_crops: bool = False
         self.field_friend = system.field_friend
 
-    async def start_workflow(self) -> bool:
+    async def start_workflow(self) -> None:
         await super().start_workflow()
         self.log.info('Performing Tornado Workflow..')
         try:
@@ -45,10 +45,8 @@ class Tornado(WeedingImplement):
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                           if not (inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius)]
                 self.log.info(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
-            return True
         except PuncherException:
             self.log.error('Error in Tornado Workflow')
-            return True
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 

@@ -81,12 +81,11 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
-    async def start_workflow(self) -> bool:
+    async def start_workflow(self) -> None:
         await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
-            return True
+            return
         self.log.info(f'Handling plants with {self.name}...')
-        return True
 
     async def stop_workflow(self) -> None:
         self.log.info('workflow completed')
