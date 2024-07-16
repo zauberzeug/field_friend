@@ -49,7 +49,7 @@ class WeedingScrew(WeedingImplement):
         if not weeds_in_range:
             self.log.info('No weeds in range')
             return self.WORKING_DISTANCE
-        self.log.info(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
+        # self.log.info(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
         for next_weed_id, next_weed_position in weeds_in_range.items():
             # next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
             weed_world_position = self.system.odometer.prediction.transform(next_weed_position)
