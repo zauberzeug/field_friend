@@ -1,13 +1,9 @@
-
-import asyncio
 import logging
 from typing import TYPE_CHECKING
 
 from nicegui import app, events, ui
 
-from .field_creator import FieldCreator
 from .key_controls import KeyControls
-from .punch_dialog import PunchDialog
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -55,24 +51,6 @@ class operation:
                 .tooltip('Select the implement to work with') \
                 .bind_value_from(self.system, 'current_implement', lambda i: i.name)
             self.implement_selection.value = self.system.current_implement.name
-
-        self.system.puncher.POSSIBLE_PUNCH.register_ui(self.can_punch)
-        self.punch_dialog = PunchDialog(self.system.usb_camera_provider,
-                                        self.system.plant_locator,
-                                        self.system.odometer)
-
-    async def can_punch(self, plant_id: str) -> None:
-        self.punch_dialog.target_plant = self.system.plant_provider.get_plant_by_id(plant_id)
-        result: str | None = None
-        try:
-            result = await asyncio.wait_for(self.punch_dialog, timeout=self.punch_dialog.timeout)
-        except asyncio.TimeoutError:
-            self.punch_dialog.close()
-            result = None
-        if result == 'Yes':
-            self.system.puncher.punch_allowed = 'allowed'
-        elif result is None or result == 'No' or result == 'Cancel':
-            self.system.puncher.punch_allowed = 'not_allowed'
 
     def handle_implement_changed(self, e: events.ValueChangeEventArguments) -> None:
         if self.system.current_implement.name != e.value:

@@ -12,7 +12,7 @@ sync(
     Folder('.', f'{args.robot}:~/field_friend', on_change=touch),
 
     # Uncomment the following lines to sync additional folders and thereby make them available on the robot:
-    Folder('../rosys/rosys', f'{args.robot}:~/field_friend/rosys', on_change=touch),
+    # Folder('../rosys/rosys', f'{args.robot}:~/field_friend/rosys', on_change=touch),
     # Folder('../nicegui/nicegui', f'{args.robot}:~/field_friend/nicegui', on_change=touch),
     # Folder('../lizard', f'{args.robot}:~/lizard', on_change=touch),
 )

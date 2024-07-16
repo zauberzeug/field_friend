@@ -25,18 +25,19 @@ class StraightLineNavigation(Navigation):
         self.target: rosys.geometry.Pose
 
     async def prepare(self) -> bool:
+        await super().prepare()
         self.target = self.odometer.prediction + rosys.geometry.PoseStep(linear=self.length, angular=0, time=0)
         self.log.info(f'Setting target pose to {self.target}')
         self.log.info(f'Activating {self.implement.name}...')
-        self.plant_provider.clear()
         await self.implement.activate()
         return True
 
     async def finish(self) -> None:
+        await super().finish()
         await self.implement.deactivate()
 
-    async def _drive(self):
-        factor: float = 0.02 / self.odometer.prediction.distance(self.target)
+    async def _drive(self, distance: float):
+        factor: float = distance / self.odometer.prediction.distance(self.target)
         local_target: rosys.geometry.Pose = self.odometer.prediction.interpolate(self.target, factor)
         # self.log.info(f'driving from {self.odometer.prediction} to local target {local_target} with factor {factor} and distance {self.odometer.prediction.distance(self.target)}')
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):

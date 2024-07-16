@@ -89,7 +89,7 @@ def configure():
             },
             'rosys': {
                 'handlers': ['console', 'debugfile'],
-                'level': 'DEBUG',
+                'level': 'INFO',
                 'propagate': False,
             },
             project: {

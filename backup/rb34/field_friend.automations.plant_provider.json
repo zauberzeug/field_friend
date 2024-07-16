@@ -1,7 +1,8 @@
 {
-    "match_distance": 0.07,
+    "match_distance": 0.1,
     "crop_spacing": 0.18,
+    "predict_crop_position": false,
     "prediction_confidence": 0.3,
-    "crop_confidence_threshold": 0.8,
-    "weed_confidence_threshold": 0.8
+    "crop_confidence_threshold": 0.6,
+    "weed_confidence_threshold": 0.35
 }

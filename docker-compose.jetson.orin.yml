@@ -6,7 +6,7 @@ services:
     privileged: true
 
   detector:
-    image: "zauberzeug/yolov5-detector:nlv0.8.8-35.4.1"
+    image: "zauberzeug/yolov5-detector:0.1.1-nlv0.10.9-35.4.1"
     restart: always
     ports:
       - "8004:80"
@@ -20,7 +20,7 @@ services:
       - ~/data_plants:/data
 
   # detector:
-  #   image: "zauberzeug/yolov5-detector:nlv0.8.8-35.4.1"
+  #   image: "zauberzeug/yolov5-detector:0.1.1-nlv0.10.9-35.4.1"
   #   restart: always
   #   ports:
   #     - "8004:80"
@@ -34,7 +34,7 @@ services:
   #     - ~/data_coins:/data
 
   monitoring:
-    image: "zauberzeug/yolov5-detector:nlv0.8.8-35.4.1"
+    image: "zauberzeug/yolov5-detector:0.1.1-nlv0.10.9-35.4.1"
     restart: always
     ports:
       - "8005:80"

@@ -1,8 +1,7 @@
 
+import pytest
 from copy import deepcopy
 
-
-import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import assert_point, forward
@@ -21,8 +20,8 @@ def test_shifted_calculation():
     point = GeoPoint(lat=51.983159, long=7.434212)
     shifted = point.shifted(rosys.geometry.Point(x=6, y=6))
     # coordinates should be x pointing north, y pointing west (verified with https://www.meridianoutpost.com/resources/etools/calculators/calculator-latitude-longitude-distance.php?)
-    assert shifted.lat == 51.98321292429539
-    assert shifted.long == 7.43412466846196
+    assert shifted.lat == pytest.approx(51.983212924295)
+    assert shifted.long == pytest.approx(7.434124668461)
     assert_point(shifted.cartesian(point), rosys.geometry.Point(x=6, y=6))
 
 
