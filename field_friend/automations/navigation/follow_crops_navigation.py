@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
 
 class FollowCropsNavigation(Navigation):
-    DRIVE_DISTANCE = 0.5
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
@@ -40,7 +39,7 @@ class FollowCropsNavigation(Navigation):
         self.plant_locator.pause()
         await self.implement.deactivate()
 
-    async def _drive(self):
+    async def _drive(self, distance: float):
         row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point, max_distance=1.0)
         if len(row) >= 3:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
@@ -65,7 +64,7 @@ class FollowCropsNavigation(Navigation):
             yaw_of_row = self.odometer.prediction.yaw
         target_yaw = self.combine_angles(yaw_of_row, self.crop_attraction, self.odometer.prediction.yaw)
         # self.log.info(f'following crops with target yaw {target_yaw}')
-        target = self.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
+        target = self.odometer.prediction.point.polar(distance, target_yaw)
         # self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
         with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
             await self.driver.drive_to(target)
