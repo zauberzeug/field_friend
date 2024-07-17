@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -31,6 +32,8 @@ class Navigation(rosys.persistence.PersistentModule):
         self.detector = system.detector
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
+        self.linear_speed_limit = 0.125
+        self.angular_speed_limit = 0.1
 
     async def start(self) -> None:
         try:
@@ -75,11 +78,21 @@ class Navigation(rosys.persistence.PersistentModule):
 
     @abc.abstractmethod
     async def _drive(self, distance: float) -> None:
-        """Drives the vehicle forward
+        """Drives the vehicle a short distance forward"""
 
-        This should only advance the robot by a small distance, e.g. 2 cm 
-        to allow for adjustments and observations.
-        """
+    async def _drive_to_yaw(self, distance: float, yaw: float):
+        deadline = rosys.time() + 2
+        start_position = self.odometer.prediction.point
+        yaw -= self.odometer.prediction.yaw  # take current yaw into account and only steer the difference
+        with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
+            await self.driver.wheels.drive(*self.driver._throttle(1, yaw))  # pylint: disable=protected-access
+        try:
+            while self.odometer.prediction.point.distance(start_position) < distance:
+                if rosys.time() >= deadline:
+                    raise TimeoutError('Driving Timeout')
+                await rosys.sleep(0.01)
+        finally:
+            await self.driver.wheels.stop()
 
     @abc.abstractmethod
     def _should_finish(self) -> bool:

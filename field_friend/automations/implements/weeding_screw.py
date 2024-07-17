@@ -37,7 +37,7 @@ class WeedingScrew(WeedingImplement):
                 self.system.detector.simulated_objects = [
                     obj for obj in self.system.detector.simulated_objects
                     if obj.position.projection().distance(punch_position) > self.system.field_friend.DRILL_RADIUS]
-            # NOTE no weeds to work on at this position -> advance robot
+            return True  # NOTE no weeds to work on at this position -> advance robot
         except Exception as e:
             raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
 
@@ -49,7 +49,7 @@ class WeedingScrew(WeedingImplement):
         if not weeds_in_range:
             self.log.info('No weeds in range')
             return self.WORKING_DISTANCE
-        # self.log.info(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
+        self.log.info(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
         for next_weed_id, next_weed_position in weeds_in_range.items():
             # next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
             weed_world_position = self.system.odometer.prediction.transform(next_weed_position)
