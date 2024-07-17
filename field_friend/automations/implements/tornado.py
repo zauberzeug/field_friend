@@ -45,6 +45,7 @@ class Tornado(WeedingImplement):
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                           if not (inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius)]
                 self.log.info(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
+            return True
         except PuncherException:
             self.log.error('Error in Tornado Workflow')
         except Exception as e:

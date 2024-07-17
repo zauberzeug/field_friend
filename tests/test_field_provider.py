@@ -9,7 +9,8 @@ from field_friend.localization import GnssSimulation
 
 
 def test_loading_from_old_persistence():
-    field_provider = FieldProvider(GnssSimulation(rosys.driving.Odometer(rosys.hardware.WheelsSimulation())))
+    wheels = rosys.hardware.WheelsSimulation()
+    field_provider = FieldProvider(GnssSimulation(rosys.driving.Odometer(wheels), wheels))
     field_provider.restore(json.loads(Path('tests/old_field_provider_persistence.json').read_text()))
     assert len(field_provider.fields) == 3
     field = field_provider.fields[1]
