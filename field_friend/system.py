@@ -243,5 +243,8 @@ class System(rosys.persistence.PersistentModule):
         return float(temp) / 1000.0  # Convert from milli °C to °C
 
     def log_status(self):
-        msg = f'cpu: {psutil.cpu_percent():.0f}%  mem: {psutil.virtual_memory().percent:.0f}% temp: {self.get_jetson_cpu_temperature():.1f}°C'
+        msg = f'cpu: {psutil.cpu_percent():.0f}%  '
+        msg += f'mem: {psutil.virtual_memory().percent:.0f}% '
+        msg += f'temp: {self.get_jetson_cpu_temperature():.1f}°C '
+        msg += f'battery: {self.field_friend.bms.state.short_string}'
         self.log.info(msg)
