@@ -28,12 +28,11 @@ class Implement(abc.ABC):
         """Return the stretch which the implement thinks is safe to drive forward."""
         return 0.02
 
-    async def start_workflow(self) -> bool:
+    async def start_workflow(self) -> None:
         """Called after robot has stopped via observation to perform it's workflow on a specific point on the ground
 
         Returns True if the robot can drive forward, if the implement whishes to stay at the current location, return False
         """
-        return True
 
     async def stop_workflow(self) -> None:
         """Called after workflow has been performed to stop the workflow"""

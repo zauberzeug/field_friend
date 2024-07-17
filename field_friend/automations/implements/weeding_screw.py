@@ -19,7 +19,7 @@ class WeedingScrew(WeedingImplement):
         self.weed_screw_depth: float = 0.13
         self.max_crop_distance: float = 0.08
 
-    async def start_workflow(self) -> bool:
+    async def start_workflow(self) -> None:
         await super().start_workflow()
         try:
             punch_position = self.system.odometer.prediction.transform(

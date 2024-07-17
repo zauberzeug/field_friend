@@ -21,7 +21,7 @@ class Tornado(WeedingImplement):
         self.drill_between_crops: bool = False
         self.field_friend = system.field_friend
 
-    async def start_workflow(self) -> bool:
+    async def start_workflow(self) -> None:
         await super().start_workflow()
         self.log.info('Performing Tornado Workflow..')
         try:
@@ -48,7 +48,6 @@ class Tornado(WeedingImplement):
             return True
         except PuncherException:
             self.log.error('Error in Tornado Workflow')
-            return True
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
