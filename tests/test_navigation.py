@@ -100,7 +100,7 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.1)
 
 
-async def test_follow_crops_sinus(system: System, detector: rosys.vision.DetectorSimulation):
+async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(10):
         x = i/10.0
         p = rosys.geometry.Point3d(x=x, y=(x/2) ** 3, z=0)
@@ -176,7 +176,7 @@ async def test_follow_crops_outlier(system: System, detector: rosys.vision.Detec
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
     assert system.odometer.prediction.point.x == pytest.approx(2.6, abs=0.1)
     assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.05)
-    assert 0 <= system.odometer.prediction.yaw_deg <= 45
+    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=0.2)
 
 
 async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.DetectorSimulation):
