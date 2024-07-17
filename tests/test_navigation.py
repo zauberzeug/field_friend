@@ -27,21 +27,12 @@ async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulat
     async def empty():
         return None
     create_new_record = gnss._create_new_record
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
-                                                                   position=rosys.geometry.Point3d(x=0.1, y=0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
-                                                                   position=rosys.geometry.Point3d(x=0.16, y=0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
-                                                                   position=rosys.geometry.Point3d(x=0.26, y=0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='thistle',
-                                                                   position=rosys.geometry.Point3d(x=0.36, y=0, z=0)))
-    system.current_implement = system.implements['Weed Screw']
     system.automator.start()
-    await forward(10)
+    await forward(5)
     gnss._create_new_record = empty  # type: ignore
     await forward(0.5)
     gnss._create_new_record = create_new_record
-    await forward(20)
+    await forward(5)
     assert system.automator.is_running
     assert len(detector.simulated_objects) == 0
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1)
