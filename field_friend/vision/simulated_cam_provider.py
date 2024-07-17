@@ -51,3 +51,6 @@ class SimulatedCamProvider(rosys.vision.CameraProvider[SimulatedCam], rosys.pers
             new_id = f'cam{len(self._cameras)}'
             print(f'adding simulated camera: {new_id}')
             self.add_camera(SimulatedCam(id=new_id, width=640, height=480))
+
+    async def update_device_list(self) -> None:
+        return None

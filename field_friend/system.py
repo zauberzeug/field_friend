@@ -90,7 +90,8 @@ class System(rosys.persistence.PersistentModule):
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
-            self.gnss = GnssSimulation(self.odometer)
+            assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
+            self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
@@ -243,5 +244,8 @@ class System(rosys.persistence.PersistentModule):
         return float(temp) / 1000.0  # Convert from milli °C to °C
 
     def log_status(self):
-        msg = f'cpu: {psutil.cpu_percent():.0f}%  mem: {psutil.virtual_memory().percent:.0f}% temp: {self.get_jetson_cpu_temperature():.1f}°C'
+        msg = f'cpu: {psutil.cpu_percent():.0f}%  '
+        msg += f'mem: {psutil.virtual_memory().percent:.0f}% '
+        msg += f'temp: {self.get_jetson_cpu_temperature():.1f}°C '
+        msg += f'battery: {self.field_friend.bms.state.short_string}'
         self.log.info(msg)
