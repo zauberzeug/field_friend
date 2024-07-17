@@ -10,8 +10,8 @@ from rosys.geometry import Point
 
 from field_friend.automations.implements.weeding_implement import WeedingImplement
 
-from ...automations import PlantLocator, Puncher
-from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
+from ...hardware import FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
+from ...vision import SimulatedCam
 from .calibration_dialog import calibration_dialog
 
 if TYPE_CHECKING:
@@ -232,17 +232,20 @@ class camera_card:
     def build_svg_for_plant_provider(self) -> str:
         if self.camera is None or self.camera.calibration is None:
             return ''
-        if self.system.is_real:
-            return ''  # NOTE: until https://github.com/zauberzeug/rosys/discussions/130 is resolved and integrated real robots will have problems with reverse projection
         position = rosys.geometry.Point(x=self.camera.calibration.extrinsics.translation[0],
                                         y=self.camera.calibration.extrinsics.translation[1])
         svg = ''
         for plant in self.plant_provider.get_relevant_weeds(position):
             position_3d = rosys.geometry.Point3d(x=plant.position.x, y=plant.position.y, z=0)
-            screen = self.camera.calibration.project_to_image(position_3d)
-            if screen is not None:
-                svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="5" fill="white" />'
-                svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{plant.id[:4]}</text>'
+            if isinstance(self.camera, SimulatedCam):
+                screen = self.camera.calibration.project_to_image(position_3d)
+            else:
+                # TODO remove this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
+                relative = self.system.odometer.prediction.relative_point(position)
+                screen = self.odometer.prediction.transform(relative.projection())
+        if screen is not None:
+            svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="5" fill="white" />'
+            svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{plant.id[:4]}</text>'
         return svg
 
     # async def save_last_image(self) -> None:
