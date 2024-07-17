@@ -1,7 +1,7 @@
 
-import pytest
 from copy import deepcopy
 
+import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import assert_point, forward
