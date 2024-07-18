@@ -51,13 +51,12 @@ async def test_driving_to_exact_positions(system: System):
             self.current_stretch = random.uniform(0.02, max_distance)
             return self.current_stretch
 
-        async def start_workflow(self) -> bool:
+        async def start_workflow(self) -> None:
             self.workflow_started = True
             deadline = rosys.time() + 1
             while self.workflow_started and rosys.time() < deadline:
                 await rosys.sleep(0.1)
             self.workflow_started = False
-            return True
 
     system.current_implement = stopper = Stopper(system)
     assert isinstance(system.current_navigation, StraightLineNavigation)
