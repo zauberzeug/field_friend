@@ -10,6 +10,7 @@ from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Implement, Recorder
 from field_friend.automations.navigation import StraightLineNavigation
+from field_friend.localization import GnssSimulation
 
 
 async def test_straight_line(system: System):
@@ -21,6 +22,21 @@ async def test_straight_line(system: System):
     await forward(until=lambda: system.automator.is_stopped)
     assert not system.automator.is_running, 'automation should stop after default length'
     assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
+
+
+async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulation, detector: rosys.vision.DetectorSimulation):
+    async def empty():
+        return None
+    create_new_record = gnss._create_new_record
+    system.automator.start()
+    await forward(5)
+    gnss._create_new_record = empty  # type: ignore
+    await forward(0.5)
+    gnss._create_new_record = create_new_record
+    await forward(5)
+    assert system.automator.is_running
+    assert len(detector.simulated_objects) == 0
+    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1)
 
 
 async def test_driving_to_exact_positions(system: System):
