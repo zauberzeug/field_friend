@@ -55,8 +55,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def create_field(self, points: list[GeoPoint] = []) -> Field:
         new_id = str(uuid.uuid4())
         field = Field(id=f'{new_id}', name=f'field_{len(self.fields)+1}', points=points)
-        if points:
-            self.set_reference(field, points[0])
         self.fields.append(field)
         self.invalidate()
         return field

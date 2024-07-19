@@ -1,15 +1,14 @@
 import pytest
-import rosys
 from rosys.geometry import Point
 
-from field_friend import System
-from field_friend.automations import Row
+from field_friend import System, localization
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.localization import GeoPoint
 
 
 def test_geometry_computation(system: System):
     field_creator = FieldCreator(system)
+    localization.reference = GeoPoint(lat=51.98317071260942, long=7.43411239981148)
     field_creator.first_row_start = GeoPoint(lat=51.98317071260942, long=7.43411239981148)
     field_creator.first_row_end = field_creator.first_row_start.shifted(Point(x=0, y=10))
     field_creator.last_row_end = field_creator.first_row_start.shifted(Point(x=10, y=10))
