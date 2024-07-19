@@ -2,6 +2,7 @@ import math
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
 import rosys
 from nicegui import ui
 from rosys.helpers import eliminate_2pi
@@ -57,6 +58,8 @@ class FollowCropsNavigation(Navigation):
         else:
             target_yaw = self.odometer.prediction.yaw
         target_yaw = self.combine_angles(target_yaw, self.crop_attraction, self.odometer.prediction.yaw)
+        self.log.info(
+            f'Driving {distance:.2f}m from {self.start_position} with {target_yaw}(yaw) with front_point {front_point}')
         await self._drive_to_yaw(distance, target_yaw)
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:

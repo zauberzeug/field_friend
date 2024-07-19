@@ -41,6 +41,8 @@ class StraightLineNavigation(Navigation):
         closest_point = rosys.geometry.Line.from_points(self.origin, self.target).foot_point(start_position)
         local_target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=start_position.direction(self.target), time=0) \
             .transform(rosys.geometry.Point(x=1, y=0))
+        self.log.info(
+            f'Driving {distance:.2f}m from {start_position} to {local_target} with closest point {closest_point}')
         await self._drive_to_yaw(distance, start_position.direction(local_target))
 
     def _should_finish(self):

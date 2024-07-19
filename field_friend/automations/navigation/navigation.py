@@ -81,7 +81,7 @@ class Navigation(rosys.persistence.PersistentModule):
         """Drives the vehicle a short distance forward"""
 
     async def _drive_to_yaw(self, distance: float, yaw: float):
-        deadline = rosys.time() + 2
+        deadline = rosys.time() + 5
         start_position = self.odometer.prediction.point
         yaw -= self.odometer.prediction.yaw  # take current yaw into account and only steer the difference
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
