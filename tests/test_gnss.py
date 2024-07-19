@@ -22,7 +22,7 @@ def test_shifted_calculation():
     # coordinates should be x pointing north, y pointing west (verified with https://www.meridianoutpost.com/resources/etools/calculators/calculator-latitude-longitude-distance.php?)
     assert shifted.lat == pytest.approx(51.983212924295)
     assert shifted.long == pytest.approx(7.434124668461)
-    assert_point(shifted.cartesian(point), rosys.geometry.Point(x=6, y=6))
+    assert_point(shifted.cartesian(), rosys.geometry.Point(x=6, y=6))
 
 
 async def test_driving(gnss_driving: System):

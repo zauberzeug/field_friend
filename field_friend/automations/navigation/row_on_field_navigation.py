@@ -39,9 +39,6 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         if self.field is None:
             rosys.notify('No field selected', 'negative')
             return False
-        if not self.field.reference:
-            rosys.notify('No field reference available', 'negative')
-            return False
         if not self.field.rows:
             rosys.notify('No rows available', 'negative')
             return False
@@ -55,13 +52,11 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         if self.state == self.State.FIELD_COMPLETED:
             self.clear()
         if self.state == self.State.FOLLOWING_ROW:
-            if self.current_row.line_segment(self.field.reference).distance(self.odometer.prediction.point) > 0.1:
+            if self.current_row.line_segment().distance(self.odometer.prediction.point) > 0.1:
                 self.clear()
         else:
             self.plant_provider.clear()
 
-        # NOTE: it's useful to set the reference point to the reference of the field; that way the cartesian coordinates are simpler to comprehend
-        self.gnss.reference = self.field.reference
         await rosys.sleep(0.1)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
         return True
@@ -162,11 +157,10 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         self.detector.simulated_objects.clear()
         if self.field is None:
             return
-        assert self.field.reference is not None
         for row in self.field.rows:
             if len(row.points) < 2:
                 continue
-            cartesian = row.cartesian(self.field.reference)
+            cartesian = row.cartesian()
             start = cartesian[0]
             end = cartesian[-1]
             length = start.distance(end)

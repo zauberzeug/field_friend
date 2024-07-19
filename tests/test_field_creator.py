@@ -13,10 +13,8 @@ def test_geometry_computation(system: System):
     field_creator.first_row_start = GeoPoint(lat=51.98317071260942, long=7.43411239981148)
     field_creator.first_row_end = field_creator.first_row_start.shifted(Point(x=0, y=10))
     field_creator.last_row_end = field_creator.first_row_start.shifted(Point(x=10, y=10))
-    assert field_creator.field.reference is None
     assert field_creator.build_geometry()
     assert len(field_creator.field.rows) == 20
-    assert field_creator.field.reference == field_creator.first_row_start
     outline = field_creator.field.outline
     assert len(outline) == 4
     assert outline[0].x == pytest.approx(-field_creator.padding)
