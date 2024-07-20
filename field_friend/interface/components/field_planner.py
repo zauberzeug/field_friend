@@ -44,7 +44,7 @@ class field_planner:
                     ui.button("Clear fields", on_click=self.field_provider.clear_fields).props("outline color=warning") \
                         .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Update reference", on_click=self.field_provider.update_reference).props("outline color=warning") \
-                        .tooltip("Delete all fields, set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
+                        .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
             self.show_field_settings()
             self.show_object_settings()
             self.field_provider.FIELDS_CHANGED.register_ui(self.refresh_ui)

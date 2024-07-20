@@ -75,7 +75,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
         if self.gnss.current is None:
             rosys.notify('No GNSS position available.')
             return
-        self.clear_fields()
         localization.reference = self.gnss.current.location
         os.utime('main.py')
 
