@@ -1,11 +1,9 @@
 import logging
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
+from typing import TYPE_CHECKING, Literal, Optional, TypedDict
 
-import rosys
 from nicegui import events, ui
 
-from ...automations import Field, FieldObstacle, FieldProvider, Row
-from ...localization import Gnss
+from ...automations import Field, FieldObstacle, Row
 from .field_creator import FieldCreator
 from .leaflet_map import leaflet_map
 
@@ -40,10 +38,13 @@ class field_planner:
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Field Wizard", on_click=lambda: FieldCreator(system)).tooltip("Build a field with rows in a few simple steps") \
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
-                    ui.button("Clear fields", on_click=self.field_provider.clear_fields).props("outline color=warning") \
-                        .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                 with ui.row().style("width: 100%;"):
                     self.show_field_table()
+                with ui.row():
+                    ui.button("Clear fields", on_click=self.field_provider.clear_fields).props("outline color=warning") \
+                        .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
+                    ui.button("Update reference", on_click=self.field_provider.update_reference).props("outline color=warning") \
+                        .tooltip("Delete all fields, set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
             self.show_field_settings()
             self.show_object_settings()
             self.field_provider.FIELDS_CHANGED.register_ui(self.refresh_ui)

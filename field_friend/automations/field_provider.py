@@ -1,11 +1,13 @@
 import logging
+import os
 import uuid
-from typing import Any, Literal, Optional, TypedDict, Union
+from typing import Any, Optional
 
 import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
 
+from .. import localization
 from ..localization import GeoPoint, Gnss
 from . import Field, FieldObstacle, Row
 
@@ -68,6 +70,14 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.fields.clear()
         self.FIELDS_CHANGED.emit()
         self.invalidate()
+
+    def update_reference(self) -> None:
+        if self.gnss.current is None:
+            rosys.notify('No GNSS position available.')
+            return
+        self.clear_fields()
+        localization.reference = self.gnss.current.location
+        os.utime('main.py')
 
     def create_obstacle(self, field: Field, points: list[GeoPoint] = []) -> FieldObstacle:
         obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points=points)
