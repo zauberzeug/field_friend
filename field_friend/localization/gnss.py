@@ -55,7 +55,7 @@ class Gnss(ABC):
         self.min_seconds_between_updates = 10.0
 
         self.needs_backup = False
-        rosys.on_repeat(self.update, 0.01)
+        rosys.on_repeat(self.check_gnss, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
 
     @property
@@ -87,7 +87,7 @@ class Gnss(ABC):
             return None
         return point.distance(point)
 
-    async def update(self) -> None:
+    async def check_gnss(self) -> None:
         if self.is_paused:
             return
         previous = deepcopy(self.current)
@@ -133,9 +133,6 @@ class Gnss(ABC):
         # correct the gnss coordinate by antenna offset
         self.current.location = get_new_position(self.current.location, self.antenna_offset, yaw+np.pi/2)
         cartesian_coordinates = self.current.location.cartesian(self.reference)
-        distance = self.odometer.prediction.point.distance(cartesian_coordinates)
-        if distance > 1:
-            self.log.warning(f'GNSS distance to prediction too high: {distance:.2f}m!!')
         pose = rosys.geometry.Pose(
             x=cartesian_coordinates.x,
             y=cartesian_coordinates.y,
@@ -152,6 +149,7 @@ class Gnss(ABC):
         x = np.mean([pose.point.x for pose in self.observed_poses])
         y = np.mean([pose.point.y for pose in self.observed_poses])
         yaw = np.mean([pose.yaw for pose in self.observed_poses])
-        self.ROBOT_POSE_LOCATED.emit(rosys.geometry.Pose(x=float(x), y=float(y), yaw=float(yaw), time=rosys.time()))
+        pose = rosys.geometry.Pose(x=float(x), y=float(y), yaw=float(yaw), time=rosys.time())
+        self.ROBOT_POSE_LOCATED.emit(pose)
         self.last_pose_update = rosys.time()
         self.observed_poses.clear()
