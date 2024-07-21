@@ -131,4 +131,6 @@ class AutomationWatcher:
             return
         if self.last_robot_pose.distance(self.odometer.prediction) == 0:  # if robot stands still
             await self.gnss.update_robot_pose()
+        else:
+            self.gnss.observed_poses.clear()
         self.last_robot_pose = self.odometer.prediction
