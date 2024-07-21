@@ -76,13 +76,13 @@ async def test_driving_to_exact_positions(system: System):
 async def test_driving_straight_line_with_slippage(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.length = 1.0
+    system.current_navigation.length = 2.0
     system.field_friend.wheels.slip_factor_right = 0.05
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.point.x == pytest.approx(1.0, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.1)
+    assert system.odometer.prediction.point.x == pytest.approx(2.0, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.02)
 
 
 async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimulation):
