@@ -81,25 +81,25 @@ class Navigation(rosys.persistence.PersistentModule):
         """Drives the vehicle a short distance forward"""
 
     async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose):
-        """Drives the vehicle a short distance forward while steering onto the line defined by the target pose
-
-        It does not steer directly onto the line but rather to a point ahead of the vehicle on the line.
-        This is done to avoid oscillations around the line."""
+        """Drives the vehicle a short distance forward while steering onto the line defined by the target pose"""
         start_position = self.odometer.prediction.point
+        hook_offset = rosys.geometry.Point(x=self.driver.parameters.hook_offset, y=0)
+        carrot_offset = rosys.geometry.Point(x=self.driver.parameters.carrot_offset, y=0)
+        target_point = target.transform(carrot_offset)
+        hook = self.odometer.prediction.transform(hook_offset)
+        turn_angle = rosys.helpers.eliminate_pi(hook.direction(target_point) - self.odometer.prediction.yaw)
+        curvature = np.tan(turn_angle) / hook_offset.x
+        if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
+            curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            target_yaw = self.odometer.prediction.direction(target.transform(rosys.geometry.Point(x=1, y=0)))
-            angle_error = rosys.helpers.eliminate_2pi(target_yaw - self.odometer.prediction.yaw)
-            gain = 10
-            self.log.info(f'{target}, {target_yaw}, {angle_error}')
-            await self.driver.wheels.drive(*self.driver._throttle(1, gain * angle_error))
-        try:
-            deadline = rosys.time() + 2
-            while self.odometer.prediction.point.distance(start_position) < distance:
-                if rosys.time() >= deadline:
-                    raise TimeoutError('Driving Timeout')
-                await rosys.sleep(0.01)
-        finally:
-            await self.driver.wheels.stop()
+            await self.driver.wheels.drive(*self.driver._throttle(1.0, curvature))  # pylint: disable=protected-access
+        deadline = rosys.time() + 3
+        while self.odometer.prediction.point.distance(start_position) < distance:
+            if rosys.time() >= deadline:
+                await self.driver.wheels.stop()
+                raise TimeoutError('Driving Timeout')
+            await rosys.sleep(0.01)
+        await self.driver.wheels.stop()
 
     @abc.abstractmethod
     def _should_finish(self) -> bool:
