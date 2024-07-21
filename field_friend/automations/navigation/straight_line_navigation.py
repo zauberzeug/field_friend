@@ -39,9 +39,8 @@ class StraightLineNavigation(Navigation):
     async def _drive(self, distance: float):
         start_position = self.odometer.prediction.point
         closest_point = rosys.geometry.Line.from_points(self.origin, self.target).foot_point(start_position)
-        local_target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=start_position.direction(self.target), time=0) \
-            .transform(rosys.geometry.Point(x=1, y=0))
-        await self._drive_to_yaw(distance, start_position.direction(local_target))
+        yaw = closest_point.direction(self.target)
+        await self._drive_towards_target(distance, rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw))
 
     def _should_finish(self):
         end_pose = rosys.geometry.Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)

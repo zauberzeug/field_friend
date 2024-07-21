@@ -1,10 +1,10 @@
 import abc
-import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import rosys
-from nicegui import ui
+import rosys.helpers
 
 from ..implements import Implement
 
@@ -80,13 +80,20 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive(self, distance: float) -> None:
         """Drives the vehicle a short distance forward"""
 
-    async def _drive_to_yaw(self, distance: float, yaw: float):
-        deadline = rosys.time() + 2
+    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose):
+        """Drives the vehicle a short distance forward while steering onto the line defined by the target pose
+
+        It does not steer directly onto the line but rather to a point ahead of the vehicle on the line.
+        This is done to avoid oscillations around the line."""
         start_position = self.odometer.prediction.point
-        yaw -= self.odometer.prediction.yaw  # take current yaw into account and only steer the difference
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.wheels.drive(*self.driver._throttle(1, yaw))  # pylint: disable=protected-access
+            target_yaw = self.odometer.prediction.direction(target.transform(rosys.geometry.Point(x=1, y=0)))
+            angle_error = rosys.helpers.eliminate_2pi(target_yaw - self.odometer.prediction.yaw)
+            gain = 10
+            self.log.info(f'{target}, {target_yaw}, {angle_error}')
+            await self.driver.wheels.drive(*self.driver._throttle(1, gain * angle_error))
         try:
+            deadline = rosys.time() + 2
             while self.odometer.prediction.point.distance(start_position) < distance:
                 if rosys.time() >= deadline:
                     raise TimeoutError('Driving Timeout')
