@@ -107,9 +107,9 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
         p = rosys.geometry.Point3d(x=x, y=(x/3) ** 3, z=0)
         p = system.odometer.prediction.transform3d(p)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
-        print(p)
-    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
+    system.gnss.min_seconds_between_updates = 1
     system.current_navigation = system.follow_crops_navigation
+    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     system.field_friend.wheels.slip_factor_right = 0.05
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)

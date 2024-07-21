@@ -49,6 +49,10 @@ class Gnss(ABC):
         self.device: str | None = None
         self._reference: Optional[GeoPoint] = None
         self.antenna_offset = antenna_offset
+        self.is_paused = False
+        self.observed_poses: list[rosys.geometry.Pose] = []
+        self.last_pose_update = rosys.time()
+        self.min_seconds_between_updates = 10.0
 
         self.needs_backup = False
         rosys.on_repeat(self.update, 0.01)
@@ -84,6 +88,8 @@ class Gnss(ABC):
         return point.distance(point)
 
     async def update(self) -> None:
+        if self.is_paused:
+            return
         previous = deepcopy(self.current)
         try:
             self.current = await self._create_new_record()
@@ -135,4 +141,17 @@ class Gnss(ABC):
             y=cartesian_coordinates.y,
             yaw=yaw,
             time=self.current.timestamp)
-        self.ROBOT_POSE_LOCATED.emit(pose)
+        self.observed_poses.append(pose)
+
+    async def update_robot_pose(self) -> None:
+        assert not self.is_paused
+        while len(self.observed_poses) < 10:
+            if rosys.time() - self.last_pose_update < self.min_seconds_between_updates:
+                return
+            await rosys.sleep(0.1)
+        x = np.mean([pose.point.x for pose in self.observed_poses])
+        y = np.mean([pose.point.y for pose in self.observed_poses])
+        yaw = np.mean([pose.yaw for pose in self.observed_poses])
+        self.ROBOT_POSE_LOCATED.emit(rosys.geometry.Pose(x=float(x), y=float(y), yaw=float(yaw), time=rosys.time()))
+        self.last_pose_update = rosys.time()
+        self.observed_poses.clear()
