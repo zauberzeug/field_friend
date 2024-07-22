@@ -1,11 +1,9 @@
-import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Optional
-import aiohttp
+from typing import TYPE_CHECKING, Any
 
+import aiohttp
 import rosys
 from nicegui import ui
-from nicegui.events import ValueChangeEventArguments
 from rosys.vision import Autoupload
 
 from ..vision import SimulatedCam
@@ -38,7 +36,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
-        self.upload_images: bool = False 
+        self.upload_images: bool = False
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
@@ -140,14 +138,14 @@ class PlantLocator(rosys.persistence.PersistentModule):
 
     async def get_outbox_mode(self, port: int) -> bool:
         # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
-        url = f'http://localhost:{port}/outbox_mode'            
+        url = f'http://localhost:{port}/outbox_mode'
         async with aiohttp.request('GET', url) as response:
             if response.status != 200:
                 self.log.error(f'Could not get outbox mode on port {port} - status code: {response.status}')
                 return None
             response_text = await response.text()
         return response_text == 'continuous_upload'
-    
+
     async def set_outbox_mode(self, value: bool, port: int) -> None:
         url = f'http://localhost:{port}/outbox_mode'
         async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
@@ -172,7 +170,8 @@ class PlantLocator(rosys.persistence.PersistentModule):
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
         if isinstance(self.detector, rosys.vision.DetectorHardware):
-            ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images').on('click', lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port))        
+            ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images') \
+                .on('click', lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port))
 
         @ui.refreshable
         def chips():

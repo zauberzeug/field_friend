@@ -34,12 +34,7 @@ class main_page():
             with ui.row().classes('h-full ml-2 m-2').style('width: calc(100% - 1rem)'):
                 operation(self.system)
                 with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
-                    camera_card(self.system.usb_camera_provider,
-                                self.system.automator,
-                                self.system.detector,
-                                self.system.plant_locator,
-                                self.system.field_friend,
-                                self.system.puncher)
+                    camera_card(self.system)
                     robot_scene(self.system, self.system.field_navigation.field)
                     with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
                         with ui.column():

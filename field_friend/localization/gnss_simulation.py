@@ -8,8 +8,9 @@ from .gnss import Gnss, GNSSRecord
 
 class GnssSimulation(Gnss):
 
-    def __init__(self, odometer: rosys.driving.Odometer) -> None:
+    def __init__(self, odometer: rosys.driving.Odometer, wheels: rosys.hardware.WheelsSimulation) -> None:
         super().__init__(odometer, 0.0)
+        self.wheels = wheels
         self.allow_connection = True
         self.gps_quality = 4
 
@@ -18,7 +19,7 @@ class GnssSimulation(Gnss):
             self.device = 'simulation'
 
     async def _create_new_record(self) -> Optional[GNSSRecord]:
-        pose = self.odometer.prediction
+        pose = self.wheels.pose
         reference = self.reference if self.reference else GeoPoint(lat=51.983159, long=7.434212)
         new_position = reference.shifted(pose.point)
         record = GNSSRecord(timestamp=pose.time, location=new_position)

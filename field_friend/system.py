@@ -6,16 +6,45 @@ import numpy as np
 import psutil
 import rosys
 
-from field_friend.hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
+from field_friend.hardware import (
+    FieldFriend,
+    FieldFriendHardware,
+    FieldFriendSimulation,
+)
 from field_friend.localization.gnss_hardware import GnssHardware
 from field_friend.localization.gnss_simulation import GnssSimulation
-from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from field_friend.vision import (
+    CalibratableUsbCameraProvider,
+    CameraConfigurator,
+    SimulatedCam,
+    SimulatedCamProvider,
+)
 
-from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PathRecorder,
-                          PlantLocator, PlantProvider, Puncher)
-from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
-                                     StraightLineNavigation)
+from .automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    FieldProvider,
+    KpiProvider,
+    PathProvider,
+    PathRecorder,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+)
+from .automations.implements import (
+    ChopAndScrew,
+    Implement,
+    Recorder,
+    Tornado,
+    WeedingScrew,
+)
+from .automations.navigation import (
+    CoverageNavigation,
+    FollowCropsNavigation,
+    Navigation,
+    RowsOnFieldNavigation,
+    StraightLineNavigation,
+)
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 
@@ -61,7 +90,8 @@ class System(rosys.persistence.PersistentModule):
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
-            self.gnss = GnssSimulation(self.odometer)
+            assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
+            self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
@@ -201,7 +231,9 @@ class System(rosys.persistence.PersistentModule):
                                                 x=0.4, z=0.4,
                                                 roll=np.deg2rad(360-150),
                                                 pitch=np.deg2rad(0),
-                                                yaw=np.deg2rad(90))
+                                                yaw=np.deg2rad(90),
+                                                color='#cccccc',
+                                                )
         self.usb_camera_provider.add_camera(camera)
         # TODO rework this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
         self.odometer.ROBOT_MOVED.register(lambda: camera.update_calibration(self.odometer.prediction))
@@ -212,5 +244,8 @@ class System(rosys.persistence.PersistentModule):
         return float(temp) / 1000.0  # Convert from milli °C to °C
 
     def log_status(self):
-        msg = f'cpu: {psutil.cpu_percent():.0f}%  mem: {psutil.virtual_memory().percent:.0f}% temp: {self.get_jetson_cpu_temperature():.1f}°C'
+        msg = f'cpu: {psutil.cpu_percent():.0f}%  '
+        msg += f'mem: {psutil.virtual_memory().percent:.0f}% '
+        msg += f'temp: {self.get_jetson_cpu_temperature():.1f}°C '
+        msg += f'battery: {self.field_friend.bms.state.short_string}'
         self.log.info(msg)

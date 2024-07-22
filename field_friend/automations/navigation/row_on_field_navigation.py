@@ -70,7 +70,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         await super().finish()
         self.automation_watcher.stop_field_watch()
 
-    async def _drive(self) -> None:
+    async def _drive(self, distance: float) -> None:
         assert self.field is not None
         assert self.field.reference is not None
         if self.state == self.State.APPROACHING_ROW_START:
@@ -83,7 +83,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
             if not self.implement.is_active:
                 await self.implement.activate()
             if self.odometer.prediction.point.distance(self.current_row.points[-1].cartesian(self.field.reference)) >= 0.1:
-                await super()._drive()
+                await super()._drive(distance)
             else:
                 await self.implement.deactivate()
                 self.state = self.State.RETURNING_TO_START
