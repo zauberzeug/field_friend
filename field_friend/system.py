@@ -161,8 +161,9 @@ class System(rosys.persistence.PersistentModule):
             case 'weed_screw':
                 implements.append(WeedingScrew(self))
             case 'dual_mechanism':
-                implements.append(WeedingScrew(self))
-                implements.append(ChopAndScrew(self))
+                # implements.append(WeedingScrew(self))
+                # implements.append(ChopAndScrew(self))
+                self.log.error('Dual mechanism not implemented')
             case 'none':
                 implements.append(WeedingScrew(self))
             case _:
