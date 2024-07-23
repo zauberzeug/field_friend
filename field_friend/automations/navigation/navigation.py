@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
+import rosys.helpers
 
 from ..implements import Implement
 
@@ -83,7 +84,7 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive_to_yaw(self, distance: float, yaw: float):
         deadline = rosys.time() + 2
         start_position = self.odometer.prediction.point
-        yaw -= self.odometer.prediction.yaw  # take current yaw into account and only steer the difference
+        yaw = rosys.helpers.angle(yaw, self.odometer.prediction.yaw) # take current yaw into account and only steer the difference
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
             await self.driver.wheels.drive(*self.driver._throttle(1, yaw))  # pylint: disable=protected-access
         try:
