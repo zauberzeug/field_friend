@@ -8,6 +8,14 @@ from rosys.geometry import Point, Pose
 
 from .plant import Plant
 
+# see field_friend/automations/plant_locator.py
+MINIMUM_WEED_CONFIDENCE = 2.4  # 0.8 * 3.0
+MINIMUM_CROP_CONFIDENCE = 2.25  # 0.75 * 3.0
+MATCH_DISTANCE = 0.07
+CROP_SPACING = 0.18
+PREDICT_CROP_POSITION = True
+PREDICTION_CONFIDENCE = 0.3
+
 
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
     for p in plants:
@@ -27,12 +35,12 @@ class PlantProvider(rosys.persistence.PersistentModule):
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 
-        self.match_distance: float = 0.07
-        self.crop_spacing: float = 0.18
-        self.predict_crop_position: bool = True
-        self.prediction_confidence: float = 0.3
-        self.crop_confidence_threshold: float = 0.8
-        self.weed_confidence_threshold: float = 0.8
+        self.match_distance: float = MATCH_DISTANCE
+        self.crop_spacing: float = CROP_SPACING
+        self.predict_crop_position: bool = PREDICT_CROP_POSITION
+        self.prediction_confidence: float = PREDICTION_CONFIDENCE
+        self.crop_confidence_threshold: float = MINIMUM_CROP_CONFIDENCE
+        self.weed_confidence_threshold: float = MINIMUM_WEED_CONFIDENCE
 
         self.PLANTS_CHANGED = rosys.event.Event()
         """The collection of plants has changed."""
