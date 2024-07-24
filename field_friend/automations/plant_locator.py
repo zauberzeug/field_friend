@@ -155,16 +155,16 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.log.debug(f'Outbox_mode was set to {value} on port {port}')
 
     def settings_ui(self) -> None:
-        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, 'minimum_weed_confidence') \
-            .tooltip('Set the minimum weed confidence for the weeding automation')
         ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_crop_confidence') \
-            .tooltip('Set the minimum crop confidence for the weeding automation')
+            .tooltip('Set the minimum crop confidence for the detection')
+        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'minimum_weed_confidence') \
+            .tooltip('Set the minimum weed confidence for the detection')
         options = [autoupload for autoupload in rosys.vision.Autoupload]
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
