@@ -10,7 +10,6 @@ from ..localization import GeoPoint
 class Path:
     name: str
     path_segments: list[rosys.driving.PathSegment] = field(default_factory=list)
-    reference: Optional[GeoPoint] = None
     visualized: bool = False
 
 

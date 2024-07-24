@@ -6,27 +6,13 @@ import numpy as np
 import psutil
 import rosys
 
-from field_friend.hardware import (
-    FieldFriend,
-    FieldFriendHardware,
-    FieldFriendSimulation,
-)
-from field_friend.localization.gnss_hardware import GnssHardware
-from field_friend.localization.gnss_simulation import GnssSimulation
-from field_friend.vision import (
-    CalibratableUsbCameraProvider,
-    CameraConfigurator,
-    SimulatedCam,
-    SimulatedCamProvider,
-)
-
+from . import localization
 from .automations import (
     AutomationWatcher,
     BatteryWatcher,
     FieldProvider,
     KpiProvider,
     PathProvider,
-    PathRecorder,
     PlantLocator,
     PlantProvider,
     Puncher,
@@ -45,8 +31,18 @@ from .automations.navigation import (
     RowsOnFieldNavigation,
     StraightLineNavigation,
 )
+from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
+from .localization.geo_point import GeoPoint
+from .localization.gnss_hardware import GnssHardware
+from .localization.gnss_simulation import GnssSimulation
+from .vision import (
+    CalibratableUsbCameraProvider,
+    CameraConfigurator,
+    SimulatedCam,
+    SimulatedCamProvider,
+)
 
 
 class System(rosys.persistence.PersistentModule):
@@ -191,6 +187,8 @@ class System(rosys.persistence.PersistentModule):
         return {
             'navigation': self.current_navigation.name,
             'implement': self.current_implement.name,
+            'reference_lat': localization.reference.lat,
+            'reference_long': localization.reference.long,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -200,6 +198,9 @@ class System(rosys.persistence.PersistentModule):
         navigation = self.navigation_strategies.get(data.get('navigation', None), None)
         if navigation is not None:
             self.current_navigation = navigation
+        lat = data.get('reference_lat', 0)
+        long = data.get('reference_long', 0)
+        localization.reference = GeoPoint(lat=lat, long=long)
 
     @property
     def current_implement(self) -> Implement:
