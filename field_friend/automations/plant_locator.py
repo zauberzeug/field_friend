@@ -155,12 +155,12 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.log.debug(f'Outbox_mode was set to {value} on port {port}')
 
     def settings_ui(self) -> None:
-        ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+        ui.number('Min. crop confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_crop_confidence') \
             .tooltip(f'Set the minimum crop confidence for the detection (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
-        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+        ui.number('Min. weed confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_weed_confidence') \
