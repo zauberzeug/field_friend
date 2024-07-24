@@ -17,10 +17,9 @@ class dev_page():
         @ui.page('/dev')
         def page() -> None:
             page_wrapper()
-            main_pg = main_page(page_wrapper, system)
-            main_pg.content(devmode=True)
+            # main_pg = main_page(page_wrapper, system)
+            # main_pg.content(devmode=True)
             self.content()
 
     def content(self) -> None:
-        with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
-            development(self.system)
+        development(self.system)
