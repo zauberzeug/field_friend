@@ -5,7 +5,6 @@ from nicegui import ui
 
 from .hardware_control import hardware_control
 from .io_sockets import io_sockets
-from .status_bulb import StatusBulb as status_bulb
 from .status_dev import status_dev_page
 
 if TYPE_CHECKING:
@@ -13,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def development(system: 'System') -> None:
-    with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
+    with ui.row().style('width: calc(100vw - 2rem); flex-wrap: nowrap;'):
         with ui.card().style('background-color: #2E5396; width: 100%;'):
             with ui.column().style("width: 100%;"):
                 ui.label("Development Tools").style('font-size: 1.5rem; color: white;')
@@ -29,7 +28,7 @@ def development(system: 'System') -> None:
                             rosys.simulation_ui()
                     hardware_control(system.field_friend, system.automator, system.puncher)
                     status_dev_page(system.field_friend, system)
-    with ui.row().style(f'width: calc(100vw - 2rem); flex-wrap: nowrap;'):
+    with ui.row().style('width: calc(100vw - 2rem); flex-wrap: nowrap;'):
         with ui.card().style('background-color: #2E5396; color: white;'), ui.row():
             with ui.row().style("width: 100%"):
                 ui.label("I/O Overview").style('font-size: 1.5rem; color: white;')

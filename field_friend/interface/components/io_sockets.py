@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import rosys
 from nicegui import ui
 
 from .status_bulb import StatusBulb as status_bulb
