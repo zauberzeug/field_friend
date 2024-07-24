@@ -1,9 +1,9 @@
 import logging
 
 import numpy as np
-import rosys
 
 import config.config_selection as config_selector
+import rosys
 
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
@@ -118,7 +118,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             try:
                 alarm_inverted: bool = config_hardware['y_axis']['alarm_inverted']
             except KeyError:
-                raise KeyError('\'alarm_inverted\' not found in config_hardware[\'y_axis\']. U4 has an inverted motor alarm input. Check your robot\'s setup.')
+                raise KeyError(
+                    '\'alarm_inverted\' not found in config_hardware[\'y_axis\']. Robots with a Closed-Loop-Step-Direction-Motor (U4 and before) has an inverted motor alarm input. Check your robot\'s setup.')
             y_axis = YAxisStepperHardware(robot_brain,
                                           expander=expander,
                                           name=config_hardware['y_axis']['name'],
