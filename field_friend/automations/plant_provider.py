@@ -1,10 +1,9 @@
 import logging
 from typing import Any
 
-import numpy as np
 import rosys
 from nicegui import ui
-from rosys.geometry import Point, Pose
+from rosys.geometry import Point
 
 from .plant import Plant
 
