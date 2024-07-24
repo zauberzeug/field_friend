@@ -8,8 +8,8 @@ from rosys.geometry import Point
 from .plant import Plant
 
 # see field_friend/automations/plant_locator.py
-MINIMUM_WEED_CONFIDENCE = 2.4  # 0.8 * 3.0
 MINIMUM_CROP_CONFIDENCE = 2.25  # 0.75 * 3.0
+MINIMUM_WEED_CONFIDENCE = 2.4  # 0.8 * 3.0
 MATCH_DISTANCE = 0.07
 CROP_SPACING = 0.18
 PREDICT_CROP_POSITION = True
