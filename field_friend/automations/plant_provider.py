@@ -8,8 +8,8 @@ from rosys.geometry import Point
 from .plant import Plant
 
 # see field_friend/automations/plant_locator.py
-MINIMUM_CROP_CONFIDENCE = 2.25  # 0.75 * 3.0
-MINIMUM_WEED_CONFIDENCE = 2.4  # 0.8 * 3.0
+MINIMUM_COMBINED_CROP_CONFIDENCE = 2.25  # 0.75 * 3.0
+MINIMUM_COMBINED_WEED_CONFIDENCE = 2.4  # 0.8 * 3.0
 MATCH_DISTANCE = 0.07
 CROP_SPACING = 0.18
 PREDICT_CROP_POSITION = True
@@ -38,8 +38,8 @@ class PlantProvider(rosys.persistence.PersistentModule):
         self.crop_spacing: float = CROP_SPACING
         self.predict_crop_position: bool = PREDICT_CROP_POSITION
         self.prediction_confidence: float = PREDICTION_CONFIDENCE
-        self.crop_confidence_threshold: float = MINIMUM_CROP_CONFIDENCE
-        self.weed_confidence_threshold: float = MINIMUM_WEED_CONFIDENCE
+        self.minimum_combined_crop_confidence: float = MINIMUM_COMBINED_CROP_CONFIDENCE
+        self.minimum_combined_weed_confidence: float = MINIMUM_COMBINED_WEED_CONFIDENCE
 
         self.PLANTS_CHANGED = rosys.event.Event()
         """The collection of plants has changed."""
@@ -58,8 +58,8 @@ class PlantProvider(rosys.persistence.PersistentModule):
             'crop_spacing': self.crop_spacing,
             'predict_crop_position': self.predict_crop_position,
             'prediction_confidence': self.prediction_confidence,
-            'crop_confidence_threshold': self.crop_confidence_threshold,
-            'weed_confidence_threshold': self.weed_confidence_threshold,
+            'minimum_combined_crop_confidence': self.minimum_combined_crop_confidence,
+            'minimum_combined_weed_confidence': self.minimum_combined_weed_confidence,
         }
         return data
 
@@ -68,8 +68,10 @@ class PlantProvider(rosys.persistence.PersistentModule):
         self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
         self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)
         self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
-        self.crop_confidence_threshold = data.get('crop_confidence_threshold', self.crop_confidence_threshold)
-        self.weed_confidence_threshold = data.get('weed_confidence_threshold', self.weed_confidence_threshold)
+        self.minimum_combined_crop_confidence = data.get(
+            'minimum_combined_crop_confidence', self.minimum_combined_crop_confidence)
+        self.minimum_combined_weed_confidence = data.get(
+            'minimum_combined_weed_confidence', self.minimum_combined_weed_confidence)
 
     def prune(self) -> None:
         weeds_max_age = 10.0
@@ -136,22 +138,22 @@ class PlantProvider(rosys.persistence.PersistentModule):
         plant.confidences.append(self.prediction_confidence)
 
     def get_relevant_crops(self, point: Point, *, max_distance=0.5) -> list[Plant]:
-        return [c for c in self.crops if c.position.distance(point) <= max_distance and c.confidence >= self.crop_confidence_threshold]
+        return [c for c in self.crops if c.position.distance(point) <= max_distance and c.confidence >= self.minimum_combined_crop_confidence]
 
     def get_relevant_weeds(self, point: Point, *, max_distance=0.5) -> list[Plant]:
-        return [w for w in self.weeds if w.position.distance(point) <= max_distance and w.confidence >= self.weed_confidence_threshold]
+        return [w for w in self.weeds if w.position.distance(point) <= max_distance and w.confidence >= self.minimum_combined_weed_confidence]
 
     def settings_ui(self) -> None:
         ui.number('Combined crop confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
-            .bind_value(self, 'crop_confidence_threshold') \
-            .tooltip(f'Needed crop confidence for punshing (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
+            .bind_value(self, 'minimum_combined_crop_confidence') \
+            .tooltip(f'Needed crop confidence for punshing (default: {MINIMUM_COMBINED_CROP_CONFIDENCE:.2f})')
         ui.number('Combined weed confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
-            .bind_value(self, 'weed_confidence_threshold') \
-            .tooltip(f'Needed weed confidence for punshing (default: {MINIMUM_WEED_CONFIDENCE:.2f})')
+            .bind_value(self, 'minimum_combined_weed_confidence') \
+            .tooltip(f'Needed weed confidence for punshing (default: {MINIMUM_COMBINED_WEED_CONFIDENCE:.2f})')
         ui.number('Crop match distance', step=0.01, min=0.01, max=0.10, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
