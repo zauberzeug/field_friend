@@ -107,9 +107,6 @@ class Gnss(ABC):
         # correct the gnss coordinate by antenna offset
         self.current.location = get_new_position(self.current.location, self.antenna_offset, yaw+np.pi/2)
         cartesian_coordinates = self.current.location.cartesian()
-        distance = self.odometer.prediction.point.distance(cartesian_coordinates)
-        if distance > 1:
-            self.log.warning(f'GNSS distance to prediction too high: {distance:.2f}m!!')
         pose = rosys.geometry.Pose(
             x=cartesian_coordinates.x,
             y=cartesian_coordinates.y,
