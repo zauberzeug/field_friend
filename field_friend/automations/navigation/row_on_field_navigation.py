@@ -39,9 +39,6 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         if self.field is None:
             rosys.notify('No field selected', 'negative')
             return False
-        if not self.field.reference:
-            rosys.notify('No field reference available', 'negative')
-            return False
         if not self.field.rows:
             rosys.notify('No rows available', 'negative')
             return False
@@ -55,13 +52,11 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         if self.state == self.State.FIELD_COMPLETED:
             self.clear()
         if self.state == self.State.FOLLOWING_ROW:
-            if self.current_row.line_segment(self.field.reference).distance(self.odometer.prediction.point) > 0.1:
+            if self.current_row.line_segment().distance(self.odometer.prediction.point) > 0.1:
                 self.clear()
         else:
             self.plant_provider.clear()
 
-        # NOTE: it's useful to set the reference point to the reference of the field; that way the cartesian coordinates are simpler to comprehend
-        self.gnss.reference = self.field.reference
         await rosys.sleep(0.1)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
         return True
@@ -72,7 +67,6 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
 
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
-        assert self.field.reference is not None
         if self.state == self.State.APPROACHING_ROW_START:
             # TODO only drive to row if we are not on any rows and near the row start
             await self._drive_to_row(self.current_row)
@@ -82,7 +76,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         if self.state == self.State.FOLLOWING_ROW:
             if not self.implement.is_active:
                 await self.implement.activate()
-            if self.odometer.prediction.point.distance(self.current_row.points[-1].cartesian(self.field.reference)) >= 0.1:
+            if self.odometer.prediction.point.distance(self.current_row.points[-1].cartesian()) >= 0.1:
                 await super()._drive(distance)
             else:
                 await self.implement.deactivate()
@@ -90,12 +84,12 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
                 self.log.info('Returning to start...')
         if self.state == self.State.RETURNING_TO_START:
             self.driver.parameters.can_drive_backwards = True
-            end = self.current_row.points[0].cartesian(self.field.reference)
+            end = self.current_row.points[0].cartesian()
             await self.driver.drive_to(end, backward=True)  # TODO replace with following crops or replay recorded path
             inverse_yaw = (self.odometer.prediction.yaw + math.pi) % (2 * math.pi)
             next_row = self.field.rows[self.row_index + 1] if self.row_index + \
                 1 < len(self.field.rows) else self.current_row
-            between = end.interpolate(next_row.points[0].cartesian(self.field.reference), 0.5)
+            between = end.interpolate(next_row.points[0].cartesian(), 0.5)
             await self.driver.drive_to(between.polar(1.5, inverse_yaw), backward=True)
             self.driver.parameters.can_drive_backwards = False
             self.state = self.State.ROW_COMPLETED
@@ -112,9 +106,9 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
 
     async def _drive_to_row(self, row: Row):
         self.log.info(f'Driving to "{row.name}"...')
-        assert self.field and self.field.reference
-        target = row.points[0].cartesian(self.field.reference)
-        direction = target.direction(row.points[-1].cartesian(self.field.reference))
+        assert self.field
+        target = row.points[0].cartesian()
+        direction = target.direction(row.points[-1].cartesian())
         end_pose = Pose(x=target.x, y=target.y, yaw=direction)
         spline = Spline.from_poses(self.odometer.prediction, end_pose)
         await self.driver.drive_spline(spline)
@@ -162,11 +156,10 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         self.detector.simulated_objects.clear()
         if self.field is None:
             return
-        assert self.field.reference is not None
         for row in self.field.rows:
             if len(row.points) < 2:
                 continue
-            cartesian = row.cartesian(self.field.reference)
+            cartesian = row.cartesian()
             start = cartesian[0]
             end = cartesian[-1]
             length = start.distance(end)

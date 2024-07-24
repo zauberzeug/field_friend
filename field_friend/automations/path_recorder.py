@@ -36,11 +36,6 @@ class PathRecorder():
             self.log.warning(f'not recording path "{path.name}" not found')
             return
         self.log.info(f'recording path {path.name}')
-        if self.gnss.device != 'simulation':
-            if self.gnss.reference is None:
-                self.log.warning('not recording because no reference location set')
-                return
-            path.reference = self.gnss.reference
         rosys.notify(f'Recording...Please drive the path {path.name} now.')
         self.current_path_recording = path.name
         self.state = 'recording'
@@ -84,17 +79,6 @@ class PathRecorder():
         if path == []:
             self.log.warning(f'path {path.name} is empty')
             return
-        if self.gnss.device != 'simulation':
-            if path.reference is None:
-                self.log.warning('not driving because no reference location set')
-                return
-            # NOTE the target location is the path reference point; we do not approach a path if it is to far away
-            self.gnss.reference = path.reference
-            distance = self.gnss.distance(self.gnss.current)
-            if not distance or distance > 10:
-                self.log.warning('not driving because distance to reference location is too large')
-                rosys.notify('Distance to reference location is too large', 'negative')
-                return
         self.log.info(f'path: {path}')
         self.current_path_driving = path.name
         rosys.notify(f'Driving path {path.name}...', 'info')

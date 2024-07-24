@@ -4,12 +4,12 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import Optional
 
 import numpy as np
 import rosys
-import serial
 
+from .. import localization
 from .geo_point import GeoPoint
 from .point_transformation import get_new_position
 
@@ -47,7 +47,6 @@ class Gnss(ABC):
 
         self.current: Optional[GNSSRecord] = None
         self.device: str | None = None
-        self._reference: Optional[GeoPoint] = None
         self.antenna_offset = antenna_offset
         self.is_paused = False
         self.observed_poses: list[rosys.geometry.Pose] = []
@@ -58,34 +57,9 @@ class Gnss(ABC):
         rosys.on_repeat(self.check_gnss, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
 
-    @property
-    def reference(self) -> Optional[GeoPoint]:
-        return self._reference
-
-    @reference.setter
-    def reference(self, reference: GeoPoint) -> None:
-        assert reference is not None
-        if self._reference is not None:
-            relative_location_of_new_reference = reference.cartesian(self._reference)
-            new_position = self.odometer.prediction.point + relative_location_of_new_reference
-            self.odometer.history.clear()
-            self.odometer.prediction = rosys.geometry.Pose(x=new_position.x, y=new_position.y,
-                                                           yaw=self.odometer.prediction.yaw,
-                                                           time=rosys.time())
-        self._reference = reference
-
     @abstractmethod
     async def try_connection(self) -> None:
         pass
-
-    def clear_reference(self) -> None:
-        self.reference = None
-
-    def distance(self, point: GeoPoint) -> Optional[float]:
-        """Compute the distance between the reference point and the given point in meters"""
-        if self.reference is None:
-            return None
-        return point.distance(point)
 
     async def check_gnss(self) -> None:
         if self.is_paused:
@@ -122,9 +96,9 @@ class Gnss(ABC):
 
     def _on_rtk_fix(self) -> None:
         assert self.current is not None
-        if self.reference is None:
+        if localization.reference.lat == 0 and localization.reference.long == 0:
             self.log.info(f'GNSS reference set to {self.current.location}')
-            self.reference = deepcopy(self.current.location)
+            localization.reference = deepcopy(self.current.location)
         if self.current.heading is not None:
             yaw = np.deg2rad(-self.current.heading)
         else:
@@ -132,7 +106,10 @@ class Gnss(ABC):
             yaw = self.odometer.get_pose(time=self.current.timestamp).yaw
         # correct the gnss coordinate by antenna offset
         self.current.location = get_new_position(self.current.location, self.antenna_offset, yaw+np.pi/2)
-        cartesian_coordinates = self.current.location.cartesian(self.reference)
+        cartesian_coordinates = self.current.location.cartesian()
+        distance = self.odometer.prediction.point.distance(cartesian_coordinates)
+        if distance > 1:
+            self.log.warning(f'GNSS distance to prediction too high: {distance:.2f}m!!')
         pose = rosys.geometry.Pose(
             x=cartesian_coordinates.x,
             y=cartesian_coordinates.y,

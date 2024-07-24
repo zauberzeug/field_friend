@@ -15,9 +15,6 @@ def test_loading_from_old_persistence():
     assert len(field_provider.fields) == 3
     field = field_provider.fields[1]
     assert len(field.points) == 4
-    assert field.reference is not None
-    assert field.reference.lat == pytest.approx(51.98, rel=0.01)
-    assert field.reference.long == pytest.approx(7.43, rel=0.01)
     assert len(field.rows) == 2
     row = field.rows[1]
     assert len(row.points) == 2
