@@ -1,26 +1,26 @@
-from typing import Optional
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import rosys
 from nicegui import ui
+from rosys.automation import Automator, automation_controls
 from rosys.driving import Odometer
 from rosys.geometry import Point3d
 from rosys.vision import Image
-from rosys.automation import Automator, automation_controls
 
-from ...automations import PlantLocator
-from ...automations.plant import Plant
 from ...vision import CalibratableUsbCameraProvider, SimulatedCamProvider
+from ..plant import Plant
 
 if TYPE_CHECKING:
     from field_friend.system import System
+
+    from ...automations import PlantLocator
 
 
 class PunchDialog(ui.dialog):
     def __init__(self, system: 'System', shrink_factor: int = 1, timeout: float = 20.0, ui_update_rate: float = 0.2) -> None:
         super().__init__()
         self.camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider = system.usb_camera_provider
-        self.plant_locator: PlantLocator = system.plant_locator
+        self.plant_locator: 'PlantLocator' = system.plant_locator
         self.odometer: Odometer = system.odometer
         self.automator: Automator = system.automator
         self.shrink_factor: int = shrink_factor
@@ -57,6 +57,8 @@ class PunchDialog(ui.dialog):
         assert self.target_plant is not None
         assert self.camera is not None
         detection_image = self.camera.latest_detected_image if self.target_plant.detection_image is None else self.target_plant.detection_image
+        assert detection_image is not None
+        assert self.static_image_view is not None
         self.update_content(self.static_image_view, detection_image, draw_target=True)
         self.timer.activate()
         super().open()
@@ -68,16 +70,8 @@ class PunchDialog(ui.dialog):
     def setup_camera(self) -> None:
         cameras = list(self.camera_provider.cameras.values())
         active_camera = next((camera for camera in cameras if camera.is_connected), None)
-        if not active_camera:
-            if self.camera:
-                self.camera = None
-                self.camera_card.clear()
-                with self.camera_card:
-                    ui.label('no camera available').classes('text-center')
-                    ui.image('assets/field_friend.webp').classes('w-full')
-            return
-        if self.camera is None or self.camera != active_camera:
-            self.camera = active_camera
+        assert active_camera is not None
+        self.camera = active_camera
 
     def update_content(self, image_view: ui.interactive_image, image: Image, draw_target: bool = False) -> None:
         self._duration_left -= self.ui_update_rate
@@ -90,15 +84,21 @@ class PunchDialog(ui.dialog):
         if image and image.detections:
             target_point = None
             confidence = None
+            assert self.camera.calibration is not None
             if self.target_plant and draw_target:
                 confidence = self.target_plant.confidence
-                relative_point = self.odometer.prediction.relative_point(self.target_plant.position)
+                # TODO simplify this when https://github.com/zauberzeug/rosys/discussions/130 is available and integrated into the field friend code
+                if isinstance(self.camera_provider, SimulatedCamProvider):
+                    point = self.target_plant.position
+                else:
+                    point = self.odometer.prediction.relative_point(self.target_plant.position)
                 target_point = self.camera.calibration.project_to_image(
-                    Point3d(x=relative_point.x, y=relative_point.y, z=0))
+                    Point3d(x=point.x, y=point.y, z=0))
             image_view.set_content(self.to_svg(image.detections, target_point, confidence))
 
     def update_live_view(self) -> None:
         if self.camera is None:
+            self.live_image_view.set_source('assets/field_friend.webp')
             return
         self.update_content(self.live_image_view, self.camera.latest_detected_image)
 

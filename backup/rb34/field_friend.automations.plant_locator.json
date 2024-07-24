@@ -1,7 +1,8 @@
 {
-    "minimum_weed_confidence": 0.05,
-    "minimum_crop_confidence": 0.2,
-    "autoupload": "disabled",
+    "minimum_weed_confidence": 0.3,
+    "minimum_crop_confidence": 0.3,
+    "autoupload": "filtered",
+    "upload_images": false,
     "tags": [
         "kiebitz"
     ]

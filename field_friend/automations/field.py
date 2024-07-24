@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 import rosys
 from shapely.geometry import Polygon
@@ -23,14 +22,13 @@ class Row(GeoPointCollection):
             points=list(reversed(self.points)),
         )
 
-    def line_segment(self, reference: GeoPoint) -> rosys.geometry.LineSegment:
-        return rosys.geometry.LineSegment(point1=self.points[0].cartesian(reference),
-                                          point2=self.points[-1].cartesian(reference))
+    def line_segment(self) -> rosys.geometry.LineSegment:
+        return rosys.geometry.LineSegment(point1=self.points[0].cartesian(),
+                                          point2=self.points[-1].cartesian())
 
 
 @dataclass(slots=True, kw_only=True)
 class Field(GeoPointCollection):
-    reference: Optional[GeoPoint] = None
     visualized: bool = False
     obstacles: list[FieldObstacle] = field(default_factory=list)
     rows: list[Row] = field(default_factory=list)
@@ -38,8 +36,7 @@ class Field(GeoPointCollection):
 
     @property
     def outline(self) -> list[rosys.geometry.Point]:
-        assert self.reference is not None
-        return self.cartesian(self.reference)
+        return self.cartesian()
 
     @property
     def outline_as_tuples(self) -> list[tuple[float, float]]:

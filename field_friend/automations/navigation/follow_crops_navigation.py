@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
 
 class FollowCropsNavigation(Navigation):
-    DRIVE_DISTANCE = 0.02
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
@@ -39,9 +38,9 @@ class FollowCropsNavigation(Navigation):
         self.plant_locator.pause()
         await self.implement.deactivate()
 
-    async def _drive(self):
-        row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point)
-        if len(row) >= 2:
+    async def _drive(self, distance: float):
+        row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point, max_distance=1.0)
+        if len(row) >= 3:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
             # Fit a line using least squares
             A = np.vstack([points_array[:, 0], np.ones(len(points_array))]).T
@@ -51,23 +50,14 @@ class FollowCropsNavigation(Navigation):
             if np.abs(yaw - self.odometer.prediction.yaw) > math.pi / 2:
                 yaw = yaw + math.pi
 
-            # Calculate a point 0.3 meters in front of the robot along the line
-            x_front = self.odometer.prediction.point.x + 0.3 * np.cos(yaw)
-            y_front = m * x_front + c
-            point_front = np.array([x_front, y_front])
-
-            # Calculate the desired yaw angle from the robot's current position to the front point
-            delta_x = point_front[0] - self.odometer.prediction.point.x
-            delta_y = point_front[1] - self.odometer.prediction.point.y
-            yaw_of_row = np.arctan2(delta_y, delta_x)
+            fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
+            closest_point = fitted_line.foot_point(self.odometer.prediction.point)
+            front_point = closest_point.polar(0.3, yaw)
+            target_yaw = self.odometer.prediction.point.direction(front_point)
         else:
-            yaw_of_row = self.odometer.prediction.yaw
-        target_yaw = self.combine_angles(yaw_of_row, self.crop_attraction, self.odometer.prediction.yaw)
-        # self.log.info(f'following crops with target yaw {target_yaw}')
-        target = self.odometer.prediction.point.polar(self.DRIVE_DISTANCE, target_yaw)
-        # self.log.info(f'Current world position: {self.odometer.prediction} Target next crop at {target}')
-        with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
-            await self.driver.drive_to(target)
+            target_yaw = self.odometer.prediction.yaw
+        target_yaw = self.combine_angles(target_yaw, self.crop_attraction, self.odometer.prediction.yaw)
+        await self._drive_to_yaw(distance, target_yaw)
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
         weight1 = influence
@@ -84,7 +74,8 @@ class FollowCropsNavigation(Navigation):
     def create_simulation(self):
         for i in range(100):
             x = i/10.0
-            p = rosys.geometry.Point3d(x=x, y=np.sin(x/2), z=0)
+            p = rosys.geometry.Point3d(x=x, y=(x/4) ** 3, z=0)
+            p = self.odometer.prediction.transform3d(p)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
 
     def _should_finish(self) -> bool:
