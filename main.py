@@ -40,7 +40,6 @@ def startup() -> None:
     interface.pages.test_page(page_wrapper, system)  # /test
     interface.pages.kpi_page(page_wrapper, system)  # /kpis
     interface.pages.monitor_page(page_wrapper, system)  # /monitor
-    interface.pages.io_page(page_wrapper, system)  # /io_overview
 
     @app.get('/status')  # /status
     def status():

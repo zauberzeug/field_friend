@@ -18,12 +18,32 @@ class io_sockets:
 
     def __init__(self, system: System) -> None:
         self.system = system
+        with ui.card().style('background-color: #3E63A6;') as estop_card:
+            ui.markdown('**E-Stops**').classes('w-full text-center')
+            ui.separator()
+            with ui.row():
+                status_bulb(True).bind_visibility_from(system.field_friend.estop, 'is_soft_estop_active')
+                status_bulb(False).bind_visibility_from(
+                    system.field_friend.estop, 'is_soft_estop_active', lambda x: not x)
+                ui.label('Soft E-Stop')
+            if system.is_real:
+                with ui.row():
+                    status_bulb(True).bind_visibility_from(system.field_friend.estop,
+                                                           'pressed_estops', lambda pressed_estops: 0 in pressed_estops)
+                    status_bulb(False).bind_visibility_from(
+                        system.field_friend.estop, 'pressed_estops', lambda pressed_estops: 0 not in pressed_estops)
+                    ui.label('Hard E-Stop 0')
+                with ui.row():
+                    status_bulb(True).bind_visibility_from(system.field_friend.estop,
+                                                           'pressed_estops', lambda pressed_estops: 1 in pressed_estops)
+                    status_bulb(False).bind_visibility_from(system.field_friend.estop,
+                                                            'pressed_estops', lambda pressed_estops: 1 not in pressed_estops)
+                    ui.label('Hard E-Stop 1')
         with ui.card().style('min-width: 200px; background-color: #3E63A6') as bumper_card:
             ui.markdown('**Bumper**').classes('w-full text-center')
             ui.separator()
             if self.system.field_friend.bumper is not None:
                 with ui.row():
-                   # TODO test the bumpers because U3 have no Bumpers
                     status_bulb(True).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
                                                            lambda active_bumpers: True if 'front_top' in active_bumpers else False)
                     status_bulb(False).bind_visibility_from(self.system.field_friend.bumper, 'active_bumpers',
@@ -60,20 +80,6 @@ class io_sockets:
                     status_bulb(True).bind_visibility_from(self.system.field_friend.y_axis, 'end_r')
                     status_bulb(False).bind_visibility_from(self.system.field_friend.y_axis, 'end_r', lambda x: not x)
                     ui.label('Right End Switch')
-                with ui.row():
-                    # TODO check if this is correct
-                    if self.system.field_friend.y_axis.steps:
-                        status_bulb(True)
-                    else:
-                        status_bulb(False)
-                    ui.label('Step')
-                with ui.row():
-                    # TODO add this
-                    # if self.system.field_friend.y_axis.direction:
-                    #     status_bulb(True)
-                    # else:
-                    #     status_bulb(False)
-                    ui.label('Direction')
             else:
                 ui.icon("link_off").props("size=lg").style(
                     "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
@@ -159,9 +165,9 @@ class io_sockets:
             if self.system.is_real:
                 with ui.row():
                     status_bulb(True).bind_visibility_from(
-                        self.system.field_friend.bms.state, 'percentage', lambda x: x < 20)
+                        self.system.field_friend.bms.state, 'percentage', lambda x: x < 20 if x else False)
                     status_bulb(False).bind_visibility_from(
-                        self.system.field_friend.bms.state, 'percentage', lambda x: x >= 20)
+                        self.system.field_friend.bms.state, 'percentage', lambda x: x >= 20 if x else False)
                     ui.label('Battery Low (< 20%)')
                 with ui.row():
                     status_bulb(True).bind_visibility_from(self.system.field_friend.bms.state, 'is_charging')
