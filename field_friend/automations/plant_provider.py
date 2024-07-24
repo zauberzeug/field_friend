@@ -146,27 +146,27 @@ class PlantProvider(rosys.persistence.PersistentModule):
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'crop_confidence_threshold') \
-            .tooltip('Needed crop confidence for punshing')
+            .tooltip(f'Needed crop confidence for punshing (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
         ui.number('Combined weed confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'weed_confidence_threshold') \
-            .tooltip('Needed weed confidence for punshing')
+            .tooltip(f'Needed weed confidence for punshing (default: {MINIMUM_WEED_CONFIDENCE:.2f})')
         ui.number('Crop match distance', step=0.01, min=0.01, max=0.10, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'match_distance') \
-            .tooltip('Maximum distance for a detection to be considered the same plant')
+            .tooltip(f'Maximum distance for a detection to be considered the same plant (default: {MATCH_DISTANCE:.2f})')
         ui.number('Crop spacing', step=0.01, min=0.01, max=1.00, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'crop_spacing') \
-            .tooltip('Spacing between crops needed for crop position prediction')
+            .tooltip(f'Spacing between crops needed for crop position prediction (default: {CROP_SPACING:.2f})')
         ui.number('Crop prediction confidence', step=0.05, min=0.05, max=1.00, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'prediction_confidence') \
-            .tooltip('Confidence of the crop prediction')
+            .tooltip(f'Confidence of the crop prediction (default: {PREDICTION_CONFIDENCE:.2f})')
         ui.checkbox('Crop Prediction', on_change=self.request_backup) \
             .bind_value(self, 'predict_crop_position') \
-            .tooltip('Provides a confidence boost for crop detections that match the expected crop spacing')
+            .tooltip(f'Provides a confidence boost for crop detections that match the expected crop spacing (default: {PREDICT_CROP_POSITION})')
