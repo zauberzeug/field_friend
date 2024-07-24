@@ -119,21 +119,20 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=2.0)
 
 
-@pytest.mark.skip('does not work anymore due to gps using wheels.pose instead of odometry.pose')
 async def test_approaching_first_row(system: System, field: Field):
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.automator.start()
-    await forward(x=1.5, y=-6.05)
+    await forward(until=lambda: system.field_navigation.state == system.field_navigation.State.APPROACHING_ROW_START)
+    await forward(1)
     assert system.field_navigation.current_row == field.rows[0]
-    assert system.field_navigation.state == system.field_navigation.State.APPROACHING_ROW_START
     assert system.field_navigation.automation_watcher.field_watch_active
     await forward(5)
     assert system.automator.is_running
     assert system.field_navigation.current_row == field.rows[0]
-    assert system.field_navigation.state == system.field_navigation.State.FOLLOWING_ROW
+    await forward(until=lambda: system.field_navigation.state == system.field_navigation.State.FOLLOWING_ROW)
     assert system.field_navigation.automation_watcher.field_watch_active
 
 

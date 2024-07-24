@@ -8,6 +8,8 @@ import rosys
 import shapely
 from geographiclib.geodesic import Geodesic
 
+from .. import localization
+
 
 @dataclass(slots=True, kw_only=True)
 class GeoPoint:
@@ -26,15 +28,12 @@ class GeoPoint:
         geodetic_measurement = Geodesic.WGS84.Inverse(self.lat, self.long, other.lat, other.long)
         return geodetic_measurement['s12']
 
-    def cartesian(self, reference: GeoPoint) -> rosys.geometry.Point:
-        """Calculate the cartesian coordinates of this point relative to a reference point.
+    def cartesian(self) -> rosys.geometry.Point:
+        """Calculate the cartesian coordinates of this point relative to the reference point.
 
         This method uses the geodesic distance and azimuth angle between the reference point and
         the current point to calculate the Cartesian coordinates.
         The azimuth angle is measured clockwise from the north direction, and the resulting Cartesian coordinates have the x-axis to north and y-axis to west.
-
-        Parameters:
-        reference (GeoPoint): The reference GeoPoint to which the Cartesian coordinates are relative.
 
         Returns:
         rosys.geometry.Point: A Point object representing the Cartesian coordinates (x, y) 
@@ -42,7 +41,7 @@ class GeoPoint:
                             - x is the eastward distance in meters,
                             - y is the northward distance in meters.
         """
-        r = Geodesic.WGS84.Inverse(reference.lat, reference.long, self.lat, self.long)
+        r = Geodesic.WGS84.Inverse(localization.reference.lat, localization.reference.long, self.lat, self.long)
         s = r['s12']
         a = -np.deg2rad(r['azi1'])
         x = s * np.cos(a)
@@ -76,10 +75,10 @@ class GeoPointCollection:
     name: str
     points: list[GeoPoint] = field(default_factory=list)
 
-    def cartesian(self, reference: GeoPoint) -> list[rosys.geometry.Point]:
+    def cartesian(self) -> list[rosys.geometry.Point]:
         cartesian_points = []
         for point in self.points:
-            cartesian_points.append(point.cartesian(reference))
+            cartesian_points.append(point.cartesian())
         return cartesian_points
 
     @property
