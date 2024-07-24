@@ -129,10 +129,10 @@ class PlantProvider(rosys.persistence.PersistentModule):
         plant.confidences.append(self.prediction_confidence)
 
     def get_relevant_crops(self, point: Point, *, max_distance=0.5) -> list[Plant]:
-        return [c for c in self.crops if c.position.distance(point) <= max_distance and len(c.positions) >= 3 and c.confidence > self.crop_confidence_threshold]
+        return [c for c in self.crops if c.position.distance(point) <= max_distance and c.confidence > self.crop_confidence_threshold]
 
     def get_relevant_weeds(self, point: Point, *, max_distance=0.5) -> list[Plant]:
-        return [w for w in self.weeds if w.position.distance(point) <= max_distance and len(w.positions) >= 3 and w.confidence > self.weed_confidence_threshold]
+        return [w for w in self.weeds if w.position.distance(point) <= max_distance and w.confidence > self.weed_confidence_threshold]
 
     def settings_ui(self) -> None:
         ui.number('Combined crop confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f', on_change=self.request_backup) \
