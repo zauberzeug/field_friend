@@ -49,6 +49,10 @@ COPY requirements.txt ./
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
     python3 -m pip install -r requirements.txt
 
+# link extracted from /usr/local/zed/get_python_api.py
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
+    python3 -m pip install https://download.stereolabs.com/zedsdk/4.1/whl/linux_aarch64/pyzed-4.1-cp311-cp311-linux_aarch64.whl
+
 # for flashing esp32 as root
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip sudo pip install esptool 
 

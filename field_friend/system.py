@@ -7,42 +7,19 @@ import psutil
 import rosys
 
 from . import localization
-from .automations import (
-    AutomationWatcher,
-    BatteryWatcher,
-    FieldProvider,
-    KpiProvider,
-    PathProvider,
-    PlantLocator,
-    PlantProvider,
-    Puncher,
-)
-from .automations.implements import (
-    ChopAndScrew,
-    Implement,
-    Recorder,
-    Tornado,
-    WeedingScrew,
-)
-from .automations.navigation import (
-    CoverageNavigation,
-    FollowCropsNavigation,
-    Navigation,
-    RowsOnFieldNavigation,
-    StraightLineNavigation,
-)
+from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PlantLocator,
+                          PlantProvider, Puncher)
+from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
+from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
+                                     StraightLineNavigation)
 from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
-from .vision import (
-    CalibratableUsbCameraProvider,
-    CameraConfigurator,
-    SimulatedCam,
-    SimulatedCamProvider,
-)
+from .vision import (CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider,
+                     ZedxminiCamera, ZedxminiCameraProvider)
 
 
 class System(rosys.persistence.PersistentModule):
@@ -73,11 +50,12 @@ class System(rosys.persistence.PersistentModule):
             self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
-            self.usb_camera_provider = SimulatedCamProvider()
+            # self.usb_camera_provider = SimulatedCamProvider()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
-            rosys.on_startup(self.setup_simulated_usb_camera)
+            # rosys.on_startup(self.setup_simulated_usb_camera)
+            self.usb_camera_provide = ZedxminiCameraProvider()
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
-            self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=self.version)
+            # self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=self.version)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.odometer = rosys.driving.Odometer(self.field_friend.wheels)

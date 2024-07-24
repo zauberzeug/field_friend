@@ -5,20 +5,6 @@ services:
     restart: always
     privileged: true
 
-  detector:
-    image: "zauberzeug/yolov5-detector:0.1.1-nlv0.10.9-35.4.1"
-    restart: always
-    ports:
-      - "8004:80"
-    hostname: ${ROBOT_ID}
-    environment:
-      - HOST=learning-loop.ai
-      - ORGANIZATION=zuckerruebe
-      - PROJECT=uckerbots
-      - NVIDIA_VISIBLE_DEVICES=all
-    volumes:
-      - ~/data_plants:/data
-
   # detector:
   #   image: "zauberzeug/yolov5-detector:0.1.1-nlv0.10.9-35.4.1"
   #   restart: always
@@ -27,11 +13,25 @@ services:
   #   hostname: ${ROBOT_ID}
   #   environment:
   #     - HOST=learning-loop.ai
-  #     - ORGANIZATION=zauberzeug
-  #     - PROJECT=coins
+  #     - ORGANIZATION=zuckerruebe
+  #     - PROJECT=uckerbots
   #     - NVIDIA_VISIBLE_DEVICES=all
   #   volumes:
-  #     - ~/data_coins:/data
+  #     - ~/data_plants:/data
+
+  detector:
+    image: "zauberzeug/yolov5-detector:0.1.1-nlv0.10.9-35.4.1"
+    restart: always
+    ports:
+      - "8004:80"
+    hostname: ${ROBOT_ID}
+    environment:
+      - HOST=learning-loop.ai
+      - ORGANIZATION=zauberzeug
+      - PROJECT=coins
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ~/data_coins:/data
 
   monitoring:
     image: "zauberzeug/yolov5-detector:0.1.1-nlv0.10.9-35.4.1"
