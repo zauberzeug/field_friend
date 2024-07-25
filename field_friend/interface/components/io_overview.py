@@ -11,12 +11,11 @@ if TYPE_CHECKING:
 
 
 class io_overview:
-
     def __init__(self, system: System) -> None:
         self.system = system
         with ui.card().style('background-color: #2E5396; color: white;'), ui.row():
-            with ui.row().style("width: 100%"):
-                ui.label("I/O Overview").style('font-size: 1.5rem; color: white;')
+            with ui.row().style('width: 100%'):
+                ui.label('I/O Overview').style('font-size: 1.5rem; color: white;')
             with ui.card().style('background-color: #3E63A6;'):
                 ui.markdown('**E-Stops**').classes('w-full text-center')
                 ui.separator()
@@ -47,8 +46,8 @@ class io_overview:
                                                       lambda active_bumpers: 'back' in active_bumpers)
                         ui.label('Back Bumper')
                 else:
-                    ui.icon("link_off").props("size=lg").style(
-                        "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+                    ui.icon('link_off').props('size=lg').style(
+                        'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')
             with ui.card().style('min-width: 200px; background-color: #3E63A6'):
                 ui.markdown('**Y-Axis**').classes('w-full text-center')
                 ui.separator()
@@ -63,8 +62,8 @@ class io_overview:
                         status_bulb().bind_value_from(self.system.field_friend.y_axis, 'end_r')
                         ui.label('Right End Switch')
                 else:
-                    ui.icon("link_off").props("size=lg").style(
-                        "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+                    ui.icon('link_off').props('size=lg').style(
+                        'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')
             with ui.card().style('min-width: 200px; background-color: #3E63A6'):
                 ui.markdown('**Z-Axis**').classes('w-full text-center')
                 ui.separator()
@@ -88,8 +87,8 @@ class io_overview:
                         status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_knife_ground')
                         ui.label('Ref Knife Ground')
                 else:
-                    ui.icon("link_off").props("size=lg").style(
-                        "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+                    ui.icon('link_off').props('size=lg').style(
+                        'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')
             with ui.card().style('min-width: 200px; background-color: #3E63A6'):
                 ui.markdown('**Wheels**').classes('w-full text-center')
                 ui.separator()
@@ -110,8 +109,8 @@ class io_overview:
                                 status_bulb(False)
                             ui.label('Connected')
                 else:
-                    ui.icon("link_off").props("size=lg").style(
-                        "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+                    ui.icon('link_off').props('size=lg').style(
+                        'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')
             with ui.card().style('min-width: 200px; background-color: #3E63A6'):
                 ui.markdown('**Flashlight**').classes('w-full text-center')
                 ui.separator()
@@ -120,8 +119,8 @@ class io_overview:
                         status_bulb().bind_value_from(self.system.field_friend.flashlight, 'is_active')
                         ui.label('Turned On')
                 else:
-                    ui.icon("link_off").props("size=lg").style(
-                        "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+                    ui.icon('link_off').props('size=lg').style(
+                        'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')
             with ui.card().style('min-width: 200px; background-color: #3E63A6'):
                 ui.markdown('**Battery**').classes('w-full text-center')
                 ui.separator()
@@ -134,5 +133,5 @@ class io_overview:
                         status_bulb().bind_value_from(self.system.field_friend.bms.state, 'is_charging')
                         ui.label('Is Charging')
                 else:
-                    ui.icon("link_off").props("size=lg").style(
-                        "display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;")
+                    ui.icon('link_off').props('size=lg').style(
+                        'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')
