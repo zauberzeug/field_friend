@@ -95,7 +95,6 @@ class io_overview:
                 if self.system.field_friend.wheels is not None:
                     if self.system.is_real:
                         with ui.row():
-                            print(self.system.field_friend.wheels.linear_target_speed)
                             status_bulb().bind_value_from(self.system.field_friend.wheels, 'linear_target_speed', lambda x: x > 0 or x < 0)
                             ui.label('Forward/Backwards')
                         with ui.row():
