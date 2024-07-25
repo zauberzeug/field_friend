@@ -6,7 +6,7 @@ from .field_planner import field_planner
 from .hardware_control import hardware_control
 from .header_bar import header_bar
 from .info import Info
-from .io_sockets import io_sockets
+from .io_overview import io_overview
 from .key_controls import KeyControls
 from .leaflet_map import leaflet_map
 from .monitoring import monitoring
