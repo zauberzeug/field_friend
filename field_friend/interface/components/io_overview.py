@@ -93,20 +93,12 @@ class io_overview:
                 ui.markdown('**Wheels**').classes('w-full text-center')
                 ui.separator()
                 if self.system.field_friend.wheels is not None:
-                    if self.system.is_real:
-                        with ui.row():
-                            status_bulb().bind_value_from(self.system.field_friend.wheels, 'linear_target_speed', lambda x: x > 0 or x < 0)
-                            ui.label('Forward/Backwards')
-                        with ui.row():
-                            status_bulb().bind_value_from(self.system.field_friend.wheels, 'angular_target_speed', lambda x: x > 0 or x < 0)
-                            ui.label('Turning')
-                    else:
-                        with ui.row():
-                            if self.system.field_friend.wheels:
-                                status_bulb().bind_value_from(self.system.field_friend.wheels)
-                            else:
-                                status_bulb(False)
-                            ui.label('Connected')
+                    with ui.row():
+                        status_bulb().bind_value_from(self.system.field_friend.wheels, 'linear_target_speed', lambda x: x != 0)
+                        ui.label('Forward/Backwards')
+                    with ui.row():
+                        status_bulb().bind_value_from(self.system.field_friend.wheels, 'angular_target_speed', lambda x: x != 0)
+                        ui.label('Turning')
                 else:
                     ui.icon('link_off').props('size=lg').style(
                         'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')
