@@ -11,8 +11,8 @@ from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
 CROP_CATEGORY_NAME = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
-MINIMUM_CROP_CONFIDENCE = 0.75
-MINIMUM_WEED_CONFIDENCE = 0.8
+MINIMUM_CROP_CONFIDENCE = 0.3
+MINIMUM_WEED_CONFIDENCE = 0.3
 
 
 if TYPE_CHECKING:
