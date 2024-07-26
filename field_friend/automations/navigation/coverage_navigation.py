@@ -84,21 +84,16 @@ class CoverageNavigation(Navigation):
             self.log.error('Field is not available')
             rosys.notify('No field selected', 'negative')
             return False
-        if not self.field.reference:
-            self.log.error('Field reference is not available')
-            return False
-        self.system.gnss.reference = self.field.reference
         if self.padding < self.robot_width+self.lane_distance:
             self.padding = self.robot_width+self.lane_distance
 
         self.path_planner.obstacles.clear()
         self.path_planner.areas.clear()
         assert self.field is not None
-        assert self.field.reference is not None
         for obstacle in self.field.obstacles:
             self.path_planner.obstacles[obstacle.id] = \
                 rosys.pathplanning.Obstacle(id=obstacle.id,
-                                            outline=obstacle.cartesian(self.field.reference))
+                                            outline=obstacle.cartesian())
         area = rosys.pathplanning.Area(id=f'{self.field.id}', outline=self.field.outline)
         self.path_planner.areas = {area.id: area}
         self.paths = self._generate_mowing_path()

@@ -87,7 +87,7 @@ class Navigation(rosys.persistence.PersistentModule):
         carrot_offset = rosys.geometry.Point(x=self.driver.parameters.carrot_offset, y=0)
         target_point = target.transform(carrot_offset)
         hook = self.odometer.prediction.transform(hook_offset)
-        turn_angle = rosys.helpers.eliminate_pi(hook.direction(target_point) - self.odometer.prediction.yaw)
+        turn_angle = rosys.helpers.angle(self.odometer.prediction.yaw, hook.direction(target_point))
         curvature = np.tan(turn_angle) / hook_offset.x
         if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
             curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius

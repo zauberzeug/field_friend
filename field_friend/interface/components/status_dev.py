@@ -5,8 +5,17 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
-                         Tornado, YAxis, ZAxis)
+from ... import localization
+from ...hardware import (
+    ChainAxis,
+    FieldFriend,
+    FieldFriendHardware,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+    YAxis,
+    ZAxis,
+)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -298,7 +307,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             if robot.wheels.odrive_version == 4:
                 l0_status.text = 'cant read status update odrive to version 0.5.6'
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
-        reference_position_label.text = 'No reference' if system.gnss.reference is None else 'Set'
+        reference_position_label.text = 'No reference' if localization.reference is None else 'Set'
         gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
         heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
