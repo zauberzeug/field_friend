@@ -1,7 +1,8 @@
 import numpy as np
 from nicegui.elements.scene_objects import Box, Curve, Cylinder, Extrusion, Group
 from rosys.geometry import Spline
-from ...automations import FieldProvider, Field
+
+from ...automations import Field, FieldProvider
 
 
 class field_object(Group):
@@ -42,7 +43,7 @@ class field_object(Group):
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('obstacle_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
-        if active_field and active_field.reference is not None:
+        if active_field:
             field = active_field
             outline = [[point.x, point.y] for point in field.outline]
             if len(outline) > 1:  # Make sure there are at least two points to form a segment
@@ -51,17 +52,15 @@ class field_object(Group):
                     end = outline[(i + 1) % len(outline)]  # Loop back to the first point
                     self.create_fence(start, end)
 
-            if not field.reference:
-                return
             for obstacle in field.obstacles:
-                outline = [[point.x, point.y] for point in obstacle.cartesian(field.reference)]
+                outline = [[point.x, point.y] for point in obstacle.cartesian()]
                 Extrusion(outline, 0.1).with_name(f'obstacle_{obstacle.id}').material('#B80F0A')
 
             for row in field.rows:
                 if len(row.points) == 1:
                     continue
                 else:
-                    row_points = row.cartesian(field.reference)
+                    row_points = row.cartesian()
                     for i in range(len(row_points) - 1):
                         spline = Spline.from_points(row_points[i], row_points[i + 1])
                         Curve(

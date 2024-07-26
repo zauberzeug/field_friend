@@ -19,6 +19,9 @@ configuration = {'wheels': {
         'dir_pin': 4,
         'alarm_pin': 36,
         'ref_t_pin': 35,
+        'end_stops_inverted': False,
+        'acceleration': 1000,
+        'quick_stop_deceleration': 4000,
 },
     'z_axis': {
         'version': 'z_axis_stepper',
@@ -37,6 +40,9 @@ configuration = {'wheels': {
         'motor_on_expander': True,
         'end_stops_on_expander': True,
         'reversed_direction': False,
+        'end_stops_inverted': False,
+        'acceleration': 1000,
+        'quick_stop_deceleration': 4000,
 },
     'flashlight': {
         'version': 'flashlight_v2',

@@ -21,6 +21,7 @@ configuration = {
         'step_pin': 5,
         'dir_pin': 4,
         'alarm_pin': 13,
+        'alarm_inverted': True,
         'end_r_pin': 19,
         'end_l_pin': 21,
         'motor_on_expander': False,
@@ -81,7 +82,7 @@ configuration = {
     'bumper': {
         'name': 'bumper',
         'on_expander': True,
-        'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
+        'pins': {'front_top': 12, 'front_bottom': 22, 'back': 25},
     },
     'status_control': {
         'name': 'status_control',

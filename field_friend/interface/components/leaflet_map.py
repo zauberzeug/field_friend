@@ -80,8 +80,6 @@ class leaflet_map:
                 else:
                     with ui.dialog() as simulated_marker_dialog, ui.card():
                         ui.label('You are currently working in a simulation. What does the placed point represent?')
-                        ui.button('simulated roboter reference point',
-                                  on_click=lambda: self.set_simulated_reference(latlon, simulated_marker_dialog))
                         ui.button('as point for the current object',
                                   on_click=lambda: self.add_point_active_object(latlon, simulated_marker_dialog))
                         ui.button('Close', on_click=lambda: self.abort_point_drawing(simulated_marker_dialog))
@@ -111,19 +109,6 @@ class leaflet_map:
             .bind_enabled_from(self, 'active_field') \
             .props('icon=polyline dense flat') \
             .tooltip('center map on field boundaries').classes('ml-0')
-
-    def set_simulated_reference(self, latlon, dialog):
-        dialog.close()
-        self.m.remove_layer(self.drawn_marker)
-        self.gnss.reference = GeoPoint.from_list(latlon)
-        self.gnss.ROBOT_GNSS_POSITION_CHANGED.emit()
-        self.gnss.ROBOT_POSE_LOCATED.emit(rosys.geometry.Pose(
-            x=0.000,
-            y=0.000,
-            yaw=0.0,
-            time=0
-        ))
-        ui.notify(f'Robot reference has been set to {latlon[0]}, {latlon[1]}')
 
     def abort_point_drawing(self, dialog) -> None:
         if self.drawn_marker is not None:
