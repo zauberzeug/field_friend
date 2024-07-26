@@ -78,6 +78,7 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 1.0
     system.field_friend.wheels.slip_factor_right = 0.05
+    system.gnss.ensure_gnss = True
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
@@ -108,6 +109,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
         p = system.odometer.prediction.transform3d(p)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.gnss.min_seconds_between_updates = 1
+    system.gnss.ensure_gnss = True
     system.current_navigation = system.follow_crops_navigation
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     system.field_friend.wheels.slip_factor_right = 0.05

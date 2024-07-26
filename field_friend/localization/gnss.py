@@ -52,6 +52,7 @@ class Gnss(ABC):
         self.observed_poses: list[rosys.geometry.Pose] = []
         self.last_pose_update = rosys.time()
         self.min_seconds_between_updates = 10.0
+        self.ensure_gnss = False
 
         self.needs_backup = False
         rosys.on_repeat(self.check_gnss, 0.01)
@@ -116,10 +117,13 @@ class Gnss(ABC):
 
     async def update_robot_pose(self) -> None:
         assert not self.is_paused
-        while len(self.observed_poses) < 10:
-            if rosys.time() - self.last_pose_update < self.min_seconds_between_updates:
-                return
-            await rosys.sleep(0.1)
+        if self.ensure_gnss:
+            while len(self.observed_poses) < 10:
+                if rosys.time() - self.last_pose_update < self.min_seconds_between_updates:
+                    return
+                await rosys.sleep(0.1)
+        if not self.observed_poses:
+            return
         x = np.mean([pose.point.x for pose in self.observed_poses])
         y = np.mean([pose.point.y for pose in self.observed_poses])
         yaw = np.mean([pose.yaw for pose in self.observed_poses])
