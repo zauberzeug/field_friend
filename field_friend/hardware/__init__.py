@@ -9,6 +9,7 @@ from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMS
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .imu import IMUHardware
+from .led_eyes import LedEyesHardware
 from .safety import Safety, SafetyHardware, SafetySimulation
 from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
@@ -19,4 +20,3 @@ from .y_axis_stepper_hardware import YAxisStepperHardware
 from .z_axis import ZAxis, ZAxisSimulation
 from .z_axis_canopen_hardware import ZAxisCanOpenHardware
 from .z_axis_stepper_hardware import ZAxisStepperHardware
-from .led_eyes import LedEyesHardware
