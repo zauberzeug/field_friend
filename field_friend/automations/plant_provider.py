@@ -148,12 +148,12 @@ class PlantProvider(rosys.persistence.PersistentModule):
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_combined_crop_confidence') \
-            .tooltip(f'Needed crop confidence for punshing (default: {MINIMUM_COMBINED_CROP_CONFIDENCE:.2f})')
+            .tooltip(f'Needed crop confidence for punching (default: {MINIMUM_COMBINED_CROP_CONFIDENCE:.2f})')
         ui.number('Combined weed confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_combined_weed_confidence') \
-            .tooltip(f'Needed weed confidence for punshing (default: {MINIMUM_COMBINED_WEED_CONFIDENCE:.2f})')
+            .tooltip(f'Needed weed confidence for punching (default: {MINIMUM_COMBINED_WEED_CONFIDENCE:.2f})')
         ui.number('Crop match distance', step=0.01, min=0.01, max=0.10, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
