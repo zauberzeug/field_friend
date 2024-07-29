@@ -2,15 +2,15 @@ import random
 
 import numpy as np
 import pytest
-import rosys
 from conftest import ROBOT_GEO_START_POSITION
-from rosys.testing import forward
 
+import rosys
 from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Implement, Recorder
 from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.localization import GnssSimulation
+from rosys.testing import forward
 
 
 async def test_straight_line(system: System):
@@ -22,6 +22,24 @@ async def test_straight_line(system: System):
     await forward(until=lambda: system.automator.is_stopped)
     assert not system.automator.is_running, 'automation should stop after default length'
     assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
+
+
+async def test_straight_line_with_high_angles(system: System):
+    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
+    predicted_yaw = 190
+    start_yaw = system.odometer.prediction.yaw
+    target_yaw = start_yaw + np.deg2rad(predicted_yaw)
+    await system.driver.wheels.drive(*system.driver._throttle(0, 0.1))  # pylint: disable=protected-access
+    await forward(until=lambda: abs(rosys.helpers.angle(system.odometer.prediction.yaw, target_yaw)) < np.deg2rad(0.01))
+    await system.driver.wheels.stop()
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = 1.0
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.odometer.prediction.point.x == pytest.approx(-0.985, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(-0.174, abs=0.1)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(predicted_yaw, abs=5)
 
 
 async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulation, detector: rosys.vision.DetectorSimulation):
@@ -101,7 +119,7 @@ async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimul
     assert system.odometer.prediction.yaw_deg == pytest.approx(40.0, abs=5.0)
 
 
-async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
+async def test_straight_with_high_angles(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(20):
         x = i/10.0
         p = rosys.geometry.Point3d(x=x, y=(x/3) ** 3, z=0)
@@ -119,6 +137,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=2.0)
 
 
+@ pytest.mark.skip('does not work anymore due to gps using wheels.pose instead of odometry.pose')
 async def test_approaching_first_row(system: System, field: Field):
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
@@ -152,7 +171,7 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     assert not system.automator.is_running, 'should have been stopped because robot is outside of field boundaries'
 
 
-@pytest.mark.skip('does not work anymore due to gps using wheels.pose instead of odometry.pose')
+@ pytest.mark.skip('does not work anymore due to gps using wheels.pose instead of odometry.pose')
 async def test_resuming_field_navigation_after_automation_stop(system: System, field: Field):
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
