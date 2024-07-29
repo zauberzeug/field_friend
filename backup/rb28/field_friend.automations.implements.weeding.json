@@ -1,0 +1,11 @@
+{
+    "with_drilling": false,
+    "with_chopping": false,
+    "chop_if_no_crops": false,
+    "cultivated_crop": "coin_with_hole",
+    "crop_safety_distance": 0.01,
+    "with_punch_check": true,
+    "drill_with_open_tornado": false,
+    "drill_between_crops": false,
+    "tornado_angle": 90.0
+}
