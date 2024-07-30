@@ -36,6 +36,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         self.row_index = 0
 
     async def prepare(self) -> bool:
+        await super().prepare()
         if self.field is None:
             rosys.notify('No field selected', 'negative')
             return False

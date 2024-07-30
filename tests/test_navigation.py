@@ -78,6 +78,7 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 1.0
     system.field_friend.wheels.slip_factor_right = 0.05
+    system.gnss.ensure_gnss = True
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
@@ -220,9 +221,10 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
         p = rosys.geometry.Point3d(x=x, y=(x/3) ** 3, z=0)
         p = system.odometer.prediction.transform3d(p)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
-        print(p)
-    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
+    system.gnss.min_seconds_between_updates = 1
+    system.gnss.ensure_gnss = True
     system.current_navigation = system.follow_crops_navigation
+    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     system.field_friend.wheels.slip_factor_right = 0.05
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -238,6 +240,7 @@ async def test_approaching_first_row(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.automator.start()
+    await forward(until=lambda: system.current_implement.is_active)
     await forward(until=lambda: system.field_navigation.state == system.field_navigation.State.APPROACHING_ROW_START)
     await forward(1)
     assert system.field_navigation.current_row == field.rows[0]
@@ -259,6 +262,7 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
     system.automator.start()
+    await forward(until=lambda: system.current_implement.is_active)
     await forward(2)
     assert system.field_navigation.current_row == field.rows[0]
     assert system.field_navigation.state == system.field_navigation.State.APPROACHING_ROW_START
