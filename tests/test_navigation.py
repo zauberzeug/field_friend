@@ -149,6 +149,7 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
     system.automator.start()
+    await forward(until=lambda: system.current_implement.is_active)
     await forward(2)
     assert system.field_navigation.current_row == field.rows[0]
     assert system.field_navigation.state == system.field_navigation.State.APPROACHING_ROW_START
