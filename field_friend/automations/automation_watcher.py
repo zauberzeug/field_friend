@@ -128,6 +128,7 @@ class AutomationWatcher:
             return
         if self.gnss.is_paused:
             self.log.warning('GNSS is paused, this should not happen outside of an automation')
+            self.gnss.is_paused = False
             return
         if self.last_robot_pose.distance(self.odometer.prediction) == 0:  # if robot stands still
             await self.gnss.update_robot_pose()
