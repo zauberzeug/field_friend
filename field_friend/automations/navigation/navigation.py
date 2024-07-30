@@ -80,6 +80,7 @@ class Navigation(rosys.persistence.PersistentModule):
     async def finish(self) -> None:
         """Executed after the navigation is done"""
         self.gnss.is_paused = False
+        self.log.info('Navigation finished')
 
     @abc.abstractmethod
     async def _drive(self, distance: float) -> None:
