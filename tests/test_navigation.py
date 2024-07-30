@@ -86,20 +86,133 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.1)
 
 
-async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimulation):
-    for i in range(20):
-        x = i/10.0
-        p = rosys.geometry.Point3d(x=x, y=(x/2) ** 3, z=0)
-        p = system.odometer.prediction.transform3d(p)
+async def test_follow_crops_no_direction(system: System, detector: rosys.vision.DetectorSimulation):
+    for i in range(1, 3):
+        x = i*0.4
+        y = i/10
+        p = rosys.geometry.Point3d(x=x, y=y, z=0)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.current_navigation = system.follow_crops_navigation
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
+    await forward(2)
+    assert system.automator.is_running
+    await forward(until=lambda: not system.automator.is_running, timeout=300)
+    assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
+    assert system.odometer.prediction.distance(rosys.geometry.Point(x=0, y=0)) == pytest.approx(2 * 0.4 + 0.5, abs=0.1)
+    assert system.odometer.prediction.point.x == pytest.approx(1.3, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.01)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
+
+
+async def test_follow_crops_empty(system: System, detector: rosys.vision.DetectorSimulation):
+    system.current_navigation = system.follow_crops_navigation
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(2)
+    assert system.automator.is_running
+    await forward(until=lambda: not system.automator.is_running, timeout=300)
+    assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
+    assert system.odometer.prediction.point.x == pytest.approx(0.5, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.01)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
+
+
+async def test_follow_crops_straight(system: System, detector: rosys.vision.DetectorSimulation):
+    for i in range(10):
+        x = i/10
+        p = rosys.geometry.Point3d(x=x, y=0, z=0)
+        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    system.current_navigation = system.follow_crops_navigation
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(2)
+    assert system.automator.is_running
+    await forward(until=lambda: not system.automator.is_running, timeout=300)
+    assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
+    assert system.odometer.prediction.point.x == pytest.approx(1.5, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.1)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
+
+
+async def test_follow_crops_adjust(system: System, detector: rosys.vision.DetectorSimulation):
+    for i in range(1, 51):
+        x = i*0.4
+        y = -(i/20)
+        p = rosys.geometry.Point3d(x=x, y=y, z=0)
+        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    system.current_navigation = system.follow_crops_navigation
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(2)
+    assert system.automator.is_running
+    await forward(until=lambda: not system.automator.is_running, timeout=300)
+    assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
+    assert system.odometer.prediction.point.x == pytest.approx(20.5, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(-2.5, abs=0.1)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(-7.125, abs=1.0)
+
+
+async def test_follow_crops_curve(system: System, detector: rosys.vision.DetectorSimulation):
+    for i in range(1, 56):
+        x = i/10.0
+        p = rosys.geometry.Point3d(x=x, y=(x/4) ** 2, z=0)
+        p = system.odometer.prediction.transform3d(p)
+        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    system.current_navigation = system.follow_crops_navigation
+    system.automator.start()
+    assert isinstance(system.current_navigation.implement, Recorder)
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.point.x == pytest.approx(2.2, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0.45, abs=0.1)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(40.0, abs=5.0)
+    assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
+    assert system.odometer.prediction.point.x == pytest.approx(5.9, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(2.16, abs=0.1)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(33.69, abs=3.0)
+
+
+async def test_follow_crops_outlier(system: System, detector: rosys.vision.DetectorSimulation):
+    for i in range(10):
+        x = i/10
+        y = 0
+        p = rosys.geometry.Point3d(x=x, y=y, z=0)
+        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    outlier = rosys.geometry.Point3d(x=1.1, y=0.2, z=0)
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=outlier))
+    for i in range(10):
+        x = i/10 + 1.1
+        y = 0
+        p = rosys.geometry.Point3d(x=x, y=y, z=0)
+        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    system.current_navigation = system.follow_crops_navigation
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(2)
+    assert system.automator.is_running
+    await forward(until=lambda: not system.automator.is_running, timeout=300)
+    assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
+    assert system.odometer.prediction.point.x == pytest.approx(2.6, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.05)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1)
+
+
+async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.DetectorSimulation):
+    for i in range(20):
+        x = i/10
+        y = 0
+        p = rosys.geometry.Point3d(x=x, y=y, z=0)
+        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    outlier = rosys.geometry.Point3d(x=2.1, y=-0.2, z=0)
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=outlier))
+    system.current_navigation = system.follow_crops_navigation
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(2)
+    assert system.automator.is_running
+    await forward(until=lambda: not system.automator.is_running, timeout=300)
+    assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
+    assert system.odometer.prediction.point.x == pytest.approx(2.6, abs=0.1)
+    assert 0 >= system.odometer.prediction.point.y >= -0.25
+    assert 0 >= system.odometer.prediction.yaw_deg >= -45
 
 
 async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
