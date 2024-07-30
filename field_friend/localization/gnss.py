@@ -124,6 +124,7 @@ class Gnss(ABC):
                 await rosys.sleep(0.1)
         if not self.observed_poses:
             return
+        self.log.info(f'updating robot pose from {len(self.observed_poses)} GNSS records')
         x = np.mean([pose.point.x for pose in self.observed_poses])
         y = np.mean([pose.point.y for pose in self.observed_poses])
         yaw = np.mean([pose.yaw for pose in self.observed_poses])
