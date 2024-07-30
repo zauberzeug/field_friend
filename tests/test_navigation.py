@@ -2,15 +2,15 @@ import random
 
 import numpy as np
 import pytest
-from conftest import ROBOT_GEO_START_POSITION
-
 import rosys
+from conftest import ROBOT_GEO_START_POSITION
+from rosys.testing import forward
+
 from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Implement, Recorder
 from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.localization import GnssSimulation
-from rosys.testing import forward
 
 
 async def test_straight_line(system: System):
