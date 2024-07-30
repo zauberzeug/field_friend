@@ -69,11 +69,11 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await super().finish()
 
     async def activate(self):
-        await super().activate()
         await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
         self.system.plant_locator.resume()
         await rosys.sleep(3)
+        await super().activate()
 
     async def deactivate(self):
         await super().deactivate()

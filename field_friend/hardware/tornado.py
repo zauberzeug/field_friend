@@ -50,7 +50,7 @@ class Tornado(rosys.hardware.Module, abc.ABC):
             raise RuntimeError(f'zaxis depth is out of range, min: {self.min_position}, given: {position}')
 
     @abc.abstractmethod
-    async def move_down_until_reference(self) -> None:
+    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
         if not self.z_is_referenced:
             raise RuntimeError('zaxis is not referenced, reference first')
 
@@ -211,30 +211,31 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.1)
         self.log.info(f'z axis moved to {position}')
 
-    async def move_down_until_reference(self) -> None:
+    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
         try:
             await super().move_down_until_reference()
         except RuntimeError as e:
             raise Exception(e) from e
         try:
-            self.log.info('moving z axis down')
+            if min_position is None:
+                min_position = self.min_position
+            self.log.info(f'moving z axis down to {min_position}')
             await self.robot_brain.send(
                 f'{self.name}_knife_stop_enabled = true;'
                 f'{self.name}_knife_ground_enabled = true;'
             )
             await rosys.sleep(0.5)
             await self.robot_brain.send(
-                f'{self.name}_z.position({self.min_position}, {self.speed_limit}, 0);'
+                f'{self.name}_z.position({min_position}, {self.speed_limit}, 0);'
             )
             await rosys.sleep(0.5)
             while self.ref_knife_ground and not self.ref_knife_stop:
-                if self.min_position - 0.005 <= self.position_z <= self.min_position + 0.005:
+                if min_position - 0.005 <= self.position_z <= min_position + 0.005:
                     self.log.info('minimum position reached')
                     break
                 await self.robot_brain.send(
-                    f'{self.name}_z.position({self.min_position}, {self.speed_limit}, 0);'
+                    f'{self.name}_z.position({min_position}, {self.speed_limit}, 0);'
                 )
-                self.log.info('moving z axis down')
                 await rosys.sleep(0.1)
             if self.ref_knife_stop:
                 raise Exception('Error while moving z axis down: Ref knifes stop triggered')
@@ -440,7 +441,7 @@ class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
             raise Exception(e) from e
         self.position_z = position
 
-    async def move_down_until_reference(self) -> None:
+    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
         try:
             await super().move_down_until_reference()
         except RuntimeError as e:
