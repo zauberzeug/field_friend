@@ -1,8 +1,6 @@
 import logging
 import os
-from typing import Optional
 
-import numpy as np
 import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
@@ -22,6 +20,7 @@ class Puncher:
         self.driver = driver
         self.kpi_provider = kpi_provider
         self.log = logging.getLogger('field_friend.puncher')
+        self.is_demo = False
 
     async def try_home(self) -> bool:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
@@ -94,6 +93,8 @@ class Puncher:
                 await self.tornado_drill(angle=angle, turns=turns, with_open_drill=with_open_tornado)
 
             elif isinstance(self.field_friend.z_axis, ZAxis):
+                if self.is_demo:
+                    self.log.warning('punching with demo mode is not yet implemented for z axis')
                 await self.field_friend.y_axis.move_to(y)
                 await self.field_friend.z_axis.move_to(-depth)
                 if os.environ.get('Z_AXIS_REST_POSITION'):
@@ -145,7 +146,7 @@ class Puncher:
                     rosys.notify('homing failed!', type='negative')
                     raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
-            await self.field_friend.z_axis.move_down_until_reference()
+            await self.field_friend.z_axis.move_down_until_reference(min_position=-0.065 if self.is_demo else None)
 
             await self.field_friend.z_axis.turn_knifes_to(angle)
             await rosys.sleep(2)
