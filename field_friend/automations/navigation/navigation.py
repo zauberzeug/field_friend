@@ -24,6 +24,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.navigation')
         self.driver = system.driver
         self.odometer = system.odometer
+        self.gnss = system.gnss
         self.kpi_provider = system.kpi_provider
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
@@ -46,11 +47,15 @@ class Navigation(rosys.persistence.PersistentModule):
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             while not self._should_finish():
+                await self.gnss.update_robot_pose()
+                self.gnss.is_paused = True
                 distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
                 if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
                     await self._drive(self.DEFAULT_DRIVE_DISTANCE)
+                    self.gnss.is_paused = False
                     continue
                 await self._drive(distance)
+                self.gnss.is_paused = False
                 await self.implement.start_workflow()
                 await self.implement.stop_workflow()
         except WorkflowException as e:
@@ -74,6 +79,8 @@ class Navigation(rosys.persistence.PersistentModule):
 
     async def finish(self) -> None:
         """Executed after the navigation is done"""
+        self.gnss.is_paused = False
+        self.log.info('Navigation finished')
 
     @abc.abstractmethod
     async def _drive(self, distance: float) -> None:
