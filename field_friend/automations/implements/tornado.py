@@ -101,6 +101,7 @@ class Tornado(WeedingImplement):
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
             'tornado_angle': self.tornado_angle,
+            'is_demo': self.puncher.is_demo,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -108,6 +109,7 @@ class Tornado(WeedingImplement):
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
+        self.puncher.is_demo = data.get('is_demo', self.puncher.is_demo)
 
     def settings_ui(self):
         super().settings_ui()
