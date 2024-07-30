@@ -1,11 +1,9 @@
-import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Optional
-import aiohttp
+from typing import TYPE_CHECKING, Any
 
+import aiohttp
 import rosys
 from nicegui import ui
-from nicegui.events import ValueChangeEventArguments
 from rosys.vision import Autoupload
 
 from ..vision import SimulatedCam
@@ -13,8 +11,8 @@ from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
 CROP_CATEGORY_NAME = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
-MINIMUM_WEED_CONFIDENCE = 0.8
-MINIMUM_CROP_CONFIDENCE = 0.75
+MINIMUM_CROP_CONFIDENCE = 0.3
+MINIMUM_WEED_CONFIDENCE = 0.3
 
 
 if TYPE_CHECKING:
@@ -38,11 +36,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
-        self.upload_images: bool = False 
+        self.upload_images: bool = False
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
-        self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
+        self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         if isinstance(self.detector, rosys.vision.DetectorHardware):
             rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port), 1.0)
@@ -140,14 +138,14 @@ class PlantLocator(rosys.persistence.PersistentModule):
 
     async def get_outbox_mode(self, port: int) -> bool:
         # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
-        url = f'http://localhost:{port}/outbox_mode'            
+        url = f'http://localhost:{port}/outbox_mode'
         async with aiohttp.request('GET', url) as response:
             if response.status != 200:
                 self.log.error(f'Could not get outbox mode on port {port} - status code: {response.status}')
                 return None
             response_text = await response.text()
         return response_text == 'continuous_upload'
-    
+
     async def set_outbox_mode(self, value: bool, port: int) -> None:
         url = f'http://localhost:{port}/outbox_mode'
         async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
@@ -157,22 +155,23 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.log.debug(f'Outbox_mode was set to {value} on port {port}')
 
     def settings_ui(self) -> None:
-        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, 'minimum_weed_confidence') \
-            .tooltip('Set the minimum weed confidence for the weeding automation')
-        ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+        ui.number('Min. crop confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_crop_confidence') \
-            .tooltip('Set the minimum crop confidence for the weeding automation')
+            .tooltip(f'Set the minimum crop confidence for the detection (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
+        ui.number('Min. weed confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'minimum_weed_confidence') \
+            .tooltip(f'Set the minimum weed confidence for the detection  (default: {MINIMUM_WEED_CONFIDENCE:.2f})')
         options = [autoupload for autoupload in rosys.vision.Autoupload]
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
         if isinstance(self.detector, rosys.vision.DetectorHardware):
-            ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images').on('click', lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port))        
+            ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images') \
+                .on('click', lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port))
 
         @ui.refreshable
         def chips():

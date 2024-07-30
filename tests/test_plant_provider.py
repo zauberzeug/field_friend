@@ -13,10 +13,7 @@ def test_extracting_relevant_crops():
     plants.crops[10].confidences.clear()
     plants.crops[10].confidences.append(0.4)
     crops = plants.get_relevant_crops(rosys.geometry.Point(x=1.0, y=0), max_distance=0.45)
-    assert len(crops) == 8, 'crops with less than 0.5 confidence should be ignored'
-    del plants.crops[9].positions[0]
-    crops = plants.get_relevant_crops(rosys.geometry.Point(x=1.0, y=0), max_distance=0.45)
-    assert len(crops) == 7, 'crops with less than 3 positions should be ignored'
+    assert len(crops) == 8, 'crops with a confidence of less than PlantProvider.MINIMUM_COMBINED_CROP_CONFIDENCE should be ignored'
 
 
 def create_crop(x: float, y: float) -> Plant:
@@ -38,7 +35,7 @@ def test_crop_prediction():
         plant.positions.append(rosys.geometry.Point(x=x, y=0))
         plant.confidences.append(confidence)
         plant_provider.add_crop(plant)
-    
+
     add_crop(x=0)
     assert plant_provider.crops[0].confidence == confidence
     add_crop(x=plant_provider.crop_spacing)

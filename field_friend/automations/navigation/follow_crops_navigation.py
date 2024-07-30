@@ -84,6 +84,7 @@ class FollowCropsNavigation(Navigation):
         if distance < 0.5:
             return False  # at least drive 0.5m
         if len(self.plant_provider.get_relevant_crops(self.odometer.prediction.point)) == 0:
+            self.log.info('No crops in sight -- stopping navigation')
             return True
         return False
 

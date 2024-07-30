@@ -1,3 +1,6 @@
 {
-    "automation": "weeding"
+    "navigation": "Straight Line",
+    "implement": "Recorder",
+    "reference_lat": 51.983156476666665,
+    "reference_long": 7.434116833333333
 }

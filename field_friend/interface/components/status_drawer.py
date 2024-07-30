@@ -1,3 +1,4 @@
+from ... import localization
 from typing import TYPE_CHECKING
 
 import rosys
@@ -26,7 +27,6 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     ui.menu_item('Restart RoSys', on_click=system.restart)
                     if system.is_real:
                         ui.menu_item('Restart Lizard', on_click=system.field_friend.robot_brain.restart)
-                    ui.menu_item('Clear GNSS reference', on_click=system.gnss.clear_reference)
 
         ui.label('System Status').classes('text-xl')
 
@@ -232,7 +232,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
 
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
-            reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'
+            reference_position_label.text = 'No reference' if localization.reference is None else 'Set'
             gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
             heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
             rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'

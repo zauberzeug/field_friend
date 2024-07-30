@@ -39,8 +39,7 @@ class AutomationWatcher:
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
         if self.field_friend.bumper:
-            self.field_friend.bumper.BUMPER_TRIGGERED.register(
-                lambda name: self.pause(f'Bumper {name} was triggered'))
+            self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
         self.gnss.GNSS_CONNECTION_LOST.register(lambda: self.pause('GNSS connection lost'))
         self.gnss.RTK_FIX_LOST.register(lambda: self.pause('GNSS RTK fix lost'))
 
