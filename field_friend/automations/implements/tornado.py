@@ -80,8 +80,6 @@ class Tornado(WeedingImplement):
             return self.WORKING_DISTANCE
         if stretch < 0:
             stretch = 0
-        self.log.info(f'Targeting crop {closest_crop_id} which is {stretch} away at world: '
-                      f'{closest_crop_world_position}, local: {closest_crop_position}')
         if stretch < max_distance and await self.ask_for_punch(closest_crop_id):
             self.next_punch_y_position = closest_crop_position.y
             return stretch

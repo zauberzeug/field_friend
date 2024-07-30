@@ -217,7 +217,6 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         except RuntimeError as e:
             raise Exception(e) from e
         try:
-            self.log.info('moving z axis down')
             await self.robot_brain.send(
                 f'{self.name}_knife_stop_enabled = true;'
                 f'{self.name}_knife_ground_enabled = true;'
