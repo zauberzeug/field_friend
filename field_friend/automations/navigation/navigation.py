@@ -88,10 +88,8 @@ class Navigation(rosys.persistence.PersistentModule):
         try:
             while self.odometer.prediction.point.distance(start_position) < distance:
                 if rosys.time() >= deadline:
-                    self.log.error(
+                    raise TimeoutError(
                         f'Driving Timeout at startpoint: {start_position} with yaw: {yaw} and target point: {self.odometer.prediction.point}')
-                    break
-                    # raise TimeoutError('Driving Timeout')
                 await rosys.sleep(0.01)
         finally:
             await self.driver.wheels.stop()
