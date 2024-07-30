@@ -150,7 +150,7 @@ class camera_card:
                 self.debug_position.set_text(f'{point2d} no calibration')
                 return
             point3d = self.camera.calibration.project_from_image(point2d)
-            self.debug_position.set_text(f'{point2d} -> {point3d}')
+            self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
         if e.type == 'mouseup':
             point2d = Point(x=e.image_x, y=e.image_y)
             if self.camera.calibration is None:

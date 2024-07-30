@@ -1,11 +1,9 @@
 import abc
-import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
 import rosys
 from rosys.helpers import angle
-from nicegui import ui
 
 from ..implements import Implement
 
@@ -26,6 +24,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.navigation')
         self.driver = system.driver
         self.odometer = system.odometer
+        self.gnss = system.gnss
         self.kpi_provider = system.kpi_provider
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
@@ -48,11 +47,15 @@ class Navigation(rosys.persistence.PersistentModule):
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             while not self._should_finish():
+                await self.gnss.update_robot_pose()
+                self.gnss.is_paused = True
                 distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
                 if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
                     await self._drive(self.DEFAULT_DRIVE_DISTANCE)
+                    self.gnss.is_paused = False
                     continue
                 await self._drive(distance)
+                self.gnss.is_paused = False
                 await self.implement.start_workflow()
                 await self.implement.stop_workflow()
         except WorkflowException as e:
@@ -76,6 +79,8 @@ class Navigation(rosys.persistence.PersistentModule):
 
     async def finish(self) -> None:
         """Executed after the navigation is done"""
+        self.gnss.is_paused = False
+        self.log.info('Navigation finished')
 
     @abc.abstractmethod
     async def _drive(self, distance: float) -> None:
@@ -84,7 +89,7 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive_to_yaw(self, distance: float, yaw: float):
         deadline = rosys.time() + 2
         start_position = self.odometer.prediction.point
-        yaw = angle(self.odometer.prediction.yaw, yaw) # take current yaw into account and only steer the difference
+        yaw = angle(self.odometer.prediction.yaw, yaw)  # take current yaw into account and only steer the difference
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
             await self.driver.wheels.drive(*self.driver._throttle(1, yaw))  # pylint: disable=protected-access
         try:
