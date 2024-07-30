@@ -119,7 +119,7 @@ async def test_follow_crops(system: System, detector: rosys.vision.DetectorSimul
     assert system.odometer.prediction.yaw_deg == pytest.approx(40.0, abs=5.0)
 
 
-async def test_straight_with_high_angles(system: System, detector: rosys.vision.DetectorSimulation):
+async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(20):
         x = i/10.0
         p = rosys.geometry.Point3d(x=x, y=(x/3) ** 3, z=0)
