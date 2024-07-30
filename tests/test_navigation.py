@@ -127,6 +127,7 @@ async def test_approaching_first_row(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.automator.start()
+    await forward(until=lambda: system.current_implement.is_active)
     await forward(until=lambda: system.field_navigation.state == system.field_navigation.State.APPROACHING_ROW_START)
     await forward(1)
     assert system.field_navigation.current_row == field.rows[0]
