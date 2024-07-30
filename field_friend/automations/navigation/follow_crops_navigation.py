@@ -52,12 +52,10 @@ class FollowCropsNavigation(Navigation):
 
             fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
             closest_point = fitted_line.foot_point(self.odometer.prediction.point)
-            front_point = closest_point.polar(0.3, yaw)
-            target_yaw = self.odometer.prediction.point.direction(front_point)
+            target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
         else:
-            target_yaw = self.odometer.prediction.yaw
-        target_yaw = self.combine_angles(target_yaw, self.crop_attraction, self.odometer.prediction.yaw)
-        await self._drive_to_yaw(distance, target_yaw)
+            target = self.odometer.prediction
+        await self._drive_towards_target(distance, target)
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
         weight1 = influence
