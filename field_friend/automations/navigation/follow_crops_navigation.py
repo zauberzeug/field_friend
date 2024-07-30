@@ -2,7 +2,6 @@ import math
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-
 import rosys
 from nicegui import ui
 from rosys.helpers import eliminate_2pi
