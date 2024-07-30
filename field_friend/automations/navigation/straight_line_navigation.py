@@ -1,4 +1,3 @@
-import asyncio
 from random import randint
 from typing import TYPE_CHECKING, Any
 
@@ -6,8 +5,7 @@ import numpy as np
 import rosys
 from nicegui import ui
 
-from field_friend.automations.implements.implement import Implement
-
+from ...automations.implements.implement import Implement
 from .navigation import Navigation
 
 if TYPE_CHECKING:

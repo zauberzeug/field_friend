@@ -24,6 +24,24 @@ async def test_straight_line(system: System):
     assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
 
 
+async def test_straight_line_with_high_angles(system: System):
+    assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
+    predicted_yaw = 190
+    start_yaw = system.odometer.prediction.yaw
+    target_yaw = start_yaw + np.deg2rad(predicted_yaw)
+    await system.driver.wheels.drive(*system.driver._throttle(0, 0.1))  # pylint: disable=protected-access
+    await forward(until=lambda: abs(rosys.helpers.angle(system.odometer.prediction.yaw, target_yaw)) < np.deg2rad(0.01))
+    await system.driver.wheels.stop()
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = 1.0
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.odometer.prediction.point.x == pytest.approx(-0.985, abs=0.1)
+    assert system.odometer.prediction.point.y == pytest.approx(-0.174, abs=0.1)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(predicted_yaw, abs=5)
+
+
 async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulation, detector: rosys.vision.DetectorSimulation):
     async def empty():
         return None
