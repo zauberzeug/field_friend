@@ -28,17 +28,9 @@ async def test_straight_line_with_high_angles(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     predicted_yaw = 190
     start_yaw = system.odometer.prediction.yaw
-    target_yaw = 0.0 + np.deg2rad(predicted_yaw)
+    target_yaw = start_yaw + np.deg2rad(predicted_yaw)
     await system.driver.wheels.drive(*system.driver._throttle(0, 0.1))  # pylint: disable=protected-access
-    while True:
-        yaw_diff = rosys.helpers.angle(system.odometer.prediction.yaw, target_yaw)
-        stop = abs(yaw_diff) < np.deg2rad(0.05)
-        if system.odometer.prediction.yaw_deg > 170:
-            await forward(0.1)
-        await forward(0.1)
-        if stop:
-            break
-    # await forward(until=lambda: abs(rosys.helpers.angle(system.odometer.prediction.yaw, target_yaw)) < np.deg2rad(0.05), timeout=300)
+    await forward(until=lambda: abs(rosys.helpers.angle(system.odometer.prediction.yaw, target_yaw)) < np.deg2rad(0.01))
     await system.driver.wheels.stop()
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 1.0
