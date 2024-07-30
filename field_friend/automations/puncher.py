@@ -123,32 +123,6 @@ class Puncher:
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         await self.field_friend.y_axis.stop()
 
-    async def drive_and_punch(self,
-                              x: float,
-                              y: float,
-                              depth: float = 0.05,
-                              angle: float = 180,
-                              turns: float = 2.0,
-                              backwards_allowed: bool = True,
-                              plant_id: Optional[str] = None,
-                              with_open_tornado: bool = False,
-                              with_punch_check: bool = False,
-                              ) -> None:
-        if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
-            rosys.notify('no y or z axis', 'negative')
-            return
-        try:
-            work_x = self.field_friend.WORK_X
-            if x < work_x and not backwards_allowed:
-                self.log.warning(f'target x: {x} is behind')
-                return
-            await self.drive_to_punch(x)
-            await self.punch(y=y, depth=depth, angle=angle, turns=turns,
-                             plant_id=plant_id, with_open_tornado=with_open_tornado, with_punch_check=with_punch_check)
-            # await self.clear_view()
-        except Exception as e:
-            raise PuncherException('drive and punch failed') from e
-
     async def chop(self) -> None:
         if not isinstance(self.field_friend.y_axis, ChainAxis):
             raise PuncherException('chop is only available for chain axis')
