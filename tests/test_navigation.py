@@ -137,7 +137,6 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=2.0)
 
 
-@ pytest.mark.skip('does not work anymore due to gps using wheels.pose instead of odometry.pose')
 async def test_approaching_first_row(system: System, field: Field):
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
@@ -171,7 +170,7 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     assert not system.automator.is_running, 'should have been stopped because robot is outside of field boundaries'
 
 
-@ pytest.mark.skip('does not work anymore due to gps using wheels.pose instead of odometry.pose')
+@pytest.mark.skip('does not work anymore due to gps using wheels.pose instead of odometry.pose')
 async def test_resuming_field_navigation_after_automation_stop(system: System, field: Field):
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
