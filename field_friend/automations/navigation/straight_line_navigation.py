@@ -36,13 +36,13 @@ class StraightLineNavigation(Navigation):
         await super().finish()
         await self.implement.deactivate()
 
-    async def _drive(self, distance: float):
+    async def _drive(self, distance: float) -> None:
         start_position = self.odometer.prediction.point
         closest_point = rosys.geometry.Line.from_points(self.origin, self.target).foot_point(start_position)
         yaw = closest_point.direction(self.target)
         await self._drive_towards_target(distance, rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw))
 
-    def _should_finish(self):
+    def _should_finish(self) -> None:
         end_pose = rosys.geometry.Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)
         return end_pose.relative_point(self.odometer.prediction.point).x > 0
 

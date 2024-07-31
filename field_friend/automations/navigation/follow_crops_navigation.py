@@ -38,7 +38,7 @@ class FollowCropsNavigation(Navigation):
         self.plant_locator.pause()
         await self.implement.deactivate()
 
-    async def _drive(self, distance: float):
+    async def _drive(self, distance: float) -> None:
         row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point, max_distance=1.0)
         if len(row) >= 3:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
@@ -69,7 +69,7 @@ class FollowCropsNavigation(Navigation):
         # Normalize
         return eliminate_2pi(combined_angle)
 
-    def create_simulation(self):
+    def create_simulation(self) -> None:
         for i in range(100):
             x = i/10.0
             p = rosys.geometry.Point3d(x=x, y=(x/4) ** 3, z=0)

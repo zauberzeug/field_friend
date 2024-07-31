@@ -80,7 +80,7 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive(self, distance: float) -> None:
         """Drives the vehicle a short distance forward"""
 
-    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose):
+    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose) -> None:
         """Drives the vehicle a short distance forward while steering onto the line defined by the target pose"""
         start_position = self.odometer.prediction.point
         hook_offset = rosys.geometry.Point(x=self.driver.parameters.hook_offset, y=0)
