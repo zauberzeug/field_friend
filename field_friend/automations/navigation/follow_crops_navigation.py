@@ -26,6 +26,7 @@ class FollowCropsNavigation(Navigation):
         self.crop_attraction = 0.5
 
     async def prepare(self) -> bool:
+        await super().prepare()
         self.log.info(f'Activating {self.implement.name}...')
         self.plant_provider.clear()
         await self.implement.activate()
@@ -34,6 +35,7 @@ class FollowCropsNavigation(Navigation):
         return True
 
     async def finish(self) -> None:
+        await super().finish()
         await self.flashlight.turn_off()
         self.plant_locator.pause()
         await self.implement.deactivate()
@@ -83,6 +85,7 @@ class FollowCropsNavigation(Navigation):
         if distance < 0.5:
             return False  # at least drive 0.5m
         if len(self.plant_provider.get_relevant_crops(self.odometer.prediction.point)) == 0:
+            self.log.info('No crops in sight -- stopping navigation')
             return True
         return False
 
