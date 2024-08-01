@@ -1,0 +1,4 @@
+FROM stereolabs/zed:4.1-py-devel-l4t-r36.3
+COPY camera_test.py /usr/local/zed/camera_test.py
+ENTRYPOINT ["tail"]
+CMD ["-f","/dev/null"]

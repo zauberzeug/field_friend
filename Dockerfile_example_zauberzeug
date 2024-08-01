@@ -1,0 +1,25 @@
+FROM stereolabs/zed:4.1-py-devel-l4t-r36.3
+RUN groupmod -g 1001 zed
+
+ARG USERNAME=zauberzeug
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+ENV LOGNAME zauberzeug
+
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && usermod -a -G dialout $USERNAME \
+    && usermod -a -G tty $USERNAME \
+    && usermod -a -G zed $USERNAME \
+    && usermod -a -G video $USERNAME \
+    && usermod -a -G render $USERNAME \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL, NOPASSWD: /usr/sbin/arp-scan > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+
+USER $USERNAME
+WORKDIR /app
+COPY camera_test.py /app/camera_test.py
+
+ENTRYPOINT ["tail"]
+CMD ["-f","/dev/null"]

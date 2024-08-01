@@ -4,6 +4,19 @@ services:
     network_mode: host
     restart: always
     privileged: true
+    runtime: nvidia
+    build:
+      context: .
+      # dockerfile: ./Dockerfile
+      # dockerfile: ./Dockerfile_example_root
+      # dockerfile: ./Dockerfile_example_zauberzeug
+      dockerfile: ./Dockerfile_zauberzeug_base
+    volumes:
+      - /dev:/dev
+      - /tmp:/tmp
+      - /var/nvidia/nvcam/settings/:/var/nvidia/nvcam/settings
+      - /etc/systemd/system/zed_x_daemon.service:/etc/systemd/system/zed_x_daemon.service
+      - /usr/local/zed/resources:/usr/local/zed/resources
 
   detector:
     image: "zauberzeug/yolov5-detector:0.1.2-nlv0.10.10-35.4.1"
