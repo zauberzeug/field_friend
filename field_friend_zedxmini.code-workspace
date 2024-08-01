@@ -7,8 +7,7 @@
       "path": "../rosys"
     },
     {
-      "path": "../nicegui",
-      "name": "nicegui relative"
+      "path": "../zedxmini"
     }
   ],
   "settings": {},
