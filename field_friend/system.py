@@ -18,8 +18,8 @@ from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
-from .vision import (CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider,
-                     ZedxminiCamera, ZedxminiCameraProvider)
+from .vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from .vision.zedxmini_camera import ZedxminiCameraProvider
 
 
 class System(rosys.persistence.PersistentModule):
@@ -35,9 +35,10 @@ class System(rosys.persistence.PersistentModule):
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED = rosys.event.Event()
 
-        self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider
+        self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider | ZedxminiCameraProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.field_friend: FieldFriend
+        self.is_real = False
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
@@ -53,7 +54,7 @@ class System(rosys.persistence.PersistentModule):
             # self.usb_camera_provider = SimulatedCamProvider()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             # rosys.on_startup(self.setup_simulated_usb_camera)
-            self.usb_camera_provide = ZedxminiCameraProvider()
+            self.usb_camera_provider = ZedxminiCameraProvider()
             self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
             # self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=self.version)
         self.plant_provider = PlantProvider()
