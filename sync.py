@@ -10,7 +10,8 @@ parser.add_argument('--rosys', action='store_true', default=False, help='Sync ro
 
 args = parser.parse_args()
 touch = 'touch ~/field_friend/main.py'
-folders = [Folder('.', f'{args.robot}:~/field_friend', on_change=touch)]
+folders = [Folder('.', f'{args.robot}:~/field_friend', on_change=touch),
+           Folder('../zedxmini', f'{args.robot}:~/zedxmini', on_change=touch)]
 if args.rosys:
     folders.append(Folder('../rosys/rosys', f'{args.robot}:~/field_friend/rosys', on_change=touch))
 else:
