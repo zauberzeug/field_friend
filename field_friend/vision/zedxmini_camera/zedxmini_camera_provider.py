@@ -1,10 +1,9 @@
 import logging
-import shutil
 
 import rosys
 from rosys.vision.usb_camera.usb_camera_scanner import scan_for_connected_devices
 
-from . import ZedxminiCamera
+from .zedxmini_camera import ZedxminiCamera
 
 SCAN_INTERVAL = 10
 
@@ -16,7 +15,8 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
         self.log = logging.getLogger('field_friend.zedxmini_camera_provider')
 
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
+        # rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
+        rosys.on_startup(self.update_device_list)
 
     def backup(self) -> dict:
         # for camera in self._cameras.values():
@@ -36,12 +36,13 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
         return (await rosys.run.io_bound(scan_for_connected_devices)) or set()
 
     async def update_device_list(self) -> None:
-        # camera_uids = await self.scan_for_cameras()
-        camera_uids = set('zedxmini-todo')
-        for uid in camera_uids:
-            if uid not in self._cameras:
-                self.add_camera(ZedxminiCamera(camera_id=uid))
-            await self._cameras[uid].connect()
+        if len(self._cameras) == 0:
+            # TODO: get camera id from api
+            self.add_camera(ZedxminiCamera(camera_id='zedxmini-todo'))
+        camera = list(self._cameras.values())[0]
+        if camera.is_connected:
+            return
+        await camera.reconnect()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
@@ -49,4 +50,4 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
 
     @staticmethod
     def is_operable() -> bool:
-        return shutil.which('v4l2-ctl') is not None
+        return True
