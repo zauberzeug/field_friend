@@ -95,6 +95,4 @@ WORKDIR /app
 RUN sudo setcap 'cap_net_bind_service=+ep cap_sys_nice=+ep' /usr/bin/python3.11
 RUN sudo usermod -a -G video $USERNAME
 
-# CMD python3 main.py
-ENTRYPOINT ["tail"]
-CMD ["-f","/dev/null"]
+CMD python3 main.py
