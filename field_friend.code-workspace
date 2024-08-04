@@ -5,10 +5,6 @@
     },
     {
       "path": "../rosys"
-    },
-    {
-      "path": "../nicegui",
-      "name": "nicegui relative"
     }
   ],
   "settings": {},
