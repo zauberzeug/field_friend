@@ -4,4 +4,5 @@ configuration = {
     'pitch': 0.033,
     'wheel_distance': 0.47,
     'antenna_offset': 0.205,
+    'tool': 'mower',
 }

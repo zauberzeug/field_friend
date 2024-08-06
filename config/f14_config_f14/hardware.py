@@ -16,6 +16,24 @@ configuration = {
     #     'on_expander': True,
     #     'eyes_pin': 12,
     # },
+    'y_axis': {
+        'version': 'none',
+    },
+    'z_axis': {
+        'version': 'none',
+    },
+    'external_mower': {
+        'name': 'mower',
+        'm0_can_address': 0x400,
+        'm1_can_address': 0x500,
+        'm2_can_address': 0x600,
+        'm_per_tick': 0.01,
+        'speed': 10.0,
+        'is_m0_reversed': False,
+        'is_m1_reversed': False,
+        'is_m2_reversed': False,
+        'odrive_version': 6,
+    },
     'estop': {
         'name': 'estop',
         'pins': {'1': 34, '2': 35},
@@ -34,10 +52,13 @@ configuration = {
         'reset_pin': 15,
         'status_pin': 13,
     },
+    'flashlight': {
+        'version': 'none',
+    },
     'bumper': {
         'name': 'bumper',
         'on_expander': True,
-        'pins': {'front_top': 35, 'front_bottom': 18, 'back': 21},
+        'pins': {'front_top': 18, 'front_bottom': 35, 'back': 21},
     },
     'status_control': {
         'name': 'status_control',
@@ -63,17 +84,5 @@ configuration = {
         'rx_pin': 32,
         'tx_pin': 33,
         'baud': 1_000_000,
-    },
-    'external_mower': {
-        'name': 'mower',
-        'm0_can_address': 0x400,
-        'm1_can_address': 0x500,
-        'm2_can_address': 0x600,
-        'm_per_tick': 0.01,
-        'speed': 1.0,
-        'is_m0_reversed': False,
-        'is_m1_reversed': False,
-        'is_m2_reversed': False,
-        'odrive_version': 6,
     },
 }
