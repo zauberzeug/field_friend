@@ -61,7 +61,6 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
                  is_m2_reversed: bool = False,
                  odrive_version: int = 4,
                  **kwargs) -> None:
-        self.name = name
         self.speed = speed
         self.odrive_version = odrive_version
         lizard_code = remove_indentation(f'''
