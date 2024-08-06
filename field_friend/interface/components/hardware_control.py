@@ -3,9 +3,8 @@ from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
-from ...hardware import (ChainAxis, ExternalMower, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM,
-                         FlashlightPWMV2, FlashlightV2, Tornado, YAxis, YAxisCanOpenHardware, ZAxis,
-                         ZAxisCanOpenHardware)
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
+                         FlashlightV2, MowerHardware, Tornado, YAxis, YAxisCanOpenHardware, ZAxis, ZAxisCanOpenHardware)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -142,8 +141,8 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.min_position, depth=depth.value)))
 
-        if isinstance(field_friend.external_mower, ExternalMower):
+        if isinstance(field_friend.mower, MowerHardware):
             with ui.column():
                 ui.markdown('**Mower**')
-                ui.button('Mower ON', on_click=lambda: automator.start(field_friend.external_mower.turn_on()))
-                ui.button('Mower OFF', on_click=lambda: automator.start(field_friend.external_mower.turn_off()))
+                ui.button('Mower ON', on_click=lambda: automator.start(field_friend.mower.turn_on()))
+                ui.button('Mower OFF', on_click=lambda: automator.start(field_friend.mower.turn_off()))
