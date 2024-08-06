@@ -8,6 +8,7 @@ configuration = {
         'right_front_can_address': 0x200,
         'is_left_reversed': False,
         'is_right_reversed': True,
+        'odrive_version': 6,
     },
     # # FIXME: PIN checken
     # 'eyes': {
