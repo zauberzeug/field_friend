@@ -1,13 +1,14 @@
 import logging
 
 import numpy as np
+import rosys
 
 import config.config_selection as config_selector
-import rosys
 
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
+from .external_mower import ExternalMower
 from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
@@ -268,6 +269,25 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown z_axis version: {config_hardware["z_axis"]["version"]}')
 
+        external_mower: ExternalMower | None
+        if 'external_mower' in config_hardware:
+            external_mower = ExternalMower(robot_brain,
+                                           can=can,
+                                           name=config_hardware['external_mower']['name'],
+                                           m0_can_address=config_hardware['external_mower']['m0_can_address'],
+                                           m1_can_address=config_hardware['external_mower']['m1_can_address'],
+                                           m2_can_address=config_hardware['external_mower']['m2_can_address'],
+                                           m_per_tick=self.M_PER_TICK,
+                                           speed=config_hardware['external_mower']['speed'],
+                                           is_m0_reversed=config_hardware['external_mower']['is_m0_reversed'],
+                                           is_m1_reversed=config_hardware['external_mower']['is_m1_reversed'],
+                                           is_m2_reversed=config_hardware['external_mower']['is_m2_reversed'],
+                                           odrive_version=config_hardware['external_mower'][
+                                               'odrive_version'] if 'odrive_version' in config_hardware['external_mower'] else 4,
+                                           )
+        else:
+            external_mower = None
+
         estop = rosys.hardware.EStopHardware(robot_brain,
                                              name=config_hardware['estop']['name'],
                                              pins=config_hardware['estop']['pins'],
@@ -375,7 +395,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                     y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
         modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, bumper, self.imu, eyes, self.status_control, safety]
+                   z_axis, external_mower, flashlight, bms, estop, self.battery_control, bumper, self.imu, eyes, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(implement_name=implement,
                          wheels=wheels,
