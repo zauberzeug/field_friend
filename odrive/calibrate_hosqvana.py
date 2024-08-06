@@ -83,7 +83,7 @@ finally:
     time.sleep(1.0)
     odrv0 = odrive.find_any()
 
-for i, axis in enumerate([odrv0.axis1]):
+for i, axis in enumerate([odrv0.axis0, odrv0.axis1]):
     print('- Calibration...')
     axis.requested_state = enums.AXIS_STATE_FULL_CALIBRATION_SEQUENCE
     time.sleep(0.1)
