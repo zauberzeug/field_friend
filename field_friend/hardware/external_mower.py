@@ -4,7 +4,7 @@ import rosys
 from rosys.helpers import remove_indentation
 
 
-class ExternalMower(rosys.hardware.ModuleHardware):
+class MowerHardware(rosys.hardware.ModuleHardware):
     """This module implements extrernal mower hardware.
 
     on and off commands are forwarded to a given Robot Brain.
@@ -52,7 +52,7 @@ class ExternalMower(rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'm0.speed({self.speed})')
 
     async def turn_off(self) -> None:
-        await self.robot_brain.send('m0.speed(0)')
+        await self.robot_brain.send('m0.off()')
 
     async def reset_motors(self) -> None:
         if not self.motor_error:
