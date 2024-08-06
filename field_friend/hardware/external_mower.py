@@ -1,10 +1,49 @@
-
+import abc
 
 import rosys
 from rosys.helpers import remove_indentation
 
 
-class MowerHardware(rosys.hardware.ModuleHardware):
+class Mower(rosys.hardware.Module, abc.ABC):
+    def __init__(self, name: str = 'mower') -> None:
+        super().__init__()
+        self.name = name
+        self.m0_error = 0
+        self.m1_error = 0
+        self.m2_error = 0
+        self.motor_error: bool = False
+
+    @abc.abstractmethod
+    async def turn_on(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def turn_off(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def reset_motors(self) -> None:
+        pass
+
+
+class MowerSimulation(Mower, rosys.hardware.ModuleSimulation):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+    async def turn_on(self) -> None:
+        pass
+
+    async def turn_off(self) -> None:
+        pass
+
+    async def reset_motors(self) -> None:
+        self.m0_error = 0
+        self.m1_error = 0
+        self.m2_error = 0
+        self.motor_error = False
+
+
+class MowerHardware(Mower, rosys.hardware.ModuleHardware):
     """This module implements extrernal mower hardware.
 
     on and off commands are forwarded to a given Robot Brain.
@@ -12,7 +51,6 @@ class MowerHardware(rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  can: rosys.hardware.CanHardware,
-                 name: str = 'mower',
                  m0_can_address: int = 0x000,
                  m1_can_address: int = 0x100,
                  m2_can_address: int = 0x200,
@@ -21,13 +59,10 @@ class MowerHardware(rosys.hardware.ModuleHardware):
                  is_m0_reversed: bool = False,
                  is_m1_reversed: bool = False,
                  is_m2_reversed: bool = False,
-                 odrive_version: int = 4,) -> None:
+                 odrive_version: int = 4,
+                 **kwargs) -> None:
         self.name = name
         self.speed = speed
-        self.m0_error = 0
-        self.m1_error = 0
-        self.m2_error = 0
-        self.motor_error = False
         self.odrive_version = odrive_version
         lizard_code = remove_indentation(f'''
             m0 = ODriveMotor({can.name}, {m0_can_address})
@@ -46,7 +81,9 @@ class MowerHardware(rosys.hardware.ModuleHardware):
         if self.odrive_version == 6:
             core_message_fields.extend(['m0.motor_error_flag', 'm1.motor_error_flag',
                                        'm2.motor_error_flag'])
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+        Mower.__init__(self, **kwargs)
+        rosys.hardware.ModuleHardware.__init__(self,
+                                               robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def turn_on(self) -> None:
         await self.robot_brain.send(f'm0.speed({self.speed})')

@@ -9,7 +9,7 @@ import rosys
 from . import localization
 from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PlantLocator,
                           PlantProvider, Puncher)
-from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
+from .automations.implements import ChopAndScrew, ExternalMower, Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
                                      StraightLineNavigation)
 from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
@@ -139,7 +139,7 @@ class System(rosys.persistence.PersistentModule):
             case 'none':
                 implements.append(WeedingScrew(self))
             case 'mower':
-                implements.append(WeedingScrew(self))
+                implements.append(ExternalMower(self))
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}
