@@ -105,13 +105,13 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         if self.odrive_version == 6:
             self.m0_error = int(words.pop(0))
             if self.m0_error == 1:
-                rosys.notify('warning' 'Left Back Motor Error')
+                rosys.notify('Left Back Motor Error', 'warning')
                 self.motor_error = True
             self.m1_error = int(words.pop(0))
             if self.m1_error == 1:
-                rosys.notify('warning' 'Right Back Motor Error')
+                rosys.notify('Right Back Motor Error', 'warning')
                 self.motor_error = True
             self.m2_error = int(words.pop(0))
             if self.m2_error == 1:
-                rosys.notify('warning' 'Left Front Motor Error')
+                rosys.notify('Left Front Motor Error', 'warning')
                 self.motor_error = True
