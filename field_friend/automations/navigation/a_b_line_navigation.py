@@ -55,8 +55,6 @@ class ABLineNavigation(Navigation):
     async def finish(self) -> None:
         await super().finish()
         self.automation_watcher.stop_field_watch()
-        self.automation_watcher.continues_updates = False
-        self.gnss.is_paused = True
         await self.implement.deactivate()
 
     async def _drive(self, distance: float):
