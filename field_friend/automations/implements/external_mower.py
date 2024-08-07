@@ -1,9 +1,10 @@
 
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import rosys
+from nicegui import ui
 
 from ...hardware import MowerHardware
 from ..navigation import WorkflowException
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
     from system import System
 
 
-class ExternalMower(Implement):
+class ExternalMower(Implement, rosys.persistence.PersistentModule):
     def __init__(self, system: 'System') -> None:
         super().__init__('Mower')
         self.log = logging.getLogger('field_friend.mower')
@@ -21,10 +22,12 @@ class ExternalMower(Implement):
         self.driver = system.driver
         assert self.mower_hardware is not None
         assert self.driver is not None
+        self.is_demo: bool = False
 
     async def activate(self):
-        await self.mower_hardware.turn_on()
-        await rosys.sleep(2)
+        if not self.is_demo:
+            await self.mower_hardware.turn_on()
+            await rosys.sleep(2)
         await super().activate()
 
     async def deactivate(self):
@@ -46,3 +49,17 @@ class ExternalMower(Implement):
         await self.mower_hardware.turn_on()
         await rosys.sleep(2)
         return 0.0
+
+    def backup(self) -> dict:
+        return {
+            'is_demo': self.is_demo,
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
+        self.is_demo = data.get('is_demo', self.is_demo)
+
+    def settings_ui(self):
+        ui.checkbox('Demo Mode') \
+            .bind_value(self, 'is_demo') \
+            .tooltip('Do not start the mowing motors')
