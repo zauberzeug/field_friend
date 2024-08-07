@@ -139,7 +139,8 @@ class System(rosys.persistence.PersistentModule):
             case 'none':
                 implements.append(WeedingScrew(self))
             case 'mower':
-                implements.append(ExternalMower(self))
+                # TODO: mower has neither flashlight nor camera, so monitoring is not possible
+                implements = [ExternalMower(self)]
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}
