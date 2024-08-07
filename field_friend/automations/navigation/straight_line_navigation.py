@@ -61,17 +61,18 @@ class StraightLineNavigation(Navigation):
                                                                                     position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
 
     def settings_ui(self) -> None:
+        super().settings_ui()
         ui.number('Length', step=0.5, min=0.05, format='%.1f') \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'length') \
             .tooltip('Length to drive in meters')
-        super().settings_ui()
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'length': self.length,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.length = data.get('length', self.length)

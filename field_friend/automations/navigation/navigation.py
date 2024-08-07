@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 import rosys
+from nicegui import ui
 from rosys.helpers import angle
 
 from ..implements import Implement
@@ -11,13 +12,16 @@ if TYPE_CHECKING:
     from system import System
 
 
+MAX_STRETCH_DISTANCE = 0.05
+DEFAULT_DRIVE_DISTANCE = 0.02
+LINEAR_SPEED_LIMIT = 0.13
+
+
 class WorkflowException(Exception):
     pass
 
 
 class Navigation(rosys.persistence.PersistentModule):
-    MAX_STRETCH_DISTANCE = 0.05
-    DEFAULT_DRIVE_DISTANCE = 0.02
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__()
@@ -32,7 +36,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.detector = system.detector
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
-        self.linear_speed_limit = 0.125
+        self.linear_speed_limit = LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
 
     async def start(self) -> None:
@@ -49,9 +53,9 @@ class Navigation(rosys.persistence.PersistentModule):
             while not self._should_finish():
                 await self.gnss.update_robot_pose()
                 self.gnss.is_paused = True
-                distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
-                if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
-                    await self._drive(self.DEFAULT_DRIVE_DISTANCE)
+                distance = await self.implement.get_stretch(MAX_STRETCH_DISTANCE)
+                if distance > MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
+                    await self._drive(DEFAULT_DRIVE_DISTANCE)
                     self.gnss.is_paused = False
                     continue
                 await self._drive(distance)
@@ -109,13 +113,19 @@ class Navigation(rosys.persistence.PersistentModule):
         """Resets the state to initial configuration"""
 
     def backup(self) -> dict:
-        return {}
+        return {
+            'linear_speed_limit': self.linear_speed_limit,
+        }
 
     def restore(self, data: dict[str, Any]) -> None:
-        pass
+        self.linear_speed_limit = data.get('linear_speed_limit', self.linear_speed_limit)
 
     def create_simulation(self) -> None:
         pass
 
     def settings_ui(self) -> None:
-        pass
+        ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f') \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'linear_speed_limit') \
+            .tooltip(f'Forward speed limit in m/s (default: {LINEAR_SPEED_LIMIT:.2f})')
