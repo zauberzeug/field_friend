@@ -1,0 +1,126 @@
+from typing import TYPE_CHECKING, Any
+
+import rosys
+from nicegui import ui
+from rosys.geometry import Pose, Spline
+
+from ..field import Field, Row
+from ..implements.implement import Implement
+from .navigation import Navigation
+
+if TYPE_CHECKING:
+    from system import System
+
+
+class ABLineNavigation(Navigation):
+
+    def __init__(self, system: 'System', tool: Implement) -> None:
+        super().__init__(system, tool)
+        self.MAX_STRETCH_DISTANCE = 2.0
+        self.start_position = self.odometer.prediction.point
+        self.name = 'A-B line'
+        self.gnss = system.gnss
+        self.bms = system.field_friend.bms
+        self.automation_watcher = system.automation_watcher
+        self.field_provider = system.field_provider
+        self.field: Field | None = None
+        self.row: Row | None = None
+        rosys.on_repeat
+
+    async def prepare(self) -> bool:
+        await super().prepare()
+        if self.field is None:
+            rosys.notify('No field selected', 'negative')
+            return False
+        if not self.field.rows:
+            rosys.notify('No rows available', 'negative')
+            return False
+        if self.gnss.device is None:
+            rosys.notify('GNSS is not available', 'negative')
+            return False
+        if self.row is None:
+            rosys.notify('No row selected', 'negative')
+            return False
+        if not len(self.row.points) >= 2:
+            rosys.notify(f'Row {self.row.name} on field {self.field.name} has not enough points', 'negative')
+            return False
+        self.automation_watcher.continues_updates = True
+        self.gnss.is_paused = False
+        await rosys.sleep(3)  # wait for GNSS to update
+        self.automation_watcher.start_field_watch(self.field.outline)
+        self.log.info(f'Activating {self.implement.name}...')
+        await self.implement.activate()
+        return True
+
+    async def finish(self) -> None:
+        await super().finish()
+        self.automation_watcher.stop_field_watch()
+        self.automation_watcher.continues_updates = False
+        self.gnss.is_paused = True
+        await self.implement.deactivate()
+
+    async def _drive(self, distance: float):
+        assert self.field is not None
+        assert self.row is not None
+        target = self.row.points[-1].cartesian()
+        start = self.odometer.prediction.point
+        direction = start.direction(target)
+        end = start.polar(distance, direction)
+        start_pose = Pose(x=start.x, y=start.y, yaw=direction)
+        end_pose = Pose(x=end.x, y=end.y, yaw=direction)
+        spline = Spline.from_poses(start_pose, end_pose)
+        await self.driver.drive_spline(spline)
+
+    def settings_ui(self) -> None:
+        super().settings_ui()
+        field_selection = ui.select(
+            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
+            on_change=lambda args: self._set_field(args.value),
+            label='Field')\
+            .classes('w-32') \
+            .tooltip('Select the field to work on')
+        field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
+        row_selection = ui.select(
+            {r.id: r.name for r in self.field.rows},
+            on_change=lambda args: self._set_row(args.value),
+            label='Row')\
+            .classes('w-32') \
+            .tooltip('Select the row to work on')
+        row_selection.bind_value_from(self, 'row', lambda r: r.id if r else None)
+
+    def _set_field(self, field_id: str) -> None:
+        field = self.field_provider.get_field(field_id)
+        if field is not None:
+            self.field = field
+
+    def _set_row(self, row_id: str) -> None:
+        for row in self.field.rows:
+            if row.id == row_id:
+                self.row = row
+                break
+
+    def _should_finish(self) -> bool:
+        distance = self.odometer.prediction.point.distance(self.row.points[-1].cartesian())
+        if distance < 0.1:
+            self.log.info(f'Row {self.row.name} completed')
+            return True
+        if self.bms.is_below_percent(20):
+            self.log.error('Battery is low')
+            return True
+        return False
+
+    def backup(self) -> dict:
+        return super().backup() | {
+            'field_id': self.field.id if self.field else None,
+            'row_id': self.row.id if self.row else None,
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
+        field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
+        self.field = self.field_provider.get_field(field_id)
+        row_id = data.get('row_id', self.field.rows[0].id if self.field and self.field.rows else None)
+        for row in self.field.rows:
+            if row.id == row_id:
+                self.row = row
+                break

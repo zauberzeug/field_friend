@@ -37,6 +37,8 @@ class AutomationWatcher:
         self.field_watch_active: bool = False
         self.last_robot_pose = self.odometer.prediction
 
+        self.continues_updates = False
+
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
         rosys.on_repeat(self.ensure_robot_pose_updates_when_not_in_automation, 5.0)
@@ -124,7 +126,7 @@ class AutomationWatcher:
                 self.field_watch_active = False
 
     async def ensure_robot_pose_updates_when_not_in_automation(self) -> None:
-        if self.automator.is_running:
+        if self.automator.is_running and not self.continues_updates:
             return
         if self.gnss.is_paused:
             self.log.warning('GNSS is paused, this should not happen outside of an automation')
