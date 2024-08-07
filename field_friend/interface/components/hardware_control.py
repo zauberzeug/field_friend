@@ -4,7 +4,9 @@ from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, MowerHardware, Tornado, YAxis, YAxisCanOpenHardware, ZAxis, ZAxisCanOpenHardware)
+                         FlashlightV2, Mower, MowerHardware, MowerSimulation, Tornado, YAxis, YAxisCanOpenHardware,
+                         ZAxis, ZAxisCanOpenHardware)
+from .status_bulb import StatusBulb as status_bulb
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -141,8 +143,24 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.min_position, depth=depth.value)))
 
-        if isinstance(field_friend.mower, MowerHardware):
+        if isinstance(field_friend.mower, Mower):
             with ui.column():
                 ui.markdown('**Mower**')
-                ui.button('Mower ON', on_click=lambda: automator.start(field_friend.mower.turn_on()))
-                ui.button('Mower OFF', on_click=lambda: automator.start(field_friend.mower.turn_off()))
+                with ui.row():
+                    status_bulb().bind_value_from(field_friend.mower, 'm0_error', lambda m0_error: not m0_error)
+                    ui.label('m0')
+                with ui.row():
+                    status_bulb().bind_value_from(field_friend.mower, 'm1_error', lambda m1_error: not m1_error)
+                    ui.label('m1')
+                with ui.row():
+                    status_bulb().bind_value_from(field_friend.mower, 'm2_error', lambda m2_error: not m2_error)
+                    ui.label('m2')
+                ui.button('Reset Motors', on_click=field_friend.mower.reset_motors)
+                if isinstance(field_friend.mower, MowerSimulation):
+                    ui.button('All Error', on_click=field_friend.mower.set_error)
+                    ui.button('m0 Error', on_click=field_friend.mower.set_m0_error)
+                    ui.button('m1 Error', on_click=field_friend.mower.set_m1_error)
+                    ui.button('m2 Error', on_click=field_friend.mower.set_m2_error)
+                elif isinstance(field_friend.mower, MowerHardware):
+                    ui.button('Mower ON', on_click=lambda: automator.start(field_friend.mower.turn_on()))
+                    ui.button('Mower OFF', on_click=lambda: automator.start(field_friend.mower.turn_off()))

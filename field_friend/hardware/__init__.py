@@ -1,7 +1,7 @@
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
-from .external_mower import MowerHardware, MowerSimulation
+from .external_mower import Mower, MowerHardware, MowerSimulation
 from .field_friend import FieldFriend
 from .field_friend_hardware import FieldFriendHardware
 from .field_friend_simulation import FieldFriendSimulation

@@ -42,6 +42,24 @@ class MowerSimulation(Mower, rosys.hardware.ModuleSimulation):
         self.m2_error = 0
         self.motor_error = False
 
+    async def set_error(self) -> None:
+        self.m0_error = 1
+        self.m1_error = 1
+        self.m2_error = 1
+        self.motor_error = True
+
+    async def set_m0_error(self) -> None:
+        self.m0_error = 1
+        self.motor_error = True
+
+    async def set_m1_error(self) -> None:
+        self.m1_error = 1
+        self.motor_error = True
+
+    async def set_m2_error(self) -> None:
+        self.m2_error = 1
+        self.motor_error = True
+
 
 class MowerHardware(Mower, rosys.hardware.ModuleHardware):
     """This module implements extrernal mower hardware.
