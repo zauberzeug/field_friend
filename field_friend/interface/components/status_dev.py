@@ -6,16 +6,8 @@ import rosys
 from nicegui import ui
 
 from ... import localization
-from ...hardware import (
-    ChainAxis,
-    FieldFriend,
-    FieldFriendHardware,
-    FlashlightPWMHardware,
-    FlashlightPWMHardwareV2,
-    Tornado,
-    YAxis,
-    ZAxis,
-)
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
+                         Tornado, YAxis, ZAxis)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -105,7 +97,14 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 r1_status = ui.label()
                 reset_motor_button = ui.button(
                     'Reset motor errors', on_click=robot.wheels.reset_motors).bind_visibility_from(robot.wheels, 'motor_error')
-
+        if hasattr(robot, 'mower') and robot.mower is not None:
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Mower status:**').style('color: #EDF4FB')
+                m0_status = ui.label()
+                m1_status = ui.label()
+                m2_status = ui.label()
+                reset_mower_button = ui.button(
+                    'Reset mower errors', on_click=robot.mower.reset_motors).bind_visibility_from(robot.mower, 'motor_error')
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Robot Brain**').style('color: #6E93D6;').classes('w-full text-center')
         ui.separator()
@@ -306,6 +305,10 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 r1_status.text = 'Error in r1' if robot.wheels.r1_error else 'No error'
             if robot.wheels.odrive_version == 4:
                 l0_status.text = 'cant read status update odrive to version 0.5.6'
+            if hasattr(robot, 'mower') and robot.mower is not None:
+                m0_status.text = 'Error in m0' if robot.mower.m0_error else 'No error'
+                m1_status.text = 'Error in m1' if robot.mower.m1_error else 'No error'
+                m2_status.text = 'Error in m2' if robot.mower.m2_error else 'No error'
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
         reference_position_label.text = 'No reference' if localization.reference is None else 'Set'
         gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
