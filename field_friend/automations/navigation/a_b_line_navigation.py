@@ -25,7 +25,6 @@ class ABLineNavigation(Navigation):
         self.field_provider = system.field_provider
         self.field: Field | None = None
         self.row: Row | None = None
-        rosys.on_repeat
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -38,8 +37,9 @@ class ABLineNavigation(Navigation):
         if self.gnss.device is None:
             rosys.notify('GNSS is not available', 'negative')
             return False
+        self.row = self.get_nearest_row()
         if self.row is None:
-            rosys.notify('No row selected', 'negative')
+            rosys.notify('No row found', 'negative')
             return False
         if not len(self.row.points) >= 2:
             rosys.notify(f'Row {self.row.name} on field {self.field.name} has not enough points', 'negative')
@@ -71,34 +71,6 @@ class ABLineNavigation(Navigation):
         spline = Spline.from_poses(start_pose, end_pose)
         await self.driver.drive_spline(spline)
 
-    def settings_ui(self) -> None:
-        super().settings_ui()
-        field_selection = ui.select(
-            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
-            on_change=lambda args: self._set_field(args.value),
-            label='Field')\
-            .classes('w-32') \
-            .tooltip('Select the field to work on')
-        field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
-        row_selection = ui.select(
-            {r.id: r.name for r in self.field.rows},
-            on_change=lambda args: self._set_row(args.value),
-            label='Row')\
-            .classes('w-32') \
-            .tooltip('Select the row to work on')
-        row_selection.bind_value_from(self, 'row', lambda r: r.id if r else None)
-
-    def _set_field(self, field_id: str) -> None:
-        field = self.field_provider.get_field(field_id)
-        if field is not None:
-            self.field = field
-
-    def _set_row(self, row_id: str) -> None:
-        for row in self.field.rows:
-            if row.id == row_id:
-                self.row = row
-                break
-
     def _should_finish(self) -> bool:
         distance = self.odometer.prediction.point.distance(self.row.points[-1].cartesian())
         if distance < 0.1:
@@ -109,18 +81,33 @@ class ABLineNavigation(Navigation):
             return True
         return False
 
+    def settings_ui(self) -> None:
+        super().settings_ui()
+        field_selection = ui.select(
+            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
+            on_change=lambda args: self._set_field(args.value),
+            label='Field')\
+            .classes('w-32') \
+            .tooltip('Select the field to work on')
+        field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
+
+    def get_nearest_row(self) -> Row:
+        assert self.field is not None
+        assert self.gnss.device is not None
+        row = min(self.field.rows, key=lambda r: r.points[0].cartesian().distance(self.odometer.prediction.point))
+        return row
+
+    def _set_field(self, field_id: str) -> None:
+        field = self.field_provider.get_field(field_id)
+        if field is not None:
+            self.field = field
+
     def backup(self) -> dict:
         return super().backup() | {
             'field_id': self.field.id if self.field else None,
-            'row_id': self.row.id if self.row else None,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         super().restore(data)
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
-        row_id = data.get('row_id', self.field.rows[0].id if self.field and self.field.rows else None)
-        for row in self.field.rows:
-            if row.id == row_id:
-                self.row = row
-                break

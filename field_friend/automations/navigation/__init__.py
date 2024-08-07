@@ -1,4 +1,5 @@
 
+from .a_b_line_navigation import ABLineNavigation
 from .coverage_navigation import CoverageNavigation
 from .follow_crops_navigation import FollowCropsNavigation
 from .navigation import Navigation, WorkflowException
@@ -12,4 +13,5 @@ __all__ = [
     'StraightLineNavigation',
     'FollowCropsNavigation',
     'CoverageNavigation',
+    'ABLineNavigation',
 ]
