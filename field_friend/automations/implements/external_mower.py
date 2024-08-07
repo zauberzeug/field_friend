@@ -38,14 +38,10 @@ class ExternalMower(Implement):
             raise WorkflowException('All motors are stuck')
         # TODO: implement a better error handling
         await rosys.sleep(0.1)
-        self.log.error('Stuck motor detected')
-        await self.mower_hardware.turn_off()
-        await rosys.sleep(2)
-        await self.driver.wheels.drive(*self.driver._throttle(-0.1, 0.0))
-        await rosys.sleep(2)
+        self.log.warning('Stuck motor detected')
         await self.driver.wheels.stop()
-        await rosys.sleep(1)
         await self.mower_hardware.reset_motors()
         await rosys.sleep(5)
         await self.mower_hardware.turn_on()
+        await rosys.sleep(2)
         return 0.0
