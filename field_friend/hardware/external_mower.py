@@ -5,12 +5,12 @@ from rosys.helpers import remove_indentation
 
 
 class Mower(rosys.hardware.Module, abc.ABC):
-    def __init__(self, name: str = 'mower') -> None:
-        super().__init__()
+    def __init__(self, *, name: str = 'mower', **kwargs) -> None:
+        super().__init__(**kwargs)
         self.name = name
-        self.m0_error = 0
-        self.m1_error = 0
-        self.m2_error = 0
+        self.m0_error: int = 0
+        self.m1_error: int = 0
+        self.m2_error: int = 0
         self.motor_error: bool = False
 
     @abc.abstractmethod
@@ -98,9 +98,10 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         if self.odrive_version == 6:
             core_message_fields.extend(['m0.motor_error_flag', 'm1.motor_error_flag',
                                        'm2.motor_error_flag'])
-        Mower.__init__(self, **kwargs)
-        rosys.hardware.ModuleHardware.__init__(self,
-                                               robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+        # Mower.__init__(self, **kwargs)
+        # rosys.hardware.ModuleHardware.__init__(self, robot_brain=robot_brain,
+        #                                        lizard_code=lizard_code, core_message_fields=core_message_fields)
+        super().__init__(name='mower', robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def turn_on(self) -> None:
         await self.robot_brain.send(f'm0.speed({self.speed})')
