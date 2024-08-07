@@ -67,6 +67,7 @@ class ABLineNavigation(Navigation):
         start_pose = Pose(x=start.x, y=start.y, yaw=direction)
         end_pose = Pose(x=end.x, y=end.y, yaw=direction)
         spline = Spline.from_poses(start_pose, end_pose)
+        self.log.info(f'Driving {distance:.2f}m to {end}')
         await self.driver.drive_spline(spline)
 
     def _should_finish(self) -> bool:
