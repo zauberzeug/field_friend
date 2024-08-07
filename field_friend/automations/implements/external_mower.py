@@ -24,6 +24,7 @@ class ExternalMower(Implement):
 
     async def activate(self):
         await self.mower_hardware.turn_on()
+        await rosys.sleep(2)
         await super().activate()
 
     async def deactivate(self):
