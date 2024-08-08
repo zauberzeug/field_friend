@@ -75,7 +75,7 @@ class Gnss(ABC):
                 self.log.warning('new GNSS record is None')
                 self.GNSS_CONNECTION_LOST.emit()
                 return
-            if previous.gps_qual == 4 and self.current.gps_qual != 4:
+            if ("R" in previous.mode or previous.mode == "SSSS") and ("R" not in self.current.mode and self.current.mode != "SSSS"):
                 self.log.warning('GNSS RTK fix lost')
                 self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
                 self.RTK_FIX_LOST.emit()
@@ -85,7 +85,7 @@ class Gnss(ABC):
         try:
             # TODO also do antenna_offset correction for this event
             self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
-            if "R" in self.current.mode:
+            if "R" in self.current.mode or self.current.mode == "SSSS":
                 self._on_rtk_fix()
         except Exception:
             self.log.exception('gnss record could not be applied')
