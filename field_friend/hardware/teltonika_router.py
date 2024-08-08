@@ -1,10 +1,10 @@
 import logging
 import os
-from typing import TYPE_CHECKING
 
 import httpx
 import rosys
 from dotenv import load_dotenv
+from nicegui import ui
 
 load_dotenv('.env')
 
@@ -24,14 +24,15 @@ class TeltonikaRouter:
         self.client = httpx.AsyncClient(headers={'Content-Type': 'application/json'}, timeout=10.0)
         self.auth_token: str = ''
         self.token_time: float = 0.0
-
         if ADMIN_PASSWORD:
             self.log.info('Connecting to Teltonika router...')
-            # rosys.on_repeat(self.get_status_info, 5.0)
         else:
-            self.log.error('No Teltonika password found in environment')
+            msg = 'The admin password for the Teltonika router is not set. Please set it in the .env file.'
+            self.log.warning(msg)
+            ui.label(msg).classes('text-xl')
+            return
 
-    async def get_status_info(self) -> None:
+    async def get_current_connection(self) -> None:
         if rosys.time() - self.token_time > 4 * 60:
             await self._get_token()
         self.log.debug('Getting status...')
@@ -45,13 +46,12 @@ class TeltonikaRouter:
             return
         self.log.debug('Getting Status Info: success')
         print(f'Status: {response.json()}')
-        # FIXME: is this correct? Is 'is_up' the correct key?
         for connection in response.json()['data']:
             if connection['is_up'] and connection['area_type'] == 'wan':
                 if self.current_connection != connection['name']:
                     self.current_connection = connection['name']
                     self.CONNECTION_CHANGED.emit()
-                    print(f'Active Connection: {connection["name"]}')
+        self.get_current_connection()
 
     async def get_sim_cards_info(self) -> None:
         if rosys.time() - self.token_time > 4 * 60:
@@ -69,21 +69,6 @@ class TeltonikaRouter:
                 return
             self.log.debug('Getting SIM-Cards Info: success')
             print(f'SIM {mobile_id} status: {response.json()}')
-
-    # TODO: is this function necessary?
-    async def set_sim_card_activation(self, mobile_id: str, activation: bool) -> None:
-        if rosys.time() - self.token_time > 4 * 60:
-            await self._get_token()
-        self.log.debug('Setting SIM-Cards activation...')
-        try:
-            response = await self.client.post(f'{TELTONIKA_ROUTER_URL}/interfaces/basic/status/{mobile_id}',
-                                              headers={'Authorization': f'Bearer {self.auth_token}'}, data={'up': activation})
-            response.raise_for_status()
-        except httpx.RequestError:
-            self.log.exception(f'Setting SIM-Cards Activation: failed')
-            return
-        self.log.debug('Setting SIM-Cards Activation: success')
-        print(f'SIM {mobile_id} status: {response.json()}')
 
     async def _get_token(self) -> None:
         try:
