@@ -6,6 +6,7 @@ from ...automations import Puncher
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
                          FlashlightV2, Mower, MowerHardware, MowerSimulation, Tornado, YAxis, YAxisCanOpenHardware,
                          ZAxis, ZAxisCanOpenHardware)
+from .confirm_dialog import ConfirmDialog as confirm_dialog
 from .status_bulb import StatusBulb as status_bulb
 
 
@@ -162,5 +163,8 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.button('m1 Error', on_click=field_friend.mower.set_m1_error)
                     ui.button('m2 Error', on_click=field_friend.mower.set_m2_error)
                 elif isinstance(field_friend.mower, MowerHardware):
-                    ui.button('Mower ON', on_click=lambda: automator.start(field_friend.mower.turn_on()))
+                    async def turn_on_motor():
+                        if await confirm_dialog('Are you sure to turn on the mower?', delay=2.0):
+                            automator.start(field_friend.mower.turn_on())
+                    ui.button('Mower ON', on_click=turn_on_motor)
                     ui.button('Mower OFF', on_click=lambda: automator.start(field_friend.mower.turn_off()))
