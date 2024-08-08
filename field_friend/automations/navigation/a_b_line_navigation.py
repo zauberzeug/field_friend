@@ -72,6 +72,7 @@ class ABLineNavigation(Navigation):
         await self.driver.drive_spline(spline)
 
     def _should_finish(self) -> bool:
+        assert self.row is not None
         distance = self.odometer.prediction.point.distance(self.row.points[-1].cartesian())
         if distance < self.STOP_DISTANCE:
             self.log.info(f'Row {self.row.name} completed')
