@@ -71,7 +71,9 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     with ui.row().classes('place-items-center'):
                         ui.markdown('**Bumper:**').style('color: #6E93D6')
                         bumper_label = ui.label()
-
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Connection:**').style('color: #6E93D6')
+            connection_label = ui.label()
         with ui.row().classes('place-items-center'):
             ui.markdown('**Tool:**').style('color: #6E93D6')
             ui.label(robot.implement_name)
