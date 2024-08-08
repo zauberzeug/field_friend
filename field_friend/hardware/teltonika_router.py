@@ -51,6 +51,7 @@ class TeltonikaRouter:
                 if self.current_connection != connection['name']:
                     self.current_connection = connection['name']
                     self.CONNECTION_CHANGED.emit()
+                    ui.notify(f'Connection changed to {self.current_connection}')
         self.get_current_connection()
 
     async def get_sim_cards_info(self) -> None:

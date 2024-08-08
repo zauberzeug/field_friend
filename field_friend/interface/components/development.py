@@ -31,7 +31,7 @@ def development(system: 'System') -> None:
                     with ui.card().style('background-color: #3E63A6; color: white;'):
                         with ui.column():
                             ui.label("Teltonika").style('font-size: 1.5rem;')
-                            ui.button("Get Status", on_click=system.teltonika_router.get_status_info)
+                            ui.button("Get Status", on_click=system.teltonika_router.get_current_connection)
                             ui.button("Get Sims", on_click=system.teltonika_router.get_sim_cards_info)
                             ui.button("Set Sim 1 False", on_click=lambda: system.teltonika_router.set_sim_card_activation(
                                 'mob1s1a1', False))

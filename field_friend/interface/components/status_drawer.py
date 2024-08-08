@@ -1,9 +1,9 @@
-from ... import localization
 from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
 
+from ... import localization
 from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado, YAxis, ZAxis
 from ...localization import Gnss
 
@@ -237,6 +237,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
             rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
             odometry_label.text = str(odometer.prediction)
+            connection_label = "placeholder"
 
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer
