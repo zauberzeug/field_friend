@@ -14,6 +14,7 @@ class GnssSimulation(Gnss):
         self.wheels = wheels
         self.allow_connection = True
         self.gps_quality = 4
+        self.mode = 'SSSS'
 
     async def try_connection(self) -> None:
         if self.allow_connection:

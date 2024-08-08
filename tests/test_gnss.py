@@ -39,7 +39,7 @@ async def test_driving(gnss_driving: System):
 
 async def test_connection_lost(gnss_driving: System, gnss: GnssSimulation):
     await forward(x=2.0)
-    gnss.gps_quality = 0
+    gnss.mode = 'NNNN'
     await forward(3)
     # robot should have stopped driving
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.0, y=0))
@@ -51,11 +51,11 @@ async def test_connection_lost(gnss_driving: System, gnss: GnssSimulation):
 
 async def test_rtk_lost(gnss_driving: System, gnss: GnssSimulation):
     await forward(x=2.0)
-    gnss.gps_quality = 5
+    gnss.mode = 'FFFF'
     await forward(3)
     # robot should have stopped driving
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.0, y=0))
-    gnss.gps_quality = 4
+    gnss.mode = 'RFFF'
     await forward(5)
     # robot should continue driving
     assert gnss_driving.odometer.prediction.point.x > 2.5

@@ -85,7 +85,7 @@ class Gnss(ABC):
         try:
             # TODO also do antenna_offset correction for this event
             self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
-            if self.current.gps_qual == 4:  # 4 = RTK fixed (cm accuracy), 5 = RTK float (dm accuracy)
+            if "R" in self.current.mode:
                 self._on_rtk_fix()
         except Exception:
             self.log.exception('gnss record could not be applied')

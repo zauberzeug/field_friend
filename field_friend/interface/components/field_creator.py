@@ -67,7 +67,7 @@ class FieldCreator:
 
     def get_infos(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual != 4:
+        if 'R' in self.gnss.current.mode:
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_start = self.gnss.current.location
@@ -103,7 +103,7 @@ class FieldCreator:
 
     def drive_to_last_row(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual != 4:
+        if 'R' in self.gnss.current.mode:
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location
@@ -119,7 +119,8 @@ class FieldCreator:
 
     def confirm_geometry(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual != 4:
+        if 'R' in self.gnss.current.mode:
+        
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.last_row_end = self.gnss.current.location

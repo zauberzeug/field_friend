@@ -146,7 +146,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         if positioning is None or positioning.lat == 0 or positioning.long == 0:
             rosys.notify("No GNSS position.")
             return
-        if self.gnss.current.gps_qual != 4:
+        if 'R' in self.gnss.current.mode:
             rosys.notify("GNSS position is not accurate enough.")
             return
         new_point = positioning
@@ -172,7 +172,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if self.gnss.current.gps_qual != 4:
+            if 'R' in self.gnss.current.mode:
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
@@ -201,7 +201,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if self.gnss.current.gps_qual != 4:
+            if 'R' in self.gnss.current.mode:
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
