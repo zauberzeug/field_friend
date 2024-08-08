@@ -16,7 +16,8 @@ class ABLineNavigation(Navigation):
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
-        self.MAX_STRETCH_DISTANCE = 2.0
+        self.MAX_STRETCH_DISTANCE: float = 2.0
+        self.STOP_DISTANCE: float = 0.1
         self.start_position = self.odometer.prediction.point
         self.name = 'A-B line'
         self.gnss = system.gnss
@@ -72,7 +73,7 @@ class ABLineNavigation(Navigation):
 
     def _should_finish(self) -> bool:
         distance = self.odometer.prediction.point.distance(self.row.points[-1].cartesian())
-        if distance < 0.1:
+        if distance < self.STOP_DISTANCE:
             self.log.info(f'Row {self.row.name} completed')
             return True
         if self.bms.is_below_percent(20):
