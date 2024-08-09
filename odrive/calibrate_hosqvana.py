@@ -30,8 +30,8 @@ assert_equal(odrv0.config.dc_max_positive_current, 50)
 assert_equal(odrv0.config.dc_max_negative_current, -20)
 assert_equal(odrv0.config.brake_resistance, 0)
 assert_equal(odrv0.can.config.baud_rate, 1_000_000)
-assert_equal(odrv0.axis0.config.can.node_id, 0x000 >> 5)
-assert_equal(odrv0.axis1.config.can.node_id, 0x100 >> 5)
+assert_equal(odrv0.axis0.config.can.node_id, 0x400 >> 5)
+assert_equal(odrv0.axis1.config.can.node_id, 0x500 >> 5)
 assert_equal(odrv0.axis0.config.can.heartbeat_rate_ms, 1000)
 assert_equal(odrv0.axis1.config.can.heartbeat_rate_ms, 1000)
 assert_equal(odrv0.axis0.config.can.encoder_rate_ms, 10)
@@ -63,7 +63,7 @@ for i, axis in enumerate([odrv0.axis0, odrv0.axis1]):
     assert_equal(axis.controller.config.enable_torque_mode_vel_limit, False)
     assert_equal(axis.config.startup_motor_calibration, False)
     assert_equal(axis.config.startup_encoder_offset_calibration, False)
-    assert_equal(axis.config.startup_closed_loop_control, True)
+    assert_equal(axis.config.startup_closed_loop_control, False)
     assert_equal(axis.controller.config.input_mode, enums.INPUT_MODE_PASSTHROUGH)
     assert_equal(axis.controller.config.vel_gain, 2.0)
     assert_equal(axis.controller.config.vel_integrator_gain, 10.0)
@@ -83,7 +83,7 @@ finally:
     time.sleep(1.0)
     odrv0 = odrive.find_any()
 
-for i, axis in enumerate([odrv0.axis1]):
+for i, axis in enumerate([odrv0.axis0, odrv0.axis1]):
     print('- Calibration...')
     axis.requested_state = enums.AXIS_STATE_FULL_CALIBRATION_SEQUENCE
     time.sleep(0.1)

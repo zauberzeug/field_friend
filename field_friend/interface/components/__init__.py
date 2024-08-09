@@ -1,4 +1,5 @@
 from .camera_card import camera_card
+from .confirm_dialog import ConfirmDialog as confirm_dialog
 from .development import development
 from .field_friend_object import field_friend_object
 from .field_object import field_object

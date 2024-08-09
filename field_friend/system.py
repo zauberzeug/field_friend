@@ -7,42 +7,18 @@ import psutil
 import rosys
 
 from . import localization
-from .automations import (
-    AutomationWatcher,
-    BatteryWatcher,
-    FieldProvider,
-    KpiProvider,
-    PathProvider,
-    PlantLocator,
-    PlantProvider,
-    Puncher,
-)
-from .automations.implements import (
-    ChopAndScrew,
-    Implement,
-    Recorder,
-    Tornado,
-    WeedingScrew,
-)
-from .automations.navigation import (
-    CoverageNavigation,
-    FollowCropsNavigation,
-    Navigation,
-    RowsOnFieldNavigation,
-    StraightLineNavigation,
-)
+from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PlantLocator,
+                          PlantProvider, Puncher)
+from .automations.implements import ChopAndScrew, ExternalMower, Implement, Recorder, Tornado, WeedingScrew
+from .automations.navigation import (ABLineNavigation, CoverageNavigation, FollowCropsNavigation, Navigation,
+                                     RowsOnFieldNavigation, StraightLineNavigation)
 from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
-from .vision import (
-    CalibratableUsbCameraProvider,
-    CameraConfigurator,
-    SimulatedCam,
-    SimulatedCamProvider,
-)
+from .vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
 
 
 class System(rosys.persistence.PersistentModule):
@@ -145,10 +121,12 @@ class System(rosys.persistence.PersistentModule):
         self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
         self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
         self.coverage_navigation = CoverageNavigation(self, self.monitoring)
+        self.a_b_line_navigation = ABLineNavigation(self, self.monitoring)
         self.navigation_strategies = {n.name: n for n in [self.field_navigation,
                                                           self.straight_line_navigation,
                                                           self.follow_crops_navigation,
                                                           self.coverage_navigation,
+                                                          self.a_b_line_navigation
                                                           ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
@@ -162,6 +140,9 @@ class System(rosys.persistence.PersistentModule):
                 self.log.error('Dual mechanism not implemented')
             case 'none':
                 implements.append(WeedingScrew(self))
+            case 'mower':
+                # TODO: mower has neither flashlight nor camera, so monitoring is not possible
+                implements = [ExternalMower(self)]
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}

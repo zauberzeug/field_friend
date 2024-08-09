@@ -116,13 +116,14 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         self.log.info(f'Arrived at row {row.name} starting at {target}')
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'field_id': self.field.id if self.field else None,
             'row_index': self.row_index,
             'state': self.state.name,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self.row_index = data.get('row_index', 0)
@@ -133,6 +134,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         self.row_index = 0
 
     def settings_ui(self) -> None:
+        super().settings_ui()
         field_selection = ui.select(
             {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
             on_change=lambda args: self._set_field(args.value),
@@ -140,7 +142,6 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
             .classes('w-32') \
             .tooltip('Select the field to work on')
         field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
-        super().settings_ui()
 
     def _set_field(self, field_id: str) -> None:
         field = self.field_provider.get_field(field_id)

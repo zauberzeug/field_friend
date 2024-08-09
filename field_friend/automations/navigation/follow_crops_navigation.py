@@ -90,17 +90,18 @@ class FollowCropsNavigation(Navigation):
         return False
 
     def settings_ui(self) -> None:
+        super().settings_ui()
         ui.number('Crop Attraction', step=0.1, min=0.0, format='%.1f') \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'crop_attraction') \
             .tooltip('Influence of the crop row direction on the driving direction')
-        super().settings_ui()
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'crop_attraction': self.crop_attraction,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.crop_attraction = data.get('crop_attraction', self.crop_attraction)

@@ -63,8 +63,6 @@ class Gnss(ABC):
         pass
 
     async def check_gnss(self) -> None:
-        if self.is_paused:
-            return
         previous = deepcopy(self.current)
         try:
             self.current = await self._create_new_record()
@@ -85,7 +83,8 @@ class Gnss(ABC):
         try:
             # TODO also do antenna_offset correction for this event
             self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
-            if self.current.gps_qual == 4:  # 4 = RTK fixed (cm accuracy), 5 = RTK float (dm accuracy)
+            # 4 = RTK fixed (cm accuracy), 5 = RTK float (dm accuracy)
+            if self.current.gps_qual == 4 and not self.is_paused:
                 self._on_rtk_fix()
         except Exception:
             self.log.exception('gnss record could not be applied')

@@ -6,6 +6,7 @@ from .implement import Implement
 from .recorder import Recorder
 from .tornado import Tornado
 from .weeding_screw import WeedingScrew
+from .external_mower import ExternalMower
 
 __all__ = [
     'Implement',
@@ -14,5 +15,6 @@ __all__ = [
     'Recorder',
     'WeedingScrew',
     'Tornado',
+    'ExternalMower',
     'ImplementException',
 ]
