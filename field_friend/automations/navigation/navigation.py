@@ -12,16 +12,14 @@ if TYPE_CHECKING:
     from system import System
 
 
-MAX_STRETCH_DISTANCE = 0.05
-DEFAULT_DRIVE_DISTANCE = 0.02
-LINEAR_SPEED_LIMIT = 0.13
-
-
 class WorkflowException(Exception):
     pass
 
 
 class Navigation(rosys.persistence.PersistentModule):
+    MAX_STRETCH_DISTANCE: float = 0.05
+    DEFAULT_DRIVE_DISTANCE: float = 0.02
+    LINEAR_SPEED_LIMIT: float = 0.13
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__()
@@ -36,7 +34,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.detector = system.detector
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
-        self.linear_speed_limit = LINEAR_SPEED_LIMIT
+        self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
 
     async def start(self) -> None:
@@ -53,9 +51,9 @@ class Navigation(rosys.persistence.PersistentModule):
             while not self._should_finish():
                 await self.gnss.update_robot_pose()
                 self.gnss.is_paused = True
-                distance = await self.implement.get_stretch(MAX_STRETCH_DISTANCE)
-                if distance > MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
-                    await self._drive(DEFAULT_DRIVE_DISTANCE)
+                distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
+                if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
+                    await self._drive(self.DEFAULT_DRIVE_DISTANCE)
                     self.gnss.is_paused = False
                     continue
                 await self._drive(distance)
@@ -128,4 +126,4 @@ class Navigation(rosys.persistence.PersistentModule):
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
-            .tooltip(f'Forward speed limit in m/s (default: {LINEAR_SPEED_LIMIT:.2f})')
+            .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
