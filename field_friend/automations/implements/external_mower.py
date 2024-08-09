@@ -36,7 +36,7 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
 
     async def get_stretch(self, max_distance: float) -> float:
         if not any([self.mower_hardware.m0_error, self.mower_hardware.m1_error, self.mower_hardware.m2_error]):
-            return 1.0
+            return 0.1
         if all([self.mower_hardware.m0_error, self.mower_hardware.m1_error, self.mower_hardware.m2_error]):
             rosys.notify('All motors are stuck', 'negative')
             raise WorkflowException('All motors are stuck')
