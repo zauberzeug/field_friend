@@ -63,6 +63,7 @@ class ABLineNavigation(Navigation):
         assert self.row is not None
         target = self.row.points[-1].cartesian()
         start = self.odometer.prediction.point
+        distance = min(distance, start.distance(target))
         direction = start.direction(target)
         end = start.polar(distance, direction)
         start_pose = Pose(x=start.x, y=start.y, yaw=direction)
