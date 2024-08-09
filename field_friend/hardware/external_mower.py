@@ -82,9 +82,9 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         self.speed = speed
         self.odrive_version = odrive_version
         lizard_code = remove_indentation(f'''
-            m0 = ODriveMotor({can.name}, {m0_can_address})
-            m1 = ODriveMotor({can.name}, {m1_can_address})
-            m2 = ODriveMotor({can.name}, {m2_can_address})
+            m0 = ODriveMotor({can.name}, {m0_can_address}{', 6'if self.odrive_version == 6  else ''})
+            m1 = ODriveMotor({can.name}, {m1_can_address}{', 6'if self.odrive_version == 6  else ''})
+            m2 = ODriveMotor({can.name}, {m2_can_address}{', 6'if self.odrive_version == 6  else ''})
             m0.m_per_tick = {m_per_tick}
             m1.m_per_tick = {m_per_tick}
             m2.m_per_tick = {m_per_tick}
