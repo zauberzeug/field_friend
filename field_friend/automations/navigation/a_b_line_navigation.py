@@ -45,7 +45,6 @@ class ABLineNavigation(Navigation):
         if not len(self.row.points) >= 2:
             rosys.notify(f'Row {self.row.name} on field {self.field.name} has not enough points', 'negative')
             return False
-        self.automation_watcher.continues_updates = True
         self.gnss.is_paused = False
         await rosys.sleep(3)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
@@ -61,17 +60,17 @@ class ABLineNavigation(Navigation):
     async def _drive(self, distance: float):
         assert self.field is not None
         assert self.row is not None
-        target = self.row.points[-1].cartesian()
-        start = self.odometer.prediction.point
-        distance = min(distance, start.distance(target))
-        direction = start.direction(target)
-        end = start.polar(distance, direction)
-        start_pose = Pose(x=start.x, y=start.y, yaw=direction)
-        end_pose = Pose(x=end.x, y=end.y, yaw=direction)
-        spline = Spline.from_poses(start_pose, end_pose)
-        self.log.info(f'Driving {distance:.2f}m to {end} with {self.odometer.current_velocity.linear:.2f}m/s')
+        current_position = self.odometer.prediction.point
+        start_point = self.row.points[0].cartesian()
+        end_point = self.row.points[-1].cartesian()
+        direction = start_point.direction(end_point)
+        self.log.info(f'line direction: {direction} robot yaw: {self.odometer.prediction.yaw}')
+        distance = min(distance, current_position.distance(end_point))
+        line = self.row.line_segment().line
+        foot_point = line.foot_point(self.odometer.prediction.point)
+        target = foot_point.polar(distance, direction)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.drive_spline(spline, throttle_at_end=False)
+            await self.driver.drive_to(target)
 
     def _should_finish(self) -> bool:
         assert self.row is not None
