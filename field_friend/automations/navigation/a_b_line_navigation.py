@@ -62,15 +62,10 @@ class ABLineNavigation(Navigation):
         assert self.field is not None
         assert self.row is not None
         target = self.row.points[-1].cartesian()
-        start = self.odometer.prediction.point
-        direction = start.direction(target)
-        end = start.polar(distance, direction)
-        start_pose = Pose(x=start.x, y=start.y, yaw=direction)
-        end_pose = Pose(x=end.x, y=end.y, yaw=direction)
-        spline = Spline.from_poses(start_pose, end_pose)
-        self.log.info(f'Driving {distance:.2f}m to {end} with {self.odometer.current_velocity.linear:.2f}m/s')
+        direction = self.odometer.prediction.point.direction(target)
+        self.log.info(f'Driving {distance:.2f}m towards {target} with {self.odometer.current_velocity.linear:.2f}m/s')
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.drive_spline(spline, throttle_at_end=False)
+            await self._drive_to_yaw(distance, direction)
 
     def _should_finish(self) -> bool:
         assert self.row is not None
