@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
-from rosys.geometry import Pose, Spline
+from rosys.geometry import Line, Pose, Spline
 
 from ..field import Field, Row
 from ..implements.implement import Implement
@@ -95,7 +95,9 @@ class ABLineNavigation(Navigation):
     def get_nearest_row(self) -> Row:
         assert self.field is not None
         assert self.gnss.device is not None
-        row = min(self.field.rows, key=lambda r: r.points[0].cartesian().distance(self.odometer.prediction.point))
+        row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
+            self.odometer.prediction.point).distance(self.odometer.prediction.point))
+        self.log.info(f'Nearest row is {row.name}')
         return row
 
     def _set_field(self, field_id: str) -> None:
