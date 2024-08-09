@@ -60,6 +60,6 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
         self.is_demo = data.get('is_demo', self.is_demo)
 
     def settings_ui(self):
-        ui.checkbox('Demo Mode') \
+        ui.checkbox('Demo Mode', on_change=self.request_backup) \
             .bind_value(self, 'is_demo') \
             .tooltip('Do not start the mowing motors')

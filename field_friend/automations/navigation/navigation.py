@@ -122,7 +122,7 @@ class Navigation(rosys.persistence.PersistentModule):
         pass
 
     def settings_ui(self) -> None:
-        ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f') \
+        ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
