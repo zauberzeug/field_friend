@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
+from rosys.geometry import Point
 
 from ..field import Field, Row
 from ..implements.implement import Implement
@@ -25,6 +26,8 @@ class ABLineNavigation(Navigation):
         self.field_provider = system.field_provider
         self.field: Field | None = None
         self.row: Row | None = None
+        self.start_point: Point | None = None
+        self.end_point: Point | None = None
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -47,6 +50,22 @@ class ABLineNavigation(Navigation):
         self.gnss.is_paused = False
         await rosys.sleep(3)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
+
+        relative_point_0 = self.odometer.prediction.relative_point(self.row.points[0].cartesian())
+        relative_point_1 = self.odometer.prediction.relative_point(self.row.points[-1].cartesian())
+        self.log.info(f'{relative_point_0=} - {relative_point_1=}')
+        self.start_point = None
+        self.end_point = None
+        if relative_point_0.x < 0 or relative_point_0.x < relative_point_1.x:
+            self.start_point = self.row.points[0].cartesian()
+            self.end_point = self.row.points[-1].cartesian()
+        elif relative_point_1.x < 0 or relative_point_1.x < relative_point_0.x:
+            self.start_point = self.row.points[-1].cartesian()
+            self.end_point = self.row.points[0].cartesian()
+        assert self.start_point is not None
+        assert self.end_point is not None
+        self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
+
         self.log.info(f'Activating {self.implement.name}...')
         await self.implement.activate()
         return True
@@ -59,12 +78,12 @@ class ABLineNavigation(Navigation):
     async def _drive(self, distance: float):
         assert self.field is not None
         assert self.row is not None
+        assert self.start_point is not None
+        assert self.end_point is not None
         current_position = self.odometer.prediction.point
-        start_point = self.row.points[0].cartesian()
-        end_point = self.row.points[-1].cartesian()
-        direction = start_point.direction(end_point)
+        direction = self.start_point.direction(self.end_point)
         self.log.info(f'line direction: {direction} robot yaw: {self.odometer.prediction.yaw}')
-        distance = min(distance, current_position.distance(end_point))
+        distance = min(distance, current_position.distance(self.end_point))
         line = self.row.line_segment().line
         foot_point = line.foot_point(self.odometer.prediction.point)
         target = foot_point.polar(distance, direction)
@@ -73,7 +92,7 @@ class ABLineNavigation(Navigation):
 
     def _should_finish(self) -> bool:
         assert self.row is not None
-        distance = self.odometer.prediction.point.distance(self.row.points[-1].cartesian())
+        distance = self.odometer.prediction.point.distance(self.end_point)
         if distance < self.STOP_DISTANCE:
             self.log.info(f'Row {self.row.name} completed')
             return True

@@ -48,6 +48,7 @@ class Navigation(rosys.persistence.PersistentModule):
             self.start_position = self.odometer.prediction.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
+            self.log.info('Navigation started')
             while not self._should_finish():
                 await self.gnss.update_robot_pose()
                 self.gnss.is_paused = True
