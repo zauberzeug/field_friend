@@ -7,7 +7,6 @@ from rosys.driving import Odometer
 from rosys.geometry import Point3d
 from rosys.vision import Image
 
-from ...vision import CalibratableUsbCameraProvider, SimulatedCamProvider
 from ..plant import Plant
 
 if TYPE_CHECKING:
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
 class PunchDialog(ui.dialog):
     def __init__(self, system: 'System', shrink_factor: int = 1, timeout: float = 20.0, ui_update_rate: float = 0.2) -> None:
         super().__init__()
-        self.camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider = system.usb_camera_provider
+        self.camera_provider = system.camera_provider
         self.plant_locator: 'PlantLocator' = system.plant_locator
         self.odometer: Odometer = system.odometer
         self.automator: Automator = system.automator

@@ -6,7 +6,6 @@ import rosys
 import config.config_selection as config_selector
 
 from .calibratable_usb_camera import CalibratableUsbCamera
-from .simulated_cam import SimulatedCam
 
 
 class CameraConfigurator:
@@ -86,7 +85,7 @@ class CameraConfigurator:
             else:
                 camera.rotation = 0
 
-        elif isinstance(camera, SimulatedCam):
+        elif isinstance(camera, rosys.vision.SimulatedCalibratableCamera):
             if camera.resolution.width != self.config['parameters']['width'] or camera.resolution.height != self.config['parameters']['height']:
                 camera.resolution = rosys.vision.ImageSize(
                     width=self.config['parameters']['width'],
