@@ -87,13 +87,8 @@ class PunchDialog(ui.dialog):
             assert self.camera.calibration is not None
             if self.target_plant and draw_target:
                 confidence = self.target_plant.confidence
-                # TODO simplify this when https://github.com/zauberzeug/rosys/discussions/130 is available and integrated into the field friend code
-                if isinstance(self.camera_provider, SimulatedCamProvider):
-                    point = self.target_plant.position
-                else:
-                    point = self.odometer.prediction.relative_point(self.target_plant.position)
-                target_point = self.camera.calibration.project_to_image(
-                    Point3d(x=point.x, y=point.y, z=0))
+                point = self.target_plant.position
+                target_point = self.camera.calibration.project_to_image(Point3d(x=point.x, y=point.y, z=0))
             image_view.set_content(self.to_svg(image.detections, target_point, confidence))
 
     def update_live_view(self) -> None:
