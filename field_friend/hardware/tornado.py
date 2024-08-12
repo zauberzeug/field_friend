@@ -123,6 +123,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                  current_limit: int = 20,
                  z_reference_speed: float = 0.0075,
                  turn_reference_speed: float = 0.25,
+                 odrive_version: int = 4,
                  ) -> None:
         self.name = name
         self.expander = expander
@@ -131,10 +132,14 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.current_limit = current_limit
         self.z_reference_speed = z_reference_speed
         self.turn_reference_speed = turn_reference_speed
+        self.odrive_version = odrive_version
+        self.turn_error = 0
+        self.z_error = 0
+        self.motor_error = False
 
         lizard_code = remove_indentation(f'''
-            {name}_motor_z = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {z_can_address})
-            {name}_motor_turn = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {turn_can_address})
+            {name}_motor_z = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {z_can_address}{', 6'if self.odrive_version == 6  else ''})
+            {name}_motor_turn = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {turn_can_address}{', 6'if self.odrive_version == 6  else ''})
             {name}_motor_z.m_per_tick = {m_per_tick}
             {name}_motor_turn.m_per_tick = {1/12.52}
             {name}_motor_z.limits({self.speed_limit}, {self.current_limit})
@@ -184,6 +189,11 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             f'{name}_motor_z.position:3',
             f'{name}_motor_turn.position:3',
         ]
+        if self.odrive_version == 6:
+            core_message_fields.extend([
+                f'{name}_motor_z.motor_error_flag',
+                f'{name}_motor_turn.motor_error_flag',
+            ])
         super().__init__(
             min_position=min_position,
             robot_brain=robot_brain,
@@ -411,6 +421,21 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.ref_knife_ground = words.pop(0) == 'true'
         self.position_z = float(words.pop(0))
         self.position_turn = float(words.pop(0)) * 360
+        if self.odrive_version == 6:
+            self.turn_error = int(words.pop(0))
+            self.z_error = int(words.pop(0))
+            if self.turn_error == 1 or self.z_error == 1:
+                self.motor_error = True
+                rosys.notify('warning', 'Tornado Motor Error')
+
+    def reset_motors(self) -> None:
+        if not self.motor_error:
+            return
+        if self.z_error == 1:
+            self.robot_brain.send(f'{self.name}_motor_z.reset_motor()')
+        if self.turn_error == 1:
+            self.robot_brain.send(f'{self.name}_motor_turn.reset_motor()')
+        self.motor_error = False
 
 
 class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
