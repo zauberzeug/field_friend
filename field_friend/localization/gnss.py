@@ -51,7 +51,8 @@ class Gnss(ABC):
         self.is_paused = False
         self.observed_poses: list[rosys.geometry.Pose] = []
         self.last_pose_update = rosys.time()
-        self.min_seconds_between_updates = 10.0
+        self.needed_poses: int = 10
+        self.min_seconds_between_updates: float = 10.0
         self.ensure_gnss = False
 
         self.needs_backup = False
@@ -117,7 +118,7 @@ class Gnss(ABC):
     async def update_robot_pose(self) -> None:
         assert not self.is_paused
         if self.ensure_gnss:
-            while len(self.observed_poses) < 10:
+            while len(self.observed_poses) < self.needed_poses:
                 if rosys.time() - self.last_pose_update < self.min_seconds_between_updates:
                     return
                 await rosys.sleep(0.1)
