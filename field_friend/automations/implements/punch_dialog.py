@@ -70,6 +70,7 @@ class PunchDialog(ui.dialog):
         cameras = list(self.camera_provider.cameras.values())
         active_camera = next((camera for camera in cameras if camera.is_connected), None)
         assert active_camera is not None
+        assert isinstance(active_camera, rosys.vision.CalibratableCamera)
         self.camera = active_camera
 
     def update_content(self, image_view: ui.interactive_image, image: Image, draw_target: bool = False) -> None:
@@ -96,10 +97,12 @@ class PunchDialog(ui.dialog):
             image_view.set_content(self.to_svg(image.detections, target_point, confidence))
 
     def update_live_view(self) -> None:
+        assert self.live_image_view
         if self.camera is None:
             self.live_image_view.set_source('assets/field_friend.webp')
             return
-        self.update_content(self.live_image_view, self.camera.latest_detected_image)
+        if self.camera.latest_detected_image is not None:
+            self.update_content(self.live_image_view, self.camera.latest_detected_image)
 
     def to_svg(self, detections: rosys.vision.Detections, target_point: Optional[rosys.geometry.Point], confidence: Optional[float], color: str = 'blue') -> str:
         svg = ''
