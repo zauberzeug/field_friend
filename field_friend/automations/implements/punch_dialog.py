@@ -103,37 +103,35 @@ class PunchDialog(ui.dialog):
         svg = ''
         cross_size = 20
         for point in detections.points:
+            x = point.x / self.shrink_factor
+            y = point.y / self.shrink_factor
             if point.category_name in self.plant_locator.crop_category_names:
                 if point.confidence > self.plant_locator.minimum_crop_confidence:
-                    svg += f'''<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
-                                                                                self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'''
-                    svg += f'''<text x="{point.x / self.shrink_factor-30}" y="{point.y /
-                                                                               self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'''
+                    svg += f'''<circle cx="{x}" cy="{y}" r="18" stroke-width="8" stroke="green" fill="none" />'''
+                    svg += f'''<text x="{x-30}" y="{y+30}" font-size="20" fill="green">Crop</text>'''
                 else:
-                    svg += f'''<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
-                                                                                self.shrink_factor}" r="18" stroke-width="8" stroke="yellow" fill="none" />'''
-                    svg += f'''<text x="{point.x / self.shrink_factor-30}" y="{point.y /
-                                                                               self.shrink_factor+30}" font-size="20" fill="yellow">{point.category_name}</text>'''
+                    svg += f'''<circle cx="{x}" cy="{y}" r="18" stroke-width="8" stroke="yellow" fill="none" />'''
+                    svg += f'''<text x="{x-30}" y="{y+30}" font-size="20" fill="yellow">{point.category_name}</text>'''
             elif point.category_name in self.plant_locator.weed_category_names:
                 if point.confidence > self.plant_locator.minimum_weed_confidence:
                     svg += f'''
-                            <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="red" stroke-width="8"
-                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                            <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="red" stroke-width="8"
-                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                            <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Weed</text>
+                            <line x1="{x - cross_size}" y1="{y}" x2="{x + cross_size}" y2="{y}" stroke="red" stroke-width="8"
+                                transform="rotate(45, {x}, {y})"/>
+                            <line x1="{x}" y1="{y - cross_size}" x2="{x}" y2="{y + cross_size}" stroke="red" stroke-width="8"
+                                transform="rotate(45, {x}, {y})"/>
+                            <text x="{x-30}" y="{y+30}" font-size="20" fill="red">Weed</text>
                     '''
                 else:
                     svg += f'''
-                            <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="yellow" stroke-width="8"
-                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                            <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="yellow" stroke-width="8"
-                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                            <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">Weed</text>
+                            <line x1="{x - cross_size}" y1="{y}" x2="{x + cross_size}" y2="{y}" stroke="yellow" stroke-width="8"
+                                transform="rotate(45, {x}, {y})"/>
+                            <line x1="{x}" y1="{y - cross_size}" x2="{x}" y2="{y + cross_size}" stroke="yellow" stroke-width="8"
+                                transform="rotate(45, {x}, {y})"/>
+                            <text x="{x-30}" y="{y+30}" font-size="20" fill="yellow">Weed</text>
                     '''
         if target_point and confidence:
-            svg += f'''<circle cx="{target_point.x / self.shrink_factor}" cy="{target_point.y /
-                                                                               self.shrink_factor}" r="20" stroke-width="8" stroke="{color}" fill="none" />'''
-            svg += f'''<text x="{target_point.x / self.shrink_factor+20}" y="{target_point.y /
-                                                                              self.shrink_factor-20}" font-size="20" fill="{color}">{confidence}</text>'''
+            x = target_point.x / self.shrink_factor
+            y = target_point.y / self.shrink_factor
+            svg += f'<circle cx="{x}" cy="{y}" r="20" stroke-width="8" stroke="{color}" fill="none" />'
+            svg += f'<text x="{x+20}" y="{y-20}" font-size="20" fill="{color}">{confidence}</text>'
         return svg
