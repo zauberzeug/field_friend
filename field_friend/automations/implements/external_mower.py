@@ -20,7 +20,6 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.mower')
         self.mower_hardware: MowerHardware = system.field_friend.mower
         self.driver = system.driver
-        self.gnss = system.gnss
         assert self.mower_hardware is not None
         assert self.driver is not None
         self.is_demo: bool = False
@@ -64,16 +63,3 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
         ui.checkbox('Demo Mode', on_change=self.request_backup) \
             .bind_value(self, 'is_demo') \
             .tooltip('Do not start the mowing motors')
-        ui.checkbox('Ensure GNSS', on_change=self.gnss.request_backup) \
-            .bind_value(self, 'ensure_gnss') \
-            .tooltip('Wait for GNSS poses before driving again')
-        ui.number('Needed GNSS Poses', step=1, min=0, max=60, on_change=self.gnss.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self.gnss, 'needed_poses') \
-            .tooltip('Needed GNSS poses before driving again (default: 10)')
-        ui.number('Time between updates', step=0.1, min=0.0, max=60.0, on_change=self.gnss.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self.gnss, 'min_seconds_between_updates') \
-            .tooltip('Waiting time between GNSS updates in s (default: 10.0)')
