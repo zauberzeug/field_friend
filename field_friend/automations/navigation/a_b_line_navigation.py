@@ -88,19 +88,7 @@ class ABLineNavigation(Navigation):
         foot_point = line.foot_point(self.odometer.prediction.point)
         target = foot_point.polar(distance, direction)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            # await self.driver.drive_to(target)
-            # TODO: kwargs from drive_to to drive_spline
-            if self.driver.parameters.minimum_turning_radius:
-                await self.driver.drive_circle(target, False)
-
-            robot_position = self.driver.prediction.point
-            approach_spline = Spline(
-                start=robot_position,
-                control1=robot_position.interpolate(target, 1/3),
-                control2=robot_position.interpolate(target, 2/3),
-                end=target,
-            )
-            await self.driver.drive_spline(approach_spline, flip_hook=False, throttle_at_end=False)
+            await self.driver.drive_to(target, throttle_at_end=False, stop_at_end=False)
 
     def _should_finish(self) -> bool:
         assert self.row is not None
