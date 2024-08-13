@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 
 class ExternalMower(Implement, rosys.persistence.PersistentModule):
+    STRETCH_DISTANCE: float = 2.0
+
     def __init__(self, system: 'System') -> None:
         super().__init__('Mower')
         self.log = logging.getLogger('field_friend.mower')
@@ -23,6 +25,7 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
         assert self.mower_hardware is not None
         assert self.driver is not None
         self.is_demo: bool = False
+        self.stretch_distance: float = self.STRETCH_DISTANCE
 
     async def activate(self):
         if not self.is_demo:
@@ -36,7 +39,7 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
 
     async def get_stretch(self, max_distance: float) -> float:
         if not any([self.mower_hardware.m0_error, self.mower_hardware.m1_error, self.mower_hardware.m2_error]):
-            return 1.0
+            return min(self.stretch_distance, max_distance)
         if all([self.mower_hardware.m0_error, self.mower_hardware.m1_error, self.mower_hardware.m2_error]):
             rosys.notify('All motors are stuck', 'negative')
             raise WorkflowException('All motors are stuck')
@@ -53,13 +56,20 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
     def backup(self) -> dict:
         return {
             'is_demo': self.is_demo,
+            'stretch_distance': self.stretch_distance,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         super().restore(data)
         self.is_demo = data.get('is_demo', self.is_demo)
+        self.stretch_distance = data.get('stretch_distance', self.stretch_distance)
 
     def settings_ui(self):
         ui.checkbox('Demo Mode', on_change=self.request_backup) \
             .bind_value(self, 'is_demo') \
             .tooltip('Do not start the mowing motors')
+        ui.number('Stretch Distance', step=0.05, min=0.05, max=100.0, format='%.2f', on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'stretch_distance') \
+            .tooltip(f'Forward speed limit in m/s (default: {self.STRETCH_DISTANCE:.2f})')
