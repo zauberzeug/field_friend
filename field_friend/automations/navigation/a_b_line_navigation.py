@@ -88,12 +88,14 @@ class ABLineNavigation(Navigation):
         current_position = self.odometer.prediction.point
         direction = self.start_point.direction(self.end_point)
         self.log.info(f'line direction: {direction} robot yaw: {self.odometer.prediction.yaw}')
-        distance = min(distance, current_position.distance(self.end_point))
+        distance_to_end = current_position.distance(self.end_point)
+        distance = min(distance, distance_to_end)
+        near_end = distance > distance_to_end
         line = self.row.line_segment().line
         foot_point = line.foot_point(self.odometer.prediction.point)
         target = foot_point.polar(distance, direction)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.drive_to(target, throttle_at_end=False, stop_at_end=False)
+            await self.driver.drive_to(target, throttle_at_end=near_end, stop_at_end=near_end)
 
     def _should_finish(self) -> bool:
         assert self.row is not None
