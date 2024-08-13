@@ -24,6 +24,10 @@ class ABLineNavigation(Navigation):
         self.bms = system.field_friend.bms
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
+        assert self.gnss is not None
+        assert self.bms is not None
+        assert self.automation_watcher is not None
+        assert self.field_provider is not None
         self.field: Field | None = None
         self.row: Row | None = None
         self.start_point: Point | None = None
@@ -51,6 +55,7 @@ class ABLineNavigation(Navigation):
         await rosys.sleep(3)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
 
+        # determine start and end point
         relative_point_0 = self.odometer.prediction.relative_point(self.row.points[0].cartesian())
         relative_point_1 = self.odometer.prediction.relative_point(self.row.points[-1].cartesian())
         self.log.info(f'{relative_point_0=} - {relative_point_1=}')
@@ -101,16 +106,6 @@ class ABLineNavigation(Navigation):
             return True
         return False
 
-    def settings_ui(self) -> None:
-        super().settings_ui()
-        field_selection = ui.select(
-            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
-            on_change=lambda args: self._set_field(args.value),
-            label='Field')\
-            .classes('w-32') \
-            .tooltip('Select the field to work on')
-        field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
-
     def get_nearest_row(self) -> Row:
         assert self.field is not None
         assert self.gnss.device is not None
@@ -123,6 +118,16 @@ class ABLineNavigation(Navigation):
         field = self.field_provider.get_field(field_id)
         if field is not None:
             self.field = field
+
+    def settings_ui(self) -> None:
+        super().settings_ui()
+        field_selection = ui.select(
+            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
+            on_change=lambda args: self._set_field(args.value),
+            label='Field')\
+            .classes('w-32') \
+            .tooltip('Select the field to work on')
+        field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
 
     def backup(self) -> dict:
         return super().backup() | {
