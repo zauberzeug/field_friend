@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
-from rosys.geometry import Point, Spline
+from rosys.geometry import Point
 
 from ..field import Field, Row
 from ..implements.implement import Implement
