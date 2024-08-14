@@ -1,9 +1,9 @@
 import logging
 
 import numpy as np
+import rosys
 
 import config.config_selection as config_selector
-import rosys
 
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
@@ -211,6 +211,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      current_limit=config_hardware['z_axis']['current_limit'],
                                      z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
                                      turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
+                                     odrive_version=config_hardware['z_axis']['odrive_version']if 'odrive_version' in config_hardware['z_axis'] else 4,
                                      )
         elif config_hardware['z_axis']['version'] == 'tornado v1.1':
             z_axis = TornadoHardware(robot_brain,
@@ -241,6 +242,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      current_limit=config_hardware['z_axis']['current_limit'],
                                      z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
                                      turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
+                                     odrive_version=config_hardware['z_axis']['odrive_version']if 'odrive_version' in config_hardware['z_axis'] else 4,
                                      )
         elif config_hardware['z_axis']['version'] == 'z_axis_canopen':
             z_axis = ZAxisCanOpenHardware(robot_brain,

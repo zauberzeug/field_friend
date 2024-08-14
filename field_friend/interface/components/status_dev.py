@@ -6,16 +6,8 @@ import rosys
 from nicegui import ui
 
 from ... import localization
-from ...hardware import (
-    ChainAxis,
-    FieldFriend,
-    FieldFriendHardware,
-    FlashlightPWMHardware,
-    FlashlightPWMHardwareV2,
-    Tornado,
-    YAxis,
-    ZAxis,
-)
+from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
+                         Tornado, YAxis, ZAxis)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -105,6 +97,13 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 r1_status = ui.label()
                 reset_motor_button = ui.button(
                     'Reset motor errors', on_click=robot.wheels.reset_motors).bind_visibility_from(robot.wheels, 'motor_error')
+        if system.is_real and isinstance(robot.z_axis, Tornado):
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Tornado motor status:**').style('color: #EDF4FB')
+                tornado_motor_turn_status = ui.label()
+                tornado_motor_z_status = ui.label()
+                reset_tornado_motor_button = ui.button(
+                    'Reset tornado motor errors', on_click=robot.z_axis.reset_motors).bind_visibility_from(robot.z_axis, 'motor_error')
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Robot Brain**').style('color: #6E93D6;').classes('w-full text-center')
@@ -306,6 +305,12 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 r1_status.text = 'Error in r1' if robot.wheels.r1_error else 'No error'
             if robot.wheels.odrive_version == 4:
                 l0_status.text = 'cant read status update odrive to version 0.5.6'
+        if system.is_real and isinstance(robot.z_axis, Tornado):
+            if robot.z_axis.odrive_version == 6:
+                tornado_motor_turn_status.text = 'Error in turn motor' if robot.z_axis.turn_error else 'No error'
+                tornado_motor_z_status.text = 'Error in z motor' if robot.z_axis.z_error else 'No error'
+            else:
+                tornado_motor_turn_status.text = 'cant read status update odrive to version 0.5.6'
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
         reference_position_label.text = 'No reference' if localization.reference is None else 'Set'
         gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
