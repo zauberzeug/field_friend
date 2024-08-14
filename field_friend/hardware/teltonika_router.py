@@ -55,7 +55,6 @@ class TeltonikaRouter:
             if value.get('status') == 'online':
                 up_connection = key
                 break
-        print(up_connection)
         if up_connection == 'wan':
             if self.current_connection != 'ether':
                 self.current_connection = 'ether'
