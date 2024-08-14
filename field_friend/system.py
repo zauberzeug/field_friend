@@ -42,7 +42,6 @@ class System(rosys.persistence.PersistentModule):
             try:
                 self.field_friend = FieldFriendHardware()
                 self.teltonika_router = TeltonikaRouter()
-                self.teltonika_router.get_current_connection()
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             self.usb_camera_provider = CalibratableUsbCameraProvider()

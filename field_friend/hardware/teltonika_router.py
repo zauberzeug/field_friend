@@ -42,7 +42,6 @@ class TeltonikaRouter:
             await self._get_token()
         self.log.debug('Getting internet connection info...')
         try:
-            print('Trying to get internet connection status...')
             response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/interfaces/basic/status',
                                              headers={'Authorization': f'Bearer {self.auth_token}'})
             response.raise_for_status()

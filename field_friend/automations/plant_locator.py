@@ -46,7 +46,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port), 1.0)
         if system.is_real:
             self.teltonika_router = system.teltonika_router
-            self.teltonika_router.CONNECTION_CHANGED.register(self.stop_upload_on_sim)
+            self.teltonika_router.CONNECTION_CHANGED.register(self.set_image_upload)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
@@ -197,9 +197,9 @@ class PlantLocator(rosys.persistence.PersistentModule):
             with label_input.add_slot('append'):
                 ui.button(icon='add', on_click=add_chip).props('round dense flat')
 
-    def stop_upload_on_sim(self):
+    def set_upload_images(self):
         if isinstance(self.detector, rosys.vision.DetectorHardware):
-            if self.teltonika_router.current_connection == 'mob1s1a1' or self.teltonika_router.current_connection == 'mob1s2a1':
+            if self.teltonika_router.current_connection == 'mobile' or self.teltonika_router.current_connection == 'disconnected':
                 self.upload_images = False
             elif self.teltonika_router.current_connection == 'wifi' or self.teltonika_router.current_connection == 'ether':
                 self.upload_images = True
