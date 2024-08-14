@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Any
 
+import icecream
 import numpy as np
 import psutil
 import rosys
@@ -44,6 +45,7 @@ from .vision import (
     SimulatedCamProvider,
 )
 
+icecream.install()
 
 class System(rosys.persistence.PersistentModule):
 
