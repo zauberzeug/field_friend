@@ -21,7 +21,7 @@ class TeltonikaRouter:
 
         self.log = logging.getLogger('hardware.teltonika_router')
 
-        self.client = httpx.AsyncClient(headers={'Content-Type': 'application/json'}, timeout=10.0)
+        self.client = httpx.AsyncClient(headers={'Content-Type': 'application/json'}, timeout=20.0)
         self.auth_token: str = ''
         self.token_time: float = 0.0
         self.connection_check_running = False
