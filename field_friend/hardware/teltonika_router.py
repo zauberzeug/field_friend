@@ -42,7 +42,7 @@ class TeltonikaRouter:
             await self._get_token()
         self.log.debug('Getting internet connection info...')
         try:
-            response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/interfaces/basic/status',
+            response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/failover/status',
                                              headers={'Authorization': f'Bearer {self.auth_token}'})
             response.raise_for_status()
         except httpx.RequestError:
@@ -50,19 +50,21 @@ class TeltonikaRouter:
             self.connection_check_running = False
             return
         self.log.debug('Getting Internet Connection Info: success')
-        up_connections = []
-        for connection in response.json()['data']:
-            if connection['is_up'] and connection['area_type'] == 'wan':
-                up_connections.append(connection['name'])
-        if 'wan' in up_connections:
+        up_connection = 'disconnected'
+        for key, value in response.json()['data'].items():
+            if value.get('status') == 'online':
+                up_connection = key
+                break
+        print(up_connection)
+        if up_connection == 'wan':
             if self.current_connection != 'ether':
                 self.current_connection = 'ether'
                 self.CONNECTION_CHANGED.emit()
-        elif any('wifi' in connection for connection in up_connections):
+        elif 'ifWan' in up_connection:
             if self.current_connection != 'wifi':
                 self.current_connection = 'wifi'
                 self.CONNECTION_CHANGED.emit()
-        elif 'mob1s1a1' in up_connections or 'mob1s2a1' in up_connections:
+        elif up_connection == 'mob1s1a1' or up_connection == 'mob1s2a1':
             if self.current_connection != 'mobile':
                 self.current_connection = 'mobile'
                 self.CONNECTION_CHANGED.emit()
