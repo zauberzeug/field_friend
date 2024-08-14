@@ -7,5 +7,5 @@ shapely
 fiona
 geopandas
 # TODO: use "rosys == v0.14.0" instead of the git repository
-git+https://github.com/zauberzeug/rosys.git@detector-simulation-frame#egg=rosys
+git+https://github.com/zauberzeug/rosys.git@maingit #egg=rosys
 uvicorn == 0.28.1
