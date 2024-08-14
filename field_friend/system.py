@@ -2,23 +2,50 @@ import logging
 import os
 from typing import Any
 
+import icecream
 import numpy as np
 import psutil
 import rosys
 
-from field_friend.hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
-from field_friend.localization.gnss_hardware import GnssHardware
-from field_friend.localization.gnss_simulation import GnssSimulation
-from field_friend.vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
-
-from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PathRecorder,
-                          PlantLocator, PlantProvider, Puncher)
-from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
-                                     StraightLineNavigation)
+from . import localization
+from .automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    FieldProvider,
+    KpiProvider,
+    PathProvider,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+)
+from .automations.implements import (
+    ChopAndScrew,
+    Implement,
+    Recorder,
+    Tornado,
+    WeedingScrew,
+)
+from .automations.navigation import (
+    CoverageNavigation,
+    FollowCropsNavigation,
+    Navigation,
+    RowsOnFieldNavigation,
+    StraightLineNavigation,
+)
+from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
+from .localization.geo_point import GeoPoint
+from .localization.gnss_hardware import GnssHardware
+from .localization.gnss_simulation import GnssSimulation
+from .vision import (
+    CalibratableUsbCameraProvider,
+    CameraConfigurator,
+    SimulatedCam,
+    SimulatedCamProvider,
+)
 
+icecream.install()
 
 class System(rosys.persistence.PersistentModule):
 
@@ -61,7 +88,8 @@ class System(rosys.persistence.PersistentModule):
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
         else:
-            self.gnss = GnssSimulation(self.odometer)
+            assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
+            self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
@@ -131,8 +159,9 @@ class System(rosys.persistence.PersistentModule):
             case 'weed_screw':
                 implements.append(WeedingScrew(self))
             case 'dual_mechanism':
-                implements.append(WeedingScrew(self))
-                implements.append(ChopAndScrew(self))
+                # implements.append(WeedingScrew(self))
+                # implements.append(ChopAndScrew(self))
+                self.log.error('Dual mechanism not implemented')
             case 'none':
                 implements.append(WeedingScrew(self))
             case _:
@@ -160,6 +189,8 @@ class System(rosys.persistence.PersistentModule):
         return {
             'navigation': self.current_navigation.name,
             'implement': self.current_implement.name,
+            'reference_lat': localization.reference.lat,
+            'reference_long': localization.reference.long,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -169,6 +200,9 @@ class System(rosys.persistence.PersistentModule):
         navigation = self.navigation_strategies.get(data.get('navigation', None), None)
         if navigation is not None:
             self.current_navigation = navigation
+        lat = data.get('reference_lat', 0)
+        long = data.get('reference_long', 0)
+        localization.reference = GeoPoint(lat=lat, long=long)
 
     @property
     def current_implement(self) -> Implement:
@@ -201,7 +235,9 @@ class System(rosys.persistence.PersistentModule):
                                                 x=0.4, z=0.4,
                                                 roll=np.deg2rad(360-150),
                                                 pitch=np.deg2rad(0),
-                                                yaw=np.deg2rad(90))
+                                                yaw=np.deg2rad(90),
+                                                color='#cccccc',
+                                                )
         self.usb_camera_provider.add_camera(camera)
         # TODO rework this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
         self.odometer.ROBOT_MOVED.register(lambda: camera.update_calibration(self.odometer.prediction))
@@ -212,5 +248,8 @@ class System(rosys.persistence.PersistentModule):
         return float(temp) / 1000.0  # Convert from milli °C to °C
 
     def log_status(self):
-        msg = f'cpu: {psutil.cpu_percent():.0f}%  mem: {psutil.virtual_memory().percent:.0f}% temp: {self.get_jetson_cpu_temperature():.1f}°C'
+        msg = f'cpu: {psutil.cpu_percent():.0f}%  '
+        msg += f'mem: {psutil.virtual_memory().percent:.0f}% '
+        msg += f'temp: {self.get_jetson_cpu_temperature():.1f}°C '
+        msg += f'battery: {self.field_friend.bms.state.short_string}'
         self.log.info(msg)

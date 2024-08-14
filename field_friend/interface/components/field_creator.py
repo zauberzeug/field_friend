@@ -67,7 +67,7 @@ class FieldCreator:
 
     def get_infos(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual != 4:
+        if "R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS":
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_start = self.gnss.current.location
@@ -103,7 +103,7 @@ class FieldCreator:
 
     def drive_to_last_row(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual != 4:
+        if "R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS":
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location
@@ -119,7 +119,8 @@ class FieldCreator:
 
     def confirm_geometry(self) -> None:
         assert self.gnss.current is not None
-        if self.gnss.current.gps_qual != 4:
+        if "R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS":
+
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.last_row_end = self.gnss.current.location
@@ -151,13 +152,12 @@ class FieldCreator:
         assert self.first_row_start is not None
         assert self.first_row_end is not None
         assert self.last_row_end is not None
-        self.field.reference = self.first_row_start
         distance = self.first_row_end.distance(self.last_row_end)
         number_of_rows = distance / (self.row_spacing) + 1
         # get AB line
-        a = self.first_row_start.cartesian(self.field.reference)
-        b = self.first_row_end.cartesian(self.field.reference)
-        c = self.last_row_end.cartesian(self.field.reference)
+        a = self.first_row_start.cartesian()
+        b = self.first_row_end.cartesian()
+        c = self.last_row_end.cartesian()
         ab = a.direction(b)
         bc = b.direction(c)
         d = a.polar(distance, bc)
@@ -165,14 +165,14 @@ class FieldCreator:
             start = a.polar(i * self.row_spacing, bc)
             end = b.polar(i * self.row_spacing, bc)
             self.field.rows.append(Row(id=str(uuid4()), name=f'Row #{len(self.field.rows)}',
-                                       points=[self.field.reference.shifted(start),
-                                               self.field.reference.shifted(end)]
+                                       points=[self.first_row_start.shifted(start),
+                                               self.first_row_start.shifted(end)]
                                        ))
         bottom_left = a.polar(-self.padding_bottom, ab).polar(-self.padding, bc)
         top_left = b.polar(self.padding, ab).polar(-self.padding, bc)
         top_right = c.polar(self.padding, ab).polar(self.padding, bc)
         bottom_right = d.polar(-self.padding_bottom, ab).polar(self.padding, bc)
-        self.field.points = [self.field.reference.shifted(p) for p in [bottom_left, top_left, top_right, bottom_right]]
+        self.field.points = [self.first_row_start.shifted(p) for p in [bottom_left, top_left, top_right, bottom_right]]
         return 1 - number_of_rows % 1 < 0.1
 
     def _apply(self) -> None:

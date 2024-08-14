@@ -1,6 +1,6 @@
 import colorsys
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import rosys
@@ -8,39 +8,52 @@ from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point
 
+from field_friend.automations.implements.weeding_implement import WeedingImplement
+
 from ...automations import PlantLocator, Puncher
 from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
 from .calibration_dialog import calibration_dialog
 
+if TYPE_CHECKING:
+    from system import System
+
 
 class camera_card:
 
-    def __init__(self,
-                 camera_provider: rosys.vision.CameraProvider,
-                 automator: rosys.automation.Automator,
-                 detector: rosys.vision.Detector,
-                 plant_locator: PlantLocator,
-                 field_friend: FieldFriend,
-                 puncher: Optional[Puncher] = None,
-                 *,
-                 shrink_factor: int = 1) -> None:
+    def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.camera_card')
+        self.automator = system.automator
+        self.camera_provider = system.usb_camera_provider
+        self.detector = system.detector
+        self.field_friend = system.field_friend
+        self.odometer = system.odometer
+        self.plant_locator = system.plant_locator
+        self.plant_provider = system.plant_provider
+        self.puncher = system.puncher
+        self.system = system
+        self.punching_enabled: bool = False
+        self.shrink_factor: float = 2.0
+        self.show_weeds_to_handle: bool = False
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
-        self.camera_provider = camera_provider
-        self.automator = automator
-        self.detector = detector
-        self.plant_locator = plant_locator
+        self.camera_provider = system.usb_camera_provider
+        self.automator = system.automator
+        self.detector = system.detector
+        self.plant_locator = system.plant_locator
         self.punching_enabled = False
-        self.puncher = puncher
-        self.field_friend = field_friend
-        self.shrink_factor = shrink_factor
+        self.puncher = system.puncher
+        self.field_friend = system.field_friend
+        self.odometer = system.odometer
+        self.shrink_factor = 2
         self.image_view: Optional[ui.interactive_image] = None
-        self.calibration_dialog = calibration_dialog(camera_provider)
+        self.calibration_dialog = calibration_dialog(self.camera_provider)
+        self.plant_provider = system.plant_provider
+        self.system = system
         self.camera_card = ui.card()
+        self.show_weeds_to_handle = False
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
-        ui.timer(0.2, self.update_content)
+        ui.timer(0.2 if system.is_real else 0.05, self.update_content)
 
     def use_camera(self, cam: rosys.vision.CalibratableCamera) -> None:
         self.camera = cam
@@ -82,6 +95,9 @@ class camera_card:
                         self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
                             .tooltip('Show the mapping between camera and world coordinates')
                     with ui.menu_item():
+                        ui.checkbox('Show weeds to handle').bind_value_to(self, 'show_weeds_to_handle') \
+                            .tooltip('Show the mapping between camera and world coordinates')
+                    with ui.menu_item():
                         ui.button('calibrate', on_click=self.calibrate) \
                             .props('icon=straighten outline').tooltip('Calibrate camera')
                     # TODO: ist das hier ein todo?: Add a button to save the last captured image
@@ -100,7 +116,7 @@ class camera_card:
     def update_content(self) -> None:
         cameras = list(self.camera_provider.cameras.values())
         active_camera = next((camera for camera in cameras if camera.is_connected), None)
-        if not active_camera:
+        if active_camera is None:
             if self.camera:
                 self.camera = None
                 self.camera_card.clear()
@@ -111,13 +127,19 @@ class camera_card:
         if self.camera is None or self.camera != active_camera:
             self.use_camera(active_camera)
         if self.shrink_factor > 1:
-            url = f'{self.camera.get_latest_image_url()}?shrink={self.shrink_factor}'
+            url = f'{active_camera.get_latest_image_url()}?shrink={self.shrink_factor}'
         else:
-            url = self.camera.get_latest_image_url()
+            url = active_camera.get_latest_image_url()
+        if self.image_view is None or self.camera.calibration is None:
+            return
         self.image_view.set_source(url)
-        image = self.camera.latest_detected_image
+        image = active_camera.latest_detected_image
+        svg = ''
         if image and image.detections:
-            self.image_view.set_content(self.to_svg(image.detections))
+            svg += self.to_svg(image.detections)
+        svg += self.build_svg_for_plant_provider()
+        svg += self.build_svg_for_implement()
+        self.image_view.set_content(svg)
 
     def on_mouse_move(self, e: MouseEventArguments):
         if self.camera is None:
@@ -128,7 +150,7 @@ class camera_card:
                 self.debug_position.set_text(f'{point2d} no calibration')
                 return
             point3d = self.camera.calibration.project_from_image(point2d)
-            self.debug_position.set_text(f'{point2d} -> {point3d}')
+            self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
         if e.type == 'mouseup':
             point2d = Point(x=e.image_x, y=e.image_y)
             if self.camera.calibration is None:
@@ -148,6 +170,7 @@ class camera_card:
             self.debug_position.set_text('')
 
     async def calibrate(self) -> None:
+        assert self.camera is not None
         result = await self.calibration_dialog.edit(self.camera)
         if result:
             self.show_mapping_checkbox.value = True
@@ -174,29 +197,52 @@ class camera_card:
         cross_size = 20
         for point in detections.points:
             if point.category_name in self.plant_locator.crop_category_names:
-                if point.confidence > self.plant_locator.minimum_crop_confidence:
-                    svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'
-                    svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
-                else:
-                    svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="orange" fill="none" />'
-                    svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="orange">{point.category_name}</text>'
+                svg += f'<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}" r="18" stroke-width="8" stroke="green" fill="none" />'
             elif point.category_name in self.plant_locator.weed_category_names:
-                if point.confidence > self.plant_locator.minimum_weed_confidence:
-                    svg += f'''
-                            <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="red" stroke-width="8" 
-                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                            <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="red" stroke-width="8" 
-                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                            <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Weed</text>
-                    '''
-                else:
-                    svg += f'''
-                            <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="yellow" stroke-width="8" 
-                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                            <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="yellow" stroke-width="8" 
-                                transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                            <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">Weed</text>
-                    '''
+                svg += f'''<line x1="{int(point.x / self.shrink_factor) - cross_size}" y1="{int(point.y / self.shrink_factor)}" x2="{int(point.x / self.shrink_factor) + cross_size}" y2="{int(point.y / self.shrink_factor)}" stroke="red" stroke-width="8" 
+    transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/><line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - cross_size}" x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + cross_size}" stroke="red" stroke-width="8" 
+    transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
+        return svg
+
+    def build_svg_for_implement(self) -> str:
+        if not isinstance(self.system.current_implement, WeedingImplement) or self.camera is None or self.camera.calibration is None:
+            return ''
+        if self.system.is_real:
+            return ''  # NOTE: until https://github.com/zauberzeug/rosys/discussions/130 is resolved and integrated real robots will have problems with reverse projection
+        tool_3d = self.odometer.prediction.point_3d() + \
+            rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0)
+        tool_2d = self.camera.calibration.project_to_image(tool_3d) / self.shrink_factor
+        svg = f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" fill="black"/>'
+        min_tool_3d = self.odometer.prediction.point_3d() + \
+            rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position, z=0)
+        min_tool_2d = self.camera.calibration.project_to_image(min_tool_3d) / self.shrink_factor
+        max_tool_3d = self.odometer.prediction.point_3d() + \
+            rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.max_position, z=0)
+        max_tool_2d = self.camera.calibration.project_to_image(max_tool_3d) / self.shrink_factor
+        svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="2" />'
+        if self.show_weeds_to_handle:
+            for i, plant in enumerate(self.system.current_implement.weeds_to_handle.values()):
+                position_3d = self.odometer.prediction.point_3d() + rosys.geometry.Point3d(x=plant.x, y=plant.y, z=0)
+                screen = self.camera.calibration.project_to_image(position_3d)
+                if screen is not None:
+                    svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="6" stroke="blue" fill="transparent" stroke-width="2" />'
+                    svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+4}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
+        return svg
+
+    def build_svg_for_plant_provider(self) -> str:
+        if self.camera is None or self.camera.calibration is None:
+            return ''
+        if self.system.is_real:
+            return ''  # NOTE: until https://github.com/zauberzeug/rosys/discussions/130 is resolved and integrated real robots will have problems with reverse projection
+        position = rosys.geometry.Point(x=self.camera.calibration.extrinsics.translation[0],
+                                        y=self.camera.calibration.extrinsics.translation[1])
+        svg = ''
+        for plant in self.plant_provider.get_relevant_weeds(position):
+            position_3d = rosys.geometry.Point3d(x=plant.position.x, y=plant.position.y, z=0)
+            screen = self.camera.calibration.project_to_image(position_3d)
+            if screen is not None:
+                svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="5" fill="white" />'
+                svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{plant.id[:4]}</text>'
         return svg
 
     # async def save_last_image(self) -> None:

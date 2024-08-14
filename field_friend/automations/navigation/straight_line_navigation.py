@@ -5,8 +5,7 @@ import numpy as np
 import rosys
 from nicegui import ui
 
-from field_friend.automations.implements.implement import Implement
-
+from ...automations.implements.implement import Implement
 from .navigation import Navigation
 
 if TYPE_CHECKING:
@@ -20,27 +19,31 @@ class StraightLineNavigation(Navigation):
         self.detector = system.detector
         self.length = 2.0
         self.name = 'Straight Line'
-        self.linear_speed_limit = 0.125
-        self.angular_speed_limit = 0.1
+        self.origin: rosys.geometry.Point
+        self.target: rosys.geometry.Point
 
     async def prepare(self) -> bool:
+        await super().prepare()
         self.log.info(f'Activating {self.implement.name}...')
-        self.plant_provider.clear()
+        self.origin = self.odometer.prediction.point
+        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=self.length, y=0))
         await self.implement.activate()
         return True
 
     async def finish(self) -> None:
+        await super().finish()
         await self.implement.deactivate()
 
-    async def _drive(self):
-        target = self.odometer.prediction.transform(rosys.geometry.Point(x=0.02, y=0))
-        # self.log.info(f'driving to {target}')
-        with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.drive_to(target)
+    async def _drive(self, distance: float):
+        start_position = self.odometer.prediction.point
+        closest_point = rosys.geometry.Line.from_points(self.origin, self.target).foot_point(start_position)
+        local_target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=start_position.direction(self.target), time=0) \
+            .transform(rosys.geometry.Point(x=1, y=0))
+        await self._drive_to_yaw(distance, start_position.direction(local_target))
 
     def _should_finish(self):
-        distance = self.odometer.prediction.point.distance(self.start_position)
-        return abs(distance - self.length) < 0.05
+        end_pose = rosys.geometry.Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)
+        return end_pose.relative_point(self.odometer.prediction.point).x > 0
 
     def create_simulation(self):
         crop_distance = 0.2

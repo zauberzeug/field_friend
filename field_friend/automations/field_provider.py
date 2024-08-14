@@ -1,11 +1,13 @@
 import logging
+import os
 import uuid
-from typing import Any, Literal, Optional, TypedDict, Union
+from typing import Any, Optional
 
 import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
 
+from .. import localization
 from ..localization import GeoPoint, Gnss
 from . import Field, FieldObstacle, Row
 
@@ -43,10 +45,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
             outline = fields_data[i].get('outline_wgs84', [])
             for coords in outline:
                 f.points.append(GeoPoint(lat=coords[0], long=coords[1]))
-            rlat = fields_data[i].get('reference_lat', None)
-            rlong = fields_data[i].get('reference_lon', None)
-            if rlat is not None and rlong is not None:
-                f.reference = GeoPoint(lat=rlat, long=rlong)
             rows = fields_data[i].get('rows', [])
             for j, row in enumerate(rows):
                 for point in row.get('points_wgs84', []):
@@ -59,8 +57,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def create_field(self, points: list[GeoPoint] = []) -> Field:
         new_id = str(uuid.uuid4())
         field = Field(id=f'{new_id}', name=f'field_{len(self.fields)+1}', points=points)
-        if points:
-            self.set_reference(field, points[0])
         self.fields.append(field)
         self.invalidate()
         return field
@@ -75,9 +71,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED.emit()
         self.invalidate()
 
-    def set_reference(self, field: Field, point: GeoPoint) -> None:
-        if field.reference is None:
-            field.reference = point
+    def update_reference(self) -> None:
+        if self.gnss.current is None:
+            rosys.notify('No GNSS position available.')
+            return
+        localization.reference = self.gnss.current.location
+        os.utime('main.py')
 
     def create_obstacle(self, field: Field, points: list[GeoPoint] = []) -> FieldObstacle:
         obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points=points)
@@ -141,44 +140,20 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.fields[field_index].rows = sorted(field.rows, key=lambda row: get_distance(row, direction=direction))
         self.FIELDS_CHANGED.emit()
 
-    def ensure_field_reference(self, field: Field) -> None:
-        if self.gnss.device is None:
-            self.log.warning('not creating Reference because no GNSS device found')
-            rosys.notify('No GNSS device found', 'negative')
-            return
-        if self.gnss.current is None or self.gnss.current.gps_qual != 4:
-            self.log.warning('not creating Reference because no RTK fix available')
-            rosys.notify('No RTK fix available', 'negative')
-            return
-        if field.reference is None:
-            ref = self.gnss.reference
-            if ref is None:
-                self.log.warning('not creating Point because no reference position available')
-                rosys.notify('No reference position available')
-                return
-            field.reference = ref
-        if self.gnss.reference != field.reference:
-            self.gnss.reference = field.reference
-
     async def add_field_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
         assert self.gnss.current is not None
         positioning = self.gnss.current.location
         if positioning is None or positioning.lat == 0 or positioning.long == 0:
             rosys.notify("No GNSS position.")
             return
-        if self.gnss.current.gps_qual != 4:
+        if "R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS":
             rosys.notify("GNSS position is not accurate enough.")
             return
         new_point = positioning
         if point is not None:
             index = field.points.index(point)
-            if index == 0:
-                self.set_reference(field, new_point)
             field.points[index] = new_point
         else:
-            if len(field.points) < 1:
-                self.set_reference(field, new_point)
-                self.gnss.reference = new_point
             field.points.append(new_point)
         self.invalidate()
 
@@ -197,7 +172,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if self.gnss.current.gps_qual != 4:
+            if "R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS":
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
@@ -226,7 +201,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if self.gnss.current.gps_qual != 4:
+            if "R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS":
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning

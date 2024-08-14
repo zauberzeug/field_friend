@@ -115,6 +115,11 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                        end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
                                        )
         elif config_hardware['y_axis']['version'] == 'y_axis_stepper':
+            try:
+                alarm_inverted: bool = config_hardware['y_axis']['alarm_inverted']
+            except KeyError:
+                raise KeyError(
+                    '\'alarm_inverted\' not found in config_hardware[\'y_axis\']. Robots with a Closed-Loop-Step-Direction-Motor (U4 and before) has an inverted motor alarm input. Check your robot\'s setup.')
             y_axis = YAxisStepperHardware(robot_brain,
                                           expander=expander,
                                           name=config_hardware['y_axis']['name'],
@@ -127,6 +132,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           step_pin=config_hardware['y_axis']['step_pin'],
                                           dir_pin=config_hardware['y_axis']['dir_pin'],
                                           alarm_pin=config_hardware['y_axis']['alarm_pin'],
+                                          alarm_inverted=alarm_inverted,
                                           end_r_pin=config_hardware['y_axis']['end_r_pin'],
                                           end_l_pin=config_hardware['y_axis']['end_l_pin'],
                                           motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
@@ -205,6 +211,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      current_limit=config_hardware['z_axis']['current_limit'],
                                      z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
                                      turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
+                                     odrive_version=config_hardware['z_axis']['odrive_version']if 'odrive_version' in config_hardware['z_axis'] else 4,
                                      )
         elif config_hardware['z_axis']['version'] == 'tornado v1.1':
             z_axis = TornadoHardware(robot_brain,
@@ -235,6 +242,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                      current_limit=config_hardware['z_axis']['current_limit'],
                                      z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
                                      turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
+                                     odrive_version=config_hardware['z_axis']['odrive_version']if 'odrive_version' in config_hardware['z_axis'] else 4,
                                      )
         elif config_hardware['z_axis']['version'] == 'z_axis_canopen':
             z_axis = ZAxisCanOpenHardware(robot_brain,
