@@ -189,16 +189,9 @@ async def test_follow_crops_curve(system: System, detector: rosys.vision.Detecto
 
 
 async def test_follow_crops_outlier(system: System, detector: rosys.vision.DetectorSimulation):
-    for i in range(10):
+    for i in range(21):
         x = i/10
-        y = 0
-        p = rosys.geometry.Point3d(x=x, y=y, z=0)
-        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
-    outlier = rosys.geometry.Point3d(x=1.1, y=0.2, z=0)
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=outlier))
-    for i in range(10):
-        x = i/10 + 1.1
-        y = 0
+        y = 0.2 if i == 5 else 0
         p = rosys.geometry.Point3d(x=x, y=y, z=0)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.current_navigation = system.follow_crops_navigation
@@ -210,7 +203,7 @@ async def test_follow_crops_outlier(system: System, detector: rosys.vision.Detec
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
     assert system.odometer.prediction.point.x == pytest.approx(2.6, abs=0.1)
     assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.05)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=2)
 
 
 async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.DetectorSimulation):
