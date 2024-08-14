@@ -16,7 +16,7 @@ class TeltonikaRouter:
     def __init__(self) -> None:
         super().__init__()
 
-        self.current_connection: str | None = None
+        self.current_connection: str = 'disconnected'
         self.CONNECTION_CHANGED = rosys.event.Event()
 
         self.log = logging.getLogger('hardware.teltonika_router')
@@ -24,8 +24,10 @@ class TeltonikaRouter:
         self.client = httpx.AsyncClient(headers={'Content-Type': 'application/json'}, timeout=10.0)
         self.auth_token: str = ''
         self.token_time: float = 0.0
+        self.connection_check_running = False
         if ADMIN_PASSWORD:
             self.log.info('Connecting to Teltonika router...')
+            rosys.on_repeat(self.get_current_connection, 1.0)
         else:
             msg = 'The admin password for the Teltonika router is not set. Please set it in the .env file.'
             self.log.warning(msg)
@@ -33,43 +35,44 @@ class TeltonikaRouter:
             return
 
     async def get_current_connection(self) -> None:
+        if self.connection_check_running is True:
+            return
+        self.connection_check_running = True
         if rosys.time() - self.token_time > 4 * 60:
             await self._get_token()
-        self.log.debug('Getting status...')
-        print('Getting status...')
+        self.log.debug('Getting internet connection info...')
         try:
+            print('Trying to get internet connection status...')
             response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/interfaces/basic/status',
                                              headers={'Authorization': f'Bearer {self.auth_token}'})
             response.raise_for_status()
         except httpx.RequestError:
-            self.log.exception(f'Getting Status Info: failed')
+            self.log.exception(f'Getting Internet Connection Info: failed')
+            self.connection_check_running = False
             return
-        self.log.debug('Getting Status Info: success')
-        print(f'Status: {response.json()}')
+        self.log.debug('Getting Internet Connection Info: success')
+        up_connections = []
         for connection in response.json()['data']:
             if connection['is_up'] and connection['area_type'] == 'wan':
-                if self.current_connection != connection['name']:
-                    self.current_connection = connection['name']
-                    self.CONNECTION_CHANGED.emit()
-                    ui.notify(f'Connection changed to {self.current_connection}')
-        self.get_current_connection()
-
-    async def get_sim_cards_info(self) -> None:
-        if rosys.time() - self.token_time > 4 * 60:
-            await self._get_token()
-        mobile_id_list = ['mob1s1a1', 'mob1s2a1']
-        self.log.debug('Getting status of SIM-Cards...')
-        print('Getting status of SIM-Cards...')
-        for mobile_id in mobile_id_list:
-            try:
-                response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/interfaces/basic/status/{mobile_id}',
-                                                 headers={'Authorization': f'Bearer {self.auth_token}'})
-                response.raise_for_status()
-            except httpx.RequestError:
-                self.log.exception(f'Getting SIM-Cards Info: failed')
-                return
-            self.log.debug('Getting SIM-Cards Info: success')
-            print(f'SIM {mobile_id} status: {response.json()}')
+                up_connections.append(connection['name'])
+        if 'wan' in up_connections:
+            if self.current_connection != 'ether':
+                self.current_connection = 'ether'
+                self.CONNECTION_CHANGED.emit()
+        elif any('wifi' in connection for connection in up_connections):
+            if self.current_connection != 'wifi':
+                self.current_connection = 'wifi'
+                self.CONNECTION_CHANGED.emit()
+        elif 'mob1s1a1' in up_connections or 'mob1s2a1' in up_connections:
+            if self.current_connection != 'mobile':
+                self.current_connection = 'mobile'
+                self.CONNECTION_CHANGED.emit()
+        else:
+            if self.current_connection != 'disconnected':
+                self.current_connection = 'disconnected'
+                self.CONNECTION_CHANGED.emit()
+        self.connection_check_running = False
+        return
 
     async def _get_token(self) -> None:
         try:
