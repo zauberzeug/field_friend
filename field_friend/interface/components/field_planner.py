@@ -279,8 +279,8 @@ class field_planner:
                 self.active_field = None
                 self.active_object = None
             else:
-                if (self.active_object is not None and self.active_object["object"] is not None):
-                    if (self.active_object["object"] not in self.active_field.obstacles and self.active_object["object"] not in self.active_field.rows):
+                if self.active_object and self.active_object.get("object") is not None:
+                    if not (self.active_object.get("object") in self.active_field.obstacles and self.active_object("object") in self.active_field.rows):
                         self.active_object = None
                 else:
                     self.active_object = None
@@ -294,6 +294,7 @@ class field_planner:
     def _set_active_field(self, field_id: str) -> None:
         self.active_field = self.field_provider.get_field(field_id)
         self.show_field_settings.refresh()
+        self.show_object_settings.refresh()
 
     def _set_active_object(self, object_id: Optional[str] = None, object_type: Optional[Literal["Obstacles", "Rows", "Outline"]] = None) -> None:
         if (self.active_field is not None and object_id is not None and object_type is not None):
