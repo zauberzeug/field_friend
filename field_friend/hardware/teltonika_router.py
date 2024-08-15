@@ -55,22 +55,17 @@ class TeltonikaRouter:
             if value.get('status') == 'online':
                 up_connection = key
                 break
+        last_connection = self.current_connection
         if up_connection == 'wan':
-            if self.current_connection != 'ether':
-                self.current_connection = 'ether'
-                self.CONNECTION_CHANGED.emit()
+            self.current_connection = 'ether'
         elif 'ifWan' in up_connection:
-            if self.current_connection != 'wifi':
-                self.current_connection = 'wifi'
-                self.CONNECTION_CHANGED.emit()
+            self.current_connection = 'wifi'
         elif up_connection == 'mob1s1a1' or up_connection == 'mob1s2a1':
-            if self.current_connection != 'mobile':
-                self.current_connection = 'mobile'
-                self.CONNECTION_CHANGED.emit()
+            self.current_connection = 'mobile'
         else:
-            if self.current_connection != 'disconnected':
-                self.current_connection = 'disconnected'
-                self.CONNECTION_CHANGED.emit()
+            self.current_connection = 'disconnected'
+        if last_connection != self.current_connection:
+            self.CONNECTION_CHANGED.emit()
         self.connection_check_running = False
         return
 
