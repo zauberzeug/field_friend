@@ -45,12 +45,10 @@ class field_planner:
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Field Wizard", on_click=lambda: FieldCreator(system)).tooltip("Build a field with rows in a few simple steps") \
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
-                    ui.button('Clear fields', on_click=self.clear_field_dialog.open).props("outline color=warning") \
-                        .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                 with ui.row().style("width: 100%;"):
                     self.show_field_table()
                 with ui.row():
-                    ui.button("Clear fields", on_click=self.field_provider.clear_fields).props("outline color=warning") \
+                    ui.button('Clear fields', on_click=self.clear_field_dialog.open).props("outline color=warning") \
                         .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Update reference", on_click=self.field_provider.update_reference).props("outline color=warning") \
                         .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
@@ -218,7 +216,6 @@ class field_planner:
                             .props("icon=delete color=warning fab-mini flat").classes("ml-auto").style("display:block; margin-top:auto; margin-bottom: auto;").tooltip("Delete obstacle")
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
                         assert self.active_field is not None
-                        assert self.active_field.reference is not None
                         for geo_point in self.active_object["object"].points:
                             with ui.row().style("width: 100%;"):
                                 ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(point.tuple)) \
@@ -256,7 +253,6 @@ class field_planner:
                             .props("icon=delete color=warning fab-mini flat").classes("ml-auto").style("display:block; margin-top:auto; margin-bottom: auto;").tooltip("Delete Row")
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
                         assert self.active_field is not None
-                        assert self.active_field.reference is not None
                         for geo_point in self.active_object["object"].points:
                             print(self.active_object["object"].points)
                             with ui.row().style("width: 100%;"):

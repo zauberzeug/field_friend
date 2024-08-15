@@ -76,6 +76,7 @@ class leaflet_map:
                         ui.button('add point to selected object (row, obstacle)',
                                   on_click=lambda: self.add_point_active_object(latlon, real_marker_dialog))
                         ui.button('Close', on_click=lambda: self.abort_point_drawing(real_marker_dialog))
+                    real_marker_dialog.on('hide', self.on_dialog_close)
                     real_marker_dialog.open()
                 else:
                     with ui.dialog() as simulated_marker_dialog, ui.card():
@@ -83,6 +84,7 @@ class leaflet_map:
                         ui.button('as point for the current object',
                                   on_click=lambda: self.add_point_active_object(latlon, simulated_marker_dialog))
                         ui.button('Close', on_click=lambda: self.abort_point_drawing(simulated_marker_dialog))
+                    simulated_marker_dialog.on('hide', self.on_dialog_close)
                     simulated_marker_dialog.open()
             if e.args['layerType'] == 'polygon':
                 coordinates = e.args['layer']['_latlngs']
@@ -111,14 +113,12 @@ class leaflet_map:
             .tooltip('center map on field boundaries').classes('ml-0')
 
     def abort_point_drawing(self, dialog) -> None:
-        if self.drawn_marker is not None:
-            self.m.remove_layer(self.drawn_marker)
-        self.drawn_marker = None
+        self.on_dialog_close()
         dialog.close()
 
     def add_point_active_object(self, latlon, dialog) -> None:
         dialog.close()
-        self.m.remove_layer(self.drawn_marker)
+        self.on_dialog_close()
         if self.active_object is not None and self.active_object["object"] is not None:
             self.active_object["object"].points.append(GeoPoint.from_list(latlon))
             self.field_provider.invalidate()
@@ -160,6 +160,7 @@ class leaflet_map:
         self._active_field = field_id
         self.update_layers()
 
+    # FIXME diese funktion muss wieder gerade gebogen werden und außerdem muss der button wieder in das Menü eingefügt werden
     def update_robot_position(self, position: GeoPoint) -> None:
         if self.robot_marker is None:
             self.robot_marker = self.m.marker(latlng=position.tuple)
@@ -215,3 +216,9 @@ class leaflet_map:
             )
         if self.current_basemap.options['maxZoom'] - 1 < self.m.zoom:
             self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
+
+    def on_dialog_close(self) -> None:
+        print(self.drawn_marker)
+        if self.drawn_marker is not None:
+            self.m.remove_layer(self.drawn_marker)
+        self.drawn_marker = None
