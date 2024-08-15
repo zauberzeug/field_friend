@@ -11,8 +11,8 @@ from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
 CROP_CATEGORY_NAME = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
-MINIMUM_WEED_CONFIDENCE = 0.8
-MINIMUM_CROP_CONFIDENCE = 0.75
+MINIMUM_CROP_CONFIDENCE = 0.3
+MINIMUM_WEED_CONFIDENCE = 0.3
 
 
 if TYPE_CHECKING:
@@ -39,8 +39,8 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.upload_images: bool = False
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
         self.crop_category_names: list[str] = CROP_CATEGORY_NAME
-        self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
+        self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         if isinstance(self.detector, rosys.vision.DetectorHardware):
             rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port), 1.0)
@@ -155,16 +155,16 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.log.debug(f'Outbox_mode was set to {value} on port {port}')
 
     def settings_ui(self) -> None:
-        ui.number('Min. weed confidence', format='%.2f', value=0.8, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, 'minimum_weed_confidence') \
-            .tooltip('Set the minimum weed confidence for the weeding automation')
-        ui.number('Min. crop confidence', format='%.2f', value=0.4, step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+        ui.number('Min. crop confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'minimum_crop_confidence') \
-            .tooltip('Set the minimum crop confidence for the weeding automation')
+            .tooltip(f'Set the minimum crop confidence for the detection (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
+        ui.number('Min. weed confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'minimum_weed_confidence') \
+            .tooltip(f'Set the minimum weed confidence for the detection  (default: {MINIMUM_WEED_CONFIDENCE:.2f})')
         options = [autoupload for autoupload in rosys.vision.Autoupload]
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \

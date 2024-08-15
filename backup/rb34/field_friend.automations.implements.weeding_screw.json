@@ -1,10 +1,10 @@
 {
-    "with_drilling": false,
-    "with_chopping": false,
-    "chop_if_no_crops": false,
-    "cultivated_crop": null,
-    "crop_safety_distance": 0.02,
-    "with_punch_check": false,
-    "weed_screw_depth": 0.14,
-    "max_crop_distance": 0.08
+  "with_drilling": false,
+  "with_chopping": false,
+  "chop_if_no_crops": false,
+  "cultivated_crop": null,
+  "crop_safety_distance": 0.02,
+  "with_punch_check": false,
+  "weed_screw_depth": 0.14,
+  "max_crop_distance": 0.08
 }

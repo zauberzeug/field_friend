@@ -8,6 +8,7 @@ configuration = {
         'right_front_can_address': 0x300,
         'is_left_reversed': False,
         'is_right_reversed': True,
+        'odrive_version': 6,
     },
     'y_axis': {
         'version': 'y_axis_stepper',
@@ -53,6 +54,7 @@ configuration = {
         'current_limit': 30,
         'z_reference_speed': 0.0075,
         'turn_reference_speed': 0.25,
+        'odrive_version': 6,
     },
     'flashlight': {
         'version': 'flashlight_pwm',
@@ -82,7 +84,7 @@ configuration = {
     'bumper': {
         'name': 'bumper',
         'on_expander': True,
-        'pins': {'front_top': 22, 'front_bottom': 12, 'back': 25},
+        'pins': {'front_top': 12, 'front_bottom': 22, 'back': 25},
     },
     'status_control': {
         'name': 'status_control',
