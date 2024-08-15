@@ -28,5 +28,5 @@ def development(system: 'System') -> None:
                             rosys.simulation_ui()
                     hardware_control(system.field_friend, system.automator, system.puncher)
                     status_dev_page(system.field_friend, system)
-    with ui.row().style('width: calc(100vw - 2rem); flex-wrap: nowrap;'):        
+    with ui.row().style('width: calc(100vw - 2rem); flex-wrap: nowrap;'):
         io_overview(system)

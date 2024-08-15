@@ -5,45 +5,22 @@ from typing import Any
 import icecream
 import numpy as np
 import psutil
+
 import rosys
 
 from . import localization
-from .automations import (
-    AutomationWatcher,
-    BatteryWatcher,
-    FieldProvider,
-    KpiProvider,
-    PathProvider,
-    PlantLocator,
-    PlantProvider,
-    Puncher,
-)
-from .automations.implements import (
-    ChopAndScrew,
-    Implement,
-    Recorder,
-    Tornado,
-    WeedingScrew,
-)
-from .automations.navigation import (
-    CoverageNavigation,
-    FollowCropsNavigation,
-    Navigation,
-    RowsOnFieldNavigation,
-    StraightLineNavigation,
-)
-from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
+from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PlantLocator,
+                          PlantProvider, Puncher)
+from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
+from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
+                                     StraightLineNavigation)
+from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
-from .vision import (
-    CalibratableUsbCameraProvider,
-    CameraConfigurator,
-    SimulatedCam,
-    SimulatedCamProvider,
-)
+from .vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
 
 icecream.install()
 
@@ -66,6 +43,7 @@ class System(rosys.persistence.PersistentModule):
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
+                self.teltonika_router = TeltonikaRouter()
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             self.usb_camera_provider = CalibratableUsbCameraProvider()
