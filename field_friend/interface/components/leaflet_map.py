@@ -1,14 +1,11 @@
 
 import logging
-import uuid
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Literal, TypedDict
 
-import rosys
-import rosys.geometry
 from nicegui import app, events, ui
-from nicegui.elements.leaflet_layers import GenericLayer, TileLayer
+from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
 
-from ...automations import Field, FieldObstacle, FieldProvider, Row
+from ...automations import Field, FieldObstacle, Row
 from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
 
@@ -55,7 +52,7 @@ class leaflet_map:
         self.current_basemap: TileLayer | None = None
         self.toggle_basemap()
         self.field_layers: list[GenericLayer] = []
-        self.robot_marker = None
+        self.robot_marker: Marker | None = None
         self.drawn_marker = None
         self.obstacle_layers: list = []
         self.row_layers: list = []
@@ -119,8 +116,8 @@ class leaflet_map:
     def add_point_active_object(self, latlon, dialog) -> None:
         dialog.close()
         self.on_dialog_close()
-        if self.active_object is not None and self.active_object["object"] is not None:
-            self.active_object["object"].points.append(GeoPoint.from_list(latlon))
+        if self.active_object and self.active_object.get("object") is not None:
+            self.active_object.get("object").points.append(GeoPoint.from_list(latlon))
             self.field_provider.invalidate()
             self.update_layers()
         else:
@@ -135,19 +132,19 @@ class leaflet_map:
             color = '#6E93D6' if field.id == self.active_field else '#999'
             self.field_layers.append(self.m.generic_layer(name="polygon",
                                                           args=[field.points_as_tuples, {'color': color}]))
-        field = self.field_provider.get_field(self.active_field)
-        if field is None:
-            return
+        current_field: Field | None = self.field_provider.get_field(self.active_field)
         for layer in self.obstacle_layers:
             self.m.remove_layer(layer)
         self.obstacle_layers = []
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
-        for obstacle in field.obstacles:
+        if current_field is None:
+            return
+        for obstacle in current_field.obstacles:
             self.obstacle_layers.append(self.m.generic_layer(name="polygon",
                                                              args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
-        for row in field.rows:
+        for row in current_field.rows:
             self.row_layers.append(self.m.generic_layer(name="polyline",
                                                         args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
@@ -162,8 +159,7 @@ class leaflet_map:
 
     # FIXME diese funktion muss wieder gerade gebogen werden und außerdem muss der button wieder in das Menü eingefügt werden
     def update_robot_position(self, position: GeoPoint) -> None:
-        if self.robot_marker is None:
-            self.robot_marker = self.m.marker(latlng=position.tuple)
+        self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
         self.robot_marker.move(*position.tuple)
