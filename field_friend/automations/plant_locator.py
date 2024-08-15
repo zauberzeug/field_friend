@@ -198,8 +198,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 ui.button(icon='add', on_click=add_chip).props('round dense flat')
 
     def set_upload_images(self):
-        if isinstance(self.detector, rosys.vision.DetectorHardware):
-            if self.teltonika_router.current_connection == 'mobile' or self.teltonika_router.current_connection == 'disconnected':
-                self.upload_images = False
-            elif self.teltonika_router.current_connection == 'wifi' or self.teltonika_router.current_connection == 'ether':
-                self.upload_images = True
+        if self.teltonika_router.current_connection == 'wifi' or self.teltonika_router.current_connection == 'ether':
+            self.upload_images = True
+        else:
+            self.upload_images = False
