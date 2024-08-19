@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class header_bar:
     def __init__(self, system: 'System', right_drawer: ui.right_drawer):
+        self.system = system
         self.drawer_icon = "expand_more"
         self.toggled = False
         self.STATUS_DRAWER_TOGGLED = rosys.event.Event()
@@ -44,9 +45,13 @@ class header_bar:
 
             ui.button('Manual Steering', on_click=lambda system=system: manual_steerer_dialog(system)).tooltip(
                 'Open the manual steering window to move the robot with a joystick.')
-            self.internet_status = ui.icon('sym_o_wifi', size='sm')
+
+            self.internet_status = ui.icon('wifi', size='sm')
+            if system.is_real:
+                self._update_internet_status()
+                self.system.teltonika_router.CONNECTION_CHANGED.register_ui(self._update_internet_status)
+
             self._show_battery(system.field_friend)
-            # ui.timer(5, callback=self._update_internet_status)
 
             def handle_toggle() -> None:
                 right_drawer.toggle()
@@ -81,10 +86,16 @@ class header_bar:
                                       lambda p: f'{p:.0f}%' if p is not None else '?')
         return row
 
-    async def _update_internet_status(self) -> None:
-        if await asyncio.get_event_loop().run_in_executor(None, has_internet):
-            self.internet_status.name = 'sym_o_wifi'
-            self.internet_status.props('color=green')
+    def _update_internet_status(self) -> None:
+        if self.system.teltonika_router.current_connection == 'ether':
+            self.internet_status.name = 'cable'
+            self.internet_status.props('size=sm')
+        elif self.system.teltonika_router.current_connection == 'wifi':
+            self.internet_status.name = 'wifi'
+            self.internet_status.props('size=sm')
+        elif self.system.teltonika_router.current_connection == 'mobile':
+            self.internet_status.name = 'lte_mobiledata'
+            self.internet_status.props('size=lg')
         else:
-            self.internet_status.name = 'sym_o_wifi_off'
-            self.internet_status.props('color=red')
+            self.internet_status.name = 'wifi_off'
+            self.internet_status.props('size=sm')
