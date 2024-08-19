@@ -21,3 +21,4 @@ from .y_axis_stepper_hardware import YAxisStepperHardware
 from .z_axis import ZAxis, ZAxisSimulation
 from .z_axis_canopen_hardware import ZAxisCanOpenHardware
 from .z_axis_stepper_hardware import ZAxisStepperHardware
+from .teltonika_router import TeltonikaRouter
