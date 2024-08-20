@@ -147,36 +147,36 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_motor_z.reversed = {'true' if is_z_reversed else 'false'}
             {name}_motor_turn.reversed = {'true' if is_turn_reversed else 'false'}
             {name}_end_top = {expander.name + "." if end_stops_on_expander or end_top_pin_expander and expander else ""}Input({end_top_pin})
-            {name}_end_top.inverted = true;
+            {name}_end_top.inverted = true
             {name}_end_bottom = {expander.name + "." if end_stops_on_expander or end_bottom_pin_expander and expander else ""}Input({end_bottom_pin})
-            {name}_end_bottom.inverted = true;
+            {name}_end_bottom.inverted = true
             {name}_ref_motor = {expander.name + "." if end_stops_on_expander or ref_motor_pin_expander and expander else ""}Input({ref_motor_pin})
-            {name}_ref_motor.inverted = true;
+            {name}_ref_motor.inverted = true
             {name}_ref_gear = {expander.name + "." if end_stops_on_expander or ref_gear_pin_expander and expander else ""}Input({ref_gear_pin})
-            {name}_ref_gear.inverted = false;
+            {name}_ref_gear.inverted = false
             {name}_ref_knife_stop = {expander.name + "." if end_stops_on_expander or ref_knife_stop_pin_expander and expander else ""}Input({ref_knife_stop_pin})
-            {name}_ref_knife_stop.inverted = false;
+            {name}_ref_knife_stop.inverted = false
             {name}_ref_knife_ground = {expander.name + "." if end_stops_on_expander or ref_knife_ground_pin_expander and expander else ""}Input({ref_knife_ground_pin})
-            {name}_ref_knife_ground.inverted = true;
+            {name}_ref_knife_ground.inverted = true
             {name}_z = {expander.name + "." if motors_on_expander and expander else ""}MotorAxis({name}_motor_z, {name + "_end_bottom" if is_z_reversed else name + "_end_top"}, {name + "_end_top" if is_z_reversed else name + "_end_bottom"})
 
-            bool {name}_is_referencing = false;
-            bool {name}_ref_motor_enabled = false;
-            bool {name}_ref_gear_enabled = false;
+            bool {name}_is_referencing = false
+            bool {name}_ref_motor_enabled = false
+            bool {name}_ref_gear_enabled = false
             when {name}_ref_motor_enabled and {name}_is_referencing and {name}_ref_motor.level == 0 then
-                {name}_motor_turn.speed(0);
+                {name}_motor_turn.speed(0)
             end
             when {name}_ref_gear_enabled and {name}_is_referencing and {name}_ref_gear.level == 1 then
                 {name}_motor_turn.speed(0);
             end
-            bool {name}_knife_ground_enabled = false;
-            bool {name}_knife_stop_enabled = false;
+            bool {name}_knife_ground_enabled = false
+            bool {name}_knife_stop_enabled = false
             when {name}_knife_ground_enabled and {name}_ref_knife_ground.level == 1 then
-                {name}_motor_z.off();
+                {name}_motor_z.off()
             end
             when {name}_knife_stop_enabled and {name}_ref_knife_stop.level == 1 then
-                en3.off();
-                {name}_knife_stop_enabled = false;
+                en3.off()
+                {name}_knife_stop_enabled = false
             end
         ''')  # tornado axis references in positive direction, in contrast to all other axis
         core_message_fields = [
