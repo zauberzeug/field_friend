@@ -6,4 +6,5 @@ configuration = {
     'work_x': 0.0125,
     'drill_radius': 0.025,
     'tool': 'none',
+    'antenna_offset': 0.205,
 }

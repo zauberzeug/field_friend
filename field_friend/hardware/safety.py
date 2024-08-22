@@ -6,8 +6,16 @@ import rosys
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
-from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
-from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
+from .flashlight_pwm import (
+    FlashlightPWM,
+    FlashlightPWMHardware,
+    FlashlightPWMSimulation,
+)
+from .flashlight_pwm_v2 import (
+    FlashlightPWMHardwareV2,
+    FlashlightPWMSimulationV2,
+    FlashlightPWMV2,
+)
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis import YAxis, YAxisSimulation
@@ -52,8 +60,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
 
         # implement lizard stop method for available hardware
         lizard_code = f'let stop do {wheels.name}.speed(0, 0);'
-        if y_axis is not None:
-            lizard_code += f' {y_axis.name}.stop();'
+        # if y_axis is not None:
+        #     lizard_code += f' {y_axis.name}.stop();'
         if z_axis is not None:
             if isinstance(z_axis, TornadoHardware):
                 lizard_code += f'{z_axis.name}_z.stop();'

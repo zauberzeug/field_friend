@@ -5,6 +5,8 @@ import rosys
 
 import config.config_selection as config_selector
 
+from .y_axis_D1 import D1Axis
+from .z_axis_D1 import D1ZAxis
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
@@ -96,12 +98,24 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
 
-        if config_hardware['y_axis']['version'] == 'y_axis_canopen' or config_hardware['z_axis']['version'] == 'z_axis_canopen':
+        if config_hardware['y_axis']['version'] in ('y_axis_canopen', 'd1_axis') or config_hardware['z_axis']['version'] in ('y_axis_canopen', 'd1_axis'):
             can_open_master = CanOpenMasterHardware(robot_brain, can=can, name='master')
         else:
             can_open_master = None
-        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | None
-        if config_hardware['y_axis']['version'] == 'chain_axis':
+        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | D1Axis | None
+        if config_hardware['y_axis']['version'] == 'd1_axis':
+            y_axis = D1Axis(robot_brain,
+                            can=can,
+                            can_address=config_hardware['y_axis']['can_address'],
+                            name=config_hardware['y_axis']['name'],
+                            max_speed=config_hardware['y_axis']['max_speed'],
+                            reference_speed=config_hardware['y_axis']['reference_speed'],
+                            min_position=config_hardware['y_axis']['min_position'],
+                            max_position=config_hardware['y_axis']['max_position'],
+                            axis_offset=config_hardware['y_axis']['axis_offset'],
+                            steps_per_m=config_hardware['y_axis']['steps_per_m'],
+                            reversed_direction=config_hardware['y_axis']['reversed_direction'],)
+        elif config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisHardware(robot_brain,
                                        expander=expander,
                                        name=config_hardware['y_axis']['name'],
@@ -166,7 +180,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown y_axis version: {config_hardware["y_axis"]["version"]}')
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | None
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | D1Axis | None
         if config_hardware['z_axis']['version'] == 'z_axis_stepper':
             z_axis = ZAxisStepperHardware(robot_brain,
                                           expander=expander,
