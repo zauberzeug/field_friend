@@ -7,7 +7,7 @@ import numpy as np
 from nicegui import events, ui
 from PIL import Image
 from rosys.geometry import Point3d
-from rosys.vision import Calibration, Camera, CameraProvider
+from rosys.vision import Calibration, Camera, CameraProvider, SimulatedCalibratableCamera
 
 from ...vision import DOT_DISTANCE, Dot, Network
 
@@ -65,7 +65,7 @@ class calibration_dialog(ui.dialog):
     async def edit(self, camera: Camera) -> bool:
         self.log.info(f'editing camera calibration for: {camera.id}')
         self.camera = camera
-        if not isinstance(camera, SimulatedCam):
+        if not isinstance(camera, SimulatedCalibratableCamera):
             image = camera.latest_captured_image
             if image is None:
                 self.log.warning('No image available')
@@ -132,8 +132,11 @@ class calibration_dialog(ui.dialog):
                 continue
 
             world_point = Point3d(x=i * DOT_DISTANCE, y=j * DOT_DISTANCE, z=k * DOT_DISTANCE)
+            self.log.info(
+                f'world point: {world_point} and image point: {self.calibration.project_to_image(world_point)}')
             image_point = self.calibration.project_to_image(world_point)
-            content += f'<circle cx="{image_point.x}" cy="{image_point.y}" r="5" fill="red" />'
+            if image_point is not None:
+                content += f'<circle cx="{image_point.x}" cy="{image_point.y}" r="5" fill="red" />'
 
         self.calibration_image.content = content
 
