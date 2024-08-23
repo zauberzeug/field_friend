@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 
 class FollowCropsNavigation(Navigation):
+    CROP_ATTRACTION: float = 0.3
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
@@ -23,7 +24,7 @@ class FollowCropsNavigation(Navigation):
         self.flashlight = system.field_friend.flashlight
         self.plant_locator = system.plant_locator
         self.name = 'Follow Crops'
-        self.crop_attraction = 0.5
+        self.crop_attraction = self.CROP_ATTRACTION
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -40,7 +41,7 @@ class FollowCropsNavigation(Navigation):
         self.plant_locator.pause()
         await self.implement.deactivate()
 
-    async def _drive(self, distance: float):
+    async def _drive(self, distance: float) -> None:
         row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point, max_distance=1.0)
         if len(row) >= 3:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
@@ -54,12 +55,10 @@ class FollowCropsNavigation(Navigation):
 
             fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
             closest_point = fitted_line.foot_point(self.odometer.prediction.point)
-            front_point = closest_point.polar(0.3, yaw)
-            target_yaw = self.odometer.prediction.point.direction(front_point)
+            target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
         else:
-            target_yaw = self.odometer.prediction.yaw
-        target_yaw = self.combine_angles(target_yaw, self.crop_attraction, self.odometer.prediction.yaw)
-        await self._drive_to_yaw(distance, target_yaw)
+            target = self.odometer.prediction
+        await self._drive_towards_target(distance, target)
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
         weight1 = influence
@@ -73,7 +72,7 @@ class FollowCropsNavigation(Navigation):
         # Normalize
         return eliminate_2pi(combined_angle)
 
-    def create_simulation(self):
+    def create_simulation(self) -> None:
         for i in range(100):
             x = i/10.0
             p = rosys.geometry.Point3d(x=x, y=(x/4) ** 3, z=0)
@@ -90,17 +89,18 @@ class FollowCropsNavigation(Navigation):
         return False
 
     def settings_ui(self) -> None:
-        ui.number('Crop Attraction', step=0.1, min=0.0, format='%.1f') \
+        ui.number('Crop Attraction', step=0.1, min=0.0, max=1.0, format='%.1f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'crop_attraction') \
-            .tooltip('Influence of the crop row direction on the driving direction')
+            .tooltip(f'Influence of the crop row direction on the driving direction (default: {self.crop_attraction:.1f})')
         super().settings_ui()
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'crop_attraction': self.crop_attraction,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.crop_attraction = data.get('crop_attraction', self.crop_attraction)

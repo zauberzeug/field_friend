@@ -13,11 +13,12 @@ if TYPE_CHECKING:
 
 
 class StraightLineNavigation(Navigation):
+    LENGTH: float = 2.0
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
         self.detector = system.detector
-        self.length = 2.0
+        self.length = self.LENGTH
         self.name = 'Straight Line'
         self.origin: rosys.geometry.Point
         self.target: rosys.geometry.Point
@@ -34,14 +35,13 @@ class StraightLineNavigation(Navigation):
         await super().finish()
         await self.implement.deactivate()
 
-    async def _drive(self, distance: float):
+    async def _drive(self, distance: float) -> None:
         start_position = self.odometer.prediction.point
         closest_point = rosys.geometry.Line.from_points(self.origin, self.target).foot_point(start_position)
-        local_target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=start_position.direction(self.target), time=0) \
-            .transform(rosys.geometry.Point(x=1, y=0))
-        await self._drive_to_yaw(distance, start_position.direction(local_target))
+        yaw = closest_point.direction(self.target)
+        await self._drive_towards_target(distance, rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw))
 
-    def _should_finish(self):
+    def _should_finish(self) -> None:
         end_pose = rosys.geometry.Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)
         return end_pose.relative_point(self.odometer.prediction.point).x > 0
 
@@ -61,7 +61,7 @@ class StraightLineNavigation(Navigation):
                                                                                     position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
 
     def settings_ui(self) -> None:
-        ui.number('Length', step=0.5, min=0.05, format='%.1f') \
+        ui.number('Length', step=0.5, min=0.05, format='%.1f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'length') \
@@ -69,9 +69,10 @@ class StraightLineNavigation(Navigation):
         super().settings_ui()
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'length': self.length,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.length = data.get('length', self.length)
