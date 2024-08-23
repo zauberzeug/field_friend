@@ -13,11 +13,12 @@ if TYPE_CHECKING:
 
 
 class StraightLineNavigation(Navigation):
+    LENGTH: float = 2.0
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
         self.detector = system.detector
-        self.length = 2.0
+        self.length = self.LENGTH
         self.name = 'Straight Line'
         self.origin: rosys.geometry.Point
         self.target: rosys.geometry.Point
@@ -60,7 +61,7 @@ class StraightLineNavigation(Navigation):
                                                                                     position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
 
     def settings_ui(self) -> None:
-        ui.number('Length', step=0.5, min=0.05, format='%.1f') \
+        ui.number('Length', step=0.5, min=0.05, format='%.1f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'length') \
@@ -68,9 +69,10 @@ class StraightLineNavigation(Navigation):
         super().settings_ui()
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'length': self.length,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.length = data.get('length', self.length)
