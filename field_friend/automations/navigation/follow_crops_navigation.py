@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 
 class FollowCropsNavigation(Navigation):
+    CROP_ATTRACTION: float = 0.3
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
@@ -23,7 +24,7 @@ class FollowCropsNavigation(Navigation):
         self.flashlight = system.field_friend.flashlight
         self.plant_locator = system.plant_locator
         self.name = 'Follow Crops'
-        self.crop_attraction = 0.5
+        self.crop_attraction = self.CROP_ATTRACTION
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -88,17 +89,18 @@ class FollowCropsNavigation(Navigation):
         return False
 
     def settings_ui(self) -> None:
-        ui.number('Crop Attraction', step=0.1, min=0.0, format='%.1f') \
+        ui.number('Crop Attraction', step=0.1, min=0.0, max=1.0, format='%.1f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'crop_attraction') \
-            .tooltip('Influence of the crop row direction on the driving direction')
+            .tooltip(f'Influence of the crop row direction on the driving direction (default: {self.crop_attraction:.1f})')
         super().settings_ui()
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'crop_attraction': self.crop_attraction,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.crop_attraction = data.get('crop_attraction', self.crop_attraction)
