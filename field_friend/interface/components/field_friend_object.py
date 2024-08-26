@@ -4,7 +4,7 @@ from rosys.driving import Odometer, robot_object
 from rosys.geometry import Prism
 from rosys.vision import CameraProjector, CameraProvider, camera_objects
 
-from ...hardware import ChainAxis, FieldFriend, Tornado, YAxis, ZAxis
+from ...hardware import ChainAxis, FieldFriend, Tornado, Axis
 
 
 class field_friend_object(robot_object):
@@ -19,7 +19,7 @@ class field_friend_object(robot_object):
         self.with_stl('assets/field_friend.stl', x=-0.365, y=-0.3, z=0.06, scale=0.001, color='#6E93D6', opacity=0.7)
         with self:
             camera_objects(camera_provider, CameraProjector(camera_provider))
-            if isinstance(self.robot.y_axis, YAxis):
+            if isinstance(self.robot.y_axis, Axis):
                 with Group() as self.tool:
                     Box(0.015, 0.015, 0.35).material('#4488ff').move(z=0.4)
                     Cylinder(0.03, 0, 0.05).material('#4488ff').move(z=0.2).rotate(1.571, 0, 0)
@@ -34,13 +34,13 @@ class field_friend_object(robot_object):
 
     def update(self) -> None:
         super().update()
-        if isinstance(self.robot.y_axis, YAxis) and isinstance(self.robot.z_axis, ZAxis):
+        if isinstance(self.robot.y_axis, Axis) and isinstance(self.robot.z_axis, Axis):
             self.tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position, z=self.robot.z_axis.position)
             if self.robot.y_axis.position > self.robot.y_axis.max_position or self.robot.y_axis.position < self.robot.y_axis.min_position:
                 self.tool.material('red')
             else:
                 self.tool.material('#4488ff')
-        elif isinstance(self.robot.y_axis, YAxis) and isinstance(self.robot.z_axis, Tornado):
+        elif isinstance(self.robot.y_axis, Axis) and isinstance(self.robot.z_axis, Tornado):
             self.tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position, z=self.robot.z_axis.position_z)
             if self.robot.y_axis.position > self.robot.y_axis.max_position or self.robot.y_axis.position < self.robot.y_axis.min_position:
                 self.tool.material('red')

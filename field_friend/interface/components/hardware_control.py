@@ -4,7 +4,7 @@ from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, Tornado, YAxis, YAxisCanOpenHardware, ZAxis, ZAxisCanOpenHardware)
+                         FlashlightV2, Tornado, Axis, YAxisCanOpenHardware, ZAxisCanOpenHardware)
 
 
 def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -61,7 +61,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         field_friend.flashlight, 'duty_cycle')
 
         if field_friend.y_axis is not None:
-            if isinstance(field_friend.y_axis, YAxis):
+            if isinstance(field_friend.y_axis, Axis):
                 with ui.column():
                     ui.markdown('**Y-Axis**')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
@@ -86,7 +86,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.button('chop to right', on_click=lambda: automator.start(field_friend.y_axis.move_dw_to_r_ref()))
 
         if field_friend.z_axis is not None:
-            if isinstance(field_friend.z_axis, ZAxis):
+            if isinstance(field_friend.z_axis, Axis):
                 with ui.column():
                     ui.markdown('**Z-Axis**')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
@@ -128,13 +128,13 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.max_position, depth=depth.value)))
-                    elif isinstance(field_friend.y_axis, YAxis) and isinstance(field_friend.z_axis, Tornado):
+                    elif isinstance(field_friend.y_axis, Axis) and isinstance(field_friend.z_axis, Tornado):
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.min_position, angle=angle.value)))
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, angle=angle.value)))
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.max_position, angle=angle.value)))
-                    elif isinstance(field_friend.y_axis, YAxis) and isinstance(field_friend.z_axis, ZAxis):
+                    elif isinstance(field_friend.y_axis, Axis) and isinstance(field_friend.z_axis, Axis):
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.max_position, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))

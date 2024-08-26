@@ -5,7 +5,7 @@ import rosys
 from rosys.driving import Driver
 from rosys.geometry import Point
 
-from ..hardware import ChainAxis, FieldFriend, Tornado, YAxis, ZAxis
+from ..hardware import Axis, ChainAxis, FieldFriend, Tornado
 from .kpi_provider import KpiProvider
 
 
@@ -83,7 +83,7 @@ class Puncher:
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
-            elif isinstance(self.field_friend.y_axis, YAxis):
+            elif isinstance(self.field_friend.y_axis, Axis):
                 if not self.field_friend.y_axis.min_position <= y <= self.field_friend.y_axis.max_position:
                     rosys.notify('y position out of range', type='negative')
                     raise PuncherException('y position out of range')
@@ -92,7 +92,7 @@ class Puncher:
                 await self.field_friend.y_axis.move_to(y)
                 await self.tornado_drill(angle=angle, turns=turns, with_open_drill=with_open_tornado)
 
-            elif isinstance(self.field_friend.z_axis, ZAxis):
+            elif isinstance(self.field_friend.z_axis, Axis):
                 if self.is_demo:
                     self.log.warning('punching with demo mode is not yet implemented for z axis')
                 await self.field_friend.y_axis.move_to(y)
@@ -119,7 +119,7 @@ class Puncher:
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
-        elif isinstance(self.field_friend.y_axis, YAxis):
+        elif isinstance(self.field_friend.y_axis, Axis):
             y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         await self.field_friend.y_axis.stop()
