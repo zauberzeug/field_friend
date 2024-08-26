@@ -50,17 +50,19 @@ class System(rosys.persistence.PersistentModule):
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
-            self.camera_configurator = CameraConfigurator(self.camera_provider)
+            self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
+            self.camera_configurator = CameraConfigurator(self.camera_provider, odometer=self.odometer)
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             self.camera_provider = rosys.vision.SimulatedCameraProvider()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
-            self.camera_configurator = CameraConfigurator(self.camera_provider, robot_id=self.version)
+            self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
+            self.camera_configurator = CameraConfigurator(
+                self.camera_provider, odometer=self.odometer, robot_id=self.version)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
-        self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)

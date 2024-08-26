@@ -36,7 +36,7 @@ class camera_card:
         self.show_weeds_to_handle: bool = False
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.image_view: Optional[ui.interactive_image] = None
-        self.calibration_dialog = calibration_dialog(self.camera_provider)
+        self.calibration_dialog = calibration_dialog(self.camera_provider, self.odometer)
         self.camera_card = ui.card()
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
