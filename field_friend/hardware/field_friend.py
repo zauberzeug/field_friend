@@ -10,8 +10,7 @@ from .flashlight_pwm import FlashlightPWM
 from .flashlight_v2 import FlashlightV2
 from .safety import Safety
 from .tornado import Tornado
-from .y_axis import YAxis
-from .z_axis import ZAxis
+from .axis import Axis
 
 
 class FieldFriend(rosys.hardware.Robot):
@@ -32,8 +31,8 @@ class FieldFriend(rosys.hardware.Robot):
             implement_name: str,
             wheels: rosys.hardware.Wheels,
             flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, None],
-            y_axis: Union[YAxis, ChainAxis, None],
-            z_axis: Union[ZAxis, Tornado, None],
+            y_axis: Union[Axis, ChainAxis, None],
+            z_axis: Union[Axis, Tornado, None],
             estop: rosys.hardware.EStop,
             bumper: Union[rosys.hardware.Bumper, None],
             bms: rosys.hardware.Bms,
