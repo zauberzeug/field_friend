@@ -3,20 +3,20 @@ from typing import Optional
 import rosys
 from rosys.helpers import remove_indentation
 
-from .z_axis import ZAxis
+from .axis import Axis
 
 
-class D1ZAxis(ZAxis, rosys.hardware.ModuleHardware):
+class D1Axis(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  max_speed: int = 2000,
                  reference_speed: int = 40,
                  name: str = 'axis_D1',
                  can: rosys.hardware.CanHardware,
                  can_address: int = 0x60,
-                 min_position: float = 100,
-                 max_position: float = 0,
+                 min_position: float = 1,
+                 max_position: float = 100,
                  axis_offset: float = 0,
-                 steps_per_m: float = 1_481_481.48,  # [steps/turn] / ([gear] * [m/turn])
+                 steps_per_m: float = 1,  # [steps/turn] / ([gear] * [m/turn])
                  reversed_direction: bool = False,
                  ) -> None:
         """
@@ -88,22 +88,28 @@ class D1ZAxis(ZAxis, rosys.hardware.ModuleHardware):
             self.log.error(f'd1axis {self.name} is not refernced')
 
     def valid_status(self) -> bool:
-        return self.ready_to_switch_on and self.switched_on and self.operation_enabled and self.quick_stop and self.remote_enable and self.target_reached
+        return self.ready_to_switch_on and self.switched_on and self.operation_enabled and self.quick_stop
 
     async def enable_motor(self):
-        await self.robot_brain.send(f'{self.name}_motor.setup();')
+        if self.fault:
+            await self.reset_error()
+            rosys.sleep(0.5)
+        await self.robot_brain.send(f'{self.name}_motor.setup()')
 
     async def reset_error(self):
         if self.fault:
-            await self.robot_brain.send(f'{self.name}_motor.reset();')
+            await self.robot_brain.send(f'{self.name}_motor.reset()')
         self.log.error(f'd1axis {self.name} is not in fault state')
 
     async def try_reference(self):
-        await self.robot_brain.send(f'{self.name}_motor.setup();')
+        if not self.valid_status():
+            await self.enable_motor()
+            await self.robot_brain.send(f'{self.name}_motor.homing()')
+            await self.robot_brain.send(f'{self.name}_motor.homing()')
         if self.is_referenced:
             self.log.error(f'd1axis {self.name} is already referenced')
-            return
-        await self.robot_brain.send(f'{self.name}_motor.homing();')
+        else:
+            await self.robot_brain.send(f'{self.name}_motor.homing()')
 
     async def speed_Mode(self, speed: int):
 
