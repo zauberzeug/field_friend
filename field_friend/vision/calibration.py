@@ -4,7 +4,7 @@ from typing import Self, Sequence
 
 import cv2
 import numpy as np
-from rosys.geometry import Point, Point3d
+from rosys.geometry import Frame3d, Point, Point3d
 from rosys.vision import Calibration, ImageSize
 
 DOT_DISTANCE = 0.055
@@ -167,9 +167,9 @@ class Network:
     def shift(self, *, di: float = 0, dj: float = 0, dk: float = 0) -> None:
         self.dots = {(i + di, j + dj, k + dk): dot for (i, j, k), dot in self.dots.items()}
 
-    def calibrate(self, f0: float) -> Calibration:
+    def calibrate(self, f0: float, prediction_frame: Frame3d) -> Calibration:
         world_points = [Point3d(x=i * DOT_DISTANCE,
                                 y=j * DOT_DISTANCE,
                                 z=k * DOT_DISTANCE) for (i, j, k), dot in self.dots.items() if dot.is_refined]
         image_points = [Point(x=dot.x, y=dot.y) for dot in self.dots.values() if dot.is_refined]
-        return Calibration.from_points(world_points, image_points, image_size=self.image_size, f0=f0)
+        return Calibration.from_points(world_points, image_points, image_size=self.image_size, f0=f0, frame=prediction_frame)
