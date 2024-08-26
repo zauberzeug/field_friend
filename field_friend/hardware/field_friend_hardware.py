@@ -6,7 +6,6 @@ import rosys
 import config.config_selection as config_selector
 
 from .axis_D1 import D1Axis
-from .z_axis_D1 import D1ZAxis
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
