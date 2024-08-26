@@ -65,7 +65,7 @@ class FieldFriend(rosys.hardware.Robot):
 
         The point is given in local coordinates, i.e. the origin is the center of the tool.
         """
-        if self.implement_name in ['weed_screw', 'tornado'] and isinstance(self.y_axis, YAxis):
+        if self.implement_name in ['weed_screw', 'tornado'] and isinstance(self.y_axis, Axis):
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         elif self.implement_name in ['dual_mechanism'] and isinstance(self.y_axis, ChainAxis):
             if second_tool:
