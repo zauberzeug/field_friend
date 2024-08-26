@@ -5,7 +5,7 @@ import rosys
 
 import config.config_selection as config_selector
 
-from .y_axis_D1 import D1Axis
+from .axis_D1 import D1Axis
 from .z_axis_D1 import D1ZAxis
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
@@ -201,6 +201,18 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           reversed_direction=config_hardware['z_axis']['reversed_direction'],
                                           end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
                                           )
+        elif config_hardware['z_axis']['version'] == 'd1_axis':
+            z_axis = D1Axis(robot_brain,
+                            can=can,
+                            can_address=config_hardware['y_axis']['can_address'],
+                            name=config_hardware['y_axis']['name'],
+                            max_speed=config_hardware['y_axis']['max_speed'],
+                            reference_speed=config_hardware['y_axis']['reference_speed'],
+                            min_position=config_hardware['y_axis']['min_position'],
+                            max_position=config_hardware['y_axis']['max_position'],
+                            axis_offset=config_hardware['y_axis']['axis_offset'],
+                            steps_per_m=config_hardware['y_axis']['steps_per_m'],
+                            reversed_direction=config_hardware['y_axis']['reversed_direction'],)
         elif config_hardware['z_axis']['version'] == 'tornado':
             z_axis = TornadoHardware(robot_brain,
                                      expander=expander,
