@@ -23,11 +23,9 @@ from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
 from .teltonika_router import TeltonikaRouter
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
-from .y_axis import YAxis, YAxisSimulation
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
-from .y_axis_D1 import D1Axis
+from .axis_D1 import D1Axis
 from .y_axis_stepper_hardware import YAxisStepperHardware
-from .z_axis import ZAxis, ZAxisSimulation
+from .axis import Axis, AxisSimulation
 from .z_axis_canopen_hardware import ZAxisCanOpenHardware
-from .z_axis_D1 import D1ZAxis
 from .z_axis_stepper_hardware import ZAxisStepperHardware

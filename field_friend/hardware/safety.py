@@ -18,10 +18,9 @@ from .flashlight_pwm_v2 import (
 )
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
-from .y_axis import YAxis, YAxisSimulation
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
 from .y_axis_stepper_hardware import YAxisStepperHardware
-from .z_axis import ZAxis, ZAxisSimulation
+from .axis import Axis, AxisSimulation
 from .z_axis_canopen_hardware import ZAxisCanOpenHardware
 from .z_axis_stepper_hardware import ZAxisStepperHardware
 
@@ -32,8 +31,8 @@ class Safety(rosys.hardware.Module, abc.ABC):
     def __init__(self, *,
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[YAxis, ChainAxis, None] = None,
-                 z_axis: Union[ZAxis, Tornado, None] = None,
+                 y_axis: Union[Axis, ChainAxis, None] = None,
+                 z_axis: Union[Axis, Tornado, None] = None,
                  flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, FlashlightPWMV2, None] = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
@@ -108,8 +107,8 @@ class SafetySimulation(Safety, rosys.hardware.ModuleSimulation):
     def __init__(self, *,
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[YAxisSimulation, ChainAxisSimulation, None] = None,
-                 z_axis: Union[ZAxisSimulation, TornadoSimulation, None] = None,
+                 y_axis: Union[AxisSimulation, ChainAxisSimulation, None] = None,
+                 z_axis: Union[AxisSimulation, TornadoSimulation, None] = None,
                  flashlight: Union[FlashlightSimulation, FlashlightSimulationV2, FlashlightPWMSimulation, FlashlightPWMSimulationV2, None]) -> None:
         super().__init__(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
