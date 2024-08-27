@@ -338,16 +338,16 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
         odometry_label.text = str(system.odometer.prediction)
-        status_1.text = f'{robot.y_axis.is_referenced}'
-        status_2.text = f'{robot.y_axis.statusword}'
-        status_3.text = f'{robot.y_axis.ready_to_switch_on}'
-        status_4.text = f'{robot.y_axis.switched_on}'
-        status_5.text = f'{robot.y_axis.operation_enabled}'
-        status_6.text = f'{robot.y_axis.fault}'
-        status_7.text = f'{robot.y_axis.voltage_enabled}'
-        status_8.text = f'{robot.y_axis.quick_stop}'
-        status_9.text = f'{robot.y_axis.switch_on_disabled}'
-        status_10.text = f'{robot.y_axis.warning}'
+        # status_1.text = f'{robot.y_axis.is_referenced}'
+        # status_2.text = f'{robot.y_axis.statusword}'
+        # status_3.text = f'{robot.y_axis.ready_to_switch_on}'
+        # status_4.text = f'{robot.y_axis.switched_on}'
+        # status_5.text = f'{robot.y_axis.operation_enabled}'
+        # status_6.text = f'{robot.y_axis.fault}'
+        # status_7.text = f'{robot.y_axis.voltage_enabled}'
+        # status_8.text = f'{robot.y_axis.quick_stop}'
+        # status_9.text = f'{robot.y_axis.switch_on_disabled}'
+        # status_10.text = f'{robot.y_axis.warning}'
 
     ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page
