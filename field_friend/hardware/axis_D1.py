@@ -20,7 +20,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         """
         self.name = name
         self.statusword: int = 0
-        self.position: int = 0
+        self._position: int = 0
         self.velocity: int = 0
 
         # flags of the Statusword for more information refer to the CANopen standard and D1 manual
@@ -53,6 +53,10 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             lizard_code=lizard_code,
             core_message_fields=core_message_fields,
             **kwargs)
+
+    @property
+    def position(self) -> float:
+        return self._position
 
     async def stop(self):
         await self.speed_Mode(0)
@@ -90,7 +94,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.name}_motor.speedMode({speed});')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.position = int(words.pop(0))
+        self._position = int(words.pop(0))
         self.velocity = int(words.pop(0))
         self.statusword = int(words.pop(0))
         self.is_referenced = int(words.pop(0)) == 1
