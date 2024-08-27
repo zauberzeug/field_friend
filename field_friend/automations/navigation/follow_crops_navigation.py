@@ -7,13 +7,13 @@ from nicegui import ui
 from rosys.helpers import eliminate_2pi
 
 from ..implements.implement import Implement
-from .navigation import Navigation
+from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
     from system import System
 
 
-class FollowCropsNavigation(Navigation):
+class FollowCropsNavigation(StraightLineNavigation):
     CROP_ATTRACTION: float = 0.3
 
     def __init__(self, system: 'System', tool: Implement) -> None:
@@ -41,6 +41,11 @@ class FollowCropsNavigation(Navigation):
         self.plant_locator.pause()
         await self.implement.deactivate()
 
+    def update_target(self) -> None:
+        self.origin = self.odometer.prediction.point
+        distance = self.length - self.odometer.prediction.point.distance(self.start_position)
+        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
+
     async def _drive(self, distance: float) -> None:
         row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point, max_distance=1.0)
         if len(row) >= 3:
@@ -56,9 +61,10 @@ class FollowCropsNavigation(Navigation):
             fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
             closest_point = fitted_line.foot_point(self.odometer.prediction.point)
             target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
+            await self._drive_towards_target(distance, target)
         else:
-            target = self.odometer.prediction
-        await self._drive_towards_target(distance, target)
+            self.update_target()
+            await super()._drive(distance)
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
         weight1 = influence
@@ -79,22 +85,13 @@ class FollowCropsNavigation(Navigation):
             p = self.odometer.prediction.transform3d(p)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
 
-    def _should_finish(self) -> bool:
-        distance = self.odometer.prediction.point.distance(self.start_position)
-        if distance < 0.5:
-            return False  # at least drive 0.5m
-        if len(self.plant_provider.get_relevant_crops(self.odometer.prediction.point)) == 0:
-            self.log.info('No crops in sight -- stopping navigation')
-            return True
-        return False
-
     def settings_ui(self) -> None:
+        super().settings_ui()
         ui.number('Crop Attraction', step=0.1, min=0.0, max=1.0, format='%.1f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'crop_attraction') \
-            .tooltip(f'Influence of the crop row direction on the driving direction (default: {self.crop_attraction:.1f})')
-        super().settings_ui()
+            .tooltip(f'Influence of the crop row direction on the driving direction (default: {self.CROP_ATTRACTION:.1f})')
 
     def backup(self) -> dict:
         return super().backup() | {
