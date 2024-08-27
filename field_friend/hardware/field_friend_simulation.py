@@ -4,6 +4,7 @@ import rosys
 # change the config to the config of simulated Robot
 import config.config_selection as config_selector
 
+from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
@@ -11,8 +12,6 @@ from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
 from .flashlight_v2 import FlashlightSimulationV2
 from .safety import SafetySimulation
 from .tornado import TornadoSimulation
-
-from .axis import AxisSimulation
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
@@ -42,7 +41,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         y_axis: AxisSimulation | ChainAxisSimulation | None
         if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()
-        elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen']:
+        elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen', 'd1_axis']:
             y_axis = AxisSimulation(
                 min_position=config_hardware['y_axis']['min_position'],
                 max_position=config_hardware['y_axis']['max_position'],
@@ -54,7 +53,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             raise NotImplementedError(f'Unknown Y-Axis version: {config_hardware["y_axis"]["version"]}')
 
         z_axis: AxisSimulation | TornadoSimulation | None
-        if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen']:
+        if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen', 'd1_axis']:
             z_axis = AxisSimulation(
                 min_position=config_hardware['z_axis']['min_position'],
                 max_position=config_hardware['z_axis']['max_position'],
