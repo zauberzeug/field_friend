@@ -7,8 +7,16 @@ from .field_friend import FieldFriend
 from .field_friend_hardware import FieldFriendHardware
 from .field_friend_simulation import FieldFriendSimulation
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
-from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
-from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
+from .flashlight_pwm import (
+    FlashlightPWM,
+    FlashlightPWMHardware,
+    FlashlightPWMSimulation,
+)
+from .flashlight_pwm_v2 import (
+    FlashlightPWMHardwareV2,
+    FlashlightPWMSimulationV2,
+    FlashlightPWMV2,
+)
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .imu import IMUHardware
 from .led_eyes import LedEyesHardware
