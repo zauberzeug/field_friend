@@ -117,8 +117,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         #     self.log.error(f'd1axis {self.name} is not in correct state')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.actual_position = words.pop(0)
-        self.velocity = words.pop(0)
+        self.position = int(words.pop(0))
+        self.velocity = int(words.pop(0))
         self.statusword = int(words.pop(0))
         self.is_referenced = int(words.pop(0)) == 1
         self.split_statusword()
