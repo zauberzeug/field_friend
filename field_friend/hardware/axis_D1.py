@@ -104,11 +104,10 @@ class D1Axis(Axis, rosys.hardware.ModuleHardware):
     async def try_reference(self):
         if not self.valid_status():
             await self.enable_motor()
-            await self.robot_brain.send(f'{self.name}_motor.homing()')
-            await self.robot_brain.send(f'{self.name}_motor.homing()')
         if self.is_referenced:
             self.log.error(f'd1axis {self.name} is already referenced')
         else:
+            await self.robot_brain.send(f'{self.name}_motor.homing()')
             await self.robot_brain.send(f'{self.name}_motor.homing()')
 
     async def speed_Mode(self, speed: int):
