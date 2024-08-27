@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from field_friend.system import System
 
 
+TabType = Literal["Plants", "Obstacles", "Outline", "Rows"]
+
+
 class ActiveObject(TypedDict):
     object_type: Literal["Obstacles", "Rows", "Outline"]
     object: Row | FieldObstacle
@@ -28,7 +31,7 @@ class field_planner:
         self.leaflet_map = leaflet
         self.active_field: Field | None = None
         self.active_object: ActiveObject | None = None
-        self.tab: Literal["Plants", "Obstacles", "Outline", "Rows"] = "Plants"
+        self.tab: TabType = "Plants"
 
         with ui.dialog() as self.clear_field_dialog, ui.card():
             ui.label('Are you sure you want to delete all fields?')
@@ -167,10 +170,10 @@ class field_planner:
                             for obstacle in self.active_field.obstacles:
                                 radio_el[obstacle.id] = obstacle.name
                             if (self.active_object is not None and self.active_object["object"] is not None and self.tab == "Obstacles"):
-                                obstacle_radio = ui.radio(radio_el, on_change=lambda event: self._set_active_object(
+                                ui.radio(radio_el, on_change=lambda event: self._set_active_object(
                                     event.value, self.tab), value=self.active_object["object"].id)
                             else:
-                                obstacle_radio = ui.radio(
+                                ui.radio(
                                     radio_el, on_change=lambda event: self._set_active_object(event.value, self.tab))
                         with ui.row().classes("items-center mt-3").style("width: 100%"):
                             ui.button(icon="add", on_click=lambda field=self.active_field: self.field_provider
@@ -181,10 +184,10 @@ class field_planner:
                             for row in self.active_field.rows:
                                 radio_el[row.id] = row.name
                             if (self.active_object is not None and self.active_object["object"] is not None and self.tab == "Rows"):
-                                row_radio = ui.radio(radio_el, on_change=lambda event:
-                                                     self._set_active_object(event.value, self.tab), value=self.active_object["object"].id)
+                                ui.radio(radio_el, on_change=lambda event:
+                                         self._set_active_object(event.value, self.tab), value=self.active_object["object"].id)
                             else:
-                                row_radio = ui.radio(
+                                ui.radio(
                                     radio_el, on_change=lambda event: self._set_active_object(event.value, self.tab))
                         with ui.row().classes("items-center mt-3").style("width: 100%"):
                             ui.button(icon="add", on_click=lambda field=self.active_field: self.field_provider.create_row(
@@ -254,7 +257,6 @@ class field_planner:
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
                         assert self.active_field is not None
                         for geo_point in self.active_object["object"].points:
-                            print(self.active_object["object"].points)
                             with ui.row().style("width: 100%;"):
                                 ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(point.tuple)) \
                                     .props("icon=place color=primary fab-mini flat").tooltip("center map on point").classes("ml-0")
@@ -280,7 +282,7 @@ class field_planner:
                 self.active_object = None
             else:
                 if self.active_object and self.active_object.get("object") is not None:
-                    if not (self.active_object.get("object") in self.active_field.obstacles and self.active_object("object") in self.active_field.rows):
+                    if not (self.active_object.get("object") in self.active_field.obstacles or self.active_object.get("object") in self.active_field.rows):
                         self.active_object = None
                 else:
                     self.active_object = None
@@ -296,16 +298,20 @@ class field_planner:
         self.show_field_settings.refresh()
         self.show_object_settings.refresh()
 
-    def _set_active_object(self, object_id: Optional[str] = None, object_type: Optional[Literal["Obstacles", "Rows", "Outline"]] = None) -> None:
+    def _set_active_object(self, object_id: Optional[str] = None, object_type: TabType | None = None) -> None:
         if (self.active_field is not None and object_id is not None and object_type is not None):
             if object_type == "Obstacles":
-                for obstacle in self.active_field.obstacles:
-                    if object_id == obstacle.id:
-                        self.active_object = {"object_type": object_type, "object": obstacle}
+                self.active_object = next(
+                    ({"object_type": object_type, "object": obj}
+                     for obj in self.active_field.obstacles if obj.id == object_id),
+                    None
+                )
             elif object_type == "Rows":
-                for row in self.active_field.rows:
-                    if object_id == row.id:
-                        self.active_object = {"object_type": object_type, "object": row}
+                self.active_object = next(
+                    ({"object_type": object_type, "object": obj}
+                     for obj in self.active_field.rows if obj.id == object_id),
+                    None
+                )
             else:
                 self.active_object = None
         else:
