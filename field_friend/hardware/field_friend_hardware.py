@@ -5,7 +5,7 @@ import rosys
 
 import config.config_selection as config_selector
 
-from .axis_D1 import D1Axis
+from .axis_d1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
@@ -101,9 +101,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             can_open_master = CanOpenMasterHardware(robot_brain, can=can, name='master')
         else:
             can_open_master = None
-        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | D1Axis | None
+        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None
         if config_hardware['y_axis']['version'] == 'd1_axis':
-            y_axis = D1Axis(robot_brain,
+            y_axis = AxisD1(robot_brain,
                             can=can,
                             can_address=config_hardware['y_axis']['can_address'],
                             name=config_hardware['y_axis']['name'],
@@ -179,7 +179,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown y_axis version: {config_hardware["y_axis"]["version"]}')
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | D1Axis | None
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | None
         if config_hardware['z_axis']['version'] == 'z_axis_stepper':
             z_axis = ZAxisStepperHardware(robot_brain,
                                           expander=expander,
@@ -201,7 +201,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
                                           )
         elif config_hardware['z_axis']['version'] == 'd1_axis':
-            z_axis = D1Axis(robot_brain,
+            z_axis = AxisD1(robot_brain,
                             can=can,
                             can_address=config_hardware['y_axis']['can_address'],
                             name=config_hardware['y_axis']['name'],

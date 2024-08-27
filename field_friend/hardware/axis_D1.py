@@ -6,7 +6,7 @@ from rosys.helpers import remove_indentation
 from .axis import Axis
 
 
-class D1Axis(Axis, rosys.hardware.ModuleHardware):
+class AxisD1(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  max_speed: int = 2000,
                  reference_speed: int = 40,
@@ -20,7 +20,7 @@ class D1Axis(Axis, rosys.hardware.ModuleHardware):
                  reversed_direction: bool = False,
                  ) -> None:
         """
-        Initialize the D1Axis object.
+        Initialize the AxisD1 object.
 
         Args:
             robot_brain (rosys.hardware.RobotBrain): The RobotBrain object.
@@ -85,7 +85,7 @@ class D1Axis(Axis, rosys.hardware.ModuleHardware):
         if self.is_referenced:
             await self.robot_brain.send(f'{self.name}_motor.ppMode({newposition});')
         if not self.is_referenced:
-            self.log.error(f'd1axis {self.name} is not refernced')
+            self.log.error(f'AxisD1 {self.name} is not refernced')
 
     def valid_status(self) -> bool:
         return self.ready_to_switch_on and self.switched_on and self.operation_enabled and self.quick_stop
@@ -99,13 +99,13 @@ class D1Axis(Axis, rosys.hardware.ModuleHardware):
     async def reset_error(self):
         if self.fault:
             await self.robot_brain.send(f'{self.name}_motor.reset()')
-        self.log.error(f'd1axis {self.name} is not in fault state')
+        self.log.error(f'AxisD1 {self.name} is not in fault state')
 
     async def try_reference(self):
         if not self.valid_status():
             await self.enable_motor()
         if self.is_referenced:
-            self.log.error(f'd1axis {self.name} is already referenced')
+            self.log.error(f'AxisD1 {self.name} is already referenced')
         else:
             await self.robot_brain.send(f'{self.name}_motor.homing()')
             await self.robot_brain.send(f'{self.name}_motor.homing()')
