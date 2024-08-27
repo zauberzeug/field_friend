@@ -37,10 +37,9 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         """
         self.name = name
         self.statusword: int = 0
-        # actual position of the motor
-        self.actual_position: int = 0
-        # actuela current velocity of the motor
+        self.position: int = 0
         self.velocity: int = 0
+
         # flags of the Statusword for more information refer to the CANopen standard and D1 manual
         self.ready_to_switch_on: bool = False
         self.switched_on: bool = False
