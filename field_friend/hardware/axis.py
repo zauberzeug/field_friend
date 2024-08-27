@@ -31,6 +31,8 @@ class Axis(rosys.hardware.Module, abc.ABC):
         self.idle: bool = False
         self.end_t: bool = False
         self.end_b: bool = False
+        self.end_l: bool = False
+        self.end_r: bool = False
 
         rosys.on_shutdown(self.stop)
 
