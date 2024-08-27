@@ -111,10 +111,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             await self.robot_brain.send(f'{self.name}_motor.homing()')
 
     async def speed_Mode(self, speed: int):
-
         await self.robot_brain.send(f'{self.name}_motor.speedMode({speed});')
-        # else:
-        #     self.log.error(f'd1axis {self.name} is not in correct state')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         self.position = int(words.pop(0))
