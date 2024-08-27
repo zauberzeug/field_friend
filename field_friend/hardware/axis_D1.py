@@ -81,9 +81,9 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
     async def stop(self):
         await self.speed_Mode(0)
 
-    async def move_to(self, newposition: float) -> None:
+    async def move_to(self, position: float, speed: int | None = None) -> None:
         if self.is_referenced:
-            await self.robot_brain.send(f'{self.name}_motor.ppMode({newposition});')
+            await self.robot_brain.send(f'{self.name}_motor.ppMode({position});')
         if not self.is_referenced:
             self.log.error(f'AxisD1 {self.name} is not refernced')
 
