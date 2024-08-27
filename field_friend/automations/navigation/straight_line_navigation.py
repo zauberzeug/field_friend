@@ -26,8 +26,7 @@ class StraightLineNavigation(Navigation):
     async def prepare(self) -> bool:
         await super().prepare()
         self.log.info(f'Activating {self.implement.name}...')
-        self.origin = self.odometer.prediction.point
-        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=self.length, y=0))
+        self.update_target()
         await self.implement.activate()
         return True
 
@@ -35,11 +34,9 @@ class StraightLineNavigation(Navigation):
         await super().finish()
         await self.implement.deactivate()
 
-    def get_origin(self) -> rosys.geometry.Point:
-        return self.origin
-
-    def get_target(self) -> rosys.geometry.Point:
-        return self.target
+    def update_target(self) -> None:
+        self.origin = self.odometer.prediction.point
+        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=self.length, y=0))
 
     async def _drive(self, distance: float) -> None:
         start_position = self.odometer.prediction.point

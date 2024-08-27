@@ -41,14 +41,10 @@ class FollowCropsNavigation(StraightLineNavigation):
         self.plant_locator.pause()
         await self.implement.deactivate()
 
-    def get_origin(self) -> rosys.geometry.Point:
-        return self.odometer.prediction.point
-
-    def get_target(self) -> rosys.geometry.Point:
+    def update_target(self) -> None:
+        self.origin = self.odometer.prediction.point
         distance = self.length - self.odometer.prediction.point.distance(self.start_position)
-        print(f'distance: {distance}')
-        target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
-        return target
+        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
 
     async def _drive(self, distance: float) -> None:
         row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point, max_distance=1.0)
@@ -67,8 +63,7 @@ class FollowCropsNavigation(StraightLineNavigation):
             target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
             await self._drive_towards_target(distance, target)
         else:
-            self.origin = self.get_origin()
-            self.target = self.get_target()
+            self.update_target()
             await super()._drive(distance)
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
