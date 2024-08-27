@@ -1,5 +1,3 @@
-from typing import Optional
-
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -8,32 +6,17 @@ from .axis import Axis
 
 class AxisD1(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 max_speed: int = 2000,
-                 reference_speed: int = 40,
                  name: str = 'axis_D1',
                  can: rosys.hardware.CanHardware,
                  can_address: int = 0x60,
-                 min_position: float = 1,
-                 max_position: float = 100,
-                 axis_offset: float = 0,
-                 steps_per_m: float = 1,  # [steps/turn] / ([gear] * [m/turn])
-                 reversed_direction: bool = False,
+                 **kwargs
                  ) -> None:
-        """
-        Initialize the AxisD1 object.
+        """Rosys module to control the Igus D1 motor controller.
 
-        Args:
-            robot_brain (rosys.hardware.RobotBrain): The RobotBrain object.
-            max_speed (int, optional): The maximum speed of the axis. Defaults to 2000.
-            reference_speed (int, optional): The reference speed of the axis. Defaults to 40.
-            name (str, optional): The name of the axis. Defaults to 'axis_D1'.
-            can (rosys.hardware.CanHardware): The CAN hardware object.
-            can_address (int, optional): The CAN address of the axis. Defaults to 0x60.
-            min_position (float, optional): The minimum position of the axis. Defaults to -0.068.
-            max_position (float, optional): The maximum position of the axis. Defaults to 0.068.
-            axis_offset (float, optional): The offset of the axis. Defaults to 0.075.
-            steps_per_m (float, optional): The steps per meter of the axis. Defaults to 1_481_481.48.
-            reversed_direction (bool, optional): Whether the direction of the axis is reversed. Defaults to False.
+        :param: robot_brain: The RobotBrain object.
+        :param name: The name of the axis (default: 'axis_D1').
+        :param can: The CAN hardware object.
+        :param can_address: The CAN address of the axis (default: 0x60).
         """
         self.name = name
         self.statusword: int = 0
@@ -66,16 +49,10 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             f'{name}_motor.status_flag',
         ]
         super().__init__(
-            max_speed=max_speed,
-            reference_speed=reference_speed,
-            min_position=min_position,
-            max_position=max_position,
-            axis_offset=axis_offset,
-            steps_per_m=steps_per_m,
-            reversed_direction=reversed_direction,
             robot_brain=robot_brain,
             lizard_code=lizard_code,
-            core_message_fields=core_message_fields)
+            core_message_fields=core_message_fields,
+            **kwargs)
 
     async def stop(self):
         await self.speed_Mode(0)
