@@ -76,7 +76,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await rosys.sleep(3)
         self.system.plant_locator.resume()
         if self.record_video:
-            self.system.timelapse_recorder.camera = self.system.usb_camera_provider.first_connected_camera
+            self.system.timelapse_recorder.camera = self.system.camera_provider.first_connected_camera
         await super().activate()
 
     async def deactivate(self):
