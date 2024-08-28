@@ -11,14 +11,13 @@ from field_friend.automations import Field
 from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
-
 ROBOT_GEO_START_POSITION = GeoPoint(lat=51.983173401171236, long=7.434163443756093)
 
 log = logging.getLogger('field_friend.testing')
 
 
 @pytest.fixture
-async def system(integration, request) -> AsyncGenerator[System, None]:
+async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     System.version = getattr(request, 'param', 'rb34')
     s = System()
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)

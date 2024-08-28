@@ -66,12 +66,22 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         await super().finish()
         self.automation_watcher.stop_field_watch()
 
+    def update_target(self) -> None:
+        # TODO: check when field navigation is reworked
+        if self.state == self.State.FOLLOWING_ROW:
+            self.origin = self.current_row.points[0].cartesian()
+            self.target = self.current_row.points[-1].cartesian()
+        elif self.state == self.State.RETURNING_TO_START:
+            self.origin = self.current_row.points[-1].cartesian()
+            self.target = self.current_row.points[0].cartesian()
+
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
         if self.state == self.State.APPROACHING_ROW_START:
             # TODO only drive to row if we are not on any rows and near the row start
             await self._drive_to_row(self.current_row)
             self.state = self.State.FOLLOWING_ROW
+            self.update_target()
             self.log.info(f'Following "{self.current_row.name}"...')
             self.plant_provider.clear()
         if self.state == self.State.FOLLOWING_ROW:
@@ -82,6 +92,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
             else:
                 await self.implement.deactivate()
                 self.state = self.State.RETURNING_TO_START
+                self.update_target()
                 self.log.info('Returning to start...')
         if self.state == self.State.RETURNING_TO_START:
             self.driver.parameters.can_drive_backwards = True
@@ -116,13 +127,14 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         self.log.info(f'Arrived at row {row.name} starting at {target}')
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'field_id': self.field.id if self.field else None,
             'row_index': self.row_index,
             'state': self.state.name,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self.row_index = data.get('row_index', 0)
@@ -133,6 +145,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         self.row_index = 0
 
     def settings_ui(self) -> None:
+        super().settings_ui()
         field_selection = ui.select(
             {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
             on_change=lambda args: self._set_field(args.value),
@@ -140,7 +153,6 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
             .classes('w-32') \
             .tooltip('Select the field to work on')
         field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
-        super().settings_ui()
 
     def _set_field(self, field_id: str) -> None:
         field = self.field_provider.get_field(field_id)

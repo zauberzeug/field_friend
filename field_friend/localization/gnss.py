@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import rosys
@@ -26,7 +26,10 @@ class GNSSRecord:
     speed_kmh: float = 0.0
 
 
-class Gnss(ABC):
+class Gnss(rosys.persistence.PersistentModule, ABC):
+    NEEDED_POSES: int = 10
+    MIN_SECONDS_BETWEEN_UPDATES: float = 10.0
+    ENSURE_GNSS: bool = False
 
     def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
         super().__init__()
@@ -51,8 +54,9 @@ class Gnss(ABC):
         self.is_paused = False
         self.observed_poses: list[rosys.geometry.Pose] = []
         self.last_pose_update = rosys.time()
-        self.min_seconds_between_updates = 10.0
-        self.ensure_gnss = False
+        self.needed_poses: int = self.NEEDED_POSES
+        self.min_seconds_between_updates: float = self.MIN_SECONDS_BETWEEN_UPDATES
+        self.ensure_gnss: bool = self.ENSURE_GNSS
 
         self.needs_backup = False
         rosys.on_repeat(self.check_gnss, 0.01)
@@ -63,8 +67,6 @@ class Gnss(ABC):
         pass
 
     async def check_gnss(self) -> None:
-        if self.is_paused:
-            return
         previous = deepcopy(self.current)
         try:
             self.current = await self._create_new_record()
@@ -85,7 +87,7 @@ class Gnss(ABC):
         try:
             # TODO also do antenna_offset correction for this event
             self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
-            if "R" in self.current.mode or self.current.mode == "SSSS":
+            if not self.is_paused and ("R" in self.current.mode or self.current.mode == "SSSS"):
                 self._on_rtk_fix()
         except Exception:
             self.log.exception('gnss record could not be applied')
@@ -118,7 +120,7 @@ class Gnss(ABC):
     async def update_robot_pose(self) -> None:
         assert not self.is_paused
         if self.ensure_gnss:
-            while len(self.observed_poses) < 10:
+            while len(self.observed_poses) < self.needed_poses:
                 if rosys.time() - self.last_pose_update < self.min_seconds_between_updates:
                     return
                 await rosys.sleep(0.1)
@@ -131,3 +133,16 @@ class Gnss(ABC):
         self.ROBOT_POSE_LOCATED.emit(pose)
         self.last_pose_update = rosys.time()
         self.observed_poses.clear()
+
+    def backup(self) -> dict:
+        return {
+            'needed_poses': self.needed_poses,
+            'min_seconds_between_updates': self.min_seconds_between_updates,
+            'ensure_gnss': self.ensure_gnss
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
+        self.needed_poses = data.get('needed_poses', self.needed_poses)
+        self.min_seconds_between_updates = data.get('min_seconds_between_updates', self.min_seconds_between_updates)
+        self.ensure_gnss = data.get('ensure_gnss', self.ensure_gnss)

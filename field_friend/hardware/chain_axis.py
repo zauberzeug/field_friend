@@ -153,44 +153,44 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             bool {name}_resetting = false
 
             when {name}_ref_r_is_referencing and {name}_ref_t_stop_enabled and {name}_ref_t.level == 1 then
-                {name}.stop();
+                {name}.stop()
             end
 
             when {name}_ref_r_is_referencing and !{name}_ref_t_stop_enabled and {name}_ref_t.level == 0 then
-                {name}.stop();
+                {name}.stop()
             end
 
             when {name}_ref_l_is_referencing and {name}_ref_t_stop_enabled and {name}_ref_t.level == 1 then
-                {name}.stop();
+                {name}.stop()
             end
 
             when {name}_ref_l_is_referencing and !{name}_ref_t_stop_enabled and {name}_ref_t.level == 0 then
-                {name}.stop();
+                {name}.stop()
             end
 
             when {name}_ref_r_return and {name}_ref_t.level == 1 then
-                {name}_ref_t_stop_enabled = true;
+                {name}_ref_t_stop_enabled = true
             end
 
             when {name}_ref_r_return and {name}_ref_t_stop_enabled and {name}_ref_t.level == 0 then
-                {name}.stop();
-                {name}_ref_r_return = false;
-                {name}_ref_t_stop_enabled = false;
+                {name}.stop()
+                {name}_ref_r_return = false
+                {name}_ref_t_stop_enabled = false
             end
 
             when {name}_ref_l_return and {name}_ref_t.level == 1 then
-                {name}_ref_t_stop_enabled = true;
+                {name}_ref_t_stop_enabled = true
             end
 
             when {name}_ref_l_return and {name}_ref_t_stop_enabled and {name}_ref_t.level == 0 then
-                {name}.stop();
-                {name}_ref_l_return = false;
-                {name}_ref_t_stop_enabled = false;
+                {name}.stop()
+                {name}_ref_l_return = false
+                {name}_ref_t_stop_enabled = false
             end
 
             when {name}_resetting and {name}_ref_t.level == 0 then
-                {name}.stop();
-                {name}_resetting = false;
+                {name}.stop()
+                {name}_resetting = false
             end
         ''')
         core_message_fields = [
