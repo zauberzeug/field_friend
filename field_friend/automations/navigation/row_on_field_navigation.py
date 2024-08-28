@@ -66,12 +66,22 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
         await super().finish()
         self.automation_watcher.stop_field_watch()
 
+    def update_target(self) -> None:
+        # TODO: check when field navigation is reworked
+        if self.state == self.State.FOLLOWING_ROW:
+            self.origin = self.current_row.points[0].cartesian()
+            self.target = self.current_row.points[-1].cartesian()
+        elif self.state == self.State.RETURNING_TO_START:
+            self.origin = self.current_row.points[-1].cartesian()
+            self.target = self.current_row.points[0].cartesian()
+
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
         if self.state == self.State.APPROACHING_ROW_START:
             # TODO only drive to row if we are not on any rows and near the row start
             await self._drive_to_row(self.current_row)
             self.state = self.State.FOLLOWING_ROW
+            self.update_target()
             self.log.info(f'Following "{self.current_row.name}"...')
             self.plant_provider.clear()
         if self.state == self.State.FOLLOWING_ROW:
@@ -82,6 +92,7 @@ class RowsOnFieldNavigation(FollowCropsNavigation):
             else:
                 await self.implement.deactivate()
                 self.state = self.State.RETURNING_TO_START
+                self.update_target()
                 self.log.info('Returning to start...')
         if self.state == self.State.RETURNING_TO_START:
             self.driver.parameters.can_drive_backwards = True

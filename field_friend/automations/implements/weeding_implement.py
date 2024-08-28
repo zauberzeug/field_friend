@@ -97,7 +97,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return False
-        camera = next((camera for camera in self.system.usb_camera_provider.cameras.values() if camera.is_connected), None)
+        camera = next((camera for camera in self.system.camera_provider.cameras.values() if camera.is_connected), None)
         if not camera:
             rosys.notify('no camera connected')
             return False

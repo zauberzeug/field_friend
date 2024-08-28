@@ -6,16 +6,17 @@ import rosys
 import config.config_selection as config_selector
 
 from .calibratable_usb_camera import CalibratableUsbCamera
-from .simulated_cam import SimulatedCam
 
 
 class CameraConfigurator:
     def __init__(self,
                  camera_provider: rosys.vision.CameraProvider,
+                 odometer: rosys.driving.Odometer,
                  robot_id: str | None = None,
                  ):
         self.log = logging.getLogger('field_friend.camera_configurator')
         self.camera_provider = camera_provider
+        self.odometer = odometer
         if not robot_id:
             self.config = config_selector.import_config(module='camera')
         else:
@@ -51,6 +52,8 @@ class CameraConfigurator:
             if not camera.streaming:
                 camera.streaming = True
                 parameters_changed = True
+            if not camera.calibration.extrinsics._frame_id:
+                camera.calibration.extrinsics.in_frame(self.odometer.prediction_frame)
             if 'crop' in self.config:
                 # Fetch new cropping parameters
                 left = self.config['crop']['left']
@@ -86,7 +89,7 @@ class CameraConfigurator:
             else:
                 camera.rotation = 0
 
-        elif isinstance(camera, SimulatedCam):
+        elif isinstance(camera, rosys.vision.SimulatedCalibratableCamera):
             if camera.resolution.width != self.config['parameters']['width'] or camera.resolution.height != self.config['parameters']['height']:
                 camera.resolution = rosys.vision.ImageSize(
                     width=self.config['parameters']['width'],

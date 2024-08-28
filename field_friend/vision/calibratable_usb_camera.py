@@ -17,6 +17,17 @@ class CalibratableUsbCamera(rosys.vision.CalibratableCamera, rosys.vision.UsbCam
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
+        if 'translation' in (data.get('calibration') or {}).get('extrinsics', {}):
+            data['calibration']['extrinsics']['x'] = data['calibration']['extrinsics']['translation'][0]
+            data['calibration']['extrinsics']['y'] = data['calibration']['extrinsics']['translation'][1]
+            data['calibration']['extrinsics']['z'] = data['calibration']['extrinsics']['translation'][2]
+            data['calibration']['extrinsics'].pop('translation')
+        if 'rotation' in (data.get('calibration') or {}).get('intrinsics', {}):
+            data['calibration']['extrinsics']['rotation']['R'] = (
+                rosys.geometry.Rotation(R=data['calibration']['extrinsics']['rotation']['R']) *
+                rosys.geometry.Rotation(R=data['calibration']['intrinsics']['rotation']['R'])
+            ).R
+        print(f'data: {data}')
         return cls(**(data | {
             'calibration': persistence.from_dict(rosys.vision.Calibration, data['calibration']) if data.get('calibration') else None,
         }))

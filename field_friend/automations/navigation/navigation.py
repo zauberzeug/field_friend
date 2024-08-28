@@ -2,9 +2,9 @@ import abc
 import logging
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import rosys
 from nicegui import ui
-from rosys.helpers import angle
 
 from ..implements import Implement
 
@@ -45,6 +45,7 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
+            await self.gnss.update_robot_pose()
             self.start_position = self.odometer.prediction.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
@@ -89,20 +90,28 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive(self, distance: float) -> None:
         """Drives the vehicle a short distance forward"""
 
-    async def _drive_to_yaw(self, distance: float, yaw: float, timeout: float = 2.0) -> None:
-        deadline = rosys.time() + timeout
+    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose) -> None:
+        """Drives the vehicle a short distance forward while steering onto the line defined by the target pose.
+        NOTE: the target pose should be the foot point of the current position on the line.
+        """
         start_position = self.odometer.prediction.point
-        yaw = angle(self.odometer.prediction.yaw, yaw)  # take current yaw into account and only steer the difference
+        hook_offset = rosys.geometry.Point(x=self.driver.parameters.hook_offset, y=0)
+        carrot_offset = rosys.geometry.Point(x=self.driver.parameters.carrot_offset, y=0)
+        target_point = target.transform(carrot_offset)
+        hook = self.odometer.prediction.transform(hook_offset)
+        turn_angle = rosys.helpers.angle(self.odometer.prediction.yaw, hook.direction(target_point))
+        curvature = np.tan(turn_angle) / hook_offset.x
+        if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
+            curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.wheels.drive(*self.driver._throttle(1, yaw))  # pylint: disable=protected-access
-        try:
-            while self.odometer.prediction.point.distance(start_position) < distance:
-                if rosys.time() >= deadline:
-                    raise TimeoutError(
-                        f'Driving Timeout at startpoint: {start_position} with yaw: {yaw} and target point: {self.odometer.prediction.point}')
-                await rosys.sleep(0.01)
-        finally:
-            await self.driver.wheels.stop()
+            await self.driver.wheels.drive(*self.driver._throttle(1.0, curvature))  # pylint: disable=protected-access
+        deadline = rosys.time() + 3.0
+        while self.odometer.prediction.point.distance(start_position) < distance:
+            if rosys.time() >= deadline:
+                await self.driver.wheels.stop()
+                raise TimeoutError('Driving Timeout')
+            await rosys.sleep(0.01)
+        await self.driver.wheels.stop()
 
     @abc.abstractmethod
     def _should_finish(self) -> bool:
