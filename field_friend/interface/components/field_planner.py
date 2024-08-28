@@ -5,7 +5,7 @@ from nicegui import events, ui
 
 from ...automations import Field, FieldObstacle, Row
 from .field_creator import FieldCreator
-from .geodata_picker import geodata_picker
+from .geodata_importer import geodata_importer
 from .leaflet_map import leaflet_map
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ class field_planner:
         with ui.row().classes("w-full").style("height: 100%; max-height:100%; width: 100%;"):
             with ui.card().style("width: 40%; max-width: 40%; max-height: 100%; height: 100%;"):
                 with ui.row():
-                    ui.button("Upload Field", on_click=lambda field_provider=self.field_provider: geodata_picker(field_provider)) \
+                    ui.button("Upload Field", on_click=lambda field_provider=self.field_provider: geodata_importer(field_provider)) \
                         .tooltip("Upload a file with field boundaries. Supported file formats: KML, XML and Shape").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Add field", on_click=self.field_provider.create_field).tooltip("Add a new field") \
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
