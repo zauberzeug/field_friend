@@ -46,7 +46,7 @@ class CoverageNavigation(Navigation):
         self.continue_mowing: bool = False
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'padding': self.padding,
             'lane_distance': self.lane_distance,
             'paths': [[rosys.persistence.to_dict(segment) for segment in path] for path in self.paths],
@@ -55,6 +55,7 @@ class CoverageNavigation(Navigation):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.padding = data.get('padding', self.padding)
         self.lane_distance = data.get('lane_distance', self.lane_distance)
         paths_data = data.get('paths', [])

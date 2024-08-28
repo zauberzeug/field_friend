@@ -5,6 +5,7 @@ import rosys
 
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
+from .external_mower import Mower, MowerHardware, MowerSimulation
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
 from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
@@ -27,6 +28,7 @@ class Safety(rosys.hardware.Module, abc.ABC):
                  y_axis: Union[YAxis, ChainAxis, None] = None,
                  z_axis: Union[ZAxis, Tornado, None] = None,
                  flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, FlashlightPWMV2, None] = None,
+                 mower: Union[Mower, None] = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.wheels = wheels
@@ -34,6 +36,7 @@ class Safety(rosys.hardware.Module, abc.ABC):
         self.y_axis = y_axis
         self.z_axis = z_axis
         self.flashlight = flashlight
+        self.mower = mower
 
 
 class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
@@ -48,6 +51,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  z_axis: Union[ZAxisCanOpenHardware, ZAxisStepperHardware,
                                TornadoHardware, ZAxisCanOpenHardware, None] = None,
                  flashlight: Union[FlashlightHardware, FlashlightHardwareV2, FlashlightPWMHardware, FlashlightPWMHardwareV2, None],
+                 mower: Union[MowerHardware, None] = None,
                  ) -> None:
 
         # implement lizard stop method for available hardware
@@ -64,8 +68,9 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f' {flashlight.name}.on();'
         elif isinstance(flashlight, FlashlightHardwareV2):
             lizard_code += f' {flashlight.name}_front.off(); {flashlight.name}_back.off();'
+        if mower is not None:
+            lizard_code += f' m0.off();'
         lizard_code += 'end\n'
-
         # implement stop call for estops and bumpers
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
@@ -102,8 +107,9 @@ class SafetySimulation(Safety, rosys.hardware.ModuleSimulation):
                  estop: rosys.hardware.EStop,
                  y_axis: Union[YAxisSimulation, ChainAxisSimulation, None] = None,
                  z_axis: Union[ZAxisSimulation, TornadoSimulation, None] = None,
-                 flashlight: Union[FlashlightSimulation, FlashlightSimulationV2, FlashlightPWMSimulation, FlashlightPWMSimulationV2, None]) -> None:
-        super().__init__(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
+                 flashlight: Union[FlashlightSimulation, FlashlightSimulationV2, FlashlightPWMSimulation, FlashlightPWMSimulationV2, None],
+                 mower: Union[MowerSimulation, None] = None) -> None:
+        super().__init__(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)
 
     async def step(self, dt: float) -> None:
         if self.estop.active:
@@ -112,5 +118,7 @@ class SafetySimulation(Safety, rosys.hardware.ModuleSimulation):
                 await self.y_axis.stop()
             if self.z_axis is not None:
                 await self.z_axis.stop()
+            if self.mower is not None:
+                await self.mower.turn_off()
             if self.flashlight is not None:
                 await self.flashlight.turn_off()

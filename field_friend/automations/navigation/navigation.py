@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
-import rosys.helpers
+from nicegui import ui
 
 from ..implements import Implement
 
@@ -17,8 +17,9 @@ class WorkflowException(Exception):
 
 
 class Navigation(rosys.persistence.PersistentModule):
-    MAX_STRETCH_DISTANCE = 0.05
-    DEFAULT_DRIVE_DISTANCE = 0.02
+    MAX_STRETCH_DISTANCE: float = 0.05
+    DEFAULT_DRIVE_DISTANCE: float = 0.02
+    LINEAR_SPEED_LIMIT: float = 0.13
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__()
@@ -33,7 +34,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.detector = system.detector
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
-        self.linear_speed_limit = 0.125
+        self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
 
     async def start(self) -> None:
@@ -48,6 +49,7 @@ class Navigation(rosys.persistence.PersistentModule):
             self.start_position = self.odometer.prediction.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
+            self.log.info('Navigation started')
             while not self._should_finish():
                 await self.gnss.update_robot_pose()
                 self.gnss.is_paused = True
@@ -119,13 +121,19 @@ class Navigation(rosys.persistence.PersistentModule):
         """Resets the state to initial configuration"""
 
     def backup(self) -> dict:
-        return {}
+        return {
+            'linear_speed_limit': self.linear_speed_limit,
+        }
 
     def restore(self, data: dict[str, Any]) -> None:
-        pass
+        self.linear_speed_limit = data.get('linear_speed_limit', self.linear_speed_limit)
 
     def create_simulation(self) -> None:
         pass
 
     def settings_ui(self) -> None:
-        pass
+        ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f', on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'linear_speed_limit') \
+            .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')

@@ -205,8 +205,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
-        if self.gnss.device != 'simulation':
-            self.ensure_field_reference(field)
         if point is not None:
             index = row.points.index(point)
             row.points[index] = new_point
