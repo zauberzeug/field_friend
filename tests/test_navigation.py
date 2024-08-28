@@ -206,16 +206,9 @@ async def test_follow_crops_curve(system: System, detector: rosys.vision.Detecto
 
 
 async def test_follow_crops_outlier(system: System, detector: rosys.vision.DetectorSimulation):
-    for i in range(10):
+    for i in range(21):
         x = i/10
-        y = 0
-        p = rosys.geometry.Point3d(x=x, y=y, z=0)
-        detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
-    outlier = rosys.geometry.Point3d(x=1.1, y=0.2, z=0)
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=outlier))
-    for i in range(10):
-        x = i/10 + 1.1
-        y = 0
+        y = 0.2 if i == 5 else 0
         p = rosys.geometry.Point3d(x=x, y=y, z=0)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.current_navigation = system.follow_crops_navigation

@@ -4,7 +4,7 @@ from typing import Self, Sequence
 
 import cv2
 import numpy as np
-from rosys.geometry import Point, Point3d
+from rosys.geometry import Frame3d, Point, Point3d
 from rosys.vision import Calibration, ImageSize
 
 DOT_DISTANCE = 0.055
@@ -114,24 +114,24 @@ class Network:
                 if self._try_step((i - di, j - dj, k - dk), (i, j, k), (i + di, j + dj, k + dk), straight=True):
                     return True
             # for calibration pattern version 1.0
-            # if j == -3 and self._try_step((i, j + 1, k), (i, j, k), (i + 0.5, j - 0.5, k + 0.5), straight=False):
-            #     return True
-            # if j == -3.5 and self._try_step((i - 0.5, j + 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
-            #     return True
-            # if j == 3 and self._try_step((i, j - 1, k), (i, j, k), (i + 0.5, j + 0.5, k + 0.5), straight=False):
-            #     return True
-            # if j == 3.5 and self._try_step((i - 0.5, j - 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
-            #     return True
+            if j == -3 and self._try_step((i, j + 1, k), (i, j, k), (i + 0.5, j - 0.5, k + 0.5), straight=False):
+                return True
+            if j == -3.5 and self._try_step((i - 0.5, j + 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
+                return True
+            if j == 3 and self._try_step((i, j - 1, k), (i, j, k), (i + 0.5, j + 0.5, k + 0.5), straight=False):
+                return True
+            if j == 3.5 and self._try_step((i - 0.5, j - 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
+                return True
 
             # for calibration pattern version 2.0
-            if j == -3 and self._try_step((i, j + 1, k), (i, j, k), (i + 0.5, j - 0.4, k + 0.6), straight=False):
-                return True
-            if j == -3.4 and self._try_step((i - 0.5, j + 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
-                return True
-            if j == 3 and self._try_step((i, j - 1, k), (i, j, k), (i + 0.5, j + 0.4, k + 0.6), straight=False):
-                return True
-            if j == 3.4 and self._try_step((i - 0.5, j - 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
-                return True
+            # if j == -3 and self._try_step((i, j + 1, k), (i, j, k), (i + 0.5, j - 0.4, k + 0.6), straight=False):
+            #     return True
+            # if j == -3.4 and self._try_step((i - 0.5, j + 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
+            #     return True
+            # if j == 3 and self._try_step((i, j - 1, k), (i, j, k), (i + 0.5, j + 0.4, k + 0.6), straight=False):
+            #     return True
+            # if j == 3.4 and self._try_step((i - 0.5, j - 0.5, k - 0.5), (i, j, k), (i, j, k + 1), straight=True):
+            #     return True
         return False
 
     def _try_step(self,
@@ -167,9 +167,9 @@ class Network:
     def shift(self, *, di: float = 0, dj: float = 0, dk: float = 0) -> None:
         self.dots = {(i + di, j + dj, k + dk): dot for (i, j, k), dot in self.dots.items()}
 
-    def calibrate(self, f0: float) -> Calibration:
+    def calibrate(self, f0: float, prediction_frame: Frame3d) -> Calibration:
         world_points = [Point3d(x=i * DOT_DISTANCE,
                                 y=j * DOT_DISTANCE,
                                 z=k * DOT_DISTANCE) for (i, j, k), dot in self.dots.items() if dot.is_refined]
         image_points = [Point(x=dot.x, y=dot.y) for dot in self.dots.values() if dot.is_refined]
-        return Calibration.from_points(world_points, image_points, self.image_size, f0)
+        return Calibration.from_points(world_points, image_points, image_size=self.image_size, f0=f0, frame=prediction_frame)

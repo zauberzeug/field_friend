@@ -6,18 +6,19 @@ import logging
 import numpy as np
 from nicegui import events, ui
 from PIL import Image
+from rosys.driving import Odometer
 from rosys.geometry import Point3d
-from rosys.vision import Calibration, Camera, CameraProvider
+from rosys.vision import Calibration, Camera, CameraProvider, SimulatedCalibratableCamera
 
-from ...vision import DOT_DISTANCE, Dot, Network, SimulatedCam
+from ...vision import DOT_DISTANCE, Dot, Network
 
 
 class calibration_dialog(ui.dialog):
 
-    def __init__(self, camera_provider: CameraProvider) -> None:
+    def __init__(self, camera_provider: CameraProvider, odometer: Odometer) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.calibration')
-
+        self.odometer = odometer
         self.camera_provider = camera_provider
         self.network: Network | None = None
         self.calibration: Calibration | None = None
@@ -56,7 +57,7 @@ class calibration_dialog(ui.dialog):
             with ui.row().classes('p-4 w-full items-center'):
                 self.focal_length_input = ui.number('Focal length', value=1830, step=10).classes('w-24')
                 ui.button('Calibrate', icon='straighten', on_click=lambda: self.set_calibration(
-                    self.network.calibrate(self.focal_length_input.value))).props('outline')
+                    self.network.calibrate(self.focal_length_input.value, self.odometer.prediction_frame))).props('outline')
                 ui.button('Help', icon='sym_o_help', on_click=help_dialog.open).props('outline')
                 ui.space()
                 ui.button('Cancel', on_click=self.close).props('color=warning outline')
@@ -65,7 +66,7 @@ class calibration_dialog(ui.dialog):
     async def edit(self, camera: Camera) -> bool:
         self.log.info(f'editing camera calibration for: {camera.id}')
         self.camera = camera
-        if not isinstance(camera, SimulatedCam):
+        if not isinstance(camera, SimulatedCalibratableCamera):
             image = camera.latest_captured_image
             if image is None:
                 self.log.warning('No image available')
@@ -132,8 +133,11 @@ class calibration_dialog(ui.dialog):
                 continue
 
             world_point = Point3d(x=i * DOT_DISTANCE, y=j * DOT_DISTANCE, z=k * DOT_DISTANCE)
+            self.log.info(
+                f'world point: {world_point} and image point: {self.calibration.project_to_image(world_point)}')
             image_point = self.calibration.project_to_image(world_point)
-            content += f'<circle cx="{image_point.x}" cy="{image_point.y}" r="5" fill="red" />'
+            if image_point is not None:
+                content += f'<circle cx="{image_point.x}" cy="{image_point.y}" r="5" fill="red" />'
 
         self.calibration_image.content = content
 

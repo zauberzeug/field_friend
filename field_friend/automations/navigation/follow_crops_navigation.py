@@ -81,7 +81,10 @@ class FollowCropsNavigation(StraightLineNavigation):
     def create_simulation(self) -> None:
         for i in range(100):
             x = i/10.0
-            p = rosys.geometry.Point3d(x=x, y=(x/4) ** 3, z=0)
+            y = (x/4) ** 3
+            if i % 10 == 0:  # create some outliers
+                y += 0.2
+            p = rosys.geometry.Point3d(x=x, y=y, z=0)
             p = self.odometer.prediction.transform3d(p)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
 
