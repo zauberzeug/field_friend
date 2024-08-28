@@ -41,7 +41,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         y_axis: AxisSimulation | ChainAxisSimulation | None
         if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()
-        elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen', 'd1_axis']:
+        elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen', 'axis_d1']:
             y_axis = AxisSimulation(
                 min_position=config_hardware['y_axis']['min_position'],
                 max_position=config_hardware['y_axis']['max_position'],
@@ -53,7 +53,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             raise NotImplementedError(f'Unknown Y-Axis version: {config_hardware["y_axis"]["version"]}')
 
         z_axis: AxisSimulation | TornadoSimulation | None
-        if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen', 'd1_axis']:
+        if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen', 'axis_d1']:
             z_axis = AxisSimulation(
                 min_position=config_hardware['z_axis']['min_position'],
                 max_position=config_hardware['z_axis']['max_position'],

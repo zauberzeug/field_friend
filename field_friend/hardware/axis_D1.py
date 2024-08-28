@@ -9,6 +9,12 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
                  name: str = 'axis_D1',
                  can: rosys.hardware.CanHardware,
                  can_address: int = 0x60,
+                 homing_acceleration: int = 100,
+                 homing_velocity: int = 20,
+                 profile_velocity: int = 20,
+                 profile_acceleration: int = 200,
+                 profile_deceleration: int = 400,
+
                  **kwargs
                  ) -> None:
         """Rosys module to control the Igus D1 motor controller.
@@ -41,6 +47,14 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
 
         lizard_code = remove_indentation(f'''
             {self.name}_motor = D1Motor({can.name}, {can_address})
+            {self.name}_motor.homing_acceleration = {homing_acceleration}
+            {self.name}_motor.switch_search_speed = {homing_velocity}
+            {self.name}_motor.zero_search_speed = {homing_velocity}
+            {self.name}_motor.homing_deceleration = {homing_deceleration}
+            {self.name}_motor.profile_acceleration = {profile_acceleration} 
+            {self.name}_motor.profile_deceleration = {profile_deceleration}
+            {self.name}_motor.profile_velocity = {profile_velocity}
+
         ''')
         core_message_fields = [
             f'{name}_motor.position',
