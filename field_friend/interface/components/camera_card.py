@@ -10,8 +10,7 @@ from rosys.geometry import Point
 
 from field_friend.automations.implements.weeding_implement import WeedingImplement
 
-from ...automations import PlantLocator, Puncher
-from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
+from ...hardware import FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
 from .calibration_dialog import calibration_dialog
 
 if TYPE_CHECKING:
