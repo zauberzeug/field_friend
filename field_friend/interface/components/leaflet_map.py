@@ -64,8 +64,8 @@ class leaflet_map:
 
         def handle_draw(e: events.GenericEventArguments):
             if e.args['layerType'] == 'marker':
-                latlon = (e.args['layer']['_latlng']['lat'],
-                          e.args['layer']['_latlng']['lng'])
+                latlon: list[float] = [e.args['layer']['_latlng']['lat'],
+                                       e.args['layer']['_latlng']['lng']]
                 self.drawn_marker = self.m.marker(latlng=latlon)
                 if system.is_real:
                     with ui.dialog() as real_marker_dialog, ui.card():
@@ -80,6 +80,8 @@ class leaflet_map:
                         ui.label('You are currently working in a simulation. What does the placed point represent?')
                         ui.button('as point for the current object',
                                   on_click=lambda: self.add_point_active_object(latlon, simulated_marker_dialog))
+                        ui.button('update roboter position', on_click=lambda: self.update_robot_position(
+                            GeoPoint.from_list(latlon), simulated_marker_dialog))
                         ui.button('Close', on_click=lambda: self.abort_point_drawing(simulated_marker_dialog))
                     simulated_marker_dialog.on('hide', self.on_dialog_close)
                     simulated_marker_dialog.open()
@@ -157,8 +159,11 @@ class leaflet_map:
         self._active_field = field_id
         self.update_layers()
 
-    # FIXME diese funktion muss wieder gerade gebogen werden und außerdem muss der button wieder in das Menü eingefügt werden
-    def update_robot_position(self, position: GeoPoint) -> None:
+    def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
+        if dialog:
+            self.on_dialog_close()
+            dialog.close()
+            self.gnss.relocate(position)
         self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
@@ -214,7 +219,6 @@ class leaflet_map:
             self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def on_dialog_close(self) -> None:
-        print(self.drawn_marker)
         if self.drawn_marker is not None:
             self.m.remove_layer(self.drawn_marker)
         self.drawn_marker = None
