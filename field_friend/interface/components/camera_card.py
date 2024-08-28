@@ -126,7 +126,8 @@ class camera_card:
         if image and image.detections:
             svg += self.to_svg(image.detections)
         svg += self.build_svg_for_plant_provider()
-        svg += self.build_svg_for_implement()
+        # TODO: fix in later PR
+        # svg += self.build_svg_for_implement()
         self.image_view.set_content(svg)
 
     def on_mouse_move(self, e: MouseEventArguments):
