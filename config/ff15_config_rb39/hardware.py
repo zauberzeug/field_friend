@@ -33,7 +33,14 @@ configuration = {
         'version': 'axis_d1',
         'name': 'zaxis',
         'can_address': 0x70,
-
+        'homing_acceleration': 2000,
+        'homing_velocity': 40,
+        'profile_acceleration': 4000,
+        'profile_velocity': 400,
+        'profile_deceleration': 5000,
+        'min_position': 0,
+        'max_position': 23000,
+        'axis_offset': 23000,
     },
     'estop': {
         'name': 'estop',
