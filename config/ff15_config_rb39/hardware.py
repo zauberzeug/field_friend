@@ -17,7 +17,7 @@ configuration = {
     #     'eyes_pin': 12,
     # },
     'y_axis': {
-        'version': 'd1_axis',
+        'version': 'axis_d1',
         'name': 'yaxis',
         'can_address': 0x60,
         'homing_acceleration': 2000,
@@ -28,7 +28,7 @@ configuration = {
         'profile_Deceleration': 5000,
     },
     'z_axis': {
-        'version': 'd1_axis',
+        'version': 'axis_d1',
         'name': 'zaxis',
         'can_address': 0x70,
 
