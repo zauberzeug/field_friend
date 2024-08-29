@@ -1,7 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Literal, Optional, TypedDict
 
-from nicegui import events, ui
+from nicegui import app, events, ui
 
 from ...automations import Field, FieldObstacle, Row
 from .field_creator import FieldCreator
@@ -29,9 +29,10 @@ class field_planner:
         self.gnss = system.gnss
         self.cultivatable_crops = system.crop_category_names
         self.leaflet_map = leaflet
-        self.active_field: Field | None = None
-        self.active_object: ActiveObject | None = None
         self.tab: TabType = "Plants"
+        self.active_object: ActiveObject | None = None
+        self.active_field: Field | None = None
+        self.restore_actives()
 
         with ui.dialog() as self.clear_field_dialog, ui.card():
             ui.label('Are you sure you want to delete all fields?')
@@ -284,6 +285,8 @@ class field_planner:
                 if self.active_object and self.active_object.get("object") is not None:
                     if not (self.active_object.get("object") in self.active_field.obstacles or self.active_object.get("object") in self.active_field.rows):
                         self.active_object = None
+                    else:
+                        self.tab = self.active_object["object_type"]
                 else:
                     self.active_object = None
         else:
@@ -295,6 +298,10 @@ class field_planner:
 
     def _set_active_field(self, field_id: str) -> None:
         self.active_field = self.field_provider.get_field(field_id)
+        if self.active_field is not None:
+            app.storage.user['active_field'] = self.active_field.id
+        else:
+            app.storage.user['active_field'] = None
         self.show_field_settings.refresh()
         self.show_object_settings.refresh()
 
@@ -306,16 +313,22 @@ class field_planner:
                      for obj in self.active_field.obstacles if obj.id == object_id),
                     None
                 )
+                app.storage.user['active_object'] = {
+                    "object_type": "Obstacles", "object": self.active_object["object"].id}
             elif object_type == "Rows":
                 self.active_object = next(
                     ({"object_type": object_type, "object": obj}
                      for obj in self.active_field.rows if obj.id == object_id),
                     None
                 )
+                app.storage.user['active_object'] = {
+                    "object_type": "Rows", "object": self.active_object["object"].id}
             else:
                 self.active_object = None
+                app.storage.user['active_object'] = None
         else:
             self.active_object = None
+            app.storage.user['active_object'] = None
         self.show_object_settings.refresh()
 
     def delete_field(self, field: Field) -> None:
@@ -333,3 +346,17 @@ class field_planner:
     def delete_row(self, field: Field, row: Row) -> None:
         self.delete_row_dialog.close()
         self.field_provider.remove_row(field, row)
+
+    def restore_actives(self) -> None:
+        stored_field = app.storage.user.get('active_field', None)
+        if stored_field is not None:
+            self.active_field = self.field_provider.get_field(stored_field)
+        stored_object = app.storage.user.get('active_object', None)
+        if self.active_field is not None and stored_object is not None:
+            if stored_object["object_type"] == "Obstacles":
+                self.active_object = next(({"object_type": stored_object["object_type"], "object": obj}
+                                           for obj in self.active_field.obstacles if obj.id == stored_object["object"]), None)
+            elif stored_object["object_type"] == "Rows":
+                self.active_object = next(({"object_type": stored_object["object_type"], "object": obj}
+                                           for obj in self.active_field.rows if obj.id == stored_object["object"]), None)
+            self.refresh_ui()
