@@ -31,6 +31,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system = system
         self.kpi_provider = system.kpi_provider
         self.puncher = system.puncher
+        self.record_video = False
         self.cultivated_crop: str | None = None
         self.crop_safety_distance: float = 0.01
 
@@ -63,17 +64,21 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def finish(self) -> None:
         self.system.plant_locator.pause()
         await self.system.field_friend.stop()
+        await self.system.timelapse_recorder.compress_video()
         await super().finish()
 
     async def activate(self):
         await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
-        self.system.plant_locator.resume()
         await rosys.sleep(3)
+        self.system.plant_locator.resume()
+        if self.record_video:
+            self.system.timelapse_recorder.camera = self.system.camera_provider.first_connected_camera
         await super().activate()
 
     async def deactivate(self):
         await super().deactivate()
+        self.system.timelapse_recorder.camera = None
         await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
@@ -94,7 +99,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return False
-        camera = next((camera for camera in self.system.camera_provider.cameras.values() if camera.is_connected), None)
+        camera = self.system.camera_provider.first_connected_camera
         if not camera:
             rosys.notify('no camera connected')
             return False
@@ -166,7 +171,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
             'cultivated_crop': self.cultivated_crop,
-            'crop_safety_distance': self.crop_safety_distance
+            'crop_safety_distance': self.crop_safety_distance,
+            'record_video': self.record_video,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -175,6 +181,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
         self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
+        self.record_video = data.get('record_video', self.record_video)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
@@ -209,3 +216,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
+        ui.checkbox('record video', on_change=self.request_backup) \
+            .bind_value(self, 'record_video') \
+            .tooltip('Set the weeding automation to record video')
