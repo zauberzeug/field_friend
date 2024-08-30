@@ -164,9 +164,6 @@ class PlantLocator(rosys.persistence.PersistentModule):
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
-        if isinstance(self.detector, rosys.vision.DetectorHardware):
-            ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images') \
-                .on('click', lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port))
 
         @ui.refreshable
         def chips():
