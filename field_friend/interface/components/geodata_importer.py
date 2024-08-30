@@ -1,7 +1,4 @@
 import json
-import platform
-import tempfile
-import uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional
@@ -13,6 +10,7 @@ from nicegui import events, ui
 from shapely.ops import transform
 
 from ...automations import Field, FieldProvider
+from ...localization import GeoPoint
 
 # Enable fiona driver
 fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
@@ -20,7 +18,7 @@ fiona.drvsupport.supported_drivers['KML'] = 'rw'
 fiona.drvsupport.supported_drivers['LIBKML'] = 'rw'
 
 
-class geodata_picker(ui.dialog):
+class geodata_importer(ui.dialog):
     def __init__(self, field_provider: FieldProvider) -> None:
         super().__init__()
         self.field_provider = field_provider
@@ -44,7 +42,7 @@ class geodata_picker(ui.dialog):
         x_coordinate, y_coordinate = gdf['geometry'].iloc[0].xy
         extracted_points = list(zip(x_coordinate, y_coordinate))
         for point in extracted_points:
-            coordinates.append([point[1], point[0]])
+            coordinates.append(GeoPoint(lat=point[1], long=point[0]))
         return coordinates
 
     def extract_coordinates_xml(self, event: events.UploadEventArguments) -> list:
@@ -55,7 +53,7 @@ class geodata_picker(ui.dialog):
             for point in geo_data.findall('.//PNT'):
                 lat = float(point.attrib['C'])
                 lon = float(point.attrib['D'])
-                coordinates.append([lat, lon])
+                coordinates.append(GeoPoint(lat=lat, long=lon))
         return coordinates
 
     def extract_coordinates_shp(self, event: events.UploadEventArguments) -> Optional[list]:
@@ -66,7 +64,9 @@ class geodata_picker(ui.dialog):
             print(gdf)
             gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
             feature = json.loads(gdf.to_json())
-            coordinates = feature["features"][0]["geometry"]["coordinates"][0]
+            shp_coordinates = feature["features"][0]["geometry"]["coordinates"][0]
+            for point in shp_coordinates:
+                coordinates.append(GeoPoint(lat=point[0], long=point[1]))
             return coordinates
         except:
             rosys.notify("The .zip file does not contain a shape file.", type='warning')

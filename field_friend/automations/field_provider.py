@@ -172,12 +172,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if not("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+            if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
-        if self.gnss.device != 'simulation':
-            self.ensure_field_reference(field)
         if point is not None:
             index = obstacle.points.index(point)
             obstacle.points[index] = new_point
@@ -201,7 +199,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             if positioning is None or positioning.lat == 0 or positioning.long == 0:
                 rosys.notify("No GNSS position.")
                 return
-            if not("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+            if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
                 rosys.notify("GNSS position is not accurate enough.")
                 return
             new_point = positioning
