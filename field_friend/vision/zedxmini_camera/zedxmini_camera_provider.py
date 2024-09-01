@@ -15,7 +15,7 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
         self.log = logging.getLogger('field_friend.zedxmini_camera_provider')
 
         rosys.on_shutdown(self.shutdown)
-        # rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
+        rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
         rosys.on_startup(self.update_device_list)
 
     def backup(self) -> dict:
