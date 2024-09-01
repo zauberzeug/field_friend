@@ -6,6 +6,8 @@ import rosys
 from nicegui import ui
 from rosys.vision import Autoupload
 
+from ..vision import CalibratableUsbCamera
+from ..vision.zedxmini_camera import StereoCamera
 from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
@@ -98,10 +100,16 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
                     continue
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-            world_point_3d = camera.calibration.project_from_image(image_point)
-            if world_point_3d is None:
-                self.log.error('could not generate world point of detection, calibration error')
-                continue
+            if isinstance(camera, CalibratableUsbCamera):
+                world_point_3d = camera.calibration.project_from_image(image_point)
+                if world_point_3d is None:
+                    self.log.error('could not generate world point of detection, calibration error')
+                    continue
+            elif isinstance(camera, StereoCamera):
+                # TODO
+                depth: float = camera.get_depth(int(d.cx), int(d.cy))
+                self.log.info(f'depth: {depth}')
+                world_point_3d = rosys.geometry.Point3d(x=0, y=0, z=depth)
             world_point = world_point_3d.projection()
             plant = Plant(type=d.category_name,
                           detection_time=rosys.time(),

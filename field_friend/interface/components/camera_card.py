@@ -12,6 +12,8 @@ from field_friend.automations.implements.weeding_implement import WeedingImpleme
 
 from ...automations import PlantLocator, Puncher
 from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
+from ...vision import CalibratableUsbCamera
+from ...vision.zedxmini_camera import StereoCamera
 from .calibration_dialog import calibration_dialog
 
 if TYPE_CHECKING:
@@ -133,19 +135,26 @@ class camera_card:
     def on_mouse_move(self, e: MouseEventArguments):
         if self.camera is None:
             return
-        if e.type == 'mousemove':
-            point2d = Point(x=e.image_x, y=e.image_y)
-            if self.camera.calibration is None:
-                self.debug_position.set_text(f'{point2d} no calibration')
-                return
+
+        point2d = Point(x=e.image_x, y=e.image_y)
+        if self.camera.calibration is None:
+            self.debug_position.set_text(f'{point2d} no calibration')
+            return
+        point3d: rosys.geometry.Point3d | None = None
+        if isinstance(self.camera, CalibratableUsbCamera):
             point3d = self.camera.calibration.project_from_image(point2d)
+        elif isinstance(self.camera, StereoCamera):
+            depth: float | None = self.camera.get_depth(int(e.image_x), int(e.image_y))
+            self.log.info(f'depth: {depth}')
+            if depth is not None:
+                point3d = rosys.geometry.Point3d(x=0, y=0, z=depth)
+
+        if e.type == 'mousemove':
             self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
         if e.type == 'mouseup':
-            point2d = Point(x=e.image_x, y=e.image_y)
             if self.camera.calibration is None:
                 self.debug_position.set_text(f'last punch: {point2d}')
                 return
-            point3d = self.camera.calibration.project_from_image(point2d)
             if point3d is not None:
                 self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
                 if self.puncher is not None and self.punching_enabled:
