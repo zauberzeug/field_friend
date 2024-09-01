@@ -1,14 +1,18 @@
 import logging
 from typing import TYPE_CHECKING, Literal, Optional, TypedDict
 
-from nicegui import events, ui
+from nicegui import app, events, ui
 
 from ...automations import Field, FieldObstacle, Row
 from .field_creator import FieldCreator
+from .geodata_importer import geodata_importer
 from .leaflet_map import leaflet_map
 
 if TYPE_CHECKING:
     from field_friend.system import System
+
+
+TabType = Literal["Plants", "Obstacles", "Outline", "Rows"]
 
 
 class ActiveObject(TypedDict):
@@ -25,14 +29,21 @@ class field_planner:
         self.gnss = system.gnss
         self.cultivatable_crops = system.crop_category_names
         self.leaflet_map = leaflet
-        self.active_field: Field | None = None
+        self.tab: TabType = "Plants"
         self.active_object: ActiveObject | None = None
-        self.tab: Literal["Plants", "Obstacles", "Outline", "Rows"] = "Plants"
+        self.active_field: Field | None = None
+        self.restore_actives()
+
+        with ui.dialog() as self.clear_field_dialog, ui.card():
+            ui.label('Are you sure you want to delete all fields?')
+            with ui.row():
+                ui.button('Cancel', on_click=self.clear_field_dialog.close)
+                ui.button('Yes, delete', on_click=self.clear_fields, color='warning')
 
         with ui.row().classes("w-full").style("height: 100%; max-height:100%; width: 100%;"):
             with ui.card().style("width: 40%; max-width: 40%; max-height: 100%; height: 100%;"):
                 with ui.row():
-                    ui.button("Upload Field", on_click=lambda field_provider=self.field_provider: geodata_picker(field_provider)) \
+                    ui.button("Upload Field", on_click=lambda field_provider=self.field_provider: geodata_importer(field_provider)) \
                         .tooltip("Upload a file with field boundaries. Supported file formats: KML, XML and Shape").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Add field", on_click=self.field_provider.create_field).tooltip("Add a new field") \
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
@@ -41,7 +52,7 @@ class field_planner:
                 with ui.row().style("width: 100%;"):
                     self.show_field_table()
                 with ui.row():
-                    ui.button("Clear fields", on_click=self.field_provider.clear_fields).props("outline color=warning") \
+                    ui.button('Clear fields', on_click=self.clear_field_dialog.open).props("outline color=warning") \
                         .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                     ui.button("Update reference", on_click=self.field_provider.update_reference).props("outline color=warning") \
                         .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
@@ -99,6 +110,12 @@ class field_planner:
 
     @ui.refreshable
     def show_field_settings(self) -> None:
+        with ui.dialog() as self.delete_active_field_dialog, ui.card():
+            ui.label('Are you sure you want to delete this field?')
+            with ui.row():
+                ui.button('Cancel', on_click=self.delete_active_field_dialog.close)
+                ui.button('Yes, delete', on_click=lambda field=self.active_field: self.delete_field(
+                    field), color='warning')
         with ui.card().classes('col-grow').style("max-height: 100%; height: 100%;"):
             if self.active_field is None:
                 with ui.column().style("display: block; margin: auto;"):
@@ -112,7 +129,7 @@ class field_planner:
                         .on("blur", self.field_provider.request_backup) \
                         .bind_value(self.active_field, "name") \
                         .classes("w-32")
-                    ui.button(on_click=lambda field=self.active_field: self.field_provider.remove_field(field)) \
+                    ui.button(on_click=self.delete_active_field_dialog.open) \
                         .props("icon=delete color=warning fab-mini flat") \
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;") \
                         .tooltip("Delete field")
@@ -154,10 +171,10 @@ class field_planner:
                             for obstacle in self.active_field.obstacles:
                                 radio_el[obstacle.id] = obstacle.name
                             if (self.active_object is not None and self.active_object["object"] is not None and self.tab == "Obstacles"):
-                                obstacle_radio = ui.radio(radio_el, on_change=lambda event: self._set_active_object(
+                                ui.radio(radio_el, on_change=lambda event: self._set_active_object(
                                     event.value, self.tab), value=self.active_object["object"].id)
                             else:
-                                obstacle_radio = ui.radio(
+                                ui.radio(
                                     radio_el, on_change=lambda event: self._set_active_object(event.value, self.tab))
                         with ui.row().classes("items-center mt-3").style("width: 100%"):
                             ui.button(icon="add", on_click=lambda field=self.active_field: self.field_provider
@@ -168,10 +185,10 @@ class field_planner:
                             for row in self.active_field.rows:
                                 radio_el[row.id] = row.name
                             if (self.active_object is not None and self.active_object["object"] is not None and self.tab == "Rows"):
-                                row_radio = ui.radio(radio_el, on_change=lambda event:
-                                                     self._set_active_object(event.value, self.tab), value=self.active_object["object"].id)
+                                ui.radio(radio_el, on_change=lambda event:
+                                         self._set_active_object(event.value, self.tab), value=self.active_object["object"].id)
                             else:
-                                row_radio = ui.radio(
+                                ui.radio(
                                     radio_el, on_change=lambda event: self._set_active_object(event.value, self.tab))
                         with ui.row().classes("items-center mt-3").style("width: 100%"):
                             ui.button(icon="add", on_click=lambda field=self.active_field: self.field_provider.create_row(
@@ -188,16 +205,21 @@ class field_planner:
                     ui.label("select an object").style("display: block; margin: auto; color: #6E93D6;")
             else:
                 if self.tab == "Obstacles":
+                    with ui.dialog() as self.delete_obstacle_dialog, ui.card():
+                        ui.label('Are you sure you want to delete this obstacle?')
+                        with ui.row():
+                            ui.button('Cancel', on_click=self.delete_obstacle_dialog.close)
+                            ui.button('Yes, delete', on_click=lambda field=self.active_field,
+                                      obstacle=self.active_object['object']: self.delete_obstacle(field, obstacle), color='warning')
                     with ui.row().style("width: 100%;"):
                         ui.icon("dangerous").props("size=sm color=primary") \
                             .style("display:block; margin-top:auto; margin-bottom: auto;")
                         ui.input("Obstacle name", value=f'{self.active_object["object"].name}',) \
                             .on("blur", self.field_provider.invalidate).bind_value(self.active_object["object"], "name").classes("w-32")
-                        ui.button(on_click=lambda field=self.active_field, obstacle=self.active_object["object"]: self.field_provider.remove_obstacle(field, obstacle)) \
+                        ui.button(on_click=self.delete_obstacle_dialog.open) \
                             .props("icon=delete color=warning fab-mini flat").classes("ml-auto").style("display:block; margin-top:auto; margin-bottom: auto;").tooltip("Delete obstacle")
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
                         assert self.active_field is not None
-                        assert self.active_field.reference is not None
                         for geo_point in self.active_object["object"].points:
                             with ui.row().style("width: 100%;"):
                                 ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(point.tuple)) \
@@ -211,10 +233,16 @@ class field_planner:
                         with ui.row().classes("items-center mt-2"):
                             ui.icon("place").props("size=sm color=grey").classes("ml-8")
                             ui.button("", on_click=lambda field=self.active_field, obstacle=self.active_object["object"]: self.field_provider
-                                      .add_obstacle_point(field, obstacle),).props("icon=add color=primary fab-mini flat")
+                                      .add_obstacle_point(field, obstacle)).props("icon=add color=primary fab-mini flat")
                             ui.button("", on_click=lambda obstacle=self.active_object["object"]: self.field_provider.remove_obstacle_point(obstacle)) \
                                 .props("icon=remove color=warning fab-mini flat")
                 elif self.tab == "Rows":
+                    with ui.dialog() as self.delete_row_dialog, ui.card():
+                        ui.label('Are you sure you want to delete this row?')
+                        with ui.row():
+                            ui.button('Cancel', on_click=self.delete_row_dialog.close)
+                            ui.button('Yes, delete', on_click=lambda field=self.active_field,
+                                      row=self.active_object['object']: self.delete_row(field, row), color='warning')
                     with ui.row().style("width: 100%"):
                         ui.icon("spa").props("size=sm color=primary") \
                             .style("height: 100%; margin-top:auto; margin-bottom: auto;")
@@ -225,9 +253,10 @@ class field_planner:
                                 .props("icon=expand_more color=primary fab-mini flat").classes("ml-auto").style("display:block; margin-top:auto; margin-bottom: auto; margin-left: 0; margin-right: 0;")
                         ui.input(value=self.active_object["object"].name).on("blur", self.field_provider.invalidate) \
                             .bind_value(self.active_object["object"], "name").classes("w-32")
-                        ui.button(on_click=lambda row=self.active_object["object"]: self.field_provider.remove_row(self.active_field, row)) \
+                        ui.button(on_click=self.delete_row_dialog.open) \
                             .props("icon=delete color=warning fab-mini flat").classes("ml-auto").style("display:block; margin-top:auto; margin-bottom: auto;").tooltip("Delete Row")
                     with ui.column().style("display: block; overflow: auto; width: 100%"):
+                        assert self.active_field is not None
                         for geo_point in self.active_object["object"].points:
                             with ui.row().style("width: 100%;"):
                                 ui.button(on_click=lambda point=geo_point: self.leaflet_map.m.set_center(point.tuple)) \
@@ -240,7 +269,7 @@ class field_planner:
                                           .add_row_point(field, row, point)).props("icon=edit_location_alt color=primary fab-mini flat").tooltip("Relocate point").classes("ml-0")
                         with ui.row().classes("items-center mt-2").style("display: block; margin: auto;"):
                             ui.icon("place").props("size=sm color=grey").classes("ml-2")
-                            ui.button("", on_click=lambda field=self.active_field, row=self.active_object["object"]: self.field_provider.add_row_point(field, row),) \
+                            ui.button("", on_click=lambda field=self.active_field, row=self.active_object["object"]: self.field_provider.add_row_point(field, row)) \
                                 .props("icon=add color=primary fab-mini flat").tooltip("Add point")
                             ui.button("", on_click=lambda row=self.active_object["object"]: self.field_provider.remove_row_point(row),) \
                                 .props("icon=remove color=warning fab-mini flat").tooltip("Remove point")
@@ -253,9 +282,11 @@ class field_planner:
                 self.active_field = None
                 self.active_object = None
             else:
-                if (self.active_object is not None and self.active_object["object"] is not None):
-                    if (self.active_object["object"] not in self.active_field.obstacles and self.active_object["object"] not in self.active_field.rows):
+                if self.active_object and self.active_object.get("object") is not None:
+                    if not (self.active_object.get("object") in self.active_field.obstacles or self.active_object.get("object") in self.active_field.rows):
                         self.active_object = None
+                    else:
+                        self.tab = self.active_object["object_type"]
                 else:
                     self.active_object = None
         else:
@@ -267,20 +298,65 @@ class field_planner:
 
     def _set_active_field(self, field_id: str) -> None:
         self.active_field = self.field_provider.get_field(field_id)
+        if self.active_field is not None:
+            app.storage.user['active_field'] = self.active_field.id
+        else:
+            app.storage.user['active_field'] = None
         self.show_field_settings.refresh()
+        self.show_object_settings.refresh()
 
-    def _set_active_object(self, object_id: Optional[str] = None, object_type: Optional[Literal["Obstacles", "Rows", "Outline"]] = None) -> None:
+    def _set_active_object(self, object_id: Optional[str] = None, object_type: TabType | None = None) -> None:
         if (self.active_field is not None and object_id is not None and object_type is not None):
             if object_type == "Obstacles":
-                for obstacle in self.active_field.obstacles:
-                    if object_id == obstacle.id:
-                        self.active_object = {"object_type": object_type, "object": obstacle}
+                self.active_object = next(
+                    ({"object_type": object_type, "object": obj}
+                     for obj in self.active_field.obstacles if obj.id == object_id),
+                    None
+                )
+                app.storage.user['active_object'] = {
+                    "object_type": "Obstacles", "object": self.active_object["object"].id}
             elif object_type == "Rows":
-                for row in self.active_field.rows:
-                    if object_id == row.id:
-                        self.active_object = {"object_type": object_type, "object": row}
+                self.active_object = next(
+                    ({"object_type": object_type, "object": obj}
+                     for obj in self.active_field.rows if obj.id == object_id),
+                    None
+                )
+                app.storage.user['active_object'] = {
+                    "object_type": "Rows", "object": self.active_object["object"].id}
             else:
                 self.active_object = None
+                app.storage.user['active_object'] = None
         else:
             self.active_object = None
+            app.storage.user['active_object'] = None
         self.show_object_settings.refresh()
+
+    def delete_field(self, field: Field) -> None:
+        self.delete_active_field_dialog.close()
+        self.field_provider.remove_field(field)
+
+    def clear_fields(self) -> None:
+        self.clear_field_dialog.close()
+        self.field_provider.clear_fields()
+
+    def delete_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
+        self.delete_obstacle_dialog.close()
+        self.field_provider.remove_obstacle(field, obstacle)
+
+    def delete_row(self, field: Field, row: Row) -> None:
+        self.delete_row_dialog.close()
+        self.field_provider.remove_row(field, row)
+
+    def restore_actives(self) -> None:
+        stored_field = app.storage.user.get('active_field', None)
+        if stored_field is not None:
+            self.active_field = self.field_provider.get_field(stored_field)
+        stored_object = app.storage.user.get('active_object', None)
+        if self.active_field is not None and stored_object is not None:
+            if stored_object["object_type"] == "Obstacles":
+                self.active_object = next(({"object_type": stored_object["object_type"], "object": obj}
+                                           for obj in self.active_field.obstacles if obj.id == stored_object["object"]), None)
+            elif stored_object["object_type"] == "Rows":
+                self.active_object = next(({"object_type": stored_object["object_type"], "object": obj}
+                                           for obj in self.active_field.rows if obj.id == stored_object["object"]), None)
+            self.refresh_ui()

@@ -1,6 +1,7 @@
 from typing import Optional
 
 import rosys
+from rosys.geometry import Pose
 
 from .. import localization
 from .geo_point import GeoPoint
@@ -14,6 +15,7 @@ class GnssSimulation(Gnss):
         self.wheels = wheels
         self.allow_connection = True
         self.gps_quality = 4
+        self.mode = 'SSSS'
 
     async def try_connection(self) -> None:
         if self.allow_connection:
@@ -26,10 +28,15 @@ class GnssSimulation(Gnss):
         else:
             new_position = localization.reference.shifted(pose.point)
         record = GNSSRecord(timestamp=pose.time, location=new_position)
-        record.mode = "simulation"  # TODO check for possible values and replace "simulation"
         record.gps_qual = self.gps_quality
+        record.mode = self.mode
         await rosys.sleep(0.1)  # NOTE simulation does not be so fast and only eats a lot of cpu time
         return record
+
+    def relocate(self, position: GeoPoint) -> None:
+        localization.reference = position
+        self.wheels.pose = Pose(x=position.lat, y=position.long, yaw=0.0, time=rosys.time())
+        self.last_pose_update = rosys.time()
 
     def disconnect(self):
         """Simulate serial disconnection.

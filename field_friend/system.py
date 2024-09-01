@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Any
 
+import icecream
 import numpy as np
 import psutil
 import rosys
@@ -9,17 +10,19 @@ import rosys
 from . import localization
 from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PlantLocator,
                           PlantProvider, Puncher)
-from .automations.implements import ChopAndScrew, Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import (CoverageNavigation, FollowCropsNavigation, Navigation, RowsOnFieldNavigation,
-                                     StraightLineNavigation)
-from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation
+from .automations.implements import ChopAndScrew, ExternalMower, Implement, Recorder, Tornado, WeedingScrew
+from .automations.navigation import (ABLineNavigation, CoverageNavigation, FollowCropsNavigation, Navigation,
+                                     RowsOnFieldNavigation, StraightLineNavigation)
+from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
-from .vision import CalibratableUsbCameraProvider, CameraConfigurator, SimulatedCam, SimulatedCamProvider
+from .vision import CalibratableUsbCameraProvider, CameraConfigurator
 from .vision.zedxmini_camera import ZedxminiCameraProvider
+
+icecream.install()
 
 
 class System(rosys.persistence.PersistentModule):
@@ -35,31 +38,34 @@ class System(rosys.persistence.PersistentModule):
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED = rosys.event.Event()
 
-        self.usb_camera_provider: CalibratableUsbCameraProvider | SimulatedCamProvider | ZedxminiCameraProvider
+        self.usb_camera_provider: CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.field_friend: FieldFriend
         self.is_real = False
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
+                self.teltonika_router = TeltonikaRouter()
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
-            self.usb_camera_provider = CalibratableUsbCameraProvider()
+            self.camera_provider = CalibratableUsbCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
-            self.camera_configurator = CameraConfigurator(self.usb_camera_provider)
+            self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
+            self.camera_configurator = CameraConfigurator(self.camera_provider, odometer=self.odometer)
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
-            # self.usb_camera_provider = SimulatedCamProvider()
+            # self.camera_provider = rosys.vision.SimulatedCameraProvider()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             # rosys.on_startup(self.setup_simulated_usb_camera)
-            self.usb_camera_provider = ZedxminiCameraProvider()
-            self.detector = rosys.vision.DetectorSimulation(self.usb_camera_provider)
-            # self.camera_configurator = CameraConfigurator(self.usb_camera_provider, robot_id=self.version)
+            self.camera_provider = ZedxminiCameraProvider()
+            self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
+            self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
+            self.camera_configurator = CameraConfigurator(
+                self.camera_provider, odometer=self.odometer, robot_id=self.version)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
-        self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
@@ -120,14 +126,20 @@ class System(rosys.persistence.PersistentModule):
         self.automator = rosys.automation.Automator(self.steerer, on_interrupt=self.field_friend.stop)
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
+        self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
+        self.timelapse_recorder.frame_info_builder = lambda _: f'{self.version}, {self.current_navigation.name}, tags: {", ".join(self.plant_locator.tags)}'
+        rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
+        rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
         self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
         self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
         self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
         self.coverage_navigation = CoverageNavigation(self, self.monitoring)
+        self.a_b_line_navigation = ABLineNavigation(self, self.monitoring)
         self.navigation_strategies = {n.name: n for n in [self.field_navigation,
                                                           self.straight_line_navigation,
                                                           self.follow_crops_navigation,
                                                           self.coverage_navigation,
+                                                          self.a_b_line_navigation
                                                           ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
@@ -141,6 +153,9 @@ class System(rosys.persistence.PersistentModule):
                 self.log.error('Dual mechanism not implemented')
             case 'none':
                 implements.append(WeedingScrew(self))
+            case 'mower':
+                # TODO: mower has neither flashlight nor camera, so monitoring is not possible
+                implements = [ExternalMower(self)]
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}
@@ -207,17 +222,16 @@ class System(rosys.persistence.PersistentModule):
         self.request_backup()
 
     async def setup_simulated_usb_camera(self):
-        self.usb_camera_provider.remove_all_cameras()
-        camera = SimulatedCam.create_calibrated(id='bottom_cam',
-                                                x=0.4, z=0.4,
-                                                roll=np.deg2rad(360-150),
-                                                pitch=np.deg2rad(0),
-                                                yaw=np.deg2rad(90),
-                                                color='#cccccc',
-                                                )
-        self.usb_camera_provider.add_camera(camera)
-        # TODO rework this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
-        self.odometer.ROBOT_MOVED.register(lambda: camera.update_calibration(self.odometer.prediction))
+        self.camera_provider.remove_all_cameras()
+        camera = rosys.vision.SimulatedCalibratableCamera.create_calibrated(id='bottom_cam',
+                                                                            x=0.4, z=0.4,
+                                                                            roll=np.deg2rad(360-150),
+                                                                            pitch=np.deg2rad(0),
+                                                                            yaw=np.deg2rad(90),
+                                                                            color='#cccccc',
+                                                                            frame=self.odometer.prediction_frame,
+                                                                            )
+        self.camera_provider.add_camera(camera)
 
     def get_jetson_cpu_temperature(self):
         with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:

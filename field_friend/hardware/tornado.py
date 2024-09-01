@@ -123,6 +123,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                  current_limit: int = 20,
                  z_reference_speed: float = 0.0075,
                  turn_reference_speed: float = 0.25,
+                 odrive_version: int = 4,
                  ) -> None:
         self.name = name
         self.expander = expander
@@ -131,10 +132,14 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.current_limit = current_limit
         self.z_reference_speed = z_reference_speed
         self.turn_reference_speed = turn_reference_speed
+        self.odrive_version = odrive_version
+        self.turn_error = 0
+        self.z_error = 0
+        self.motor_error = False
 
         lizard_code = remove_indentation(f'''
-            {name}_motor_z = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {z_can_address})
-            {name}_motor_turn = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {turn_can_address})
+            {name}_motor_z = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {z_can_address}{', 6'if self.odrive_version == 6  else ''})
+            {name}_motor_turn = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {turn_can_address}{', 6'if self.odrive_version == 6  else ''})
             {name}_motor_z.m_per_tick = {m_per_tick}
             {name}_motor_turn.m_per_tick = {1/12.52}
             {name}_motor_z.limits({self.speed_limit}, {self.current_limit})
@@ -142,36 +147,36 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_motor_z.reversed = {'true' if is_z_reversed else 'false'}
             {name}_motor_turn.reversed = {'true' if is_turn_reversed else 'false'}
             {name}_end_top = {expander.name + "." if end_stops_on_expander or end_top_pin_expander and expander else ""}Input({end_top_pin})
-            {name}_end_top.inverted = true;
+            {name}_end_top.inverted = true
             {name}_end_bottom = {expander.name + "." if end_stops_on_expander or end_bottom_pin_expander and expander else ""}Input({end_bottom_pin})
-            {name}_end_bottom.inverted = true;
+            {name}_end_bottom.inverted = true
             {name}_ref_motor = {expander.name + "." if end_stops_on_expander or ref_motor_pin_expander and expander else ""}Input({ref_motor_pin})
-            {name}_ref_motor.inverted = true;
+            {name}_ref_motor.inverted = true
             {name}_ref_gear = {expander.name + "." if end_stops_on_expander or ref_gear_pin_expander and expander else ""}Input({ref_gear_pin})
-            {name}_ref_gear.inverted = false;
+            {name}_ref_gear.inverted = false
             {name}_ref_knife_stop = {expander.name + "." if end_stops_on_expander or ref_knife_stop_pin_expander and expander else ""}Input({ref_knife_stop_pin})
-            {name}_ref_knife_stop.inverted = false;
+            {name}_ref_knife_stop.inverted = false
             {name}_ref_knife_ground = {expander.name + "." if end_stops_on_expander or ref_knife_ground_pin_expander and expander else ""}Input({ref_knife_ground_pin})
-            {name}_ref_knife_ground.inverted = true;
+            {name}_ref_knife_ground.inverted = true
             {name}_z = {expander.name + "." if motors_on_expander and expander else ""}MotorAxis({name}_motor_z, {name + "_end_bottom" if is_z_reversed else name + "_end_top"}, {name + "_end_top" if is_z_reversed else name + "_end_bottom"})
 
-            bool {name}_is_referencing = false;
-            bool {name}_ref_motor_enabled = false;
-            bool {name}_ref_gear_enabled = false;
+            bool {name}_is_referencing = false
+            bool {name}_ref_motor_enabled = false
+            bool {name}_ref_gear_enabled = false
             when {name}_ref_motor_enabled and {name}_is_referencing and {name}_ref_motor.level == 0 then
-                {name}_motor_turn.speed(0);
+                {name}_motor_turn.speed(0)
             end
             when {name}_ref_gear_enabled and {name}_is_referencing and {name}_ref_gear.level == 1 then
-                {name}_motor_turn.speed(0);
+                {name}_motor_turn.speed(0)
             end
-            bool {name}_knife_ground_enabled = false;
-            bool {name}_knife_stop_enabled = false;
+            bool {name}_knife_ground_enabled = false
+            bool {name}_knife_stop_enabled = false
             when {name}_knife_ground_enabled and {name}_ref_knife_ground.level == 1 then
-                {name}_motor_z.off();
+                {name}_motor_z.off()
             end
             when {name}_knife_stop_enabled and {name}_ref_knife_stop.level == 1 then
-                en3.off();
-                {name}_knife_stop_enabled = false;
+                en3.off()
+                {name}_knife_stop_enabled = false
             end
         ''')  # tornado axis references in positive direction, in contrast to all other axis
         core_message_fields = [
@@ -184,6 +189,11 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             f'{name}_motor_z.position:3',
             f'{name}_motor_turn.position:3',
         ]
+        if self.odrive_version == 6:
+            core_message_fields.extend([
+                f'{name}_motor_z.motor_error_flag',
+                f'{name}_motor_turn.motor_error_flag',
+            ])
         super().__init__(
             min_position=min_position,
             robot_brain=robot_brain,
@@ -411,6 +421,21 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.ref_knife_ground = words.pop(0) == 'true'
         self.position_z = float(words.pop(0))
         self.position_turn = float(words.pop(0)) * 360
+        if self.odrive_version == 6:
+            self.turn_error = int(words.pop(0))
+            self.z_error = int(words.pop(0))
+            if self.turn_error == 1 or self.z_error == 1:
+                self.motor_error = True
+                rosys.notify('warning', 'Tornado Motor Error')
+
+    def reset_motors(self) -> None:
+        if not self.motor_error:
+            return
+        if self.z_error == 1:
+            self.robot_brain.send(f'{self.name}_motor_z.reset_motor()')
+        if self.turn_error == 1:
+            self.robot_brain.send(f'{self.name}_motor_turn.reset_motor()')
+        self.motor_error = False
 
 
 class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):

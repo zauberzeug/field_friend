@@ -7,13 +7,14 @@ from nicegui import ui
 from rosys.helpers import eliminate_2pi
 
 from ..implements.implement import Implement
-from .navigation import Navigation
+from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
     from system import System
 
 
-class FollowCropsNavigation(Navigation):
+class FollowCropsNavigation(StraightLineNavigation):
+    CROP_ATTRACTION: float = 0.3
 
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
@@ -23,7 +24,7 @@ class FollowCropsNavigation(Navigation):
         self.flashlight = system.field_friend.flashlight
         self.plant_locator = system.plant_locator
         self.name = 'Follow Crops'
-        self.crop_attraction = 0.5
+        self.crop_attraction = self.CROP_ATTRACTION
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -40,7 +41,12 @@ class FollowCropsNavigation(Navigation):
         self.plant_locator.pause()
         await self.implement.deactivate()
 
-    async def _drive(self, distance: float):
+    def update_target(self) -> None:
+        self.origin = self.odometer.prediction.point
+        distance = self.length - self.odometer.prediction.point.distance(self.start_position)
+        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
+
+    async def _drive(self, distance: float) -> None:
         row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point, max_distance=1.0)
         if len(row) >= 3:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
@@ -54,12 +60,11 @@ class FollowCropsNavigation(Navigation):
 
             fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
             closest_point = fitted_line.foot_point(self.odometer.prediction.point)
-            front_point = closest_point.polar(0.3, yaw)
-            target_yaw = self.odometer.prediction.point.direction(front_point)
+            target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
+            await self._drive_towards_target(distance, target)
         else:
-            target_yaw = self.odometer.prediction.yaw
-        target_yaw = self.combine_angles(target_yaw, self.crop_attraction, self.odometer.prediction.yaw)
-        await self._drive_to_yaw(distance, target_yaw)
+            self.update_target()
+            await super()._drive(distance)
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
         weight1 = influence
@@ -73,34 +78,29 @@ class FollowCropsNavigation(Navigation):
         # Normalize
         return eliminate_2pi(combined_angle)
 
-    def create_simulation(self):
+    def create_simulation(self) -> None:
         for i in range(100):
             x = i/10.0
-            p = rosys.geometry.Point3d(x=x, y=(x/4) ** 3, z=0)
+            y = (x/4) ** 3
+            if i % 10 == 0:  # create some outliers
+                y += 0.2
+            p = rosys.geometry.Point3d(x=x, y=y, z=0)
             p = self.odometer.prediction.transform3d(p)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
 
-    def _should_finish(self) -> bool:
-        distance = self.odometer.prediction.point.distance(self.start_position)
-        if distance < 0.5:
-            return False  # at least drive 0.5m
-        if len(self.plant_provider.get_relevant_crops(self.odometer.prediction.point)) == 0:
-            self.log.info('No crops in sight -- stopping navigation')
-            return True
-        return False
-
     def settings_ui(self) -> None:
-        ui.number('Crop Attraction', step=0.1, min=0.0, format='%.1f') \
+        super().settings_ui()
+        ui.number('Crop Attraction', step=0.1, min=0.0, max=1.0, format='%.1f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'crop_attraction') \
-            .tooltip('Influence of the crop row direction on the driving direction')
-        super().settings_ui()
+            .tooltip(f'Influence of the crop row direction on the driving direction (default: {self.CROP_ATTRACTION:.1f})')
 
     def backup(self) -> dict:
-        return {
+        return super().backup() | {
             'crop_attraction': self.crop_attraction,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.crop_attraction = data.get('crop_attraction', self.crop_attraction)

@@ -68,7 +68,7 @@ class WeedingScrew(WeedingImplement):
                 stretch = 0
             self.log.info(f'Targeting weed {next_weed_id} which is {stretch} away at world: '
                           f'{weed_world_position}, local: {next_weed_position}')
-            if stretch < max_distance and await self.ask_for_punch(next_weed_id):
+            if stretch < max_distance:
                 self.next_punch_y_position = next_weed_position.y
                 return stretch
             else:

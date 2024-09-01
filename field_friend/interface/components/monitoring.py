@@ -22,7 +22,7 @@ class CameraPosition:
 class monitoring:
 
     def __init__(self,
-                 usb_camera_provider: rosys.vision.CameraProvider,
+                 camera_provider: rosys.vision.CameraProvider,
                  mjpeg_camera_provider: rosys.vision.CameraProvider,
                  detector: rosys.vision.Detector,
                  monitoring_detector: rosys.vision.Detector,
@@ -34,7 +34,7 @@ class monitoring:
                  shrink_factor: int = 1,
                  ) -> None:
         self.log = logging.getLogger('field_friend.monitoring')
-        self.usb_camera_provider = usb_camera_provider
+        self.usb_camera_provider = camera_provider
         self.mjpg_camera_provider = mjpeg_camera_provider
         self.detector = detector
         self.monitoring_detector = monitoring_detector

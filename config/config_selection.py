@@ -57,4 +57,6 @@ def find_matching_config_folders(hostname):
     matching_folders = glob.glob(pattern)
     # Filter out the ones that are not directories
     matching_dirs = [folder for folder in matching_folders if os.path.isdir(folder)]
+    assert len(matching_dirs) == 1, \
+        f"Expected exactly one matching folder, but got {len(matching_dirs)} for {pattern}: {matching_dirs}"
     return matching_dirs[0].replace("/", ".")

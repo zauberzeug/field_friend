@@ -23,7 +23,7 @@ class camera_card:
     def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.camera_card')
         self.automator = system.automator
-        self.camera_provider = system.usb_camera_provider
+        self.camera_provider = system.camera_provider
         self.detector = system.detector
         self.field_friend = system.field_friend
         self.odometer = system.odometer
@@ -35,21 +35,9 @@ class camera_card:
         self.shrink_factor: float = 2.0
         self.show_weeds_to_handle: bool = False
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
-        self.camera_provider = system.usb_camera_provider
-        self.automator = system.automator
-        self.detector = system.detector
-        self.plant_locator = system.plant_locator
-        self.punching_enabled = False
-        self.puncher = system.puncher
-        self.field_friend = system.field_friend
-        self.odometer = system.odometer
-        self.shrink_factor = 2
         self.image_view: Optional[ui.interactive_image] = None
-        self.calibration_dialog = calibration_dialog(self.camera_provider)
-        self.plant_provider = system.plant_provider
-        self.system = system
+        self.calibration_dialog = calibration_dialog(self.camera_provider, self.odometer)
         self.camera_card = ui.card()
-        self.show_weeds_to_handle = False
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
@@ -138,7 +126,8 @@ class camera_card:
         if image and image.detections:
             svg += self.to_svg(image.detections)
         svg += self.build_svg_for_plant_provider()
-        svg += self.build_svg_for_implement()
+        # TODO: fix in later PR
+        # svg += self.build_svg_for_implement()
         self.image_view.set_content(svg)
 
     def on_mouse_move(self, e: MouseEventArguments):
@@ -207,8 +196,6 @@ class camera_card:
     def build_svg_for_implement(self) -> str:
         if not isinstance(self.system.current_implement, WeedingImplement) or self.camera is None or self.camera.calibration is None:
             return ''
-        if self.system.is_real:
-            return ''  # NOTE: until https://github.com/zauberzeug/rosys/discussions/130 is resolved and integrated real robots will have problems with reverse projection
         tool_3d = self.odometer.prediction.point_3d() + \
             rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0)
         tool_2d = self.camera.calibration.project_to_image(tool_3d) / self.shrink_factor
@@ -232,8 +219,6 @@ class camera_card:
     def build_svg_for_plant_provider(self) -> str:
         if self.camera is None or self.camera.calibration is None:
             return ''
-        if self.system.is_real:
-            return ''  # NOTE: until https://github.com/zauberzeug/rosys/discussions/130 is resolved and integrated real robots will have problems with reverse projection
         position = rosys.geometry.Point(x=self.camera.calibration.extrinsics.translation[0],
                                         y=self.camera.calibration.extrinsics.translation[1])
         svg = ''

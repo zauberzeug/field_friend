@@ -1,14 +1,11 @@
 
 import logging
-import uuid
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Literal, TypedDict
 
-import rosys
-import rosys.geometry
 from nicegui import app, events, ui
-from nicegui.elements.leaflet_layers import GenericLayer, TileLayer
+from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
 
-from ...automations import Field, FieldObstacle, FieldProvider, Row
+from ...automations import Field, FieldObstacle, Row
 from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
 
@@ -55,7 +52,7 @@ class leaflet_map:
         self.current_basemap: TileLayer | None = None
         self.toggle_basemap()
         self.field_layers: list[GenericLayer] = []
-        self.robot_marker = None
+        self.robot_marker: Marker | None = None
         self.drawn_marker = None
         self.obstacle_layers: list = []
         self.row_layers: list = []
@@ -67,8 +64,8 @@ class leaflet_map:
 
         def handle_draw(e: events.GenericEventArguments):
             if e.args['layerType'] == 'marker':
-                latlon = (e.args['layer']['_latlng']['lat'],
-                          e.args['layer']['_latlng']['lng'])
+                latlon: list[float] = [e.args['layer']['_latlng']['lat'],
+                                       e.args['layer']['_latlng']['lng']]
                 self.drawn_marker = self.m.marker(latlng=latlon)
                 if system.is_real:
                     with ui.dialog() as real_marker_dialog, ui.card():
@@ -76,13 +73,17 @@ class leaflet_map:
                         ui.button('add point to selected object (row, obstacle)',
                                   on_click=lambda: self.add_point_active_object(latlon, real_marker_dialog))
                         ui.button('Close', on_click=lambda: self.abort_point_drawing(real_marker_dialog))
+                    real_marker_dialog.on('hide', self.on_dialog_close)
                     real_marker_dialog.open()
                 else:
                     with ui.dialog() as simulated_marker_dialog, ui.card():
                         ui.label('You are currently working in a simulation. What does the placed point represent?')
                         ui.button('as point for the current object',
                                   on_click=lambda: self.add_point_active_object(latlon, simulated_marker_dialog))
+                        ui.button('update roboter position', on_click=lambda: self.update_robot_position(
+                            GeoPoint.from_list(latlon), simulated_marker_dialog))
                         ui.button('Close', on_click=lambda: self.abort_point_drawing(simulated_marker_dialog))
+                    simulated_marker_dialog.on('hide', self.on_dialog_close)
                     simulated_marker_dialog.open()
             if e.args['layerType'] == 'polygon':
                 coordinates = e.args['layer']['_latlngs']
@@ -111,16 +112,14 @@ class leaflet_map:
             .tooltip('center map on field boundaries').classes('ml-0')
 
     def abort_point_drawing(self, dialog) -> None:
-        if self.drawn_marker is not None:
-            self.m.remove_layer(self.drawn_marker)
-        self.drawn_marker = None
+        self.on_dialog_close()
         dialog.close()
 
     def add_point_active_object(self, latlon, dialog) -> None:
         dialog.close()
-        self.m.remove_layer(self.drawn_marker)
-        if self.active_object is not None and self.active_object["object"] is not None:
-            self.active_object["object"].points.append(GeoPoint.from_list(latlon))
+        self.on_dialog_close()
+        if self.active_object and self.active_object.get("object") is not None:
+            self.active_object.get("object").points.append(GeoPoint.from_list(latlon))
             self.field_provider.invalidate()
             self.update_layers()
         else:
@@ -135,19 +134,19 @@ class leaflet_map:
             color = '#6E93D6' if field.id == self.active_field else '#999'
             self.field_layers.append(self.m.generic_layer(name="polygon",
                                                           args=[field.points_as_tuples, {'color': color}]))
-        field = self.field_provider.get_field(self.active_field)
-        if field is None:
-            return
+        current_field: Field | None = self.field_provider.get_field(self.active_field)
         for layer in self.obstacle_layers:
             self.m.remove_layer(layer)
         self.obstacle_layers = []
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
-        for obstacle in field.obstacles:
+        if current_field is None:
+            return
+        for obstacle in current_field.obstacles:
             self.obstacle_layers.append(self.m.generic_layer(name="polygon",
                                                              args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
-        for row in field.rows:
+        for row in current_field.rows:
             self.row_layers.append(self.m.generic_layer(name="polyline",
                                                         args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
@@ -160,9 +159,12 @@ class leaflet_map:
         self._active_field = field_id
         self.update_layers()
 
-    def update_robot_position(self, position: GeoPoint) -> None:
-        if self.robot_marker is None:
-            self.robot_marker = self.m.marker(latlng=position.tuple)
+    def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
+        if dialog:
+            self.on_dialog_close()
+            dialog.close()
+            self.gnss.relocate(position)
+        self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
         self.robot_marker.move(*position.tuple)
@@ -215,3 +217,8 @@ class leaflet_map:
             )
         if self.current_basemap.options['maxZoom'] - 1 < self.m.zoom:
             self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
+
+    def on_dialog_close(self) -> None:
+        if self.drawn_marker is not None:
+            self.m.remove_layer(self.drawn_marker)
+        self.drawn_marker = None
