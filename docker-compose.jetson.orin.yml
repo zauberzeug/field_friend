@@ -52,7 +52,7 @@ services:
       - /etc/systemd/system/zed_x_daemon.service:/etc/systemd/system/zed_x_daemon.service
       - /usr/local/zed/resources:/usr/local/zed/resources
     ports:
-      - "8003:80"
+      - "8003:8003"
     environment:
       - TZ=Europe/Amsterdam
 
