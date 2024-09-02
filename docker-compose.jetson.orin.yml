@@ -44,8 +44,8 @@ services:
     runtime: nvidia
     build:
       context: ../zedxmini
-      # dockerfile: ../zedxmini/Dockerfile
-      dockerfile: ../zedxmini/Dockerfile.JP6
+      dockerfile: ../zedxmini/Dockerfile
+      # dockerfile: ../zedxmini/Dockerfile.JP6
     volumes:
       - ../zedxmini:/app
       - /dev:/dev

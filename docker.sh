@@ -73,30 +73,30 @@ cmd_args=${@:2}
 set -x
 case $cmd in
     b | build)
-        docker compose $compose_args pull detector
-    	docker compose $compose_args build --no-cache $cmd_args
+        docker-compose $compose_args pull detector
+    	docker-compose $compose_args build --no-cache $cmd_args
         ;;
     u | up)
-        docker compose $compose_args up -d $cmd_args
+        docker-compose $compose_args up -d $cmd_args
         ;;
     p | pull)
-        docker compose $compose_args pull
+        docker-compose $compose_args pull
         ;;
     U | uppull)
-        docker compose $compose_args pull
-        docker compose $compose_args up -d --build $cmd_args
+        docker-compose $compose_args pull
+        docker-compose $compose_args up -d --build $cmd_args
         ;;
     d | down)
-        docker compose $compose_args down -d $cmd_args
+        docker-compose $compose_args down -d $cmd_args
         ;;
     s | start)
-        docker compose $compose_args start $cmd_args
+        docker-compose $compose_args start $cmd_args
         ;;
     r | restart)
-        docker compose $compose_args restart $cmd_args
+        docker-compose $compose_args restart $cmd_args
         ;;
     h | stop)
-        docker compose $compose_args stop $cmd_args
+        docker-compose $compose_args stop $cmd_args
         ;;
     i | install)
         echo "disabing restart for any containers which may have been configured before"
@@ -105,22 +105,22 @@ case $cmd in
         docker update --restart=always $(docker ps -q)
         ;;
     rm)
-        docker compose $compose_args rm $cmd_args
+        docker-compose $compose_args rm $cmd_args
         ;;
     ps)
-        docker compose $compose_args ps $cmd_args
+        docker-compose $compose_args ps $cmd_args
         ;;
     stat | stats)
         docker stats $cmd_args
         ;;
     l | log | logs)
-        docker compose $compose_args logs -f --tail 1000 $cmd_args
+        docker-compose $compose_args logs -f --tail 1000 $cmd_args
         ;;
     e | exec)
-        docker compose $compose_args exec $cmd_args
+        docker-compose $compose_args exec $cmd_args
         ;;
     a | attach)
-        docker compose $compose_args exec $cmd_args /bin/bash
+        docker-compose $compose_args exec $cmd_args /bin/bash
         ;;
     prune)
         docker system prune
