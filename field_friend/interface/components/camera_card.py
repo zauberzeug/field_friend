@@ -144,12 +144,14 @@ class camera_card:
         if isinstance(self.camera, CalibratableUsbCamera):
             point3d = self.camera.calibration.project_from_image(point2d)
         elif isinstance(self.camera, StereoCamera):
-            depth: float | None = self.camera.get_depth(int(e.image_x), int(e.image_y))
-            self.log.info(f'depth: {depth}')
-            if depth is not None:
-                point3d = rosys.geometry.Point3d(x=0, y=0, z=depth)
+            # TODO: too many calls to get_depth
+            # depth: float | None = self.camera.get_depth(int(e.image_x), int(e.image_y))
+            # self.log.info(f'depth: {depth}')
+            # if depth is not None:
+            #     point3d = rosys.geometry.Point3d(x=0, y=0, z=depth)
+            pass
 
-        if e.type == 'mousemove':
+        if e.type == 'mousemove' and point3d is not None:
             self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
         if e.type == 'mouseup':
             if self.camera.calibration is None:
