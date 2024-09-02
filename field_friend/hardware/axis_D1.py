@@ -3,11 +3,16 @@ from rosys.helpers import remove_indentation
 
 from .axis import Axis
 
+D1_STEPS_P_M = 100000
+
 
 class AxisD1(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'axis_D1',
                  can: rosys.hardware.CanHardware,
+                 max_position: int = 2000,
+                 min_position: int = 200,
+                 axis_offset: int = 0,
                  can_address: int = 0x60,
                  homing_acceleration: int = 100,
                  homing_velocity: int = 20,
@@ -15,7 +20,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
                  profile_acceleration: int = 200,
                  profile_deceleration: int = 400,
 
-                 **kwargs
+
+                 ** kwargs
                  ) -> None:
         """Rosys module to control the Igus D1 motor controller.
 
@@ -50,11 +56,9 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             {self.name}_motor.homing_acceleration = {homing_acceleration}
             {self.name}_motor.switch_search_speed = {homing_velocity}
             {self.name}_motor.zero_search_speed = {homing_velocity}
-            {self.name}_motor.homing_deceleration = {homing_deceleration}
             {self.name}_motor.profile_acceleration = {profile_acceleration} 
             {self.name}_motor.profile_deceleration = {profile_deceleration}
             {self.name}_motor.profile_velocity = {profile_velocity}
-
         ''')
         core_message_fields = [
             f'{name}_motor.position',
@@ -66,28 +70,44 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             robot_brain=robot_brain,
             lizard_code=lizard_code,
             core_message_fields=core_message_fields,
+            # give some default values to satisfy parent class
+            max_speed=profile_velocity,
+            max_position=max_position,
+            min_position=min_position,
+            axis_offset=axis_offset,
+            reference_speed=homing_velocity,
+            steps_per_m=0,
+            reversed_direction=False,
             **kwargs)
 
     @property
     def position(self) -> float:
-        return self._position
+        return (self._position / D1_STEPS_P_M) - self.axis_offset
 
     async def stop(self):
         await self.speed_Mode(0)
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if self.is_referenced:
-            await self.robot_brain.send(f'{self.name}_motor.ppMode({position});')
+            await self.robot_brain.send(f'{self.name}_motor.ppMode({self.compute_steps(position)});')
         if not self.is_referenced:
             self.log.error(f'AxisD1 {self.name} is not refernced')
+        self.log.info(f'>>>>>>>>>>>>>>target reachsed{self.target_reached}')
+        await rosys.sleep(0.5)
+        self.log.info(f'target reachsed{self.target_reached}')
+        while not self.target_reached:
+            await rosys.sleep(0.1)
 
     def valid_status(self) -> bool:
         return self.ready_to_switch_on and self.switched_on and self.operation_enabled and self.quick_stop
 
+    def compute_steps(self, position: float) -> int:
+        return int(abs(position + self.axis_offset) * D1_STEPS_P_M)
+
     async def enable_motor(self):
         if self.fault:
             await self.reset_error()
-            rosys.sleep(0.5)
+            await rosys.sleep(0.5)
         await self.robot_brain.send(f'{self.name}_motor.setup()')
 
     async def reset_error(self):

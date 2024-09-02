@@ -4,6 +4,7 @@ from typing import Union
 import rosys
 
 from .axis import Axis, AxisSimulation
+from .axis_d1 import AxisD1
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
@@ -60,11 +61,16 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         # implement lizard stop method for available hardware
         lizard_code = f'let stop do {wheels.name}.speed(0, 0);'
         if y_axis is not None:
-            lizard_code += f' {y_axis.name}.stop();'
+            if isinstance(y_axis, AxisD1):
+                lizard_code += f'{y_axis.name}_motor.stop();'
+            else:
+                lizard_code += f' {y_axis.name}.stop();'
         if z_axis is not None:
             if isinstance(z_axis, TornadoHardware):
                 lizard_code += f'{z_axis.name}_z.stop();'
                 lizard_code += f'{z_axis.name}_motor_turn.speed(0);'
+            elif isinstance(z_axis, AxisD1):
+                lizard_code += f'{z_axis.name}_motor.stop();'
             else:
                 lizard_code += f' {z_axis.name}.stop();'
         if isinstance(flashlight, FlashlightHardware):
