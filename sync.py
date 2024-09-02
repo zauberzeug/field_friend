@@ -18,9 +18,9 @@ else:
     print('Ensuring we have no local rosys on the robot')
     run_subprocess(f'ssh {args.robot} "rm -rf ~/field_friend/rosys"')
 
-if args.zedxmini:
-    folders.append(Folder('../zedxmini/zedxmini', f'{args.robot}:~/field_friend/zedxmini', on_change=touch))
-else:
-    print('Ensuring we have no local zedxmini on the robot')
-    run_subprocess(f'ssh {args.robot} "rm -rf ~/field_friend/zedxmini"')
+# if args.zedxmini:
+folders.append(Folder('../zedxmini', f'{args.robot}:~/zedxmini', on_change=touch))
+# else:
+#     print('Ensuring we have no local zedxmini on the robot')
+#     run_subprocess(f'ssh {args.robot} "rm -rf ~/zedxmini"')
 sync(*folders)
