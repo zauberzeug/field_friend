@@ -92,10 +92,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             await self.robot_brain.send(f'{self.name}_motor.ppMode({self.compute_steps(position)});')
         if not self.is_referenced:
             self.log.error(f'AxisD1 {self.name} is not refernced')
-        self.log.info(f'>>>>>>>>>>>>>>target reachsed{self.target_reached}')
-        await rosys.sleep(0.5)
-        self.log.info(f'target reachsed{self.target_reached}')
-        while not self.target_reached:
+        while abs(self.position - position) > 0.02:
             await rosys.sleep(0.1)
 
     def valid_status(self) -> bool:
