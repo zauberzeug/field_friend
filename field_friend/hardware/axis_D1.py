@@ -95,12 +95,6 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         while abs(self.position - position) > 0.02:
             await rosys.sleep(0.1)
 
-    def valid_status(self) -> bool:
-        return self.ready_to_switch_on and self.switched_on and self.operation_enabled and self.quick_stop
-
-    def compute_steps(self, position: float) -> int:
-        return int(abs(position + self.axis_offset) * D1_STEPS_P_M)
-
     async def enable_motor(self):
         if self.fault:
             await self.reset_error()
@@ -110,10 +104,10 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
     async def reset_error(self):
         if self.fault:
             await self.robot_brain.send(f'{self.name}_motor.reset()')
-        self.log.error(f'AxisD1 {self.name} is not in fault state')
+        else: self.log.error(f'AxisD1 {self.name} is not in fault state')
 
     async def try_reference(self):
-        if not self.valid_status():
+        if not self._valid_status():
             await self.enable_motor()
         if self.is_referenced:
             self.log.error(f'AxisD1 {self.name} is already referenced')
@@ -129,9 +123,15 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         self.velocity = int(words.pop(0))
         self.statusword = int(words.pop(0))
         self.is_referenced = int(words.pop(0)) == 1
-        self.split_statusword()
+        self._split_statusword()
 
-    def split_statusword(self) -> None:
+    def _valid_status(self) -> bool:
+        return self.ready_to_switch_on and self.switched_on and self.operation_enabled and self.quick_stop
+
+    def _compute_steps(self, position: float) -> int:
+        return int(abs(position + self.axis_offset) * D1_STEPS_P_M)
+
+    def _split_statusword(self) -> None:
         self.ready_to_switch_on = ((self.statusword >> 0) & 1) == 1
         self.switched_on = ((self.statusword >> 1) & 1) == 1
         self.operation_enabled = ((self.statusword >> 2) & 1) == 1
