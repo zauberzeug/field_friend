@@ -149,7 +149,7 @@ class Puncher:
                     rosys.notify('homing failed!', type='negative')
                     raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
-            await self.field_friend.z_axis.move_down_until_reference(min_position=-0.065 if self.is_demo else None)
+            await self.field_friend.z_axis.move_down_until_reference(min_position=-0.058 if self.is_demo else None)
 
             await self.field_friend.z_axis.turn_knifes_to(angle)
             await rosys.sleep(2)

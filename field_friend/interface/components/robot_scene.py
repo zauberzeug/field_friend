@@ -4,11 +4,12 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import events, ui
 
+from ...automations import Field
 from .field_friend_object import field_friend_object
 from .field_object import field_object
 from .plant_object import plant_objects
 from .visualizer_object import visualizer_object
-from ...automations import Field
+
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -30,7 +31,7 @@ class robot_scene:
                 .style('position: absolute; left: 1px; top: 1px; z-index: 500;').tooltip('Lock view to robot')
 
             with ui.scene(200, 200, on_click=self.handle_click, grid=False).classes('w-full') as self.scene:
-                field_friend_object(self.system.odometer, self.system.usb_camera_provider, self.system.field_friend)
+                field_friend_object(self.system.odometer, self.system.camera_provider, self.system.field_friend)
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system.plant_provider,
                               self.system.big_weed_category_names + self.system.small_weed_category_names)

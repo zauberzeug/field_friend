@@ -6,7 +6,6 @@ import rosys
 from nicegui import ui
 from rosys.vision import Autoupload
 
-from ..vision import SimulatedCam
 from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
@@ -28,7 +27,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def __init__(self, system: 'System') -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.plant_detection')
-        self.camera_provider = system.usb_camera_provider
+        self.camera_provider = system.camera_provider
         self.detector = system.detector
         self.plant_provider = system.plant_provider
         self.odometer = system.odometer
@@ -99,18 +98,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
                     continue
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-            if isinstance(camera, SimulatedCam):
-                world_point = camera.calibration.project_from_image(image_point).projection()
-            else:
-                # TODO remove this when RoSys supports multiple extrinsics (see https://github.com/zauberzeug/rosys/discussions/130)
-                floor_point = camera.calibration.project_from_image(image_point)
-                if floor_point is None:
-                    self.log.error('could not generate floor point of detection, calibration error')
-                    continue
-                world_point = self.odometer.prediction.transform(floor_point.projection())
-            if world_point is None:
+            world_point_3d = camera.calibration.project_from_image(image_point)
+            if world_point_3d is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue
+            world_point = world_point_3d.projection()
             plant = Plant(type=d.category_name,
                           detection_time=rosys.time(),
                           detection_image=new_image)
@@ -172,9 +164,6 @@ class PlantLocator(rosys.persistence.PersistentModule):
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
-        if isinstance(self.detector, rosys.vision.DetectorHardware):
-            ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images') \
-                .on('click', lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port))
 
         @ui.refreshable
         def chips():

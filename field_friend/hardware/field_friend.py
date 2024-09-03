@@ -5,6 +5,7 @@ import numpy as np
 import rosys
 
 from .chain_axis import ChainAxis
+from .external_mower import Mower
 from .flashlight import Flashlight
 from .flashlight_pwm import FlashlightPWM
 from .flashlight_v2 import FlashlightV2
@@ -33,6 +34,7 @@ class FieldFriend(rosys.hardware.Robot):
             flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, None],
             y_axis: Union[Axis, ChainAxis, None],
             z_axis: Union[Axis, Tornado, None],
+            mower: Union[Mower, None],
             estop: rosys.hardware.EStop,
             bumper: Union[rosys.hardware.Bumper, None],
             bms: rosys.hardware.Bms,
@@ -45,6 +47,7 @@ class FieldFriend(rosys.hardware.Robot):
         self.flashlight = flashlight
         self.y_axis = y_axis
         self.z_axis = z_axis
+        self.mower = mower
         self.estop = estop
         self.bumper = bumper
         self.bms = bms
