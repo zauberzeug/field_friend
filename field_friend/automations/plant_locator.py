@@ -102,11 +102,10 @@ class PlantLocator(rosys.persistence.PersistentModule):
             if world_point_3d is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue
-            world_point = world_point_3d.projection()
             plant = Plant(type=d.category_name,
                           detection_time=rosys.time(),
                           detection_image=new_image)
-            plant.positions.append(world_point)
+            plant.positions.append(world_point_3d)
             plant.confidences.append(d.confidence)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
