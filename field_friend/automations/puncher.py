@@ -120,6 +120,9 @@ class Puncher:
             await self.field_friend.y_axis.return_to_reference()
             return
         elif isinstance(self.field_friend.y_axis, Axis):
+            if isinstance(self.field_friend.z_axis,Axis):
+                if self.field_friend.z_axis.position != 0:
+                    await self.field_friend.z_axis.return_to_reference()
             y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         await self.field_friend.y_axis.stop()
