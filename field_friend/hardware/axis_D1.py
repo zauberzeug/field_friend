@@ -10,8 +10,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'axis_D1',
                  can: rosys.hardware.CanHardware,
-                 max_position: int = 2000,
-                 min_position: int = 200,
+                 max_position: int = -0.1,
+                 min_position: int = 0.1,
                  axis_offset: int = 0,
                  can_address: int = 0x60,
                  homing_acceleration: int = 100,
@@ -70,7 +70,6 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             robot_brain=robot_brain,
             lizard_code=lizard_code,
             core_message_fields=core_message_fields,
-            # give some default values to satisfy parent class
             max_speed=profile_velocity,
             max_position=max_position,
             min_position=min_position,
@@ -85,13 +84,14 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         return (self._position / D1_STEPS_P_M) - self.axis_offset
 
     async def stop(self):
-        await self.speed_Mode(0)
+        pass
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if self.is_referenced:
             await self.robot_brain.send(f'{self.name}_motor.ppMode({self.compute_steps(position)});')
         if not self.is_referenced:
             self.log.error(f'AxisD1 {self.name} is not refernced')
+            return
         while abs(self.position - position) > 0.02:
             await rosys.sleep(0.1)
 
@@ -112,10 +112,13 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         if self.is_referenced:
             self.log.error(f'AxisD1 {self.name} is already referenced')
         else:
+            #due to some timing issues, the homing command is sent twice
             await self.robot_brain.send(f'{self.name}_motor.homing()')
             await self.robot_brain.send(f'{self.name}_motor.homing()')
 
     async def speed_Mode(self, speed: int):
+        #due to some timing issues, the speed command is sent twice
+        await self.robot_brain.send(f'{self.name}_motor.speedMode({speed});')
         await self.robot_brain.send(f'{self.name}_motor.speedMode({speed});')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
