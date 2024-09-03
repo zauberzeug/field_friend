@@ -5,6 +5,7 @@ from nicegui import ui
 
 from .hardware_control import hardware_control
 from .io_overview import io_overview
+from .settings import settings
 from .status_dev import status_dev_page
 
 if TYPE_CHECKING:
@@ -16,6 +17,7 @@ def development(system: 'System') -> None:
         with ui.card().style('background-color: #2E5396; width: 100%;'):
             with ui.column().style("width: 100%;"):
                 ui.label("Development Tools").style('font-size: 1.5rem; color: white;')
+                settings(system)
                 with ui.row().style("width: 100%"):
                     with ui.card().style('background-color: #3E63A6; color: white;'):
                         if isinstance(system.field_friend, rosys.hardware.RobotHardware):
