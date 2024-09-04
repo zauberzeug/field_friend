@@ -63,8 +63,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         core_message_fields = [
             f'{name}_motor.position',
             f'{name}_motor.velocity',
-            f'{name}_motor.statusword',
-            f'{name}_motor.status_flag',
+            f'{name}_motor.status_word',
+            f'{name}_motor.status_flags',
         ]
         super().__init__(
             robot_brain=robot_brain,
@@ -88,7 +88,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if self.is_referenced:
-            await self.robot_brain.send(f'{self.name}_motor.ppMode({self.compute_steps(position)});')
+            await self.robot_brain.send(f'{self.name}_motor.profile_position({self.compute_steps(position)});')
         if not self.is_referenced:
             self.log.error(f'AxisD1 {self.name} is not refernced')
             return
@@ -113,13 +113,13 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             self.log.error(f'AxisD1 {self.name} is already referenced')
         else:
             #due to some timing issues, the homing command is sent twice
-            await self.robot_brain.send(f'{self.name}_motor.homing()')
-            await self.robot_brain.send(f'{self.name}_motor.homing()')
+            await self.robot_brain.send(f'{self.name}_motor.home()')
+            await self.robot_brain.send(f'{self.name}_motor.home()')
 
     async def speed_Mode(self, speed: int):
         #due to some timing issues, the speed command is sent twice
-        await self.robot_brain.send(f'{self.name}_motor.speedMode({speed});')
-        await self.robot_brain.send(f'{self.name}_motor.speedMode({speed});')
+        await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')
+        await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         self._position = int(words.pop(0))
