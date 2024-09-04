@@ -5,6 +5,7 @@ import rosys
 
 import config.config_selection as config_selector
 
+from .axis_D1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
@@ -100,12 +101,25 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
 
-        if config_hardware['y_axis']['version'] == 'y_axis_canopen' or config_hardware['z_axis']['version'] == 'z_axis_canopen':
+        if config_hardware['y_axis']['version'] in ('y_axis_canopen', 'axis_d1') or config_hardware['z_axis']['version'] in ('y_axis_canopen', 'axis_d1'):
             can_open_master = CanOpenMasterHardware(robot_brain, can=can, name='master')
         else:
             can_open_master = None
-        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | None
-        if config_hardware['y_axis']['version'] == 'chain_axis':
+        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None
+        if config_hardware['y_axis']['version'] == 'axis_d1':
+            y_axis = AxisD1(robot_brain,
+                            can=can,
+                            can_address=config_hardware['y_axis']['can_address'],
+                            name=config_hardware['y_axis']['name'],
+                            homing_acceleration=config_hardware['y_axis']['homing_acceleration'],
+                            homing_velocity=config_hardware['y_axis']['homing_velocity'],
+                            profile_acceleration=config_hardware['y_axis']['profile_acceleration'],
+                            profile_velocity=config_hardware['y_axis']['profile_velocity'],
+                            profile_deceleration=config_hardware['y_axis']['profile_deceleration'],
+                            max_position=config_hardware['y_axis']['max_position'],
+                            min_position=config_hardware['y_axis']['min_position'],
+                            axis_offset=config_hardware['y_axis']['axis_offset'],)
+        elif config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisHardware(robot_brain,
                                        expander=expander,
                                        name=config_hardware['y_axis']['name'],
@@ -170,7 +184,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown y_axis version: {config_hardware["y_axis"]["version"]}')
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | None
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | None
         if config_hardware['z_axis']['version'] == 'z_axis_stepper':
             z_axis = ZAxisStepperHardware(robot_brain,
                                           expander=expander,
@@ -191,6 +205,19 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           reversed_direction=config_hardware['z_axis']['reversed_direction'],
                                           end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
                                           )
+        elif config_hardware['z_axis']['version'] == 'axis_d1':
+            z_axis = AxisD1(robot_brain,
+                            can=can,
+                            can_address=config_hardware['z_axis']['can_address'],
+                            name=config_hardware['z_axis']['name'],
+                            homing_acceleration=config_hardware['z_axis']['homing_acceleration'],
+                            homing_velocity=config_hardware['z_axis']['homing_velocity'],
+                            profile_acceleration=config_hardware['z_axis']['profile_acceleration'],
+                            profile_velocity=config_hardware['z_axis']['profile_velocity'],
+                            profile_deceleration=config_hardware['z_axis']['profile_deceleration'],
+                            max_position=config_hardware['z_axis']['max_position'],
+                            min_position=config_hardware['z_axis']['min_position'],
+                            axis_offset=config_hardware['z_axis']['axis_offset'],)
         elif config_hardware['z_axis']['version'] == 'tornado':
             z_axis = TornadoHardware(robot_brain,
                                      expander=expander,

@@ -4,7 +4,14 @@ import rosys
 from nicegui import ui
 
 from ... import localization
-from ...hardware import ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado, YAxis, ZAxis
+from ...hardware import (
+    Axis,
+    ChainAxis,
+    FieldFriend,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+)
 from ...localization import Gnss
 
 if TYPE_CHECKING:
@@ -42,7 +49,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             ui.label('Software ESTOP is active!').classes('text-red mt-1')
 
         with ui.row().bind_visibility_from(robot.estop, 'active', value=False):
-            if isinstance(robot.z_axis, ZAxis):
+            if isinstance(robot.z_axis, Axis):
                 with ui.row().bind_visibility_from(robot.z_axis, 'end_t'):
                     ui.icon('report').props('size=md').classes('text-red')
                     ui.label('Z-axis in top end position!').classes('text-red mt-1')
@@ -54,7 +61,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 with ui.row().bind_visibility_from(robot.z_axis, 'alarm'):
                     ui.icon('report').props('size=md').classes('text-yellow')
                     ui.label('Z-axis in alarm, warning!').classes('text-orange mt-1')
-            if isinstance(robot.y_axis, ChainAxis) or isinstance(robot.y_axis, YAxis):
+            if isinstance(robot.y_axis, ChainAxis) or isinstance(robot.y_axis, Axis):
                 with ui.row().bind_visibility_from(robot.y_axis, 'alarm'):
                     ui.icon('report').props('size=md').classes('text-yellow')
                     ui.label('Y-axis in alarm, warning!').classes('text-orange mt-1')
@@ -151,7 +158,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     f'{robot.y_axis.steps:.0f}',
                     f'{robot.y_axis.position:.2f}m' if robot.y_axis.is_referenced else ''
                 ]
-            elif isinstance(robot.y_axis, YAxis):
+            elif isinstance(robot.y_axis, Axis):
                 y_axis_flags = [
                     'not referenced' if not robot.y_axis.is_referenced else '',
                     'alarm' if robot.y_axis.alarm else '',
@@ -163,7 +170,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 ]
             else:
                 y_axis_flags = ['no y-axis']
-            if isinstance(robot.z_axis, ZAxis):
+            if isinstance(robot.z_axis, Axis):
                 z_axis_flags = [
                     '' if robot.z_axis.is_referenced else 'not referenced',
                     'alarm' if robot.z_axis.alarm else '',

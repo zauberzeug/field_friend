@@ -11,7 +11,7 @@ from rosys.geometry import Point
 from field_friend.automations.implements.weeding_implement import WeedingImplement
 
 from ...automations import PlantLocator, Puncher
-from ...hardware import FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado, ZAxis
+from ...hardware import Axis, FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado
 from .calibration_dialog import calibration_dialog
 
 if TYPE_CHECKING:
@@ -69,7 +69,7 @@ class camera_card:
                         with ui.row():
                             ui.checkbox('Punching').bind_value(self, 'punching_enabled').tooltip(
                                 'Enable punching mode').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
-                            if isinstance(self.field_friend.z_axis, ZAxis):
+                            if isinstance(self.field_friend.z_axis, Axis):
                                 self.depth = ui.number('depth', value=0.02, format='%.2f',
                                                        step=0.01, min=self.field_friend.z_axis.max_position, max=-self.field_friend.z_axis.min_position).classes('w-16').bind_visibility_from(self, 'punching_enabled')
                             elif isinstance(self.field_friend.z_axis, Tornado):
@@ -150,7 +150,7 @@ class camera_card:
                 self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
                 if self.puncher is not None and self.punching_enabled:
                     self.log.info(f'punching {point3d}')
-                    if isinstance(self.field_friend.z_axis, ZAxis):
+                    if isinstance(self.field_friend.z_axis, Axis):
                         self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
                     elif isinstance(self.field_friend.z_axis, Tornado):
                         self.automator.start(self.puncher.drive_and_punch(
