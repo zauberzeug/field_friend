@@ -47,7 +47,7 @@ class FollowCropsNavigation(StraightLineNavigation):
         self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
 
     async def _drive(self, distance: float) -> None:
-        row = self.plant_provider.get_relevant_crops(self.odometer.prediction.point, max_distance=1.0)
+        row = self.plant_provider.get_relevant_crops(point=self.odometer.prediction.point_3d(), max_distance=1.0)
         if len(row) >= 3:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
             # Fit a line using least squares

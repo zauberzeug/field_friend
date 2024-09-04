@@ -117,7 +117,7 @@ async def test_follow_crops_no_direction(system: System, detector: rosys.vision.
     assert system.automator.is_running
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.distance(rosys.geometry.Point(x=0, y=0)) == pytest.approx(2.0, abs=0.1)
+    assert system.odometer.prediction.distance(rosys.geometry.Point3d(x=0, y=0, z=0)) == pytest.approx(2.0, abs=0.1)
     assert system.odometer.prediction.point.x == pytest.approx(2.0, abs=0.1)
     assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.01)
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
@@ -139,7 +139,7 @@ async def test_follow_crops_empty(system: System, detector: rosys.vision.Detecto
 async def test_follow_crops_straight(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(10):
         x = i/10
-        p = rosys.geometry.Point3d(x=x, y=0, z=0)
+        p = rosys.geometry.Point3d(x=x)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.current_navigation = system.follow_crops_navigation
     assert isinstance(system.current_navigation.implement, Recorder)
