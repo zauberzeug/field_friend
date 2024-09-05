@@ -101,16 +101,20 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
                     continue
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
+            world_point_3d: rosys.geometry.Point3d | None = None
             if isinstance(camera, CalibratableUsbCamera):
                 world_point_3d = camera.calibration.project_from_image(image_point)
-                if world_point_3d is None:
-                    self.log.error('could not generate world point of detection, calibration error')
-                    continue
             elif isinstance(camera, StereoCamera):
-                # TODO: correct coordinate frame
-                depth: float = camera.get_depth(int(d.cx), int(d.cy))
+                depth: float | None = camera.get_depth(int(d.cx), int(d.cy))
+                if depth is None:
+                    self.log.error('could not get a depth value for detection')
+                    continue
                 self.log.info(f'depth: {depth}')
+                # TODO: correct coordinate frame
                 world_point_3d = rosys.geometry.Point3d(x=0, y=0, z=depth)
+            if world_point_3d is None:
+                self.log.error('could not generate world point of detection, calibration error')
+                continue
             plant = Plant(type=d.category_name,
                           detection_time=rosys.time(),
                           detection_image=new_image)
