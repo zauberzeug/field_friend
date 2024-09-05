@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import rosys
 from nicegui import ui
-from rosys.geometry import Point, Pose
+from rosys.geometry import Point3d, Pose
 
 from ...hardware import ChainAxis
 from .implement import Implement
@@ -44,9 +44,9 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.start_time: Optional[float] = None
         self.last_pose: Optional[Pose] = None
         self.driven_distance: float = 0.0
-        self.crops_to_handle: dict[str, Point] = {}
-        self.weeds_to_handle: dict[str, Point] = {}
-        self.last_punches: deque[rosys.geometry.Point] = deque(maxlen=5)
+        self.crops_to_handle: dict[str, Point3d] = {}
+        self.weeds_to_handle: dict[str, Point3d] = {}
+        self.last_punches: deque[Point3d] = deque(maxlen=5)
         self.next_punch_y_position: float = 0
 
         rosys.on_repeat(self._update_time_and_distance, 0.1)
@@ -123,8 +123,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def _has_plants_to_handle(self) -> bool:
         relative_crop_positions = {
-            c.id: self.system.odometer.prediction.relative_point(c.position)
-            for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point)
+            c.id: Point3d.from_point(self.system.odometer.prediction.relative_point(c.position))
+            for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point_3d())
             if self.cultivated_crop is None or c.type == self.cultivated_crop
         }
         upcoming_crop_positions = {
@@ -136,8 +136,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.crops_to_handle = sorted_crops
 
         relative_weed_positions = {
-            w.id: self.system.odometer.prediction.relative_point(w.position)
-            for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
+            w.id: Point3d.from_point(self.system.odometer.prediction.relative_point(w.position))
+            for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point_3d())
             if w.type in self.relevant_weeds
         }
         upcoming_weed_positions = {
@@ -151,7 +151,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                 offset = self.system.field_friend.DRILL_RADIUS + \
                     self.crop_safety_distance - crop_position.distance(weed_position)
                 if offset > 0:
-                    safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
+                    safe_weed_position = Point3d.from_point(Point3d.projection(weed_position).polar(
+                        offset, Point3d.projection(crop_position).direction(weed_position)))
                     upcoming_weed_positions[weed] = safe_weed_position
                     self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
                                   f'by {offset} to safe {crop} at {crop_position}')

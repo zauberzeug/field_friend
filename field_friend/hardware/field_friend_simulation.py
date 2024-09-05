@@ -4,6 +4,7 @@ import rosys
 # change the config to the config of simulated Robot
 import config.config_selection as config_selector
 
+from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
 from .external_mower import MowerSimulation
 from .field_friend import FieldFriend
@@ -12,8 +13,6 @@ from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
 from .flashlight_v2 import FlashlightSimulationV2
 from .safety import SafetySimulation
 from .tornado import TornadoSimulation
-from .y_axis import YAxisSimulation
-from .z_axis import ZAxisSimulation
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
@@ -43,11 +42,11 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
         wheels = rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
 
-        y_axis: YAxisSimulation | ChainAxisSimulation | None
+        y_axis: AxisSimulation | ChainAxisSimulation | None
         if config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisSimulation()
-        elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen']:
-            y_axis = YAxisSimulation(
+        elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen', 'axis_d1']:
+            y_axis = AxisSimulation(
                 min_position=config_hardware['y_axis']['min_position'],
                 max_position=config_hardware['y_axis']['max_position'],
                 axis_offset=config_hardware['y_axis']['axis_offset'],
@@ -57,9 +56,9 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown Y-Axis version: {config_hardware["y_axis"]["version"]}')
 
-        z_axis: ZAxisSimulation | TornadoSimulation | None
-        if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen']:
-            z_axis = ZAxisSimulation(
+        z_axis: AxisSimulation | TornadoSimulation | None
+        if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen', 'axis_d1']:
+            z_axis = AxisSimulation(
                 min_position=config_hardware['z_axis']['min_position'],
                 max_position=config_hardware['z_axis']['max_position'],
                 axis_offset=config_hardware['z_axis']['axis_offset'],

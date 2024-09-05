@@ -3,10 +3,10 @@ from typing import Optional
 import rosys
 from rosys.helpers import remove_indentation
 
-from .z_axis import ZAxis
+from .axis import Axis
 
 
-class ZAxisStepperHardware(ZAxis, rosys.hardware.ModuleHardware):
+class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
     """The z axis module is a simple example for a representation of real or simulated robot hardware."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
