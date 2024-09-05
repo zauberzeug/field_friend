@@ -1,10 +1,9 @@
-import uuid
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Optional
 from uuid import uuid4
 
-from rosys.geometry import Point
+from rosys.geometry import Point3d
 from rosys.vision import Image
 
 
@@ -12,21 +11,23 @@ from rosys.vision import Image
 class Plant:
     id: str = field(default_factory=lambda: str(uuid4()))
     type: str
-    positions: deque[Point] = field(default_factory=lambda: deque(maxlen=20))
+    positions: deque[Point3d] = field(default_factory=lambda: deque(maxlen=20))
     detection_time: float
     confidences: deque[float] = field(default_factory=lambda: deque(maxlen=20))
     detection_image: Optional[Image] = None
 
     @property
-    def position(self) -> Point:
+    def position(self) -> Point3d:
         """Calculate the middle position of all points"""
-        total_x = sum(point.x for point in self.positions)
-        total_y = sum(point.y for point in self.positions)
+        total_x = sum(point3d.x for point3d in self.positions)
+        total_y = sum(point3d.y for point3d in self.positions)
+        total_z = sum(point3d.z for point3d in self.positions)
 
         middle_x = total_x / len(self.positions)
         middle_y = total_y / len(self.positions)
+        middle_z = total_z / len(self.positions)
 
-        return Point(x=middle_x, y=middle_y)
+        return Point3d(x=middle_x, y=middle_y, z=middle_z)
 
     @property
     def confidence(self) -> float:
