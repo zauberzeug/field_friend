@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
-from geographiclib.geodesic import Geodesic
 from nicegui import ui
 
 from ... import localization
