@@ -10,7 +10,8 @@ from rosys.driving import Odometer
 from rosys.geometry import Point3d
 from rosys.vision import Calibration, Camera, CameraProvider, SimulatedCalibratableCamera
 
-from ...vision import DOT_DISTANCE, Dot, Network
+from ...vision import DOT_DISTANCE, CalibratableUsbCamera, Dot, Network
+from ...vision.zedxmini_camera import ZedxminiCamera
 
 
 class calibration_dialog(ui.dialog):
@@ -150,7 +151,7 @@ class calibration_dialog(ui.dialog):
             if self.moving_dot:
                 self.moving_dot.x = e.image_x
                 self.moving_dot.y = e.image_y
-                self.render()
+                # self.render()
         if e.type == 'mouseup':
             if self.moving_dot is not None:
                 self.network.try_refine(self.moving_dot)
@@ -193,7 +194,10 @@ class calibration_dialog(ui.dialog):
         try:
             if not self.calibration:
                 raise ValueError('No calibration created')
-            self.camera.calibration = self.calibration
+            if isinstance(self.camera, CalibratableUsbCamera):
+                self.camera.calibration = self.calibration
+            elif isinstance(self.camera, ZedxminiCamera):
+                self.camera.calibration.extrinsics = self.calibration.extrinsics
         except Exception as e:
             self.camera.calibration = None
             ui.notify(str(e))
