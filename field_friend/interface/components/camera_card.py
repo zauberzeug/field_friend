@@ -119,9 +119,11 @@ class camera_card:
             url = f'{active_camera.get_latest_image_url()}?shrink={self.shrink_factor}'
         else:
             url = active_camera.get_latest_image_url()
-        if self.image_view is None or self.camera.calibration is None:
+        if self.image_view is None:
             return
         self.image_view.set_source(url)
+        if self.camera.calibration is None:
+            return
         image = active_camera.latest_detected_image
         svg = ''
         if image and image.detections:
