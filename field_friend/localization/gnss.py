@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from dataclasses import dataclass
-from typing import Any, Optional
+from dataclasses import datacfrom from typing import Any, Optional
 
 import numpy as np
 import rosys
@@ -51,7 +51,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.current: Optional[GNSSRecord] = None
         self.device: str | None = None
         self.antenna_offset = antenna_offset
-        self.is_paused = False
+        self._is_paused = False
         self.observed_poses: list[rosys.geometry.Pose] = []
         self.last_pose_update = rosys.time()
         self.needed_poses: int = self.NEEDED_POSES
@@ -87,11 +87,19 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         try:
             # TODO also do antenna_offset correction for this event
             self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
-            if not self.is_paused and ("R" in self.current.mode or self.current.mode == "SSSS"):
+            if ("R" in self.current.mode or self.current.mode == "SSSS"):
                 self._on_rtk_fix()
         except Exception:
             self.log.exception('gnss record could not be applied')
             self.current = None
+
+    @contextlib.contextmanager
+    def pause(self):
+        try:
+            self._is_paused = True
+            yield
+        finally:
+            self._is_paused = False
 
     @abstractmethod
     async def _create_new_record(self) -> Optional[GNSSRecord]:
@@ -116,16 +124,15 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
             yaw=yaw,
             time=self.current.timestamp)
         self.observed_poses.append(pose)
+        
+        if len(self.observed_poses) > self.needed_poses: # Ensure fresh data
+            self.observed_poses.pop(0)
+        
+        # Only update if unpaused
+        if not self._is_paused:
+            self._update_robot_pose()
 
-    async def update_robot_pose(self) -> None:
-        assert not self.is_paused
-        if self.ensure_gnss:
-            while len(self.observed_poses) < self.needed_poses:
-                if rosys.time() - self.last_pose_update < self.min_seconds_between_updates:
-                    return
-                await rosys.sleep(0.1)
-        if not self.observed_poses:
-            return
+    def _update_robot_pose(self) -> None:
         x = np.mean([pose.point.x for pose in self.observed_poses])
         y = np.mean([pose.point.y for pose in self.observed_poses])
         yaw = np.mean([pose.yaw for pose in self.observed_poses])
@@ -137,12 +144,10 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
     def backup(self) -> dict:
         return {
             'needed_poses': self.needed_poses,
-            'min_seconds_between_updates': self.min_seconds_between_updates,
             'ensure_gnss': self.ensure_gnss
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         super().restore(data)
         self.needed_poses = data.get('needed_poses', self.needed_poses)
-        self.min_seconds_between_updates = data.get('min_seconds_between_updates', self.min_seconds_between_updates)
         self.ensure_gnss = data.get('ensure_gnss', self.ensure_gnss)
