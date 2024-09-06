@@ -43,9 +43,9 @@ class PlantLocator(rosys.persistence.PersistentModule):
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         if isinstance(self.detector, rosys.vision.DetectorHardware):
             rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port), 1.0)
-        if system.is_real:
-            self.teltonika_router = system.teltonika_router
-            self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
+        # if system.is_real:
+        #     self.teltonika_router = system.teltonika_router
+        #     self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')

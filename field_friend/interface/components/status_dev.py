@@ -7,7 +7,7 @@ from nicegui import ui
 
 from ... import localization
 from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2,
-                         Tornado, YAxis, ZAxis)
+                         Tornado, YAxis, ZAxis, DoubleWheelsHardware)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -88,7 +88,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Bumper:**').style('color: #EDF4FB')
                 bumper_label = ui.label()
-        if system.is_real:
+        if system.is_real and isinstance(robot.wheels, DoubleWheelsHardware):
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Motor status:**').style('color: #EDF4FB')
                 l0_status = ui.label()
@@ -309,7 +309,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
             #         if robot.implement_name == 'dual_mechanism':
             #             kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
-        if system.is_real:
+        if system.is_real and isinstance(robot.wheels, DoubleWheelsHardware):
             if robot.wheels.odrive_version == 6:
                 l0_status.text = 'Error in l0' if robot.wheels.l0_error else 'No error'
                 l1_status.text = 'Error in l1' if robot.wheels.l1_error else 'No error'

@@ -13,8 +13,8 @@ class StatusControlHardware(ModuleHardware):
         self.rdyp_status: bool = False
         self.vdp_status: bool = False
         self.heap: int = 0
-        lizard_code = f'rdyp_status = Input({rdyp_pin})\n'
-        lizard_code += f'vdp_status = {expander.name + "."}Input({vdp_pin})\n'
+        lizard_code = f'rdyp_status = Input({rdyp_pin})\nrdyp_status.level = 0\n'
+        lizard_code += f'vdp_status = {expander.name + "."}Input({vdp_pin})\nvdp_status.level = 0\n'
         core_message_fields = [
             'rdyp_status.level',
             'vdp_status.level',

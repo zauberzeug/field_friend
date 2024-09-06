@@ -38,8 +38,8 @@ class TeltonikaRouter:
         if self.connection_check_running is True:
             return
         self.connection_check_running = True
-        if rosys.time() - self.token_time > 4 * 60:
-            await self._get_token()
+        # if rosys.time() - self.token_time > 4 * 60:
+        #     await self._get_token()
         self.log.debug('Getting internet connection info...')
         try:
             response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/failover/status',
@@ -82,3 +82,17 @@ class TeltonikaRouter:
         self.log.info('Getting authentication token for Teltonika router: success')
         self.auth_token = response.json()['data']['token']
         self.token_time = rosys.time()
+
+class TeltonikaRouterSimulation():
+    def __init__(self) -> None:
+        self.current_connection: str = 'wifi'
+        self.CONNECTION_CHANGED = rosys.event.Event()
+    
+    async def get_current_connection(self) -> None:
+        if self.current_connection == 'wifi':
+            self.current_connection = 'ether'
+        else:
+            self.current_connection = 'wifi'
+            
+        self.CONNECTION_CHANGED.emit()
+        return

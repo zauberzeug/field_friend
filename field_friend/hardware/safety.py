@@ -73,7 +73,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         lizard_code += 'end\n'
         # implement stop call for estops and bumpers
         for name in estop.pins:
-            lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
+            lizard_code += f'estop_{name}.level=0\nwhen estop_{name}.level == 0 then stop(); end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
             lizard_code += 'when ' + \
                 ' or '.join(f'{bumper.name}_{pin}.level == 1' for pin in bumper.pins) + \

@@ -13,7 +13,7 @@ from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiP
 from .automations.implements import ChopAndScrew, ExternalMower, Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (ABLineNavigation, CoverageNavigation, FollowCropsNavigation, Navigation,
                                      RowsOnFieldNavigation, StraightLineNavigation)
-from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
+from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter,TeltonikaRouterSimulation
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
@@ -43,13 +43,13 @@ class System(rosys.persistence.PersistentModule):
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
-                self.teltonika_router = TeltonikaRouter()
+                self.teltonika_router = TeltonikaRouterSimulation()
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
-            self.camera_provider = CalibratableUsbCameraProvider()
+            self.camera_provider = rosys.vision.SimulatedCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
-            self.detector = rosys.vision.DetectorHardware(port=8004)
-            self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
+            self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
+            #self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
             self.camera_configurator = CameraConfigurator(self.camera_provider, odometer=self.odometer)
         else:
@@ -72,8 +72,8 @@ class System(rosys.persistence.PersistentModule):
             self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
-        self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.2
+        self.driver.parameters.linear_speed_limit = 3
+        self.driver.parameters.angular_speed_limit = 2
         self.driver.parameters.can_drive_backwards = True
         self.driver.parameters.minimum_turning_radius = 0.01
         self.driver.parameters.hook_offset = 0.45

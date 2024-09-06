@@ -1,3 +1,3 @@
 configuration = {'robot_brain': {
-    'flash_params': ['orin', 'v05']
+    'flash_params': ['nand']
 }}

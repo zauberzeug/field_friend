@@ -32,24 +32,24 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.log = logging.getLogger('field_friend.field_friend_hardware')
         config_hardware: dict = config_selector.import_config(module='hardware')
         config_robotbrain: dict = config_selector.import_config(module='robotbrain')
-        config_params: dict = config_selector.import_config(module='params')
+        self.config_params: dict = config_selector.import_config(module='params')
         self.check_pins(config_hardware)
-        self.MOTOR_GEAR_RATIO: float = config_params['motor_gear_ratio']
-        self.THOOTH_COUNT: int = config_params['thooth_count']
-        self.PITCH: float = config_params['pitch']
+        self.MOTOR_GEAR_RATIO: float = self.config_params['motor_gear_ratio']
+        self.THOOTH_COUNT: int = self.config_params['thooth_count']
+        self.PITCH: float = self.config_params['pitch']
         self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH / np.pi
         self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
-        self.WHEEL_DISTANCE: float = config_params['wheel_distance']
-        self.ANTENNA_OFFSET: float = config_params['antenna_offset']
-        implement: str = config_params['tool']
+        self.WHEEL_DISTANCE: float = self.config_params['wheel_distance']
+        self.ANTENNA_OFFSET: float = self.config_params['antenna_offset']
+        implement: str = self.config_params['tool']
         if implement in ['tornado', 'weed_screw', 'none']:
-            self.WORK_X: float = config_params['work_x']
-            self.DRILL_RADIUS: float = config_params['drill_radius']
+            self.WORK_X: float = self.config_params['work_x']
+            self.DRILL_RADIUS: float = self.config_params['drill_radius']
         elif implement in ['dual_mechanism']:
-            self.WORK_X_CHOP: float = config_params['work_x_chop']
-            self.WORK_X: float = config_params['work_x_drill']
-            self.DRILL_RADIUS = config_params['drill_radius']
-            self.CHOP_RADIUS: float = config_params['chop_radius']
+            self.WORK_X_CHOP: float = self.config_params['work_x_chop']
+            self.WORK_X: float = self.config_params['work_x_drill']
+            self.DRILL_RADIUS = self.config_params['drill_radius']
+            self.CHOP_RADIUS: float = self.config_params['chop_radius']
         elif implement in ['mower']:  # front mower for trees
             self.WORK_X: float = 0.0
             self.DRILL_RADIUS: float = 0.0

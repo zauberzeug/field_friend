@@ -24,7 +24,7 @@ class manual_steerer_dialog(ui.dialog):
             with ui.column():
                 ui.markdown(SHORTCUT_INFO).classes('col-grow')
             with ui.row().classes('w-full justify-end'):
-                ui.number('speed', format='%.0f', max=4, min=1, value=1).props('dense outlined').classes(
+                ui.number('speed', format='%.0f', max=4, min=1, value=2).props('dense outlined').classes(
                     'w-24 mr-4').bind_value(self.key_controls, 'speed').tooltip('Set the speed of the robot (1-4)')
                 ui.space()
                 ui.button('Close', on_click=self.close).props('outline')
