@@ -4,7 +4,6 @@ import logging
 from typing import Any, Self
 
 import aiohttp
-import requests
 import rosys
 from rosys import persistence
 from rosys.geometry import Point3d
@@ -13,7 +12,7 @@ from rosys.vision import CalibratableCamera, Calibration, Image, ImageSize, Intr
 
 class StereoCamera(CalibratableCamera, abc.ABC):
     @abc.abstractmethod
-    def get_depth(self, x, y, size=0) -> float | None:
+    async def get_point(self, x, y) -> Point3d | None:
         pass
 
 
@@ -101,14 +100,6 @@ class ZedxminiCamera(StereoCamera):
             tags=set(data['tags']),
         )
         self._add_image(image)
-
-    def get_depth(self, x, y, size=0) -> float | None:
-        url = f'http://{self.ip}:{self.port}/depth?x={x}&y={y}&size={size}'
-        response = requests.get(url, timeout=2.0)
-        if response.status_code != 200:
-            self.log.warning(f"response.status_code: {response.status_code}")
-            return None
-        return float(response.text)
 
     async def get_point(self, x, y) -> Point3d | None:
         url = f'http://{self.ip}:{self.port}/point?x={x}&y={y}'
