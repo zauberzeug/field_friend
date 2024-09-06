@@ -1,0 +1,17 @@
+rdyp = Output(15)
+en3 = Output(12)
+bluetooth = Bluetooth("minibot-z33")
+can = Can(32, 33, 1000000)
+l = ODriveMotor(can, 0)
+r = ODriveMotor(can, 0x100)
+l.m_per_tick = 0.04
+r.m_per_tick = 0.04
+l.reversed = true
+r.reversed = false
+wheels = ODriveWheels(l, r)
+wheels.width = 0.21
+let stop do wheels.speed(0, 0);end
+when core.last_message_age > 1000 then wheels.speed(0, 0); end
+when core.last_message_age > 20000 then stop(); end
+rdyp.on()
+en3.on()
