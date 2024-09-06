@@ -6,9 +6,10 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Optional
-from nicegui import ui
+
 import numpy as np
 import rosys
+from nicegui import ui
 
 from .. import localization
 from .geo_point import GeoPoint
@@ -62,6 +63,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.needs_backup = False
         rosys.on_repeat(self.check_gnss, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
+        self.reference_alert_dialog = None
 
     @abstractmethod
     async def try_connection(self) -> None:
