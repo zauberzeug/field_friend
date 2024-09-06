@@ -1,20 +1,12 @@
 import abc
-import base64
 import logging
-from dataclasses import dataclass
+from typing import Any, Self
 
-import numpy as np
 import requests
-from rosys.vision import CalibratableCamera, Image, ImageSize
-
-
-@dataclass
-class StereoFrame:
-    timestamp: float
-    left: Image
-    right: Image
-    depth: Image
-    depth_map: np.ndarray
+import rosys
+from rosys import persistence
+from rosys.geometry import Point3d
+from rosys.vision import CalibratableCamera, Calibration, Image, ImageSize, Intrinsics
 
 
 class StereoCamera(CalibratableCamera, abc.ABC):
@@ -24,29 +16,50 @@ class StereoCamera(CalibratableCamera, abc.ABC):
 
 
 class ZedxminiCamera(StereoCamera):
-    def __init__(self, camera_id='zedxmini-todo', ip: str = '127.0.0.1', port: int = 8003) -> None:
+    ip: str = 'localhost'
+    port: int = 8003
+
+    def __init__(self, ip: str | None = None, port: int | None = None, focal_length: float = 747.0735473632812, **kwargs) -> None:
         self.MAX_IMAGES = 10
-        super().__init__(id=camera_id, name='Zedxmini', polling_interval=0.1)
-        self.ip = ip
-        self.port = port
+        super().__init__(**kwargs)
+        if ip is not None:
+            self.ip = ip
+        if port is not None:
+            self.port = port
+        self.focal_length = focal_length
         self.connected: bool = False
         self.log = logging.getLogger(self.name)
         self.log.setLevel(logging.DEBUG)
-        # TODO: get calibration
-        self.set_perfect_calibration(width=1920, height=1200)
-        # rosys.on_startup(self.setup_camera)
+        self.camera_information: dict[str, Any] = {}
 
     async def connect(self) -> None:
         await super().connect()
-        url = f'http://{self.ip}:{self.port}/information'
-        response = requests.get(url, timeout=2.0)
+        self.connected = await self.setup_camera_information()
+
+    @staticmethod
+    async def get_camera_information(ip: str | None = None, port: int | None = None) -> dict[str, Any] | None:
+        ip = ZedxminiCamera.ip if ip is None else ip
+        port = ZedxminiCamera.port if port is None else port
+        url = f'http://{ip}:{port}/information'
+        try:
+            response = requests.get(url, timeout=10.0)
+        except ConnectionRefusedError:
+            return None
         if response.status_code != 200:
-            self.log.warning(f"response.status_code: {response.status_code}")
-            self.connected = False
-            return
-        data = response.json()
-        print(data)
-        self.connected = True
+            return None
+        camera_information = response.json()
+        return camera_information
+
+    async def setup_camera_information(self) -> bool:
+        camera_information = await self.get_camera_information(self.ip, self.port)
+        if camera_information is None:
+            return False
+        assert 'calibration' in camera_information
+        assert 'left_cam' in camera_information['calibration']
+        assert 'fx' in camera_information['calibration']['left_cam']
+        self.camera_information = camera_information
+        self.focal_length = camera_information['calibration']['left_cam']['fy']
+        return True
 
     async def capture_image(self) -> None:
         if not self.connected:
@@ -58,8 +71,7 @@ class ZedxminiCamera(StereoCamera):
             return
         data = response.json()
         assert 'image' in data
-        image_bytes = base64.b64decode(data['image'])
-
+        image_bytes = await rosys.run.cpu_bound(bytes.fromhex, data['image'])
         image = Image(
             camera_id=data['camera_id'],
             size=ImageSize(width=data['width'], height=data['height']),
@@ -77,6 +89,15 @@ class ZedxminiCamera(StereoCamera):
             self.log.warning(f"response.status_code: {response.status_code}")
             return None
         return float(response.text)
+
+    def get_point(self, x, y) -> Point3d | None:
+        url = f'http://{self.ip}:{self.port}/point?x={x}&y={y}'
+        response = requests.get(url, timeout=2.0)
+        if response.status_code != 200:
+            self.log.warning(f"response.status_code: {response.status_code}")
+            return None
+        data = response.json()
+        return Point3d(**data)
 
     @property
     def is_connected(self) -> bool:

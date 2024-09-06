@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import rosys
 from nicegui import ui
+from rosys.geometry import Point3d
 from rosys.vision import Autoupload
 
 from ..vision import CalibratableUsbCamera
@@ -105,13 +106,14 @@ class PlantLocator(rosys.persistence.PersistentModule):
             if isinstance(camera, CalibratableUsbCamera):
                 world_point_3d = camera.calibration.project_from_image(image_point)
             elif isinstance(camera, StereoCamera):
-                depth: float | None = camera.get_depth(int(d.cx), int(d.cy))
-                if depth is None:
+                camera_point_3d: Point3d | None = camera.get_point(
+                    int(d.cx), int(d.cy))
+                if camera_point_3d is None:
                     self.log.error('could not get a depth value for detection')
                     continue
-                self.log.info(f'depth: {depth}')
-                # TODO: correct coordinate frame
-                world_point_3d = rosys.geometry.Point3d(x=0, y=0, z=depth)
+                camera_point_3d = camera_point_3d.in_frame(self.odometer.prediction_frame)
+                world_point_3d = camera_point_3d.resolve()
+                self.log.info(f'camera_point_3d: {camera_point_3d} -> world_point_3d: {world_point_3d.tuple}')
             if world_point_3d is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue
