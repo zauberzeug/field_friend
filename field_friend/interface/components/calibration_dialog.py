@@ -197,7 +197,9 @@ class calibration_dialog(ui.dialog):
             if isinstance(self.camera, CalibratableUsbCamera):
                 self.camera.calibration = self.calibration
             elif isinstance(self.camera, ZedxminiCamera):
+                self.camera.setup_calibration(self.camera.camera_information)
                 self.camera.calibration.extrinsics = self.calibration.extrinsics
+            self.camera.calibration.extrinsics.as_frame(self.camera.id)
         except Exception as e:
             self.camera.calibration = None
             ui.notify(str(e))
