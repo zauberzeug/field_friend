@@ -55,8 +55,8 @@ class Navigation(rosys.persistence.PersistentModule):
                     await self._drive(self.DEFAULT_DRIVE_DISTANCE)
                     continue
                 else:
-                    with self.gnss.paused(): # Pause GNSS for better local accuracy
-                        await self._drive(distance)
+                    await self._drive(distance)
+                    with self.gnss.pause(): # Pause GNSS for better local accuracy
                         await self.implement.start_workflow()
                         await self.implement.stop_workflow()
         except WorkflowException as e:
