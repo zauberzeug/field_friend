@@ -88,9 +88,9 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
-            lizard_code += 'when ' + \
-                ' or '.join(f'{bumper.name}_{pin}.level == 1' for pin in bumper.pins) + \
-                f' then {wheels.name}.off(); end\n'
+             for name in bumper.pins:
+                lizard_code += f'bumper_{name}.level = 0\n'
+                lizard_code += f'when bumper_{name}.level == 1 then stop(); end\n'
 
         # implement stop call for "ground check" reference sensors
         if isinstance(y_axis, ChainAxisHardware):
