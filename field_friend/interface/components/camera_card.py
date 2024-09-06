@@ -232,12 +232,12 @@ class camera_card:
     def build_svg_for_plant_provider(self) -> str:
         if self.camera is None or self.camera.calibration is None:
             return ''
-        position = rosys.geometry.Point(x=self.camera.calibration.extrinsics.translation[0],
-                                        y=self.camera.calibration.extrinsics.translation[1])
+        position = rosys.geometry.Point3d(x=self.camera.calibration.extrinsics.translation[0],
+                                          y=self.camera.calibration.extrinsics.translation[1],
+                                          z=0)
         svg = ''
         for plant in self.plant_provider.get_relevant_weeds(position):
-            position_3d = rosys.geometry.Point3d(x=plant.position.x, y=plant.position.y, z=0)
-            screen = self.camera.calibration.project_to_image(position_3d)
+            screen = self.camera.calibration.project_to_image(plant.position)
             if screen is not None:
                 svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="5" fill="white" />'
                 svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{plant.id[:4]}</text>'

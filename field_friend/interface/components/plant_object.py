@@ -18,7 +18,7 @@ class plant_objects(Group):
         self.plant_provider.PLANTS_CHANGED.register_ui(self.update)
 
     def update(self) -> None:
-        origin = rosys.geometry.Point(x=0, y=0)
+        origin = rosys.geometry.Point3d(x=0, y=0, z=0)
         in_world = {p.id: p for p in
                     self.plant_provider.get_relevant_weeds(origin, max_distance=1000) +
                     self.plant_provider.get_relevant_crops(origin, max_distance=1000)}
