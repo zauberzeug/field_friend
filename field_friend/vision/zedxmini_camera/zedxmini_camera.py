@@ -82,3 +82,42 @@ class ZedxminiCamera(StereoCamera):
     def is_connected(self) -> bool:
         # TODO: check it in capture_image
         return self.connected
+
+    def setup_calibration(self, camera_dict: dict) -> None:
+        assert 'resolution' in camera_dict
+        assert 'calibration' in camera_dict
+        assert 'left_cam' in camera_dict['calibration']
+        width = camera_dict['resolution'][0]
+        height = camera_dict['resolution'][1]
+        fx = camera_dict['calibration']['left_cam']['fx']
+        # TODO: calculate correct focal length
+        self.focal_length = fx
+        fy = camera_dict['calibration']['left_cam']['fy']
+        cx = camera_dict['calibration']['left_cam']['cx']
+        cy = camera_dict['calibration']['left_cam']['cy']
+        k1 = camera_dict['calibration']['left_cam']['k1']
+        k2 = camera_dict['calibration']['left_cam']['k2']
+        p1 = camera_dict['calibration']['left_cam']['p1']
+        p2 = camera_dict['calibration']['left_cam']['p2']
+        k3 = camera_dict['calibration']['left_cam']['k3']
+
+        size = ImageSize(width=width, height=height)
+        K: list[list[float]] = [[fx, 0.0, cx],
+                                [0.0, fy, cy],
+                                [0.0, 0.0, 1.0]]
+        D: list[float] = [k1, k2, p1, p2, k3]
+        intrinsics = Intrinsics(matrix=K, distortion=D, size=size)
+        self.calibration = Calibration(intrinsics=intrinsics)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        logging.info(f'zedxmini - from_dict - data: {data}')
+        return cls(**(data | {
+            'calibration': persistence.from_dict(rosys.vision.Calibration, data['calibration']) if data.get('calibration') else None,
+        }))
+
+    def to_dict(self) -> dict:
+        logging.info('zedxmini - to_dict')
+        return super().to_dict() | {
+            'focal_length': self.focal_length,
+        }
