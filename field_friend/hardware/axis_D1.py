@@ -106,7 +106,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             await self.robot_brain.send(f'{self.name}_motor.reset()')
         else: self.log.error(f'AxisD1 {self.name} is not in fault state')
 
-    async def try_reference(self):
+    async def try_reference(self) -> bool:
         if not self._valid_status():
             await self.enable_motor()
         if self.is_referenced:
@@ -115,6 +115,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             #due to some timing issues, the homing command is sent twice
             await self.robot_brain.send(f'{self.name}_motor.home()')
             await self.robot_brain.send(f'{self.name}_motor.home()')
+        return self.is_referenced
 
     async def speed_Mode(self, speed: int):
         #due to some timing issues, the speed command is sent twice
