@@ -68,7 +68,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await super().finish()
 
     async def activate(self):
-        await self.system.field_friend.flashlight.turn_on()
+        # await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
         await rosys.sleep(3)
         self.system.plant_locator.resume()
@@ -79,7 +79,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def deactivate(self):
         await super().deactivate()
         self.system.timelapse_recorder.camera = None
-        await self.system.field_friend.flashlight.turn_off()
+        # await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
@@ -154,8 +154,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                     safe_weed_position = Point3d.from_point(Point3d.projection(weed_position).polar(
                         offset, Point3d.projection(crop_position).direction(weed_position)))
                     upcoming_weed_positions[weed] = safe_weed_position
-                    self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
-                                  f'by {offset} to safe {crop} at {crop_position}')
+                    # self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
+                    #               f'by {offset} to safe {crop} at {crop_position}')
 
         # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
