@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Optional
-
+from nicegui import ui
 import numpy as np
 import rosys
 
@@ -146,3 +147,18 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.needed_poses = data.get('needed_poses', self.needed_poses)
         self.min_seconds_between_updates = data.get('min_seconds_between_updates', self.min_seconds_between_updates)
         self.ensure_gnss = data.get('ensure_gnss', self.ensure_gnss)
+
+    def update_reference(self) -> None:
+        if self.current is None:
+            rosys.notify('No GNSS position available.')
+            return
+        localization.reference = self.current.location
+        os.utime('main.py')
+
+    def reference_warning_dialog(self) -> None:
+        with ui.dialog() as self.reference_alert_dialog, ui.card():
+            ui.label('The reference is to far away from the current position which would lead to issues in the navigation. Do you want to set it now?')
+            with ui.row():
+                ui.button("Update reference", on_click=self.update_reference).props("outline color=warning") \
+                    .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
+                ui.button('Cancel', on_click=self.reference_alert_dialog.close)

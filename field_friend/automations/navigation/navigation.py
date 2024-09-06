@@ -27,7 +27,6 @@ class Navigation(rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.navigation')
         self.driver = system.driver
         self.odometer = system.odometer
-        self.field_provider = system.field_provider
         self.gnss = system.gnss
         self.kpi_provider = system.kpi_provider
         self.plant_provider = system.plant_provider
@@ -49,7 +48,7 @@ class Navigation(rosys.persistence.PersistentModule):
                 return
             await self.gnss.update_robot_pose()
             if self.gnss.current.location.distance(localization.reference) > 2000.0:
-                self.reference_alert_dialog.open()
+                self.gnss.reference_alert_dialog.open()
                 return
             self.start_position = self.odometer.prediction.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
@@ -137,12 +136,6 @@ class Navigation(rosys.persistence.PersistentModule):
         pass
 
     def settings_ui(self) -> None:
-        with ui.dialog() as self.reference_alert_dialog, ui.card():
-            ui.label('The reference is to far away from the current position which would lead to issues in the navigation. Do you want to set it now?')
-            with ui.row():
-                ui.button("Update reference", on_click=self.field_provider.update_reference).props("outline color=warning") \
-                    .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
-                ui.button('Cancel', on_click=self.reference_alert_dialog.close)
         ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
