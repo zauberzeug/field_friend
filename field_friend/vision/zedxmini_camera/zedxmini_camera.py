@@ -1,7 +1,9 @@
 import abc
+import asyncio
 import logging
 from typing import Any, Self
 
+import aiohttp
 import requests
 import rosys
 from rosys import persistence
@@ -41,14 +43,23 @@ class ZedxminiCamera(StereoCamera):
         ip = ZedxminiCamera.ip if ip is None else ip
         port = ZedxminiCamera.port if port is None else port
         url = f'http://{ip}:{port}/information'
-        try:
-            response = requests.get(url, timeout=10.0)
-        except ConnectionRefusedError:
-            return None
-        if response.status_code != 200:
-            return None
-        camera_information = response.json()
-        return camera_information
+        data: dict[str, Any] | None = None
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(url, timeout=2.0) as response:
+                    if response.status != 200:
+                        logging.warning(f"response.status: {response.status}")
+                        return None
+                    data = await response.json()
+            except aiohttp.ClientError as e:
+                logging.error(f"Error capturing image: {str(e)}")
+                return None
+            except asyncio.TimeoutError:
+                logging.error("Request timed out")
+                return None
+        if data is None:
+            return
+        return data
 
     async def setup_camera_information(self) -> bool:
         camera_information = await self.get_camera_information(self.ip, self.port)
@@ -65,11 +76,20 @@ class ZedxminiCamera(StereoCamera):
         if not self.connected:
             return
         url = f'http://{self.ip}:{self.port}/image'
-        response = requests.get(url, timeout=2.0)
-        if response.status_code != 200:
-            self.log.warning(f"response.status_code: {response.status_code}")
+        data: dict[str, Any] | None = None
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(url, timeout=2.0) as response:
+                    if response.status != 200:
+                        self.log.warning(f"response.status: {response.status}")
+                        return
+                    data = await response.json()
+            except aiohttp.ClientError as e:
+                self.log.error(f"Error capturing image: {str(e)}")
+            except asyncio.TimeoutError:
+                self.log.error("Request timed out")
+        if data is None:
             return
-        data = response.json()
         assert 'image' in data
         image_bytes = await rosys.run.cpu_bound(bytes.fromhex, data['image'])
         image = Image(
@@ -90,13 +110,25 @@ class ZedxminiCamera(StereoCamera):
             return None
         return float(response.text)
 
-    def get_point(self, x, y) -> Point3d | None:
+    async def get_point(self, x, y) -> Point3d | None:
         url = f'http://{self.ip}:{self.port}/point?x={x}&y={y}'
-        response = requests.get(url, timeout=2.0)
-        if response.status_code != 200:
-            self.log.warning(f"response.status_code: {response.status_code}")
-            return None
-        data = response.json()
+        data: dict[str, Any] | None = None
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(url, timeout=2.0) as response:
+                    if response.status != 200:
+                        self.log.warning(f"response.status: {response.status}")
+                        return
+                    data = await response.json()
+            except aiohttp.ClientError as e:
+                self.log.error(f"Error capturing image: {str(e)}")
+            except asyncio.TimeoutError:
+                self.log.error("Request timed out")
+        if data is None:
+            return
+        assert 'x' in data
+        assert 'y' in data
+        assert 'z' in data
         return Point3d(**data)
 
     @property
