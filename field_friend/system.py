@@ -41,14 +41,15 @@ class System(rosys.persistence.PersistentModule):
         self.usb_camera_provider: CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.field_friend: FieldFriend
-        self.is_real = False
+        # self.is_real = False
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
                 self.teltonika_router = TeltonikaRouter()
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
-            self.camera_provider = CalibratableUsbCameraProvider()
+            # self.camera_provider = CalibratableUsbCameraProvider()
+            self.camera_provider = ZedxminiCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
