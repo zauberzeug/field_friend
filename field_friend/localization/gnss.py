@@ -4,7 +4,8 @@ import contextlib
 import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from dataclasses import datacfrom from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any, Optional
 
 import numpy as np
 import rosys
