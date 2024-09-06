@@ -106,14 +106,17 @@ class PlantLocator(rosys.persistence.PersistentModule):
             if isinstance(camera, CalibratableUsbCamera):
                 world_point_3d = camera.calibration.project_from_image(image_point)
             elif isinstance(camera, StereoCamera):
-                camera_point_3d: Point3d | None = camera.get_point(
+                camera_point_3d: Point3d | None = await camera.get_point(
                     int(d.cx), int(d.cy))
                 if camera_point_3d is None:
                     self.log.error('could not get a depth value for detection')
                     continue
-                camera_point_3d = camera_point_3d.in_frame(self.odometer.prediction_frame)
-                world_point_3d = camera_point_3d.resolve()
-                self.log.info(f'camera_point_3d: {camera_point_3d} -> world_point_3d: {world_point_3d.tuple}')
+                camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
+                    'zedxmini').in_frame(self.odometer.prediction_frame)
+                world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
+                # rosys_1       | 2024-09-06 12:57:03.962 [INFO] field_friend/automations/plant_locator.py:130: camera_point_3d: Point3d(0.061, -0.002, 0.469) -> world_point_3d: (array([0.14884793]), array([-0.02568044]), array([0.46912057]))
+                # rosys_1       | 2024-09-06 12:57:04.002 [INFO] field_friend/automations/plant_locator.py:130: camera_point_3d: Point3d(0.006, -0.073, 0.525) -> world_point_3d: (array([0.09310573]), array([-0.09459265]), array([0.52506744]))
+                # self.log.info(f'camera_point_3d: {camera_point_3d} -> world_point_3d: {world_point_3d.tuple}')
             if world_point_3d is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue
@@ -127,6 +130,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info(f'{d.category_name} found')
+                self.log.info(f'camera_point_3d: {camera_point_3d} -> world_point_3d: {world_point_3d.tuple}')
                 self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
