@@ -31,7 +31,7 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
     async def update_device_list(self) -> None:
         if len(self._cameras) == 0:
             # TODO: get camera id from api
-            self.add_camera(ZedxminiCamera(id='zedxmini-todo', polling_interval=0.2))
+            self.add_camera(ZedxminiCamera(id='zedxmini-todo', polling_interval=0.1))
         camera = list(self._cameras.values())[0]
         if camera.is_connected:
             return
