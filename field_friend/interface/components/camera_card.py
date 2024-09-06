@@ -33,7 +33,7 @@ class camera_card:
         self.puncher = system.puncher
         self.system = system
         self.punching_enabled: bool = False
-        self.shrink_factor: float = 2.0
+        self.shrink_factor: float = 4.0
         self.show_weeds_to_handle: bool = False
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.image_view: Optional[ui.interactive_image] = None
