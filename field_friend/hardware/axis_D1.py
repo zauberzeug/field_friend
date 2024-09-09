@@ -85,9 +85,9 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
         await super().move_to(position)
-        await self.robot_brain.send(f'{self.name}_motor.profile_position({self.compute_steps(position)});')
-        while (abs(self.position - position)) > 0.005:
-
+        while (abs(self.position - position)) > 0.01:
+            # sometimes the moving command is not executed, so it is send in each loop (for demo purposes)
+            await self.robot_brain.send(f'{self.name}_motor.profile_position({self.compute_steps(position)});')
             await rosys.sleep(0.1)
 
     async def enable_motor(self):
