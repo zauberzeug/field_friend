@@ -63,6 +63,7 @@ class Puncher:
                     turns: float = 2.0,
                     with_open_tornado: bool = False,
                     ) -> None:
+        y += self.field_friend.WORK_Y
         self.log.info(f'Punching at {y} with depth {depth}...')
         rest_position = 'reference'
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
@@ -120,7 +121,7 @@ class Puncher:
             await self.field_friend.y_axis.return_to_reference()
             return
         elif isinstance(self.field_friend.y_axis, Axis):
-            if isinstance(self.field_friend.z_axis,Axis):
+            if isinstance(self.field_friend.z_axis, Axis):
                 if self.field_friend.z_axis.position != 0:
                     await self.field_friend.z_axis.return_to_reference()
             y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position

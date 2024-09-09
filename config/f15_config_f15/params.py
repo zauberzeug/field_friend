@@ -5,6 +5,7 @@ configuration = {
     'wheel_distance': 0.47,
     'antenna_offset': 0.205,
     'work_x': 0.147,
+    'work_y': 0.0,
     'drill_radius': 0.025,
     'tool': 'weed_screw',
 }
