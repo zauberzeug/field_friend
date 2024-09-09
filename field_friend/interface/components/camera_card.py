@@ -11,7 +11,7 @@ from rosys.geometry import Point
 from field_friend.automations.implements.weeding_implement import WeedingImplement
 
 from ...automations import PlantLocator, Puncher
-from ...hardware import Axis, FieldFriend, FlashlightPWM, FlashlightPWMV2, Tornado
+from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Tornado
 from .calibration_dialog import calibration_dialog
 
 if TYPE_CHECKING:
@@ -126,8 +126,7 @@ class camera_card:
         if image and image.detections:
             svg += self.to_svg(image.detections)
         svg += self.build_svg_for_plant_provider()
-        # TODO: fix in later PR
-        # svg += self.build_svg_for_implement()
+        svg += self.build_svg_for_implement()
         self.image_view.set_content(svg)
 
     def on_mouse_move(self, e: MouseEventArguments):
@@ -196,15 +195,16 @@ class camera_card:
     def build_svg_for_implement(self) -> str:
         if not isinstance(self.system.current_implement, WeedingImplement) or self.camera is None or self.camera.calibration is None:
             return ''
-        tool_3d = self.odometer.prediction.point_3d() + \
-            rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0)
+        tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0).in_frame(
+            self.odometer.prediction_frame).resolve().point_3d
         tool_2d = self.camera.calibration.project_to_image(tool_3d) / self.shrink_factor
         svg = f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" fill="black"/>'
-        min_tool_3d = self.odometer.prediction.point_3d() + \
-            rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position, z=0)
+
+        min_tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position, z=0).in_frame(
+            self.odometer.prediction_frame).resolve().point_3d
         min_tool_2d = self.camera.calibration.project_to_image(min_tool_3d) / self.shrink_factor
-        max_tool_3d = self.odometer.prediction.point_3d() + \
-            rosys.geometry.Point3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.max_position, z=0)
+        max_tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.max_position, z=0).in_frame(
+            self.odometer.prediction_frame).resolve().point_3d
         max_tool_2d = self.camera.calibration.project_to_image(max_tool_3d) / self.shrink_factor
         svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="2" />'
         if self.show_weeds_to_handle:
@@ -219,8 +219,8 @@ class camera_card:
     def build_svg_for_plant_provider(self) -> str:
         if self.camera is None or self.camera.calibration is None:
             return ''
-        position = rosys.geometry.Point(x=self.camera.calibration.extrinsics.translation[0],
-                                        y=self.camera.calibration.extrinsics.translation[1])
+        position = rosys.geometry.Point3d(x=self.camera.calibration.extrinsics.translation[0],
+                                          y=self.camera.calibration.extrinsics.translation[1])
         svg = ''
         for plant in self.plant_provider.get_relevant_weeds(position):
             position_3d = rosys.geometry.Point3d(x=plant.position.x, y=plant.position.y, z=0)

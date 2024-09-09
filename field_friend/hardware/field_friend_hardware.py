@@ -58,7 +58,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             raise NotImplementedError(f'Unknown FieldFriend implement: {implement}')
 
         communication = rosys.hardware.SerialCommunication()
-        robot_brain = rosys.hardware.RobotBrain(communication)
+        if 'enable_esp_on_startup' in config_robotbrain['robot_brain']:
+            robot_brain = rosys.hardware.RobotBrain(communication,enable_esp_on_startup=config_robotbrain['robot_brain']['enable_esp_on_startup'])
+        else:
+            robot_brain = rosys.hardware.RobotBrain(communication)
         robot_brain.lizard_firmware.flash_params += config_robotbrain['robot_brain']['flash_params']
         bluetooth = rosys.hardware.BluetoothHardware(robot_brain,
                                                      name=config_hardware['bluetooth']['name'],
