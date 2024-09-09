@@ -33,12 +33,4 @@ class CalibratableUsbCamera(rosys.vision.CalibratableCamera, rosys.vision.UsbCam
         }))
 
     def to_dict(self) -> dict:
-        base_dict = {
-            'id': self.id,
-            'name': self.name,
-            'connect_after_init': self.connect_after_init,
-            'streaming': self.streaming,
-            'focal_length': self.focal_length,
-            'calibration': persistence.to_dict(self.calibration),
-        }
-        return base_dict | {name: param.value for name, param in self._parameters.items()}
+        return super().to_dict() | {'focal_length': self.focal_length} | {name: param.value for name, param in self._parameters.items()}
