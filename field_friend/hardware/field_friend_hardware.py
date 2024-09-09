@@ -121,7 +121,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                             profile_deceleration=config_hardware['y_axis']['profile_deceleration'],
                             max_position=config_hardware['y_axis']['max_position'],
                             min_position=config_hardware['y_axis']['min_position'],
-                            axis_offset=config_hardware['y_axis']['axis_offset'],)
+                            axis_offset=config_hardware['y_axis']['axis_offset'],
+                            reverse_direction=config_hardware['y_axis']['reversed_direction'],)
         elif config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisHardware(robot_brain,
                                        expander=expander,
@@ -220,7 +221,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                             profile_deceleration=config_hardware['z_axis']['profile_deceleration'],
                             max_position=config_hardware['z_axis']['max_position'],
                             min_position=config_hardware['z_axis']['min_position'],
-                            axis_offset=config_hardware['z_axis']['axis_offset'],)
+                            axis_offset=config_hardware['z_axis']['axis_offset'],
+                            reverse_direction=config_hardware['z_axis']['reversed_direction'],)
         elif config_hardware['z_axis']['version'] == 'tornado':
             z_axis = TornadoHardware(robot_brain,
                                      expander=expander,

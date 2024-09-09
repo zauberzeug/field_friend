@@ -28,6 +28,7 @@ configuration = {
         'min_position': -0.11,
         'max_position': 0.11,
         'axis_offset': 0.115,
+        'reversed_direction': False,
     },
     'z_axis': {
         'version': 'axis_d1',
@@ -38,9 +39,10 @@ configuration = {
         'profile_acceleration': 500000,
         'profile_velocity': 40000,
         'profile_deceleration': 500000,
-        'min_position': 0.230,
-        'max_position': 0,
-        'axis_offset': 0.01,
+        'min_position': -0.230,
+        'max_position': 0.0,
+        'axis_offset': -0.01,
+        'reversed_direction': True,
     },
     'estop': {
         'name': 'estop',
