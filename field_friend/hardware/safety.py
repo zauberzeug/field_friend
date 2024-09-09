@@ -3,18 +3,26 @@ from typing import Union
 
 import rosys
 
+from .axis import Axis, AxisSimulation
+from .axis_D1 import AxisD1
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
 from .external_mower import Mower, MowerHardware, MowerSimulation
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
-from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
-from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
+from .flashlight_pwm import (
+    FlashlightPWM,
+    FlashlightPWMHardware,
+    FlashlightPWMSimulation,
+)
+from .flashlight_pwm_v2 import (
+    FlashlightPWMHardwareV2,
+    FlashlightPWMSimulationV2,
+    FlashlightPWMV2,
+)
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
-from .y_axis import YAxis, YAxisSimulation
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
 from .y_axis_stepper_hardware import YAxisStepperHardware
-from .z_axis import ZAxis, ZAxisSimulation
 from .z_axis_canopen_hardware import ZAxisCanOpenHardware
 from .z_axis_stepper_hardware import ZAxisStepperHardware
 
@@ -25,8 +33,8 @@ class Safety(rosys.hardware.Module, abc.ABC):
     def __init__(self, *,
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[YAxis, ChainAxis, None] = None,
-                 z_axis: Union[ZAxis, Tornado, None] = None,
+                 y_axis: Union[Axis, ChainAxis, None] = None,
+                 z_axis: Union[Axis, Tornado, None] = None,
                  flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, FlashlightPWMV2, None] = None,
                  mower: Union[Mower, None] = None,
                  **kwargs) -> None:
@@ -57,11 +65,16 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         # implement lizard stop method for available hardware
         lizard_code = f'let stop do {wheels.name}.speed(0, 0);'
         if y_axis is not None:
-            lizard_code += f' {y_axis.name}.stop();'
+            if isinstance(y_axis, AxisD1):
+                lizard_code += f'{y_axis.name}_motor.stop();'
+            else:
+                lizard_code += f' {y_axis.name}.stop();'
         if z_axis is not None:
             if isinstance(z_axis, TornadoHardware):
                 lizard_code += f'{z_axis.name}_z.stop();'
                 lizard_code += f'{z_axis.name}_motor_turn.speed(0);'
+            elif isinstance(z_axis, AxisD1):
+                lizard_code += f'{z_axis.name}_motor.stop();'
             else:
                 lizard_code += f' {z_axis.name}.stop();'
         if isinstance(flashlight, FlashlightHardware):
@@ -75,9 +88,9 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
-            lizard_code += 'when ' + \
-                ' or '.join(f'{bumper.name}_{pin}.level == 1' for pin in bumper.pins) + \
-                f' then {wheels.name}.off(); end\n'
+             for name in bumper.pins:
+                lizard_code += f'bumper_{name}.level = 0\n'
+                lizard_code += f'when bumper_{name}.level == 1 then stop(); end\n'
 
         # implement stop call for "ground check" reference sensors
         if isinstance(y_axis, ChainAxisHardware):
@@ -105,8 +118,8 @@ class SafetySimulation(Safety, rosys.hardware.ModuleSimulation):
     def __init__(self, *,
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[YAxisSimulation, ChainAxisSimulation, None] = None,
-                 z_axis: Union[ZAxisSimulation, TornadoSimulation, None] = None,
+                 y_axis: Union[AxisSimulation, ChainAxisSimulation, None] = None,
+                 z_axis: Union[AxisSimulation, TornadoSimulation, None] = None,
                  flashlight: Union[FlashlightSimulation, FlashlightSimulationV2, FlashlightPWMSimulation, FlashlightPWMSimulationV2, None],
                  mower: Union[MowerSimulation, None] = None) -> None:
         super().__init__(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)

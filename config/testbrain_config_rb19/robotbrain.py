@@ -1,4 +1,4 @@
 configuration = {'robot_brain': {
-    'flash_params': ['']
+    'flash_params': ['nand']
 }}
 # test

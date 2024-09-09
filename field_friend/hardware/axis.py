@@ -4,10 +4,17 @@ from typing import Optional
 import rosys
 
 
-class YAxis(rosys.hardware.Module, abc.ABC):
-    """The y axis module is a simple example for a representation of real or simulated robot hardware."""
+class Axis(rosys.hardware.Module, abc.ABC):
 
-    def __init__(self, max_speed, reference_speed, min_position, max_position, axis_offset, steps_per_m, reversed_direction, **kwargs) -> None:
+    def __init__(self,
+                 max_speed,
+                 reference_speed,
+                 min_position,
+                 max_position,
+                 axis_offset,
+                 steps_per_m,
+                 reversed_direction,
+                 **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.max_speed: int = max_speed
@@ -19,11 +26,11 @@ class YAxis(rosys.hardware.Module, abc.ABC):
         self.reversed_direction: bool = reversed_direction
 
         self.steps: int = 0
+        self.is_referenced: bool = False
         self.alarm: bool = False
         self.idle: bool = False
-
-        self.is_referenced: bool = False
-
+        self.end_t: bool = False
+        self.end_b: bool = False
         self.end_l: bool = False
         self.end_r: bool = False
 
@@ -35,16 +42,15 @@ class YAxis(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def move_to(self, position: float, speed: int | None = None) -> None:
-        if not speed:
+        if speed is None:
             speed = self.max_speed
         if not self.is_referenced:
-            raise RuntimeError('yaxis is not referenced, reference first')
+            raise RuntimeError('zaxis is not referenced, reference first')
         if speed > self.max_speed:
-            raise RuntimeError(f'yaxis speed is too high, max speed is {self.max_speed}')
+            raise RuntimeError(f'axis speed is too high, max speed is {self.max_speed}')
         if not self.min_position <= position <= self.max_position:
             raise RuntimeError(
-                f'target position {position} ist out of yaxis range {self.min_position} to {self.max_position}')
-        self.log.info(f'moving yaxis to {position} with speed {speed}')
+                f'target position {position} ist out of axis range {self.min_position} to {self.max_position}')
 
     @abc.abstractmethod
     async def try_reference(self) -> bool:
@@ -64,9 +70,15 @@ class YAxis(rosys.hardware.Module, abc.ABC):
     def position(self) -> float:
         return self.compute_position(self.steps)
 
+    async def return_to_reference(self) -> None:
+        try:
+            await self.move_to(0)
+        except RuntimeError as e:
+            self.log.error(f'could not return zaxis to reference because of {e}')
 
-class YAxisSimulation(YAxis, rosys.hardware.ModuleSimulation):
-    '''The y axis simulation module is a simple example for a representation of simulated robot hardware.
+
+class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
+    '''The z axis simulation module is a simple example for a representation of simulated robot hardware.
     '''
 
     def __init__(self,
@@ -101,8 +113,7 @@ class YAxisSimulation(YAxis, rosys.hardware.ModuleSimulation):
         try:
             await super().move_to(position, speed)
         except RuntimeError as e:
-            rosys.notify(e, type='negative')
-            self.log.error(f'could not move yaxis to {position} because of {e}')
+            self.log.error(f'could not move axis to {position} because of {e}')
             return
         self.target_steps = self.compute_steps(position)
         self.speed = speed if self.target_steps > self.steps else speed * -1

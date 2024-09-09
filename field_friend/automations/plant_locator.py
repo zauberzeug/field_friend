@@ -46,6 +46,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         if system.is_real:
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
+            self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
@@ -102,11 +103,10 @@ class PlantLocator(rosys.persistence.PersistentModule):
             if world_point_3d is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue
-            world_point = world_point_3d.projection()
             plant = Plant(type=d.category_name,
                           detection_time=rosys.time(),
                           detection_image=new_image)
-            plant.positions.append(world_point)
+            plant.positions.append(world_point_3d)
             plant.confidences.append(d.confidence)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
@@ -164,9 +164,6 @@ class PlantLocator(rosys.persistence.PersistentModule):
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
-        if isinstance(self.detector, rosys.vision.DetectorHardware):
-            ui.checkbox('Upload images', on_change=self.request_backup).bind_value(self, 'upload_images') \
-                .on('click', lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port))
 
         @ui.refreshable
         def chips():
@@ -190,7 +187,10 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 ui.button(icon='add', on_click=add_chip).props('round dense flat')
 
     def set_upload_images(self):
-        if self.teltonika_router.current_connection == 'wifi' or self.teltonika_router.current_connection == 'ether':
+        if self.teltonika_router.mobile_upload_permission:
             self.upload_images = True
         else:
-            self.upload_images = False
+            if self.teltonika_router.current_connection == 'wifi' or self.teltonika_router.current_connection == 'ether':
+                self.upload_images = True
+            else:
+                self.upload_images = False

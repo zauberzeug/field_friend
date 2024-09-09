@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import rosys
 from nicegui import ui
-from rosys.geometry import Point, Pose
+from rosys.geometry import Point3d, Pose
 
 from ...hardware import ChainAxis
 from .implement import Implement
@@ -31,6 +31,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system = system
         self.kpi_provider = system.kpi_provider
         self.puncher = system.puncher
+        self.record_video = False
         self.cultivated_crop: str | None = None
         self.crop_safety_distance: float = 0.01
 
@@ -43,9 +44,9 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.start_time: Optional[float] = None
         self.last_pose: Optional[Pose] = None
         self.driven_distance: float = 0.0
-        self.crops_to_handle: dict[str, Point] = {}
-        self.weeds_to_handle: dict[str, Point] = {}
-        self.last_punches: deque[rosys.geometry.Point] = deque(maxlen=5)
+        self.crops_to_handle: dict[str, Point3d] = {}
+        self.weeds_to_handle: dict[str, Point3d] = {}
+        self.last_punches: deque[Point3d] = deque(maxlen=5)
         self.next_punch_y_position: float = 0
 
         rosys.on_repeat(self._update_time_and_distance, 0.1)
@@ -63,17 +64,21 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def finish(self) -> None:
         self.system.plant_locator.pause()
         await self.system.field_friend.stop()
+        await self.system.timelapse_recorder.compress_video()
         await super().finish()
 
     async def activate(self):
         await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
-        self.system.plant_locator.resume()
         await rosys.sleep(3)
+        self.system.plant_locator.resume()
+        if self.record_video:
+            self.system.timelapse_recorder.camera = self.system.camera_provider.first_connected_camera
         await super().activate()
 
     async def deactivate(self):
         await super().deactivate()
+        self.system.timelapse_recorder.camera = None
         await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
@@ -94,7 +99,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
             return False
-        camera = next((camera for camera in self.system.camera_provider.cameras.values() if camera.is_connected), None)
+        camera = self.system.camera_provider.first_connected_camera
         if not camera:
             rosys.notify('no camera connected')
             return False
@@ -118,8 +123,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def _has_plants_to_handle(self) -> bool:
         relative_crop_positions = {
-            c.id: self.system.odometer.prediction.relative_point(c.position)
-            for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point)
+            c.id: Point3d.from_point(self.system.odometer.prediction.relative_point(c.position))
+            for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point_3d())
             if self.cultivated_crop is None or c.type == self.cultivated_crop
         }
         upcoming_crop_positions = {
@@ -131,8 +136,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.crops_to_handle = sorted_crops
 
         relative_weed_positions = {
-            w.id: self.system.odometer.prediction.relative_point(w.position)
-            for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point)
+            w.id: Point3d.from_point(self.system.odometer.prediction.relative_point(w.position))
+            for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point_3d())
             if w.type in self.relevant_weeds
         }
         upcoming_weed_positions = {
@@ -146,7 +151,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                 offset = self.system.field_friend.DRILL_RADIUS + \
                     self.crop_safety_distance - crop_position.distance(weed_position)
                 if offset > 0:
-                    safe_weed_position = weed_position.polar(offset, crop_position.direction(weed_position))
+                    safe_weed_position = Point3d.from_point(Point3d.projection(weed_position).polar(
+                        offset, Point3d.projection(crop_position).direction(weed_position)))
                     upcoming_weed_positions[weed] = safe_weed_position
                     self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
                                   f'by {offset} to safe {crop} at {crop_position}')
@@ -166,7 +172,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
             'cultivated_crop': self.cultivated_crop,
-            'crop_safety_distance': self.crop_safety_distance
+            'crop_safety_distance': self.crop_safety_distance,
+            'record_video': self.record_video,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -175,6 +182,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
         self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
+        self.record_video = data.get('record_video', self.record_video)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
@@ -209,3 +217,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
+        ui.checkbox('record video', on_change=self.request_backup) \
+            .bind_value(self, 'record_video') \
+            .tooltip('Set the weeding automation to record video')

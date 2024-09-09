@@ -3,12 +3,13 @@ import os
 
 from dotenv import load_dotenv
 from nicegui import app, ui
-from rosys.analysis import logging_page
+from rosys.analysis import logging_page, videos_page
 
 import field_friend.log_configuration as log_configuration
 from field_friend import interface
 from field_friend.interface.components import header_bar, status_drawer, system_bar
 from field_friend.system import System
+
 
 logger = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
@@ -46,6 +47,7 @@ def startup() -> None:
         return {'status': 'ok'}
 
     logging_page(['field_friend', 'rosys'])  # /logging
+    videos_page()  # /videos
 
 
 app.on_startup(startup)

@@ -11,4 +11,4 @@ async def test_locating_of_plants(system: System, detector: rosys.vision.Detecto
     await forward(20)
     assert len(system.plant_provider.crops) == 1
     assert system.plant_provider.crops[0].type == 'sugar_beet'
-    assert_point(system.plant_provider.crops[0].position, rosys.geometry.Point(x=0.212, y=0.03))
+    assert_point(system.plant_provider.crops[0].position, rosys.geometry.Point3d(x=0.212, y=0.03, z=0))

@@ -3,7 +3,7 @@ from typing import Any
 
 import rosys
 from nicegui import ui
-from rosys.geometry import Point
+from rosys.geometry import Point3d
 
 from .plant import Plant
 
@@ -129,18 +129,18 @@ class PlantProvider(rosys.persistence.PersistentModule):
         crop_1 = sorted_crops[0]
         crop_2 = sorted_crops[1]
 
-        yaw = crop_2.position.direction(crop_1.position)
-        prediction = crop_1.position.polar(self.crop_spacing, yaw)
+        yaw = crop_2.position.projection().direction(crop_1.position.projection())
+        prediction = crop_1.position.projection().polar(self.crop_spacing, yaw)
 
-        if plant.position.distance(prediction) > self.match_distance:
+        if plant.position.projection().distance(prediction) > self.match_distance:
             return
-        plant.positions.append(prediction)
+        plant.positions.append(Point3d.from_point(prediction, 0))
         plant.confidences.append(self.prediction_confidence)
 
-    def get_relevant_crops(self, point: Point, *, max_distance=0.5) -> list[Plant]:
+    def get_relevant_crops(self, point: Point3d, *, max_distance=0.5) -> list[Plant]:
         return [c for c in self.crops if c.position.distance(point) <= max_distance and c.confidence >= self.minimum_combined_crop_confidence]
 
-    def get_relevant_weeds(self, point: Point, *, max_distance=0.5) -> list[Plant]:
+    def get_relevant_weeds(self, point: Point3d, *, max_distance=0.5) -> list[Plant]:
         return [w for w in self.weeds if w.position.distance(point) <= max_distance and w.confidence >= self.minimum_combined_weed_confidence]
 
     def settings_ui(self) -> None:

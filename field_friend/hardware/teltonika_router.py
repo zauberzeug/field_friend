@@ -25,6 +25,8 @@ class TeltonikaRouter:
         self.auth_token: str = ''
         self.token_time: float = 0.0
         self.connection_check_running = False
+        self.mobile_upload_permission = False
+        self.MOBILE_UPLOAD_PERMISSION_CHANGED = rosys.event.Event()
         if ADMIN_PASSWORD:
             self.log.info('Connecting to Teltonika router...')
             rosys.on_repeat(self.get_current_connection, 1.0)
