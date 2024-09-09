@@ -103,20 +103,23 @@ class PlantLocator(rosys.persistence.PersistentModule):
                     continue
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
             world_point_3d: rosys.geometry.Point3d | None = None
-            if isinstance(camera, CalibratableUsbCamera):
+            if isinstance(camera, CalibratableUsbCamera) or isinstance(camera, StereoCamera):
                 world_point_3d = camera.calibration.project_from_image(image_point)
-            elif isinstance(camera, StereoCamera):
-                camera_point_3d: Point3d | None = await camera.get_point(
-                    int(d.cx), int(d.cy))
-                if camera_point_3d is None:
-                    self.log.error('could not get a depth value for detection')
-                    continue
-                camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
-                    'zedxmini').in_frame(self.odometer.prediction_frame)
-                world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
+            # elif isinstance(camera, StereoCamera):
+            #     camera_point_3d: Point3d | None = await camera.get_point(
+            #         int(d.cx), int(d.cy))
+            #     if camera_point_3d is None:
+            #         self.log.error('could not get a depth value for detection')
+            #         continue
+            #     camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
+            #         'zedxmini').in_frame(self.odometer.prediction_frame)
+            #     world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
             if world_point_3d is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue
+            if abs(world_point_3d.y) > 0.12:
+                continue
+            world_point_3d.z = 0.0
             plant = Plant(type=d.category_name,
                           detection_time=rosys.time(),
                           detection_image=new_image)
@@ -124,10 +127,14 @@ class PlantLocator(rosys.persistence.PersistentModule):
             plant.confidences.append(d.confidence)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
+                self.log.info(f'image_point: {image_point} -> world_point_3d: {world_point_3d}')
                 await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info(f'{d.category_name} found')
                 self.plant_provider.add_crop(plant)
+                # self.log.info(f'image_point: {image_point} -> world_point_3d: {world_point_3d}')
+                # test_point = camera.calibration.project_to_image(Point3d(x=0.0, y=0.0, z=0.0))
+                # self.log.info(f'test_point: {test_point}')
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
             # else:
