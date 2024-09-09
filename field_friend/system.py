@@ -11,8 +11,8 @@ from . import localization
 from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PlantLocator,
                           PlantProvider, Puncher)
 from .automations.implements import ChopAndScrew, ExternalMower, Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import (ABLineNavigation, CoverageNavigation, FollowCropsNavigation, Navigation,
-                                     RowsOnFieldNavigation, StraightLineNavigation)
+from .automations.navigation import (ABLineNavigation, CoverageNavigation, CrossglideDemoNavigation,
+                                     FollowCropsNavigation, Navigation, RowsOnFieldNavigation, StraightLineNavigation)
 from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
@@ -136,11 +136,13 @@ class System(rosys.persistence.PersistentModule):
         self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
         self.coverage_navigation = CoverageNavigation(self, self.monitoring)
         self.a_b_line_navigation = ABLineNavigation(self, self.monitoring)
+        self.crossglide_demo_navigation = CrossglideDemoNavigation(self, self.monitoring)
         self.navigation_strategies = {n.name: n for n in [self.field_navigation,
                                                           self.straight_line_navigation,
                                                           self.follow_crops_navigation,
                                                           self.coverage_navigation,
-                                                          self.a_b_line_navigation
+                                                          self.a_b_line_navigation,
+                                                          self.crossglide_demo_navigation
                                                           ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:

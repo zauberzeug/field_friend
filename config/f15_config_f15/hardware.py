@@ -63,7 +63,11 @@ configuration = {
         'status_pin': 13,
     },
     'flashlight': {
-        'version': 'none',
+        'version': 'flashlight_pwm_v2',
+        'name': 'flashlight',
+        'on_expander': True,
+        'front_pin': 12,
+        'back_pin': 23,
     },
     'bumper': {
         'name': 'bumper',
