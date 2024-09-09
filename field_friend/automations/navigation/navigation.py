@@ -53,7 +53,6 @@ class Navigation(rosys.persistence.PersistentModule):
                 distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
                 if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
                     await self._drive(self.DEFAULT_DRIVE_DISTANCE)
-                    continue
                 else:
                     await self._drive(distance)
                     with self.gnss.pause(): # Pause GNSS for better local accuracy
