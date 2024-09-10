@@ -95,7 +95,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
             self.current = None
 
     @contextlib.contextmanager
-    def pause(self):
+    def paused(self):
         try:
             self._is_paused = True
             yield
@@ -129,7 +129,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         if len(self.observed_poses) > self.needed_poses: # Ensure fresh data
             self.observed_poses.pop(0)
         
-        # Only update if unpaused
         if not self._is_paused:
             self._update_robot_pose()
 
