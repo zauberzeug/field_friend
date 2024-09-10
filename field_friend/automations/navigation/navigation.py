@@ -75,6 +75,9 @@ class Navigation(rosys.persistence.PersistentModule):
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects = []
         self.log.info('clearing plant provider')
+
+        self.log.info('waiting for GNSS pose upsate')
+        await self.gnss.wait_for_updated_robot_pose()
         return True
 
     async def finish(self) -> None:

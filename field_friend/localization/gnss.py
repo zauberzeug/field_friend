@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 from abc import ABC, abstractmethod
@@ -52,6 +53,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.device: str | None = None
         self.antenna_offset = antenna_offset
         self._is_paused = False
+        self._pose_update = asyncio.Event()
         self.observed_poses: list[rosys.geometry.Pose] = []
         self.last_pose_update = rosys.time()
         self.needed_poses: int = self.NEEDED_POSES
@@ -131,12 +133,18 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         if not self._is_paused:
             self._update_robot_pose()
 
+    async def wait_for_updated_robot_pose(self) -> None:
+        if self.ensure_gnss:
+            await self._pose_update.wait()
+
     def _update_robot_pose(self) -> None:
         x = np.mean([pose.point.x for pose in self.observed_poses])
         y = np.mean([pose.point.y for pose in self.observed_poses])
         yaw = np.mean([pose.yaw for pose in self.observed_poses])
         pose = rosys.geometry.Pose(x=float(x), y=float(y), yaw=float(yaw), time=rosys.time())
         self.ROBOT_POSE_LOCATED.emit(pose)
+        self._pose_update.set()
+        self._pose_update.clear()
         self.last_pose_update = rosys.time()
         self.observed_poses.clear()
 
