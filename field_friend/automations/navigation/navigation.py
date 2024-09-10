@@ -47,8 +47,7 @@ class Navigation(rosys.persistence.PersistentModule):
                 self.log.error('Preparation failed')
                 return
             await self.gnss.update_robot_pose()
-            if self.gnss.current.location.distance(localization.reference) > 2000.0:
-                self.gnss.reference_alert_dialog.open()
+            if self.gnss.check_distance_to_reference():
                 raise WorkflowException('reference to far away from robot')
             self.start_position = self.odometer.prediction.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:

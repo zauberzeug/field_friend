@@ -5,7 +5,7 @@ import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import rosys
@@ -24,7 +24,7 @@ class GNSSRecord:
     gps_qual: int = 0
     altitude: float = 0.0
     separation: float = 0.0
-    heading: Optional[float] = None
+    heading: float | None = None
     speed_kmh: float = 0.0
 
 
@@ -50,7 +50,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.GNSS_CONNECTION_LOST = rosys.event.Event()
         """the GNSS connection was lost"""
 
-        self.current: Optional[GNSSRecord] = None
+        self.current: GNSSRecord | None = None
         self.device: str | None = None
         self.antenna_offset = antenna_offset
         self.is_paused = False
@@ -63,7 +63,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.needs_backup = False
         rosys.on_repeat(self.check_gnss, 0.01)
         rosys.on_repeat(self.try_connection, 3.0)
-        self.reference_alert_dialog = None
 
     @abstractmethod
     async def try_connection(self) -> None:
@@ -97,7 +96,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
             self.current = None
 
     @abstractmethod
-    async def _create_new_record(self) -> Optional[GNSSRecord]:
+    async def _create_new_record(self) -> GNSSRecord | None:
         pass
 
     def _on_rtk_fix(self) -> None:
@@ -164,3 +163,9 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
                 ui.button("Update reference", on_click=self.update_reference).props("outline color=warning") \
                     .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
                 ui.button('Cancel', on_click=self.reference_alert_dialog.close)
+
+    def check_distance_to_reference(self) -> bool:
+        if self.current.location.distance(localization.reference) > 2000.0:
+            self.reference_alert_dialog.open()
+            return True
+        return False
