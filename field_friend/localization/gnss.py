@@ -29,7 +29,6 @@ class GNSSRecord:
 
 class Gnss(rosys.persistence.PersistentModule, ABC):
     NEEDED_POSES: int = 10
-    MIN_SECONDS_BETWEEN_UPDATES: float = 10.0
     ENSURE_GNSS: bool = False
 
     def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
