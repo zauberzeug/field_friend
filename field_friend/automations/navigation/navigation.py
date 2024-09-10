@@ -51,13 +51,13 @@ class Navigation(rosys.persistence.PersistentModule):
             self.log.info('Navigation started')
             while not self._should_finish():
                 distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
-                if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
+                if distance > self.MAX_STRETCH_DISTANCE:  # No crop in sight
                     await self._drive(self.DEFAULT_DRIVE_DISTANCE)
-                else:
-                    await self._drive(distance)
+                else: # Crop in sight
                     with self.gnss.paused(): # Pause GNSS for better local accuracy
-                        await self.implement.start_workflow()
-                        await self.implement.stop_workflow()
+                        await self._drive(distance)
+                    await self.implement.start_workflow()
+                    await self.implement.stop_workflow()
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
