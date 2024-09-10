@@ -134,6 +134,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
             self._update_robot_pose()
 
     async def wait_for_updated_robot_pose(self) -> None:
+        assert not self._is_paused
         if self.ensure_gnss:
             await self._pose_update.wait()
 
