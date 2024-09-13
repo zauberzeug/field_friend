@@ -152,8 +152,8 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
                     await asyncio.wait_for(event.wait(), timeout=timeout)
             finally:
                 self.ROBOT_POSE_LOCATED.unregister(callback)
-        except asyncio.TimeoutError:
-            raise TimeoutError(f"Timed out waiting for robot pose update after {timeout} seconds")
+        except asyncio.TimeoutError as e:
+            raise TimeoutError(f"Timed out waiting for robot pose update after {timeout} seconds") from e
 
     def _update_robot_pose(self) -> None:
         x = np.mean([pose.point.x for pose in self.observed_poses])
