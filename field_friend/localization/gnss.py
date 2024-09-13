@@ -136,7 +136,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         if not self._is_paused:
             self._update_robot_pose()
 
-    async def wait_for_robot_pose_update(self, timeout = None) -> None:
+    async def wait_for_robot_pose_update(self, timeout : Optional[float] = None) -> None:
         event = asyncio.Event()
         def callback():
             nonlocal event
