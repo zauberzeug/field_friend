@@ -53,7 +53,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.device: str | None = None
         self.antenna_offset = antenna_offset
         self._is_paused = False
-        self._pose_update = asyncio.Event()
         self.observed_poses: list[rosys.geometry.Pose] = []
         self.last_pose_update = rosys.time()
         self.needed_poses: int = self.NEEDED_POSES
@@ -103,6 +102,10 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         finally:
             self._is_paused = False
 
+    @property
+    def is_paused(self) -> bool:
+        return self._is_paused
+
     @abstractmethod
     async def _create_new_record(self) -> Optional[GNSSRecord]:
         pass
@@ -135,8 +138,14 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
 
     async def wait_for_updated_robot_pose(self) -> None:
         assert not self._is_paused
-        if self.ensure_gnss:
-            await self._pose_update.wait()
+        event = asyncio.Event()
+        def callback():
+            nonlocal event
+            event.set()
+            self.ROBOT_POSE_LOCATED.unregister(callback)
+        
+        self.ROBOT_POSE_LOCATED.register(callback)
+        await event.wait()
 
     def _update_robot_pose(self) -> None:
         x = np.mean([pose.point.x for pose in self.observed_poses])
