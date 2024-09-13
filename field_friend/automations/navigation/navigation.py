@@ -77,7 +77,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.log.info('clearing plant provider')
 
         self.log.info('waiting for GNSS pose upsate')
-        await self.gnss.wait_for_updated_robot_pose()
+        await self.gnss.wait_for_robot_pose_update(timeout = 10)
         return True
 
     async def finish(self) -> None:
