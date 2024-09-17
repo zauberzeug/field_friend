@@ -161,8 +161,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         yaw = np.mean([pose.yaw for pose in self.observed_poses])
         pose = rosys.geometry.Pose(x=float(x), y=float(y), yaw=float(yaw), time=rosys.time())
         self.ROBOT_POSE_LOCATED.emit(pose)
-        self._pose_update.set()
-        self._pose_update.clear()
         self.last_pose_update = rosys.time()
         self.observed_poses.clear()
 
