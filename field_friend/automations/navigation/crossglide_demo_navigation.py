@@ -1,9 +1,7 @@
-from random import randint
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
-from nicegui import ui
 
 from ...automations.implements.implement import Implement
 from .navigation import Navigation
@@ -45,11 +43,8 @@ class CrossglideDemoNavigation(Navigation):
                 self.create_simulation()
             self.log.info('Navigation started')
             while not self._should_finish():
-                # put a random simulated plant in the dict
                 self.implement.next_punch_y_position = np.random.uniform(-0.11, 0.1)
-                self.log.info(f'🥵 Weeds to handle: {self.implement.weeds_to_handle}')
                 await self.implement.start_workflow()
-                # await rosys.sleep(5)
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
