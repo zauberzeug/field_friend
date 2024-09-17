@@ -56,7 +56,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.observed_poses: list[rosys.geometry.Pose] = []
         self.last_pose_update = rosys.time()
         self.needed_poses: int = self.NEEDED_POSES
-        self.min_seconds_between_updates: float = self.MIN_SECONDS_BETWEEN_UPDATES
         self.ensure_gnss: bool = self.ENSURE_GNSS
 
         self.needs_backup = False
