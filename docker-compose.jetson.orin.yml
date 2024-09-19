@@ -14,12 +14,9 @@ services:
     environment:
       - HOST=learning-loop.ai
       - NVIDIA_VISIBLE_DEVICES=all
-      # - ORGANIZATION=zauberzeug
-      # - PROJECT=coins
-      - ORGANIZATION=zuckerruebe
-      - PROJECT=uckerbots
+      - ORGANIZATION=feldfreund
+      - PROJECT=plants
     volumes:
-      # - ~/data_coins:/data
       - ~/data_plants:/data
 
   monitoring:
