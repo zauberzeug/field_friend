@@ -141,6 +141,13 @@ class leaflet_map:
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
+        if len(self.field_provider.fields) > 0:
+            print(self.field_provider.fields[0].outline_as_tuples)
+            for row in self.field_provider.fields[0].rows:
+                self.m.generic_layer(name="polyline", args=[
+                    row.points_as_tuples, {'color': '#6E93D6'}])
+            self.m.generic_layer(name="polygon", args=[
+                self.field_provider.fields[0].outline_as_tuples, {'color': '#6E93D6'}])
         if current_field is None:
             return
         for obstacle in current_field.obstacles:
