@@ -3,10 +3,13 @@ from dataclasses import dataclass, field
 from uuid import uuid4
 
 import rosys
+from rosys.geometry import Point
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 
 from field_friend.localization import GeoPoint, GeoPointCollection
+
+from ..localization.point_transformation import cartesian_to_wgs84, wgs84_to_cartesian
 
 
 @dataclass(slots=True, kw_only=True)
@@ -46,25 +49,25 @@ class Field(GeoPointCollection):
     def outline(self) -> list[GeoPoint]:
         assert self.first_row_start is not None
         assert self.first_row_end is not None
-        ab_line = LineString([self.first_row_start.tuple, self.first_row_end.tuple])
-        last_row_linestring = offset_curve(ab_line, self.row_spacing * self.row_number / 100000)
-        end_row_points: list[GeoPoint] = []
+        first_row_start_cartesian = Point(x=0, y=0)  # first_row_start as reference for calculation
+        first_row_end_cartesian = wgs84_to_cartesian(self.first_row_start, self.first_row_end)
+        ab_line_cartesian = LineString([first_row_start_cartesian.tuple, first_row_end_cartesian.tuple])
+        last_row_linestring = offset_curve(ab_line_cartesian, -self.row_spacing * self.row_number)
+        end_row_points: list[Point] = []
         for point in last_row_linestring.coords:
-            end_row_points.append(GeoPoint(lat=point[0], long=point[1]))
-        outline_unbuffered: list[GeoPoint] = []
+            end_row_points.append(Point(x=point[0], y=point[1]))
+        outline_unbuffered: list[Point] = []
         for i, point in enumerate(end_row_points):
             outline_unbuffered.append(point)
-        outline_unbuffered.append(self.first_row_end)
-        outline_unbuffered.append(self.first_row_start)
-        print(f'outline_unbuffered: {outline_unbuffered}')
-        outline_polygon = Polygon([(p.lat, p.long) for p in outline_unbuffered])
+        outline_unbuffered.append(first_row_end_cartesian)
+        outline_unbuffered.append(first_row_start_cartesian)
+        outline_polygon = Polygon([p.tuple for p in outline_unbuffered])
         bufferd_polygon = outline_polygon.buffer(
-            self.outline_buffer_width/100000, join_style='mitre', mitre_limit=math.inf)
+            self.outline_buffer_width, join_style='mitre', mitre_limit=math.inf)
         bufferd_polygon_coords = bufferd_polygon.exterior.coords
         outline: list[GeoPoint] = []
         for p in bufferd_polygon_coords:
-            outline.append(GeoPoint(lat=p[0], long=p[1]))
-        outline.append(outline[0])
+            outline.append(cartesian_to_wgs84(self.first_row_start, Point(x=p[0], y=p[1])))
         return outline
 
     @ property
@@ -88,14 +91,16 @@ class Field(GeoPointCollection):
     def rows(self) -> list[Row]:
         assert self.first_row_start is not None
         assert self.first_row_end is not None
-        ab_line = LineString([self.first_row_start.tuple, self.first_row_end.tuple])
+        first_row_start_cartesian = Point(x=0, y=0)  # first_row_start as reference for calculation
+        first_row_end_cartesian = wgs84_to_cartesian(self.first_row_start, self.first_row_end)
+        ab_line_cartesian = LineString([first_row_start_cartesian.tuple, first_row_end_cartesian.tuple])
         rows = []
-        for i in range(self.row_number+1):
+        for i in range(int(self.row_number)+1):
             offset = i * self.row_spacing
-            offset_row_coordinated = offset_curve(ab_line, offset/100_000).coords
+            offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = []
             for point in offset_row_coordinated:
-                row_points.append(GeoPoint(lat=point[0], long=point[1]))
+                row_points.append(cartesian_to_wgs84(self.first_row_start, Point(x=point[0], y=point[1])))
             row = Row(id=str(uuid4()), name=f'{i + 1}', points=row_points)
             rows.append(row)
         return rows

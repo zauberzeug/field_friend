@@ -118,6 +118,7 @@ class FieldCreator:
 
     def _apply(self) -> None:
         self.dialog.close()
+        self.field_provider.fields = []  # TODO: for now we only want a single field to be saved
         self.field_provider.fields.append(Field(id=str(uuid4()), name=f'field_{len(self.field_provider.fields) + 1}', first_row_start=self.first_row_start,
                                           first_row_end=self.first_row_end, row_spacing=self.row_spacing, row_number=self.row_number))
         self.field_provider.request_backup()
