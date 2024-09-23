@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  zedxmini:
+    restart: always
+    privileged: true
+    runtime: nvidia
+    build:
+      context: ../zedxmini
+      dockerfile: ../zedxmini/Dockerfile
+      # dockerfile: ../zedxmini/Dockerfile.JP6
+    volumes:
+      - ../zedxmini:/app
+      - /dev:/dev
+      - /tmp:/tmp
+      - /var/nvidia/nvcam/settings/:/var/nvidia/nvcam/settings
+      - /etc/systemd/system/zed_x_daemon.service:/etc/systemd/system/zed_x_daemon.service
+      - /usr/local/zed/resources:/usr/local/zed/resources
+    ports:
+      - "8003:8003"
+    environment:
+      - TZ=Europe/Amsterdam
