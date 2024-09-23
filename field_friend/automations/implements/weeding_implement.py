@@ -26,7 +26,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         rosys.persistence.PersistentModule.__init__(self,
                                                     persistence_key=f'field_friend.automations.implements.{persistence_key}')
 
-        self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
+        self.relevant_weeds = system.plant_locator.weed_category_names
         self.log = logging.getLogger('field_friend.weeding')
         self.system = system
         self.kpi_provider = system.kpi_provider
