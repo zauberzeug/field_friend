@@ -37,7 +37,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        print('tes')
         fields_data = data.get('fields', [])
         rosys.persistence.replace_list(self.fields, Field, fields_data)
 
@@ -50,7 +49,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
             for j, row in enumerate(rows):
                 for point in row.get('points_wgs84', []):
                     f.rows[j].points.append(GeoPoint(lat=point[0], long=point[1]))
-        print(f'fields 🛑: {self.fields[0].rows[10]}')
 
     def invalidate(self) -> None:
         self.request_backup()

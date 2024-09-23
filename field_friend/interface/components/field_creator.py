@@ -3,7 +3,6 @@ from uuid import uuid4
 
 import rosys
 from nicegui import ui
-
 from field_friend.automations import Field
 from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.interface.components.monitoring import CameraPosition
@@ -103,8 +102,6 @@ class FieldCreator:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location
         assert self.first_row_end is not None
-        # TODO we do not need a last row
-        # we now only work with first row, row_spacing and numbers of rows
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
         with self.content:
@@ -113,12 +110,13 @@ class FieldCreator:
                 ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
                 ui.label(f'Row Spacing: {self.row_spacing} m').classes('text-lg')
                 ui.label(f'Number of Rows: {self.row_number}').classes('text-lg')
+            with ui.row().classes('items-center'):
                 ui.button('Cancel', on_click=self.dialog.close).props('color=red')
         self.next = self._apply
 
     def _apply(self) -> None:
         self.dialog.close()
-        self.field_provider.fields = []  # TODO: for now we only want a single field to be saved
+        self.field_provider.fields = []  # currently only a single field is saved
         self.field_provider.fields.append(Field(id=str(uuid4()), name=f'field_{len(self.field_provider.fields) + 1}', first_row_start=self.first_row_start,
                                           first_row_end=self.first_row_end, row_spacing=self.row_spacing, row_number=self.row_number))
         self.field_provider.request_backup()

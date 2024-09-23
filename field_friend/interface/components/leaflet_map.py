@@ -56,11 +56,12 @@ class leaflet_map:
         self.drawn_marker = None
         self.obstacle_layers: list = []
         self.row_layers: list = []
-        self._active_field: str | None = None
-        self.active_object: Active_object | None = None
+        self.active_field: str | None = None
+        self.set_active_field()
         self.update_layers()
-        self.field_provider.FIELDS_CHANGED.register(self.update_layers)
         self.zoom_to_robot()
+        self.field_provider.FIELDS_CHANGED.register(self.set_active_field)
+        self.field_provider.FIELDS_CHANGED.register(self.update_layers)
 
         def handle_draw(e: events.GenericEventArguments):
             if e.args['layerType'] == 'marker':
@@ -107,7 +108,6 @@ class leaflet_map:
         ui.button(icon='my_location', on_click=self.zoom_to_robot).props('dense flat') \
             .tooltip('Center map on robot position').classes('ml-0')
         ui.button(on_click=self.zoom_to_field) \
-            .bind_enabled_from(self, 'active_field') \
             .props('icon=polyline dense flat') \
             .tooltip('center map on field boundaries').classes('ml-0')
 
@@ -115,15 +115,15 @@ class leaflet_map:
         self.on_dialog_close()
         dialog.close()
 
-    def add_point_active_object(self, latlon, dialog) -> None:
-        dialog.close()
-        self.on_dialog_close()
-        if self.active_object and self.active_object.get("object") is not None:
-            self.active_object.get("object").points.append(GeoPoint.from_list(latlon))
-            self.field_provider.invalidate()
-            self.update_layers()
-        else:
-            ui.notify("No object selected. Point could not be added to the void.")
+    # def add_point_active_object(self, latlon, dialog) -> None:
+    #     dialog.close()
+    #     self.on_dialog_close()
+    #     if self.active_object and self.active_object.get("object") is not None:
+    #         self.active_object.get("object").points.append(GeoPoint.from_list(latlon))
+    #         self.field_provider.invalidate()
+    #         self.update_layers()
+    #     else:
+    #         ui.notify("No object selected. Point could not be added to the void.")
 
     def update_layers(self) -> None:
         for layer in self.field_layers:
@@ -133,7 +133,7 @@ class leaflet_map:
         for field in self.field_provider.fields:
             color = '#6E93D6' if field.id == self.active_field else '#999'
             self.field_layers.append(self.m.generic_layer(name="polygon",
-                                                          args=[field.points_as_tuples, {'color': color}]))
+                                                          args=[field.outline_as_tuples, {'color': color}]))
         current_field: Field | None = self.field_provider.get_field(self.active_field)
         for layer in self.obstacle_layers:
             self.m.remove_layer(layer)
@@ -141,30 +141,13 @@ class leaflet_map:
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
-        if len(self.field_provider.fields) > 0:
-            print(self.field_provider.fields[0].outline_as_tuples)
-            for row in self.field_provider.fields[0].rows:
-                self.m.generic_layer(name="polyline", args=[
-                    row.points_as_tuples, {'color': '#6E93D6'}])
-            self.m.generic_layer(name="polygon", args=[
-                self.field_provider.fields[0].outline_as_tuples, {'color': '#6E93D6'}])
-        if current_field is None:
-            return
-        for obstacle in current_field.obstacles:
-            self.obstacle_layers.append(self.m.generic_layer(name="polygon",
-                                                             args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
-        for row in current_field.rows:
-            self.row_layers.append(self.m.generic_layer(name="polyline",
-                                                        args=[row.points_as_tuples, {'color': '#F2C037'}]))
-
-    @property
-    def active_field(self) -> str | None:
-        return self._active_field
-
-    @active_field.setter
-    def active_field(self, field_id: str | None) -> None:
-        self._active_field = field_id
-        self.update_layers()
+        if current_field is not None:
+            for obstacle in current_field.obstacles:
+                self.obstacle_layers.append(self.m.generic_layer(name="polygon",
+                                                                 args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
+            for row in current_field.rows:
+                self.row_layers.append(self.m.generic_layer(name="polyline",
+                                                            args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
         if dialog:
@@ -184,10 +167,10 @@ class leaflet_map:
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def zoom_to_field(self) -> None:
-        field = self.field_provider.get_field(self.active_field)
+        field = self.field_provider.fields[0] if len(self.field_provider.fields) > 0 else None
         if field is None:
             return
-        coords = field.points_as_tuples
+        coords = field.outline_as_tuples
         center = sum(lat for lat, _ in coords) / len(coords), sum(lon for _, lon in coords) / len(coords)
         self.m.set_center(center)
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)  # TODO use field boundaries to calculate zoom
@@ -229,3 +212,6 @@ class leaflet_map:
         if self.drawn_marker is not None:
             self.m.remove_layer(self.drawn_marker)
         self.drawn_marker = None
+
+    def set_active_field(self) -> None:
+        self.active_field = self.field_provider.fields[0].id if len(self.field_provider.fields) > 0 else None
