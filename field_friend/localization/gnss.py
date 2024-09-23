@@ -149,11 +149,12 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.min_seconds_between_updates = data.get('min_seconds_between_updates', self.min_seconds_between_updates)
         self.ensure_gnss = data.get('ensure_gnss', self.ensure_gnss)
 
-    def update_reference(self) -> None:
+    async def update_reference(self) -> None:
         if self.current is None:
             rosys.notify('No GNSS position available.')
             return
         localization.reference = self.current.location
+        await backup(force=True)
         os.utime('main.py')
 
     def reference_warning_dialog(self) -> None:
