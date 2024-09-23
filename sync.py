@@ -20,7 +20,5 @@ else:
 
 if args.zedxmini:
     folders.append(Folder('../zedxmini', f'{args.robot}:~/zedxmini', on_change=touch))
-# else:
-#     print('Ensuring we have no local zedxmini on the robot')
-#     run_subprocess(f'ssh {args.robot} "rm -rf ~/zedxmini"')
+
 sync(*folders)
