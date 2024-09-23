@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.persistence.registry import backup
 
 from .. import localization
 from .geo_point import GeoPoint
@@ -32,6 +33,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
     NEEDED_POSES: int = 10
     MIN_SECONDS_BETWEEN_UPDATES: float = 10.0
     ENSURE_GNSS: bool = False
+    MAX_DISTANCE_TO_REFERENCE: float = 2000.0
 
     def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
         super().__init__()
@@ -59,6 +61,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.needed_poses: int = self.NEEDED_POSES
         self.min_seconds_between_updates: float = self.MIN_SECONDS_BETWEEN_UPDATES
         self.ensure_gnss: bool = self.ENSURE_GNSS
+        self.max_distance_to_reference: float = self.MAX_DISTANCE_TO_REFERENCE
         self.reference_alert_dialog: ui.dialog
 
         self.needs_backup = False
@@ -167,7 +170,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
                 ui.button('Cancel', on_click=self.reference_alert_dialog.close)
 
     def check_distance_to_reference(self) -> bool:
-        if self.current is not None and self.current.location.distance(localization.reference) > 2000.0:
+        if self.current is not None and self.current.location.distance(localization.reference) > self.max_distance_to_reference:
             self.reference_alert_dialog.open()
             return True
         return False
