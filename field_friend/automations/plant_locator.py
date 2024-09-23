@@ -105,6 +105,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             world_point_3d: rosys.geometry.Point3d | None = None
             if isinstance(camera, StereoCamera):
                 world_point_3d = camera.calibration.project_from_image(image_point)
+                # TODO: 3d detection
                 # camera_point_3d: Point3d | None = await camera.get_point(
                 #     int(d.cx), int(d.cy))
                 # if camera_point_3d is None:

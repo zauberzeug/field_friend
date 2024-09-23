@@ -68,7 +68,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await super().finish()
 
     async def activate(self):
-        # await self.system.field_friend.flashlight.turn_on()
+        await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
         await rosys.sleep(3)
         self.system.plant_locator.resume()
@@ -79,13 +79,13 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def deactivate(self):
         await super().deactivate()
         self.system.timelapse_recorder.camera = None
-        # await self.system.field_friend.flashlight.turn_off()
+        await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
     async def start_workflow(self) -> None:
         # TODO: only sleep when moving
-        # await rosys.sleep(2)  # wait for robot to stand still
+        await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
             return
         self.log.info(f'Handling plants with {self.name}...')
