@@ -41,7 +41,7 @@ case $os in
             r_number=$(grep -oP 'R\d+' /etc/nv_tegra_release)
 
             case $r_number in
-                R35|R36)
+                R35)
                     # Jetson Orin
                     compose_args="$compose_args -f docker-compose.yml -f docker-compose.jetson.orin.yml"
                     ;;

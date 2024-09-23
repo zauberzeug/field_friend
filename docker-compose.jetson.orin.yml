@@ -4,8 +4,6 @@ services:
     network_mode: host
     restart: always
     privileged: true
-    build:
-      context: .
 
   detector:
     image: "zauberzeug/yolov5-detector:0.1.2-nlv0.10.10-35.4.1"
