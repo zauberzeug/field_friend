@@ -59,6 +59,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.needed_poses: int = self.NEEDED_POSES
         self.min_seconds_between_updates: float = self.MIN_SECONDS_BETWEEN_UPDATES
         self.ensure_gnss: bool = self.ENSURE_GNSS
+        self.reference_alert_dialog: ui.dialog
 
         self.needs_backup = False
         rosys.on_repeat(self.check_gnss, 0.01)
