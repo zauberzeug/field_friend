@@ -134,8 +134,8 @@ class ZedxminiCamera(StereoCamera):
         width = camera_dict['resolution'][0]
         height = camera_dict['resolution'][1]
         fx = camera_dict['calibration']['left_cam']['fx']
-        # TODO: calculate correct focal length
-        self.focal_length = fx
+        fy = camera_dict['calibration']['left_cam']['fy']
+        self.focal_length = (fx + fy) / 2.0
         fy = camera_dict['calibration']['left_cam']['fy']
         cx = camera_dict['calibration']['left_cam']['cx']
         cy = camera_dict['calibration']['left_cam']['cy']
