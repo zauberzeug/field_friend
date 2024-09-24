@@ -109,14 +109,14 @@ class ZedxminiCamera(StereoCamera):
                 async with session.get(url, timeout=2.0) as response:
                     if response.status != 200:
                         self.log.warning(f"response.status: {response.status}")
-                        return
+                        return None
                     data = await response.json()
             except aiohttp.ClientError as e:
                 self.log.error(f"Error capturing image: {str(e)}")
             except asyncio.TimeoutError:
                 self.log.error("Request timed out")
         if data is None:
-            return
+            return None
         assert 'x' in data
         assert 'y' in data
         assert 'z' in data
