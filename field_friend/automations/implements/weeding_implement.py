@@ -210,7 +210,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def settings_ui(self):
         super().settings_ui()
-        ui.select(self.system.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
+        ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \
             .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
         ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \
