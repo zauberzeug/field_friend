@@ -27,7 +27,7 @@ class field_planner:
         self.field_provider = system.field_provider
         self.odometer = system.odometer
         self.gnss = system.gnss
-        self.cultivatable_crops = system.crop_category_names
+        self.cultivatable_crops = system.plant_locator.crop_category_names
         self.leaflet_map = leaflet
         self.tab: TabType = "Plants"
         self.active_object: ActiveObject | None = None
