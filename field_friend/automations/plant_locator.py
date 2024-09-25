@@ -11,7 +11,7 @@ from ..vision import CalibratableUsbCamera
 from ..vision.zedxmini_camera import StereoCamera
 from .plant import Plant
 
-WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'weedy_area', ]
+WEED_CATEGORY_NAME = ['coin', 'weed', 'weedy_area', ]
 CROP_CATEGORY_NAME = ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
                       'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]
 MINIMUM_CROP_CONFIDENCE = 0.3
