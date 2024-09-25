@@ -46,6 +46,8 @@ class Navigation(rosys.persistence.PersistentModule):
                 self.log.error('Preparation failed')
                 return
             await self.gnss.update_robot_pose()
+            if self.gnss.check_distance_to_reference():
+                raise WorkflowException('reference to far away from robot')
             self.start_position = self.odometer.prediction.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
@@ -65,6 +67,7 @@ class Navigation(rosys.persistence.PersistentModule):
         except WorkflowException as e:
             self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
+            rosys.notify(f'An exception occurred during automation: {e}', 'negative')
         finally:
             self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.implement.finish()
