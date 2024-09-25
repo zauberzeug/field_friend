@@ -1,4 +1,5 @@
 
+from .a_b_field_navigation import ABFieldNavigatoin
 from .a_b_line_navigation import ABLineNavigation
 from .coverage_navigation import CoverageNavigation
 from .follow_crops_navigation import FollowCropsNavigation
@@ -14,4 +15,5 @@ __all__ = [
     'FollowCropsNavigation',
     'CoverageNavigation',
     'ABLineNavigation',
+    'ABFieldNavigatoin',
 ]

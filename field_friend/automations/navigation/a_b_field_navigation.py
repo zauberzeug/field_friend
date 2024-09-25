@@ -24,7 +24,7 @@ class ABFieldNavigatoin(FollowCropsNavigation):
     def __init__(self, system: 'System', tool: Implement) -> None:
         super().__init__(system, tool)
 
-        self.name = 'A B field navigation'
+        self.name = 'Field Navigation'
         self.gnss = system.gnss
         self.bms = system.field_friend.bms
         self.automation_watcher = system.automation_watcher
