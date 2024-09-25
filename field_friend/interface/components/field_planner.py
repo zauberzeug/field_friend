@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from field_friend.system import System
 
 
-TabType = Literal["Plants", "Obstacles", "Outline", "Rows"]
+TabType = Literal["Obstacles", "Outline", "Rows"]
 
 
 class ActiveObject(TypedDict):
@@ -27,9 +27,9 @@ class field_planner:
         self.field_provider = system.field_provider
         self.odometer = system.odometer
         self.gnss = system.gnss
-        self.cultivatable_crops = system.crop_category_names
+        # self.cultivatable_crops = system.crop_category_names
         self.leaflet_map = leaflet
-        self.tab: TabType = "Plants"
+        self.tab: TabType = "Outline"
         self.active_object: ActiveObject | None = None
         self.active_field: Field | None = None
         self.restore_actives()
@@ -134,16 +134,16 @@ class field_planner:
                         .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;") \
                         .tooltip("Delete field")
                 with ui.tabs().style("width: 100%;") as self.tabs:
-                    ui.tab("Plants", "Plants")
+                    # ui.tab("Plants", "Plants")
                     ui.tab("Outline", "Outline")
                     ui.tab("Obstacles", "Obstacles")
                     ui.tab("Rows", "Rows")
                 with ui.tab_panels(self.tabs, value=f"{self.tab}", on_change=self.set_tab).style("width: 100%;") as self.panels:
-                    with ui.tab_panel("Plants").style("width: 100%;"):
-                        ui.select(self.cultivatable_crops, label="Cultivated Crop", on_change=self.field_provider.request_backup) \
-                            .classes("w-40").props('clearable') \
-                            .bind_value(self.active_field, "crop") \
-                            .tooltip('Set the cultivated crop which should be kept safe')
+                    # with ui.tab_panel("Plants").style("width: 100%;"):
+                    #     ui.select(self.cultivatable_crops, label="Cultivated Crop", on_change=self.field_provider.request_backup) \
+                    #         .classes("w-40").props('clearable') \
+                    #         .bind_value(self.active_field, "crop") \
+                    #         .tooltip('Set the cultivated crop which should be kept safe')
                     with ui.tab_panel("Outline").style("width: 100%;"):
                         for geo_point in self.active_field.points:
                             with ui.row().style("width: 100%;"):

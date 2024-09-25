@@ -1,5 +1,6 @@
 import numpy as np
 from geographiclib.geodesic import Geodesic
+from rosys.geometry import Point
 
 from .geo_point import GeoPoint
 

@@ -6,6 +6,7 @@ from nicegui import binding, ui
 from field_friend.system import System
 
 from ..components import camera_card, leaflet_map, operation, robot_scene
+from ..components.field_creator import FieldCreator
 
 
 class main_page():
@@ -35,7 +36,6 @@ class main_page():
                 operation(self.system)
                 with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
                     camera_card(self.system)
-                    robot_scene(self.system, self.system.field_navigation.field)
                     with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
                         with ui.column():
                             ui.button('emergency stop', on_click=lambda: self.system.field_friend.estop.set_soft_estop(True)).props('color=red') \
@@ -46,3 +46,6 @@ class main_page():
                         ui.space()
                         with ui.row():
                             rosys.automation.automation_controls(self.system.automator)
+                        with ui.row():
+                            ui.button("Field Creation Wizard", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
+                                .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")

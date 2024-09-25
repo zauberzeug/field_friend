@@ -3,8 +3,7 @@ from uuid import uuid4
 
 import rosys
 from nicegui import ui
-
-from field_friend.automations import Field, Row
+from field_friend.automations import Field
 from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
@@ -29,14 +28,10 @@ class FieldCreator:
         self.plant_locator = system.plant_locator
         self.gnss = system.gnss
         self.field_provider = system.field_provider
-
-        self.field = Field(id=str(uuid4()), name=f'Field #{len(self.field_provider.fields) + 1}')
         self.first_row_start: GeoPoint | None = None
         self.first_row_end: GeoPoint | None = None
-        self.last_row_end: GeoPoint | None = None
         self.row_spacing = 0.5
-        self.padding = 1
-        self.padding_bottom = 2
+        self.row_number = 10
         self.next: Callable = self.find_first_row
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
@@ -63,26 +58,25 @@ class FieldCreator:
                      'right before the first crop. '
                      'The blue line should be in the center of the row.') \
                 .classes('text-lg text-center')
+            ui.label('Place the back center of the robot over the start point of the row.') \
+                .classes('text-lg text-center')
         self.next = self.get_infos
 
     def get_infos(self) -> None:
+        self.headline.text = 'Field Parameters'
         assert self.gnss.current is not None
         if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_start = self.gnss.current.location
-
         self.row_sight.content = ''
-        crops = self.plant_locator.crop_category_names[:]
-        crops.remove('coin_with_hole')
         self.content.clear()
         with self.content:
-            ui.select(label='Cultivated Crop', options=crops, clearable=True).classes('w-40') \
-                .bind_value(self.field, 'crop')
-            ui.number('Crop Spacing', suffix='cm',
-                      value=20, step=1, min=1, max=60) \
+            ui.number('Number of rows',
+                      value=10, step=1, min=1, max=500) \
                 .props('dense outlined').classes('w-40') \
-                .tooltip('Set the distance between the crops')
+                .tooltip('Set the number of rows.')\
+                .bind_value(self, 'row_number')
             ui.number('Row Spacing', suffix='cm',
                       value=50, step=5, min=20, max=100) \
                 .props('dense outlined').classes('w-40') \
@@ -94,89 +88,37 @@ class FieldCreator:
         self.headline.text = 'Find Row Ending'
         self.content.clear()
         with self.content:
-            with ui.row().classes('items-center'):
-                rosys.automation.automation_controls(self.automator)
-            ui.label('Press "Play" to start driving forward. '
-                     'At the end of the row, press the "Stop" button.') \
-                .classes('text-lg text-center')
-        self.next = self.drive_to_last_row
-
-    def drive_to_last_row(self) -> None:
-        assert self.gnss.current is not None
-        if not("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
-            with self.content:
-                ui.label('No RTK fix available.').classes('text-red')
-        self.first_row_end = self.gnss.current.location
-
-        self.headline.text = 'Drive to Last Row'
-        self.content.clear()
-        with self.content:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
-            ui.label('Drive the robot to the last row on this side, '
-                     'right before the first crop.') \
+            ui.label('Drive the robot to the end of the current row.') \
+                .classes('text-lg text-center')
+            ui.label('Place the back center of the robot over the end point of the row.') \
                 .classes('text-lg text-center')
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
         assert self.gnss.current is not None
-        if not("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
-        self.last_row_end = self.gnss.current.location
-
+        self.first_row_end = self.gnss.current.location
         assert self.first_row_end is not None
-        assert self.last_row_end is not None
-        if not self.build_geometry():
-            d = self.first_row_end.distance(self.last_row_end)
-            ui.label(f'The distance between first row and last row is {d:.2f} m. '
-                     f'Which does not match well with the provided row spacing of {self.row_spacing} cm.') \
-                .classes('text-red')
-
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
         with self.content:
             with ui.row().classes('items-center'):
-                rosys.automation.automation_controls(self.automator)
-            ui.label('Press "Play" to start driving forward. '
-                     'At the end of the row, press the "Stop" button.') \
-                .classes('w-64 text-lg')
+                ui.label(f'First Row Start: {self.first_row_start}').classes('text-lg')
+                ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
+                ui.label(f'Row Spacing: {self.row_spacing} m').classes('text-lg')
+                ui.label(f'Number of Rows: {self.row_number}').classes('text-lg')
+            with ui.row().classes('items-center'):
+                ui.button('Cancel', on_click=self.dialog.close).props('color=red')
         self.next = self._apply
-
-    def build_geometry(self) -> bool:
-        """Build the geometry of the field based on the given points.
-
-        Returns True if the row spacing matches the distance between the first and last row, False otherwise.
-        Will create rows in any case to make testing easier.
-        """
-        assert self.first_row_start is not None
-        assert self.first_row_end is not None
-        assert self.last_row_end is not None
-        distance = self.first_row_end.distance(self.last_row_end)
-        number_of_rows = distance / (self.row_spacing) + 1
-        # get AB line
-        a = self.first_row_start.cartesian()
-        b = self.first_row_end.cartesian()
-        c = self.last_row_end.cartesian()
-        ab = a.direction(b)
-        bc = b.direction(c)
-        d = a.polar(distance, bc)
-        for i in range(int(number_of_rows)):
-            start = a.polar(i * self.row_spacing, bc)
-            end = b.polar(i * self.row_spacing, bc)
-            self.field.rows.append(Row(id=str(uuid4()), name=f'Row #{len(self.field.rows)}',
-                                       points=[self.first_row_start.shifted(start),
-                                               self.first_row_start.shifted(end)]
-                                       ))
-        bottom_left = a.polar(-self.padding_bottom, ab).polar(-self.padding, bc)
-        top_left = b.polar(self.padding, ab).polar(-self.padding, bc)
-        top_right = c.polar(self.padding, ab).polar(self.padding, bc)
-        bottom_right = d.polar(-self.padding_bottom, ab).polar(self.padding, bc)
-        self.field.points = [self.first_row_start.shifted(p) for p in [bottom_left, top_left, top_right, bottom_right]]
-        return 1 - number_of_rows % 1 < 0.1
 
     def _apply(self) -> None:
         self.dialog.close()
-        self.field_provider.fields.append(self.field)
+        self.field_provider.fields = []  # currently only a single field is saved
+        self.field_provider.fields.append(Field(id=str(uuid4()), name=f'field_{len(self.field_provider.fields) + 1}', first_row_start=self.first_row_start,
+                                          first_row_end=self.first_row_end, row_spacing=self.row_spacing, row_number=self.row_number))
         self.field_provider.request_backup()
         self.field_provider.FIELDS_CHANGED.emit()
 
