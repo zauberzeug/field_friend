@@ -2,6 +2,8 @@ import numpy as np
 from nicegui.elements.scene_objects import Box, Curve, Cylinder, Extrusion, Group
 from rosys.geometry import Spline
 
+from field_friend.localization import GeoPoint
+
 from ...automations import Field, FieldProvider
 
 
@@ -31,7 +33,8 @@ class field_object(Group):
         Box(length, height, depth).move(x=center_x, y=center_y,
                                         z=height / 2 + 0.2).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
         Box(length, height, depth).move(x=center_x, y=center_y,
-                                        z=height / 2 + 0.5).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)  # Convert angle from radians to degrees
+                                        # Convert angle from radians to degrees
+                                        z=height / 2 + 0.5).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
         Box(length, height, depth).move(x=center_x, y=center_y,
                                         z=height / 2 + 0.8).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
         Cylinder(0.1, 0.1, 1.0).move(x=start[0], y=start[1], z=0.5).with_name(
@@ -45,7 +48,7 @@ class field_object(Group):
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
         if active_field:
             field = active_field
-            outline = [[point.x, point.y] for point in field.outline]
+            outline = [point.cartesian().tuple for point in field.outline]
             if len(outline) > 1:  # Make sure there are at least two points to form a segment
                 for i in range(len(outline)):
                     start = outline[i]
