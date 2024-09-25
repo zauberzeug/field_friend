@@ -45,6 +45,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         implement: str = config_params['tool']
         if implement in ['tornado', 'weed_screw', 'none']:
             self.WORK_X: float = config_params['work_x']
+            if 'work_y' in config_params:
+                self.WORK_Y: float = config_params['work_y']
             self.DRILL_RADIUS: float = config_params['drill_radius']
         elif implement in ['dual_mechanism']:
             self.WORK_X_CHOP: float = config_params['work_x_chop']
@@ -59,7 +61,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         communication = rosys.hardware.SerialCommunication()
         if 'enable_esp_on_startup' in config_robotbrain['robot_brain']:
-            robot_brain = rosys.hardware.RobotBrain(communication,enable_esp_on_startup=config_robotbrain['robot_brain']['enable_esp_on_startup'])
+            robot_brain = rosys.hardware.RobotBrain(
+                communication, enable_esp_on_startup=config_robotbrain['robot_brain']['enable_esp_on_startup'])
         else:
             robot_brain = rosys.hardware.RobotBrain(communication)
         robot_brain.lizard_firmware.flash_params += config_robotbrain['robot_brain']['flash_params']
@@ -121,7 +124,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                             profile_deceleration=config_hardware['y_axis']['profile_deceleration'],
                             max_position=config_hardware['y_axis']['max_position'],
                             min_position=config_hardware['y_axis']['min_position'],
-                            axis_offset=config_hardware['y_axis']['axis_offset'],)
+                            axis_offset=config_hardware['y_axis']['axis_offset'],
+                            reverse_direction=config_hardware['y_axis']['reversed_direction'],)
         elif config_hardware['y_axis']['version'] == 'chain_axis':
             y_axis = ChainAxisHardware(robot_brain,
                                        expander=expander,
@@ -220,7 +224,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                             profile_deceleration=config_hardware['z_axis']['profile_deceleration'],
                             max_position=config_hardware['z_axis']['max_position'],
                             min_position=config_hardware['z_axis']['min_position'],
-                            axis_offset=config_hardware['z_axis']['axis_offset'],)
+                            axis_offset=config_hardware['z_axis']['axis_offset'],
+                            reverse_direction=config_hardware['z_axis']['reversed_direction'],)
         elif config_hardware['z_axis']['version'] == 'tornado':
             z_axis = TornadoHardware(robot_brain,
                                      expander=expander,

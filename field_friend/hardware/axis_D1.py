@@ -19,6 +19,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
                  profile_velocity: int = 20,
                  profile_acceleration: int = 200,
                  profile_deceleration: int = 400,
+                 reverse_direction: bool = False,
 
 
                  ** kwargs
@@ -32,7 +33,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         """
         self.name = name
         self.statusword: int = 0
-        self._position: int = 0
+        self.steps: int = 0
         self.velocity: int = 0
 
         # flags of the Statusword for more information refer to the CANopen standard and D1 manual
@@ -56,7 +57,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             {self.name}_motor.homing_acceleration = {homing_acceleration}
             {self.name}_motor.switch_search_speed = {homing_velocity}
             {self.name}_motor.zero_search_speed = {homing_velocity}
-            {self.name}_motor.profile_acceleration = {profile_acceleration} 
+            {self.name}_motor.profile_acceleration = {profile_acceleration}
             {self.name}_motor.profile_deceleration = {profile_deceleration}
             {self.name}_motor.profile_velocity = {profile_velocity}
         ''')
@@ -75,24 +76,18 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             min_position=min_position,
             axis_offset=axis_offset,
             reference_speed=homing_velocity,
-            steps_per_m=0,
-            reversed_direction=False,
+            steps_per_m=D1_STEPS_P_M,
+            reversed_direction=reverse_direction,
             **kwargs)
-
-    @property
-    def position(self) -> float:
-        return (self._position / D1_STEPS_P_M) - self.axis_offset
 
     async def stop(self):
         pass
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
-        if self.is_referenced:
-            await self.robot_brain.send(f'{self.name}_motor.profile_position({self._compute_steps(position)});')
-        if not self.is_referenced:
-            self.log.error(f'AxisD1 {self.name} is not refernced')
-            return
-        while abs(self.position - position) > 0.02:
+        await super().move_to(position)
+        while (abs(self.position - position)) > 0.01:
+            # sometimes the moving command is not executed, so it is send in each loop (for demo purposes)
+            await self.robot_brain.send(f'{self.name}_motor.profile_position({self.compute_steps(position)});')
             await rosys.sleep(0.1)
 
     async def enable_motor(self):
@@ -104,25 +99,29 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
     async def reset_error(self):
         if self.fault:
             await self.robot_brain.send(f'{self.name}_motor.reset()')
-        else: self.log.error(f'AxisD1 {self.name} is not in fault state')
+        else:
+            self.log.error(f'AxisD1 {self.name} is not in fault state')
 
-    async def try_reference(self):
+    async def try_reference(self) -> bool:
         if not self._valid_status():
             await self.enable_motor()
         if self.is_referenced:
             self.log.error(f'AxisD1 {self.name} is already referenced')
         else:
-            #due to some timing issues, the homing command is sent twice
+            # due to some timing issues, the homing command is sent twice
             await self.robot_brain.send(f'{self.name}_motor.home()')
             await self.robot_brain.send(f'{self.name}_motor.home()')
+            while not self.is_referenced:
+                await rosys.sleep(0.1)
+        return self.is_referenced
 
     async def speed_Mode(self, speed: int):
-        #due to some timing issues, the speed command is sent twice
+        # due to some timing issues, the speed command is sent twice
         await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')
         await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self._position = int(words.pop(0))
+        self.steps = int(words.pop(0))
         self.velocity = int(words.pop(0))
         self.statusword = int(words.pop(0))
         self.is_referenced = int(words.pop(0)) == 1
@@ -130,9 +129,6 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
 
     def _valid_status(self) -> bool:
         return self.ready_to_switch_on and self.switched_on and self.operation_enabled and self.quick_stop
-
-    def _compute_steps(self, position: float) -> int:
-        return int(abs(position + self.axis_offset) * D1_STEPS_P_M)
 
     def _split_statusword(self) -> None:
         self.ready_to_switch_on = ((self.statusword >> 0) & 1) == 1

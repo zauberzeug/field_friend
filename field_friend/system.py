@@ -7,12 +7,14 @@ import numpy as np
 import psutil
 import rosys
 
+import config.config_selection as config_selector
+
 from . import localization
 from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PlantLocator,
                           PlantProvider, Puncher)
 from .automations.implements import ChopAndScrew, ExternalMower, Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import (ABLineNavigation, CoverageNavigation, FollowCropsNavigation, Navigation,
-                                     RowsOnFieldNavigation, StraightLineNavigation)
+from .automations.navigation import (ABLineNavigation, CoverageNavigation, CrossglideDemoNavigation,
+                                     FollowCropsNavigation, Navigation, RowsOnFieldNavigation, StraightLineNavigation)
 from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
@@ -20,6 +22,7 @@ from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
 from .vision import CalibratableUsbCameraProvider, CameraConfigurator
+from .vision.zedxmini_camera import ZedxminiCameraProvider
 
 icecream.install()
 
@@ -37,7 +40,7 @@ class System(rosys.persistence.PersistentModule):
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED = rosys.event.Event()
 
-        self.camera_provider: CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider
+        self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.field_friend: FieldFriend
         if self.is_real:
@@ -46,7 +49,6 @@ class System(rosys.persistence.PersistentModule):
                 self.teltonika_router = TeltonikaRouter()
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
-            self.camera_provider = CalibratableUsbCameraProvider()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
@@ -54,7 +56,6 @@ class System(rosys.persistence.PersistentModule):
             self.camera_configurator = CameraConfigurator(self.camera_provider, odometer=self.odometer)
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
-            self.camera_provider = rosys.vision.SimulatedCameraProvider()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
@@ -122,11 +123,13 @@ class System(rosys.persistence.PersistentModule):
         self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
         self.coverage_navigation = CoverageNavigation(self, self.monitoring)
         self.a_b_line_navigation = ABLineNavigation(self, self.monitoring)
+        self.crossglide_demo_navigation = CrossglideDemoNavigation(self, self.monitoring)
         self.navigation_strategies = {n.name: n for n in [self.field_navigation,
                                                           self.straight_line_navigation,
                                                           self.follow_crops_navigation,
                                                           self.coverage_navigation,
-                                                          self.a_b_line_navigation
+                                                          self.a_b_line_navigation,
+                                                          self.crossglide_demo_navigation
                                                           ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
@@ -207,6 +210,17 @@ class System(rosys.persistence.PersistentModule):
         self.automator.default_automation = self._current_navigation.start
         self.AUTOMATION_CHANGED.emit(navigation.name)
         self.request_backup()
+
+    def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider:
+        if not self.is_real:
+            return rosys.vision.SimulatedCameraProvider()
+        camera_config = config_selector.import_config(module='camera')
+        camera_type = camera_config.get('type', 'CalibratableUsbCamera')
+        if camera_type == 'CalibratableUsbCamera':
+            return CalibratableUsbCameraProvider()
+        if camera_type == 'ZedxminiCamera':
+            return ZedxminiCameraProvider()
+        raise NotImplementedError(f'Unknown camera type: {camera_type}')
 
     async def setup_simulated_usb_camera(self):
         self.camera_provider.remove_all_cameras()

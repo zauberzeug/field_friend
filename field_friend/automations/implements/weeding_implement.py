@@ -84,6 +84,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
     async def start_workflow(self) -> None:
+        # TODO: only sleep when moving
         await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
             return
@@ -154,8 +155,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                     safe_weed_position = Point3d.from_point(Point3d.projection(weed_position).polar(
                         offset, Point3d.projection(crop_position).direction(weed_position)))
                     upcoming_weed_positions[weed] = safe_weed_position
-                    self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
-                                  f'by {offset} to safe {crop} at {crop_position}')
+                    # self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
+                    #               f'by {offset} to safe {crop} at {crop_position}')
 
         # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
