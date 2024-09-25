@@ -5,8 +5,7 @@ from nicegui import binding, ui
 
 from field_friend.system import System
 
-from ..components import camera_card, leaflet_map, operation, robot_scene
-from ..components.field_creator import FieldCreator
+from ..components import camera_card, leaflet_map, operation
 
 
 class main_page():
@@ -46,6 +45,3 @@ class main_page():
                         ui.space()
                         with ui.row():
                             rosys.automation.automation_controls(self.system.automator)
-                        with ui.row():
-                            ui.button("Field Creation Wizard", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
-                                .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")

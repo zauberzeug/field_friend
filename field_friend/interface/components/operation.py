@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import app, events, ui
 
+from .field_creator import FieldCreator
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
@@ -25,6 +26,9 @@ class operation:
                     with ui.row():
                         ui.label('Settings').classes('text-xl')
                     with ui.expansion('Navigation').classes('w-full').bind_value(app.storage.user, 'show_navigation_settings'):
+                        with ui.row().style('width:100%;'):
+                            ui.button("Create Field" if len(self.system.field_provider.fields) < 1 else "Overwrite Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
+                                .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto; width: 100%;").tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
                         self.implement_settings = ui.row().classes('items-center')
