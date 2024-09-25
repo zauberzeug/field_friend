@@ -32,6 +32,7 @@ class ABFieldNavigatoin(FollowCropsNavigation):
 
         self.state = self.State.APPROACHING_ROW_START
         self.field: Field | None = None
+        self.rows: list[Row] | None = None
         self.row_index = 0
         self.start_point: Point | None = None
         self.end_point: Point | None = None
@@ -39,16 +40,18 @@ class ABFieldNavigatoin(FollowCropsNavigation):
     @property
     def current_row(self) -> Row:
         assert self.field
-        return self.field.rows[self.row_index]
+        return self.rows[self.row_index]
 
     async def prepare(self) -> bool:
         await super().prepare()
+        self.field = self.field_provider.fields[0]
         if self.field is None:
             rosys.notify('No field selected', 'negative')
             return False
         if not self.field.rows:
             rosys.notify('No rows available', 'negative')
             return False
+        self.rows = self.field.rows
         if self.gnss.device is None:
             rosys.notify('GNSS is not available', 'negative')
             return False
@@ -56,13 +59,10 @@ class ABFieldNavigatoin(FollowCropsNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
-        self.current_row = self.get_nearest_row()
-        self.row_index = self.field.rows.index(row)
+        row = self.get_nearest_row()
+        self.row_index = self.rows.index(row)
         if self.state == self.State.FIELD_COMPLETED:
             self.clear()
-        if self.state == self.State.FOLLOWING_ROW:
-            if self.current_row.line_segment().distance(self.odometer.prediction.point) > 0.1:
-                self.clear()
         else:
             self.plant_provider.clear()
 
@@ -90,27 +90,29 @@ class ABFieldNavigatoin(FollowCropsNavigation):
     def get_nearest_row(self) -> Row:
         assert self.field is not None
         assert self.gnss.device is not None
-        row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
+        row = min(self.rows, key=lambda r: r.line_segment().line.foot_point(
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
         self.log.info(f'Nearest row is {row.name}')
-        self.row_index = self.field.rows.index(row)
+        self.row_index = self.rows.index(row)
         return row
 
     def set_start_and_end_points(self):
         assert self.field is not None
         self.start_point = None
         self.end_point = None
-        relative_point_0 = self.odometer.prediction.relative_point(self.current_row.points[0].cartesian())
-        relative_point_1 = self.odometer.prediction.relative_point(self.current_row.points[-1].cartesian())
-        if relative_point_0.x < 0 or relative_point_0.x < relative_point_1.x:
+        relative_point_0 = self.odometer.prediction.distance(self.current_row.points[0].cartesian())
+        relative_point_1 = self.odometer.prediction.distance(self.current_row.points[-1].cartesian())
+        self.log.info(f'Relative point 0: {relative_point_0} Relative point 1: {relative_point_1}')
+        if relative_point_0 < relative_point_1:
             self.start_point = self.current_row.points[0].cartesian()
             self.end_point = self.current_row.points[-1].cartesian()
-        elif relative_point_1.x < 0 or relative_point_1.x < relative_point_0.x:
+        elif relative_point_1 < relative_point_0:
             self.start_point = self.current_row.points[-1].cartesian()
             self.end_point = self.current_row.points[0].cartesian()
+        self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 
     def update_target(self) -> None:
-        pass
+        self.origin = self.odometer.prediction.point
 
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
@@ -121,14 +123,18 @@ class ABFieldNavigatoin(FollowCropsNavigation):
             self.state = self.State.FOLLOWING_ROW
             self.log.info(f'Following "{self.current_row.name}"...')
             self.plant_provider.clear()
+            self.log.info(f'State is {self.state}...')
         if self.state == self.State.FOLLOWING_ROW:
             if not self.implement.is_active:
                 await self.implement.activate()
             if self.odometer.prediction.point.distance(self.end_point) >= 0.1:
+                super().update_target()
                 await super()._drive(distance)
             else:  # TODO: drive forward to clear the row and not drive over the plants
                 await self.implement.deactivate()
                 self.state = self.State.ROW_COMPLETED
+                await self._drive_forward(0.5)
+                self.log.info(f'State is {self.state}...')
         if self.state == self.State.ROW_COMPLETED:
             if self.current_row == self.field.rows[-1]:
                 self.state = self.State.FIELD_COMPLETED
@@ -137,13 +143,29 @@ class ABFieldNavigatoin(FollowCropsNavigation):
                 self.row_index += 1
                 self.state = self.State.APPROACHING_ROW_START
 
+    async def _drive_forward(self, distance: float) -> None:
+        target = Pose(x=self.odometer.prediction.point.x+distance,y=self.odometer.prediction.point.y, yaw=self.odometer.prediction.direction)
+        hook_offset = rosys.geometry.Point(x=self.driver.parameters.hook_offset, y=0)
+        carrot_offset = rosys.geometry.Point(x=self.driver.parameters.carrot_offset, y=0)
+        target_point = target.transform(carrot_offset)
+        hook = self.odometer.prediction.transform(hook_offset)
+        turn_angle = rosys.helpers.angle(self.odometer.prediction.yaw, hook.direction(target_point))
+        curvature = np.tan(turn_angle) / hook_offset.x
+        if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
+            curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius
+        with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
+            await self.driver.wheels.drive(*self.driver._throttle(1.0, curvature))  # pylint: disable=protected-access
+        await self.driver.wheels.stop()
+
     async def _drive_to_row(self):
         self.log.info(f'Driving to "{self.current_row.name}"...')
         assert self.field
         target = self.start_point
         direction = target.direction(self.end_point)
         end_pose = Pose(x=target.x, y=target.y, yaw=direction)
+        self.log.info(f'Driving to {end_pose} from {self.odometer.prediction}...')
         spline = Spline.from_poses(self.odometer.prediction, end_pose)
+        self.log.info(f'Driving spline {spline}...')
         await self.driver.drive_spline(spline)
         self.log.info(f'Arrived at row {self.current_row.name} starting at {target}')
 
@@ -162,6 +184,7 @@ class ABFieldNavigatoin(FollowCropsNavigation):
         self.state = self.State[data.get('state', self.State.APPROACHING_ROW_START.name)]
 
     def clear(self) -> None:
+        return
         self.state = self.State.APPROACHING_ROW_START
         self.row_index = 0
 

@@ -151,8 +151,8 @@ class System(rosys.persistence.PersistentModule):
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
-        self.timelapse_recorder.frame_info_builder = lambda _: f'{self.version}, {
-            self.current_navigation.name}, tags: {", ".join(self.plant_locator.tags)}'
+        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version},\ {
+            self.current_navigation.name}, tags: {", ".join(self.plant_locator.tags)}'''
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
         self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
