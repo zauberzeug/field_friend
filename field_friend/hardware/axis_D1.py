@@ -111,6 +111,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             # due to some timing issues, the homing command is sent twice
             await self.robot_brain.send(f'{self.name}_motor.home()')
             await self.robot_brain.send(f'{self.name}_motor.home()')
+            while not self.is_referenced:
+                await rosys.sleep(0.1)
         return self.is_referenced
 
     async def speed_Mode(self, speed: int):
