@@ -33,7 +33,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
     NEEDED_POSES: int = 10
     MIN_SECONDS_BETWEEN_UPDATES: float = 10.0
     ENSURE_GNSS: bool = False
-    MAX_DISTANCE_TO_REFERENCE: float = 2000.0
+    MAX_DISTANCE_TO_REFERENCE: float = 5000.0
 
     def __init__(self, odometer: rosys.driving.Odometer, antenna_offset: float) -> None:
         super().__init__()
@@ -94,7 +94,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
             # TODO also do antenna_offset correction for this event
             self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
             if not self.is_paused and ("R" in self.current.mode or self.current.mode == "SSSS"):
-                self._on_rtk_fix()
+                await self._on_rtk_fix()
         except Exception:
             self.log.exception('gnss record could not be applied')
             self.current = None
@@ -103,11 +103,10 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
     async def _create_new_record(self) -> GNSSRecord | None:
         pass
 
-    def _on_rtk_fix(self) -> None:
+    async def _on_rtk_fix(self) -> None:
         assert self.current is not None
         if localization.reference.lat == 0 and localization.reference.long == 0:
-            self.log.info(f'GNSS reference set to {self.current.location}')
-            localization.reference = deepcopy(self.current.location)
+            await self.update_reference()
         if self.current.heading is not None:
             yaw = np.deg2rad(-self.current.heading)
         else:
@@ -155,10 +154,11 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
 
     async def update_reference(self) -> None:
         if self.current is None:
-            rosys.notify('No GNSS position available.')
+            self.log.warning('No GNSS position available')
             return
         localization.reference = self.current.location
         await backup(force=True)
+        self.log.info('GNSS reference set to %s', self.current.location)
         os.utime('main.py')
 
     def reference_warning_dialog(self) -> None:
