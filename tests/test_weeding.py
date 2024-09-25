@@ -9,7 +9,7 @@ from field_friend.automations.implements import Tornado, WeedingScrew
 async def test_working_with_weeding_screw(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='big_weed',
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.05, z=0)))
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
@@ -22,7 +22,7 @@ async def test_working_with_weeding_screw(system: System, detector: rosys.vision
 async def test_keep_crops_safe(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='big_weed',
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=system.field_friend.DRILL_RADIUS-0.01, z=0)))
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
@@ -32,11 +32,11 @@ async def test_keep_crops_safe(system: System, detector: rosys.vision.DetectorSi
     assert detector.simulated_objects[0].category_name == 'maize'
 
 
-@pytest.mark.skip(reason='Needs to be rewritten to ignore specific weeds')
+@pytest.mark.skip(reason='We currently do not differentiate between different weed types')
 async def test_weeding_screw_only_targets_big_weed(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='big_weed',
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='coin',
                                                                    position=rosys.geometry.Point3d(x=0.15, y=0, z=0)))
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
@@ -47,9 +47,9 @@ async def test_weeding_screw_only_targets_big_weed(system: System, detector: ros
 
 
 async def test_weeding_screw_does_not_skip_close_weed(system: System, detector: rosys.vision.DetectorSimulation):
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='big_weed',
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='big_weed',
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2+system.field_friend.DRILL_RADIUS-0.01, y=0.05, z=0)))
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
@@ -61,9 +61,9 @@ async def test_weeding_screw_does_not_skip_close_weed(system: System, detector: 
 async def test_weeding_screw_focus_on_weed_close_to_crop(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='big_weed',
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.1, y=0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='big_weed',
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.16, y=0, z=0)))
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
@@ -73,7 +73,7 @@ async def test_weeding_screw_focus_on_weed_close_to_crop(system: System, detecto
     system.automator.start()
     await forward(40)
     assert len(detector.simulated_objects) == 2
-    assert detector.simulated_objects[1].category_name == 'big_weed'
+    assert detector.simulated_objects[1].category_name == 'weed'
     assert detector.simulated_objects[1].position.x == 0.1
 
 
