@@ -82,7 +82,7 @@ class System(rosys.persistence.PersistentModule):
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.driver.parameters.hook_bending_factor = 0.25
 
-        self.kpi_provider = KpiProvider(self.plant_provider)
+        self.kpi_provider = KpiProvider(self)
         if not self.is_real:
             generate_kpis(self.kpi_provider)
 
