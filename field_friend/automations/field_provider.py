@@ -53,7 +53,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.request_backup()
         self.FIELDS_CHANGED.emit()
 
-    def create_field(self, points: list[GeoPoint] = []) -> Field:
+    def create_field(self, points: list[GeoPoint] | None = None) -> Field:
+        if points is None:
+            points = []
         new_id = str(uuid.uuid4())
         field = Field(id=f'{new_id}', name=f'field_{len(self.fields)+1}', points=points)
         self.fields.append(field)
@@ -70,7 +72,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED.emit()
         self.invalidate()
 
-    def create_obstacle(self, field: Field, points: list[GeoPoint] = []) -> FieldObstacle:
+    def create_obstacle(self, field: Field, points: list[GeoPoint] | None = None) -> FieldObstacle:
+        if points is None:
+            points = []
         obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points=points)
         field.obstacles.append(obstacle)
         self.invalidate()
@@ -80,7 +84,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
         field.obstacles.remove(obstacle)
         self.invalidate()
 
-    def create_row(self, field: Field, points: list[GeoPoint] = []) -> Row:
+    def create_row(self, field: Field, points: list[GeoPoint] | None = None) -> Row:
+        if points is None:
+            points = []
         row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points=points)
         field.rows.append(row)
         self.invalidate()
