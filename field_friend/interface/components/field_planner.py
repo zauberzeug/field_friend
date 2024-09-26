@@ -27,7 +27,7 @@ class field_planner:
         self.field_provider = system.field_provider
         self.odometer = system.odometer
         self.gnss = system.gnss
-        self.cultivatable_crops = system.crop_category_names
+        self.cultivatable_crops = system.plant_locator.crop_category_names
         self.leaflet_map = leaflet
         self.tab: TabType = "Plants"
         self.active_object: ActiveObject | None = None
@@ -54,7 +54,7 @@ class field_planner:
                 with ui.row():
                     ui.button('Clear fields', on_click=self.clear_field_dialog.open).props("outline color=warning") \
                         .tooltip("Delete all fields").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
-                    ui.button("Update reference", on_click=self.field_provider.update_reference).props("outline color=warning") \
+                    ui.button("Update reference", on_click=self.gnss.update_reference).props("outline color=warning") \
                         .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
             self.show_field_settings()
             self.show_object_settings()

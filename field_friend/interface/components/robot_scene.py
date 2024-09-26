@@ -33,8 +33,7 @@ class robot_scene:
             with ui.scene(200, 200, on_click=self.handle_click, grid=False).classes('w-full') as self.scene:
                 field_friend_object(self.system.odometer, self.system.camera_provider, self.system.field_friend)
                 rosys.driving.driver_object(self.system.driver)
-                plant_objects(self.system.plant_provider,
-                              self.system.big_weed_category_names + self.system.small_weed_category_names)
+                plant_objects(self.system)
                 visualizer_object(self.system)
                 field_object(self.system.field_provider, self.system.field_navigation.field)
                 self.scene.move_camera(-0.5, -1, 2)

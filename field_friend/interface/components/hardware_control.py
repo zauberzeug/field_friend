@@ -3,8 +3,8 @@ from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
-from ...hardware import (ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, Mower, MowerHardware, MowerSimulation, Tornado, Axis, YAxisCanOpenHardware,
+from ...hardware import (Axis, ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
+                         FlashlightV2, Mower, MowerHardware, MowerSimulation, Tornado, YAxisCanOpenHardware,
                          ZAxisCanOpenHardware)
 from .confirm_dialog import ConfirmDialog as confirm_dialog
 from .status_bulb import StatusBulb as status_bulb
@@ -142,7 +142,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                             puncher.punch(field_friend.y_axis.max_position, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.min_position, depth=depth.value)))
+                            puncher.punch(field_friend.y_axis.min_position - field_friend.WORK_Y, depth=depth.value)))
 
         if isinstance(field_friend.mower, Mower):
             with ui.column():

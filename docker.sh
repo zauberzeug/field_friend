@@ -68,6 +68,14 @@ case $os in
 esac
 export DOCKER_BUILDKIT=1
 
+if [ -d /usr/local/zed ]; then
+    if [ -d ../zedxmini ]; then
+        compose_args="$compose_args -f docker-compose.jetson.orin.zedxmini.yml"
+    else
+        echo -e "\033[33mWARNING:\033[0m Zed X Mini not found. https://github.com/zauberzeug/zedxmini"
+    fi
+fi
+
 cmd=$1
 cmd_args=${@:2}
 set -x
