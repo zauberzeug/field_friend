@@ -25,6 +25,31 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
         self.needs_backup: bool = False
 
+        field = Field(id='dummy', name='dummy', points=[])
+        for i, row_list in enumerate([[GeoPoint(lat=51.98316780897856, long=7.434212), GeoPoint(lat=51.98321232423919, long=7.434212)],
+                                      [GeoPoint(lat=51.983167808956075, long=7.4342847762085835),
+                                       GeoPoint(lat=51.98321232421671, long=7.434284776280727)],
+                                      [GeoPoint(lat=51.98316780888862, long=7.4343575524171674),
+                                       GeoPoint(lat=51.98321232414926, long=7.434357552561454)],
+                                      [GeoPoint(lat=51.9831678087762, long=7.4344303286257505),
+                                       GeoPoint(lat=51.98321232403683, long=7.43443032884218)],
+                                      [GeoPoint(lat=51.98316780861881, long=7.4345031048343335),
+                                       GeoPoint(lat=51.98321232387944, long=7.434503105122906)],
+                                      [GeoPoint(lat=51.98316780841646, long=7.434575881042917),
+                                       GeoPoint(lat=51.98321232367709, long=7.434575881403632)],
+                                      [GeoPoint(lat=51.983167808169135, long=7.434648657251498),
+                                       GeoPoint(lat=51.98321232342976, long=7.434648657684356)],
+                                      [GeoPoint(lat=51.983167807876846, long=7.434721433460079),
+                                       GeoPoint(lat=51.98321232313747, long=7.4347214339650805)],
+                                      [GeoPoint(lat=51.98316780753959, long=7.434794209668659),
+                                       GeoPoint(lat=51.983212322800206, long=7.434794210245803)],
+                                      [GeoPoint(lat=51.98316780715736, long=7.434866985877237),
+                                       GeoPoint(lat=51.983212322417984, long=7.434866986526525)],
+                                      [GeoPoint(lat=51.98316780673016, long=7.434939762085815), GeoPoint(lat=51.98321232199079, long=7.434939762807245)],]):
+            row = Row(id=f'row_{i}', name=f'row_{i}', points=list(row_list))
+            field.rows.append(row)
+        self.fields.append(field)
+
     def get_field(self, id_: str | None) -> Field | None:
         for field in self.fields:
             if field.id == id_:
