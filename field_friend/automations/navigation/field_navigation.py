@@ -149,14 +149,7 @@ class FieldNavigation(FollowCropsNavigation):
     async def _run_following_row(self, distance: float) -> State:
         if not self.implement.is_active:
             await self.implement.activate()
-        # self.update_target()
-        # if self.odometer.prediction.point.distance(self.target) < 0.05:
-        end_pose = rosys.geometry.Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)
-        relative_point = end_pose.relative_point(self.odometer.prediction.point).x
-        bool_check = relative_point > 0
-        self.log.info(f'End pose: {end_pose} - relative_point: {relative_point} - Bool check: {bool_check}')
-        # if StraightLineNavigation._should_finish(self):  # type: disable=W0212
-        if bool_check:
+        if StraightLineNavigation._should_finish(self):  # type: disable=W0212
             await self.implement.deactivate()
             return State.CLEAR_ROW
         await super()._drive(distance)
