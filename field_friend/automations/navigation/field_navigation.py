@@ -260,7 +260,7 @@ class FieldNavigation(FollowCropsNavigation):
             start = cartesian[0]
             end = cartesian[-1]
             length = start.distance(end)
-            self.log.info(f'Adding plants from {start} to {end} (length {length:.1f} m)')
+            # self.log.info(f'Adding plants from {start} to {end} (length {length:.1f} m)')
             crop_count = length / crop_distance
             for i in range(int(crop_count)):
                 p = start.interpolate(end, (crop_distance * i) / length)
