@@ -27,9 +27,9 @@ from .automations.implements import (
     WeedingScrew,
 )
 from .automations.navigation import (
-    ABFieldNavigatoin,
     ABLineNavigation,
     CoverageNavigation,
+    FieldNavigation,
     FollowCropsNavigation,
     Navigation,
     RowsOnFieldNavigation,
@@ -155,14 +155,14 @@ class System(rosys.persistence.PersistentModule):
             self.current_navigation.name}, tags: {", ".join(self.plant_locator.tags)}'''
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
-        self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
+        self.rows_on_field_navigation = RowsOnFieldNavigation(self, self.monitoring)
         self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
         self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
         self.coverage_navigation = CoverageNavigation(self, self.monitoring)
         self.a_b_line_navigation = ABLineNavigation(self, self.monitoring)
-        self.field_navigation = ABFieldNavigatoin(self, self.monitoring)
+        self.field_navigation = FieldNavigation(self, self.monitoring)
 
-        self.navigation_strategies = {n.name: n for n in [self.field_navigation,
+        self.navigation_strategies = {n.name: n for n in [self.rows_on_field_navigation,
                                                           self.straight_line_navigation,
                                                           self.follow_crops_navigation,
                                                           self.coverage_navigation,
