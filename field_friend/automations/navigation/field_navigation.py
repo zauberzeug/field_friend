@@ -165,11 +165,9 @@ class FieldNavigation(FollowCropsNavigation):
         assert self.field
         next_state: State = State.ROW_COMPLETED
         if self.current_row == self.field.rows[-1]:
-            next_state = State.FIELD_COMPLETED
-            await rosys.sleep(0.1)  # wait for base class to finish navigation
-        else:
-            self.row_index += 1
-            next_state = State.APPROACHING_ROW_START
+            return State.FIELD_COMPLETED
+        self.row_index += 1
+        next_state = State.APPROACHING_ROW_START
 
         # TODO: remove later, when any direction is possible
         if self.row_index >= len(self.field.rows):
