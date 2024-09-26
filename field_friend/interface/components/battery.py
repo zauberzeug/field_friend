@@ -1,6 +1,6 @@
-import datetime
 from typing import TYPE_CHECKING
 
+import rosys
 from nicegui import ui
 
 if TYPE_CHECKING:
@@ -33,8 +33,8 @@ def developer_ui(system: 'System') -> None:
             system.field_friend.bms.state.is_charging))
     with ui.row().classes('place-items-center'):
         ui.label('Last Update:').classes('text-bold')
-        ui.label('No Data' if system.field_friend.bms.state.last_update is None else str(
-            datetime.datetime.fromtimestamp(system.field_friend.bms.state.last_update).strftime("%H:%M:%S.%f")[:-3]))
+        ui.label(
+            'No Data' if system.field_friend.bms.state.last_update is None else f'{(rosys.time() - system.field_friend.bms.state.last_update):.4f}s')
     with ui.row().classes('place-items-center'):
         ui.label('Battery Control:').classes('text-bold')
         if hasattr(system.field_friend, 'battery_control') and system.field_friend.battery_control is not None:
