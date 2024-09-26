@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 import rosys
 from geographiclib.geodesic import Geodesic
@@ -138,7 +138,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.fields[field_index].rows = sorted(field.rows, key=lambda row: get_distance(row, direction=direction))
         self.FIELDS_CHANGED.emit()
 
-    async def add_field_point(self, field: Field, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+    async def add_field_point(self, field: Field, point: GeoPoint | None = None, new_point: GeoPoint | None = None) -> None:
         assert self.gnss.current is not None
         positioning = self.gnss.current.location
         if positioning is None or positioning.lat == 0 or positioning.long == 0:
@@ -155,7 +155,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             field.points.append(new_point)
         self.invalidate()
 
-    def remove_field_point(self, field: Field, point: Optional[GeoPoint] = None) -> None:
+    def remove_field_point(self, field: Field, point: GeoPoint | None = None) -> None:
         if point is not None:
             index = field.points.index(point)
             del field.points[index]
@@ -163,7 +163,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             del field.points[-1]
         self.invalidate()
 
-    def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+    def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: GeoPoint | None = None, new_point: GeoPoint | None = None) -> None:
         if new_point is None:
             assert self.gnss.current is not None
             positioning = self.gnss.current.location
@@ -181,7 +181,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             obstacle.points.append(new_point)
         self.invalidate()
 
-    def remove_obstacle_point(self, obstacle: FieldObstacle, point: Optional[GeoPoint] = None) -> None:
+    def remove_obstacle_point(self, obstacle: FieldObstacle, point: GeoPoint | None = None) -> None:
         if obstacle.points:
             if point is not None:
                 index = obstacle.points.index(point)
@@ -190,7 +190,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
                 del obstacle.points[-1]
             self.invalidate()
 
-    def add_row_point(self, field: Field, row: Row, point: Optional[GeoPoint] = None, new_point: Optional[GeoPoint] = None) -> None:
+    def add_row_point(self, field: Field, row: Row, point: GeoPoint | None = None, new_point: GeoPoint | None = None) -> None:
         if new_point is None:
             assert self.gnss.current is not None
             positioning = self.gnss.current.location
@@ -208,7 +208,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             row.points.append(new_point)
         self.invalidate()
 
-    def remove_row_point(self, row: Row, point: Optional[GeoPoint] = None) -> None:
+    def remove_row_point(self, row: Row, point: GeoPoint | None = None) -> None:
         if row.points:
             if point is not None:
                 index = row.points.index(point)
