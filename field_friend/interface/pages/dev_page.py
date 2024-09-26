@@ -19,4 +19,6 @@ class dev_page():
             self.content()
 
     def content(self) -> None:
+        with ui.card():
+            self.system.field_navigation.developer_ui()
         development(self.system)

@@ -57,9 +57,6 @@ class FollowCropsNavigation(StraightLineNavigation):
             # flip if it is pointing backwards
             if np.abs(yaw - self.odometer.prediction.yaw) > math.pi / 2:
                 yaw = yaw + math.pi
-            if np.abs(yaw - self.odometer.prediction.yaw) > 0.2:
-                self.log.error(f'Yaw difference is too high: {np.abs(yaw - self.odometer.prediction.yaw)}')
-                return
             fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
             closest_point = fitted_line.foot_point(self.odometer.prediction.point)
             target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
