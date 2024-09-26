@@ -6,8 +6,16 @@ import rosys
 from nicegui import ui
 
 from ... import localization
-from ...hardware import (Axis, AxisD1, ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware,
-                         FlashlightPWMHardwareV2, Tornado)
+from ...hardware import (
+    Axis,
+    AxisD1,
+    ChainAxis,
+    FieldFriend,
+    FieldFriendHardware,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -71,12 +79,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
                 status_control_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Battery:**').style('color: #EDF4FB')
-            bms_label = ui.label()
-            if hasattr(robot, 'battery_control'):
-                battery_control_label = ui.label('').tooltip('Battery Box out connectors 1-4')
-
-        with ui.row().classes('place-items-center'):
             ui.markdown('**Axis:**').style('color: #EDF4FB')
             axis_label = ui.label()
 
@@ -134,76 +136,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ui.markdown('**Temperature:**').style('color: #EDF4FB')
             temperature_label = ui.label()
 
-    with ui.card().style('background-color: #3E63A6; color: white;'):
-        ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
-        ui.separator()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Current Field:**').style('color: #EDF4FB')
-            current_field_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Worked Area:**').style('color: #EDF4FB')
-            worked_area_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Current Row:**').style('color: #EDF4FB')
-            current_row_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Time on Field:**').style('color: #EDF4FB')
-            kpi_fieldtime_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Distance:**').style('color: #EDF4FB')
-            kpi_distance_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Processed Rows:**').style('color: #EDF4FB')
-            kpi_rows_weeded_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Crops Detected:**').style('color: #EDF4FB')
-            kpi_crops_detected_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
-            kpi_weeds_detected_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Weeds Removed:**').style('color: #EDF4FB')
-            kpi_weeds_removed_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Punches:**').style('color: #EDF4FB')
-            kpi_punches_label = ui.label()
-        if robot.implement_name == 'dual_mechanism':
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Chops:**').style('color: #EDF4FB')
-                kpi_chops_label = ui.label()
-
-    with ui.card().style('background-color: #3E63A6; color: white;'):
-        ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
-        ui.separator()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**GNSS-Device:**').style('color: #EDF4FB')
-            gnss_device_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Reference position:**').style('color: #EDF4FB')
-            reference_position_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Position:**').style('color: #EDF4FB')
-            gnss_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Heading:**').style('color: #EDF4FB')
-            heading_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**RTK-Fix:**').style('color: #EDF4FB')
-            rtk_fix_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**GNSS paused:**').style('color: #EDF4FB')
-            gnss_paused_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**odometry:**').style('color: #EDF4FB')
-            odometry_label = ui.label()
-
     def update_status() -> None:
-        bms_flags = [
-            f'{robot.bms.state.short_string}',
-            'charging' if robot.bms.state.is_charging else ''
-        ]
         if isinstance(robot.y_axis, ChainAxis):
             y_axis_flags = [
                 'not referenced' if not robot.y_axis.is_referenced else '',
@@ -251,9 +184,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             ]
         else:
             z_axis_flags = ['no z-axis']
-        bms_label.text = ', '.join(flag for flag in bms_flags if flag)
-        if hasattr(robot, 'battery_control') and robot.battery_control is not None:
-            battery_control_label.text = 'Out 1..4 is on' if robot.battery_control.status else 'Out 1..4 is off'
 
         y_axis_text = ', '.join(flag for flag in y_axis_flags if flag)
         z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
@@ -277,38 +207,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-        direction_flag = '?' if system.gnss.current is None or system.gnss.current.heading is None else \
-            'N' if system.gnss.current.heading <= 23 else \
-            'NE' if system.gnss.current.heading <= 68 else \
-            'E' if system.gnss.current.heading <= 113 else \
-            'SE' if system.gnss.current.heading <= 158 else \
-            'S' if system.gnss.current.heading <= 203 else \
-            'SW' if system.gnss.current.heading <= 248 else \
-            'W' if system.gnss.current.heading <= 293 else \
-            'NW' if system.gnss.current.heading <= 338 else \
-            'N'
-
-        if system.automator.is_running:
-            kpi_fieldtime_label.text = f'{timedelta(seconds=system.kpi_provider.current_weeding_kpis.time)}'
-            kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance:.0f}m'
-
-            # current_automation = next(key for key, value in system.implements.items()
-            #                           if value == system.automator.default_automation)
-            # if current_automation == 'weeding' or current_automation == 'monitoring':
-            #     if current_automation == 'weeding':
-            #         current_row_label.text = system.weeding.current_row.name if system.weeding.current_row is not None else 'No row'
-            #         worked_area_label.text = f'{system.weeding.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.weeding.field.area():.2f}m²' if system.weeding.field is not None else 'No field'
-            #     elif current_automation == 'monitoring':
-            #         current_row_label.text = system.monitoring.current_row.name if system.monitoring.current_row is not None else 'No row'
-            #         worked_area_label.text = f'{system.monitoring.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.monitoring.field.area():.2f}m²' if system.monitoring.field is not None else 'No field'
-            #     kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
-            #     kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
-            #     kpi_weeds_removed_label.text = system.kpi_provider.current_weeding_kpis.weeds_removed
-            #     kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
-            #     if current_automation == 'weeding':
-            #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
-            #         if robot.implement_name == 'dual_mechanism':
-            #             kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
         if system.is_real:
             if robot.wheels.odrive_version == 6:
                 l0_status.text = 'Error in l0' if robot.wheels.l0_error else 'No error'
@@ -328,15 +226,6 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             m0_status.text = 'Error in m0' if robot.mower.m0_error else 'No error'
             m1_status.text = 'Error in m1' if robot.mower.m1_error else 'No error'
             m2_status.text = 'Error in m2' if robot.mower.m2_error else 'No error'
-
-        gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
-        reference_position_label.text = 'No reference' if localization.reference is None or (
-            localization.reference.lat == 0 and localization.reference.long == 0) else str(localization.reference)
-        gnss_label.text = 'No position' if system.gnss.current is None else str(system.gnss.current.location)
-        heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
-        rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
-        gnss_paused_label.text = str(system.gnss.is_paused)
-        odometry_label.text = str(system.odometer.prediction)
 
     ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page

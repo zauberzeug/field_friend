@@ -84,3 +84,8 @@ class TeltonikaRouter:
         self.log.info('Getting authentication token for Teltonika router: success')
         self.auth_token = response.json()['data']['token']
         self.token_time = rosys.time()
+
+    def developer_ui(self) -> None:
+        with ui.card().style('background-color: #3E63A6; color: white;'):
+            ui.markdown('**Teltonika**').style('color: #6E93D6;').classes('w-full text-center')
+            ui.separator()
