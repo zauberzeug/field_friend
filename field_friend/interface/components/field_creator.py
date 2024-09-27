@@ -3,8 +3,8 @@ from uuid import uuid4
 
 import rosys
 from nicegui import ui
-from field_friend.automations import Field
-from field_friend.automations.navigation import StraightLineNavigation
+
+from field_friend.automations import FieldParameters
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
 
@@ -15,17 +15,9 @@ if TYPE_CHECKING:
 class FieldCreator:
 
     def __init__(self, system: 'System'):
-        drive_straight = StraightLineNavigation(system, system.monitoring)
-        drive_straight.length = 100  # NOTE: for now, every 100 m the user needs to re-start automation
-        drive_straight.linear_speed_limit = 2
-        drive_straight.angular_speed_limit = 1
         self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
-        self.automator = rosys.automation.Automator(system.steerer,
-                                                    default_automation=drive_straight.start,
-                                                    on_interrupt=system.field_friend.stop)
         self.steerer = system.steerer
-        self.plant_locator = system.plant_locator
         self.gnss = system.gnss
         self.field_provider = system.field_provider
         self.first_row_start: GeoPoint | None = None
@@ -116,9 +108,11 @@ class FieldCreator:
 
     def _apply(self) -> None:
         self.dialog.close()
-        self.field_provider.fields = []  # currently only a single field is saved
-        self.field_provider.fields.append(Field(id=str(uuid4()), name=f'field_{len(self.field_provider.fields) + 1}', first_row_start=self.first_row_start,
-                                          first_row_end=self.first_row_end, row_spacing=self.row_spacing, row_number=self.row_number))
+        if self.first_row_start is None or self.first_row_end is None:
+            ui.notify('No valid field parameters.')
+            return
+        self.field_provider.create_field_parameters(FieldParameters(id=str(
+            uuid4()), name='Field 1', first_row_start=self.first_row_start, first_row_end=self.first_row_end, row_spacing=self.row_spacing, row_number=self.row_number))
         self.field_provider.request_backup()
         self.field_provider.FIELDS_CHANGED.emit()
 
