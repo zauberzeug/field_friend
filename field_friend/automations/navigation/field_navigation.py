@@ -220,19 +220,24 @@ class FieldNavigation(FollowCropsNavigation):
         self.row_index = 0
 
     def settings_ui(self) -> None:
-        super().settings_ui()
-        field_selection = ui.select(
-            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1},
-            on_change=lambda args: self._set_field(args.value),
-            label='Field')\
-            .classes('w-32') \
-            .tooltip('Select the field to work on')
-        field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
-        ui.number('Clear Row Distance', step=0.05, min=0.01, max=5.0, format='%.2f', on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, 'clear_row_distance') \
-            .tooltip(f'Safety distance to row in m (default: {self.CLEAR_ROW_DISTANCE:.2f})')
+        with ui.row():
+            super().settings_ui()
+            field_selection = ui.select(
+                {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1},
+                on_change=lambda args: self._set_field(args.value),
+                label='Field')\
+                .classes('w-32') \
+                .tooltip('Select the field to work on')
+            field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
+            ui.number('Clear Row Distance', step=0.05, min=0.01, max=5.0, format='%.2f', on_change=self.request_backup) \
+                .props('dense outlined') \
+                .classes('w-24') \
+                .bind_value(self, 'clear_row_distance') \
+                .tooltip(f'Safety distance to row in m (default: {self.CLEAR_ROW_DISTANCE:.2f})')
+        with ui.row():
+            with ui.column():
+                ui.label('FOR DEVELOPMENT ONLY').classes('text-bold')
+                self.developer_ui()
 
     def developer_ui(self) -> None:
         # super().developer_ui()
@@ -240,6 +245,7 @@ class FieldNavigation(FollowCropsNavigation):
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.label('').bind_text_from(self, 'start_point', lambda start_point: f'Start Point: {start_point}')
         ui.label('').bind_text_from(self, 'end_point', lambda end_point: f'End Point: {end_point}')
+        ui.label('').bind_text_from(self.odometer, 'prediction', lambda prediction: f'Position: {prediction}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
 
     def _set_field(self, field_id: str) -> None:
