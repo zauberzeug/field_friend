@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
-from rosys.geometry import Point, Pose, Spline
+from rosys.geometry import Point
 
 from ..field import Field, Row
 from ..implements import Implement, WeedingImplement
@@ -52,7 +52,6 @@ class FieldNavigation(FollowCropsNavigation):
 
     async def prepare(self) -> bool:
         await super().prepare()
-        # self.field = self.field_provider.fields[0]
         if self.field is None:
             rosys.notify('No field selected', 'negative')
             return False
@@ -114,6 +113,7 @@ class FieldNavigation(FollowCropsNavigation):
         elif relative_point_1 < relative_point_0:
             self.start_point = self.current_row.points[-1].cartesian()
             self.end_point = self.current_row.points[0].cartesian()
+        self.update_target()
         # self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 
     def update_target(self) -> None:
@@ -124,8 +124,6 @@ class FieldNavigation(FollowCropsNavigation):
 
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
-
-        # self.update_target()
         if self._state == State.APPROACHING_ROW_START:
             self._state = await self._run_approaching_row_start()
         elif self._state == State.FOLLOWING_ROW:
@@ -178,9 +176,8 @@ class FieldNavigation(FollowCropsNavigation):
                 next_state = State.FIELD_COMPLETED
         return next_state
 
-    async def _wait_for_gnss(self, waiting_time: float = 2.0) -> None:
+    async def _wait_for_gnss(self, waiting_time: float = 1.0) -> None:
         self.gnss.is_paused = False
-        # TODO: dont wait so long
         await rosys.sleep(waiting_time)
         await self.gnss.update_robot_pose()
         self.gnss.is_paused = True
