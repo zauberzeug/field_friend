@@ -139,10 +139,10 @@ class FieldNavigation(FollowCropsNavigation):
         await self._wait_for_gnss()
         await self._drive_to_row()
         await self._wait_for_gnss()
-        # self.log.info(f'Following "{self.current_row.name}"...')
-        self.plant_provider.clear()
-        self.set_start_and_end_points()
-        self.update_target()
+        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
+            self.create_simulation()
+        else:
+            self.plant_provider.clear()
         return State.FOLLOWING_ROW
 
     async def _run_following_row(self, distance: float) -> State:
@@ -261,14 +261,18 @@ class FieldNavigation(FollowCropsNavigation):
 
     def create_simulation(self, crop_distance: float = 0.5) -> None:
         self.detector.simulated_objects.clear()
+        self.plant_provider.clear()
         if self.field is None:
             return
-        for row in self.field.rows:
-            if len(row.points) < 2:
-                continue
-            cartesian = row.cartesian()
-            start = cartesian[0]
-            end = cartesian[-1]
+        # for row in self.field.rows:
+        #     if len(row.points) < 2:
+        #         continue
+        #     cartesian = row.cartesian()
+        #     start = cartesian[0]
+        #     end = cartesian[-1]
+        if self.start_point is not None and self.end_point is not None:
+            start = self.start_point
+            end = self.end_point
             length = start.distance(end)
             # self.log.info(f'Adding plants from {start} to {end} (length {length:.1f} m)')
             crop_count = length / crop_distance
