@@ -137,7 +137,12 @@ class FieldNavigation(FollowCropsNavigation):
         # TODO only drive to row if we are not on any rows and near the row start
         self.set_start_and_end_points()
         await self._wait_for_gnss()
-        await self._drive_to_row()
+        row_yaw = self.start_point.direction(self.end_point)
+        safe_start_point = self.start_point.polar(-self.clear_row_distance, self.start_point.direction(self.end_point))
+        await self.driver.drive_to(safe_start_point, stop_at_end=False)
+        await self.driver.drive_to(self.start_point)
+        await self._wait_for_gnss()
+        await self.driver.drive_circle(self.start_point.polar(1.0, row_yaw), angle_threshold=np.deg2rad(1.0))
         await self._wait_for_gnss()
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
@@ -156,7 +161,7 @@ class FieldNavigation(FollowCropsNavigation):
 
     async def _run_clear_row(self) -> State:
         target = self.odometer.prediction.transform_pose(rosys.geometry.Pose(x=self.clear_row_distance, y=0))
-        await self._drive_towards_target(0.02, target)
+        await self.driver.drive_to(target)
         await self._wait_for_gnss()
         return State.ROW_COMPLETED
 
@@ -181,20 +186,6 @@ class FieldNavigation(FollowCropsNavigation):
         await rosys.sleep(waiting_time)
         await self.gnss.update_robot_pose()
         self.gnss.is_paused = True
-
-    async def _drive_to_row(self) -> None:
-        # self.log.info(f'Driving to "{self.current_row.name}"...')
-        assert self.field
-        assert self.start_point
-        assert self.end_point
-        direction = self.start_point.direction(self.end_point)
-        row_start_pose = Pose(x=self.start_point.x, y=self.start_point.y, yaw=direction)
-        target_pose = row_start_pose.transform_pose(Pose(x=-self.clear_row_distance))
-        # self.log.info(f'Driving to {end_pose} from {self.odometer.prediction}...')
-        spline = Spline.from_poses(self.odometer.prediction, target_pose)
-        # self.log.info(f'Driving spline {spline}...')
-        await self.driver.drive_spline(spline)
-        # self.log.info(f'Arrived at row {self.current_row.name} starting at {target}')
 
     def backup(self) -> dict:
         return super().backup() | {
