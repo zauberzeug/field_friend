@@ -51,7 +51,6 @@ class ABLineNavigation(Navigation):
         if not len(self.row.points) >= 2:
             rosys.notify(f'Row {self.row.name} on field {self.field.name} has not enough points', 'negative')
             return False
-        self.gnss.is_paused = False
         await rosys.sleep(3)  # wait for GNSS to update
         self.automation_watcher.start_field_watch(self.field.outline)
 

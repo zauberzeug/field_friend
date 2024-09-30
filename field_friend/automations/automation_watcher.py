@@ -126,12 +126,4 @@ class AutomationWatcher:
     async def ensure_robot_pose_updates_when_not_in_automation(self) -> None:
         if self.automator.is_running:
             return
-        if self.gnss.is_paused:
-            self.log.warning('GNSS is paused, this should not happen outside of an automation')
-            self.gnss.is_paused = False
-            return
-        if self.last_robot_pose == self.odometer.prediction:
-            await self.gnss.update_robot_pose()
-        else:
-            self.gnss.observed_poses.clear()
-        self.last_robot_pose = self.odometer.prediction
+        await self.gnss.update_robot_pose()
