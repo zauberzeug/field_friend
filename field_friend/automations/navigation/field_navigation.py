@@ -43,6 +43,7 @@ class FieldNavigation(FollowCropsNavigation):
 
         self.field: Field | None = None
         self.clear_row_distance: float = self.CLEAR_ROW_DISTANCE
+        self._loop: bool = False
 
     @property
     def current_row(self) -> Row:
@@ -164,14 +165,17 @@ class FieldNavigation(FollowCropsNavigation):
     async def _run_row_completed(self) -> State:
         assert self.field
         next_state: State = State.ROW_COMPLETED
-        if self.current_row == self.field.rows[-1]:
+        if not self._loop and self.current_row == self.field.rows[-1]:
             return State.FIELD_COMPLETED
         self.row_index += 1
         next_state = State.APPROACHING_ROW_START
 
         # TODO: remove later, when any direction is possible
         if self.row_index >= len(self.field.rows):
-            next_state = State.FIELD_COMPLETED
+            if self._loop:
+                self.row_index = 0
+            else:
+                next_state = State.FIELD_COMPLETED
         return next_state
 
     async def _wait_for_gnss(self, waiting_time: float = 2.0) -> None:
@@ -201,6 +205,7 @@ class FieldNavigation(FollowCropsNavigation):
             'row_index': self.row_index,
             'state': self._state.name,
             'clear_row_distance': self.clear_row_distance,
+            'loop': self._loop,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -210,6 +215,7 @@ class FieldNavigation(FollowCropsNavigation):
         self.row_index = data.get('row_index', 0)
         self._state = State[data.get('state', State.APPROACHING_ROW_START.name)]
         self.clear_row_distance = data.get('clear_row_distance', self.CLEAR_ROW_DISTANCE)
+        self._loop = data.get('loop', False)
 
     def clear(self) -> None:
         return
@@ -237,6 +243,7 @@ class FieldNavigation(FollowCropsNavigation):
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.label('').bind_text_from(self, 'start_point', lambda start_point: f'Start Point: {start_point}')
         ui.label('').bind_text_from(self, 'end_point', lambda end_point: f'End Point: {end_point}')
+        ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
 
     def _set_field(self, field_id: str) -> None:
         field = self.field_provider.get_field(field_id)
