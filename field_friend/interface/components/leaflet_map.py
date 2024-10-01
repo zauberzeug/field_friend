@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Literal, TypedDict
 from nicegui import app, events, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
 
-from ...automations import Field, FieldObstacle, Row
+from ...automations import Field, Row
 from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
 
 
 class Active_object(TypedDict):
-    object_type: Literal["Obstacles", "Rows", "Outline"]
-    object: Row | FieldObstacle
+    object_type: Literal["Rows", "Outline"]
+    object: Row
 
 
 if TYPE_CHECKING:
@@ -54,7 +54,6 @@ class leaflet_map:
         self.field_layers: list[GenericLayer] = []
         self.robot_marker: Marker | None = None
         self.drawn_marker = None
-        self.obstacle_layers: list = []
         self.row_layers: list = []
         self.active_field: str | None = None
         self.set_active_field()
@@ -63,38 +62,6 @@ class leaflet_map:
         self.field_provider.FIELDS_CHANGED.register(self.set_active_field)
         self.field_provider.FIELDS_CHANGED.register(self.update_layers)
 
-        def handle_draw(e: events.GenericEventArguments):
-            if e.args['layerType'] == 'marker':
-                latlon: list[float] = [e.args['layer']['_latlng']['lat'],
-                                       e.args['layer']['_latlng']['lng']]
-                self.drawn_marker = self.m.marker(latlng=latlon)
-                if system.is_real:
-                    with ui.dialog() as real_marker_dialog, ui.card():
-                        ui.label('You are currently working in a real system. What does the placed point represent?')
-                        ui.button('add point to selected object (row, obstacle)',
-                                  on_click=lambda: self.add_point_active_object(latlon, real_marker_dialog))
-                        ui.button('Close', on_click=lambda: self.abort_point_drawing(real_marker_dialog))
-                    real_marker_dialog.on('hide', self.on_dialog_close)
-                    real_marker_dialog.open()
-                else:
-                    with ui.dialog() as simulated_marker_dialog, ui.card():
-                        ui.label('You are currently working in a simulation. What does the placed point represent?')
-                        ui.button('as point for the current object',
-                                  on_click=lambda: self.add_point_active_object(latlon, simulated_marker_dialog))
-                        ui.button('update roboter position', on_click=lambda: self.update_robot_position(
-                            GeoPoint.from_list(latlon), simulated_marker_dialog))
-                        ui.button('Close', on_click=lambda: self.abort_point_drawing(simulated_marker_dialog))
-                    simulated_marker_dialog.on('hide', self.on_dialog_close)
-                    simulated_marker_dialog.open()
-            if e.args['layerType'] == 'polygon':
-                coordinates = e.args['layer']['_latlngs']
-                point_list = []
-                for point in coordinates[0]:
-                    point_list.append(GeoPoint(lat=point['lat'], long=point['lng']))
-                self.field_provider.create_field(points=point_list)
-
-        with self.m as m:
-            m.on('draw:created', handle_draw)
         self.gnss.ROBOT_GNSS_POSITION_CHANGED.register_ui(self.update_robot_position)
 
     def buttons(self) -> None:
@@ -115,16 +82,6 @@ class leaflet_map:
         self.on_dialog_close()
         dialog.close()
 
-    # def add_point_active_object(self, latlon, dialog) -> None:
-    #     dialog.close()
-    #     self.on_dialog_close()
-    #     if self.active_object and self.active_object.get("object") is not None:
-    #         self.active_object.get("object").points.append(GeoPoint.from_list(latlon))
-    #         self.field_provider.invalidate()
-    #         self.update_layers()
-    #     else:
-    #         ui.notify("No object selected. Point could not be added to the void.")
-
     def update_layers(self) -> None:
         for layer in self.field_layers:
             if layer in self.m.layers:
@@ -135,16 +92,10 @@ class leaflet_map:
             self.field_layers.append(self.m.generic_layer(name="polygon",
                                                           args=[field.outline_as_tuples, {'color': color}]))
         current_field: Field | None = self.field_provider.get_field(self.active_field)
-        for layer in self.obstacle_layers:
-            self.m.remove_layer(layer)
-        self.obstacle_layers = []
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
         if current_field is not None:
-            for obstacle in current_field.obstacles:
-                self.obstacle_layers.append(self.m.generic_layer(name="polygon",
-                                                                 args=[obstacle.points_as_tuples, {'color': '#C10015'}]))
             for row in current_field.rows:
                 self.row_layers.append(self.m.generic_layer(name="polyline",
                                                             args=[row.points_as_tuples, {'color': '#F2C037'}]))
@@ -189,14 +140,6 @@ class leaflet_map:
                     'maxZoom': 21,
                     'attribution': 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
                 })
-            # self.current_basemap = self.m.tile_layer(
-            #     url_template=r'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-            #     options={
-            #         'maxZoom': 20,
-            #         'subdomains': ['mt0', 'mt1', 'mt2', 'mt3'],
-            #         'attribution': '&copy; <a href="https://maps.google.com">Google Maps</a>'
-            #     },
-            # )
         else:
             self.current_basemap = self.m.tile_layer(
                 url_template=r'https://tile.openstreetmap.org/{z}/{x}/{y}.png',

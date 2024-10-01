@@ -4,7 +4,7 @@ from uuid import uuid4
 import rosys
 from nicegui import ui
 
-from field_friend.automations import FieldParameters
+from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
 
@@ -111,10 +111,8 @@ class FieldCreator:
         if self.first_row_start is None or self.first_row_end is None:
             ui.notify('No valid field parameters.')
             return
-        self.field_provider.create_field_parameters(FieldParameters(id=str(
+        self.field_provider.create_field(Field(id=str(
             uuid4()), name='Field 1', first_row_start=self.first_row_start, first_row_end=self.first_row_end, row_spacing=self.row_spacing, row_number=self.row_number))
-        self.field_provider.request_backup()
-        self.field_provider.FIELDS_CHANGED.emit()
 
     def update_front_cam(self) -> None:
         if self.front_cam is None:

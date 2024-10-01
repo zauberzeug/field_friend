@@ -124,7 +124,7 @@ class ABLineNavigation(Navigation):
     def settings_ui(self) -> None:
         super().settings_ui()
         field_selection = ui.select(
-            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.points) >= 3},
+            {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1 and len(f.outline) >= 3},
             on_change=lambda args: self._set_field(args.value),
             label='Field')\
             .classes('w-32') \
