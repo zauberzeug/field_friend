@@ -12,6 +12,8 @@ from typing_extensions import Self
 
 from field_friend.localization import GeoPoint, GeoPointCollection
 
+from ..localization import reference
+
 
 @dataclass(slots=True, kw_only=True)
 class Row(GeoPointCollection):
@@ -82,18 +84,17 @@ class Field:
         self.outline = self._generate_outline()
         self.rows = self._generate_rows()
 
-    @property
-    def rows(self) -> list[Row]:
+    def _generate_rows(self) -> list[Row]:
         assert self.first_row_start is not None
         assert self.first_row_end is not None
         ab_line_cartesian = LineString([self.first_row_start.cartesian().tuple, self.first_row_end.cartesian().tuple])
-        rows = []
+        rows: list[Row] = []
         for i in range(int(self.row_number)):
             offset = i * self.row_spacing
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = []
             for point in offset_row_coordinated:
-                row_points.append(self.first_row_start.shifted(Point(x=point[0], y=point[1])))
+                row_points.append(reference.shifted(Point(x=point[0], y=point[1])))
             row = Row(id=str(uuid4()), name=f'{i + 1}', points=row_points)
             rows.append(row)
         return rows
@@ -117,7 +118,7 @@ class Field:
         bufferd_polygon_coords = bufferd_polygon.exterior.coords
         outline: list[GeoPoint] = []
         for p in bufferd_polygon_coords:
-            outline.append(self.first_row_start.shifted(Point(x=p[0], y=p[1])))
+            outline.append(reference.shifted(Point(x=p[0], y=p[1])))
         return outline
 
     def to_dict(self) -> dict:
