@@ -73,14 +73,16 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.error(f'could not move yaxis to {position} because of {error}')
             raise Exception(f'could not move yaxis to {position} because of {error}')
         steps = self.compute_steps(position)
+        if steps == self.steps:
+            return # Already at steps
         self.log.info(f'moving to steps: {steps}')
         await self.enable_motor()
-        await rosys.sleep(1)  # necessary ?!
+        await rosys.sleep(0.2)  # necessary ?!
         await self.robot_brain.send(
             f'{self.name}.position({steps},{speed}, 0);'
         )
         # Give flags time to turn false first
-        await rosys.sleep(0.5)
+        await rosys.sleep(0.2)
         while not self.idle and not self.alarm:
             await rosys.sleep(0.2)
         if self.alarm:
