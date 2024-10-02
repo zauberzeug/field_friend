@@ -65,12 +65,12 @@ class FieldCreator:
         self.content.clear()
         with self.content:
             ui.number('Number of rows',
-                      value=10, step=1, min=1, max=500) \
+                      value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the number of rows.')\
                 .bind_value(self, 'row_number')
             ui.number('Row Spacing', suffix='cm',
-                      value=50, step=5, min=20, max=100) \
+                      value=50, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the distance between the rows') \
                 .bind_value(self, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
@@ -111,8 +111,14 @@ class FieldCreator:
         if self.first_row_start is None or self.first_row_end is None:
             ui.notify('No valid field parameters.')
             return
-        self.field_provider.create_field(Field(id=str(
-            uuid4()), name='Field 1', first_row_start=self.first_row_start, first_row_end=self.first_row_end, row_spacing=self.row_spacing, row_number=self.row_number))
+        self.field_provider.create_field(Field(id=str(uuid4()),
+                                               name='Field 1',
+                                               first_row_start=self.first_row_start,
+                                               first_row_end=self.first_row_end,
+                                               row_spacing=self.row_spacing,
+                                               row_number=self.row_number))
+        self.first_row_start = None
+        self.first_row_end = None
 
     def update_front_cam(self) -> None:
         if self.front_cam is None:

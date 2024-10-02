@@ -77,6 +77,8 @@ class leaflet_map:
         ui.button(on_click=self.zoom_to_field) \
             .props('icon=polyline dense flat') \
             .tooltip('center map on field boundaries').classes('ml-0')
+        ui.button("Update reference", on_click=self.gnss.update_reference).props("outline color=warning") \
+            .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
 
     def abort_point_drawing(self, dialog) -> None:
         self.on_dialog_close()
