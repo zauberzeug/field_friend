@@ -12,7 +12,7 @@ from typing_extensions import Self
 
 from field_friend.localization import GeoPoint, GeoPointCollection
 
-from ..localization import reference
+from .. import localization
 
 
 @dataclass(slots=True, kw_only=True)
@@ -94,7 +94,7 @@ class Field:
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = []
             for point in offset_row_coordinated:
-                row_points.append(reference.shifted(Point(x=point[0], y=point[1])))
+                row_points.append(localization.reference.shifted(Point(x=point[0], y=point[1])))
             row = Row(id=str(uuid4()), name=f'{i + 1}', points=row_points)
             rows.append(row)
         return rows
@@ -118,7 +118,7 @@ class Field:
         bufferd_polygon_coords = bufferd_polygon.exterior.coords
         outline: list[GeoPoint] = []
         for p in bufferd_polygon_coords:
-            outline.append(reference.shifted(Point(x=p[0], y=p[1])))
+            outline.append(localization.reference.shifted(Point(x=p[0], y=p[1])))
         return outline
 
     def to_dict(self) -> dict:
