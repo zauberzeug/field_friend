@@ -19,6 +19,7 @@ class FieldFriend(rosys.hardware.Robot):
     WHEEL_DIAMETER = 0.041 * 17 / np.pi
     M_PER_TICK = WHEEL_DIAMETER * np.pi / MOTOR_GEAR_RATIO
     WORK_X = 0.118
+    WORK_Y = 0.0
     DRILL_RADIUS = 0.025
     CHOP_RADIUS = 0.07
     WORK_X_CHOP = 0.04

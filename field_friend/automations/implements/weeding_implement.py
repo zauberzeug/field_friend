@@ -26,7 +26,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         rosys.persistence.PersistentModule.__init__(self,
                                                     persistence_key=f'field_friend.automations.implements.{persistence_key}')
 
-        self.relevant_weeds = system.small_weed_category_names + system.big_weed_category_names
+        self.relevant_weeds = system.plant_locator.weed_category_names
         self.log = logging.getLogger('field_friend.weeding')
         self.system = system
         self.kpi_provider = system.kpi_provider
@@ -84,6 +84,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
     async def start_workflow(self) -> None:
+        # TODO: only sleep when moving
         await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
             return
@@ -154,8 +155,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                     safe_weed_position = Point3d.from_point(Point3d.projection(weed_position).polar(
                         offset, Point3d.projection(crop_position).direction(weed_position)))
                     upcoming_weed_positions[weed] = safe_weed_position
-                    self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
-                                  f'by {offset} to safe {crop} at {crop_position}')
+                    # self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
+                    #               f'by {offset} to safe {crop} at {crop_position}')
 
         # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
@@ -209,7 +210,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def settings_ui(self):
         super().settings_ui()
-        ui.select(self.system.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
+        ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \
             .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
         ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \

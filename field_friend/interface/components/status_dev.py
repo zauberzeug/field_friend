@@ -330,8 +330,9 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             m2_status.text = 'Error in m2' if robot.mower.m2_error else 'No error'
 
         gnss_device_label.text = 'No connection' if system.gnss.device is None else 'Connected'
-        reference_position_label.text = 'No reference' if localization.reference is None else 'Set'
-        gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
+        reference_position_label.text = 'No reference' if localization.reference is None or (
+            localization.reference.lat == 0 and localization.reference.long == 0) else str(localization.reference)
+        gnss_label.text = 'No position' if system.gnss.current is None else str(system.gnss.current.location)
         heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
         gnss_paused_label.text = str(system.gnss.is_paused)

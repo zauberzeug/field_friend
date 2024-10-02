@@ -1,18 +1,20 @@
 import logging
+from typing import TYPE_CHECKING
 
 import rosys
 from nicegui.elements.scene_objects import Group, Sphere
 
-from ...automations import PlantProvider
+if TYPE_CHECKING:
+    from system import System
 
 
 class plant_objects(Group):
 
-    def __init__(self, plant_provider: PlantProvider, weed_category_names: list[str]) -> None:
+    def __init__(self, system: 'System') -> None:
         super().__init__()
 
-        self.plant_provider = plant_provider
-        self.weed_category_names = weed_category_names
+        self.plant_provider = system.plant_provider
+        self.plant_locator = system.plant_locator
         self.log = logging.getLogger('field_friend.plant_objects')
         self.update()
         self.plant_provider.PLANTS_CHANGED.register_ui(self.update)
@@ -29,7 +31,7 @@ class plant_objects(Group):
                 obj.delete()
         for id, plant in in_world.items():
             if id not in rendered:
-                if plant.type in self.weed_category_names:
+                if plant.type in self.plant_locator.weed_category_names:
                     Sphere(0.02).with_name(f'plant_{plant.type}:{id}') \
                         .material('#ef1208') \
                         .move(plant.position.x, plant.position.y, 0.02)

@@ -10,8 +10,9 @@ from rosys.geometry import Point
 
 from field_friend.automations.implements.weeding_implement import WeedingImplement
 
-from ...automations import PlantLocator, Puncher
 from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Tornado
+from ...vision import CalibratableUsbCamera
+from ...vision.zedxmini_camera import StereoCamera
 from .calibration_dialog import calibration_dialog
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ class camera_card:
         self.puncher = system.puncher
         self.system = system
         self.punching_enabled: bool = False
-        self.shrink_factor: float = 2.0
+        self.shrink_factor: float = 4.0
         self.show_weeds_to_handle: bool = False
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.image_view: Optional[ui.interactive_image] = None
@@ -118,9 +119,11 @@ class camera_card:
             url = f'{active_camera.get_latest_image_url()}?shrink={self.shrink_factor}'
         else:
             url = active_camera.get_latest_image_url()
-        if self.image_view is None or self.camera.calibration is None:
+        if self.image_view is None:
             return
         self.image_view.set_source(url)
+        if self.camera.calibration is None:
+            return
         image = active_camera.latest_detected_image
         svg = ''
         if image and image.detections:
@@ -132,19 +135,31 @@ class camera_card:
     def on_mouse_move(self, e: MouseEventArguments):
         if self.camera is None:
             return
-        if e.type == 'mousemove':
-            point2d = Point(x=e.image_x, y=e.image_y)
-            if self.camera.calibration is None:
-                self.debug_position.set_text(f'{point2d} no calibration')
-                return
+
+        point2d = Point(x=e.image_x, y=e.image_y)
+        if self.camera.calibration is None:
+            self.debug_position.set_text(f'{point2d} no calibration')
+            return
+        point3d: rosys.geometry.Point3d | None = None
+        if isinstance(self.camera, CalibratableUsbCamera):
             point3d = self.camera.calibration.project_from_image(point2d)
+        elif isinstance(self.camera, StereoCamera):
+            # TODO: too many calls
+            # camera_point_3d: Point3d | None = self.camera.get_point(
+            #     int(point2d.x), int(point2d.y))
+            # if camera_point_3d is None:
+            #     return
+            # camera_point_3d = camera_point_3d.in_frame(self.odometer.prediction_frame)
+            # world_point_3d = camera_point_3d.resolve()
+            # self.log.info(f'camera_point_3d: {camera_point_3d} -> world_point_3d: {world_point_3d.tuple}')
+            pass
+
+        if e.type == 'mousemove' and point3d is not None:
             self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
         if e.type == 'mouseup':
-            point2d = Point(x=e.image_x, y=e.image_y)
             if self.camera.calibration is None:
                 self.debug_position.set_text(f'last punch: {point2d}')
                 return
-            point3d = self.camera.calibration.project_from_image(point2d)
             if point3d is not None:
                 self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
                 if self.puncher is not None and self.punching_enabled:
@@ -220,11 +235,11 @@ class camera_card:
         if self.camera is None or self.camera.calibration is None:
             return ''
         position = rosys.geometry.Point3d(x=self.camera.calibration.extrinsics.translation[0],
-                                          y=self.camera.calibration.extrinsics.translation[1])
+                                          y=self.camera.calibration.extrinsics.translation[1],
+                                          z=0)
         svg = ''
         for plant in self.plant_provider.get_relevant_weeds(position):
-            position_3d = rosys.geometry.Point3d(x=plant.position.x, y=plant.position.y, z=0)
-            screen = self.camera.calibration.project_to_image(position_3d)
+            screen = self.camera.calibration.project_to_image(plant.position)
             if screen is not None:
                 svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="5" fill="white" />'
                 svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{plant.id[:4]}</text>'

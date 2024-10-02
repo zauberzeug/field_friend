@@ -1,4 +1,6 @@
 import logging
+import uuid
+from typing import Any
 
 import rosys
 
@@ -34,9 +36,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def invalidate(self) -> None:
         self.request_backup()
         self.FIELDS_CHANGED.emit()
-
-    def get_field(self, id_: str) -> Field | None:
-        return next((fp for fp in self.fields if fp.id == id_), None)
 
     def create_field(self, new_field: Field) -> Field:
         # TODO: delete the clear when we want to save multiple fields again

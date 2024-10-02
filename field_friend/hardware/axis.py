@@ -57,14 +57,14 @@ class Axis(rosys.hardware.Module, abc.ABC):
         return True
 
     def compute_steps(self, position: float) -> int:
-        """Compute the number of steps to move the y axis to the given position.   
+        """Compute the number of steps to move the axis to the given position.
 
         The position is given in meters.
         """
         return int((position + self.axis_offset) * self.steps_per_m) * (-1 if self.reversed_direction else 1)
 
     def compute_position(self, steps: int) -> float:
-        return steps / self.steps_per_m - self.axis_offset * (-1 if self.reversed_direction else 1)
+        return steps / self.steps_per_m * (-1 if self.reversed_direction else 1) - self.axis_offset
 
     @property
     def position(self) -> float:

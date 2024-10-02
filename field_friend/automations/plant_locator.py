@@ -4,12 +4,16 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import rosys
 from nicegui import ui
+from rosys.geometry import Point3d
 from rosys.vision import Autoupload
 
+from ..vision import CalibratableUsbCamera
+from ..vision.zedxmini_camera import StereoCamera
 from .plant import Plant
 
-WEED_CATEGORY_NAME = ['coin', 'weed', 'big_weed', 'thistle', 'orache', 'weedy_area', ]
-CROP_CATEGORY_NAME = ['coin_with_hole', 'crop', 'sugar_beet', 'onion', 'garlic', ]
+WEED_CATEGORY_NAME = ['coin', 'weed', 'weedy_area', ]
+CROP_CATEGORY_NAME = ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
+                      'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]
 MINIMUM_CROP_CONFIDENCE = 0.3
 MINIMUM_WEED_CONFIDENCE = 0.3
 
@@ -99,7 +103,20 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
                     continue
             image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-            world_point_3d = camera.calibration.project_from_image(image_point)
+            world_point_3d: rosys.geometry.Point3d | None = None
+            if isinstance(camera, StereoCamera):
+                world_point_3d = camera.calibration.project_from_image(image_point)
+                # TODO: 3d detection
+                # camera_point_3d: Point3d | None = await camera.get_point(
+                #     int(d.cx), int(d.cy))
+                # if camera_point_3d is None:
+                #     self.log.error('could not get a depth value for detection')
+                #     continue
+                # camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
+                #     'zedxmini').in_frame(self.odometer.prediction_frame)
+                # world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
+            else:
+                world_point_3d = camera.calibration.project_from_image(image_point)
             if world_point_3d is None:
                 self.log.error('could not generate world point of detection, calibration error')
                 continue

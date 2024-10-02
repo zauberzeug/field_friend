@@ -34,6 +34,7 @@ async def test_straight_line_with_high_angles(system: System):
     await system.driver.wheels.stop()
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 1.0
+    system.gnss.observed_poses.clear()
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
