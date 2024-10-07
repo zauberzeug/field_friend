@@ -24,55 +24,82 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
         self.needs_backup: bool = False
 
-        field = Field(id='5.00m', name='5.00m', points=[])
-        for i, row_list in enumerate([[GeoPoint(lat=51.98316780897856, long=7.434212), GeoPoint(lat=51.98321232423919, long=7.434212)],
-                                      [GeoPoint(lat=51.983167808956075, long=7.4342847762085835),
-                                       GeoPoint(lat=51.98321232421671, long=7.434284776280727)],
-                                      [GeoPoint(lat=51.98316780888862, long=7.4343575524171674),
-                                       GeoPoint(lat=51.98321232414926, long=7.434357552561454)],
-                                      [GeoPoint(lat=51.9831678087762, long=7.4344303286257505),
-                                       GeoPoint(lat=51.98321232403683, long=7.43443032884218)],
-                                      [GeoPoint(lat=51.98316780861881, long=7.4345031048343335),
-                                       GeoPoint(lat=51.98321232387944, long=7.434503105122906)],
-                                      [GeoPoint(lat=51.98316780841646, long=7.434575881042917),
-                                       GeoPoint(lat=51.98321232367709, long=7.434575881403632)],
-                                      [GeoPoint(lat=51.983167808169135, long=7.434648657251498),
-                                       GeoPoint(lat=51.98321232342976, long=7.434648657684356)],
-                                      [GeoPoint(lat=51.983167807876846, long=7.434721433460079),
-                                       GeoPoint(lat=51.98321232313747, long=7.4347214339650805)],
-                                      [GeoPoint(lat=51.98316780753959, long=7.434794209668659),
-                                       GeoPoint(lat=51.983212322800206, long=7.434794210245803)],
-                                      [GeoPoint(lat=51.98316780715736, long=7.434866985877237),
-                                       GeoPoint(lat=51.983212322417984, long=7.434866986526525)],
-                                      [GeoPoint(lat=51.98316780673016, long=7.434939762085815), GeoPoint(lat=51.98321232199079, long=7.434939762807245)],]):
+        field = Field(id='Wiese_test_20241007', name='Wiese_Testfeld', points=[])
+        for i, row_list in enumerate([[GeoPoint(lat=51.983183478278214, long=7.434241411038152), GeoPoint(lat=51.98319748684229, long=7.434292552530567)],
+                                      [GeoPoint(lat=51.983179370626104, long=7.434244362155524),
+                                       GeoPoint(lat=51.983193379188904, long=7.434295503644181)],
+                                      [GeoPoint(lat=51.983175262974, long=7.434247313272896),
+                                       GeoPoint(lat=51.98318927153552, long=7.434298354757795)],
+                                      [GeoPoint(lat=51.98317526297393, long=7.434247313272356),
+                                       GeoPoint(lat=51.98318927153545, long=7.434298454757256)],
+                                      [GeoPoint(lat=51.98317115532166, long=7.4342502643886474),
+                                       GeoPoint(lat=51.98318516388192, long=7.43430140586979)],
+                                      [GeoPoint(lat=51.98316704766932, long=7.434253215504399),
+                                       GeoPoint(lat=51.9831810562283, long=7.434304356981785)],
+                                      [GeoPoint(lat=51.98316294001689, long=7.434256166619611),
+                                       GeoPoint(lat=51.98317694857461, long=7.4343073080932385)],
+                                      [GeoPoint(lat=51.98315883236441, long=7.434259117734283),
+                                       GeoPoint(lat=51.983172840920844, long=7.434310259204153)],
+                                      [GeoPoint(lat=51.98315472471183, long=7.434262068848415),
+                                       GeoPoint(lat=51.98316873326699, long=7.434313210314528)],
+                                      [GeoPoint(lat=51.98315061705919, long=7.434265019962007),
+                                       GeoPoint(lat=51.98316462561307, long=7.434316161424363)],
+                                      [GeoPoint(lat=51.98314650940645, long=7.43426797107506),
+                                       GeoPoint(lat=51.98316051795908, long=7.434319112533658)]]):
             row = Row(id=f'row_{i}', name=f'row_{i}', points=list(row_list))
             field.rows.append(row)
         self.fields.append(field)
+        self.FIELDS_CHANGED.emit()
 
-        field = Field(id='0.45m', name='0.45m', points=[])
-        for i, row_list in enumerate([[GeoPoint(lat=51.98316791930925, long=7.434212),
-                                       GeoPoint(lat=51.98319451381729, long=7.434212)],
-                                      [GeoPoint(lat=51.98316791930907, long=7.434218549858788),
-                                       GeoPoint(lat=51.983194513817104, long=7.434218549862667)],
-                                      [GeoPoint(lat=51.98316791930852, long=7.434225099717577),
-                                       GeoPoint(lat=51.98319451381656, long=7.434225099725335)],
-                                      [GeoPoint(lat=51.98316791930762, long=7.434231649576366),
-                                       GeoPoint(lat=51.983194513815654, long=7.4342316495880025)],
-                                      [GeoPoint(lat=51.98316791930634, long=7.434238199435154),
-                                       GeoPoint(lat=51.983194513814375, long=7.43423819945067)],
-                                      [GeoPoint(lat=51.9831679193047, long=7.434244749293943),
-                                       GeoPoint(lat=51.983194513812734, long=7.434244749313338)],
-                                      [GeoPoint(lat=51.983167919302694, long=7.434251299152732),
-                                       GeoPoint(lat=51.98319451381073, long=7.4342512991760055)],
-                                      [GeoPoint(lat=51.983167919300335, long=7.43425784901152),
-                                       GeoPoint(lat=51.983194513808364, long=7.434257849038673)],
-                                      [GeoPoint(lat=51.9831679192976, long=7.434264398870309),
-                                       GeoPoint(lat=51.983194513805635, long=7.434264398901341)],
-                                      [GeoPoint(lat=51.9831679192945, long=7.434270948729098),
-                                       GeoPoint(lat=51.98319451380254, long=7.434270948764008)],]):
-            row = Row(id=f'row_{i}', name=f'row_{i}', points=list(row_list))
-            field.rows.append(row)
-        self.fields.append(field)
+        # field = Field(id='5.00m', name='5.00m', points=[])
+        # for i, row_list in enumerate([[GeoPoint(lat=51.98316780897856, long=7.434212), GeoPoint(lat=51.98321232423919, long=7.434212)],
+        #                               [GeoPoint(lat=51.983167808956075, long=7.4342847762085835),
+        #                                GeoPoint(lat=51.98321232421671, long=7.434284776280727)],
+        #                               [GeoPoint(lat=51.98316780888862, long=7.4343575524171674),
+        #                                GeoPoint(lat=51.98321232414926, long=7.434357552561454)],
+        #                               [GeoPoint(lat=51.9831678087762, long=7.4344303286257505),
+        #                                GeoPoint(lat=51.98321232403683, long=7.43443032884218)],
+        #                               [GeoPoint(lat=51.98316780861881, long=7.4345031048343335),
+        #                                GeoPoint(lat=51.98321232387944, long=7.434503105122906)],
+        #                               [GeoPoint(lat=51.98316780841646, long=7.434575881042917),
+        #                                GeoPoint(lat=51.98321232367709, long=7.434575881403632)],
+        #                               [GeoPoint(lat=51.983167808169135, long=7.434648657251498),
+        #                                GeoPoint(lat=51.98321232342976, long=7.434648657684356)],
+        #                               [GeoPoint(lat=51.983167807876846, long=7.434721433460079),
+        #                                GeoPoint(lat=51.98321232313747, long=7.4347214339650805)],
+        #                               [GeoPoint(lat=51.98316780753959, long=7.434794209668659),
+        #                                GeoPoint(lat=51.983212322800206, long=7.434794210245803)],
+        #                               [GeoPoint(lat=51.98316780715736, long=7.434866985877237),
+        #                                GeoPoint(lat=51.983212322417984, long=7.434866986526525)],
+        #                               [GeoPoint(lat=51.98316780673016, long=7.434939762085815), GeoPoint(lat=51.98321232199079, long=7.434939762807245)],]):
+        #     row = Row(id=f'row_{i}', name=f'row_{i}', points=list(row_list))
+        #     field.rows.append(row)
+        # self.fields.append(field)
+
+        # field = Field(id='0.45m', name='0.45m', points=[])
+        # for i, row_list in enumerate([[GeoPoint(lat=51.98316791930925, long=7.434212),
+        #                                GeoPoint(lat=51.98319451381729, long=7.434212)],
+        #                               [GeoPoint(lat=51.98316791930907, long=7.434218549858788),
+        #                                GeoPoint(lat=51.983194513817104, long=7.434218549862667)],
+        #                               [GeoPoint(lat=51.98316791930852, long=7.434225099717577),
+        #                                GeoPoint(lat=51.98319451381656, long=7.434225099725335)],
+        #                               [GeoPoint(lat=51.98316791930762, long=7.434231649576366),
+        #                                GeoPoint(lat=51.983194513815654, long=7.4342316495880025)],
+        #                               [GeoPoint(lat=51.98316791930634, long=7.434238199435154),
+        #                                GeoPoint(lat=51.983194513814375, long=7.43423819945067)],
+        #                               [GeoPoint(lat=51.9831679193047, long=7.434244749293943),
+        #                                GeoPoint(lat=51.983194513812734, long=7.434244749313338)],
+        #                               [GeoPoint(lat=51.983167919302694, long=7.434251299152732),
+        #                                GeoPoint(lat=51.98319451381073, long=7.4342512991760055)],
+        #                               [GeoPoint(lat=51.983167919300335, long=7.43425784901152),
+        #                                GeoPoint(lat=51.983194513808364, long=7.434257849038673)],
+        #                               [GeoPoint(lat=51.9831679192976, long=7.434264398870309),
+        #                                GeoPoint(lat=51.983194513805635, long=7.434264398901341)],
+        #                               [GeoPoint(lat=51.9831679192945, long=7.434270948729098),
+        #                                GeoPoint(lat=51.98319451380254, long=7.434270948764008)],]):
+        #     row = Row(id=f'row_{i}', name=f'row_{i}', points=list(row_list))
+        #     field.rows.append(row)
+        # self.fields.append(field)
 
     def get_field(self, id_: str | None) -> Field | None:
         for field in self.fields:
