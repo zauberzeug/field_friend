@@ -100,13 +100,16 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
         with ui.column().bind_visibility_from(system.automator, 'is_running'):
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Current Field:**').style('color: #6E93D6')
+                current_field_label = ui.label()
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Time on Field:**').style('color: #6E93D6')
                 kpi_fieldtime_label = ui.label()
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Distance:**').style('color: #6E93D6')
                 kpi_distance_label = ui.label()
-            current_field_label = ui.label()
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Time in Automation:**').style('color: #6E93D6')
+                kpi_time_in_automation = ui.label()
             with ui.row().classes('place-items-center'):
                 ui.markdown('**Current Row:**').style('color: #6E93D6')
                 current_row_label = ui.label()
@@ -123,8 +126,13 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 ui.markdown('**Punches:**').style('color: #6E93D6')
                 kpi_punches_label = ui.label()
 
-        with ui.row().classes('place-items-center').bind_visibility_from(system.automator, 'is_running', backward=lambda x: not x):
-            ui.markdown('**No automation running**').style('color: #6E93D6')
+        with ui.column().classes('place-items-center').bind_visibility_from(system.automator, 'is_running', backward=lambda x: not x):
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**No automation running**').style('color: #6E93D6')
+            with ui.row().classes('place-items-center'):
+                ui.markdown('**Time in Automation**').style('color: #6E93D6')
+                kpi_time_in_automation_off = ui.label()
+
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
 
@@ -224,6 +232,9 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             if automator.is_running:
                 kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time}s'
                 kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance}m'
+                kpi_time_in_automation.text = f'{system.kpi_provider.all_time_kpis.time}s'
+            else: 
+                kpi_time_in_automation_off.text = f'{system.kpi_provider.all_time_kpis.time}s'
 
                 # TODO reimplement with navigation and tools
                 # current_automation = next(key for key, value in system.tools.items()
@@ -243,6 +254,5 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
             heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
             rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
             odometry_label.text = str(odometer.prediction)
-
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer

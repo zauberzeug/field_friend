@@ -65,6 +65,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system.plant_locator.pause()
         await self.system.field_friend.stop()
         await self.system.timelapse_recorder.compress_video()
+        self.state = 'idle'
         await super().finish()
 
     async def activate(self):
@@ -206,6 +207,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         passed_time = rosys.time() - self.start_time
         if passed_time > 1:
             self.kpi_provider.increment_weeding_kpi('time')
+            self.kpi_provider.increment_all_time_kpi('time')
             self.start_time = rosys.time()
 
     def settings_ui(self):

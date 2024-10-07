@@ -49,6 +49,8 @@ class KpiProvider(KpiLogger):
         self.WEEDING_KPIS_UPDATED = rosys.event.Event()
         """one of the KPIs of the running weeding automation has been updated."""
 
+        self.all_time_kpis: KPIs = KPIs()
+
         self.current_mowing_kpis: Mowing_KPIs = Mowing_KPIs()
         self.MOWING_KPIS_UPDATED = rosys.event.Event()
         """one of the KPIs of the running mowing automation has been updated."""
@@ -59,6 +61,7 @@ class KpiProvider(KpiLogger):
         logger_backup = super().backup()
         return {'current_weeding_kpis': rosys.persistence.to_dict(self.current_weeding_kpis),
                 'current_mowing_kpis': rosys.persistence.to_dict(self.current_mowing_kpis),
+                'all_time_kpis': rosys.persistence.to_dict(self.all_time_kpis),
                 'days': logger_backup['days'],
                 'months': logger_backup['months']}
 
@@ -66,12 +69,23 @@ class KpiProvider(KpiLogger):
         super().restore(data)
         rosys.persistence.replace_dataclass(self.current_weeding_kpis, data.get('current_weeding_kpis', Weeding_KPIs()))
         rosys.persistence.replace_dataclass(self.current_mowing_kpis, data.get('current_mowing_kpis', Mowing_KPIs()))
+        rosys.persistence.replace_dataclass(self.all_time_kpis, data.get('all_time_kpis', KPIs()))
 
     def invalidate(self) -> None:
         self.request_backup()
         self.WEEDING_KPIS_UPDATED.emit()
         self.MOWING_KPIS_UPDATED.emit()
 
+    def increment_all_time_kpi(self, indicator: str) -> None:
+        self.increment(indicator)
+        if getattr(self.all_time_kpis, indicator) is None:
+            new_value = 1
+        else:
+            new_value = getattr(self.all_time_kpis, indicator)+1
+        setattr(self.all_time_kpis, indicator, new_value)
+        self.invalidate()
+        return
+    
     def increment_weeding_kpi(self, indicator: str) -> None:
         self.increment(indicator)
         if getattr(self.current_weeding_kpis, indicator) is None:
