@@ -45,6 +45,8 @@ class FieldNavigation(FollowCropsNavigation):
         self.clear_row_distance: float = self.CLEAR_ROW_DISTANCE
         self._loop: bool = False
 
+        self.turn_step = 25.0
+
     @property
     def current_row(self) -> Row:
         assert self.field
@@ -139,16 +141,57 @@ class FieldNavigation(FollowCropsNavigation):
         await self._wait_for_gnss()
         row_yaw = self.start_point.direction(self.end_point)
         safe_start_point = self.start_point.polar(-self.clear_row_distance, self.start_point.direction(self.end_point))
-        await self.driver.drive_to(safe_start_point, stop_at_end=False)
+
+        relative_yaw = self.odometer.prediction.relative_direction(safe_start_point)
+        yaw = self.odometer.prediction.direction(safe_start_point)
+        loop_num = max(1, int(np.ceil(abs(relative_yaw)/np.deg2rad(self.turn_step)))+1)
+        self.log.info(
+            f'Turn to safe start with relative yaw {np.rad2deg(relative_yaw)} in {loop_num} steps')
+        self.log.info(f'robot_yaw: {self.odometer.prediction.yaw_deg} - target_yaw: {np.rad2deg(yaw)}')
+        for i, target_yaw in enumerate(np.linspace(self.odometer.prediction.yaw, yaw, num=loop_num)):
+            self.log.info(f'{i}: robot_yaw: {self.odometer.prediction.yaw_deg} - target_yaw: {np.rad2deg(target_yaw)}')
+            await self.turn_to_yaw(target_yaw)
+            await self._wait_for_gnss()
+        self.log.info('Drive to safe start')
+        await self.driver.drive_to(safe_start_point)
+        await self._wait_for_gnss()
+
+        relative_yaw = self.odometer.prediction.relative_direction(self.start_point)
+        loop_num = max(1, int(np.ceil(abs(relative_yaw)/np.deg2rad(self.turn_step)))+1)
+        self.log.info(f'Turn to row start with relative yaw {relative_yaw} in {loop_num} steps')
+        for i, target_yaw in enumerate(np.linspace(self.odometer.prediction.yaw, row_yaw, num=loop_num)):
+            self.log.info(f'{i}: robot_yaw: {self.odometer.prediction.yaw_deg} - target_yaw: {np.rad2deg(target_yaw)}')
+            await self.turn_to_yaw(target_yaw)
+            await self._wait_for_gnss()
+        self.log.info('Drive to row start')
         await self.driver.drive_to(self.start_point)
         await self._wait_for_gnss()
-        await self.driver.drive_circle(self.start_point.polar(1.0, row_yaw), angle_threshold=np.deg2rad(1.0))
-        await self._wait_for_gnss()
+
+        self.log.info('Adjust heading')
+        relative_yaw = self.odometer.prediction.relative_direction(self.end_point)
+        loop_num = max(1, int(np.ceil(abs(relative_yaw)/np.deg2rad(self.turn_step)))+1)
+        for i, target_yaw in enumerate(np.linspace(self.odometer.prediction.yaw, row_yaw, num=loop_num)):
+            self.log.info(f'{i}: robot_yaw: {self.odometer.prediction.yaw_deg} - target_yaw: {np.rad2deg(target_yaw)}')
+            await self.turn_to_yaw(target_yaw)
+            await self._wait_for_gnss()
+
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
         else:
             self.plant_provider.clear()
         return State.FOLLOWING_ROW
+
+    async def turn_to_yaw(self, target_yaw, angle_threshold=np.deg2rad(1.0)) -> None:
+        while True:
+            angle = rosys.helpers.eliminate_2pi(target_yaw - self.odometer.prediction.yaw)
+            if abs(angle) < angle_threshold:
+                break
+            linear = 0.5
+            sign = 1 if angle > 0 else -1
+            angular = linear / self.driver.parameters.minimum_turning_radius * sign
+            await self.driver.wheels.drive(*self.driver._throttle(linear, angular))
+            await rosys.sleep(0.1)
+        await self.driver.wheels.stop()
 
     async def _run_following_row(self, distance: float) -> State:
         if not self.implement.is_active:
@@ -228,6 +271,10 @@ class FieldNavigation(FollowCropsNavigation):
         with ui.row():
             with ui.column():
                 ui.label('FOR DEVELOPMENT ONLY').classes('text-bold')
+                ui.number('Turn Step', step=1.0, min=1.0, max=180.0, format='%.2f') \
+                    .props('dense outlined') \
+                    .classes('w-24') \
+                    .bind_value(self, 'turn_step')
                 self.developer_ui()
 
     def developer_ui(self) -> None:
