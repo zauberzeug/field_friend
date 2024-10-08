@@ -26,7 +26,6 @@ def development(system: 'System') -> None:
                                     system.field_friend.robot_brain.developer_ui()
                                 with ui.column():
                                     system.field_friend.robot_brain.communication.debug_ui()
-
                         else:
                             rosys.simulation_ui()
                     hardware_control(system.field_friend, system.automator, system.puncher)

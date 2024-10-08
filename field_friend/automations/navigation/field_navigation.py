@@ -186,14 +186,14 @@ class FieldNavigation(FollowCropsNavigation):
             linear = 0.5
             sign = 1 if angle > 0 else -1
             angular = linear / self.driver.parameters.minimum_turning_radius * sign
-            await self.driver.wheels.drive(*self.driver._throttle(linear, angular))
+            await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
             await rosys.sleep(0.1)
         await self.driver.wheels.stop()
 
     async def _run_following_row(self, distance: float) -> State:
         if not self.implement.is_active:
             await self.implement.activate()
-        if StraightLineNavigation._should_finish(self):  # type: disable=W0212
+        if StraightLineNavigation._should_finish(self):  # pylint: disable=protected-access
             await self.implement.deactivate()
             return State.CLEAR_ROW
         await super()._drive(distance)
