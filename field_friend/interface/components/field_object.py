@@ -1,20 +1,24 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 from nicegui.elements.scene_objects import Box, Curve, Cylinder, Extrusion, Group
 from rosys.geometry import Spline
 
-from field_friend.localization import GeoPoint
-
 from ...automations import Field, FieldProvider
+from ...automations.navigation import FieldNavigation
+
+if TYPE_CHECKING:
+    from field_friend.system import System
 
 
 class field_object(Group):
 
-    def __init__(self, field_provider: FieldProvider, active_field: Field | None) -> None:
+    def __init__(self, system: 'System') -> None:
         super().__init__()
-
-        self.field_provider = field_provider
-        self.update(active_field)
-        self.field_provider.FIELDS_CHANGED.register_ui(lambda: self.update(active_field))
+        self.system = system
+        self.field_provider: FieldProvider = system.field_provider
+        self._update()
+        self.field_provider.FIELDS_CHANGED.register_ui(self._update)
 
     def create_fence(self, start, end):
         height = 0.12
@@ -33,7 +37,6 @@ class field_object(Group):
         Box(length, height, depth).move(x=center_x, y=center_y,
                                         z=height / 2 + 0.2).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
         Box(length, height, depth).move(x=center_x, y=center_y,
-                                        # Convert angle from radians to degrees
                                         z=height / 2 + 0.5).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
         Box(length, height, depth).move(x=center_x, y=center_y,
                                         z=height / 2 + 0.8).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
@@ -42,24 +45,27 @@ class field_object(Group):
         Cylinder(0.1, 0.1, 1.0).move(x=end[0], y=end[1], z=0.5).with_name(
             'field_').material('#8b4513').rotate(np.pi/2, 0, 0)
 
+    def _update(self) -> None:
+        if isinstance(self.system.current_navigation, FieldNavigation):
+            self.update(self.system.current_navigation.field)
+
     def update(self, active_field: Field | None) -> None:
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('obstacle_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
         if active_field:
-            field = active_field
-            outline = [point.cartesian().tuple for point in field.outline]
+            outline = [point.cartesian().tuple for point in active_field.outline]
             if len(outline) > 1:  # Make sure there are at least two points to form a segment
                 for i in range(len(outline)):
                     start = outline[i]
                     end = outline[(i + 1) % len(outline)]  # Loop back to the first point
                     self.create_fence(start, end)
 
-            for obstacle in field.obstacles:
+            for obstacle in active_field.obstacles:
                 outline = [[point.x, point.y] for point in obstacle.cartesian()]
                 Extrusion(outline, 0.1).with_name(f'obstacle_{obstacle.id}').material('#B80F0A')
 
-            for row in field.rows:
+            for row in active_field.rows:
                 if len(row.points) == 1:
                     continue
                 else:

@@ -295,6 +295,7 @@ class FieldNavigation(FollowCropsNavigation):
         else:
             if isinstance(self.implement, WeedingImplement):
                 self.implement.cultivated_crop = None
+        self.field_provider.FIELDS_CHANGED.emit()
 
     def create_simulation(self, crop_distance: float = 0.5) -> None:
         self.detector.simulated_objects.clear()
