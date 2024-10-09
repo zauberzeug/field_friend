@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import events, ui
 
-from ...automations import Field
 from .field_friend_object import field_friend_object
 from .field_object import field_object
 from .plant_object import plant_objects
@@ -16,7 +15,7 @@ if TYPE_CHECKING:
 
 class robot_scene:
 
-    def __init__(self, system: 'System', active_field: Field | None):
+    def __init__(self, system: 'System'):
         self.log = logging.getLogger('field_friend.robot_scene')
         self.system = system
         self.scene_card = ui.card()
@@ -35,7 +34,7 @@ class robot_scene:
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system)
                 visualizer_object(self.system)
-                field_object(self.system.field_provider, self.system.field_navigation.field)
+                field_object(self.system)
                 self.scene.move_camera(-0.5, -1, 2)
 
         ui.timer(rosys.config.ui_update_interval, self.update)
