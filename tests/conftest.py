@@ -14,7 +14,7 @@ from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
-ROBOT_GEO_START_POSITION = GeoPoint(lat=51.98333089813455, long=7.434242065994318)
+ROBOT_GEO_START_POSITION = GeoPoint(lat=51.98333489813455, long=7.434242465994318)
 
 FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, long=7.434242765994318)
 FIELD_FIRST_ROW_END = GeoPoint(lat=51.98334192260392, long=7.434293309874038)
