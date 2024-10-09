@@ -22,14 +22,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     WORKING_DISTANCE = 0.15
 
     def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
-        Implement.__init__(self, name)
+        Implement.__init__(self, name,system=system)
         rosys.persistence.PersistentModule.__init__(self,
                                                     persistence_key=f'field_friend.automations.implements.{persistence_key}')
 
         self.relevant_weeds = system.plant_locator.weed_category_names
         self.log = logging.getLogger('field_friend.weeding')
-        self.system = system
-        self.kpi_provider = system.kpi_provider
         self.puncher = system.puncher
         self.record_video = False
         self.cultivated_crop: str | None = None
@@ -40,7 +38,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.with_chopping: bool = False
         self.chop_if_no_crops: bool = False
 
-        self.state: str = 'idle'
         self.start_time: Optional[float] = None
         self.last_pose: Optional[Pose] = None
         self.driven_distance: float = 0.0
@@ -49,7 +46,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.last_punches: deque[Point3d] = deque(maxlen=5)
         self.next_punch_y_position: float = 0
 
-        rosys.on_repeat(self._update_time_and_distance, 0.1)
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -58,14 +54,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         if not await self._check_hardware_ready():
             rosys.notify('hardware is not ready')
             return False
-        self.state = 'running'
         return True
 
     async def finish(self) -> None:
         self.system.plant_locator.pause()
         await self.system.field_friend.stop()
         await self.system.timelapse_recorder.compress_video()
-        self.state = 'idle'
         await super().finish()
 
     async def activate(self):
@@ -82,7 +76,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system.timelapse_recorder.camera = None
         await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
-        self.kpi_provider.increment_weeding_kpi('rows_weeded')
 
     async def start_workflow(self) -> None:
         # TODO: only sleep when moving
@@ -164,9 +157,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.weeds_to_handle = sorted_weeds
         return False
 
-    def reset_kpis(self):
-        super().reset_kpis()
-        self.kpi_provider.clear_weeding_kpis()
+
 
     def backup(self) -> dict:
         return {
@@ -190,25 +181,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
-    def _update_time_and_distance(self):
-        # TODO move this to base class?
-        if self.state == 'idle':
-            return
-        if self.start_time is None:
-            self.start_time = rosys.time()
-        if self.last_pose is None:
-            self.last_pose = self.system.odometer.prediction
-            self.driven_distance = 0.0
-        self.driven_distance += self.system.odometer.prediction.distance(self.last_pose)
-        if self.driven_distance > 1:
-            self.kpi_provider.increment_weeding_kpi('distance')
-            self.driven_distance -= 1
-        self.last_pose = self.system.odometer.prediction
-        passed_time = rosys.time() - self.start_time
-        if passed_time > 1:
-            self.kpi_provider.increment_weeding_kpi('time')
-            self.kpi_provider.increment_all_time_kpi('time')
-            self.start_time = rosys.time()
 
     def settings_ui(self):
         super().settings_ui()
