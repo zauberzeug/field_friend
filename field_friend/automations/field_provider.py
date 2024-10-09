@@ -30,8 +30,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
                                        GeoPoint(lat=51.983193379188904, long=7.434295503644181)],
                                       [GeoPoint(lat=51.983175262974, long=7.434247313272896),
                                        GeoPoint(lat=51.98318927153552, long=7.434298354757795)],
-                                      [GeoPoint(lat=51.98317526297393, long=7.434247313272356),
-                                       GeoPoint(lat=51.98318927153545, long=7.434298454757256)],
                                       [GeoPoint(lat=51.98317115532166, long=7.4342502643886474),
                                        GeoPoint(lat=51.98318516388192, long=7.43430140586979)],
                                       [GeoPoint(lat=51.98316704766932, long=7.434253215504399),
