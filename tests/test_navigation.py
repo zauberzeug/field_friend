@@ -61,7 +61,7 @@ async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulat
 async def test_driving_to_exact_positions(system: System):
     class Stopper(Implement):
         def __init__(self, system: System) -> None:
-            super().__init__('Stopper')
+            super().__init__('Stopper',system)
             self.system = system
             self.current_stretch = 0.0
             self.workflow_started = False

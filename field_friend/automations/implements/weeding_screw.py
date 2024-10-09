@@ -30,7 +30,6 @@ class WeedingScrew(WeedingImplement):
                              if weed.position.distance(punch_position) <= self.system.field_friend.DRILL_RADIUS]
             for weed_id in punched_weeds:
                 self.system.plant_provider.remove_weed(weed_id)
-                self.kpi_provider.increment_weeding_kpi('weeds_removed')
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
                 self.log.info(f'removing weeds at screw world position {punch_position} '
                               f'with radius {self.system.field_friend.DRILL_RADIUS}')
