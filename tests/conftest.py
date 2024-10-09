@@ -1,17 +1,23 @@
 
 import logging
 from typing import AsyncGenerator, Generator
+from uuid import uuid4
 
 import pytest
 import rosys
+from rosys.geometry import Point
 from rosys.testing import forward, helpers
 
 from field_friend import localization
 from field_friend.automations import Field
+from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
 ROBOT_GEO_START_POSITION = GeoPoint(lat=51.983173401171236, long=7.434163443756093)
+
+FIELD_FIRST_ROW_START = GeoPoint(lat=51.98317071260942, long=7.43411239981148)
+FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(Point(x=0, y=10))
 
 log = logging.getLogger('field_friend.testing')
 
@@ -42,16 +48,20 @@ def gnss(system: System) -> GnssSimulation:
 
 @pytest.fixture
 async def field(system: System) -> AsyncGenerator[Field, None]:
-    points = [[51.98317071260942, 7.43411239981148],
-              [51.98307173817015, 7.43425187239752],
-              [51.983141020300614, 7.434388662818431],
-              [51.98322844759802, 7.43424919023239]]
-    geo_points = [GeoPoint.from_list(point) for point in points]
-    f = system.field_provider.create_field(points=geo_points)
-    system.field_provider.create_row(f, points=[GeoPoint(lat=51.98318416921418, long=7.4342004020500285),
-                                                GeoPoint(lat=51.98312378543273, long=7.434291470886676)])
-    system.field_provider.active_field = f
+    f = system.field_provider.create_field(Field(id=str(uuid4()), name='Field 1', first_row_start=FIELD_FIRST_ROW_START,
+                                           first_row_end=FIELD_FIRST_ROW_END, row_spacing=0.5, row_number=10))
     yield f
+
+
+@pytest.fixture
+def field_creator(system: System) -> FieldCreator:
+    fc = FieldCreator(system)
+    fc.first_row_start = FIELD_FIRST_ROW_START
+    fc.row_spacing = 0.5
+    fc.row_number = 10
+    fc.confirm_geometry()
+    fc.first_row_end = FIELD_FIRST_ROW_END
+    return fc
 
 
 @pytest.fixture
