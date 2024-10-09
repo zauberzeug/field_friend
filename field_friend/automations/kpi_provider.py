@@ -85,6 +85,13 @@ class KpiProvider(KpiLogger):
         setattr(self.all_time_kpis, indicator, new_value)
         self.invalidate()
         return
+
+    def get_time_kpi(self) -> str:
+        total_seconds = self.all_time_kpis.time
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        return f'{hours:02}:{minutes:02}:{seconds:02}'
     
     def increment_weeding_kpi(self, indicator: str) -> None:
         self.increment(indicator)

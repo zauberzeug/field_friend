@@ -4,14 +4,7 @@ import rosys
 from nicegui import ui
 
 from ... import localization
-from ...hardware import (
-    Axis,
-    ChainAxis,
-    FieldFriend,
-    FlashlightPWMHardware,
-    FlashlightPWMHardwareV2,
-    Tornado,
-)
+from ...hardware import Axis, ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado
 from ...localization import Gnss
 
 if TYPE_CHECKING:
@@ -97,41 +90,12 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
         ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
-        with ui.column().bind_visibility_from(system.automator, 'is_running'):
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Current Field:**').style('color: #6E93D6')
-                current_field_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Time on Field:**').style('color: #6E93D6')
-                kpi_fieldtime_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Distance:**').style('color: #6E93D6')
-                kpi_distance_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Time in Automation:**').style('color: #6E93D6')
-                kpi_time_in_automation = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Current Row:**').style('color: #6E93D6')
-                current_row_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Processed Rows:**').style('color: #6E93D6')
-                kpi_rows_weeded_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Crops Detected:**').style('color: #6E93D6')
-                kpi_crops_detected_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Weeds Detected:**').style('color: #6E93D6')
-                kpi_weeds_detected_label = ui.label()
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Punches:**').style('color: #6E93D6')
-                kpi_punches_label = ui.label()
 
-        with ui.column().classes('place-items-center').bind_visibility_from(system.automator, 'is_running', backward=lambda x: not x):
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**No automation running**').style('color: #6E93D6')
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Time in Automation**').style('color: #6E93D6')
-                kpi_time_in_automation_off = ui.label()
+        with ui.row().classes('place-items-center').bind_visibility_from(system.automator, 'is_running', backward=lambda x: not x):
+            ui.markdown('**No automation running**').style('color: #6E93D6')
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Time in Automation**').style('color: #6E93D6')
+            kpi_time_in_automation_off = ui.label()
 
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
         ui.separator()
@@ -229,12 +193,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 'NW' if gnss.current.heading <= 338 else \
                 'N'
 
-            if automator.is_running:
-                kpi_fieldtime_label.text = f'{system.kpi_provider.current_weeding_kpis.time}s'
-                kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance}m'
-                kpi_time_in_automation.text = f'{system.kpi_provider.all_time_kpis.time}s'
-            else: 
-                kpi_time_in_automation_off.text = f'{system.kpi_provider.all_time_kpis.time}s'
+
 
                 # TODO reimplement with navigation and tools
                 # current_automation = next(key for key, value in system.tools.items()
@@ -248,6 +207,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 #     if current_automation == 'weeding':
                 #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
 
+            kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_kpi()}'
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
             reference_position_label.text = 'No reference' if localization.reference is None else 'Set'
             gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
