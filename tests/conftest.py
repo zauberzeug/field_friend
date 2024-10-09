@@ -14,10 +14,10 @@ from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
-ROBOT_GEO_START_POSITION = GeoPoint(lat=51.983173401171236, long=7.434163443756093)
+ROBOT_GEO_START_POSITION = GeoPoint(lat=51.98333089813455, long=7.434242065994318)
 
-FIELD_FIRST_ROW_START = GeoPoint(lat=51.98317071260942, long=7.43411239981148)
-FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(Point(x=0, y=10))
+FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, long=7.434242765994318)
+FIELD_FIRST_ROW_END = GeoPoint(lat=51.98334192260392, long=7.434293309874038)
 
 log = logging.getLogger('field_friend.testing')
 
