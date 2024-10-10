@@ -35,7 +35,6 @@ def startup() -> None:
         system_bar()
 
     interface.pages.main_page(page_wrapper, system)  # /
-    interface.pages.field_planner_page(page_wrapper, system)  # /field
     # interface.pages.path_planner_page(page_wrapper, system)  # /path
     interface.pages.dev_page(page_wrapper, system)  # /dev
     interface.pages.test_page(page_wrapper, system)  # /test

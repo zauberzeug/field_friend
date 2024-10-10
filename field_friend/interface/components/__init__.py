@@ -3,7 +3,6 @@ from .confirm_dialog import ConfirmDialog as confirm_dialog
 from .development import development
 from .field_friend_object import field_friend_object
 from .field_object import field_object
-from .field_planner import field_planner
 from .hardware_control import hardware_control
 from .header_bar import header_bar
 from .info import Info
