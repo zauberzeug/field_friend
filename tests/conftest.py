@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import pytest
 import rosys
-from rosys.geometry import Point
 from rosys.testing import forward, helpers
 
 from field_friend import localization

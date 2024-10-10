@@ -21,7 +21,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def backup(self) -> dict:
         return {
-            'fields': {field.id: field.to_dict() for field in self.fields},
+            'fields': {f.id: f.to_dict() for f in self.fields},
         }
 
     def restore(self, data: dict[str, dict]) -> None:
@@ -36,7 +36,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED.emit()
 
     def get_field(self, id_: str | None) -> Field | None:
-        return next((field for field in self.fields if field.id == id_), None)
+        return next((f for f in self.fields if f.id == id_), None)
 
     def create_field(self, new_field: Field) -> Field:
         # TODO: delete the clear when we want to save multiple fields again
@@ -50,7 +50,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.invalidate()
 
     def delete_field(self, id_: str) -> None:
-        field = next((field for field in self.fields if field.id == id_), None)
+        field = self.get_field(id_)
         if field:
             self.fields.remove(field)
             self.invalidate()

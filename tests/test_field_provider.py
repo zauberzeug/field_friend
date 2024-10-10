@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 import rosys
 from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
-from rosys.geometry import Point
 
 from field_friend import System
 from field_friend.automations import FieldProvider

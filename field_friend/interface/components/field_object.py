@@ -1,5 +1,5 @@
 import numpy as np
-from nicegui.elements.scene_objects import Box, Curve, Cylinder, Extrusion, Group
+from nicegui.elements.scene_objects import Box, Curve, Cylinder, Group
 from rosys.geometry import Spline
 
 from ...automations import Field, FieldProvider

@@ -2,7 +2,7 @@
 import logging
 from typing import TYPE_CHECKING, Literal, TypedDict
 
-from nicegui import app, events, ui
+from nicegui import app, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
 
 from ...automations import Field, Row

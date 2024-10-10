@@ -54,10 +54,7 @@ class Field:
 
     @property
     def outline_cartesian(self) -> list[rosys.geometry.Point]:
-        cartesian_points = []
-        for point in self.outline:
-            cartesian_points.append(point.cartesian())
-        return cartesian_points
+        return [p.cartesian() for p in self.outline]
 
     @property
     def outline_as_tuples(self) -> list[tuple[float, float]]:
@@ -92,9 +89,8 @@ class Field:
         for i in range(int(self.row_number)):
             offset = i * self.row_spacing
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
-            row_points: list[GeoPoint] = []
-            for point in offset_row_coordinated:
-                row_points.append(localization.reference.shifted(Point(x=point[0], y=point[1])))
+            row_points: list[GeoPoint] = [localization.reference.shifted(
+                Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
             row = Row(id=str(uuid4()), name=f'{i + 1}', points=row_points)
             rows.append(row)
         return rows
@@ -104,21 +100,18 @@ class Field:
         assert self.first_row_end is not None
         ab_line_cartesian = LineString([self.first_row_start.cartesian().tuple, self.first_row_end.cartesian().tuple])
         last_row_linestring = offset_curve(ab_line_cartesian, - self.row_spacing * self.row_number + self.row_spacing)
-        end_row_points: list[Point] = []
-        for point in last_row_linestring.coords:
-            end_row_points.append(Point(x=point[0], y=point[1]))
+        end_row_points: list[Point] = [Point(x=p[0], y=p[1]) for p in last_row_linestring.coords]
         outline_unbuffered: list[Point] = []
-        for i, point in enumerate(end_row_points):
-            outline_unbuffered.append(point)
+        for p in end_row_points:
+            outline_unbuffered.append(p)
         outline_unbuffered.append(self.first_row_end.cartesian())
         outline_unbuffered.append(self.first_row_start.cartesian())
         outline_polygon = Polygon([p.tuple for p in outline_unbuffered])
         bufferd_polygon = outline_polygon.buffer(
             self.outline_buffer_width, join_style='mitre', mitre_limit=math.inf)
         bufferd_polygon_coords = bufferd_polygon.exterior.coords
-        outline: list[GeoPoint] = []
-        for p in bufferd_polygon_coords:
-            outline.append(localization.reference.shifted(Point(x=p[0], y=p[1])))
+        outline: list[GeoPoint] = [localization.reference.shifted(
+            Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
         return outline
 
     def to_dict(self) -> dict:
