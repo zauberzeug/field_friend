@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import pytest
 import rosys
+from rosys.geometry import Point
 from rosys.testing import forward, helpers
 
 from field_friend import localization
@@ -16,7 +17,7 @@ from field_friend.system import System
 ROBOT_GEO_START_POSITION = GeoPoint(lat=51.98333489813455, long=7.434242465994318)
 
 FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, long=7.434242765994318)
-FIELD_FIRST_ROW_END = GeoPoint(lat=51.98334192260392, long=7.434293309874038)
+FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=10, y=0))
 
 log = logging.getLogger('field_friend.testing')
 
