@@ -53,32 +53,32 @@ class field_object(Group):
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('obstacle_')]
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
-        if active_field:
-            outline = [point.cartesian().tuple for point in active_field.outline]
-            if len(outline) > 1:  # Make sure there are at least two points to form a segment
-                for i in range(len(outline)):
-                    start = outline[i]
-                    end = outline[(i + 1) % len(outline)]  # Loop back to the first point
-                    self.create_fence(start, end)
+        if active_field is None:
+            return
+        outline = [point.cartesian().tuple for point in active_field.outline]
+        if len(outline) > 1:  # Make sure there are at least two points to form a segment
+            for i in range(len(outline)):
+                start = outline[i]
+                end = outline[(i + 1) % len(outline)]  # Loop back to the first point
+                self.create_fence(start, end)
 
-            for obstacle in active_field.obstacles:
-                outline = [[point.x, point.y] for point in obstacle.cartesian()]
-                Extrusion(outline, 0.1).with_name(f'obstacle_{obstacle.id}').material('#B80F0A')
+        for obstacle in active_field.obstacles:
+            outline = [[point.x, point.y] for point in obstacle.cartesian()]
+            Extrusion(outline, 0.1).with_name(f'obstacle_{obstacle.id}').material('#B80F0A')
 
-            for row in active_field.rows:
-                if len(row.points) == 1:
-                    continue
-                else:
-                    row_points = row.cartesian()
-                    for i in range(len(row_points) - 1):
-                        spline = Spline.from_points(row_points[i], row_points[i + 1])
-                        Curve(
-                            [spline.start.x, spline.start.y, 0],
-                            [spline.control1.x, spline.control1.y, 0],
-                            [spline.control2.x, spline.control2.y, 0],
-                            [spline.end.x, spline.end.y, 0],
-                        ).material('#6c541e').with_name(f'row_{row.id}_{i}')
+        for row in active_field.rows:
+            if len(row.points) == 1:
+                continue
+            row_points = row.cartesian()
+            for i in range(len(row_points) - 1):
+                spline = Spline.from_points(row_points[i], row_points[i + 1])
+                Curve(
+                    [spline.start.x, spline.start.y, 0],
+                    [spline.control1.x, spline.control1.y, 0],
+                    [spline.control2.x, spline.control2.y, 0],
+                    [spline.end.x, spline.end.y, 0],
+                ).material('#6c541e').with_name(f'row_{row.id}_{i}')
 
-                for point in row_points:
-                    Cylinder(0.04, 0.04, 0.7).move(x=point.x, y=point.y, z=0.35).material(
-                        'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)
+            for point in row_points:
+                Cylinder(0.04, 0.04, 0.7).move(x=point.x, y=point.y, z=0.35).material(
+                    'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)
