@@ -46,12 +46,12 @@ class FieldCreator:
         self.row_sight.content = '<line x1="50%" y1="0" x2="50%" y2="100%" stroke="#6E93D6" stroke-width="6"/>'
         with self.content:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
-            ui.label('Drive the robot to the leftmost row of your new field, '
-                     'right before the first crop. '
-                     'The blue line should be in the center of the row.') \
-                .classes('text-lg text-center')
-            ui.label('Place the back center of the robot over the start point of the row.') \
-                .classes('text-lg text-center')
+            ui.label('1. Drive the robot to the leftmost row of your field.').classes(
+                'text-lg')
+            ui.label('2. Place the robot about 1 meter in front of the first crop.').classes(
+                'text-lg')
+            ui.label('• The blue line should be in the center of the row.') \
+                .classes('text-lg ps-8')
         self.next = self.get_infos
 
     def get_infos(self) -> None:
@@ -81,10 +81,10 @@ class FieldCreator:
         self.content.clear()
         with self.content:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
-            ui.label('Drive the robot to the end of the current row.') \
-                .classes('text-lg text-center')
-            ui.label('Place the back center of the robot over the end point of the row.') \
-                .classes('text-lg text-center')
+            ui.label('1. Drive the robot to the end of the current row.') \
+                .classes('text-lg')
+            ui.label('2. Place the robot about 1 meter after the last crop.') \
+                .classes('text-lg')
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
