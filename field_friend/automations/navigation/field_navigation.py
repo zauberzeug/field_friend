@@ -8,7 +8,7 @@ from nicegui import ui
 from rosys.geometry import Point
 
 from ..field import Field, Row
-from ..implements import Implement, WeedingImplement
+from ..implements import Implement
 from .follow_crops_navigation import FollowCropsNavigation
 from .straight_line_navigation import StraightLineNavigation
 
@@ -67,17 +67,15 @@ class FieldNavigation(FollowCropsNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
+        # TODO: allow starting from any row in a later PR
         # row = self.get_nearest_row()
         # self.row_index = self.field.rows.index(row)
         self.row_index = 0
-        # if self._state == State.FIELD_COMPLETED:
-        #     self.clear()
-        # else:
         self._state = State.APPROACHING_ROW_START
         self.plant_provider.clear()
 
-        await rosys.sleep(1)  # wait for GNSS to update
-        # self.automation_watcher.start_field_watch(self.field.outline)
+        await self._wait_for_gnss()
+        self.automation_watcher.start_field_watch(self.field.outline)
 
         self.log.info(f'Activating {self.implement.name}...')
         await self.implement.activate()
@@ -92,7 +90,7 @@ class FieldNavigation(FollowCropsNavigation):
         await self.implement.deactivate()
 
     def get_nearest_row(self) -> Row:
-        # currently not used, starts on row 0
+        # TODO: currently not used, starts on row 0
         # assert self.field is not None
         # assert self.gnss.device is not None
         # row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
@@ -143,30 +141,24 @@ class FieldNavigation(FollowCropsNavigation):
                 angle = rosys.helpers.eliminate_2pi(start + total_diff * i / num_steps)
                 yield angle
 
-        # TODO only drive to row if we are not on any rows and near the row start
         self.set_start_and_end_points()
         await self._wait_for_gnss()
         row_yaw = self.start_point.direction(self.end_point)
         safe_start_point = self.start_point.polar(-self.clear_row_distance, self.start_point.direction(self.end_point))
-
         # turn towards safe start point
         for angle in interpolate_angles(self.odometer.prediction.yaw, self.odometer.prediction.direction(safe_start_point), self._turn_step):
             await self.turn_to_yaw(angle)
             await self._wait_for_gnss()
-
         # drive to safe start point
         await self.driver.drive_to(safe_start_point)
         await self._wait_for_gnss()
-
         # turn towards row start
         for angle in interpolate_angles(self.odometer.prediction.yaw, row_yaw, self._turn_step):
             await self.turn_to_yaw(angle)
             await self._wait_for_gnss()
-
         # drive to row start
         await self.driver.drive_to(self.start_point)
         await self._wait_for_gnss()
-
         # adjust heading
         for angle in interpolate_angles(self.odometer.prediction.yaw, row_yaw, self._turn_step):
             await self.turn_to_yaw(angle)
@@ -213,7 +205,7 @@ class FieldNavigation(FollowCropsNavigation):
         self.row_index += 1
         next_state = State.APPROACHING_ROW_START
 
-        # TODO: remove later, when any direction is possible
+        # TODO: rework later, when starting at any row is possible
         if self.row_index >= len(self.field.rows):
             if self._loop:
                 self.row_index = 0
@@ -247,11 +239,6 @@ class FieldNavigation(FollowCropsNavigation):
         self._loop = data.get('loop', False)
         self._turn_step = data.get('turn_step', self.TURN_STEP)
 
-    def clear(self) -> None:
-        return
-        self._state = State.APPROACHING_ROW_START
-        self.row_index = 0
-
     def settings_ui(self) -> None:
         with ui.row():
             super().settings_ui()
@@ -267,34 +254,21 @@ class FieldNavigation(FollowCropsNavigation):
                 .classes('w-24') \
                 .bind_value(self, 'clear_row_distance') \
                 .tooltip(f'Safety distance to row in m (default: {self.CLEAR_ROW_DISTANCE:.2f})')
-        with ui.row():
-            with ui.column():
-                ui.label('FOR DEVELOPMENT ONLY').classes('text-bold')
-                self.developer_ui()
 
     def developer_ui(self) -> None:
         # super().developer_ui()
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
-        ui.label('').bind_text_from(self, 'start_point', lambda start_point: f'Start Point: {start_point}')
-        ui.label('').bind_text_from(self, 'end_point', lambda end_point: f'End Point: {end_point}')
-        ui.label('').bind_text_from(self.odometer, 'prediction', lambda prediction: f'Position: {prediction}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
         ui.number('Turn Step', step=1.0, min=1.0, max=180.0, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
-            .bind_value(self, '_turn_step', forward=lambda turn_step: np.deg2rad(turn_step), backward=lambda turn_step: np.rad2deg(turn_step))
+            .bind_value(self, '_turn_step', forward=np.deg2rad, backward=np.rad2deg)
 
     def _set_field(self, field_id: str) -> None:
         field = self.field_provider.get_field(field_id)
         if field is not None:
             self.field = field
-            # if isinstance(self.implement, WeedingImplement):
-            #     self.implement.cultivated_crop = field.crop
-            self.clear()
-        else:
-            if isinstance(self.implement, WeedingImplement):
-                self.implement.cultivated_crop = None
         self.field_provider.FIELDS_CHANGED.emit()
 
     def create_simulation(self, crop_distance: float = 0.5) -> None:
@@ -302,17 +276,10 @@ class FieldNavigation(FollowCropsNavigation):
         self.plant_provider.clear()
         if self.field is None:
             return
-        # for row in self.field.rows:
-        #     if len(row.points) < 2:
-        #         continue
-        #     cartesian = row.cartesian()
-        #     start = cartesian[0]
-        #     end = cartesian[-1]
         if self.start_point is not None and self.end_point is not None:
             start = self.start_point
             end = self.end_point
             length = start.distance(end)
-            # self.log.info(f'Adding plants from {start} to {end} (length {length:.1f} m)')
             crop_count = length / crop_distance
             for i in range(int(crop_count)):
                 p = start.interpolate(end, (crop_distance * i) / length)
