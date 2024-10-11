@@ -30,7 +30,6 @@ class FieldNavigation(FollowCropsNavigation):
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__(system, implement)
-
         self.name = 'Field Navigation'
         self.gnss = system.gnss
         self.bms = system.field_friend.bms
@@ -74,8 +73,7 @@ class FieldNavigation(FollowCropsNavigation):
         self._state = State.APPROACHING_ROW_START
         self.plant_provider.clear()
 
-        await self._wait_for_gnss()
-        self.automation_watcher.start_field_watch(self.field.outline)
+        # self.automation_watcher.start_field_watch(self.field.outline)
 
         self.log.info(f'Activating {self.implement.name}...')
         await self.implement.activate()
