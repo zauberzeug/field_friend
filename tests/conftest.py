@@ -4,6 +4,7 @@ from typing import AsyncGenerator, Generator
 
 import pytest
 import rosys
+from rosys.geometry import Point
 from rosys.testing import forward, helpers
 
 from field_friend import localization
@@ -42,14 +43,22 @@ def gnss(system: System) -> GnssSimulation:
 
 @pytest.fixture
 async def field(system: System) -> AsyncGenerator[Field, None]:
-    points = [[51.98317071260942, 7.43411239981148],
-              [51.98307173817015, 7.43425187239752],
-              [51.983141020300614, 7.434388662818431],
-              [51.98322844759802, 7.43424919023239]]
-    geo_points = [GeoPoint.from_list(point) for point in points]
-    f = system.field_provider.create_field(points=geo_points)
-    system.field_provider.create_row(f, points=[GeoPoint(lat=51.98318416921418, long=7.4342004020500285),
-                                                GeoPoint(lat=51.98312378543273, long=7.434291470886676)])
+    start_point = GeoPoint(lat=51.98318416921418, long=7.4342004020500285)
+    points = [
+        start_point.shifted(Point(x=-2, y=4)),
+        start_point.shifted(Point(x=-2, y=-4)),
+        start_point.shifted(Point(x=12, y=-4)),
+        start_point.shifted(Point(x=12, y=4)),
+    ]
+    f = system.field_provider.create_field(points=points)
+    system.field_provider.create_row(f, points=[start_point.shifted(Point(x=0.5, y=0.0)),
+                                                start_point.shifted(Point(x=9.5, y=0.0))])
+    system.field_provider.create_row(f, points=[start_point.shifted(Point(x=0.5, y=0.45)),
+                                                start_point.shifted(Point(x=9.5, y=0.45))])
+    system.field_provider.create_row(f, points=[start_point.shifted(Point(x=0.5, y=0.9)),
+                                                start_point.shifted(Point(x=9.5, y=0.9))])
+    system.field_provider.create_row(f, points=[start_point.shifted(Point(x=0.5, y=1.35)),
+                                                start_point.shifted(Point(x=9.5, y=1.35))])
     system.field_provider.active_field = f
     yield f
 
