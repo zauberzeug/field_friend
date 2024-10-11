@@ -20,12 +20,10 @@ class State(Enum):
     APPROACHING_ROW_START = auto()
     FOLLOWING_ROW = auto()
     ROW_COMPLETED = auto()
-    CLEAR_ROW = auto()
     FIELD_COMPLETED = auto()
 
 
 class FieldNavigation(FollowCropsNavigation):
-    CLEAR_ROW_DISTANCE = 0.5
     TURN_STEP = np.deg2rad(25.0)
 
     def __init__(self, system: 'System', implement: Implement) -> None:
@@ -42,7 +40,6 @@ class FieldNavigation(FollowCropsNavigation):
         self.end_point: Point | None = None
 
         self.field: Field | None = None
-        self.clear_row_distance: float = self.CLEAR_ROW_DISTANCE
         self._loop: bool = False
         self._turn_step = self.TURN_STEP
 
@@ -126,8 +123,6 @@ class FieldNavigation(FollowCropsNavigation):
             self._state = await self._run_approaching_row_start()
         elif self._state == State.FOLLOWING_ROW:
             self._state = await self._run_following_row(distance)
-        elif self._state == State.CLEAR_ROW:
-            self._state = await self._run_clear_row()
         elif self._state == State.ROW_COMPLETED:
             self._state = await self._run_row_completed()
 
@@ -141,23 +136,16 @@ class FieldNavigation(FollowCropsNavigation):
 
         self.set_start_and_end_points()
         await self._wait_for_gnss()
-        row_yaw = self.start_point.direction(self.end_point)
-        safe_start_point = self.start_point.polar(-self.clear_row_distance, self.start_point.direction(self.end_point))
-        # turn towards safe start point
-        for angle in interpolate_angles(self.odometer.prediction.yaw, self.odometer.prediction.direction(safe_start_point), self._turn_step):
-            await self.turn_to_yaw(angle)
-            await self._wait_for_gnss()
-        # drive to safe start point
-        await self.driver.drive_to(safe_start_point)
-        await self._wait_for_gnss()
+        target_yaw = self.odometer.prediction.direction(self.start_point)
         # turn towards row start
-        for angle in interpolate_angles(self.odometer.prediction.yaw, row_yaw, self._turn_step):
+        for angle in interpolate_angles(self.odometer.prediction.yaw, target_yaw, self._turn_step):
             await self.turn_to_yaw(angle)
             await self._wait_for_gnss()
         # drive to row start
         await self.driver.drive_to(self.start_point)
         await self._wait_for_gnss()
         # adjust heading
+        row_yaw = self.start_point.direction(self.end_point)
         for angle in interpolate_angles(self.odometer.prediction.yaw, row_yaw, self._turn_step):
             await self.turn_to_yaw(angle)
             await self._wait_for_gnss()
@@ -185,15 +173,9 @@ class FieldNavigation(FollowCropsNavigation):
             await self.implement.activate()
         if StraightLineNavigation._should_finish(self):  # pylint: disable=protected-access
             await self.implement.deactivate()
-            return State.CLEAR_ROW
+            return State.ROW_COMPLETED
         await super()._drive(distance)
         return State.FOLLOWING_ROW
-
-    async def _run_clear_row(self) -> State:
-        target = self.odometer.prediction.transform_pose(rosys.geometry.Pose(x=self.clear_row_distance, y=0))
-        await self.driver.drive_to(target)
-        await self._wait_for_gnss()
-        return State.ROW_COMPLETED
 
     async def _run_row_completed(self) -> State:
         assert self.field
@@ -222,7 +204,6 @@ class FieldNavigation(FollowCropsNavigation):
             'field_id': self.field.id if self.field else None,
             'row_index': self.row_index,
             'state': self._state.name,
-            'clear_row_distance': self.clear_row_distance,
             'loop': self._loop,
             'turn_step': self._turn_step,
         }
@@ -233,7 +214,6 @@ class FieldNavigation(FollowCropsNavigation):
         self.field = self.field_provider.get_field(field_id)
         self.row_index = data.get('row_index', 0)
         self._state = State[data.get('state', State.APPROACHING_ROW_START.name)]
-        self.clear_row_distance = data.get('clear_row_distance', self.CLEAR_ROW_DISTANCE)
         self._loop = data.get('loop', False)
         self._turn_step = data.get('turn_step', self.TURN_STEP)
 
@@ -247,11 +227,6 @@ class FieldNavigation(FollowCropsNavigation):
                 .classes('w-32') \
                 .tooltip('Select the field to work on')
             field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
-            ui.number('Clear Row Distance', step=0.05, min=0.01, max=5.0, format='%.2f', on_change=self.request_backup) \
-                .props('dense outlined') \
-                .classes('w-24') \
-                .bind_value(self, 'clear_row_distance') \
-                .tooltip(f'Safety distance to row in m (default: {self.CLEAR_ROW_DISTANCE:.2f})')
 
     def developer_ui(self) -> None:
         # super().developer_ui()
