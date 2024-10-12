@@ -353,16 +353,16 @@ async def test_complete_row(system: System, field: Field):
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    # await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
+    await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)  # pylint: disable=protected-access
     assert system.field_navigation.current_row == field.rows[0]
-    # assert system.field_navigation.automation_watcher.field_watch_active
+    assert system.field_navigation.automation_watcher.field_watch_active
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)  # pylint: disable=protected-access
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)  # pylint: disable=protected-access
     end_point = field.rows[0].points[1].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
-    # assert system.field_navigation.automation_watcher.field_watch_active
+    assert system.field_navigation.automation_watcher.field_watch_active
 
 
 @pytest.mark.skip('TODO: rework in a later PR')
