@@ -6,8 +6,16 @@ import rosys
 from nicegui import ui
 
 from ... import localization
-from ...hardware import (Axis, AxisD1, ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware,
-                         FlashlightPWMHardwareV2, Tornado)
+from ...hardware import (
+    Axis,
+    AxisD1,
+    ChainAxis,
+    FieldFriend,
+    FieldFriendHardware,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+)
 
 if TYPE_CHECKING:
     from field_friend.system import System
