@@ -70,7 +70,7 @@ class FieldNavigation(FollowCropsNavigation):
         self._state = State.APPROACHING_ROW_START
         self.plant_provider.clear()
 
-        # self.automation_watcher.start_field_watch(self.field.outline)
+        self.automation_watcher.start_field_watch(self.field.outline)
 
         self.log.info(f'Activating {self.implement.name}...')
         await self.implement.activate()
