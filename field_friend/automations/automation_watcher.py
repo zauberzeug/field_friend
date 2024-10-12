@@ -39,7 +39,6 @@ class AutomationWatcher:
 
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
-        rosys.on_repeat(self.ensure_robot_pose_updates_when_not_in_automation, 5.0)
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
         self.gnss.GNSS_CONNECTION_LOST.register(lambda: self.pause('GNSS connection lost'))
@@ -122,8 +121,3 @@ class AutomationWatcher:
             if self.automator.is_running:
                 self.stop('robot is outside of field boundaries')
                 self.field_watch_active = False
-
-    async def ensure_robot_pose_updates_when_not_in_automation(self) -> None:
-        if self.automator.is_running:
-            return
-        await self.gnss.update_robot_pose()
