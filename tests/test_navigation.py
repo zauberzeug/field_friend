@@ -247,13 +247,11 @@ async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.
 
 
 async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
-    end = rosys.geometry.Point(x=0, y=0)
     for i in range(20):
         x = i/10.0
         p = rosys.geometry.Point3d(x=x, y=(x/3) ** 3, z=0)
         p = system.odometer.prediction.transform3d(p)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
-        end = p.projection()
     system.gnss.min_seconds_between_updates = 1
     system.gnss.ensure_gnss = True
     system.current_navigation = system.follow_crops_navigation
@@ -261,8 +259,8 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     system.field_friend.wheels.slip_factor_right = 0.05
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.odometer.prediction.distance(end) < 0.2)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(25.0, abs=5.0)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.odometer.prediction.yaw_deg == pytest.approx(16.5, abs=0.2)
 
 
 async def test_approaching_first_row(system: System, field: Field):

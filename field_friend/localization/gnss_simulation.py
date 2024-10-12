@@ -1,5 +1,6 @@
 from typing import Optional
 
+import numpy as np
 import rosys
 from rosys.geometry import Pose
 
@@ -27,7 +28,7 @@ class GnssSimulation(Gnss):
             new_position = GeoPoint(lat=51.983159, long=7.434212)
         else:
             new_position = localization.reference.shifted(pose.point)
-        record = GNSSRecord(timestamp=pose.time, location=new_position)
+        record = GNSSRecord(timestamp=pose.time, location=new_position, heading=-np.rad2deg(pose.yaw))
         record.gps_qual = self.gps_quality
         record.mode = self.mode
         await rosys.sleep(0.1)  # NOTE simulation does not be so fast and only eats a lot of cpu time
