@@ -345,7 +345,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
         odometry_label.text = str(system.odometer.prediction)
-        update_label.text = f'{timedelta(seconds=rosys.time() - system.gnss.last_pose_update)}'
+        update_label.text = f'{timedelta(seconds=rosys.time() - system.gnss._last_gnss_pose.time)}'  # pylint: disable=protected-access
 
     ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page

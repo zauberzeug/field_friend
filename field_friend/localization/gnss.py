@@ -57,11 +57,11 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.device: str | None = None
         self.antenna_offset = antenna_offset
         self.observed_poses: deque[rosys.geometry.Pose] = deque(maxlen=self.MAX_POSES)
-        self.last_pose_update = rosys.time()
         self.needed_poses: int = self.NEEDED_POSES
         self.max_distance_to_reference: float = self.MAX_DISTANCE_TO_REFERENCE
         self.reference_alert_dialog: ui.dialog
-        self._last_robot_pose = self.odometer.prediction
+        self._last_odometer_pose = self.odometer.prediction
+        self._last_gnss_pose = self.odometer.prediction
 
         self.needs_backup = False
         rosys.on_repeat(self.check_gnss, 0.01)
@@ -104,11 +104,11 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         pass
 
     async def _on_rtk_fix(self) -> None:
-        distance = self._last_robot_pose.distance(self.odometer.prediction)
-        yaw_difference = abs(rosys.helpers.angle(self._last_robot_pose.yaw, self.odometer.prediction.yaw))
+        distance = self._last_odometer_pose.distance(self.odometer.prediction)
+        yaw_difference = abs(rosys.helpers.angle(self._last_odometer_pose.yaw, self.odometer.prediction.yaw))
         if abs(distance) > 0.0001 or yaw_difference > np.deg2rad(0.01):  # if robot does not stand still
             self.observed_poses.clear()
-            self._last_robot_pose = self.odometer.prediction
+            self._last_odometer_pose = self.odometer.prediction
             return
         assert self.current is not None
         if localization.reference.lat == 0 and localization.reference.long == 0:
@@ -134,9 +134,9 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         x = np.mean([pose.point.x for pose in self.observed_poses])
         y = np.mean([pose.point.y for pose in self.observed_poses])
         yaw = np.mean([pose.yaw for pose in self.observed_poses])
-        pose = rosys.geometry.Pose(x=float(x), y=float(y), yaw=float(yaw), time=rosys.time())
-        self.ROBOT_POSE_LOCATED.emit(pose)
-        self.last_pose_update = rosys.time()
+        self._last_gnss_pose = rosys.geometry.Pose(x=float(x), y=float(
+            y), yaw=float(yaw), time=self.observed_poses[-1].time)
+        self.ROBOT_POSE_LOCATED.emit(self._last_gnss_pose)
         self.observed_poses.clear()
 
     def backup(self) -> dict:
