@@ -10,7 +10,9 @@ from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Implement, Recorder
 from field_friend.automations.navigation import StraightLineNavigation
-from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
+from field_friend.automations.navigation.field_navigation import (
+    State as FieldNavigationState,
+)
 from field_friend.localization import GnssSimulation
 
 
@@ -264,7 +266,6 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     assert system.odometer.prediction.yaw_deg == pytest.approx(16.5, abs=0.2)
 
 
-@pytest.mark.skip('will work with the upcoming field navigation - skiped for now')
 async def test_approaching_first_row(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -318,7 +319,6 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-@pytest.mark.skip('will work with the upcoming field navigation - skiped for now')
 async def test_approaching_first_row_when_outside_of_field(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01

@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import binding, ui
 
-from field_friend.interface.components.robot_scene import robot_scene
-from field_friend.system import System
+from ..components import camera_card, leaflet_map, operation, robot_scene
 
-from ..components import camera_card, leaflet_map, operation
+if TYPE_CHECKING:
+    from ...system import System
 
 
 class main_page():
