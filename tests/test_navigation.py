@@ -267,6 +267,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
 
 
 async def test_approaching_first_row(system: System, field: Field):
+    # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field = field
@@ -275,12 +276,12 @@ async def test_approaching_first_row(system: System, field: Field):
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
     await forward(until=lambda: system.current_implement.is_active)
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)  # pylint: disable=protected-access
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     assert system.field_navigation.current_row == field.rows[0]
     assert system.field_navigation.automation_watcher.field_watch_active
     assert system.automator.is_running
     assert system.field_navigation.current_row == field.rows[0]
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)  # pylint: disable=protected-access
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
     start_point = field.rows[0].points[0].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(start_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(start_point.y, abs=0.05)
@@ -288,6 +289,7 @@ async def test_approaching_first_row(system: System, field: Field):
 
 
 async def test_approaching_first_row_from_other_side(system: System, field: Field):
+    # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     start_point = field.rows[0].points[-1].cartesian()
@@ -308,18 +310,19 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
     await forward(until=lambda: system.current_implement.is_active)
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)  # pylint: disable=protected-access
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     assert system.field_navigation.current_row == field.rows[0]
     assert system.field_navigation.automation_watcher.field_watch_active
     assert system.automator.is_running
     assert system.field_navigation.current_row == field.rows[0]
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)  # pylint: disable=protected-access
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
     assert system.odometer.prediction.point.x == pytest.approx(start_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(start_point.y, abs=0.05)
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
 async def test_approaching_first_row_when_outside_of_field(system: System, field: Field):
+    # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     point_outside = rosys.geometry.Point(x=-10, y=0)
@@ -340,13 +343,14 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     await forward(until=lambda: system.current_implement.is_active)
     assert system.field_navigation.current_row == field.rows[0]
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START  # pylint: disable=protected-access
-    assert system.odometer.prediction.point.x == pytest.approx(-3.1, abs=0.5)
+    assert system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START
+    assert system.odometer.prediction.point.x == pytest.approx(-10, abs=1.0)
     assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.5)
     assert not system.automator.is_running, 'should have been stopped because robot is outside of field boundaries'
 
 
 async def test_complete_row(system: System, field: Field):
+    # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field = field
@@ -354,11 +358,11 @@ async def test_complete_row(system: System, field: Field):
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)  # pylint: disable=protected-access
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     assert system.field_navigation.current_row == field.rows[0]
     assert system.field_navigation.automation_watcher.field_watch_active
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)  # pylint: disable=protected-access
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)  # pylint: disable=protected-access
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     end_point = field.rows[0].points[1].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
@@ -367,6 +371,7 @@ async def test_complete_row(system: System, field: Field):
 
 @pytest.mark.skip('TODO: rework in a later PR')
 async def test_resuming_field_navigation_after_automation_stop(system: System, field: Field):
+    # pylint: disable=protected-access
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
     system.automator.start()
@@ -374,25 +379,26 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     point = rosys.geometry.Point(x=1.54, y=-6.1)
     await forward(x=point.x, y=point.y, tolerance=0.01)  # drive until we are on first row
     await forward(2)
-    assert system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW  # pylint: disable=protected-access
+    assert system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW
     system.automator.stop(because='test')
     await forward(2)
     system.automator.start()
     await forward(5)
-    assert system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW  # pylint: disable=protected-access
+    assert system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW
     assert not system.plant_locator.is_paused
     await forward(20)
     assert system.odometer.prediction.point.distance(point) > 0.1
 
 
 async def test_complete_field(system: System, field: Field):
+    # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field = field
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=500)  # pylint: disable=protected-access
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=500)
     assert system.automator.is_stopped
     end_point = field.rows[3].points[0].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)

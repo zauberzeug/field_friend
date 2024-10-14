@@ -25,7 +25,7 @@ class State(Enum):
 
 class FieldNavigation(FollowCropsNavigation):
     TURN_STEP = np.deg2rad(25.0)
-    WAITING_TIME = 3.0
+    MAX_GNSS_WAITING_TIME = 3.0
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__(system, implement)
@@ -43,7 +43,7 @@ class FieldNavigation(FollowCropsNavigation):
         self.field: Field | None = None
         self._loop: bool = False
         self._turn_step = self.TURN_STEP
-        self._waiting_time = self.WAITING_TIME
+        self._max_gnss_waiting_time = self.MAX_GNSS_WAITING_TIME
 
     @property
     def current_row(self) -> Row:
@@ -137,20 +137,20 @@ class FieldNavigation(FollowCropsNavigation):
                 yield angle
 
         self.set_start_and_end_points()
-        await rosys.sleep(self._waiting_time)
+        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         target_yaw = self.odometer.prediction.direction(self.start_point)
         # turn towards row start
         for angle in interpolate_angles(self.odometer.prediction.yaw, target_yaw, self._turn_step):
             await self.turn_to_yaw(angle)
-            await rosys.sleep(self._waiting_time)
+            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # drive to row start
         await self.driver.drive_to(self.start_point)
-        await rosys.sleep(self._waiting_time)
+        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # adjust heading
         row_yaw = self.start_point.direction(self.end_point)
         for angle in interpolate_angles(self.odometer.prediction.yaw, row_yaw, self._turn_step):
             await self.turn_to_yaw(angle)
-            await rosys.sleep(self._waiting_time)
+            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
 
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
@@ -202,7 +202,7 @@ class FieldNavigation(FollowCropsNavigation):
             'state': self._state.name,
             'loop': self._loop,
             'turn_step': self._turn_step,
-            'waiting_time': self._waiting_time,
+            'max_gnss_waiting_time': self._max_gnss_waiting_time,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -213,7 +213,7 @@ class FieldNavigation(FollowCropsNavigation):
         self._state = State[data.get('state', State.APPROACHING_ROW_START.name)]
         self._loop = data.get('loop', False)
         self._turn_step = data.get('turn_step', self.TURN_STEP)
-        self._waiting_time = data.get('waiting_time', self.WAITING_TIME)
+        self._max_gnss_waiting_time = data.get('max_gnss_waiting_time', self.MAX_GNSS_WAITING_TIME)
 
     def settings_ui(self) -> None:
         with ui.row():
@@ -238,7 +238,7 @@ class FieldNavigation(FollowCropsNavigation):
         ui.number('Turn Step', step=0.1, min=0.1, max=20.0, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
-            .bind_value(self, '_waiting_time')
+            .bind_value(self, '_max_gnss_waiting_time')
 
     def _set_field(self, field_id: str) -> None:
         field = self.field_provider.get_field(field_id)
