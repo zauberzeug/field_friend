@@ -69,6 +69,15 @@ def configure():
                 'filename': PATH / 'communication.log',
                 'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
                 'backupCount': 50  # max 500 mb of logs
+            },
+            'batteryfile': {
+                'level': 'DEBUG',
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'default',
+                'filters': ['package_path_filter'],
+                'filename': PATH / 'battery.log',
+                'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
+                'backupCount': 50  # max 500 mb of logs
             }
         },
         'loggers': {
@@ -79,6 +88,11 @@ def configure():
             },
             'rosys.communication': {
                 'handlers': ['communicationfile'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+            'field_friend.bms': {
+                'handlers': ['batteryfile'],
                 'level': 'INFO',
                 'propagate': False,
             },

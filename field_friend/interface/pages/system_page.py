@@ -9,7 +9,7 @@ import rosys
 from nicegui import ui
 
 from ...hardware import system_status
-from ...hardware.log_configuration import PATH as LOG_PATH
+from ...log_configuration import PATH as LOG_PATH
 
 if TYPE_CHECKING:
     from system import System
