@@ -6,7 +6,6 @@ import rosys
 from geographiclib.geodesic import Geodesic
 from rosys.geometry import Point
 
-from .. import localization
 from ..localization import GeoPoint, Gnss
 from . import Field, FieldObstacle, Row
 
@@ -18,11 +17,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.field_provider')
         self.gnss = gnss
         self.fields: list[Field] = []
+        self.needs_backup: bool = False
 
         self.FIELDS_CHANGED = rosys.event.Event()
         """The dict of fields has changed."""
-
-        self.needs_backup: bool = False
 
     def get_field(self, id_: str | None) -> Field | None:
         for field in self.fields:

@@ -16,6 +16,7 @@ def test_geometry_computation(system: System):
     assert len(field_creator.field.rows) == 20
     outline = field_creator.field.outline
     assert len(outline) == 4
+    outline = [point.cartesian() for point in outline]
     assert outline[0].x == pytest.approx(-field_creator.padding)
     assert outline[0].y == pytest.approx(-field_creator.padding_bottom)
     assert outline[1].x == pytest.approx(-field_creator.padding)

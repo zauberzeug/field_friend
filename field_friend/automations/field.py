@@ -36,7 +36,7 @@ class Field(GeoPointCollection):
 
     @property
     def outline(self) -> list[rosys.geometry.Point]:
-        return self.cartesian()
+        return self.points
 
     @property
     def outline_as_tuples(self) -> list[tuple[float, float]]:
