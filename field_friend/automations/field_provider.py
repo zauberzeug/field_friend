@@ -12,6 +12,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.log = logging.getLogger('field_friend.field_provider')
         self.gnss = gnss
         self.fields: list[Field] = []
+        self.needs_backup: bool = False
 
         self.FIELDS_CHANGED = rosys.event.Event()
         """The dict of fields has changed."""

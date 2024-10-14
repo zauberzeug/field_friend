@@ -49,7 +49,7 @@ def gnss(system: System) -> GnssSimulation:
 @pytest.fixture
 async def field(system: System) -> AsyncGenerator[Field, None]:
     f = system.field_provider.create_field(Field(id=str(uuid4()), name='Field 1', first_row_start=FIELD_FIRST_ROW_START,
-                                           first_row_end=FIELD_FIRST_ROW_END, row_spacing=0.5, row_number=10))
+                                           first_row_end=FIELD_FIRST_ROW_END, row_spacing=0.45, row_number=10))
     yield f
 
 
