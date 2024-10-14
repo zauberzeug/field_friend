@@ -54,7 +54,7 @@ def test_field_rows(system: System, field: Field):
         shift = i * field.row_spacing
         assert len(r.points) == 2
         print(i)
-        assert r.points[0].lat == pytest.approx(field.first_row_start.lat, 0.000000001)
-        assert r.points[0].long == pytest.approx(field.first_row_start.shifted(Point(x=0, y=-shift)).long, 0.000000001)
-        assert r.points[1].lat == pytest.approx(field.first_row_end.lat, 0.000000001)
-        assert r.points[1].long == pytest.approx(field.first_row_end.shifted(Point(x=0, y=-shift)).long, 0.000000001)
+        assert r.points[0].lat == pytest.approx(field.first_row_start.lat, 0.000_000_001)
+        assert r.points[0].long == pytest.approx(field.first_row_start.shifted(Point(x=0, y=-shift)).long, 0.000_000_001)
+        assert r.points[1].lat == pytest.approx(field.first_row_end.lat, 0.000_000_001)
+        assert r.points[1].long == pytest.approx(field.first_row_end.shifted(Point(x=0, y=-shift)).long, 0.000_000_001)
