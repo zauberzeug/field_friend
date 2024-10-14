@@ -45,7 +45,6 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
-            await self.gnss.update_robot_pose()
             if self.gnss.check_distance_to_reference():
                 raise WorkflowException('reference to far away from robot')
             self.start_position = self.odometer.prediction.point
@@ -53,7 +52,6 @@ class Navigation(rosys.persistence.PersistentModule):
                 self.create_simulation()
             self.log.info('Navigation started')
             while not self._should_finish():
-                await self.gnss.update_robot_pose()
                 distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
                 if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
                     await self._drive(self.DEFAULT_DRIVE_DISTANCE)
@@ -79,7 +77,6 @@ class Navigation(rosys.persistence.PersistentModule):
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects = []
         self.log.info('clearing plant provider')
-        await self.gnss.update_robot_pose()
         return True
 
     async def finish(self) -> None:
