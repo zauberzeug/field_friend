@@ -15,31 +15,26 @@ if TYPE_CHECKING:
     from system import System
 
 
-class system_page:
+class bms_page:
 
     def __init__(self, page_wrapper, system: 'System') -> None:
         self.system = system
 
-        @ui.page('/system')
+        @ui.page('/bms')
         def page() -> None:
             page_wrapper()
             self.content()
 
     def content(self) -> None:
-        with ui.row().classes('w-full gap-0'):
-            with ui.column().classes('col-4'):
-                self._overview_section()
-                self._bms_section()
         with ui.row().classes('w-full'):
             with ui.column().classes('col-12'):
                 self._bms_history_section()
-
-    def _overview_section(self) -> None:
-        ui.label('Overview').classes('text-2xl')
-        system_status(self.system)
+        with ui.row().classes('w-full gap-0'):
+            with ui.column().classes('col-4'):
+                self._bms_section()
 
     def _bms_section(self) -> None:
-        ui.label('BMS').classes('text-2xl')
+        ui.label('BMS Overview').classes('text-2xl')
 
         field_friend = self.system.field_friend
         bms = field_friend.bms
