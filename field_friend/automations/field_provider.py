@@ -1,17 +1,12 @@
 import logging
-import uuid
-from typing import Any
 
 import rosys
-from geographiclib.geodesic import Geodesic
-from rosys.geometry import Point
 
-from ..localization import GeoPoint, Gnss
-from . import Field, FieldObstacle, Row
+from ..localization import Gnss
+from . import Field
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
-
     def __init__(self, gnss: Gnss) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.field_provider')
@@ -22,206 +17,51 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED = rosys.event.Event()
         """The dict of fields has changed."""
 
-    def get_field(self, id_: str | None) -> Field | None:
-        for field in self.fields:
-            if field.id == id_:
-                return field
-        return None
+        self.FIELDS_CHANGED.register(self.refresh_fields)
 
     def backup(self) -> dict:
         return {
-            'fields': rosys.persistence.to_dict(self.fields),
+            'fields': {f.id: f.to_dict() for f in self.fields},
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        fields_data = data.get('fields', [])
-        rosys.persistence.replace_list(self.fields, Field, fields_data)
-
-        # NOTE we had some changes in persistence; this code transforms old to new format
-        for i, f in enumerate(self.fields):
-            outline = fields_data[i].get('outline_wgs84', [])
-            for coords in outline:
-                f.points.append(GeoPoint(lat=coords[0], long=coords[1]))
-            rows = fields_data[i].get('rows', [])
-            for j, row in enumerate(rows):
-                for point in row.get('points_wgs84', []):
-                    f.rows[j].points.append(GeoPoint(lat=point[0], long=point[1]))
+    def restore(self, data: dict[str, dict]) -> None:
+        fields_data: dict[str, dict] = data.get('fields', {})
+        for field in list(fields_data.values()):
+            new_field = Field.from_dict(field)
+            self.fields.append(new_field)
+        self.FIELDS_CHANGED.emit()
 
     def invalidate(self) -> None:
         self.request_backup()
         self.FIELDS_CHANGED.emit()
 
-    def create_field(self, points: list[GeoPoint] | None = None) -> Field:
-        if points is None:
-            points = []
-        new_id = str(uuid.uuid4())
-        field = Field(id=f'{new_id}', name=f'field_{len(self.fields)+1}', points=points)
-        self.fields.append(field)
-        self.invalidate()
-        return field
+    def get_field(self, id_: str | None) -> Field | None:
+        return next((f for f in self.fields if f.id == id_), None)
 
-    def remove_field(self, field: Field) -> None:
-        self.fields.remove(field)
-        self.FIELDS_CHANGED.emit()
+    def create_field(self, new_field: Field) -> Field:
+        # TODO: delete the clear when we want to save multiple fields again
+        self.fields.clear()
+        self.fields.append(new_field)
         self.invalidate()
+        return new_field
 
     def clear_fields(self) -> None:
         self.fields.clear()
-        self.FIELDS_CHANGED.emit()
         self.invalidate()
 
-    def create_obstacle(self, field: Field, points: list[GeoPoint] | None = None) -> FieldObstacle:
-        if points is None:
-            points = []
-        obstacle = FieldObstacle(id=f'{str(uuid.uuid4())}', name=f'obstacle_{len(field.obstacles)+1}', points=points)
-        field.obstacles.append(obstacle)
-        self.invalidate()
-        return obstacle
-
-    def remove_obstacle(self, field: Field, obstacle: FieldObstacle) -> None:
-        field.obstacles.remove(obstacle)
-        self.invalidate()
-
-    def create_row(self, field: Field, points: list[GeoPoint] | None = None) -> Row:
-        if points is None:
-            points = []
-        row = Row(id=f'{str(uuid.uuid4())}', name=f'row_{len(field.rows)+1}', points=points)
-        field.rows.append(row)
-        self.invalidate()
-        return row
-
-    def remove_row(self, field: Field, row: Row) -> None:
-        field.rows.remove(row)
-        self.invalidate()
+    def delete_field(self, id_: str) -> None:
+        field = self.get_field(id_)
+        if field:
+            self.fields.remove(field)
+            self.invalidate()
 
     def is_polygon(self, field: Field) -> bool:
         try:
-            polygon = field.shapely_polygon
+            polygon = field.shapely_polygon()
             return polygon.is_valid and polygon.geom_type == 'Polygon'
         except Exception:
             return False
 
-    def sort_rows(self, field: Field) -> None:
-        # TODO currently the function does only sort even fields where rows have the same length
-        # the function need to be extended for more special cases
-        if len(field.rows) <= 1:
-            rosys.notify(f'There are not enough rows that can be sorted.', type='warning')
-            return
-
-        for row in field.rows:
-            if len(row.points) < 1:
-                rosys.notify(f'Row {row.name} has to few points. Sorting not possible.', type='warning')
-                return
-
-        def get_centroid(row: Row) -> Point:
-            return row.shapely_line.centroid
-
-        reference_centroid = get_centroid(field.rows[0])
-
-        def get_distance(row: Row, direction: str):
-            row_centroid = get_centroid(row)
-            distance = Geodesic.WGS84.Inverse(reference_centroid.x, reference_centroid.y,
-                                              row_centroid.x, row_centroid.y)["s12"]
-            if direction == "x" and reference_centroid.x > row_centroid.x:
-                distance *= -1
-            elif direction == "y" and reference_centroid.y > row_centroid.y:
-                distance *= -1
-            print(f'{row.name} has a dist of {distance}')
-
-            return distance
-
-        field_index = self.fields.index(field)
-        p = field.rows[-1].points[0]
-        direction = "x" if abs(reference_centroid.x - p.lat) > abs(reference_centroid.y - p.long) else "y"
-        self.fields[field_index].rows = sorted(field.rows, key=lambda row: get_distance(row, direction=direction))
-        self.FIELDS_CHANGED.emit()
-
-    async def add_field_point(self, field: Field, point: GeoPoint | None = None, new_point: GeoPoint | None = None) -> None:
-        assert self.gnss.current is not None
-        positioning = self.gnss.current.location
-        if positioning is None or positioning.lat == 0 or positioning.long == 0:
-            rosys.notify("No GNSS position.")
-            return
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
-            rosys.notify("GNSS position is not accurate enough.")
-            return
-        new_point = positioning
-        if point is not None:
-            index = field.points.index(point)
-            field.points[index] = new_point
-        else:
-            field.points.append(new_point)
-        self.invalidate()
-
-    def remove_field_point(self, field: Field, point: GeoPoint | None = None) -> None:
-        if point is not None:
-            index = field.points.index(point)
-            del field.points[index]
-        elif field.points:
-            del field.points[-1]
-        self.invalidate()
-
-    def add_obstacle_point(self, field: Field, obstacle: FieldObstacle, point: GeoPoint | None = None, new_point: GeoPoint | None = None) -> None:
-        if new_point is None:
-            assert self.gnss.current is not None
-            positioning = self.gnss.current.location
-            if positioning is None or positioning.lat == 0 or positioning.long == 0:
-                rosys.notify("No GNSS position.")
-                return
-            if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
-                rosys.notify("GNSS position is not accurate enough.")
-                return
-            new_point = positioning
-        if point is not None:
-            index = obstacle.points.index(point)
-            obstacle.points[index] = new_point
-        else:
-            obstacle.points.append(new_point)
-        self.invalidate()
-
-    def remove_obstacle_point(self, obstacle: FieldObstacle, point: GeoPoint | None = None) -> None:
-        if obstacle.points:
-            if point is not None:
-                index = obstacle.points.index(point)
-                del obstacle.points[index]
-            else:
-                del obstacle.points[-1]
-            self.invalidate()
-
-    def add_row_point(self, field: Field, row: Row, point: GeoPoint | None = None, new_point: GeoPoint | None = None) -> None:
-        if new_point is None:
-            assert self.gnss.current is not None
-            positioning = self.gnss.current.location
-            if positioning is None or positioning.lat == 0 or positioning.long == 0:
-                rosys.notify("No GNSS position.")
-                return
-            if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
-                rosys.notify("GNSS position is not accurate enough.")
-                return
-            new_point = positioning
-        if point is not None:
-            index = row.points.index(point)
-            row.points[index] = new_point
-        else:
-            row.points.append(new_point)
-        self.invalidate()
-
-    def remove_row_point(self, row: Row, point: GeoPoint | None = None) -> None:
-        if row.points:
-            if point is not None:
-                index = row.points.index(point)
-                del row.points[index]
-            else:
-                del row.points[-1]
-            self.invalidate()
-
-    def move_row(self, field: Field, row: Row, next: bool = False) -> None:
-        index = field.rows.index(row)
-        if next:
-            if index == len(field.rows)-1:
-                field.rows[index], field.rows[0] = field.rows[0], field.rows[index]
-            else:
-                field.rows[index], field.rows[index+1] = field.rows[index+1], field.rows[index]
-        else:
-            field.rows[index], field.rows[index-1] = field.rows[index-1], field.rows[index]
-        self.invalidate()
+    def refresh_fields(self) -> None:
+        for field in self.fields:
+            field.refresh()

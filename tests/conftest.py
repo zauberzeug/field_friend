@@ -1,6 +1,7 @@
 
 import logging
 from typing import AsyncGenerator, Generator
+from uuid import uuid4
 
 import pytest
 import rosys
@@ -9,10 +10,14 @@ from rosys.testing import forward, helpers
 
 from field_friend import localization
 from field_friend.automations import Field
+from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
-ROBOT_GEO_START_POSITION = GeoPoint(lat=51.983173401171236, long=7.434163443756093)
+ROBOT_GEO_START_POSITION = GeoPoint(lat=51.98333489813455, long=7.434242465994318)
+
+FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, long=7.434242765994318)
+FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=10, y=0))
 
 log = logging.getLogger('field_friend.testing')
 
@@ -43,24 +48,20 @@ def gnss(system: System) -> GnssSimulation:
 
 @pytest.fixture
 async def field(system: System) -> AsyncGenerator[Field, None]:
-    start_point = GeoPoint(lat=51.98318416921418, long=7.4342004020500285)
-    points = [
-        start_point.shifted(Point(x=-2, y=4)),
-        start_point.shifted(Point(x=-2, y=-4)),
-        start_point.shifted(Point(x=12, y=-4)),
-        start_point.shifted(Point(x=12, y=4)),
-    ]
-    f = system.field_provider.create_field(points=points)
-    system.field_provider.create_row(f, points=[start_point.shifted(Point(x=0.5, y=0.0)),
-                                                start_point.shifted(Point(x=9.5, y=0.0))])
-    system.field_provider.create_row(f, points=[start_point.shifted(Point(x=0.5, y=0.45)),
-                                                start_point.shifted(Point(x=9.5, y=0.45))])
-    system.field_provider.create_row(f, points=[start_point.shifted(Point(x=0.5, y=0.9)),
-                                                start_point.shifted(Point(x=9.5, y=0.9))])
-    system.field_provider.create_row(f, points=[start_point.shifted(Point(x=0.5, y=1.35)),
-                                                start_point.shifted(Point(x=9.5, y=1.35))])
-    system.field_provider.active_field = f
+    f = system.field_provider.create_field(Field(id=str(uuid4()), name='Field 1', first_row_start=FIELD_FIRST_ROW_START,
+                                           first_row_end=FIELD_FIRST_ROW_END, row_spacing=0.45, row_number=10))
     yield f
+
+
+@pytest.fixture
+def field_creator(system: System) -> FieldCreator:
+    fc = FieldCreator(system)
+    fc.first_row_start = FIELD_FIRST_ROW_START
+    fc.row_spacing = 0.5
+    fc.row_number = 10
+    fc.confirm_geometry()
+    fc.first_row_end = FIELD_FIRST_ROW_END
+    return fc
 
 
 @pytest.fixture

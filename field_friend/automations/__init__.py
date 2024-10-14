@@ -2,7 +2,7 @@
 from .automation_watcher import AutomationWatcher
 from .battery_watcher import BatteryWatcher
 from .coverage_planer import CoveragePlanner
-from .field import Field, FieldObstacle, Row
+from .field import Field, Row
 from .field_provider import FieldProvider
 from .implements.implement import Implement
 from .kpi_provider import KpiProvider
@@ -18,7 +18,6 @@ __all__ = [
     'CoveragePlanner',
     'DetectorError',
     'Field',
-    'FieldObstacle',
     'FieldProvider',
     'Implement',
     'Path',
