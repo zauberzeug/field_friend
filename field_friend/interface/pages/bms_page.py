@@ -8,7 +8,7 @@ import pandas as pd
 import rosys
 from nicegui import ui
 
-from ...hardware import system_status
+from ...hardware import bms_status
 from ...log_configuration import PATH as LOG_PATH
 
 if TYPE_CHECKING:
@@ -62,6 +62,8 @@ class bms_page:
 
     def _bms_history_section(self) -> None:
         ui.label('BMS History').classes('text-2xl')
+
+        bms_status(self.system)
 
         log_lines = []
         for path in LOG_PATH.glob('battery.log*'):
