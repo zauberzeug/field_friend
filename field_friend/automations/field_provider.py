@@ -11,7 +11,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
         super().__init__()
         self.log = logging.getLogger('field_friend.field_provider')
         self.gnss = gnss
-        self.needs_backup: bool = False
         self.fields: list[Field] = []
 
         self.FIELDS_CHANGED = rosys.event.Event()

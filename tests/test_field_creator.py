@@ -4,7 +4,7 @@ from field_friend import System
 from field_friend.interface.components.field_creator import FieldCreator
 
 
-def test_geometry_computation(system: System, field_creator: FieldCreator):
+def test_field_creation(system: System, field_creator: FieldCreator):
     assert len(system.field_provider.fields) == 0
     field_creator.next()
     assert len(system.field_provider.fields) == 1
@@ -16,7 +16,7 @@ def test_geometry_computation(system: System, field_creator: FieldCreator):
     assert len(system.field_provider.fields[0].rows) == 10
 
 
-def test_wrong_row_spacing(system: System, field_creator: FieldCreator):
+def test_field_creation_wrong_row_spacing(system: System, field_creator: FieldCreator):
     field_creator.row_spacing = 0
     assert len(system.field_provider.fields) == 0
     field_creator.next()
