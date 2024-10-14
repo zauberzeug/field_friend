@@ -37,10 +37,6 @@ class field_object(Group):
         Box(length, height, depth).move(x=center_x, y=center_y,
                                         z=height / 2 + 0.2).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
         Box(length, height, depth).move(x=center_x, y=center_y,
-                                        << << << < HEAD
-                                        # Convert angle from radians to degrees
-                                        == == == =
-                                        >>>>>> > main
                                         z=height / 2 + 0.5).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
         Box(length, height, depth).move(x=center_x, y=center_y,
                                         z=height / 2 + 0.8).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
