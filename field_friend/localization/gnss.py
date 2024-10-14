@@ -32,7 +32,7 @@ class GNSSRecord:
 
 
 class Gnss(rosys.persistence.PersistentModule, ABC):
-    NEEDED_POSES: int = 10
+    MIN_POSES: int = 5
     MAX_POSES: int = 30
     MAX_DISTANCE_TO_REFERENCE: float = 5000.0
 
