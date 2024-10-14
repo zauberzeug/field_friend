@@ -25,7 +25,7 @@ class State(Enum):
 
 class FieldNavigation(FollowCropsNavigation):
     TURN_STEP = np.deg2rad(25.0)
-    MAX_GNSS_WAITING_TIME = 3.0
+    MAX_GNSS_WAITING_TIME = 10.0
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__(system, implement)
