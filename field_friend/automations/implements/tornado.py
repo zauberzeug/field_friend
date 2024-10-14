@@ -1,4 +1,6 @@
 
+import asyncio
+
 from collections import deque
 from typing import TYPE_CHECKING, Any
 
@@ -21,6 +23,49 @@ class Tornado(WeedingImplement):
         self.drill_between_crops: bool = False
         self.field_friend = system.field_friend
 
+        self.move_y_while_driving = False
+        self.move_knifes_while_driving = False
+
+        self.y_axis_move_task = None
+        self.knife_reset_task = None
+
+    async def _reset_knifes(self) -> None:
+        await self.field_friend.z_axis.turn_knifes_to(0)
+        await rosys.sleep(0.5)
+        await self.field_friend.z_axis.turn_knifes_to(self.tornado_angle)
+
+    async def finish(self) -> None:
+        await super().finish()
+        if self.y_axis_move_task:
+            try:
+                self.y_axis_move_task.cancel()
+                self.y_axis_move_task = None
+            except:
+                pass
+        if self.knife_reset_task:
+            try:
+                self.knife_reset_task.cancel()
+                self.knife_reset_task = None
+            except:
+                pass
+        await self.field_friend.z_axis.turn_knifes_to(0)
+
+    async def prepare(self) -> None:
+        res = await super().prepare()
+        if self.y_axis_move_task:
+            try:
+                self.y_axis_move_task.cancel()
+                self.y_axis_move_task = None
+            except:
+                res = False
+        if self.knife_reset_task:
+            try:
+                self.knife_reset_task.cancel()
+                self.knife_reset_task = None
+            except:
+                res = False
+        return res
+
     async def start_workflow(self) -> None:
         await super().start_workflow()
         self.log.info('Performing Tornado Workflow..')
@@ -33,7 +78,24 @@ class Tornado(WeedingImplement):
             open_drill = False
             if self.drill_with_open_tornado:
                 open_drill = True
+
+            if self.y_axis_move_task:
+                await self.y_axis_move_task
+                if self.y_axis_move_task.exception():
+                    raise self.y_axis_move_task.exception()
+                self.y_axis_move_task = None
+
+            if self.knife_reset_task:
+                await self.knife_reset_task
+                if self.knife_reset_task.exception():
+                    raise self.knife_reset_task.exception()
+                self.knife_reset_task = None
+
             await self.system.puncher.punch(y=self.next_punch_y_position, angle=self.tornado_angle, with_open_tornado=open_drill)
+            if self.move_knifes_while_driving:
+                self.knife_reset_task = asyncio.create_task(self._reset_knifes())
+            else:
+                await self._reset_knifes()
             # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
                 # remove the simulated weeds
@@ -61,7 +123,7 @@ class Tornado(WeedingImplement):
         # for p in self.last_punches:
         #     self.log.info(f'Last punch: {p} - {p.distance(closest_crop_world_position)} - {self.crop_safety_distance} - {closest_crop_world_position}')
         if any(p.distance(closest_crop_world_position) < self.field_friend.DRILL_RADIUS for p in self.last_punches):
-            self.log.info('Skipping weed because it was already punched')
+            self.log.info('Skipping crop because it was already punched')
             return self.WORKING_DISTANCE
         if not self.system.field_friend.can_reach(closest_crop_position):
             self.log.info('Target crop is not reachable')
@@ -81,6 +143,8 @@ class Tornado(WeedingImplement):
             stretch = 0
         if stretch < max_distance:
             self.next_punch_y_position = closest_crop_position.y
+            if self.move_y_while_driving:
+                self.y_axis_move_task = asyncio.create_task(self.field_friend.y_axis.move_to(self.next_punch_y_position))
             return stretch
         return self.WORKING_DISTANCE
 
@@ -121,6 +185,9 @@ class Tornado(WeedingImplement):
         ui.checkbox('Demo Mode') \
             .bind_value(self.puncher, 'is_demo') \
             .tooltip('If active, stop right before the ground')
+        
+        ui.checkbox("Move y while driving").bind_value(self, 'move_y_while_driving').tooltip("Moves the y-axis into position whilst driving.")
+        ui.checkbox("Move knifes while driving").bind_value(self, 'move_knifes_while_driving').tooltip("Moves the knifes into the correct angle whilst driving.")
         # TODO test and reactivate these options
         # ui.checkbox('Drill 2x with open tornado') \
         #     .bind_value(self, 'drill_with_open_tornado') \
