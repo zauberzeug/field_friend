@@ -57,7 +57,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.device: str | None = None
         self.antenna_offset = antenna_offset
         self.observed_poses: deque[rosys.geometry.Pose] = deque(maxlen=self.MAX_POSES)
-        self.needed_poses: int = self.NEEDED_POSES
+        self.needed_poses: int = self.MIN_POSES
         self.max_distance_to_reference: float = self.MAX_DISTANCE_TO_REFERENCE
         self.reference_alert_dialog: ui.dialog
         self._last_odometer_pose = self.odometer.prediction
