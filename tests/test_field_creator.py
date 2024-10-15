@@ -1,36 +1,24 @@
-import pytest
-from rosys.geometry import Point
+from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 
-from field_friend import System, localization
+from field_friend import System
 from field_friend.interface.components.field_creator import FieldCreator
-from field_friend.localization import GeoPoint
 
 
-def test_geometry_computation(system: System):
-    field_creator = FieldCreator(system)
-    localization.reference = GeoPoint(lat=51.98317071260942, long=7.43411239981148)
-    field_creator.first_row_start = GeoPoint(lat=51.98317071260942, long=7.43411239981148)
-    field_creator.first_row_end = field_creator.first_row_start.shifted(Point(x=0, y=10))
-    field_creator.last_row_end = field_creator.first_row_start.shifted(Point(x=10, y=10))
-    assert field_creator.build_geometry()
-    assert len(field_creator.field.rows) == 20
-    outline = field_creator.field.outline
-    assert len(outline) == 4
-    assert outline[0].x == pytest.approx(-field_creator.padding)
-    assert outline[0].y == pytest.approx(-field_creator.padding_bottom)
-    assert outline[1].x == pytest.approx(-field_creator.padding)
-    assert outline[1].y == pytest.approx(10 + field_creator.padding)
-    assert outline[2].x == pytest.approx(10 + field_creator.padding)
-    assert outline[2].y == pytest.approx(10 + field_creator.padding)
-    assert outline[3].x == pytest.approx(10 + field_creator.padding)
-    assert outline[3].y == pytest.approx(-field_creator.padding_bottom)
+def test_field_creation(system: System, field_creator: FieldCreator):
+    assert len(system.field_provider.fields) == 0
+    field_creator.next()
+    assert len(system.field_provider.fields) == 1
+    assert system.field_provider.fields[0].name == 'Field 1'
+    assert system.field_provider.fields[0].row_spacing == 0.5
+    assert system.field_provider.fields[0].row_number == 10
+    assert system.field_provider.fields[0].first_row_start == FIELD_FIRST_ROW_START
+    assert system.field_provider.fields[0].first_row_end == FIELD_FIRST_ROW_END
+    assert len(system.field_provider.fields[0].rows) == 10
 
 
-def test_wrong_row_spacing(system: System):
-    field_creator = FieldCreator(system)
-    field_creator.first_row_start = GeoPoint(lat=51.98317071260942, long=7.43411239981148)
-    field_creator.first_row_end = field_creator.first_row_start.shifted(Point(x=0, y=10))
-    field_creator.last_row_end = field_creator.first_row_start.shifted(Point(x=10, y=10))
-    field_creator.row_spacing = 45
-    assert not field_creator.build_geometry()
-    assert len(field_creator.field.rows) == 1, 'the row should still be there even if the spacing is wrong'
+def test_field_creation_wrong_row_spacing(system: System, field_creator: FieldCreator):
+    field_creator.row_spacing = 0
+    assert len(system.field_provider.fields) == 0
+    field_creator.next()
+    assert len(system.field_provider.fields) == 1
+    assert len(system.field_provider.fields[0].rows) == 10, 'the row should still be there even if the spacing is wrong'

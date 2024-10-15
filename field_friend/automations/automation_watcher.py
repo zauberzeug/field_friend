@@ -7,6 +7,8 @@ from rosys.geometry import Pose
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
+from field_friend.localization import GeoPoint
+
 if TYPE_CHECKING:
     from system import System
 
@@ -105,8 +107,8 @@ class AutomationWatcher:
                 self.log.info('resetting resume_delay')
                 self.resume_delay = DEFAULT_RESUME_DELAY
 
-    def start_field_watch(self, field_boundaries: list[rosys.geometry.Point]) -> None:
-        self.field_polygon = ShapelyPolygon([(point.x, point.y) for point in field_boundaries])
+    def start_field_watch(self, field_boundaries: list[GeoPoint]) -> None:
+        self.field_polygon = ShapelyPolygon([point.cartesian().tuple for point in field_boundaries])
         self.field_watch_active = True
 
     def stop_field_watch(self) -> None:
