@@ -158,4 +158,3 @@ class Navigation(rosys.persistence.PersistentModule):
         if passed_time > 1:
             self.kpi_provider.increment_all_time_kpi('time')
             self.start_time = rosys.time()
-            self.log.info(f'Time: {passed_time:.2f}s')
