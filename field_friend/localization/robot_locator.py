@@ -2,6 +2,7 @@ from typing import Any
 
 import numpy as np
 import rosys
+from nicegui import ui
 
 
 class RobotLocator(rosys.persistence.PersistentModule):
@@ -120,6 +121,14 @@ class RobotLocator(rosys.persistence.PersistentModule):
             yaw=self.x[2, 0],
         )
 
+    @property
+    def velocity(self) -> rosys.geometry.Velocity:
+        return rosys.geometry.Velocity(
+            linear=self.x[3, 0],
+            angular=self.x[4, 0],
+            time=self.t,
+        )
+
     def handle_velocity_measurement(self, velocities: list[rosys.geometry.Velocity]) -> None:
         self.predict()
         if not self.ignore_odometry:
@@ -168,3 +177,26 @@ class RobotLocator(rosys.persistence.PersistentModule):
     def reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
         self.x = np.array([[x, y, yaw, 0, 0, 0]], dtype=float).T
         self.Sxx = np.diag([0.01, 0.01, 0.01, 0.01, 0.01, 0.01])**2
+
+    def ui(self) -> None:
+        with ui.column():
+            ui.label('Kalman Filter Settings').classes('text-bold text-xl')
+            with ui.grid(columns=2).classes('w-full'):
+                ui.checkbox('Ignore Odometry').props('dense color=red').classes('col-span-2') \
+                    .bind_value(self, 'ignore_odometry')
+                for key, label in {
+                    'q_odometry_v': 'Q Odometry v',
+                    'q_odometry_omega': 'Q Odometry ω',
+                    'r_x': 'R x',
+                    'r_y': 'R y',
+                    'r_theta': 'R θ',
+                    'r_v': 'R v',
+                    'r_omega': 'R ω',
+                    'r_a': 'R a',
+                }.items():
+                    with ui.column().classes('w-full gap-0'):
+                        ui.label(label)
+                        ui.slider(min=0, max=1, step=0.01, on_change=self.request_backup) \
+                            .bind_value(self, key).props('label')
+            ui.label().bind_text_from(self, 'pose', lambda p: f'Pose: x={p.x:.2f} y={p.y:.2f} yaw={p.yaw:.2f}')
+            ui.label().bind_text_from(self, 'velocity', lambda v: f'Velocity: lin.={v.linear:.2f} ang.={v.angular:.2f}')

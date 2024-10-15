@@ -19,6 +19,7 @@ class operation:
         self.key_controls = KeyControls(self.system)
 
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
+            self.system.robot_locator.ui()
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
                 with ui.column().classes('w-full'):
                     activities = ui.row().classes('items-center')
