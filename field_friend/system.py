@@ -268,3 +268,6 @@ class System(rosys.persistence.PersistentModule):
         msg += f'temp: {self.get_jetson_cpu_temperature():.1f}°C '
         msg += f'battery: {self.field_friend.bms.state.short_string}'
         self.log.info(msg)
+
+        bms_logger = logging.getLogger('field_friend.bms')
+        bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
