@@ -43,6 +43,7 @@ from .hardware import (
 )
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
+from .localization import RobotLocator
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
@@ -119,6 +120,7 @@ class System(rosys.persistence.PersistentModule):
 
         self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
         self.plant_locator = PlantLocator(self)
+        self.robot_locator = RobotLocator(self.field_friend.wheels)
 
         rosys.on_repeat(watch_robot, 1.0)
 
