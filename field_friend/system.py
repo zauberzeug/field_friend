@@ -90,7 +90,6 @@ class System(rosys.persistence.PersistentModule):
                 self.camera_provider, odometer=self.odometer, robot_id=self.version)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
-        self.robot_locator = RobotLocator(self.field_friend.wheels)
         self.gnss: GnssHardware | GnssSimulation
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
@@ -98,6 +97,7 @@ class System(rosys.persistence.PersistentModule):
         else:
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
+        self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
         self.driver.parameters.linear_speed_limit = 0.3

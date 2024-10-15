@@ -4,9 +4,12 @@ import numpy as np
 import rosys
 from nicegui import ui
 
+from .gnss import Gnss, GNSSRecord
+from .point_transformation import get_new_position
+
 
 class RobotLocator(rosys.persistence.PersistentModule):
-    def __init__(self, wheels: rosys.hardware.Wheels):
+    def __init__(self, wheels: rosys.hardware.Wheels, gnss: Gnss):
         """ Robot Locator based on an extended Kalman filter.
 
         ### State
@@ -78,6 +81,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.t = rosys.time()
 
         self.ignore_odometry = False
+        self.ignore_gnss = False
 
         self.q_odometry_v = 0.01
         self.q_odometry_omega = 0.01
@@ -89,7 +93,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.r_omega = 1.00
         self.r_a = 1.00
 
+        self.gnss = gnss
+
         wheels.VELOCITY_MEASURED.register(self.handle_velocity_measurement)
+        gnss.NEW_GNSS_RECORD.register(self.handle_gnss_measurement)
 
     def backup(self) -> dict[str, Any]:
         return {
@@ -143,6 +150,32 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     Q=np.diag([self.q_odometry_v, self.q_odometry_omega])**2,
                 )
 
+    def handle_gnss_measurement(self, record: GNSSRecord) -> None:
+        self.predict()
+        if not self.ignore_gnss:
+            yaw = np.deg2rad(-record.heading)
+            geo_point = get_new_position(record.location, self.gnss.antenna_offset, yaw+np.pi/2)
+            cartesian_coords = geo_point.cartesian()
+            pose = rosys.geometry.Pose(
+                x=cartesian_coords.x,
+                y=cartesian_coords.y,
+                yaw=self.x[2, 0] + rosys.helpers.angle(self.x[2, 0], yaw),
+            )
+            z = [[pose.x], [pose.y], [pose.yaw]]
+            h = [[self.x[0, 0]], [self.x[1, 0]], [self.x[2, 0]]]
+            H = [
+                [1, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0],
+            ]
+            # TODO: switch gps_qual for accuracy
+            r_xy = 4 - record.gps_qual
+            r_theta = 4 - record.gps_qual
+            # r_xy = (record.latitude_accuracy + record.longitude_accuracy) / 2
+            # r_theta = np.deg2rad(record.heading_accuracy)
+            Q = np.diag([r_xy, r_xy, r_theta])**2
+            self.update(z=np.array(z), h=np.array(h), H=np.array(H), Q=Q)
+
     def predict(self) -> None:
         dt = rosys.time() - self.t
         self.t = rosys.time()
@@ -184,6 +217,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
             with ui.grid(columns=2).classes('w-full'):
                 ui.checkbox('Ignore Odometry').props('dense color=red').classes('col-span-2') \
                     .bind_value(self, 'ignore_odometry')
+                ui.checkbox('Ignore GNSS').props('dense color=red').classes('col-span-2') \
+                    .bind_value(self, 'ignore_gnss')
                 for key, label in {
                     'q_odometry_v': 'Q Odometry v',
                     'q_odometry_omega': 'Q Odometry ω',

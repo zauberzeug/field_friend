@@ -46,6 +46,9 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         self.ROBOT_GNSS_POSITION_CHANGED = rosys.event.Event()
         """the robot has been located (argument: GeoPoint), may only be a rough estimate if no RTK fix is available"""
 
+        self.NEW_GNSS_RECORD = rosys.event.Event()
+        """a new GNSS record is available (argument: GNSSRecord)"""
+
         self.RTK_FIX_LOST = rosys.event.Event()
         """the robot lost RTK fix"""
 
@@ -76,6 +79,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         previous = deepcopy(self.current)
         try:
             self.current = await self._create_new_record()
+            self.NEW_GNSS_RECORD.emit(self.current)
         except Exception:
             self.log.exception('creation of gnss record failed')
         if previous is not None:
