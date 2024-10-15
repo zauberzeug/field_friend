@@ -3,7 +3,7 @@ import logging
 import rosys
 
 from ..localization import Gnss
-from . import Field
+from . import Field, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
@@ -61,6 +61,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
             return polygon.is_valid and polygon.geom_type == 'Polygon'
         except Exception:
             return False
+
+    def add_row_support_point(self, field_id: str, row_support_point: RowSupportPoint) -> None:
+        field = self.get_field(field_id)
+        if field:
+            field.row_support_points.append(row_support_point)
+            self.invalidate()
 
     def refresh_fields(self) -> None:
         for field in self.fields:
