@@ -61,6 +61,3 @@ class Implement(abc.ABC):
         if passed_time > 1:
             self.system.kpi_provider.increment_all_time_kpi('time')
             self.start_time = rosys.time()
-            self.start_time = rosys.time()
-            self.start_time = rosys.time()
-            self.start_time = rosys.time()
