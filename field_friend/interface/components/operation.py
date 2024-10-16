@@ -2,10 +2,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from nicegui import app, events, ui
-
+from .support_point_dialog import SupportPointDialog
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
-
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -29,6 +28,9 @@ class operation:
                         with ui.row().style('width:100%;'):
                             ui.button("Create Field" if len(self.system.field_provider.fields) < 1 else "Overwrite Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
                                 .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto; width: 100%;").tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
+                        with ui.row().style('width:100%;'):
+                            ui.button("Add Support Point", on_click=lambda: SupportPointDialog(self.system)).tooltip(
+                                "Add a support point for a row").classes("w-full")
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
                         self.implement_settings = ui.row().classes('items-center')
