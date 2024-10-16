@@ -24,7 +24,6 @@ from .led_eyes import LedEyesHardware
 from .safety import Safety, SafetyHardware, SafetySimulation
 from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
-from .bms_status import bms_status
 from .teltonika_router import TeltonikaRouter
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
