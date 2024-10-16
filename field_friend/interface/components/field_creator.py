@@ -123,5 +123,4 @@ class FieldCreator:
     def update_front_cam(self) -> None:
         if self.front_cam is None:
             return
-        self.front_cam.streaming = True
         self.row_sight.set_source(self.front_cam.get_latest_image_url())

@@ -32,6 +32,7 @@ class ZedxminiCamera(StereoCamera):
         self.log = logging.getLogger(self.name)
         self.log.setLevel(logging.DEBUG)
         self.camera_information: dict[str, Any] = {}
+        rosys.on_repeat(self._capture_image, interval=0.1)
 
     async def connect(self) -> None:
         await super().connect()
@@ -71,7 +72,7 @@ class ZedxminiCamera(StereoCamera):
         self.focal_length = camera_information['calibration']['left_cam']['fy']
         return True
 
-    async def capture_image(self) -> None:
+    async def _capture_image(self) -> None:
         if not self.connected:
             return
         url = f'http://{self.ip}:{self.port}/image'

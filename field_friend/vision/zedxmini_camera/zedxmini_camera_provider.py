@@ -33,7 +33,7 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
             camera_information = await ZedxminiCamera.get_camera_information('localhost', 8003)
             if camera_information is None:
                 return
-            self.add_camera(ZedxminiCamera(id=str(camera_information['serial_number']), polling_interval=0.1))
+            self.add_camera(ZedxminiCamera(id=str(camera_information['serial_number'])))
         camera = list(self._cameras.values())[0]
         if camera.is_connected:
             return
