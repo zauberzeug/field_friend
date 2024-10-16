@@ -1,16 +1,11 @@
 import abc
-from typing import TYPE_CHECKING
 
-import rosys
-
-if TYPE_CHECKING:
-    from system import System
 
 class Implement(abc.ABC):
 
-    def __init__(self, name: str, system:'System') -> None:
+    def __init__(self, name: str,) -> None:
         self.name = name
-        self.system = system
+
         self.is_active = False
 
     async def prepare(self) -> bool:

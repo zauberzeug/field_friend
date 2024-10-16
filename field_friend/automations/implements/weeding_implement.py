@@ -22,12 +22,13 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     WORKING_DISTANCE = 0.15
 
     def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
-        Implement.__init__(self, name,system=system)
+        Implement.__init__(self, name)
         rosys.persistence.PersistentModule.__init__(self,
                                                     persistence_key=f'field_friend.automations.implements.{persistence_key}')
 
         self.relevant_weeds = system.plant_locator.weed_category_names
         self.log = logging.getLogger('field_friend.weeding')
+        self.system = system
         self.puncher = system.puncher
         self.record_video = False
         self.cultivated_crop: str | None = None

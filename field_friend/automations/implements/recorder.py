@@ -13,7 +13,8 @@ if TYPE_CHECKING:
 class Recorder(Implement):
 
     def __init__(self, system: 'System') -> None:
-        super().__init__('Recorder',system=system)
+        super().__init__('Recorder')
+        self.system = system
 
     async def activate(self):
         self.system.plant_provider.clear()
@@ -22,12 +23,6 @@ class Recorder(Implement):
         self.system.plant_locator.resume()
         await super().activate()
     
-    async def prepare(self) -> bool:
-        return True
-
-    async def finish(self) -> None:
-        await super().finish()
-
 
     async def deactivate(self):
         self.system.plant_locator.pause()
