@@ -92,7 +92,7 @@ class System(rosys.persistence.PersistentModule):
             if self.field_friend.bms:
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
-        self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
+        self.puncher = Puncher(self.field_friend, self.driver)
         self.plant_locator = PlantLocator(self)
 
         rosys.on_repeat(watch_robot, 1.0)

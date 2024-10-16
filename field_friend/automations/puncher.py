@@ -14,11 +14,10 @@ class PuncherException(Exception):
 
 
 class Puncher:
-    def __init__(self, field_friend: FieldFriend, driver: Driver, kpi_provider: KpiProvider) -> None:
+    def __init__(self, field_friend: FieldFriend, driver: Driver) -> None:
         self.punch_allowed: str = 'waiting'
         self.field_friend = field_friend
         self.driver = driver
-        self.kpi_provider = kpi_provider
         self.log = logging.getLogger('field_friend.puncher')
         self.is_demo = False
 
@@ -105,7 +104,6 @@ class Puncher:
                 else:
                     await self.field_friend.z_axis.return_to_reference()
             self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
-            self.kpi_provider.increment_weeding_kpi('punches')
         except Exception as e:
             raise PuncherException('punching failed') from e
         finally:
@@ -136,7 +134,6 @@ class Puncher:
         else:
             await self.field_friend.y_axis.move_dw_to_r_ref()
         await self.field_friend.y_axis.stop()
-        self.kpi_provider.increment_weeding_kpi('chops')
 
     async def tornado_drill(self, angle: float = 180, turns: float = 2, with_open_drill=False) -> None:
         self.log.info(f'Drilling with tornado at {angle}°...')

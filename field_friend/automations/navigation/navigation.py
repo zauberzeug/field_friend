@@ -27,7 +27,6 @@ class Navigation(rosys.persistence.PersistentModule):
         self.driver = system.driver
         self.odometer = system.odometer
         self.gnss = system.gnss
-        self.kpi_provider = system.kpi_provider
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
         self.kpi_provider = system.kpi_provider
@@ -70,11 +69,9 @@ class Navigation(rosys.persistence.PersistentModule):
                 await self.implement.start_workflow()
                 await self.implement.stop_workflow()
         except WorkflowException as e:
-            self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
             rosys.notify(f'An exception occurred during automation: {e}', 'negative')
         finally:
-            self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.implement.finish()
             await self.finish()
             await self.driver.wheels.stop()

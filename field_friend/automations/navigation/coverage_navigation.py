@@ -31,7 +31,6 @@ class CoverageNavigation(Navigation):
         self.gnss = system.gnss
         self.system = system
         self.coverage_planner = CoveragePlanner(self)
-        self.kpi_provider = system.kpi_provider
 
         self.padding: float = 1.0
         self.lane_distance: float = 0.5
@@ -109,12 +108,10 @@ class CoverageNavigation(Navigation):
             try:
                 assert self.paths is not None
                 await self._drive_mowing_paths(self.paths)
-                self.kpi_provider.increment_mowing_kpi('mowing_completed')
                 rosys.notify('Mowing finished', 'positive')
                 # break TODO: only for demo
             except Exception as e:
                 self.log.exception(e)
-                self.kpi_provider.increment('automation_stopped')
                 rosys.notify(f'Mowing failed because of {e}', 'negative')
                 break
 
