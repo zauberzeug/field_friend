@@ -25,13 +25,14 @@ class State(Enum):
 
 class FieldNavigation(FollowCropsNavigation):
     TURN_STEP = np.deg2rad(25.0)
-    MAX_GNSS_WAITING_TIME = 10.0
+    MAX_GNSS_WAITING_TIME = 15.0
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__(system, implement)
         self.name = 'Field Navigation'
         self.gnss = system.gnss
         self.bms = system.field_friend.bms
+        self.automator = system.automator
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
@@ -178,6 +179,14 @@ class FieldNavigation(FollowCropsNavigation):
         if StraightLineNavigation._should_finish(self):  # pylint: disable=protected-access
             await self.implement.deactivate()
             return State.ROW_COMPLETED
+
+        # temporary fix for GNSS waiting
+        if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 2.0:
+            self.log.warning('GNSS waiting for fix')
+            self.automator.pause(because='Waiting for new GNSS fix')
+            await self.gnss.ROBOT_POSE_LOCATED.emitted(15.0)
+            self.automator.resume()
+
         await super()._drive(distance)
         return State.FOLLOWING_ROW
 
