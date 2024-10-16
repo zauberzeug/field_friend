@@ -10,7 +10,6 @@ from field_friend import interface
 from field_friend.interface.components import header_bar, status_drawer, system_bar
 from field_friend.system import System
 
-
 logger = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
 
@@ -38,7 +37,6 @@ def startup() -> None:
     # interface.pages.path_planner_page(page_wrapper, system)  # /path
     interface.pages.dev_page(page_wrapper, system)  # /dev
     interface.pages.test_page(page_wrapper, system)  # /test
-    interface.pages.kpi_page(page_wrapper, system)  # /kpis
     interface.pages.monitor_page(page_wrapper, system)  # /monitor
     interface.pages.bms_page(page_wrapper, system)  # /bms
 
