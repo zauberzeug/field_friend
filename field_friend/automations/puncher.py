@@ -6,7 +6,6 @@ from rosys.driving import Driver
 from rosys.geometry import Point
 
 from ..hardware import Axis, ChainAxis, FieldFriend, Tornado
-from .kpi_provider import KpiProvider
 
 
 class PuncherException(Exception):
