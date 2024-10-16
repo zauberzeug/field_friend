@@ -47,7 +47,6 @@ class ChopAndScrew(WeedingImplement):
                                 self.system.plant_provider.remove_weed(weed_id)
                                 if weed_id in weeds_in_range:
                                     del weeds_in_range[weed_id]
-                                self.kpi_provider.increment_weeding_kpi('weeds_removed')
                         await self.system.puncher.clear_view()
                 # second: check if weed before crop to chop
                 if self.with_chopping:
@@ -73,7 +72,6 @@ class ChopAndScrew(WeedingImplement):
                             ) if target_position - self.system.field_friend.CHOP_RADIUS < self.system.odometer.prediction.relative_point(starting_position.transform(position)).x < target_position + self.system.field_friend.CHOP_RADIUS]
                             for weed_id in choped_weeds:
                                 self.system.plant_provider.remove_weed(weed_id)
-                                self.kpi_provider.increment_weeding_kpi('weeds_removed')
                         else:
                             self.log.warning(f'Weed position {next_weed_position} is behind field friend')
                     if not moved:
@@ -99,7 +97,6 @@ class ChopAndScrew(WeedingImplement):
                         ) if axis_distance - self.system.field_friend.CHOP_RADIUS < self.system.odometer.prediction.relative_point(starting_position.transform(position)).x < axis_distance + self.system.field_friend.CHOP_RADIUS]
                         for weed_id in choped_weeds:
                             self.system.plant_provider.remove_weed(weed_id)
-                            self.kpi_provider.increment_weeding_kpi('weeds_removed')
                     else:
                         self.log.warning(f'Weed position {next_weed_position} is behind field friend')
             if not moved:

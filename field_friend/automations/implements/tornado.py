@@ -34,7 +34,7 @@ class Tornado(WeedingImplement):
             if self.drill_with_open_tornado:
                 open_drill = True
             await self.system.puncher.punch(y=self.next_punch_y_position, angle=self.tornado_angle, with_open_tornado=open_drill)
-            # TODO remove weeds from plant_provider and increment kpis (like in Weeding Screw)
+            # TODO remove weeds from plant_provider
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
                 # remove the simulated weeds
                 inner_radius = 0.025  # TODO compute inner radius according to tornado angle

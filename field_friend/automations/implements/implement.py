@@ -40,5 +40,3 @@ class Implement(abc.ABC):
     def settings_ui(self):
         """Create UI for settings and configuration."""
 
-    def reset_kpis(self):
-        """Reset KPIs for the implement."""
