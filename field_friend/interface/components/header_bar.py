@@ -38,7 +38,7 @@ class header_bar:
                 ui.label('Software ESTOP is active!').classes('text-white text-3xl').props('elevated')
 
             with ui.row():
-                ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
+                # ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
                 # ui.link('Path recorder', '/path').classes('text-white text-lg !no-underline')
                 ui.link('Circle Sight', '/monitor').classes('text-white text-lg !no-underline')
                 # ui.link('Development', '/dev').classes('text-white text-lg !no-underline')

@@ -35,12 +35,12 @@ def startup() -> None:
         system_bar()
 
     interface.pages.main_page(page_wrapper, system)  # /
-    interface.pages.field_planner_page(page_wrapper, system)  # /field
     # interface.pages.path_planner_page(page_wrapper, system)  # /path
     interface.pages.dev_page(page_wrapper, system)  # /dev
     interface.pages.test_page(page_wrapper, system)  # /test
     interface.pages.kpi_page(page_wrapper, system)  # /kpis
     interface.pages.monitor_page(page_wrapper, system)  # /monitor
+    interface.pages.bms_page(page_wrapper, system)  # /bms
 
     @app.get('/status')  # /status
     def status():

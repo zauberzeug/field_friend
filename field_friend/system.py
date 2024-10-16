@@ -10,12 +10,37 @@ import rosys
 import config.config_selection as config_selector
 
 from . import localization
-from .automations import (AutomationWatcher, BatteryWatcher, FieldProvider, KpiProvider, PathProvider, PlantLocator,
-                          PlantProvider, Puncher)
-from .automations.implements import ChopAndScrew, ExternalMower, Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import (ABLineNavigation, CoverageNavigation, CrossglideDemoNavigation,
-                                     FollowCropsNavigation, Navigation, RowsOnFieldNavigation, StraightLineNavigation)
-from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
+from .automations import (
+    AutomationWatcher,
+    BatteryWatcher,
+    FieldProvider,
+    KpiProvider,
+    PathProvider,
+    PlantLocator,
+    PlantProvider,
+    Puncher,
+)
+from .automations.implements import (
+    ChopAndScrew,
+    ExternalMower,
+    Implement,
+    Recorder,
+    Tornado,
+    WeedingScrew,
+)
+from .automations.navigation import (
+    CrossglideDemoNavigation,
+    FieldNavigation,
+    FollowCropsNavigation,
+    Navigation,
+    StraightLineNavigation,
+)
+from .hardware import (
+    FieldFriend,
+    FieldFriendHardware,
+    FieldFriendSimulation,
+    TeltonikaRouter,
+)
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
@@ -115,21 +140,19 @@ class System(rosys.persistence.PersistentModule):
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
-        self.timelapse_recorder.frame_info_builder = lambda _: f'{self.version}, {self.current_navigation.name}, tags: {", ".join(self.plant_locator.tags)}'
+        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name}, \
+            tags: {", ".join(self.plant_locator.tags)}'''
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
-        self.field_navigation = RowsOnFieldNavigation(self, self.monitoring)
         self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
         self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
-        self.coverage_navigation = CoverageNavigation(self, self.monitoring)
-        self.a_b_line_navigation = ABLineNavigation(self, self.monitoring)
+        self.field_navigation = FieldNavigation(self, self.monitoring)
+
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, self.monitoring)
-        self.navigation_strategies = {n.name: n for n in [self.field_navigation,
-                                                          self.straight_line_navigation,
+        self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
                                                           self.follow_crops_navigation,
-                                                          self.coverage_navigation,
-                                                          self.a_b_line_navigation,
-                                                          self.crossglide_demo_navigation
+                                                          self.field_navigation,
+                                                          self.crossglide_demo_navigation,
                                                           ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
@@ -245,3 +268,6 @@ class System(rosys.persistence.PersistentModule):
         msg += f'temp: {self.get_jetson_cpu_temperature():.1f}°C '
         msg += f'battery: {self.field_friend.bms.state.short_string}'
         self.log.info(msg)
+
+        bms_logger = logging.getLogger('field_friend.bms')
+        bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
