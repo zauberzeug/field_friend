@@ -6,8 +6,16 @@ import rosys
 from nicegui import ui
 
 from ... import localization
-from ...hardware import (Axis, AxisD1, ChainAxis, FieldFriend, FieldFriendHardware, FlashlightPWMHardware,
-                         FlashlightPWMHardwareV2, Tornado)
+from ...hardware import (
+    Axis,
+    AxisD1,
+    ChainAxis,
+    FieldFriend,
+    FieldFriendHardware,
+    FlashlightPWMHardware,
+    FlashlightPWMHardwareV2,
+    Tornado,
+)
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -167,13 +175,14 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         with ui.row().classes('place-items-center'):
             ui.markdown('**RTK-Fix:**').style('color: #EDF4FB')
             rtk_fix_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**GNSS paused:**').style('color: #EDF4FB')
-            gnss_paused_label = ui.label()
 
         with ui.row().classes('place-items-center'):
             ui.markdown('**odometry:**').style('color: #EDF4FB')
             odometry_label = ui.label()
+
+        with ui.row().classes('place-items-center'):
+            ui.markdown('**Since last uupdate:**').style('color: #EDF4FB')
+            update_label = ui.label()
 
     def update_status() -> None:
         bms_flags = [
@@ -291,8 +300,8 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         gnss_label.text = 'No position' if system.gnss.current is None else str(system.gnss.current.location)
         heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
-        gnss_paused_label.text = str(system.gnss.is_paused)
         odometry_label.text = str(system.odometer.prediction)
+        update_label.text = f'{timedelta(seconds=rosys.time() - system.gnss._last_gnss_pose.time)}'  # pylint: disable=protected-access
 
     ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page

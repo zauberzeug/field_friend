@@ -37,7 +37,6 @@ class GnssSimulation(Gnss):
     def relocate(self, position: GeoPoint) -> None:
         localization.reference = position
         self.wheels.pose = Pose(x=position.lat, y=position.long, yaw=0.0, time=rosys.time())
-        self.last_pose_update = rosys.time()
 
     def disconnect(self):
         """Simulate serial disconnection.
