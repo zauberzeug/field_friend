@@ -17,7 +17,7 @@ from field_friend.system import System
 ROBOT_GEO_START_POSITION = GeoPoint(lat=51.98333489813455, long=7.434242465994318)
 
 FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, long=7.434242765994318)
-FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=10, y=0))
+FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=3, y=0))
 
 log = logging.getLogger('field_friend.testing')
 
@@ -49,7 +49,7 @@ def gnss(system: System) -> GnssSimulation:
 @pytest.fixture
 async def field(system: System) -> AsyncGenerator[Field, None]:
     f = system.field_provider.create_field(Field(id=str(uuid4()), name='Field 1', first_row_start=FIELD_FIRST_ROW_START,
-                                           first_row_end=FIELD_FIRST_ROW_END, row_spacing=0.45, row_number=10))
+                                           first_row_end=FIELD_FIRST_ROW_END, row_spacing=0.45, row_number=2))
     yield f
 
 
