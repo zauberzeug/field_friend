@@ -1,10 +1,8 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import rosys
 from rosys.analysis import KpiLogger
-
-from .plant_provider import PlantProvider
 
 
 @dataclass(slots=True, kw_only=True)
@@ -20,7 +18,7 @@ class KPIs:
     imu_rolling_detected: int = 0
     gnss_connection_lost: int = 0
 class KpiProvider(KpiLogger):
-    def __init__(self, plant_provider: PlantProvider) -> None:
+    def __init__(self) -> None:
         super().__init__()
         self.all_time_kpis: KPIs = KPIs()
         self.needs_backup: bool = False
