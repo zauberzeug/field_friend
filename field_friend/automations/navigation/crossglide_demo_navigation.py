@@ -46,10 +46,8 @@ class CrossglideDemoNavigation(Navigation):
                 self.implement.next_punch_y_position = np.random.uniform(-0.11, 0.1)
                 await self.implement.start_workflow()
         except WorkflowException as e:
-            self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
         finally:
-            self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.implement.finish()
             await self.finish()
             await self.driver.wheels.stop()

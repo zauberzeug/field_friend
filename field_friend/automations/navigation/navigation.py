@@ -27,15 +27,18 @@ class Navigation(rosys.persistence.PersistentModule):
         self.driver = system.driver
         self.odometer = system.odometer
         self.gnss = system.gnss
-        self.kpi_provider = system.kpi_provider
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
+        self.kpi_provider = system.kpi_provider
         self.implement = implement
         self.detector = system.detector
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
+        self.is_active = False
+        self.start_time = None
+        rosys.on_repeat(self._update_time, 0.1)
 
     async def start(self) -> None:
         try:
@@ -52,6 +55,7 @@ class Navigation(rosys.persistence.PersistentModule):
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             self.log.info('Navigation started')
+            self.is_active = True
             while not self._should_finish():
                 await self.gnss.update_robot_pose()
                 self.gnss.is_paused = True
@@ -65,11 +69,9 @@ class Navigation(rosys.persistence.PersistentModule):
                 await self.implement.start_workflow()
                 await self.implement.stop_workflow()
         except WorkflowException as e:
-            self.kpi_provider.increment_weeding_kpi('automation_stopped')
             self.log.error(f'WorkflowException: {e}')
             rosys.notify(f'An exception occurred during automation: {e}', 'negative')
         finally:
-            self.kpi_provider.increment_weeding_kpi('weeding_completed')
             await self.implement.finish()
             await self.finish()
             await self.driver.wheels.stop()
@@ -88,6 +90,7 @@ class Navigation(rosys.persistence.PersistentModule):
     async def finish(self) -> None:
         """Executed after the navigation is done"""
         self.gnss.is_paused = False
+        self.is_active = False
         self.log.info('Navigation finished')
 
     @abc.abstractmethod
@@ -141,3 +144,14 @@ class Navigation(rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
             .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
+    
+    def _update_time(self):
+        """Update KPIs for time"""
+        if not self.is_active:
+            return
+        if self.start_time is None:
+            self.start_time = rosys.time()
+        passed_time = rosys.time() - self.start_time
+        if passed_time > 1:
+            self.kpi_provider.increment_all_time_kpi('time',passed_time)
+            self.start_time = rosys.time()
