@@ -31,6 +31,8 @@ def development(system: 'System') -> None:
                             rosys.simulation_ui()
                     hardware_control(system.field_friend, system.automator, system.puncher)
                     status_dev_page(system.field_friend, system)
+    with ui.row().style('width: calc(100vw - 2rem); flex-wrap: nowrap;'):
+        io_overview(system)
     if isinstance(system.field_friend, rosys.hardware.RobotHardware):
         with ui.row():
             with ui.card().style('min-width: 200px;'):
@@ -39,5 +41,3 @@ def development(system: 'System') -> None:
             with ui.card().style('min-width: 200px;'):
                 esp_pins_p0 = EspPins(name='p0', robot_brain=system.field_friend.robot_brain)
                 esp_pins_p0.developer_ui()
-    with ui.row().style('width: calc(100vw - 2rem); flex-wrap: nowrap;'):
-        io_overview(system)
