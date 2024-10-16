@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Callable
 
 import rosys
 from nicegui import app, ui
-from rosys.hardware import ESPPins
+from rosys.hardware import EspPins
 
 from ...localization import localization_ui
 from ..components import battery, hardware_control, io_overview, status_dev_page
@@ -76,14 +76,12 @@ class dev_page():
                             self.system.field_friend.robot_brain.communication.debug_ui()
         with ui.row():
             if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
-                with ui.card().style('min-width: 200px; background-color: #3E63A6; color: white;'):
-                    esp_pins_core = ESPPins(name='core', robot_brain=self.system.field_friend.robot_brain)
+                with ui.card().style('min-width: 200px;'):
+                    esp_pins_core = EspPins(name='core', robot_brain=self.system.field_friend.robot_brain)
                     esp_pins_core.developer_ui()
-                    # self.setup_refreshable(esp_pins_core.developer_ui)
-                with ui.card().style('min-width: 200px; background-color: #3E63A6; color: white;'):
-                    esp_pins_p0 = ESPPins(name='p0', robot_brain=self.system.field_friend.robot_brain)
+                with ui.card().style('min-width: 200px;'):
+                    esp_pins_p0 = EspPins(name='p0', robot_brain=self.system.field_friend.robot_brain)
                     esp_pins_p0.developer_ui()
-                    # self.setup_refreshable(esp_pins_p0.developer_ui)
 
     def battery_ui(self) -> None:
         with ui.row():
