@@ -3,9 +3,8 @@ import abc
 
 class Implement(abc.ABC):
 
-    def __init__(self, name: str,) -> None:
+    def __init__(self, name: str) -> None:
         self.name = name
-
         self.is_active = False
 
     async def prepare(self) -> bool:
