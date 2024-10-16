@@ -93,8 +93,8 @@ class Field:
         return worked_area
 
     def refresh(self):
-        self.outline = self._generate_outline()
         self.rows = self._generate_rows()
+        self.outline = self._generate_outline()
 
     def _generate_rows(self) -> list[Row]:
         assert self.first_row_start is not None
@@ -124,14 +124,10 @@ class Field:
         return rows
 
     def _generate_outline(self) -> list[GeoPoint]:
-        assert self.first_row_start is not None
-        assert self.first_row_end is not None
-        ab_line_cartesian = LineString([self.first_row_start.cartesian().tuple, self.first_row_end.cartesian().tuple])
-        last_row_linestring = offset_curve(ab_line_cartesian, - self.row_spacing * self.row_number + self.row_spacing)
-        end_row_points: list[Point] = [Point(x=p[0], y=p[1]) for p in last_row_linestring.coords]
+        assert len(self.rows) > 0
         outline_unbuffered: list[Point] = []
-        for p in end_row_points:
-            outline_unbuffered.append(p)
+        for p in self.rows[-1].points:
+            outline_unbuffered.append(p.cartesian())
         outline_unbuffered.append(self.first_row_end.cartesian())
         outline_unbuffered.append(self.first_row_start.cartesian())
         outline_polygon = Polygon([p.tuple for p in outline_unbuffered])
