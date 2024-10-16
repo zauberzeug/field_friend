@@ -124,6 +124,10 @@ class FieldNavigation(FollowCropsNavigation):
 
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
+        # TODO: remove temporary fix for GNSS waiting
+        if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 2.0:  # pylint: disable=protected-access
+            await self.gnss.ROBOT_POSE_LOCATED.emitted(15.0)
+
         if self._state == State.APPROACHING_ROW_START:
             self._state = await self._run_approaching_row_start()
         elif self._state == State.FOLLOWING_ROW:
@@ -179,14 +183,6 @@ class FieldNavigation(FollowCropsNavigation):
         if StraightLineNavigation._should_finish(self):  # pylint: disable=protected-access
             await self.implement.deactivate()
             return State.ROW_COMPLETED
-
-        # temporary fix for GNSS waiting
-        if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 2.0:
-            self.log.warning('GNSS waiting for fix')
-            self.automator.pause(because='Waiting for new GNSS fix')
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(15.0)
-            self.automator.resume()
-
         await super()._drive(distance)
         return State.FOLLOWING_ROW
 
