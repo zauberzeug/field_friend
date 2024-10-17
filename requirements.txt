@@ -7,5 +7,5 @@ shapely
 fiona
 geopandas
 # rosys == v0.18.1
-git+https://github.com/zauberzeug/rosys.git@4eb1280d7e775d4a01f746b6d92ab226e9a5b168#egg=rosys
+git+https://github.com/zauberzeug/rosys.git@a77cafe7f46aad57d00d9d78854986147226ca3e#egg=rosys
 uvicorn == 0.28.1
