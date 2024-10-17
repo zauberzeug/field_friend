@@ -1,12 +1,13 @@
 
-import asyncio
+# import asyncio
 import logging
 from typing import AsyncGenerator, Generator
 from uuid import uuid4
 
 import pytest
 import rosys
-from nicegui import core
+
+# from nicegui import core
 from rosys.geometry import Point
 from rosys.testing import forward, helpers
 
@@ -26,8 +27,8 @@ log = logging.getLogger('field_friend.testing')
 
 @pytest.fixture
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
-    core.loop = asyncio.get_event_loop()
-    core.loop.set_debug(True)  # HACK: speed up tests on GitHub actions by enabling asyncio debug mode ¯\_(ツ)_/¯
+    # core.loop = asyncio.get_event_loop()
+    # core.loop.set_debug(True)  # HACK: speed up tests on GitHub actions by enabling asyncio debug mode ¯\_(ツ)_/¯
     System.version = getattr(request, 'param', 'rb34')
     s = System()
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
