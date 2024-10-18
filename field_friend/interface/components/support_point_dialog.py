@@ -4,7 +4,7 @@ from uuid import uuid4
 import rosys
 from nicegui import ui
 
-from field_friend.automations.field import Field, RowSupportPoint
+from field_friend.automations.field import RowSupportPoint
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
 import shapely
@@ -40,7 +40,7 @@ class SupportPointDialog:
         self.dialog.open()
 
     def find_support_point(self) -> None:
-        self.headline.text = 'Drive to First Row'
+        self.headline.text = 'Drive to Row'
         self.row_sight.content = '<line x1="50%" y1="0" x2="50%" y2="100%" stroke="#6E93D6" stroke-width="6"/>'
         with self.content:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
@@ -86,8 +86,7 @@ class SupportPointDialog:
         distance = first_row_line.distance(shapely.geometry.Point([support_point.x, support_point.y]))
         row_support_point = RowSupportPoint(row_index=row_index, distance=distance)
         self.field_provider.add_row_support_point(field.id, row_support_point)
-        self.first_row_start = None
-        self.first_row_end = None
+        ui.notify('Support point added.')
 
     def update_front_cam(self) -> None:
         if self.front_cam is None:
