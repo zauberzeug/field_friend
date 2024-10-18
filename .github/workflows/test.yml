@@ -19,8 +19,8 @@ jobs:
       - name: install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio
+          pip install pytest pytest-asyncio pytest-xdist
       - name: run pytests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest
+        run: pytest -n auto
