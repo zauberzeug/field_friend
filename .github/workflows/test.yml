@@ -7,19 +7,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v2
-      - name: set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.11"
+      - uses: actions/checkout@v4
       - name: set up Poetry
-        uses: abatilo/actions-poetry@v2.0.0
+        uses: abatilo/actions-poetry@v2.4.0
+      - name: set up Python
+        uses: actions/setup-python@v5
         with:
-          poetry-version: "1.2.2"
+          python-version: "3.12"
+          cache: "poetry"
       - name: install dependencies
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-asyncio
+          sudo apt-get update && sudo apt-get install -y v4l-utils psmisc libgl1-mesa-glx
       - name: run pytests
         env:
           PYTHONPATH: ${{ github.workspace }}
