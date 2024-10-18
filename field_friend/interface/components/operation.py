@@ -6,6 +6,7 @@ from nicegui import app, events, ui
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
 
+
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -19,16 +20,23 @@ class operation:
         self.field = None
         self.key_controls = KeyControls(self.system)
 
+        self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
+
+        with ui.dialog() as self.delete_field_dialog, ui.card():
+            ui.label('Are you sure you want to delete this field?')
+            with ui.row():
+                ui.button('Cancel', on_click=self.delete_field_dialog.close)
+                ui.button('Delete', on_click=self.delete_selected_field).props('color=red')
+
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
                 with ui.column().classes('w-full'):
                     activities = ui.row().classes('items-center')
                     with ui.row():
                         ui.label('Settings').classes('text-xl')
+                    with ui.expansion('Fields').classes('w-full').bind_value(app.storage.user, 'show_fields_settings'):
+                        self.field_setting()
                     with ui.expansion('Navigation').classes('w-full').bind_value(app.storage.user, 'show_navigation_settings'):
-                        with ui.row().style('width:100%;'):
-                            ui.button("Create Field" if len(self.system.field_provider.fields) < 1 else "Overwrite Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
-                                .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto; width: 100%;").tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
                         self.implement_settings = ui.row().classes('items-center')
@@ -41,8 +49,8 @@ class operation:
             self.navigation_selection = ui.select(
                 [key for key in self.system.navigation_strategies.keys()],
                 on_change=self.handle_navigation_changed,
-                label='Navigation') \
-                .classes('w-32') \
+                label='Navigation'
+            ).classes('w-32') \
                 .tooltip('Select the navigation strategy') \
                 .bind_value_from(self.system, 'current_navigation', lambda i: i.name)
             self.navigation_selection.value = self.system.current_navigation.name
@@ -50,7 +58,7 @@ class operation:
             self.implement_selection = ui.select(
                 [key for key in self.system.implements.keys()],
                 on_change=self.handle_implement_changed,
-                label='Implement') \
+                label='Implement')\
                 .classes('w-32') \
                 .tooltip('Select the implement to work with') \
                 .bind_value_from(self.system, 'current_implement', lambda i: i.name)
@@ -69,3 +77,35 @@ class operation:
         self.navigation_settings.clear()
         with self.navigation_settings:
             self.system.current_navigation.settings_ui()
+
+    def delete_selected_field(self):
+        if hasattr(self, 'selected_field'):
+            field_to_delete = next(
+                (f for f in self.system.field_provider.fields if f.name == self.selected_field), None)
+            if field_to_delete:
+                self.system.field_provider.delete_field(field_to_delete.id)
+                ui.notify(f'Field "{self.selected_field}" has been deleted')
+                self.selected_field = None
+                self.field_select.options = [field.name for field in self.system.field_provider.fields]
+                self.field_select.value = None
+            else:
+                ui.notify('No field selected', color='warning')
+        else:
+            ui.notify('No field selected', color='warning')
+        self.delete_field_dialog.close()
+
+    @ui.refreshable
+    def field_setting(self):
+        with ui.row().style('width:100%;'):
+            ui.button("Create Field" if len(self.system.field_provider.fields) < 1 else "Overwrite Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
+                .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto; width: 100%;").tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
+        with ui.row().classes('w-full mt-2'):
+            self.field_select = ui.select(
+                options=[field.name for field in self.system.field_provider.fields],
+                label='Select Field',
+                on_change=lambda e: setattr(self, 'selected_field', e.value)
+            ).classes('w-3/4')
+            ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
+                .props('color=red') \
+                .classes('ml-2') \
+                .tooltip('Delete the selected field')

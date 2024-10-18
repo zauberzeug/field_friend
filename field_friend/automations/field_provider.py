@@ -39,11 +39,18 @@ class FieldProvider(rosys.persistence.PersistentModule):
         return next((f for f in self.fields if f.id == id_), None)
 
     def create_field(self, new_field: Field) -> Field:
-        # TODO: delete the clear when we want to save multiple fields again
-        self.fields.clear()
         self.fields.append(new_field)
         self.invalidate()
         return new_field
+
+    def delete_single_field(self, id_: str) -> None:
+        field = self.get_field(id_)
+        if field:
+            self.fields.remove(field)
+            self.invalidate()
+            self.log.info(f"Field with id {id_} has been deleted.")
+        else:
+            self.log.warning(f"No field found with id {id_}. Nothing was deleted.")
 
     def clear_fields(self) -> None:
         self.fields.clear()
