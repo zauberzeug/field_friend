@@ -103,17 +103,15 @@ class Field:
         rows: list[Row] = []
 
         last_support_point = None
-        last_offset = 0.0
 
         for i in range(int(self.row_number)):
             support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
             if support_point:
                 offset = support_point.distance
                 last_support_point = support_point
-                last_offset = offset
             else:
                 if last_support_point:
-                    offset = last_offset + (i - last_support_point.row_index) * self.row_spacing
+                    offset = last_support_point.distance + (i - last_support_point.row_index) * self.row_spacing
                 else:
                     offset = i * self.row_spacing
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
