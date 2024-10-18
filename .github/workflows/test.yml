@@ -23,4 +23,4 @@ jobs:
       - name: run pytests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: pytest
+        run: pytest -v -s --tb=short --show-capture=all
