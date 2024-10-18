@@ -48,24 +48,15 @@ def gnss(system: System) -> GnssSimulation:
 
 
 class TestField():
-    def __init__(self,
-                 id="test_field_id",
-                 name="Test Field",
-                 first_row_start=FIELD_FIRST_ROW_START,
-                 first_row_end=FIELD_FIRST_ROW_END,
-                 row_spacing=0.45,
-                 row_number=4,
-                 outline_buffer_width=2,
-                 row_support_points: list[RowSupportPoint] = []
-                 ):
-        self.id = id
-        self.name = name
-        self.first_row_start = first_row_start
-        self.first_row_end = first_row_end
-        self.row_spacing = row_spacing
-        self.row_number = row_number
-        self.outline_buffer_width = outline_buffer_width
-        self.row_support_points = row_support_points
+    def __init__(self):
+        self.id = "test_field_id"
+        self.name = "Test Field"
+        self.first_row_start = FIELD_FIRST_ROW_START
+        self.first_row_end = FIELD_FIRST_ROW_END
+        self.row_spacing = 0.45
+        self.row_number = 4
+        self.outline_buffer_width = 2
+        self.row_support_points = []
         self.rows = [
             Row(id=f"field_{self.id}_row_1", name="row_1", points=[
                 self.first_row_start,
