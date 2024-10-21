@@ -34,12 +34,12 @@ class Row(GeoPointCollection):
 @dataclass(slots=True, kw_only=True)
 class RowSupportPoint:
     row_index: int
-    distance: float  # Distance from the first row (index 0)
+    point: GeoPoint
 
     def to_dict(self) -> dict:
         return {
             'row_index': self.row_index,
-            'distance': self.distance,
+            'point': [self.point.lat, self.point.long],
         }
 
 
@@ -103,15 +103,18 @@ class Field:
         rows: list[Row] = []
 
         last_support_point = None
+        last_support_point_offset = 0
 
         for i in range(int(self.row_number)):
             support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
             if support_point:
-                offset = support_point.distance
+                offset = ab_line_cartesian.distance(shapely.geometry.Point(
+                    [support_point.point.cartesian().x, support_point.point.cartesian().y]))
                 last_support_point = support_point
+                last_support_point_offset = offset
             else:
                 if last_support_point:
-                    offset = last_support_point.distance + (i - last_support_point.row_index) * self.row_spacing
+                    offset = last_support_point_offset + (i - last_support_point.row_index) * self.row_spacing
                 else:
                     offset = i * self.row_spacing
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
@@ -160,6 +163,6 @@ class Field:
         data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'], long=data['first_row_start']['long'])
         data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], long=data['first_row_end']['long'])
         data['row_support_points'] = [RowSupportPoint(
-            row_index=sp['row_index'], distance=sp['distance']) for sp in data['row_support_points']]
+            row_index=sp['row_index'], point=GeoPoint.from_list(sp['point'])) for sp in data['row_support_points']]
         field_data = cls(**cls.args_from_dict(data))
         return field_data

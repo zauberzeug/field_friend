@@ -77,14 +77,7 @@ class SupportPointDialog:
             return
         row_index = self.row_name - 1
         field = self.field_provider.fields[0]
-
-        first_row_start = field.first_row_start.cartesian()
-        first_row_end = field.first_row_end.cartesian()
-        first_row_line = shapely.geometry.LineString(
-            [[first_row_start.x, first_row_start.y], [first_row_end.x, first_row_end.y]])
-        support_point = self.support_point_coordinates.cartesian()
-        distance = first_row_line.distance(shapely.geometry.Point([support_point.x, support_point.y]))
-        row_support_point = RowSupportPoint(row_index=row_index, distance=distance)
+        row_support_point = RowSupportPoint(row_index=row_index, point=self.support_point_coordinates)
         self.field_provider.add_row_support_point(field.id, row_support_point)
         ui.notify('Support point added.')
 
