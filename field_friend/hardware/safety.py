@@ -98,7 +98,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f'when {y_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); end\n'
         if isinstance(z_axis, TornadoHardware):
             if isinstance(y_axis, YAxisStepperHardware) or isinstance(y_axis, YAxisCanOpenHardware):
-                lizard_code += f'when {z_axis.name}_ref_knife_ground.level == 1 then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
+                lizard_code += f'when {z_axis.name}_ref_knife_ground.active == false then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
 
         # implement watchdog for rosys modules
         lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
