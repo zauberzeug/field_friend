@@ -64,13 +64,14 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def add_row_support_point(self, field_id: str, row_support_point: RowSupportPoint) -> None:
         field = self.get_field(field_id)
-        if field:
-            existing_point = next((sp for sp in field.row_support_points if sp.row_index ==
-                                  row_support_point.row_index), None)
-            if existing_point:
-                field.row_support_points.remove(existing_point)
-            field.row_support_points.append(row_support_point)
-            self.invalidate()
+        if not field:
+            return
+        existing_point = next((sp for sp in field.row_support_points if sp.row_index ==
+                              row_support_point.row_index), None)
+        if existing_point:
+            field.row_support_points.remove(existing_point)
+        field.row_support_points.append(row_support_point)
+        self.invalidate()
 
     def refresh_fields(self) -> None:
         for field in self.fields:
