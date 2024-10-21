@@ -14,7 +14,7 @@ class Implement(abc.ABC):
         return True
 
     async def finish(self) -> None:
-        """Finish the implement once at the end (for example to store KPIs)"""
+        """Finish the implement once at the end"""
 
     async def activate(self):
         """Activate the implement (for example to start weeding in a new row)"""
@@ -40,5 +40,3 @@ class Implement(abc.ABC):
     def settings_ui(self):
         """Create UI for settings and configuration."""
 
-    def reset_kpis(self):
-        """Reset KPIs for the implement."""

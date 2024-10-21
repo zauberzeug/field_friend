@@ -107,7 +107,7 @@ class System(rosys.persistence.PersistentModule):
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.driver.parameters.hook_bending_factor = 0.25
 
-        self.kpi_provider = KpiProvider(self.plant_provider)
+        self.kpi_provider = KpiProvider()
         if not self.is_real:
             generate_kpis(self.kpi_provider)
 
@@ -117,7 +117,7 @@ class System(rosys.persistence.PersistentModule):
             if self.field_friend.bms:
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
-        self.puncher = Puncher(self.field_friend, self.driver, self.kpi_provider)
+        self.puncher = Puncher(self.field_friend, self.driver)
         self.plant_locator = PlantLocator(self)
 
         rosys.on_repeat(watch_robot, 1.0)
@@ -268,3 +268,6 @@ class System(rosys.persistence.PersistentModule):
         msg += f'temp: {self.get_jetson_cpu_temperature():.1f}°C '
         msg += f'battery: {self.field_friend.bms.state.short_string}'
         self.log.info(msg)
+
+        bms_logger = logging.getLogger('field_friend.bms')
+        bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')

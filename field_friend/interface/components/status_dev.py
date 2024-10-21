@@ -147,31 +147,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
         with ui.row().classes('place-items-center'):
             ui.markdown('**Current Row:**').style('color: #EDF4FB')
             current_row_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Time on Field:**').style('color: #EDF4FB')
-            kpi_fieldtime_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Distance:**').style('color: #EDF4FB')
-            kpi_distance_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Processed Rows:**').style('color: #EDF4FB')
-            kpi_rows_weeded_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Crops Detected:**').style('color: #EDF4FB')
-            kpi_crops_detected_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Weeds Detected:**').style('color: #EDF4FB')
-            kpi_weeds_detected_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Weeds Removed:**').style('color: #EDF4FB')
-            kpi_weeds_removed_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.markdown('**Punches:**').style('color: #EDF4FB')
-            kpi_punches_label = ui.label()
-        if robot.implement_name == 'dual_mechanism':
-            with ui.row().classes('place-items-center'):
-                ui.markdown('**Chops:**').style('color: #EDF4FB')
-                kpi_chops_label = ui.label()
+
 
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
@@ -288,27 +264,7 @@ def status_dev_page(robot: FieldFriend, system: 'System'):
             'NW' if system.gnss.current.heading <= 338 else \
             'N'
 
-        if system.automator.is_running:
-            kpi_fieldtime_label.text = f'{timedelta(seconds=system.kpi_provider.current_weeding_kpis.time)}'
-            kpi_distance_label.text = f'{system.kpi_provider.current_weeding_kpis.distance:.0f}m'
 
-            # current_automation = next(key for key, value in system.implements.items()
-            #                           if value == system.automator.default_automation)
-            # if current_automation == 'weeding' or current_automation == 'monitoring':
-            #     if current_automation == 'weeding':
-            #         current_row_label.text = system.weeding.current_row.name if system.weeding.current_row is not None else 'No row'
-            #         worked_area_label.text = f'{system.weeding.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.weeding.field.area():.2f}m²' if system.weeding.field is not None else 'No field'
-            #     elif current_automation == 'monitoring':
-            #         current_row_label.text = system.monitoring.current_row.name if system.monitoring.current_row is not None else 'No row'
-            #         worked_area_label.text = f'{system.monitoring.field.worked_area(system.kpi_provider.current_weeding_kpis.rows_weeded):.2f}m²/{system.monitoring.field.area():.2f}m²' if system.monitoring.field is not None else 'No field'
-            #     kpi_weeds_detected_label.text = system.kpi_provider.current_weeding_kpis.weeds_detected
-            #     kpi_crops_detected_label.text = system.kpi_provider.current_weeding_kpis.crops_detected
-            #     kpi_weeds_removed_label.text = system.kpi_provider.current_weeding_kpis.weeds_removed
-            #     kpi_rows_weeded_label.text = system.kpi_provider.current_weeding_kpis.rows_weeded
-            #     if current_automation == 'weeding':
-            #         kpi_punches_label.text = system.kpi_provider.current_weeding_kpis.punches
-            #         if robot.implement_name == 'dual_mechanism':
-            #             kpi_chops_label.text = system.kpi_provider.current_weeding_kpis.chops
         if system.is_real:
             if robot.wheels.odrive_version == 6:
                 l0_status.text = 'Error in l0' if robot.wheels.l0_error else 'No error'

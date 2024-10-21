@@ -19,7 +19,7 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
 
     def backup(self) -> dict:
         for camera in self._cameras.values():
-            self.log.info(f'backing up camera: {camera.to_dict()}')
+            self.log.info(f'backing up camera: {camera.name}')
         return {
             'cameras': {camera.id: camera.to_dict() for camera in self._cameras.values()}
         }
