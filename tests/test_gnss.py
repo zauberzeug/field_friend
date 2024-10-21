@@ -8,6 +8,8 @@ from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import assert_point, forward
 
 from field_friend import localization
+from field_friend.automations.implements import Recorder
+from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
@@ -78,6 +80,7 @@ async def test_device_disconnects(gnss_driving: System, gnss: GnssSimulation):
 
 
 async def test_record_is_none(gnss_driving: System, gnss: GnssSimulation):
+    # pylint: disable=protected-access
     async def empty():
         return None
     await forward(x=2.0)
@@ -85,3 +88,18 @@ async def test_record_is_none(gnss_driving: System, gnss: GnssSimulation):
     await forward(5)
     # robot should have stopped driving
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2, y=0))
+
+
+async def test_only_update_when_standing(gnss_driving: System, gnss: GnssSimulation):
+    # pylint: disable=protected-access
+    assert isinstance(gnss_driving.current_navigation, StraightLineNavigation)
+    gnss_driving.current_navigation.length = 10.0
+    assert isinstance(gnss_driving.current_navigation.implement, Recorder)
+    assert gnss._last_gnss_pose.x == pytest.approx(gnss._last_odometer_pose.x)
+    gnss_driving.automator.start()
+    await forward(until=lambda: gnss_driving.automator.is_running)
+    await forward(x=5.0)
+    assert gnss._last_gnss_pose.x != pytest.approx(gnss._last_odometer_pose.x)
+    await forward(until=lambda: gnss_driving.automator.is_stopped)
+    await forward(2.0)
+    assert gnss._last_gnss_pose.x == pytest.approx(gnss._last_odometer_pose.x)
