@@ -120,7 +120,7 @@ class Field:
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = [localization.reference.shifted(
                 Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            row = Row(id=f"field_{self.id}_row_{str(i + 1)}", name=f'row_{i + 1}', points=row_points)
+            row = Row(id=f'field_{self.id}_row_{str(i + 1)}', name=f'row_{i + 1}', points=row_points)
             rows.append(row)
         return rows
 
