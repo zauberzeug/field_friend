@@ -1,9 +1,10 @@
 from enum import Enum, auto
 from random import randint
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
+import rosys.helpers
 from nicegui import ui
 from rosys.geometry import Point
 
@@ -129,28 +130,17 @@ class FieldNavigation(FollowCropsNavigation):
             self._state = await self._run_row_completed()
 
     async def _run_approaching_row_start(self) -> State:
-        def interpolate_angles(start: float, end: float, step: float) -> Generator[float, None, None]:
-            total_diff = rosys.helpers.eliminate_2pi(end - start)
-            num_steps = int(np.ceil(abs(total_diff) / step))
-            for i in range(1, num_steps + 1):
-                angle = rosys.helpers.eliminate_2pi(start + total_diff * i / num_steps)
-                yield angle
-
         self.set_start_and_end_points()
         await self._wait_for_gnss()
-        target_yaw = self.odometer.prediction.direction(self.start_point)
         # turn towards row start
-        for angle in interpolate_angles(self.odometer.prediction.yaw, target_yaw, self._turn_step):
-            await self.turn_to_yaw(angle)
-            await self._wait_for_gnss()
+        target_yaw = self.odometer.prediction.direction(self.start_point)
+        await self.turn_in_steps(target_yaw)
         # drive to row start
         await self.driver.drive_to(self.start_point)
         await self._wait_for_gnss()
-        # adjust heading
+        # turn to row
         row_yaw = self.start_point.direction(self.end_point)
-        for angle in interpolate_angles(self.odometer.prediction.yaw, row_yaw, self._turn_step):
-            await self.turn_to_yaw(angle)
-            await self._wait_for_gnss()
+        await self.turn_in_steps(row_yaw)
 
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
@@ -169,6 +159,18 @@ class FieldNavigation(FollowCropsNavigation):
             await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
             await rosys.sleep(0.1)
         await self.driver.wheels.stop()
+
+    async def turn_in_steps(self, target_yaw: float) -> None:
+        angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
+        while abs(angle_difference) > np.deg2rad(1.0):
+            next_angle = rosys.helpers.eliminate_2pi(
+                self.odometer.prediction.yaw + np.sign(angle_difference) * self._turn_step)
+            if abs(angle_difference) > self._turn_step:
+                await self.turn_to_yaw(next_angle)
+            else:
+                await self.turn_to_yaw(target_yaw)
+            await self._wait_for_gnss()
+            angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
 
     async def _run_following_row(self, distance: float) -> State:
         if not self.implement.is_active:
