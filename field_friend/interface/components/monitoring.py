@@ -138,8 +138,6 @@ class monitoring:
         person_count = 0
         animal_count = 0
         for camera in self.mjpg_camera_provider.cameras.values():
-            if not camera.streaming:
-                camera.streaming = True
             image = camera.latest_captured_image
             if not image:
                 continue
