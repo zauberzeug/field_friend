@@ -32,15 +32,12 @@ class Row(GeoPointCollection):
 
 
 @dataclass(slots=True, kw_only=True)
-class RowSupportPoint:
+class RowSupportPoint(GeoPoint):
     row_index: int
-    point: GeoPoint
 
-    def to_dict(self) -> dict:
-        return {
-            'row_index': self.row_index,
-            'point': [self.point.lat, self.point.long],
-        }
+    @classmethod
+    def from_geopoint(cls, geopoint: GeoPoint, row_index: int) -> Self:
+        return cls(lat=geopoint.lat, long=geopoint.long, row_index=row_index)
 
 
 class Field:
@@ -108,8 +105,9 @@ class Field:
         for i in range(int(self.row_number)):
             support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
             if support_point:
+                support_point_cartesian = support_point.cartesian()
                 offset = ab_line_cartesian.distance(shapely.geometry.Point(
-                    [support_point.point.cartesian().x, support_point.point.cartesian().y]))
+                    [support_point_cartesian.x, support_point_cartesian.y]))
                 last_support_point = support_point
                 last_support_point_offset = offset
             else:
@@ -148,7 +146,7 @@ class Field:
             'row_spacing': self.row_spacing,
             'row_number': self.row_number,
             'outline_buffer_width': self.outline_buffer_width,
-            'row_support_points': [sp.to_dict() for sp in self.row_support_points],
+            'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
         }
 
     def shapely_polygon(self) -> shapely.geometry.Polygon:
@@ -162,7 +160,7 @@ class Field:
     def from_dict(cls, data: dict[str, Any]) -> Self:
         data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'], long=data['first_row_start']['long'])
         data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], long=data['first_row_end']['long'])
-        data['row_support_points'] = [RowSupportPoint(
-            row_index=sp['row_index'], point=GeoPoint.from_list(sp['point'])) for sp in data['row_support_points']]
+        data['row_support_points'] = [rosys.persistence.from_dict(
+            RowSupportPoint, sp) for sp in data['row_support_points']] if 'row_support_points' in data else []
         field_data = cls(**cls.args_from_dict(data))
         return field_data

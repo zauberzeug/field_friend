@@ -2,12 +2,13 @@ from typing import TYPE_CHECKING, Callable
 from uuid import uuid4
 
 import rosys
+import shapely
 from nicegui import ui
 
 from field_friend.automations.field import RowSupportPoint
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
-import shapely
+
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -77,7 +78,7 @@ class SupportPointDialog:
             return
         row_index = self.row_name - 1
         field = self.field_provider.fields[0]
-        row_support_point = RowSupportPoint(row_index=row_index, point=self.support_point_coordinates)
+        row_support_point = RowSupportPoint.from_geopoint(self.support_point_coordinates, row_index)
         self.field_provider.add_row_support_point(field.id, row_support_point)
         ui.notify('Support point added.')
 
