@@ -1,11 +1,11 @@
+import pytest
 from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
-from field_friend import localization
-from field_friend import System
+from rosys.geometry import Point
+
+from field_friend import System, localization
+from field_friend.automations.field import Field
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.interface.components.support_point_dialog import SupportPointDialog
-from field_friend.automations.field import Field
-from rosys.geometry import Point
-import pytest
 
 
 def test_field_creation(system: System, field_creator: FieldCreator):
@@ -36,9 +36,9 @@ def test_support_point_dialog(system: System, field: Field):
     system.gnss.current.location = test_location
     dialog.next()
     dialog.next()
-    assert system.field_provider.fields[0].row_support_points[0].point.cartesian(
+    assert system.field_provider.fields[0].row_support_points[0].cartesian(
     ).x - FIELD_FIRST_ROW_START.cartesian().x == pytest.approx(0, abs=0.001)
-    assert system.field_provider.fields[0].row_support_points[0].point.cartesian(
+    assert system.field_provider.fields[0].row_support_points[0].cartesian(
     ).y - FIELD_FIRST_ROW_START.cartesian().y == pytest.approx(-1.5, abs=0.001)
     assert system.field_provider.fields[0].row_support_points[0].row_index == row_index
     assert dialog.support_point_coordinates == test_location
