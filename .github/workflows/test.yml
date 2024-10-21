@@ -8,22 +8,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - name: install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio
-      - name: run pytests
-        env:
-          PYTHONPATH: ${{ github.workspace }}
-        run: pytest
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - run: pip install pytest pytest-asyncio
