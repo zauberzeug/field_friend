@@ -163,17 +163,21 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             bool {name}_is_referencing = false
             bool {name}_ref_motor_enabled = false
             bool {name}_ref_gear_enabled = false
+            {name}_ref_motor.level = 0
             when {name}_ref_motor_enabled and {name}_is_referencing and {name}_ref_motor.level == 0 then
                 {name}_motor_turn.speed(0)
             end
+            {name}_ref_gear.level = 0
             when {name}_ref_gear_enabled and {name}_is_referencing and {name}_ref_gear.level == 1 then
                 {name}_motor_turn.speed(0)
             end
             bool {name}_knife_ground_enabled = false
             bool {name}_knife_stop_enabled = false
+            {name}_ref_knife_ground.level = 0
             when {name}_knife_ground_enabled and {name}_ref_knife_ground.level == 1 then
                 {name}_motor_z.off()
             end
+            {name}_ref_knife_stop.level = 0
             when {name}_knife_stop_enabled and {name}_ref_knife_stop.level == 1 then
                 en3.off()
                 {name}_knife_stop_enabled = false
