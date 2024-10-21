@@ -88,7 +88,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
-             for name in bumper.pins:
+            for name in bumper.pins:
+                # TODO: remove level = 0 when lizard issue 66 is fixed. https://github.com/zauberzeug/lizard/issues/66
                 lizard_code += f'bumper_{name}.level = 0\n'
                 lizard_code += f'when bumper_{name}.level == 1 then stop(); end\n'
 
