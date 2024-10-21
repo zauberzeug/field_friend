@@ -22,7 +22,6 @@ from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, Flashli
 from .imu import IMUHardware
 from .led_eyes import LedEyesHardware
 from .safety import Safety, SafetyHardware, SafetySimulation
-from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
 from .teltonika_router import TeltonikaRouter
 from .tornado import Tornado, TornadoHardware, TornadoSimulation

@@ -18,7 +18,6 @@ from .flashlight_v2 import FlashlightHardwareV2
 from .imu import IMUHardware
 from .led_eyes import LedEyesHardware
 from .safety import SafetyHardware
-from .safety_small import SmallSafetyHardware
 from .status_control import StatusControlHardware
 from .tornado import TornadoHardware
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
@@ -426,13 +425,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             self.status_control = None
 
-        safety: SafetyHardware | SmallSafetyHardware
-        if 'small_safety' in config_hardware:
-            safety = SmallSafetyHardware(robot_brain, wheels=wheels, estop=estop, bumper=bumper,
-                                         y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
-        else:
-            safety = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
-                                    y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)
+        safety: SafetyHardware = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
+                                                y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)
 
         modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis,
                    z_axis, mower, flashlight, bms, estop, self.battery_control, bumper, self.imu, eyes, self.status_control, safety]
