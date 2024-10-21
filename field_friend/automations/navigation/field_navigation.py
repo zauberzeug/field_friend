@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
-import rosys.helpers
 from nicegui import ui
 from rosys.geometry import Point
 
