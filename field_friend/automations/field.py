@@ -31,6 +31,15 @@ class Row(GeoPointCollection):
                                           point2=self.points[-1].cartesian())
 
 
+@dataclass(slots=True, kw_only=True)
+class RowSupportPoint(GeoPoint):
+    row_index: int
+
+    @classmethod
+    def from_geopoint(cls, geopoint: GeoPoint, row_index: int) -> Self:
+        return cls(lat=geopoint.lat, long=geopoint.long, row_index=row_index)
+
+
 class Field:
     def __init__(self,
                  id: str,  # pylint: disable=redefined-builtin
@@ -39,7 +48,8 @@ class Field:
                  first_row_end: GeoPoint,
                  row_spacing: float = 0.5,
                  row_number: int = 10,
-                 outline_buffer_width: float = 2) -> None:
+                 outline_buffer_width: float = 2,
+                 row_support_points: list[RowSupportPoint] | None = None) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
@@ -47,6 +57,8 @@ class Field:
         self.row_spacing: float = row_spacing
         self.row_number: int = row_number
         self.outline_buffer_width: float = outline_buffer_width
+        self.row_support_points: list[RowSupportPoint] = row_support_points or []
+        self.row_support_points.sort(key=lambda sp: sp.row_index)
         self.visualized: bool = False
         self.rows: list[Row] = []
         self.outline: list[GeoPoint] = []
@@ -78,32 +90,43 @@ class Field:
         return worked_area
 
     def refresh(self):
-        self.outline = self._generate_outline()
         self.rows = self._generate_rows()
+        self.outline = self._generate_outline()
 
     def _generate_rows(self) -> list[Row]:
         assert self.first_row_start is not None
         assert self.first_row_end is not None
         ab_line_cartesian = LineString([self.first_row_start.cartesian().tuple, self.first_row_end.cartesian().tuple])
         rows: list[Row] = []
+
+        last_support_point = None
+        last_support_point_offset = 0
+
         for i in range(int(self.row_number)):
-            offset = i * self.row_spacing
+            support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
+            if support_point:
+                support_point_cartesian = support_point.cartesian()
+                offset = ab_line_cartesian.distance(shapely.geometry.Point(
+                    [support_point_cartesian.x, support_point_cartesian.y]))
+                last_support_point = support_point
+                last_support_point_offset = offset
+            else:
+                if last_support_point:
+                    offset = last_support_point_offset + (i - last_support_point.row_index) * self.row_spacing
+                else:
+                    offset = i * self.row_spacing
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = [localization.reference.shifted(
                 Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            row = Row(id=str(uuid4()), name=f'{i + 1}', points=row_points)
+            row = Row(id=f'field_{self.id}_row_{str(i + 1)}', name=f'row_{i + 1}', points=row_points)
             rows.append(row)
         return rows
 
     def _generate_outline(self) -> list[GeoPoint]:
-        assert self.first_row_start is not None
-        assert self.first_row_end is not None
-        ab_line_cartesian = LineString([self.first_row_start.cartesian().tuple, self.first_row_end.cartesian().tuple])
-        last_row_linestring = offset_curve(ab_line_cartesian, - self.row_spacing * self.row_number + self.row_spacing)
-        end_row_points: list[Point] = [Point(x=p[0], y=p[1]) for p in last_row_linestring.coords]
+        assert len(self.rows) > 0
         outline_unbuffered: list[Point] = []
-        for p in end_row_points:
-            outline_unbuffered.append(p)
+        for p in self.rows[-1].points:
+            outline_unbuffered.append(p.cartesian())
         outline_unbuffered.append(self.first_row_end.cartesian())
         outline_unbuffered.append(self.first_row_start.cartesian())
         outline_polygon = Polygon([p.tuple for p in outline_unbuffered])
@@ -123,6 +146,7 @@ class Field:
             'row_spacing': self.row_spacing,
             'row_number': self.row_number,
             'outline_buffer_width': self.outline_buffer_width,
+            'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
         }
 
     def shapely_polygon(self) -> shapely.geometry.Polygon:
@@ -136,5 +160,7 @@ class Field:
     def from_dict(cls, data: dict[str, Any]) -> Self:
         data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'], long=data['first_row_start']['long'])
         data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], long=data['first_row_end']['long'])
+        data['row_support_points'] = [rosys.persistence.from_dict(
+            RowSupportPoint, sp) for sp in data['row_support_points']] if 'row_support_points' in data else []
         field_data = cls(**cls.args_from_dict(data))
         return field_data

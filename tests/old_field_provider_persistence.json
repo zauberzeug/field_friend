@@ -10,7 +10,8 @@
       "first_row_end": { "lat": 51.98334192260392, "long": 7.434293309874038 },
       "row_spacing": 0.5,
       "row_number": 10,
-      "outline_buffer_width": 2
+      "outline_buffer_width": 2,
+      "row_support_points": []
     }
   }
 }
