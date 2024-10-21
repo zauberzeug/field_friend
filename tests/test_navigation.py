@@ -27,7 +27,6 @@ async def test_straight_line(system: System):
     assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_straight_line_with_high_angles(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     predicted_yaw = 190
@@ -47,7 +46,6 @@ async def test_straight_line_with_high_angles(system: System):
     assert system.odometer.prediction.yaw_deg == pytest.approx(predicted_yaw, abs=5)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulation, detector: rosys.vision.DetectorSimulation):
     async def empty():
         return None
@@ -63,7 +61,6 @@ async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulat
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_driving_to_exact_positions(system: System):
     class Stopper(Implement):
         def __init__(self, system: System) -> None:
@@ -98,7 +95,6 @@ async def test_driving_to_exact_positions(system: System):
         await forward(0.1)  # give robot time to update position
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_driving_straight_line_with_slippage(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     assert isinstance(system.current_navigation, StraightLineNavigation)
@@ -112,7 +108,6 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.1)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_no_direction(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(1, 3):
         x = i*0.4
@@ -132,7 +127,6 @@ async def test_follow_crops_no_direction(system: System, detector: rosys.vision.
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_empty(system: System, detector: rosys.vision.DetectorSimulation):
     system.current_navigation = system.follow_crops_navigation
     assert isinstance(system.current_navigation.implement, Recorder)
@@ -146,7 +140,6 @@ async def test_follow_crops_empty(system: System, detector: rosys.vision.Detecto
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_straight(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(10):
         x = i/10
@@ -164,7 +157,6 @@ async def test_follow_crops_straight(system: System, detector: rosys.vision.Dete
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_continue(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(0, 20):
         x = i / 10
@@ -182,7 +174,6 @@ async def test_follow_crops_continue(system: System, detector: rosys.vision.Dete
     assert system.odometer.prediction.yaw_deg == pytest.approx(45, abs=1.0)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_adjust(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(1, 51):
         x = i*0.4
@@ -201,7 +192,6 @@ async def test_follow_crops_adjust(system: System, detector: rosys.vision.Detect
     assert system.odometer.prediction.yaw_deg == pytest.approx(-7.2, abs=1.0)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_curve(system: System, detector: rosys.vision.DetectorSimulation):
     end = rosys.geometry.Point(x=0, y=0)
     for i in range(1, 56):
@@ -219,7 +209,6 @@ async def test_follow_crops_curve(system: System, detector: rosys.vision.Detecto
     assert system.odometer.prediction.yaw_deg == pytest.approx(34, abs=5.0)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_outlier(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(21):
         x = i/10
@@ -239,7 +228,6 @@ async def test_follow_crops_outlier(system: System, detector: rosys.vision.Detec
     assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=2)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(20):
         x = i/10
@@ -261,7 +249,6 @@ async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.
     assert 0 >= system.odometer.prediction.yaw_deg >= -45
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(20):
         x = i/10.0
@@ -279,7 +266,6 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     assert system.odometer.prediction.yaw_deg == pytest.approx(16.5, abs=0.2)
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_approaching_first_row(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -301,7 +287,6 @@ async def test_approaching_first_row(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_approaching_first_row_from_other_side(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -334,7 +319,6 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_approaching_first_row_when_outside_of_field(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -362,7 +346,6 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     assert not system.automator.is_running, 'should have been stopped because robot is outside of field boundaries'
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_complete_row(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -402,7 +385,6 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     assert system.odometer.prediction.point.distance(point) > 0.1
 
 
-@pytest.mark.skip('TODO: finding the culprit')
 async def test_complete_field(system: System, field: Field):
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
