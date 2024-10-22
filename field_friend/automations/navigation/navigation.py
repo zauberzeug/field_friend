@@ -83,6 +83,7 @@ class Navigation(rosys.persistence.PersistentModule):
 
     async def finish(self) -> None:
         """Executed after the navigation is done"""
+        self.is_active = False
         self.log.info('Navigation finished')
 
     @abc.abstractmethod
