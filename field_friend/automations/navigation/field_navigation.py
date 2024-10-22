@@ -145,6 +145,8 @@ class FieldNavigation(FollowCropsNavigation):
         await self.driver.drive_to(self.start_point)
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn to row
+        assert self.start_point is not None
+        assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
         await self.turn_in_steps(row_yaw)
 
