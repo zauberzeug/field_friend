@@ -7,19 +7,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v2
-      - name: set up Python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: set up Poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-          poetry-version: "1.2.2"
-      - name: install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - run: pip install pytest pytest-asyncio
       - name: run pytests
         env:
           PYTHONPATH: ${{ github.workspace }}
