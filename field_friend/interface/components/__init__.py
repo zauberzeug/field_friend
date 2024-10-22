@@ -17,6 +17,7 @@ from .robot_scene import robot_scene
 from .status_bulb import StatusBulb as status_bulb
 from .status_dev import status_dev_page
 from .status_drawer import status_drawer
+from .support_point_dialog import SupportPointDialog
 from .system_bar import system_bar
 from .test import test
 from .visualizer_object import visualizer_object
