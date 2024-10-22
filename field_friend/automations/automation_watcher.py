@@ -132,10 +132,9 @@ class AutomationWatcher:
         if not self.automator.is_running:
             self.start_time = None
             return
-        else:
-            if self.start_time is None:
-                self.start_time = rosys.time()
-            passed_time = rosys.time() - self.start_time
-            if passed_time > 1:
-                self.kpi_provider.increment_all_time_kpi('time', passed_time)
-                self.start_time = rosys.time()
+        if self.start_time is None:
+            self.start_time = rosys.time()
+        passed_time = rosys.time() - self.start_time
+        if passed_time > 1:
+            self.kpi_provider.increment_all_time_kpi('time', passed_time)
+            self.start_time = rosys.time()
