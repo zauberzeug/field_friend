@@ -244,11 +244,13 @@ class FieldNavigation(FollowCropsNavigation):
         ui.number('Turn Step', step=1.0, min=1.0, max=180.0, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
-            .bind_value(self, '_turn_step', forward=np.deg2rad, backward=np.rad2deg)
-        ui.number('Turn Step', step=0.1, min=0.1, max=20.0, format='%.2f', on_change=self.request_backup) \
+            .bind_value(self, '_turn_step', forward=np.deg2rad, backward=np.rad2deg) \
+            .tooltip(f'TURN_STEP (default: {np.rad2deg(self.TURN_STEP):.2f}°)')
+        ui.number('Max GNSS Waiting Time', step=0.1, min=0.1, max=20.0, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
-            .bind_value(self, '_max_gnss_waiting_time')
+            .bind_value(self, '_max_gnss_waiting_time') \
+            .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f}s)')
 
     def _set_field(self, field_id: str) -> None:
         field = self.field_provider.get_field(field_id)
