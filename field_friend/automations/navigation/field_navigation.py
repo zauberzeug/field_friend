@@ -126,7 +126,7 @@ class FieldNavigation(FollowCropsNavigation):
         assert self.field is not None
         # TODO: remove temporary fix for GNSS waiting
         if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 2.0:  # pylint: disable=protected-access
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(15.0)
+            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
 
         if self._state == State.APPROACHING_ROW_START:
             self._state = await self._run_approaching_row_start()
