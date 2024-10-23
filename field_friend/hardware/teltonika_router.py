@@ -47,8 +47,8 @@ class TeltonikaRouter:
             response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/failover/status',
                                              headers={'Authorization': f'Bearer {self.auth_token}'})
             response.raise_for_status()
-        except (httpx.RequestError, httpcore.ConnectError) as e:
-            self.log.exception(f'Getting Internet Connection Info failed: {e}')
+        except (httpx.RequestError, httpcore.ConnectError):
+            self.log.exception('Getting Internet Connection Info failed')
             self.connection_check_running = False
             return
         self.log.debug('Getting Internet Connection Info: success')
