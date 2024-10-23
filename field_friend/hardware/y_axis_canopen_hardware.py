@@ -38,6 +38,11 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             {name}_end_l.inverted = {str(end_stops_inverted).lower()}
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
             {name}_end_r.inverted = {str(end_stops_inverted).lower()}
+            # TODO: remove when lizard issue 66 is fixed.
+            {name}_end_l.level = 0
+            {name}_end_l.active = false
+            {name}_end_r.level = 0
+            {name}_end_r.active = false
             {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_l" if reversed_direction else name + "_end_r"}, {name + "_end_r" if reversed_direction else name + "_end_l"})
         ''')
         core_message_fields = [
