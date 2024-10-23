@@ -82,15 +82,13 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         elif isinstance(flashlight, FlashlightHardwareV2):
             lizard_code += f' {flashlight.name}_front.off(); {flashlight.name}_back.off();'
         if mower is not None:
-            lizard_code += f' m0.off();'
+            lizard_code += ' m0.off();'
         lizard_code += 'end\n'
         # implement stop call for estops and bumpers
         for name in estop.pins:
             lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
             for name in bumper.pins:
-                # TODO: remove level = 0 when lizard issue 66 is fixed. https://github.com/zauberzeug/lizard/issues/66
-                lizard_code += f'bumper_{name}.level = 0\n'
                 lizard_code += f'when bumper_{name}.level == 1 then stop(); end\n'
 
         # implement stop call for "ground check" reference sensors
@@ -98,7 +96,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f'when {y_axis.name}_ref_t.level == 1 then {wheels.name}.speed(0, 0); end\n'
         if isinstance(z_axis, TornadoHardware):
             if isinstance(y_axis, YAxisStepperHardware) or isinstance(y_axis, YAxisCanOpenHardware):
-                lizard_code += f'when {z_axis.name}_ref_knife_ground.active == false then {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
+                lizard_code += f'when {z_axis.name}_ref_knife_ground.active == false then \
+                    {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
 
         # implement watchdog for rosys modules
         lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'

@@ -138,8 +138,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.motor_error = False
 
         lizard_code = remove_indentation(f'''
-            {name}_motor_z = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {z_can_address}{', 6'if self.odrive_version == 6  else ''})
-            {name}_motor_turn = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {turn_can_address}{', 6'if self.odrive_version == 6  else ''})
+            {name}_motor_z = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {z_can_address}{', 6'if self.odrive_version == 6 else ''})
+            {name}_motor_turn = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {turn_can_address}{', 6'if self.odrive_version == 6 else ''})
             {name}_motor_z.m_per_tick = {m_per_tick}
             {name}_motor_turn.m_per_tick = {1/12.52}
             {name}_motor_z.limits({self.speed_limit}, {self.current_limit})
@@ -160,10 +160,13 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_ref_knife_ground.inverted = true
             {name}_z = {expander.name + "." if motors_on_expander and expander else ""}MotorAxis({name}_motor_z, {name + "_end_bottom" if is_z_reversed else name + "_end_top"}, {name + "_end_top" if is_z_reversed else name + "_end_bottom"})
 
-            # TODO: remove when lizard issue 66 is fixed. https://github.com/zauberzeug/lizard/issues/66
-            {name}_ref_motor.level = 0
-            {name}_ref_gear.level = 0
+            # TODO: remove when lizard issue 66 is fixed.
+            {name}_end_top.level = 0
+            {name}_end_top.active = false
+            {name}_end_bottom.level = 0
+            {name}_end_bottom.active = false
             {name}_ref_knife_stop.level = 0
+            {name}_ref_knife_stop.active = false
             {name}_ref_knife_ground.level = 0
             {name}_ref_knife_ground.active = false
 
