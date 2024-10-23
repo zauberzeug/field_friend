@@ -33,15 +33,17 @@ class AutomationWatcher:
         self.incidence_pose: Pose = Pose()
         self.resume_delay: float = DEFAULT_RESUME_DELAY
         self.field_polygon: Optional[ShapelyPolygon] = None
+        self.kpi_provider = system.kpi_provider
 
         self.bumper_watch_active: bool = False
         self.gnss_watch_active: bool = False
         self.field_watch_active: bool = False
         self.last_robot_pose = self.odometer.prediction
 
+        self.start_time = None
+        rosys.on_repeat(self._update_time, 0.1)
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
-        rosys.on_repeat(self.ensure_robot_pose_updates_when_not_in_automation, 5.0)
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
         self.gnss.GNSS_CONNECTION_LOST.register(lambda: self.pause('GNSS connection lost'))
@@ -125,15 +127,14 @@ class AutomationWatcher:
                 self.stop('robot is outside of field boundaries')
                 self.field_watch_active = False
 
-    async def ensure_robot_pose_updates_when_not_in_automation(self) -> None:
-        if self.automator.is_running:
+    def _update_time(self):
+        """Update KPIs for time"""
+        if not self.automator.is_running:
+            self.start_time = None
             return
-        if self.gnss.is_paused:
-            self.log.warning('GNSS is paused, this should not happen outside of an automation')
-            self.gnss.is_paused = False
-            return
-        if self.last_robot_pose == self.odometer.prediction:
-            await self.gnss.update_robot_pose()
-        else:
-            self.gnss.observed_poses.clear()
-        self.last_robot_pose = self.odometer.prediction
+        if self.start_time is None:
+            self.start_time = rosys.time()
+        passed_time = rosys.time() - self.start_time
+        if passed_time > 1:
+            self.kpi_provider.increment_all_time_kpi('time', passed_time)
+            self.start_time = rosys.time()

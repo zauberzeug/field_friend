@@ -2,11 +2,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from nicegui import app, events, ui
-
+from .support_point_dialog import SupportPointDialog
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
-
-
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -97,15 +95,21 @@ class operation:
     @ui.refreshable
     def field_setting(self):
         with ui.row().style('width:100%;'):
-            ui.button("Create Field" if len(self.system.field_provider.fields) < 1 else "Overwrite Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
-                .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto; width: 100%;").tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
-        with ui.row().classes('w-full mt-2'):
-            self.field_select = ui.select(
-                options=[field.name for field in self.system.field_provider.fields],
-                label='Select Field',
-                on_change=lambda e: setattr(self, 'selected_field', e.value)
-            ).classes('w-3/4')
-            ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
-                .props('color=red') \
-                .classes('ml-2') \
-                .tooltip('Delete the selected field')
+            # ui.button("Create Field" if len(self.system.field_provider.fields) < 1 else "Overwrite Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
+            #     .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto; width: 100%;").tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
+            ui.button(icon='add_box', on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
+                .tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
+        if len(self.system.field_provider.fields) > 0:
+            with ui.row().classes('w-full mt-2'):
+                self.field_select = ui.select(
+                    options=[field.name for field in self.system.field_provider.fields],
+                    label='Select Field',
+                    on_change=lambda e: setattr(self, 'selected_field', e.value)
+                ).classes('w-3/4')
+                ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
+                    .props('color=red') \
+                    .classes('ml-2') \
+                    .tooltip('Delete the selected field')
+            with ui.row().style('width:100%;'):
+                ui.button("Add Support Point", on_click=lambda: SupportPointDialog(self.system)).tooltip(
+                    "Add a support point for a row").classes("w-full")

@@ -29,16 +29,12 @@ class Navigation(rosys.persistence.PersistentModule):
         self.gnss = system.gnss
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
-        self.kpi_provider = system.kpi_provider
         self.implement = implement
         self.detector = system.detector
         self.name = 'Unknown'
         self.start_position = self.odometer.prediction.point
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
-        self.is_active = False
-        self.start_time = None
-        rosys.on_repeat(self._update_time, 0.1)
 
     async def start(self) -> None:
         try:
@@ -48,24 +44,18 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
-            await self.gnss.update_robot_pose()
             if self.gnss.check_distance_to_reference():
                 raise WorkflowException('reference to far away from robot')
             self.start_position = self.odometer.prediction.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             self.log.info('Navigation started')
-            self.is_active = True
             while not self._should_finish():
-                await self.gnss.update_robot_pose()
-                self.gnss.is_paused = True
                 distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
                 if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
                     await self._drive(self.DEFAULT_DRIVE_DISTANCE)
-                    self.gnss.is_paused = False
                     continue
                 await self._drive(distance)
-                self.gnss.is_paused = False
                 await self.implement.start_workflow()
                 await self.implement.stop_workflow()
         except WorkflowException as e:
@@ -84,13 +74,10 @@ class Navigation(rosys.persistence.PersistentModule):
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects = []
         self.log.info('clearing plant provider')
-        await self.gnss.update_robot_pose()
         return True
 
     async def finish(self) -> None:
         """Executed after the navigation is done"""
-        self.gnss.is_paused = False
-        self.is_active = False
         self.log.info('Navigation finished')
 
     @abc.abstractmethod
@@ -144,14 +131,4 @@ class Navigation(rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
             .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
-    
-    def _update_time(self):
-        """Update KPIs for time"""
-        if not self.is_active:
-            return
-        if self.start_time is None:
-            self.start_time = rosys.time()
-        passed_time = rosys.time() - self.start_time
-        if passed_time > 1:
-            self.kpi_provider.increment_all_time_kpi('time',passed_time)
-            self.start_time = rosys.time()
+

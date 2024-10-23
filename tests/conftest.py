@@ -1,4 +1,5 @@
 
+from field_friend.automations import Field, RowSupportPoint
 import logging
 from typing import AsyncGenerator, Generator
 from uuid import uuid4
@@ -9,7 +10,7 @@ from rosys.geometry import Point
 from rosys.testing import forward, helpers
 
 from field_friend import localization
-from field_friend.automations import Field
+from field_friend.automations import Field, Row
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
@@ -46,11 +47,58 @@ def gnss(system: System) -> GnssSimulation:
     return system.gnss
 
 
+class TestField():
+    def __init__(self):
+        self.id = "test_field_id"
+        self.name = "Test Field"
+        self.first_row_start = FIELD_FIRST_ROW_START
+        self.first_row_end = FIELD_FIRST_ROW_END
+        self.row_spacing = 0.45
+        self.row_number = 4
+        self.outline_buffer_width = 2
+        self.row_support_points = []
+        self.rows = [
+            Row(id=f"field_{self.id}_row_1", name="row_1", points=[
+                self.first_row_start,
+                self.first_row_end
+            ]),
+            Row(id=f"field_{self.id}_row_2", name="row_2", points=[
+                self.first_row_start.shifted(Point(x=0, y=-0.45)),
+                self.first_row_end.shifted(Point(x=0, y=-0.45))
+            ]),
+            Row(id=f"field_{self.id}_row_3", name="row_3", points=[
+                self.first_row_start.shifted(Point(x=0, y=-0.9)),
+                self.first_row_end.shifted(Point(x=0, y=-0.9))
+            ]),
+            Row(id=f"field_{self.id}_row_4", name="row_4", points=[
+                self.first_row_start.shifted(Point(x=0, y=-1.35)),
+                self.first_row_end.shifted(Point(x=0, y=-1.35))
+            ])
+        ]
+        self.outline = [
+            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=self.outline_buffer_width)),
+            self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=self.outline_buffer_width)),
+            self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=-
+                                       self.outline_buffer_width - (self.row_number - 1) * self.row_spacing)),
+            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=-
+                                         self.outline_buffer_width - (self.row_number - 1) * self.row_spacing)),
+            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=self.outline_buffer_width))
+        ]
+
+
 @pytest.fixture
-async def field(system: System) -> AsyncGenerator[Field, None]:
-    f = system.field_provider.create_field(Field(id=str(uuid4()), name='Field 1', first_row_start=FIELD_FIRST_ROW_START,
-                                           first_row_end=FIELD_FIRST_ROW_END, row_spacing=0.45, row_number=10))
-    yield f
+async def field(system: System) -> AsyncGenerator[TestField, None]:
+    test_field = TestField()
+    system.field_provider.create_field(Field(
+        id=test_field.id,
+        name="Test Field",
+        first_row_start=test_field.first_row_start,
+        first_row_end=test_field.first_row_end,
+        row_spacing=test_field.row_spacing,
+        row_number=test_field.row_number,
+        row_support_points=[]
+    ))
+    yield test_field
 
 
 @pytest.fixture
