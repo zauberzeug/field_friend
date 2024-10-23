@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING
-
+import rosys
+from field_friend.automations import Field
 from nicegui import app, events, ui
 from .support_point_dialog import SupportPointDialog
 from .field_creator import FieldCreator
@@ -17,8 +18,8 @@ class operation:
         self.field_provider = system.field_provider
         self.field = None
         self.key_controls = KeyControls(self.system)
-
         self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
+        self.system.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
 
         with ui.dialog() as self.delete_field_dialog, ui.card():
             ui.label('Are you sure you want to delete this field?')
@@ -77,17 +78,11 @@ class operation:
             self.system.current_navigation.settings_ui()
 
     def delete_selected_field(self):
-        if hasattr(self, 'selected_field'):
-            field_to_delete = next(
-                (f for f in self.system.field_provider.fields if f.name == self.selected_field), None)
-            if field_to_delete:
-                self.system.field_provider.delete_field(field_to_delete.id)
-                ui.notify(f'Field "{self.selected_field}" has been deleted')
-                self.selected_field = None
-                self.field_select.options = [field.name for field in self.system.field_provider.fields]
-                self.field_select.value = None
-            else:
-                ui.notify('No field selected', color='warning')
+        if self.system.field_provider.selected_field:
+            name = self.system.field_provider.selected_field.name
+            self.system.field_provider.delete_selected_field()
+            ui.notify(f'Field "{name}" has been deleted')
+            self.field_provider.FIELDS_CHANGED.emit()
         else:
             ui.notify('No field selected', color='warning')
         self.delete_field_dialog.close()
@@ -95,21 +90,22 @@ class operation:
     @ui.refreshable
     def field_setting(self):
         with ui.row().style('width:100%;'):
-            # ui.button("Create Field" if len(self.system.field_provider.fields) < 1 else "Overwrite Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
-            #     .classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto; width: 100%;").tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
-            ui.button(icon='add_box', on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
+            ui.button(icon='add_box', text="Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
                 .tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
         if len(self.system.field_provider.fields) > 0:
             with ui.row().classes('w-full mt-2'):
                 self.field_select = ui.select(
-                    options=[field.name for field in self.system.field_provider.fields],
+                    value=self.system.field_provider.selected_field.id if self.system.field_provider.selected_field else None,
+                    options={field.id: field.name for field in self.system.field_provider.fields},
                     label='Select Field',
-                    on_change=lambda e: setattr(self, 'selected_field', e.value)
+                    on_change=lambda e: self.system.field_provider.select_field(e.value)
                 ).classes('w-3/4')
-                ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
-                    .props('color=red') \
-                    .classes('ml-2') \
-                    .tooltip('Delete the selected field')
-            with ui.row().style('width:100%;'):
-                ui.button("Add Support Point", on_click=lambda: SupportPointDialog(self.system)).tooltip(
-                    "Add a support point for a row").classes("w-full")
+                if self.system.field_provider.selected_field:
+                    ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
+                        .props('color=red') \
+                        .classes('ml-2') \
+                        .tooltip('Delete the selected field')
+            if self.system.field_provider.selected_field:
+                with ui.row().style('width:100%;'):
+                    ui.button(icon='add_box', text="Row Point", on_click=lambda: SupportPointDialog(self.system)).tooltip(
+                        "Add a support point for a row")

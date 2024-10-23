@@ -34,7 +34,7 @@ class main_page():
                 with ui.row():
                     leaflet.buttons()
             with ui.row().classes('h-full ml-2 m-2').style('width: calc(100% - 1rem)'):
-                operation(self.system)
+                self.operation: operation = operation(self.system)
                 with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
                     camera_card(self.system)
                     robot_scene(self.system)

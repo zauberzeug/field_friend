@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Literal, TypedDict
 
 from nicegui import app, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
-
+import rosys
 from ...automations import Field, Row
 from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
@@ -38,6 +38,7 @@ class leaflet_map:
             },
             'edit': False,
         }
+        self.field_provider.FIELD_SELECTED.register_ui(self.set_active_field)
         center_point = GeoPoint(lat=51.983159, long=7.434212)
         if self.system.gnss.current is not None and self.system.gnss.current.location is not None:
             center_point = self.system.gnss.current.location
@@ -55,12 +56,10 @@ class leaflet_map:
         self.robot_marker: Marker | None = None
         self.drawn_marker = None
         self.row_layers: list = []
-        self.active_field: str | None = None
-        self.set_active_field()
         self.update_layers()
         self.zoom_to_robot()
-        self.field_provider.FIELDS_CHANGED.register(self.set_active_field)
         self.field_provider.FIELDS_CHANGED.register(self.update_layers)
+        self.field_provider.FIELD_SELECTED.register(self.update_layers)
 
         self.gnss.ROBOT_GNSS_POSITION_CHANGED.register_ui(self.update_robot_position)
 
@@ -90,15 +89,14 @@ class leaflet_map:
                 self.m.remove_layer(layer)
         self.field_layers = []
         for field in self.field_provider.fields:
-            color = '#6E93D6' if field.id == self.active_field else '#999'
+            color = '#6E93D6' if self.field_provider.selected_field is not None and field.id == self.field_provider.selected_field.id else '#999'
             self.field_layers.append(self.m.generic_layer(name="polygon",
                                                           args=[field.outline_as_tuples, {'color': color}]))
-        current_field: Field | None = self.field_provider.get_field(self.active_field)
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
-        if current_field is not None:
-            for row in current_field.rows:
+        if self.field_provider.selected_field is not None:
+            for row in self.field_provider.selected_field.rows:
                 self.row_layers.append(self.m.generic_layer(name="polyline",
                                                             args=[row.points_as_tuples, {'color': '#F2C037'}]))
 

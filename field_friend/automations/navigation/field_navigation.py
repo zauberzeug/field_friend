@@ -41,7 +41,8 @@ class FieldNavigation(FollowCropsNavigation):
         self.start_point: Point | None = None
         self.end_point: Point | None = None
 
-        self.field: Field | None = None
+        self.field: Field | None = self.field_provider.selected_field
+        self.field_provider.FIELD_SELECTED.register_ui(self._set_field)
         self._loop: bool = False
         self._turn_step = self.TURN_STEP
         self._max_gnss_waiting_time = self.MAX_GNSS_WAITING_TIME
@@ -228,13 +229,6 @@ class FieldNavigation(FollowCropsNavigation):
     def settings_ui(self) -> None:
         with ui.row():
             super().settings_ui()
-            field_selection = ui.select(
-                {f.id: f.name for f in self.field_provider.fields if len(f.rows) >= 1},
-                on_change=lambda args: self._set_field(args.value),
-                label='Field')\
-                .classes('w-32') \
-                .tooltip('Select the field to work on')
-            field_selection.bind_value_from(self, 'field', lambda f: f.id if f else None)
 
     def developer_ui(self) -> None:
         # super().developer_ui()
@@ -252,11 +246,8 @@ class FieldNavigation(FollowCropsNavigation):
             .bind_value(self, '_max_gnss_waiting_time') \
             .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f}s)')
 
-    def _set_field(self, field_id: str) -> None:
-        field = self.field_provider.get_field(field_id)
-        if field is not None:
-            self.field = field
-        self.field_provider.FIELDS_CHANGED.emit()
+    def _set_field(self) -> None:
+        self.field = self.field_provider.selected_field
 
     def create_simulation(self, crop_distance: float = 0.5) -> None:
         self.detector.simulated_objects.clear()
