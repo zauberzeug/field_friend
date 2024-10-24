@@ -10,11 +10,6 @@ from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
 
 
-class Active_object(TypedDict):
-    object_type: Literal["Rows", "Outline"]
-    object: Row
-
-
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -38,7 +33,6 @@ class leaflet_map:
             },
             'edit': False,
         }
-        self.field_provider.FIELD_SELECTED.register_ui(self.set_active_field)
         center_point = GeoPoint(lat=51.983159, long=7.434212)
         if self.system.gnss.current is not None and self.system.gnss.current.location is not None:
             center_point = self.system.gnss.current.location
@@ -58,8 +52,8 @@ class leaflet_map:
         self.row_layers: list = []
         self.update_layers()
         self.zoom_to_robot()
-        self.field_provider.FIELDS_CHANGED.register(self.update_layers)
-        self.field_provider.FIELD_SELECTED.register(self.update_layers)
+        self.field_provider.FIELDS_CHANGED.register_ui(self.update_layers)
+        self.field_provider.FIELD_SELECTED.register_ui(self.update_layers)
 
         self.gnss.ROBOT_GNSS_POSITION_CHANGED.register_ui(self.update_robot_position)
 
@@ -155,6 +149,3 @@ class leaflet_map:
         if self.drawn_marker is not None:
             self.m.remove_layer(self.drawn_marker)
         self.drawn_marker = None
-
-    def set_active_field(self) -> None:
-        self.active_field = self.field_provider.fields[0].id if len(self.field_provider.fields) > 0 else None
