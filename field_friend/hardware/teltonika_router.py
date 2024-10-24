@@ -2,6 +2,7 @@ import logging
 import os
 
 import httpx
+import httpcore
 import rosys
 from dotenv import load_dotenv
 from nicegui import ui
@@ -46,8 +47,8 @@ class TeltonikaRouter:
             response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/failover/status',
                                              headers={'Authorization': f'Bearer {self.auth_token}'})
             response.raise_for_status()
-        except httpx.RequestError:
-            self.log.exception(f'Getting Internet Connection Info: failed')
+        except (httpx.RequestError, httpcore.ConnectError):
+            self.log.error('Getting Internet Connection Info failed')
             self.connection_check_running = False
             return
         self.log.debug('Getting Internet Connection Info: success')
