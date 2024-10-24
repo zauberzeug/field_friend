@@ -38,8 +38,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def invalidate(self) -> None:
         self.request_backup()
         self.FIELDS_CHANGED.emit()
-        self.selected_field = None
-        self.FIELD_SELECTED.emit()
+        if self.selected_field and self.selected_field not in self.fields:
+            self.selected_field = None
+            self.FIELD_SELECTED.emit()
 
     def get_field(self, id_: str | None) -> Field | None:
         return next((f for f in self.fields if f.id == id_), None)
