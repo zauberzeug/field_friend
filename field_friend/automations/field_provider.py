@@ -58,10 +58,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
         if self.selected_field:
             name = self.selected_field.name
             self.fields.remove(self.selected_field)
-            self.log.info(f"Field {name} has been deleted.")
+            self.log.info('Field %s has been deleted.', name)
             self.invalidate()
         else:
-            self.log.warning(f"No field selected. Nothing was deleted.")
+            self.log.warning('No field selected. Nothing was deleted.')
 
     def is_polygon(self, field: Field) -> bool:
         try:
@@ -92,11 +92,11 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def update_field_parameters(self, field_id: str, name: str, row_number: int, row_spacing: float) -> None:
         field = self.get_field(field_id)
         if not field:
-            self.log.warning(f"Field with id {field_id} not found. Cannot update parameters.")
+            self.log.warning('Field with id %s not found. Cannot update parameters.', field_id)
             return
         field.name = name
         field.row_number = row_number
         field.row_spacing = row_spacing
-        self.log.info(
-            f"Updated parameters for field {field.name}: row number = {row_number}, row spacing = {row_spacing}")
+        self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
+                      field.name, row_number, row_spacing)
         self.invalidate()
