@@ -24,7 +24,7 @@ class State(Enum):
 
 
 class FieldNavigation(FollowCropsNavigation):
-    DRIVE_STEP = 0.1
+    DRIVE_STEP = 0.2
     TURN_STEP = np.deg2rad(25.0)
     MAX_GNSS_WAITING_TIME = 15.0
 
