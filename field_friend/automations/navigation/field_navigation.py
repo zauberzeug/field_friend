@@ -42,7 +42,7 @@ class FieldNavigation(FollowCropsNavigation):
         self.end_point: Point | None = None
 
         self.field: Field | None = self.field_provider.selected_field
-        self.field_provider.FIELD_SELECTED.register_ui(self._set_field)
+        self.field_provider.FIELD_SELECTED.register(self._set_field)
         self._loop: bool = False
         self._turn_step = self.TURN_STEP
         self._max_gnss_waiting_time = self.MAX_GNSS_WAITING_TIME
