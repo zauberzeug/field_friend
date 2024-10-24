@@ -1,11 +1,12 @@
 import logging
 from typing import TYPE_CHECKING
-import rosys
-from field_friend.automations import Field
+
 from nicegui import app, events, ui
-from .support_point_dialog import SupportPointDialog
+
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
+from .support_point_dialog import SupportPointDialog
+
 if TYPE_CHECKING:
     from field_friend.system import System
 
@@ -19,7 +20,7 @@ class operation:
         self.field = None
         self.key_controls = KeyControls(self.system)
         self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
-        self.system.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
+        self.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
 
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
@@ -51,7 +52,7 @@ class operation:
             self.implement_selection = ui.select(
                 [key for key in self.system.implements.keys()],
                 on_change=self.handle_implement_changed,
-                label='Implement')\
+                label='Implement') \
                 .classes('w-32') \
                 .tooltip('Select the implement to work with') \
                 .bind_value_from(self.system, 'current_implement', lambda i: i.name)
@@ -121,25 +122,26 @@ class operation:
                 ui.button('Delete', on_click=self.delete_selected_field).props('color=red')
 
         with ui.row().style('width:100%;'):
-            ui.button(icon='add_box', text="Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
-                .tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
-        if len(self.system.field_provider.fields) > 0:
-            with ui.row().classes('w-full mt-2'):
-                self.field_select = ui.select(
-                    value=self.system.field_provider.selected_field.id if self.system.field_provider.selected_field else None,
-                    options={field.id: field.name for field in self.system.field_provider.fields},
-                    label='Select Field',
-                    on_change=lambda e: self.system.field_provider.select_field(e.value)
-                ).classes('w-3/4')
-                if self.system.field_provider.selected_field:
-                    ui.button(icon='edit', on_click=self.edit_field_dialog.open) \
-                        .classes('ml-2') \
-                        .tooltip('Delete the selected field')
-                    ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
-                        .props('color=red') \
-                        .classes('ml-2') \
-                        .tooltip('Delete the selected field')
+            ui.button(icon='add_box', text='Field', on_click=lambda: FieldCreator(self.system)) \
+                .tooltip('Create a field with AB-line in a few simple steps')
+        if len(self.system.field_provider.fields) <= 0:
+            return
+        with ui.row().classes('w-full mt-2'):
+            self.field_select = ui.select(
+                value=self.system.field_provider.selected_field.id if self.system.field_provider.selected_field else None,
+                options={field.id: field.name for field in self.system.field_provider.fields},
+                label='Select Field',
+                on_change=lambda e: self.system.field_provider.select_field(e.value)
+            ).classes('w-3/4')
             if self.system.field_provider.selected_field:
-                with ui.row().style('width:100%;'):
-                    ui.button(icon='add_box', text="Row Point", on_click=lambda: SupportPointDialog(self.system)).tooltip(
-                        "Add a support point for a row")
+                ui.button(icon='edit', on_click=self.edit_field_dialog.open) \
+                    .classes('ml-2') \
+                    .tooltip('Edit the selected field')
+                ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
+                    .props('color=red') \
+                    .classes('ml-2') \
+                    .tooltip('Delete the selected field')
+        if self.system.field_provider.selected_field:
+            with ui.row().style('width:100%;'):
+                ui.button(icon='add_box', text='Row Point', on_click=lambda: SupportPointDialog(self.system)) \
+                    .tooltip('Add a support point for a row')

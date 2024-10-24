@@ -55,13 +55,13 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.invalidate()
 
     def delete_selected_field(self) -> None:
-        if self.selected_field:
-            name = self.selected_field.name
-            self.fields.remove(self.selected_field)
-            self.log.info('Field %s has been deleted.', name)
-            self.invalidate()
-        else:
+        if not self.selected_field:
             self.log.warning('No field selected. Nothing was deleted.')
+            return
+        name = self.selected_field.name
+        self.fields.remove(self.selected_field)
+        self.log.info('Field %s has been deleted.', name)
+        self.invalidate()
 
     def is_polygon(self, field: Field) -> bool:
         try:

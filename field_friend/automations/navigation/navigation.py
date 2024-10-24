@@ -131,4 +131,3 @@ class Navigation(rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
             .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
-
