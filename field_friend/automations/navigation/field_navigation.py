@@ -74,7 +74,6 @@ class FieldNavigation(FollowCropsNavigation):
         self.plant_provider.clear()
 
         self.automation_watcher.start_field_watch(self.field.outline)
-        self.automation_watcher.gnss_watch_active = True
 
         self.log.info(f'Activating {self.implement.name}...')
         await self.implement.activate()
@@ -86,7 +85,6 @@ class FieldNavigation(FollowCropsNavigation):
     async def finish(self) -> None:
         await super().finish()
         self.automation_watcher.stop_field_watch()
-        self.automation_watcher.gnss_watch_active = False
         await self.implement.deactivate()
 
     def get_nearest_row(self) -> Row:
