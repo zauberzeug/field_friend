@@ -43,6 +43,7 @@ from .hardware import (
 )
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
+from .localization import RobotLocator
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
@@ -96,8 +97,9 @@ class System(rosys.persistence.PersistentModule):
         else:
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
+        self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
-        self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
+        self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
         self.driver.parameters.linear_speed_limit = 0.3
         self.driver.parameters.angular_speed_limit = 0.2
         self.driver.parameters.can_drive_backwards = True

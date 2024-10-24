@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 
+import coloredlogs
 import icecream
 
 project = 'field_friend'
@@ -35,6 +36,7 @@ def configure():
         'disable_existing_loggers': True,
         'formatters': {
             'default': {
+                '()': coloredlogs.ColoredFormatter,
                 'format': '%(asctime)s.%(msecs)03d [%(levelname)s] %(relativepath)s:%(lineno)d: %(message)s',
                 'datefmt': '%Y-%m-%d %H:%M:%S',
             },
