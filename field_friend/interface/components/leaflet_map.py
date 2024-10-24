@@ -35,7 +35,6 @@ class leaflet_map:
         if self.system.gnss.current is not None and self.system.gnss.current.location is not None:
             center_point = self.system.gnss.current.location
         self.m: ui.leaflet
-        self.active_field_id: str | None = None
         if draw_tools:
             self.m = ui.leaflet(center=center_point.tuple, zoom=13, draw_control=self.draw_control)
         else:
