@@ -96,7 +96,6 @@ class operation:
     @ui.refreshable
     def field_setting(self) -> None:
         with ui.dialog() as self.edit_field_dialog, ui.card():
-            ui.label('Are you sure you want to delete this field?')
             parameters: dict = {
                 'name': self.field_provider.selected_field.name if self.field_provider.selected_field else '',
                 'row_number': self.field_provider.selected_field.row_number if self.field_provider.selected_field else 0,
@@ -113,7 +112,7 @@ class operation:
                 .bind_value(parameters, 'row_spacing')
             with ui.row():
                 ui.button('Cancel', on_click=self.edit_field_dialog.close)
-                ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters)).props('color=primary')
+                ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters))
 
         with ui.dialog() as self.delete_field_dialog, ui.card():
             ui.label('Are you sure you want to delete this field?')
