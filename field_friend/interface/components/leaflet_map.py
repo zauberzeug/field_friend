@@ -1,14 +1,12 @@
 
 import logging
-from typing import TYPE_CHECKING, Literal, TypedDict
+from typing import TYPE_CHECKING
 
 from nicegui import app, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
-import rosys
-from ...automations import Field, Row
+
 from ...localization.geo_point import GeoPoint
 from .key_controls import KeyControls
-
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -37,12 +35,11 @@ class leaflet_map:
         if self.system.gnss.current is not None and self.system.gnss.current.location is not None:
             center_point = self.system.gnss.current.location
         self.m: ui.leaflet
+        self.active_field_id: str | None = None
         if draw_tools:
-            self.m = ui.leaflet(center=center_point.tuple,
-                                zoom=13, draw_control=self.draw_control)
+            self.m = ui.leaflet(center=center_point.tuple, zoom=13, draw_control=self.draw_control)
         else:
-            self.m = ui.leaflet(center=center_point.tuple,
-                                zoom=13)
+            self.m = ui.leaflet(center=center_point.tuple, zoom=13)
         self.m.clear_layers()
         self.current_basemap: TileLayer | None = None
         self.toggle_basemap()
@@ -70,8 +67,9 @@ class leaflet_map:
         ui.button(on_click=self.zoom_to_field) \
             .props('icon=polyline dense flat') \
             .tooltip('center map on field boundaries').classes('ml-0')
-        ui.button("Update reference", on_click=self.gnss.update_reference).props("outline color=warning") \
-            .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
+        ui.button('Update reference', on_click=self.gnss.update_reference).props('outline color=warning') \
+            .tooltip('Set current position as geo reference and restart the system').classes('ml-auto') \
+            .style('display: block; margin-top:auto; margin-bottom: auto;')
 
     def abort_point_drawing(self, dialog) -> None:
         self.on_dialog_close()
@@ -84,14 +82,14 @@ class leaflet_map:
         self.field_layers = []
         for field in self.field_provider.fields:
             color = '#6E93D6' if self.field_provider.selected_field is not None and field.id == self.field_provider.selected_field.id else '#999'
-            self.field_layers.append(self.m.generic_layer(name="polygon",
+            self.field_layers.append(self.m.generic_layer(name='polygon',
                                                           args=[field.outline_as_tuples, {'color': color}]))
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
         if self.field_provider.selected_field is not None:
             for row in self.field_provider.selected_field.rows:
-                self.row_layers.append(self.m.generic_layer(name="polyline",
+                self.row_layers.append(self.m.generic_layer(name='polyline',
                                                             args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
