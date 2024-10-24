@@ -87,3 +87,15 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def select_field(self, id_: str | None) -> None:
         self.selected_field = self.get_field(id_)
         self.FIELD_SELECTED.emit()
+
+    def update_field_parameters(self, field_id: str, name: str, row_number: int, row_spacing: float) -> None:
+        field = self.get_field(field_id)
+        if not field:
+            self.log.warning(f"Field with id {field_id} not found. Cannot update parameters.")
+            return
+        field.name = name
+        field.row_number = row_number
+        field.row_spacing = row_spacing
+        self.log.info(
+            f"Updated parameters for field {field.name}: row number = {row_number}, row spacing = {row_spacing}")
+        self.invalidate()

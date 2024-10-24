@@ -21,12 +21,6 @@ class operation:
         self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
         self.system.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
 
-        with ui.dialog() as self.delete_field_dialog, ui.card():
-            ui.label('Are you sure you want to delete this field?')
-            with ui.row():
-                ui.button('Cancel', on_click=self.delete_field_dialog.close)
-                ui.button('Delete', on_click=self.delete_selected_field).props('color=red')
-
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
                 with ui.column().classes('w-full'):
@@ -77,6 +71,15 @@ class operation:
         with self.navigation_settings:
             self.system.current_navigation.settings_ui()
 
+    def edit_selected_field(self, parameters):
+        if self.system.field_provider.selected_field:
+            name = 'placeholder'
+            ui.notify(f'Parameters of Field "{name}" has been changed')
+            self.field_provider.FIELDS_CHANGED.emit()
+        else:
+            ui.notify('No field selected', color='warning')
+        self.edit_field_dialog.close()
+
     def delete_selected_field(self):
         if self.system.field_provider.selected_field:
             name = self.system.field_provider.selected_field.name
@@ -88,7 +91,38 @@ class operation:
         self.delete_field_dialog.close()
 
     @ui.refreshable
-    def field_setting(self):
+    def field_setting(self) -> None:
+        with ui.dialog() as self.edit_field_dialog, ui.card():
+            ui.label('Are you sure you want to delete this field?')
+            parameters: dict = {
+                'name': self.field_provider.selected_field.name if self.field_provider.selected_field else '',
+                'row_number': self.field_provider.selected_field.row_number if self.field_provider.selected_field else 0,
+                'row_spacing': self.field_provider.selected_field.row_spacing if self.field_provider.selected_field else 0.0
+            }
+            ui.input('Field Name', value=parameters['name']) \
+                .props('dense outlined').classes('w-full') \
+                .bind_value(parameters, 'name')
+            ui.input('Row Number', value=parameters['row_number']) \
+                .props('dense outlined').classes('w-full') \
+                .bind_value(parameters, 'row_number')
+            ui.input('Row Spacing', value=parameters['row_spacing']) \
+                .props('dense outlined').classes('w-full') \
+                .bind_value(parameters, 'row_spacing')
+            with ui.row():
+                ui.button('Cancel', on_click=self.edit_field_dialog.close)
+                ui.button('Apply', on_click=lambda: self.system.field_provider.update_field_parameters(
+                    self.system.field_provider.selected_field.id,
+                    parameters['name'],
+                    int(parameters['row_number']),
+                    float(parameters['row_spacing'])
+                )).props('color=primary')
+
+        with ui.dialog() as self.delete_field_dialog, ui.card():
+            ui.label('Are you sure you want to delete this field?')
+            with ui.row():
+                ui.button('Cancel', on_click=self.delete_field_dialog.close)
+                ui.button('Delete', on_click=self.delete_selected_field).props('color=red')
+
         with ui.row().style('width:100%;'):
             ui.button(icon='add_box', text="Field", on_click=lambda: FieldCreator(self.system)).tooltip("Build a field with AB-line in a few simple steps") \
                 .tooltip("Build a field with AB-line in a few simple steps. Currently only one field will be saved.")
@@ -101,6 +135,9 @@ class operation:
                     on_change=lambda e: self.system.field_provider.select_field(e.value)
                 ).classes('w-3/4')
                 if self.system.field_provider.selected_field:
+                    ui.button(icon='edit', on_click=self.edit_field_dialog.open) \
+                        .classes('ml-2') \
+                        .tooltip('Delete the selected field')
                     ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
                         .props('color=red') \
                         .classes('ml-2') \
