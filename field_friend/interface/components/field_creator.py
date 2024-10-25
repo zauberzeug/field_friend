@@ -25,6 +25,7 @@ class FieldCreator:
         self.field_name: str = 'Field'
         self.row_spacing: float = 0.5
         self.row_number: int = 10
+        self.outline_buffer_width: float = 2.0
         self.next: Callable = self.find_first_row
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
@@ -79,6 +80,11 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the distance between the rows') \
                 .bind_value(self, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
+            ui.number('Outline Buffer Width', suffix='m',
+                      value=2, step=0.1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the width of the buffer around the field outline') \
+                .bind_value(self, 'outline_buffer_width')
         self.next = self.find_row_ending
 
     def find_row_ending(self) -> None:
@@ -108,6 +114,7 @@ class FieldCreator:
                 ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
                 ui.label(f'Row Spacing: {self.row_spacing} m').classes('text-lg')
                 ui.label(f'Number of Rows: {self.row_number}').classes('text-lg')
+                ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
             with ui.row().classes('items-center'):
                 ui.button('Cancel', on_click=self.dialog.close).props('color=red')
         self.next = self._apply
@@ -122,7 +129,8 @@ class FieldCreator:
                                                first_row_start=self.first_row_start,
                                                first_row_end=self.first_row_end,
                                                row_spacing=self.row_spacing,
-                                               row_number=self.row_number))
+                                               row_number=self.row_number,
+                                               outline_buffer_width=self.outline_buffer_width))
         self.first_row_start = None
         self.first_row_end = None
 

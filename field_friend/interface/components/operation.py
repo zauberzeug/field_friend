@@ -79,7 +79,9 @@ class operation:
                 self.system.field_provider.selected_field.id,
                 parameters['name'],
                 int(parameters['row_number']),
-                float(parameters['row_spacing']))
+                float(parameters['row_spacing']),
+                float(parameters['outline_buffer_width'])
+            )
             ui.notify(f'Parameters of Field "{name}" has been changed')
         else:
             ui.notify('No field selected', color='warning')
@@ -100,7 +102,8 @@ class operation:
             parameters: dict = {
                 'name': self.field_provider.selected_field.name if self.field_provider.selected_field else '',
                 'row_number': self.field_provider.selected_field.row_number if self.field_provider.selected_field else 0,
-                'row_spacing': self.field_provider.selected_field.row_spacing if self.field_provider.selected_field else 0.0
+                'row_spacing': self.field_provider.selected_field.row_spacing if self.field_provider.selected_field else 0.0,
+                'outline_buffer_width': self.field_provider.selected_field.outline_buffer_width if self.field_provider.selected_field else 2.0
             }
             ui.input('Field Name', value=parameters['name']) \
                 .props('dense outlined').classes('w-full') \
@@ -111,6 +114,10 @@ class operation:
             ui.input('Row Spacing', value=parameters['row_spacing']) \
                 .props('dense outlined').classes('w-full') \
                 .bind_value(parameters, 'row_spacing')
+            ui.number('Outline Buffer Width', value=parameters.get('outline_buffer_width', 2.0), min=1, max=10, step=0.1) \
+                .props('dense outlined').classes('w-full') \
+                .bind_value(parameters, 'outline_buffer_width') \
+                .tooltip('Set the outline buffer width')
             with ui.row():
                 ui.button('Cancel', on_click=self.edit_field_dialog.close)
                 ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters))
