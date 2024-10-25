@@ -222,6 +222,7 @@ class FieldNavigation(FollowCropsNavigation):
             'row_index': self.row_index,
             'state': self._state.name,
             'loop': self._loop,
+            'drive_step': self._drive_step,
             'turn_step': self._turn_step,
             'max_gnss_waiting_time': self._max_gnss_waiting_time,
         }
@@ -233,6 +234,7 @@ class FieldNavigation(FollowCropsNavigation):
         self.row_index = data.get('row_index', 0)
         self._state = State[data.get('state', State.APPROACHING_ROW_START.name)]
         self._loop = data.get('loop', False)
+        self._drive_step = data.get('drive_step', self.DRIVE_STEP)
         self._turn_step = data.get('turn_step', self.TURN_STEP)
         self._max_gnss_waiting_time = data.get('max_gnss_waiting_time', self.MAX_GNSS_WAITING_TIME)
 
