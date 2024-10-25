@@ -112,7 +112,7 @@ class FieldCreator:
                 ui.label(f'Field Name: {self.field_name}').classes('text-lg')
                 ui.label(f'First Row Start: {self.first_row_start}').classes('text-lg')
                 ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
-                ui.label(f'Row Spacing: {self.row_spacing} m').classes('text-lg')
+                ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows: {self.row_number}').classes('text-lg')
                 ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
             with ui.row().classes('items-center'):

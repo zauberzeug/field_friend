@@ -111,10 +111,10 @@ class operation:
             ui.input('Row Number', value=parameters['row_number']) \
                 .props('dense outlined').classes('w-full') \
                 .bind_value(parameters, 'row_number')
-            ui.input('Row Spacing', value=parameters['row_spacing']) \
+            ui.number('Row Spacing', value=parameters['row_spacing'], suffix='cm', min=1, step=1) \
                 .props('dense outlined').classes('w-full') \
-                .bind_value(parameters, 'row_spacing')
-            ui.number('Outline Buffer Width', value=parameters.get('outline_buffer_width', 2.0), min=1, max=10, step=0.1) \
+                .bind_value(parameters, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
+            ui.number('Outline Buffer Width', value=parameters.get('outline_buffer_width', 2.0), min=1, max=10, step=0.1, suffix='m') \
                 .props('dense outlined').classes('w-full') \
                 .bind_value(parameters, 'outline_buffer_width') \
                 .tooltip('Set the outline buffer width')
