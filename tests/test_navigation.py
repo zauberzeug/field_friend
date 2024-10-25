@@ -270,7 +270,7 @@ async def test_approaching_first_row(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_navigation.field = field
+    system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -304,7 +304,7 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
     assert system.odometer.prediction.point.x == pytest.approx(safe_start_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(safe_start_point.y, abs=0.05)
 
-    system.field_navigation.field = field
+    system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -335,7 +335,7 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     assert system.odometer.prediction.point.x == pytest.approx(point_outside.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(point_outside.y, abs=0.05)
 
-    system.field_navigation.field = field
+    system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -353,7 +353,7 @@ async def test_complete_row(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_navigation.field = field
+    system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -394,7 +394,7 @@ async def test_complete_field(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_navigation.field = system.field_provider.get_field(field.id)
+    system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
