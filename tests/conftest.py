@@ -1,8 +1,7 @@
 
-from field_friend.automations import Field, RowSupportPoint
+from field_friend.automations import Field
 import logging
 from typing import AsyncGenerator, Generator
-from uuid import uuid4
 
 import pytest
 import rosys

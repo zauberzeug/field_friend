@@ -22,8 +22,9 @@ class FieldCreator:
         self.field_provider = system.field_provider
         self.first_row_start: GeoPoint | None = None
         self.first_row_end: GeoPoint | None = None
-        self.row_spacing = 0.5
-        self.row_number = 10
+        self.field_name: str = 'Field'
+        self.row_spacing: float = 0.5
+        self.row_number: int = 10
         self.next: Callable = self.find_first_row
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
@@ -64,6 +65,10 @@ class FieldCreator:
         self.row_sight.content = ''
         self.content.clear()
         with self.content:
+            ui.input('Field Name') \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Enter a name for the field') \
+                .bind_value(self, 'field_name')
             ui.number('Number of rows',
                       value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
@@ -98,6 +103,7 @@ class FieldCreator:
         self.content.clear()
         with self.content:
             with ui.row().classes('items-center'):
+                ui.label(f'Field Name: {self.field_name}').classes('text-lg')
                 ui.label(f'First Row Start: {self.first_row_start}').classes('text-lg')
                 ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
                 ui.label(f'Row Spacing: {self.row_spacing} m').classes('text-lg')
@@ -112,7 +118,7 @@ class FieldCreator:
             ui.notify('No valid field parameters.')
             return
         self.field_provider.create_field(Field(id=str(uuid4()),
-                                               name='Field 1',
+                                               name=self.field_name,
                                                first_row_start=self.first_row_start,
                                                first_row_end=self.first_row_end,
                                                row_spacing=self.row_spacing,
