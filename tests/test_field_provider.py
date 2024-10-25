@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
-
+import uuid
 import pytest
-from conftest import FIELD_FIRST_ROW_START
+from conftest import FIELD_FIRST_ROW_START, FIELD_FIRST_ROW_END
 from rosys.geometry import Point
 
 from field_friend import System
@@ -141,3 +141,61 @@ def test_update_existing_row_support_point(system: System, field: Field):
     expected_distance = 2.45  # 3rd row support point + row spacing
     actual_distance = updated_field.rows[3].points[0].cartesian().distance(updated_field.rows[0].points[0].cartesian())
     assert actual_distance == pytest.approx(expected_distance, abs=1e-6)
+
+
+def test_create_multiple_fields(system: System):
+    field_provider = system.field_provider
+    field_provider.clear_fields()
+    assert len(field_provider.fields) == 0
+
+    # Create first field
+    field1 = Field(
+        id=str(uuid.uuid4()),
+        name="Field 1",
+        first_row_start=FIELD_FIRST_ROW_START,
+        first_row_end=FIELD_FIRST_ROW_END,
+        row_number=5,
+        row_spacing=0.5
+    )
+    created_field1 = field_provider.create_field(field1)
+    assert len(field_provider.fields) == 1
+    assert field_provider.get_field(created_field1.id) == created_field1
+
+    # Create second field
+    field2 = Field(
+        id=str(uuid.uuid4()),
+        name="Field 2",
+        first_row_start=FIELD_FIRST_ROW_START.shifted(Point(x=10, y=10)),
+        first_row_end=FIELD_FIRST_ROW_END.shifted(Point(x=10, y=10)),
+        row_number=3,
+        row_spacing=0.75
+    )
+    created_field2 = field_provider.create_field(field2)
+    assert len(field_provider.fields) == 2
+    assert field_provider.get_field(created_field2.id) == created_field2
+
+    assert field_provider.fields[0].name == "Field 1"
+    assert field_provider.fields[0].row_number == 5
+    assert field_provider.fields[0].row_spacing == 0.5
+
+    assert field_provider.fields[1].name == "Field 2"
+    assert field_provider.fields[1].row_number == 3
+    assert field_provider.fields[1].row_spacing == 0.75
+
+    assert field_provider.fields[0].id != field_provider.fields[1].id
+
+
+def test_select_field(system: System, field: Field):
+    field_provider = system.field_provider
+    assert field_provider.selected_field.id == field.id
+    field_provider.select_field(field.id)
+    assert field_provider.selected_field is not None
+    assert field_provider.selected_field.id == field.id
+
+
+def test_delete_selected_field(system: System, field: Field):
+    field_provider = system.field_provider
+    field_provider.select_field(field.id)
+    field_provider.delete_selected_field()
+    assert len(field_provider.fields) == 0
+    assert field_provider.get_field(field.id) is None

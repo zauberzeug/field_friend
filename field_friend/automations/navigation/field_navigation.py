@@ -43,6 +43,8 @@ class FieldNavigation(FollowCropsNavigation):
         self.end_point: Point | None = None
 
         self.field: Field | None = None
+        self.field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
+        self.field_provider.FIELD_SELECTED.register(self._set_field_id)
         self._loop: bool = False
         self._drive_step = self.DRIVE_STEP
         self._turn_step = self.TURN_STEP
@@ -55,6 +57,7 @@ class FieldNavigation(FollowCropsNavigation):
 
     async def prepare(self) -> bool:
         await super().prepare()
+        self.field = self.field_provider.get_field(self.field_id)
         if self.field is None:
             rosys.notify('No field selected', 'negative')
             return False
@@ -268,11 +271,8 @@ class FieldNavigation(FollowCropsNavigation):
             .bind_value(self, '_max_gnss_waiting_time') \
             .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f}s)')
 
-    def _set_field(self, field_id: str) -> None:
-        field = self.field_provider.get_field(field_id)
-        if field is not None:
-            self.field = field
-        self.field_provider.FIELDS_CHANGED.emit()
+    def _set_field_id(self) -> None:
+        self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
 
     def create_simulation(self, crop_distance: float = 0.5) -> None:
         self.detector.simulated_objects.clear()
