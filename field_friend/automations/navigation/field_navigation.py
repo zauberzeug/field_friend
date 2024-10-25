@@ -249,7 +249,7 @@ class FieldNavigation(FollowCropsNavigation):
             .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f}s)')
 
     def _set_field_id(self) -> None:
-        self.field = self.field_provider.selected_field
+        self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
 
     def create_simulation(self, crop_distance: float = 0.5) -> None:
         self.detector.simulated_objects.clear()
