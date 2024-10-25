@@ -52,6 +52,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def create_field(self, new_field: Field) -> Field:
         self.fields.append(new_field)
+        self.select_field(new_field.id)
         self.invalidate()
         return new_field
 
