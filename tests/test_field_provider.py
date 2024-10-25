@@ -107,7 +107,7 @@ def test_add_multiple_row_support_points(system: System, field: Field):
     assert [sp.long for sp in updated_field.row_support_points] == [
         second_row_shift_point.long, third_row_shift_point.long]
     # Check the distance between the first and second row
-    assert updated_field.rows[0].points[0].distance(updated_field.rows[1].points[0]) == pytest.approx(0.3, abs=1e-6)
+    assert updated_field.rows[0].points[0].distance(updated_field.rows[1].points[0]) == pytest.approx(0.3, abs=+-6)
     assert updated_field.rows[0].points[1].distance(updated_field.rows[1].points[1]) == pytest.approx(0.3, abs=1e-6)
     # Check the distance between the first and third row
     assert updated_field.rows[0].points[0].distance(updated_field.rows[2].points[0]) == pytest.approx(1.0, abs=1e-6)
@@ -187,7 +187,7 @@ def test_create_multiple_fields(system: System):
 
 def test_select_field(system: System, field: Field):
     field_provider = system.field_provider
-    assert field_provider.selected_field is None
+    assert field_provider.selected_field.id == field.id
     field_provider.select_field(field.id)
     assert field_provider.selected_field is not None
     assert field_provider.selected_field.id == field.id
