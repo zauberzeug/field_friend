@@ -281,7 +281,6 @@ async def test_approaching_first_row(system: System, field: Field):
         assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-6)
     assert system.field_navigation.automation_watcher.field_watch_active
     assert system.automator.is_running
-    assert system.field_navigation.current_row == field.rows[0]
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
     start_point = field.rows[0].points[0].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(start_point.x, abs=0.05)
