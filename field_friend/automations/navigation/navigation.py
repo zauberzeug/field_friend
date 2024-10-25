@@ -84,7 +84,7 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive(self, distance: float) -> None:
         """Drives the vehicle a short distance forward"""
 
-    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose) -> None:
+    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, timeout: float = 3.0) -> None:
         """Drives the vehicle a short distance forward while steering onto the line defined by the target pose.
         NOTE: the target pose should be the foot point of the current position on the line.
         """
@@ -97,14 +97,14 @@ class Navigation(rosys.persistence.PersistentModule):
         curvature = np.tan(turn_angle) / hook_offset.x
         if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
             curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius
-        with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-            await self.driver.wheels.drive(*self.driver._throttle(1.0, curvature))  # pylint: disable=protected-access
-        deadline = rosys.time() + 3.0
+        deadline = rosys.time() + timeout
         while self.odometer.prediction.point.distance(start_position) < distance:
             if rosys.time() >= deadline:
                 await self.driver.wheels.stop()
                 raise TimeoutError('Driving Timeout')
             await rosys.sleep(0.01)
+            with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
+                await self.driver.wheels.drive(*self.driver._throttle(1.0, curvature))  # pylint: disable=protected-access
         await self.driver.wheels.stop()
 
     @abc.abstractmethod
@@ -131,4 +131,3 @@ class Navigation(rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
             .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
-
