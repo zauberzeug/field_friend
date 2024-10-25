@@ -103,7 +103,6 @@ class Navigation(rosys.persistence.PersistentModule):
                 await self.driver.wheels.stop()
                 raise TimeoutError('Driving Timeout')
             await rosys.sleep(0.01)
-            # TODO: dont send so many commands
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
                 await self.driver.wheels.drive(*self.driver._throttle(1.0, curvature))  # pylint: disable=protected-access
         await self.driver.wheels.stop()
