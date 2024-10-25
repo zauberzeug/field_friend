@@ -161,9 +161,17 @@ class FieldNavigation(FollowCropsNavigation):
             distance = self.odometer.prediction.distance(target)
             if abs(distance) < 0.05:
                 break
+            angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw,
+                                                   self.odometer.prediction.direction(target))
+            if abs(angle_difference) > np.pi / 2.0:
+                break
+
             drive_step = min(self._drive_step, distance)
-            await self._drive_towards_target(drive_step, target)
+            # TODO: calculate a good timeout
+            await self._drive_towards_target(drive_step, target, timeout=30)
+            # TODO: check a waiting timeout is a good idea
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+            # await self.gnss.ROBOT_POSE_LOCATED
 
     async def turn_to_yaw(self, target_yaw, angle_threshold=np.deg2rad(1.0)) -> None:
         while True:
@@ -255,7 +263,7 @@ class FieldNavigation(FollowCropsNavigation):
             .classes('w-24') \
             .bind_value(self, '_turn_step', forward=np.deg2rad, backward=np.rad2deg) \
             .tooltip(f'TURN_STEP (default: {np.rad2deg(self.TURN_STEP):.2f}°)')
-        ui.number('Max GNSS Waiting Time', step=0.1, min=0.1, max=20.0, format='%.2f', on_change=self.request_backup) \
+        ui.number('Max GNSS Waiting Time', step=0.1, min=0.1, max=180.0, format='%.2f', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, '_max_gnss_waiting_time') \
