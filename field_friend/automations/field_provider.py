@@ -26,6 +26,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def backup(self) -> dict:
         return {
             'fields': {f.id: f.to_dict() for f in self.fields},
+            'selected_field': self.selected_field.id if self.selected_field else None,
         }
 
     def restore(self, data: dict[str, dict]) -> None:
@@ -33,6 +34,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)
             self.fields.append(new_field)
+        selected_field_id = data.get('selected_field')
+        if selected_field_id:
+            self.selected_field = self.get_field(selected_field_id)
+            self.FIELD_SELECTED.emit()
         self.FIELDS_CHANGED.emit()
 
     def invalidate(self) -> None:
