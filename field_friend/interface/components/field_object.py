@@ -47,8 +47,7 @@ class field_object(Group):
             'field_').material('#8b4513').rotate(np.pi/2, 0, 0)
 
     def _update(self) -> None:
-        if isinstance(self.system.current_navigation, FieldNavigation):
-            self.update(self.system.current_navigation.field)
+        self.update(self.system.field_provider.selected_field)
 
     def update(self, active_field: Field | None) -> None:
         [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
