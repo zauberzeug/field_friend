@@ -161,17 +161,16 @@ class FieldNavigation(FollowCropsNavigation):
             distance = self.odometer.prediction.distance(target)
             if abs(distance) < 0.05:
                 break
+            # Check if target is behind the robot
             angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw,
                                                    self.odometer.prediction.direction(target))
             if abs(angle_difference) > np.pi / 2.0:
                 break
-
             drive_step = min(self._drive_step, distance)
-            # TODO: calculate a good timeout
-            await self._drive_towards_target(drive_step, target, timeout=30)
-            # TODO: check a waiting timeout is a good idea
+            # Calculate timeout based on linear speed limit and drive step
+            timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 3.0
+            await self._drive_towards_target(drive_step, target, timeout=timeout)
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
-            # await self.gnss.ROBOT_POSE_LOCATED
 
     async def turn_to_yaw(self, target_yaw, angle_threshold=np.deg2rad(1.0)) -> None:
         while True:
