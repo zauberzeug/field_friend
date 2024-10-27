@@ -258,21 +258,21 @@ class FieldNavigation(FollowCropsNavigation):
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
-        ui.number('Drive Step', step=0.01, min=0.01, max=10.0, format='%.2f', on_change=self.request_backup) \
+        ui.number('Drive Step', step=0.01, min=0.01, max=10.0, format='%.2f', suffix='m', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, '_drive_step') \
-            .tooltip(f'DRIVE_STEP (default: {self.DRIVE_STEP:.2f}m)')
-        ui.number('Turn Step', step=1.0, min=1.0, max=180.0, format='%.2f', on_change=self.request_backup) \
+            .tooltip(f'DRIVE_STEP (default: {self.DRIVE_STEP:.2f})')
+        ui.number('Turn Step', step=1.0, min=1.0, max=180.0, format='%.1f', suffix='°', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, '_turn_step', forward=np.deg2rad, backward=np.rad2deg) \
-            .tooltip(f'TURN_STEP (default: {np.rad2deg(self.TURN_STEP):.2f}°)')
-        ui.number('Max GNSS Waiting Time', step=0.1, min=0.1, max=180.0, format='%.2f', on_change=self.request_backup) \
+            .tooltip(f'TURN_STEP (default: {np.rad2deg(self.TURN_STEP):.2f})')
+        ui.number('Max GNSS Waiting Time', step=0.1, min=0.1, format='%.1f', suffix='s', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, '_max_gnss_waiting_time') \
-            .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f}s)')
+            .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f})')
 
     def _set_field_id(self) -> None:
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
