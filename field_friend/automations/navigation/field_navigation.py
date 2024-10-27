@@ -200,11 +200,14 @@ class FieldNavigation(FollowCropsNavigation):
             angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
 
     async def _run_following_row(self, distance: float) -> State:
-        if not self.implement.is_active:
-            await self.implement.activate()
-        if StraightLineNavigation._should_finish(self):  # pylint: disable=protected-access
+        end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
+                                       yaw=self.start_point.direction(self.end_point), time=0)
+        if end_pose.relative_point(self.odometer.prediction.point).x > 0:
+            await self.driver.wheels.stop()
             await self.implement.deactivate()
             return State.ROW_COMPLETED
+        if not self.implement.is_active:
+            await self.implement.activate()
         await super()._drive(distance)
         return State.FOLLOWING_ROW
 
