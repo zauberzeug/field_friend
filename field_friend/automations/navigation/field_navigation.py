@@ -159,17 +159,11 @@ class FieldNavigation(FollowCropsNavigation):
             self.plant_provider.clear()
         return State.FOLLOWING_ROW
 
-    async def drive_in_steps(self, target: Point) -> None:
+    async def drive_in_steps(self, target: Pose) -> None:
         while True:
-            distance = self.odometer.prediction.distance(target)
-            if abs(distance) < 0.05:
-                break
-            # Check if target is behind the robot
-            angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw,
-                                                   self.odometer.prediction.direction(target))
-            if abs(angle_difference) > np.pi / 2.0:
-                break
-            drive_step = min(self._drive_step, distance)
+            if target.relative_point(self.odometer.prediction.point).x > 0:
+                return
+            drive_step = min(self._drive_step, self.odometer.prediction.distance(target))
             # Calculate timeout based on linear speed limit and drive step
             timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 3.0
             await self._drive_towards_target(drive_step, target, timeout=timeout)
@@ -212,6 +206,7 @@ class FieldNavigation(FollowCropsNavigation):
         return State.FOLLOWING_ROW
 
     async def _run_row_completed(self) -> State:
+        await self.driver.wheels.stop()
         assert self.field
         next_state: State = State.ROW_COMPLETED
         if not self._loop and self.current_row == self.field.rows[-1]:
