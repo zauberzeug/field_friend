@@ -47,17 +47,17 @@ class Field:
                  first_row_start: GeoPoint,
                  first_row_end: GeoPoint,
                  row_spacing: float = 0.5,
-                 row_number: int = 10,
+                 row_count: int = 10,
                  outline_buffer_width: float = 2,
                  row_support_points: list[RowSupportPoint] | None = None,
                  bed_count: int = 1,
-                 bed_spacing: float | None = 0.5) -> None:
+                 bed_spacing: float = 0.5) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
         self.first_row_end: GeoPoint = first_row_end
         self.row_spacing: float = row_spacing
-        self.row_number: int = row_number  # rows per bed
+        self.row_count: int = row_count  # rows per bed
         self.bed_count: int = bed_count
         self.bed_spacing: float = bed_spacing if bed_spacing is not None else row_spacing * 2
         self.outline_buffer_width: float = outline_buffer_width
@@ -90,7 +90,7 @@ class Field:
     def worked_area(self, worked_rows: int) -> float:
         worked_area = 0.0
         if self.area() > 0:
-            total_rows = self.row_number * self.bed_count
+            total_rows = self.row_count * self.bed_count
             worked_area = worked_rows * self.area() / total_rows
         return worked_area
 
@@ -107,10 +107,10 @@ class Field:
         last_support_point = None
         last_support_point_offset = 0
 
-        total_rows = int(self.row_number * self.bed_count)
+        total_rows = int(self.row_count * self.bed_count)
         for i in range(total_rows):
-            bed_index = i // self.row_number
-            row_in_bed = i % self.row_number
+            bed_index = i // self.row_count
+            row_in_bed = i % self.row_count
 
             support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
             if support_point:
@@ -124,7 +124,7 @@ class Field:
                     offset = last_support_point_offset + (i - last_support_point.row_index) * self.row_spacing
                 else:
                     base_offset = row_in_bed * self.row_spacing
-                    bed_offset = bed_index * (self.row_number * self.row_spacing + self.bed_spacing)
+                    bed_offset = bed_index * (self.row_count * self.row_spacing + self.bed_spacing)
                     offset = base_offset + bed_offset
 
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
@@ -156,7 +156,7 @@ class Field:
             'first_row_start':  rosys.persistence.to_dict(self.first_row_start),
             'first_row_end': rosys.persistence.to_dict(self.first_row_end),
             'row_spacing': self.row_spacing,
-            'row_number': self.row_number,
+            'row_count': self.row_count,
             'outline_buffer_width': self.outline_buffer_width,
             'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
             'bed_count': self.bed_count,

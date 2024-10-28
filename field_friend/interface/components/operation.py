@@ -78,7 +78,7 @@ class operation:
             self.system.field_provider.update_field_parameters(
                 self.system.field_provider.selected_field.id,
                 parameters['name'],
-                int(parameters['row_number']),
+                int(parameters['row_count']),
                 float(parameters['row_spacing']),
                 float(parameters['outline_buffer_width']),
                 int(parameters['bed_count']),
@@ -103,7 +103,7 @@ class operation:
         with ui.dialog() as self.edit_field_dialog, ui.card():
             parameters: dict = {
                 'name': self.field_provider.selected_field.name if self.field_provider.selected_field else '',
-                'row_number': self.field_provider.selected_field.row_number if self.field_provider.selected_field else 0,
+                'row_count': self.field_provider.selected_field.row_count if self.field_provider.selected_field else 0,
                 'row_spacing': self.field_provider.selected_field.row_spacing if self.field_provider.selected_field else 0.0,
                 'outline_buffer_width': self.field_provider.selected_field.outline_buffer_width if self.field_provider.selected_field else 2.0,
                 'bed_count': self.field_provider.selected_field.bed_count if self.field_provider.selected_field else 1,
@@ -119,9 +119,9 @@ class operation:
                 .props('dense outlined').classes('w-full') \
                 .bind_value(parameters, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
                 .bind_visibility_from(parameters, 'bed_count', backward=lambda v: v is not None and v > 1)
-            ui.input('Row Number (per Bed)', value=parameters['row_number']) \
+            ui.input('Row Number (per Bed)', value=parameters['row_count']) \
                 .props('dense outlined').classes('w-full') \
-                .bind_value(parameters, 'row_number') \
+                .bind_value(parameters, 'row_count') \
                 .tooltip('Set the number of rows per bed.')
             ui.number('Row Spacing', value=parameters['row_spacing'], suffix='cm', min=1, step=1) \
                 .props('dense outlined').classes('w-full') \

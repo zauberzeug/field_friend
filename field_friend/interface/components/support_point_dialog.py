@@ -49,7 +49,7 @@ class SupportPointDialog:
                 'text-lg')
             ui.label('2. Enter the row number for the support point:').classes('text-lg')
             ui.number(
-                label='Row Number', min=1, max=self.field_provider.fields[0].row_number if self.field_provider.fields else 1, step=1, value=1) \
+                label='Row Number', min=1, max=self.field_provider.fields[0].row_count if self.field_provider.fields else 1, step=1, value=1) \
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Choose the row number you would like to give a fixed support point to.') \
                 .bind_value(self, 'row_name')

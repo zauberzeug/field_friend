@@ -14,7 +14,7 @@ def test_loading_from_old_persistence(system: System):
     system.field_provider.restore(json.loads(Path('tests/old_field_provider_persistence.json').read_text()))
     assert len(system.field_provider.fields) == 1
     field = system.field_provider.fields[0]
-    assert field.row_number == 10
+    assert field.row_count == 10
     assert field.row_spacing == 0.5
     assert field.outline_buffer_width == 2
     assert len(field.outline) == 5
@@ -37,7 +37,7 @@ def test_field_outline(system: System, field: Field):
         assert rounded_geo_point(point) in [rounded_geo_point(p) for p in outline]
 
     buffer = field.outline_buffer_width
-    row_offset = field.row_spacing * (field.row_number - 1)
+    row_offset = field.row_spacing * (field.row_count - 1)
 
     # Check first row boundary points
     assert_in_outline(field.first_row_start.shifted(Point(x=-buffer, y=buffer)))
@@ -154,7 +154,7 @@ def test_create_multiple_fields(system: System):
         name="Field 1",
         first_row_start=FIELD_FIRST_ROW_START,
         first_row_end=FIELD_FIRST_ROW_END,
-        row_number=5,
+        row_count=5,
         row_spacing=0.5
     )
     created_field1 = field_provider.create_field(field1)
@@ -167,7 +167,7 @@ def test_create_multiple_fields(system: System):
         name="Field 2",
         first_row_start=FIELD_FIRST_ROW_START.shifted(Point(x=10, y=10)),
         first_row_end=FIELD_FIRST_ROW_END.shifted(Point(x=10, y=10)),
-        row_number=3,
+        row_count=3,
         row_spacing=0.75
     )
     created_field2 = field_provider.create_field(field2)
@@ -175,11 +175,11 @@ def test_create_multiple_fields(system: System):
     assert field_provider.get_field(created_field2.id) == created_field2
 
     assert field_provider.fields[0].name == "Field 1"
-    assert field_provider.fields[0].row_number == 5
+    assert field_provider.fields[0].row_count == 5
     assert field_provider.fields[0].row_spacing == 0.5
 
     assert field_provider.fields[1].name == "Field 2"
-    assert field_provider.fields[1].row_number == 3
+    assert field_provider.fields[1].row_count == 3
     assert field_provider.fields[1].row_spacing == 0.75
 
     assert field_provider.fields[0].id != field_provider.fields[1].id

@@ -53,7 +53,7 @@ class TestField():
         self.first_row_start = FIELD_FIRST_ROW_START
         self.first_row_end = FIELD_FIRST_ROW_END
         self.row_spacing = 0.45
-        self.row_number = 4
+        self.row_count = 4
         self.outline_buffer_width = 2
         self.row_support_points = []
         self.rows = [
@@ -78,9 +78,9 @@ class TestField():
             self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=self.outline_buffer_width)),
             self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=self.outline_buffer_width)),
             self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=-
-                                       self.outline_buffer_width - (self.row_number - 1) * self.row_spacing)),
+                                       self.outline_buffer_width - (self.row_count - 1) * self.row_spacing)),
             self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=-
-                                         self.outline_buffer_width - (self.row_number - 1) * self.row_spacing)),
+                                         self.outline_buffer_width - (self.row_count - 1) * self.row_spacing)),
             self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=self.outline_buffer_width))
         ]
 
@@ -94,7 +94,7 @@ async def field(system: System) -> AsyncGenerator[TestField, None]:
         first_row_start=test_field.first_row_start,
         first_row_end=test_field.first_row_end,
         row_spacing=test_field.row_spacing,
-        row_number=test_field.row_number,
+        row_count=test_field.row_count,
         row_support_points=[]
     ))
     yield test_field
@@ -105,7 +105,7 @@ def field_creator(system: System) -> FieldCreator:
     fc = FieldCreator(system)
     fc.first_row_start = FIELD_FIRST_ROW_START
     fc.row_spacing = 0.5
-    fc.row_number = 10
+    fc.row_count = 10
     fc.confirm_geometry()
     fc.first_row_end = FIELD_FIRST_ROW_END
     return fc

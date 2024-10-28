@@ -24,7 +24,7 @@ class FieldCreator:
         self.first_row_end: GeoPoint | None = None
         self.field_name: str = 'Field'
         self.row_spacing: float = 0.5
-        self.row_number: int = 10
+        self.row_count: int = 10
         self.outline_buffer_width: float = 2.0
         self.bed_number: int = 1
         self.bed_spacing: float = 0.5
@@ -88,7 +88,7 @@ class FieldCreator:
                       value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the number of rows.')\
-                .bind_value(self, 'row_number')
+                .bind_value(self, 'row_count')
             ui.number('Row Spacing', suffix='cm',
                       value=50, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
@@ -130,7 +130,7 @@ class FieldCreator:
                     ui.label(f'Number of Beds: {self.bed_number}').classes('text-lg')
                     ui.label(f'Bed Spacing: {self.bed_spacing*100} cm').classes('text-lg')
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
-                ui.label(f'Number of Rows: {self.row_number}').classes('text-lg')
+                ui.label(f'Number of Rows: {self.row_count}').classes('text-lg')
                 ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
             with ui.row().classes('items-center'):
                 ui.button('Cancel', on_click=self.dialog.close).props('color=red')
@@ -147,7 +147,7 @@ class FieldCreator:
                                                    first_row_start=self.first_row_start,
                                                    first_row_end=self.first_row_end,
                                                    row_spacing=self.row_spacing,
-                                                   row_number=self.row_number,
+                                                   row_count=self.row_count,
                                                    outline_buffer_width=self.outline_buffer_width,
                                                    bed_count=self.bed_number,
                                                    bed_spacing=self.bed_spacing))
@@ -157,7 +157,7 @@ class FieldCreator:
                                                    first_row_start=self.first_row_start,
                                                    first_row_end=self.first_row_end,
                                                    row_spacing=self.row_spacing,
-                                                   row_number=self.row_number,
+                                                   row_count=self.row_count,
                                                    outline_buffer_width=self.outline_buffer_width))
         self.first_row_start = None
         self.first_row_end = None
