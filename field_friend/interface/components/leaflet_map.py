@@ -109,7 +109,7 @@ class leaflet_map:
         self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def zoom_to_field(self) -> None:
-        field = self.field_provider.fields[0] if len(self.field_provider.fields) > 0 else None
+        field = self.field_provider.selected_field if self.field_provider.selected_field else None
         if field is None:
             return
         coords = field.outline_as_tuples
