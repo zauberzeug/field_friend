@@ -278,7 +278,7 @@ async def test_approaching_first_row(system: System, field: Field):
     await forward(until=lambda: system.current_implement.is_active)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     for index, point in enumerate(field.rows[0].points):
-        assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-6)
+        assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-8)
     assert system.field_navigation.automation_watcher.field_watch_active
     assert system.automator.is_running
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
@@ -312,7 +312,7 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
     await forward(until=lambda: system.current_implement.is_active)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     for index, point in enumerate(field.rows[0].points):
-        assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-6)
+        assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-8)
     assert system.field_navigation.automation_watcher.field_watch_active
     assert system.automator.is_running
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
@@ -342,7 +342,7 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
     await forward(until=lambda: system.current_implement.is_active)
     for index, point in enumerate(field.rows[0].points):
-        assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-6)
+        assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-8)
     await forward(until=lambda: system.automator.is_stopped)
     assert system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START
     assert system.odometer.prediction.point.x == pytest.approx(-10, abs=1.0)
@@ -361,7 +361,7 @@ async def test_complete_row(system: System, field: Field):
     await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     for index, point in enumerate(field.rows[0].points):
-        assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-6)
+        assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-8)
     assert system.field_navigation.automation_watcher.field_watch_active
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
