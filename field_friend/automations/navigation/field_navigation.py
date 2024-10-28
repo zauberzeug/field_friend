@@ -272,25 +272,26 @@ class FieldNavigation(FollowCropsNavigation):
     def _set_field_id(self) -> None:
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
 
-    def create_simulation(self, crop_distance: float = 0.5) -> None:
+    def create_simulation(self, crop_distance: float = 0.3) -> None:
         self.detector.simulated_objects.clear()
         self.plant_provider.clear()
         if self.field is None:
             return
         if self.start_point is not None and self.end_point is not None:
-            start = self.start_point
-            end = self.end_point
-            length = start.distance(end)
+            length = self.start_point.distance(self.end_point)
             crop_count = length / crop_distance
             for i in range(int(crop_count)):
-                p = start.interpolate(end, (crop_distance * i) / length)
+                p = self.start_point.interpolate(self.end_point, (crop_distance * (i+1)) / length)
+                if i == 10:
+                    p.y += 0.20
+                else:
+                    p.y += randint(-5, 5) * 0.01
                 p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
                 plant = rosys.vision.SimulatedObject(category_name='maize', position=p3d)
                 self.detector.simulated_objects.append(plant)
 
                 for _ in range(1, 7):
-                    p = start.polar(crop_distance * i + randint(-5, 5) * 0.01,
-                                    start.direction(end)) \
+                    p = self.start_point.polar(crop_distance * (i+1) + randint(-5, 5) * 0.01, self.start_point.direction(self.end_point)) \
                         .polar(randint(-15, 15)*0.01, self.odometer.prediction.yaw + np.pi/2)
                     self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                                         position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
