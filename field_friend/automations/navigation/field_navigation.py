@@ -23,7 +23,7 @@ class State(Enum):
     FIELD_COMPLETED = auto()
 
 
-class FieldNavigation(FollowCropsNavigation):
+class FieldNavigation(StraightLineNavigation):
     DRIVE_STEP = 0.2
     TURN_STEP = np.deg2rad(25.0)
     MAX_GNSS_WAITING_TIME = 15.0
@@ -202,6 +202,7 @@ class FieldNavigation(FollowCropsNavigation):
             return State.ROW_COMPLETED
         if not self.implement.is_active:
             await self.implement.activate()
+        self.update_target()
         await super()._drive(distance)
         return State.FOLLOWING_ROW
 
