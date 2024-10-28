@@ -121,10 +121,19 @@ class Field:
                 last_support_point_offset = offset
             else:
                 if last_support_point:
-                    offset = last_support_point_offset + (i - last_support_point.row_index) * self.row_spacing
+                    rows_since_support = i - last_support_point.row_index
+                    beds_crossed = bed_index - (last_support_point.row_index // self.row_count)
+                    offset = last_support_point_offset
+                    if beds_crossed > 0:
+                        offset += beds_crossed * self.bed_spacing
+                        rows_in_complete_beds = rows_since_support - (row_in_bed + 1)
+                        offset += rows_in_complete_beds * self.row_spacing
+                        offset += row_in_bed * self.row_spacing
+                    else:
+                        offset += rows_since_support * self.row_spacing
                 else:
                     base_offset = row_in_bed * self.row_spacing
-                    bed_offset = bed_index * (self.row_count * self.row_spacing + self.bed_spacing)
+                    bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
                     offset = base_offset + bed_offset
 
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords

@@ -177,10 +177,14 @@ def test_create_multiple_fields(system: System):
     assert field_provider.fields[0].name == "Field 1"
     assert field_provider.fields[0].row_count == 5
     assert field_provider.fields[0].row_spacing == 0.5
+    assert field_provider.fields[0].bed_count == 1
+    assert field_provider.fields[0].bed_spacing == 0.5
 
     assert field_provider.fields[1].name == "Field 2"
     assert field_provider.fields[1].row_count == 3
     assert field_provider.fields[1].row_spacing == 0.75
+    assert field_provider.fields[1].bed_count == 1
+    assert field_provider.fields[1].bed_spacing == 0.5
 
     assert field_provider.fields[0].id != field_provider.fields[1].id
 
@@ -199,3 +203,37 @@ def test_delete_selected_field(system: System, field: Field):
     field_provider.delete_selected_field()
     assert len(field_provider.fields) == 0
     assert field_provider.get_field(field.id) is None
+
+
+def test_create_field_with_multiple_beds(system: System):
+    field_provider = system.field_provider
+    field = Field(
+        id=str(uuid.uuid4()),
+        name="Multi-bed Field",
+        first_row_start=FIELD_FIRST_ROW_START,
+        first_row_end=FIELD_FIRST_ROW_END,
+        row_count=6,  # 2 beds with 3 rows each
+        row_spacing=0.5,
+        bed_count=2,
+        bed_spacing=1.5  # Wider spacing between beds
+    )
+    created_field = field_provider.create_field(field)
+    assert len(field_provider.fields) == 1
+    assert field_provider.get_field(created_field.id) == created_field
+
+    # Verify field properties
+    assert created_field.bed_count == 2
+    assert created_field.bed_spacing == 1.5
+    assert created_field.row_count == 6
+    assert created_field.row_spacing == 0.5
+
+    # Verify row positions
+    # First bed (3 rows)
+    assert created_field.rows[0].points[0] == field.first_row_start
+    assert created_field.rows[1].points[0] == field.first_row_start.shifted(Point(x=0, y=-0.5))
+    assert created_field.rows[2].points[0] == field.first_row_start.shifted(Point(x=0, y=-1.0))
+
+    # Second bed (3 rows) - starts after bed_spacing
+    assert created_field.rows[3].points[0] == field.first_row_start.shifted(Point(x=0, y=-2.5))  # -1.0 - 1.5
+    assert created_field.rows[4].points[0] == field.first_row_start.shifted(Point(x=0, y=-3.0))
+    assert created_field.rows[5].points[0] == field.first_row_start.shifted(Point(x=0, y=-3.5))
