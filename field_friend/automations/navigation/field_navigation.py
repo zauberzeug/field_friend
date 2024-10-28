@@ -5,11 +5,10 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
-from rosys.geometry import Point, Pose
+from rosys.geometry import Point, Pose, Spline
 
 from ..field import Field, Row
 from ..implements import Implement
-from .follow_crops_navigation import FollowCropsNavigation
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
 
 
 class State(Enum):
+    APPROACHING_FIRST_ROW = auto()
     APPROACHING_ROW_START = auto()
     FOLLOWING_ROW = auto()
     ROW_COMPLETED = auto()
@@ -37,7 +37,7 @@ class FieldNavigation(StraightLineNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
-        self._state = State.APPROACHING_ROW_START
+        self._state = State.APPROACHING_FIRST_ROW
         self.row_index = 0
         self.start_point: Point | None = None
         self.end_point: Point | None = None
@@ -75,7 +75,7 @@ class FieldNavigation(StraightLineNavigation):
         # row = self.get_nearest_row()
         # self.row_index = self.field.rows.index(row)
         self.row_index = 0
-        self._state = State.APPROACHING_ROW_START
+        self._state = State.APPROACHING_FIRST_ROW
         self.plant_provider.clear()
 
         self.automation_watcher.start_field_watch(self.field.outline)
@@ -131,15 +131,19 @@ class FieldNavigation(StraightLineNavigation):
         if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 1.0:  # pylint: disable=protected-access
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
 
-        if self._state == State.APPROACHING_ROW_START:
+        if self._state == State.APPROACHING_FIRST_ROW:
+            self._state = await self._run_approaching_first_row()
+        elif self._state == State.APPROACHING_ROW_START:
             self._state = await self._run_approaching_row_start()
         elif self._state == State.FOLLOWING_ROW:
             self._state = await self._run_following_row(distance)
         elif self._state == State.ROW_COMPLETED:
             self._state = await self._run_row_completed()
 
-    async def _run_approaching_row_start(self) -> State:
+    async def _run_approaching_first_row(self) -> State:
         self.set_start_and_end_points()
+        assert self.start_point is not None
+        assert self.end_point is not None
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn towards row start
         target_yaw = self.odometer.prediction.direction(self.start_point)
@@ -148,8 +152,6 @@ class FieldNavigation(StraightLineNavigation):
         await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn to row
-        assert self.start_point is not None
-        assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
         await self.turn_in_steps(row_yaw)
 
@@ -159,15 +161,54 @@ class FieldNavigation(StraightLineNavigation):
             self.plant_provider.clear()
         return State.FOLLOWING_ROW
 
+    async def _run_approaching_row_start(self) -> State:
+        self.set_start_and_end_points()
+        assert self.start_point is not None
+        assert self.end_point is not None
+        old_turning_radius = self.driver.parameters.minimum_turning_radius
+        self.driver.parameters.minimum_turning_radius = self.field.row_spacing
+
+        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+        row_yaw = self.start_point.direction(self.end_point)
+        field_yaw = self.field.rows[0].points[0].cartesian().direction(self.field.rows[-1].points[0].cartesian())
+
+        step_1_point = self.start_point.polar(-1.5, row_yaw).polar(0.5, field_yaw)
+        step_1_pose = Pose(x=step_1_point.x, y=step_1_point.y, yaw=field_yaw)
+        await self.driver.drive_spline(Spline.from_poses(self.odometer.prediction, step_1_pose))
+        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+
+        step_2_point = step_1_pose.point.polar(-1.5, field_yaw)
+        step_2_pose = Pose(x=step_2_point.x, y=step_2_point.y, yaw=field_yaw)
+        await self.driver.drive_spline(Spline.from_poses(self.odometer.prediction, step_2_pose, backward=True), flip_hook=True)
+        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+
+        step_3_point = self.start_point.polar(-0.5, row_yaw)
+        step_3_pose = Pose(x=step_3_point.x, y=step_3_point.y, yaw=row_yaw)
+        await self.driver.drive_spline(Spline.from_poses(self.odometer.prediction, step_3_pose))
+        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+
+        await self.turn_in_steps(row_yaw)
+        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+
+        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
+            self.create_simulation()
+        else:
+            self.plant_provider.clear()
+        self.driver.parameters.minimum_turning_radius = old_turning_radius
+        return State.FOLLOWING_ROW
+
     async def drive_in_steps(self, target: Pose) -> None:
+        origin = self.odometer.prediction.point
         while True:
+            if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 2.0 * self._drive_step:  # pylint: disable=protected-access
+                await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
             if target.relative_point(self.odometer.prediction.point).x > 0:
                 return
             drive_step = min(self._drive_step, self.odometer.prediction.distance(target))
-            # Calculate timeout based on linear speed limit and drive step
-            timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 3.0
-            await self._drive_towards_target(drive_step, target, timeout=timeout)
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+            timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 10.0
+            closest_point = rosys.geometry.Line.from_points(origin, target).foot_point(self.odometer.prediction.point)
+            yaw = closest_point.direction(target)
+            await self._drive_towards_target(drive_step, rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw), timeout)
 
     async def turn_to_yaw(self, target_yaw, angle_threshold=np.deg2rad(1.0)) -> None:
         while True:
@@ -219,6 +260,7 @@ class FieldNavigation(StraightLineNavigation):
         if self.row_index >= len(self.field.rows):
             if self._loop:
                 self.row_index = 0
+                next_state = State.APPROACHING_FIRST_ROW
             else:
                 next_state = State.FIELD_COMPLETED
         return next_state
@@ -286,7 +328,7 @@ class FieldNavigation(StraightLineNavigation):
                 if i == 10:
                     p.y += 0.20
                 else:
-                    p.y += randint(-5, 5) * 0.01
+                    p.y += randint(-2, 2) * 0.01
                 p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
                 plant = rosys.vision.SimulatedObject(category_name='maize', position=p3d)
                 self.detector.simulated_objects.append(plant)
