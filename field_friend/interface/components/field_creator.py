@@ -26,6 +26,8 @@ class FieldCreator:
         self.row_spacing: float = 0.5
         self.row_number: int = 10
         self.outline_buffer_width: float = 2.0
+        self.bed_number: int = 1
+        self.bed_spacing: float = 0.5
         self.next: Callable = self.find_first_row
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
@@ -70,7 +72,19 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Enter a name for the field') \
                 .bind_value(self, 'field_name')
-            ui.number('Number of rows',
+            beds_switch = ui.switch('Field has multiple beds')
+            ui.number('Number of Beds',
+                      value=10, step=1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the number of beds.')\
+                .bind_value(self, 'bed_number').bind_visibility_from(beds_switch, 'value')
+            ui.number('Bed Spacing', suffix='cm',
+                      value=50, step=1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the distance between the beds') \
+                .bind_value(self, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
+                .bind_visibility_from(beds_switch, 'value')
+            ui.number('Number of Rows',
                       value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the number of rows.')\
@@ -112,6 +126,9 @@ class FieldCreator:
                 ui.label(f'Field Name: {self.field_name}').classes('text-lg')
                 ui.label(f'First Row Start: {self.first_row_start}').classes('text-lg')
                 ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
+                if self.bed_number > 1:
+                    ui.label(f'Number of Beds: {self.bed_number}').classes('text-lg')
+                    ui.label(f'Bed Spacing: {self.bed_spacing*100} cm').classes('text-lg')
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows: {self.row_number}').classes('text-lg')
                 ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
@@ -124,13 +141,24 @@ class FieldCreator:
         if self.first_row_start is None or self.first_row_end is None:
             ui.notify('No valid field parameters.')
             return
-        self.field_provider.create_field(Field(id=str(uuid4()),
-                                               name=self.field_name,
-                                               first_row_start=self.first_row_start,
-                                               first_row_end=self.first_row_end,
-                                               row_spacing=self.row_spacing,
-                                               row_number=self.row_number,
-                                               outline_buffer_width=self.outline_buffer_width))
+        if self.bed_number > 1:
+            self.field_provider.create_field(Field(id=str(uuid4()),
+                                                   name=self.field_name,
+                                                   first_row_start=self.first_row_start,
+                                                   first_row_end=self.first_row_end,
+                                                   row_spacing=self.row_spacing,
+                                                   row_number=self.row_number,
+                                                   outline_buffer_width=self.outline_buffer_width,
+                                                   bed_count=self.bed_number,
+                                                   bed_spacing=self.bed_spacing))
+        else:
+            self.field_provider.create_field(Field(id=str(uuid4()),
+                                                   name=self.field_name,
+                                                   first_row_start=self.first_row_start,
+                                                   first_row_end=self.first_row_end,
+                                                   row_spacing=self.row_spacing,
+                                                   row_number=self.row_number,
+                                                   outline_buffer_width=self.outline_buffer_width))
         self.first_row_start = None
         self.first_row_end = None
 
