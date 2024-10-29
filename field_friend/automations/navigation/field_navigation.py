@@ -71,10 +71,7 @@ class FieldNavigation(StraightLineNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
-        # TODO: allow starting from any row in a later PR
-        # row = self.get_nearest_row()
-        # self.row_index = self.field.rows.index(row)
-        self.row_index = 0
+        self.row_index = self.field.rows.index(self.get_nearest_row())
         self._state = State.APPROACHING_FIRST_ROW
         self.plant_provider.clear()
 
@@ -93,15 +90,13 @@ class FieldNavigation(StraightLineNavigation):
         await self.implement.deactivate()
 
     def get_nearest_row(self) -> Row:
-        # TODO: currently not used, starts on row 0
-        # assert self.field is not None
-        # assert self.gnss.device is not None
-        # row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
-        #     self.odometer.prediction.point).distance(self.odometer.prediction.point))
-        # self.log.info(f'Nearest row is {row.name}')
-        # self.row_index = self.field.rows.index(row)
-        # return row
-        return Row(id='dummy', name='dummy', points=[])
+        assert self.field is not None
+        assert self.gnss.device is not None
+        row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
+            self.odometer.prediction.point).distance(self.odometer.prediction.point))
+        self.log.info(f'Nearest row is {row.name}')
+        self.row_index = self.field.rows.index(row)
+        return row
 
     def set_start_and_end_points(self):
         assert self.field is not None
