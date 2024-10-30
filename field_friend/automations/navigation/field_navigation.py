@@ -111,6 +111,11 @@ class FieldNavigation(StraightLineNavigation):
         elif relative_point_1 < relative_point_0:
             self.start_point = self.current_row.points[-1].cartesian()
             self.end_point = self.current_row.points[0].cartesian()
+
+        relative_start = self.odometer.prediction.relative_point(self.start_point).x
+        relative_end = self.odometer.prediction.relative_point(self.end_point).x
+        if relative_start < 0 <= relative_end:
+            self.start_point, self.end_point = self.end_point, self.start_point
         self.update_target()
         # self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 
