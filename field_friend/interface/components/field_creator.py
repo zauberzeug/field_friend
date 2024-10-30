@@ -84,10 +84,10 @@ class FieldCreator:
                 .tooltip('Set the distance between the beds') \
                 .bind_value(self, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
                 .bind_visibility_from(beds_switch, 'value')
-            ui.number('Number of Rows',
+            ui.number('Number of Rows (per Bed)',
                       value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
-                .tooltip('Set the number of rows.')\
+                .tooltip('Set the number of rows (per bed, if multiple beds are selected).')\
                 .bind_value(self, 'row_count')
             ui.number('Row Spacing', suffix='cm',
                       value=50, step=1, min=1) \
@@ -130,7 +130,7 @@ class FieldCreator:
                     ui.label(f'Number of Beds: {self.bed_number}').classes('text-lg')
                     ui.label(f'Bed Spacing: {self.bed_spacing*100} cm').classes('text-lg')
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
-                ui.label(f'Number of Rows: {self.row_count}').classes('text-lg')
+                ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
                 ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
             with ui.row().classes('items-center'):
                 ui.button('Cancel', on_click=self.dialog.close).props('color=red')
