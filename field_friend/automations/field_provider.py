@@ -23,6 +23,8 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
 
+        self.selected_beds: list[int] = []
+
     def backup(self) -> dict:
         return {
             'fields': {f.id: f.to_dict() for f in self.fields},
@@ -45,6 +47,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED.emit()
         if self.selected_field and self.selected_field not in self.fields:
             self.selected_field = None
+            self.selected_beds = []
             self.FIELD_SELECTED.emit()
 
     def get_field(self, id_: str | None) -> Field | None:
@@ -59,6 +62,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def clear_fields(self) -> None:
         self.fields.clear()
         self.invalidate()
+
+    def clear_selected_beds(self) -> None:
+        self.selected_beds.clear()
 
     def delete_selected_field(self) -> None:
         if not self.selected_field:

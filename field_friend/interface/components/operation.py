@@ -21,6 +21,7 @@ class operation:
         self.key_controls = KeyControls(self.system)
         self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
         self.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
+        self.selected_beds: set[int] = set()
 
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
@@ -153,14 +154,22 @@ class operation:
                 on_change=lambda e: self.system.field_provider.select_field(e.value)
             ).classes('w-3/4')
             if self.system.field_provider.selected_field:
-                ui.button(icon='edit', on_click=self.edit_field_dialog.open) \
-                    .classes('ml-2') \
-                    .tooltip('Edit the selected field')
-                ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
-                    .props('color=red') \
-                    .classes('ml-2') \
-                    .tooltip('Delete the selected field')
-        if self.system.field_provider.selected_field:
-            with ui.row().style('width:100%;'):
-                ui.button(icon='add_box', text='Row Point', on_click=lambda: SupportPointDialog(self.system)) \
-                    .tooltip('Add a support point for a row')
+                with ui.row():
+                    ui.button(icon='edit', on_click=self.edit_field_dialog.open) \
+                        .classes('ml-2') \
+                        .tooltip('Edit the selected field')
+                    ui.button(icon='add_box', text='Row Point', on_click=lambda: SupportPointDialog(self.system)) \
+                        .tooltip('Add a support point for a row')
+                    ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
+                        .props('color=red') \
+                        .classes('ml-2') \
+                        .tooltip('Delete the selected field')
+                if self.system.field_provider.selected_field.bed_count > 1:
+                    with ui.row().classes('w-full'):
+                        beds_checkbox = ui.checkbox('Select specific beds').classes(
+                            'w-full').on_value_change(lambda: self.system.field_provider.clear_selected_beds())
+                        with ui.row().bind_visibility_from(beds_checkbox, 'value').classes('w-full'):
+                            ui.select(list(range(1, int(self.system.field_provider.selected_field.bed_count) + 1)), multiple=True, label='selected beds') \
+                                .classes('w-full').props('use-chips').bind_value(self.system.field_provider, 'selected_beds')
+                        ui.button('Print Selected Beds', on_click=lambda: print(f"Selected beds: {self.system.field_provider.selected_beds}")) \
+                            .classes('w-full mt-2')

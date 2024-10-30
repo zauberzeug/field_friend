@@ -49,11 +49,12 @@ class FieldNavigation(FollowCropsNavigation):
         self._drive_step = self.DRIVE_STEP
         self._turn_step = self.TURN_STEP
         self._max_gnss_waiting_time = self.MAX_GNSS_WAITING_TIME
+        self.rows_to_work_on: list[Row] = []
 
     @property
     def current_row(self) -> Row:
         assert self.field
-        return self.field.rows[self.row_index]
+        return self.rows_to_work_on[self.row_index]
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -61,13 +62,21 @@ class FieldNavigation(FollowCropsNavigation):
         if self.field is None:
             rosys.notify('No field selected', 'negative')
             return False
-        if not self.field.rows:
+        if self.field.bed_count > 1 and len(self.field_provider.selected_beds) > 0:
+            row_indices = []
+            for bed in self.field_provider.selected_beds:
+                for number in range(int(self.field.row_count)):
+                    row_indices.append((bed - 1) * int(self.field.row_count) + number)
+            self.rows_to_work_on = [row for i, row in enumerate(self.field.rows) if i in row_indices]
+        else:
+            self.rows_to_work_on = self.field.rows
+        if not self.rows_to_work_on:
             rosys.notify('No rows available', 'negative')
             return False
         if self.gnss.device is None:
             rosys.notify('GNSS is not available', 'negative')
             return False
-        for idx, row in enumerate(self.field.rows):
+        for idx, row in enumerate(self.rows_to_work_on):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
@@ -211,13 +220,13 @@ class FieldNavigation(FollowCropsNavigation):
     async def _run_row_completed(self) -> State:
         assert self.field
         next_state: State = State.ROW_COMPLETED
-        if not self._loop and self.current_row == self.field.rows[-1]:
+        if not self._loop and self.current_row == self.rows_to_work_on[-1]:
             return State.FIELD_COMPLETED
         self.row_index += 1
         next_state = State.APPROACHING_ROW_START
 
         # TODO: rework later, when starting at any row is possible
-        if self.row_index >= len(self.field.rows):
+        if self.row_index >= len(self.rows_to_work_on):
             if self._loop:
                 self.row_index = 0
             else:
