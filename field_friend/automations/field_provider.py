@@ -134,7 +134,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             for bed in self.selected_beds:
                 for number in range(int(self.selected_field.row_count)):
                     row_indices.append((bed - 1) * int(self.selected_field.row_count) + number)
-            self.rows_to_work_on = [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
+            rows_to_work_on = [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
         else:
-            self.rows_to_work_on = self.selected_field.rows
+            rows_to_work_on = self.selected_field.rows
         return rows_to_work_on
