@@ -169,7 +169,5 @@ class operation:
                         beds_checkbox = ui.checkbox('Select specific beds').classes(
                             'w-full').on_value_change(lambda: self.system.field_provider.clear_selected_beds())
                         with ui.row().bind_visibility_from(beds_checkbox, 'value').classes('w-full'):
-                            ui.select(list(range(1, int(self.system.field_provider.selected_field.bed_count) + 1)), multiple=True, label='selected beds') \
-                                .classes('w-full').props('use-chips').bind_value(self.system.field_provider, 'selected_beds')
-                        ui.button('Print Selected Beds', on_click=lambda: print(f"Selected beds: {self.system.field_provider.selected_beds}")) \
-                            .classes('w-full mt-2')
+                            ui.select(list(range(1, int(self.system.field_provider.selected_field.bed_count) + 1)), multiple=True, label='selected beds', clearable=True) \
+                                .classes('grow').props('use-chips').bind_value(self.system.field_provider, 'selected_beds')

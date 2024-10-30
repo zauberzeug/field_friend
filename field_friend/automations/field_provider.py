@@ -71,9 +71,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.fields.clear()
         self.invalidate()
 
-    def clear_selected_beds(self) -> None:
-        self.selected_beds.clear()
-
     def delete_selected_field(self) -> None:
         if not self.selected_field:
             self.log.warning('No field selected. Nothing was deleted.')
@@ -123,6 +120,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
                       field.name, row_count, row_spacing)
         self.invalidate()
+
+    def clear_selected_beds(self) -> None:
+        self.selected_beds = []
 
     def get_rows_to_work_on(self) -> list[Row]:
         rows_to_work_on: list[Row] = []
