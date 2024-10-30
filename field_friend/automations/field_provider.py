@@ -3,7 +3,7 @@ import logging
 import rosys
 
 from ..localization import Gnss
-from . import Field, RowSupportPoint
+from . import Field, RowSupportPoint, Row
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
@@ -23,7 +23,15 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
 
-        self.selected_beds: list[int] = []
+        self._selected_beds: list[int] = []
+
+    @property
+    def selected_beds(self) -> list[int]:
+        return self._selected_beds
+
+    @selected_beds.setter
+    def selected_beds(self, value: list[int]) -> None:
+        self._selected_beds = sorted(value)
 
     def backup(self) -> dict:
         return {
@@ -115,3 +123,18 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
                       field.name, row_count, row_spacing)
         self.invalidate()
+
+    def get_rows_to_work_on(self) -> list[Row]:
+        rows_to_work_on: list[Row] = []
+        if not self.selected_field:
+            self.log.warning('No field selected. Cannot get rows to work on.')
+            return rows_to_work_on
+        if self.selected_field.bed_count > 1 and len(self.selected_beds) > 0:
+            row_indices = []
+            for bed in self.selected_beds:
+                for number in range(int(self.selected_field.row_count)):
+                    row_indices.append((bed - 1) * int(self.selected_field.row_count) + number)
+            self.rows_to_work_on = [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
+        else:
+            self.rows_to_work_on = self.selected_field.rows
+        return rows_to_work_on
