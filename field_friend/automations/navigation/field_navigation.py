@@ -23,7 +23,7 @@ class State(Enum):
     FIELD_COMPLETED = auto()
 
 
-class FieldNavigation(FollowCropsNavigation):
+class FieldNavigation(StraightLineNavigation):
     DRIVE_STEP = 0.2
     TURN_STEP = np.deg2rad(25.0)
     MAX_GNSS_WAITING_TIME = 15.0
@@ -73,10 +73,7 @@ class FieldNavigation(FollowCropsNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
-        # TODO: allow starting from any row in a later PR
-        # row = self.get_nearest_row()
-        # self.row_index = self.field.rows.index(row)
-        self.row_index = 0
+        self.row_index = self.field.rows.index(self.get_nearest_row())
         self._state = State.APPROACHING_ROW_START
         self.plant_provider.clear()
 
@@ -95,15 +92,13 @@ class FieldNavigation(FollowCropsNavigation):
         await self.implement.deactivate()
 
     def get_nearest_row(self) -> Row:
-        # TODO: currently not used, starts on row 0
-        # assert self.field is not None
-        # assert self.gnss.device is not None
-        # row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
-        #     self.odometer.prediction.point).distance(self.odometer.prediction.point))
-        # self.log.info(f'Nearest row is {row.name}')
-        # self.row_index = self.field.rows.index(row)
-        # return row
-        return Row(id='dummy', name='dummy', points=[])
+        assert self.field is not None
+        assert self.gnss.device is not None
+        row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
+            self.odometer.prediction.point).distance(self.odometer.prediction.point))
+        self.log.info(f'Nearest row is {row.name}')
+        self.row_index = self.field.rows.index(row)
+        return row
 
     def set_start_and_end_points(self):
         assert self.field is not None
@@ -161,17 +156,11 @@ class FieldNavigation(FollowCropsNavigation):
             self.plant_provider.clear()
         return State.FOLLOWING_ROW
 
-    async def drive_in_steps(self, target: Point) -> None:
+    async def drive_in_steps(self, target: Pose) -> None:
         while True:
-            distance = self.odometer.prediction.distance(target)
-            if abs(distance) < 0.05:
-                break
-            # Check if target is behind the robot
-            angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw,
-                                                   self.odometer.prediction.direction(target))
-            if abs(angle_difference) > np.pi / 2.0:
-                break
-            drive_step = min(self._drive_step, distance)
+            if target.relative_point(self.odometer.prediction.point).x > 0:
+                return
+            drive_step = min(self._drive_step, self.odometer.prediction.distance(target))
             # Calculate timeout based on linear speed limit and drive step
             timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 3.0
             await self._drive_towards_target(drive_step, target, timeout=timeout)
@@ -202,15 +191,20 @@ class FieldNavigation(FollowCropsNavigation):
             angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
 
     async def _run_following_row(self, distance: float) -> State:
-        if not self.implement.is_active:
-            await self.implement.activate()
-        if StraightLineNavigation._should_finish(self):  # pylint: disable=protected-access
+        end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
+                                       yaw=self.start_point.direction(self.end_point), time=0)
+        if end_pose.relative_point(self.odometer.prediction.point).x > 0:
+            await self.driver.wheels.stop()
             await self.implement.deactivate()
             return State.ROW_COMPLETED
+        if not self.implement.is_active:
+            await self.implement.activate()
+        self.update_target()
         await super()._drive(distance)
         return State.FOLLOWING_ROW
 
     async def _run_row_completed(self) -> State:
+        await self.driver.wheels.stop()
         assert self.field
         next_state: State = State.ROW_COMPLETED
         if not self._loop and self.current_row == self.rows_to_work_on[-1]:
@@ -257,44 +251,45 @@ class FieldNavigation(FollowCropsNavigation):
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
-        ui.number('Drive Step', step=0.01, min=0.01, max=10.0, format='%.2f', on_change=self.request_backup) \
+        ui.number('Drive Step', step=0.01, min=0.01, max=10.0, format='%.2f', suffix='m', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, '_drive_step') \
-            .tooltip(f'DRIVE_STEP (default: {self.DRIVE_STEP:.2f}m)')
-        ui.number('Turn Step', step=1.0, min=1.0, max=180.0, format='%.2f', on_change=self.request_backup) \
+            .tooltip(f'DRIVE_STEP (default: {self.DRIVE_STEP:.2f})')
+        ui.number('Turn Step', step=1.0, min=1.0, max=180.0, format='%.1f', suffix='°', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, '_turn_step', forward=np.deg2rad, backward=np.rad2deg) \
-            .tooltip(f'TURN_STEP (default: {np.rad2deg(self.TURN_STEP):.2f}°)')
-        ui.number('Max GNSS Waiting Time', step=0.1, min=0.1, max=180.0, format='%.2f', on_change=self.request_backup) \
+            .tooltip(f'TURN_STEP (default: {np.rad2deg(self.TURN_STEP):.2f})')
+        ui.number('Max GNSS Waiting Time', step=0.1, min=0.1, format='%.1f', suffix='s', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, '_max_gnss_waiting_time') \
-            .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f}s)')
+            .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f})')
 
     def _set_field_id(self) -> None:
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
 
-    def create_simulation(self, crop_distance: float = 0.5) -> None:
+    def create_simulation(self, crop_distance: float = 0.3) -> None:
         self.detector.simulated_objects.clear()
         self.plant_provider.clear()
         if self.field is None:
             return
         if self.start_point is not None and self.end_point is not None:
-            start = self.start_point
-            end = self.end_point
-            length = start.distance(end)
+            length = self.start_point.distance(self.end_point)
             crop_count = length / crop_distance
             for i in range(int(crop_count)):
-                p = start.interpolate(end, (crop_distance * i) / length)
+                p = self.start_point.interpolate(self.end_point, (crop_distance * (i+1)) / length)
+                if i == 10:
+                    p.y += 0.20
+                else:
+                    p.y += randint(-5, 5) * 0.01
                 p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
                 plant = rosys.vision.SimulatedObject(category_name='maize', position=p3d)
                 self.detector.simulated_objects.append(plant)
 
                 for _ in range(1, 7):
-                    p = start.polar(crop_distance * i + randint(-5, 5) * 0.01,
-                                    start.direction(end)) \
+                    p = self.start_point.polar(crop_distance * (i+1) + randint(-5, 5) * 0.01, self.start_point.direction(self.end_point)) \
                         .polar(randint(-15, 15)*0.01, self.odometer.prediction.yaw + np.pi/2)
                     self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                                         position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
