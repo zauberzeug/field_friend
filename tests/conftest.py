@@ -101,6 +101,23 @@ async def field(system: System) -> AsyncGenerator[TestField, None]:
 
 
 @pytest.fixture
+async def field_with_beds(system: System) -> AsyncGenerator[TestField, None]:
+    test_field = TestField()
+    system.field_provider.create_field(Field(
+        id=test_field.id,
+        name="Test Field With Beds",
+        first_row_start=test_field.first_row_start,
+        first_row_end=test_field.first_row_end,
+        row_spacing=test_field.row_spacing,
+        row_count=1,
+        row_support_points=[],
+        bed_count=4,
+        bed_spacing=0.45
+    ))
+    yield test_field
+
+
+@pytest.fixture
 def field_creator(system: System) -> FieldCreator:
     fc = FieldCreator(system)
     fc.first_row_start = FIELD_FIRST_ROW_START
