@@ -62,15 +62,8 @@ class FieldNavigation(FollowCropsNavigation):
         if self.field is None:
             rosys.notify('No field selected', 'negative')
             return False
-        if self.field.bed_count > 1 and len(self.field_provider.selected_beds) > 0:
-            row_indices = []
-            for bed in self.field_provider.selected_beds:
-                for number in range(int(self.field.row_count)):
-                    row_indices.append((bed - 1) * int(self.field.row_count) + number)
-            self.rows_to_work_on = [row for i, row in enumerate(self.field.rows) if i in row_indices]
-        else:
-            self.rows_to_work_on = self.field.rows
-        if not self.rows_to_work_on:
+        self.rows_to_work_on = self.field_provider.get_rows_to_work_on()
+        if not self.rows_to_work_on or len(self.rows_to_work_on) == 0:
             rosys.notify('No rows available', 'negative')
             return False
         if self.gnss.device is None:
