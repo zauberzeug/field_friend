@@ -140,10 +140,27 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _run_approaching_row_start(self) -> State:
         self.set_start_and_end_points()
+        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
+            self.create_simulation()
+        else:
+            self.plant_provider.clear()
+
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn towards row start
         target_yaw = self.odometer.prediction.direction(self.start_point)
         await self.turn_in_steps(target_yaw)
+
+        # TODO: IF INSIDE FIELD AREA:
+        # distance_to_row = self.current_row.line_segment().line.foot_point(
+        #     self.odometer.prediction.point).distance(self.odometer.prediction.point)
+        # if distance_to_row < 0.1:
+        #     rosys.notify('Inside field area', 'positive')
+        #     return State.FOLLOWING_ROW
+        # else:
+        #     rosys.notify('Between rows', 'negative')
+        #     return State.FIELD_COMPLETED
+        # END TODO
+
         # drive to row start
         await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
@@ -152,11 +169,6 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
         await self.turn_in_steps(row_yaw)
-
-        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
-            self.create_simulation()
-        else:
-            self.plant_provider.clear()
         return State.FOLLOWING_ROW
 
     async def drive_in_steps(self, target: Pose) -> None:
