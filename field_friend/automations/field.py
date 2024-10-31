@@ -107,7 +107,7 @@ class Field:
         last_support_point = None
         last_support_point_offset = 0
 
-        total_rows = int(self.row_count * self.bed_count)
+        total_rows = self.row_count * self.bed_count
         for i in range(total_rows):
             bed_index = i // self.row_count
             row_in_bed = i % self.row_count
