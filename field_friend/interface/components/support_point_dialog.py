@@ -22,6 +22,7 @@ class SupportPointDialog:
         self.gnss = system.gnss
         self.field_provider = system.field_provider
         self.row_name: int = 1
+        self.bed_number: int = 1
         self.support_point_coordinates: GeoPoint | None = None
         self.next: Callable = self.find_support_point
 
@@ -47,12 +48,25 @@ class SupportPointDialog:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
             ui.label('1. Drive the robot on the row you want to give a fixed support point.').classes(
                 'text-lg')
-            ui.label('2. Enter the row number for the support point:').classes('text-lg')
-            ui.number(
-                label='Row Number', min=1, max=self.field_provider.fields[0].row_number if self.field_provider.fields else 1, step=1, value=1) \
-                .props('dense outlined').classes('w-40') \
-                .tooltip('Choose the row number you would like to give a fixed support point to.') \
-                .bind_value(self, 'row_name')
+            if self.field_provider.selected_field and self.field_provider.selected_field.bed_count == 1:
+                ui.label('2. Enter the row number for the support point:').classes('text-lg')
+                ui.number(
+                    label='Row Number', min=1, max=self.field_provider.selected_field.row_count, step=1, value=1) \
+                    .props('dense outlined').classes('w-40') \
+                    .tooltip('Choose the row number you would like to give a fixed support point to.') \
+                    .bind_value(self, 'row_name')
+            else:
+                ui.label('2. Enter the bed and row number for the support point:').classes('text-lg')
+                ui.number(
+                    label='Bed Number', min=1, max=self.field_provider.selected_field.bed_count, step=1, value=1) \
+                    .props('dense outlined').classes('w-40') \
+                    .tooltip('Choose the bed number the row is on.') \
+                    .bind_value(self, 'bed_number')
+                ui.number(
+                    label='Row Number', min=1, max=self.field_provider.selected_field.row_count, step=1, value=1) \
+                    .props('dense outlined').classes('w-40') \
+                    .tooltip('Choose the row number you would like to give a fixed support point to.') \
+                    .bind_value(self, 'row_name')
         self.next = self.confirm_support_point
 
     def confirm_support_point(self) -> None:
@@ -67,6 +81,7 @@ class SupportPointDialog:
             with ui.row().classes('items-center'):
                 ui.label(f'Support Point Coordinates: {self.support_point_coordinates}').classes('text-lg')
                 ui.label(f'Row Number: {round(self.row_name)}').classes('text-lg')
+                ui.label(f'Bed Number: {round(self.bed_number)}').classes('text-lg')
             with ui.row().classes('items-center'):
                 ui.button('Cancel', on_click=self.dialog.close).props('color=red')
         self.next = self._apply
@@ -76,8 +91,8 @@ class SupportPointDialog:
         if self.support_point_coordinates is None:
             ui.notify('No valid point coordinates.')
             return
-        row_index = self.row_name - 1
-        field = self.field_provider.fields[0]
+        field = self.field_provider.selected_field
+        row_index = (self.bed_number - 1) * field.row_count + self.row_name - 1
         row_support_point = RowSupportPoint.from_geopoint(self.support_point_coordinates, row_index)
         self.field_provider.add_row_support_point(field.id, row_support_point)
         ui.notify('Support point added.')

@@ -47,15 +47,19 @@ class Field:
                  first_row_start: GeoPoint,
                  first_row_end: GeoPoint,
                  row_spacing: float = 0.5,
-                 row_number: int = 10,
+                 row_count: int = 10,
                  outline_buffer_width: float = 2,
-                 row_support_points: list[RowSupportPoint] | None = None) -> None:
+                 row_support_points: list[RowSupportPoint] | None = None,
+                 bed_count: int = 1,
+                 bed_spacing: float = 0.5) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
         self.first_row_end: GeoPoint = first_row_end
         self.row_spacing: float = row_spacing
-        self.row_number: int = row_number
+        self.row_count: int = row_count  # rows per bed
+        self.bed_count: int = bed_count
+        self.bed_spacing: float = bed_spacing if bed_spacing is not None else row_spacing * 2
         self.outline_buffer_width: float = outline_buffer_width
         self.row_support_points: list[RowSupportPoint] = row_support_points or []
         self.row_support_points.sort(key=lambda sp: sp.row_index)
@@ -86,7 +90,8 @@ class Field:
     def worked_area(self, worked_rows: int) -> float:
         worked_area = 0.0
         if self.area() > 0:
-            worked_area = worked_rows * self.area() / self.row_number
+            total_rows = self.row_count * self.bed_count
+            worked_area = worked_rows * self.area() / total_rows
         return worked_area
 
     def refresh(self):
@@ -102,7 +107,11 @@ class Field:
         last_support_point = None
         last_support_point_offset = 0
 
-        for i in range(int(self.row_number)):
+        total_rows = self.row_count * self.bed_count
+        for i in range(total_rows):
+            bed_index = i // self.row_count
+            row_in_bed = i % self.row_count
+
             support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
             if support_point:
                 support_point_cartesian = support_point.cartesian()
@@ -112,9 +121,20 @@ class Field:
                 last_support_point_offset = offset
             else:
                 if last_support_point:
-                    offset = last_support_point_offset + (i - last_support_point.row_index) * self.row_spacing
+                    rows_since_support = i - last_support_point.row_index
+                    beds_crossed = bed_index - (last_support_point.row_index // self.row_count)
+                    offset = last_support_point_offset
+                    if beds_crossed > 0:
+                        offset += beds_crossed * self.bed_spacing
+                        rows_in_complete_beds = rows_since_support - (row_in_bed + 1)
+                        offset += rows_in_complete_beds * self.row_spacing
+                        offset += row_in_bed * self.row_spacing
+                    else:
+                        offset += rows_since_support * self.row_spacing
                 else:
-                    offset = i * self.row_spacing
+                    base_offset = row_in_bed * self.row_spacing
+                    bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
+                    offset = base_offset + bed_offset
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = [localization.reference.shifted(
                 Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
@@ -144,9 +164,11 @@ class Field:
             'first_row_start':  rosys.persistence.to_dict(self.first_row_start),
             'first_row_end': rosys.persistence.to_dict(self.first_row_end),
             'row_spacing': self.row_spacing,
-            'row_number': self.row_number,
+            'row_count': self.row_count,
             'outline_buffer_width': self.outline_buffer_width,
             'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
+            'bed_count': self.bed_count,
+            'bed_spacing': self.bed_spacing,
         }
 
     def shapely_polygon(self) -> shapely.geometry.Polygon:
