@@ -1,6 +1,6 @@
 import colorsys
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import rosys
@@ -35,8 +35,8 @@ class camera_card:
         self.punching_enabled: bool = False
         self.shrink_factor: float = 4.0
         self.show_weeds_to_handle: bool = False
-        self.camera: Optional[rosys.vision.CalibratableCamera] = None
-        self.image_view: Optional[ui.interactive_image] = None
+        self.camera: rosys.vision.CalibratableCamera | None = None
+        self.image_view: ui.interactive_image | None = None
         self.calibration_dialog = calibration_dialog(self.camera_provider, self.odometer)
         self.camera_card = ui.card()
         with self.camera_card.tight().classes('w-full'):

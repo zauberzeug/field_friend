@@ -1,6 +1,6 @@
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import rosys
 from rosys.geometry import Pose
@@ -32,7 +32,7 @@ class AutomationWatcher:
         self.incidence_time: float = 0.0
         self.incidence_pose: Pose = Pose()
         self.resume_delay: float = DEFAULT_RESUME_DELAY
-        self.field_polygon: Optional[ShapelyPolygon] = None
+        self.field_polygon: ShapelyPolygon | None = None
         self.kpi_provider = system.kpi_provider
 
         self.bumper_watch_active: bool = False

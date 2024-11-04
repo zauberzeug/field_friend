@@ -1,7 +1,6 @@
-import asyncio
 import logging
 from collections import deque
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
@@ -39,14 +38,13 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.with_chopping: bool = False
         self.chop_if_no_crops: bool = False
 
-        self.start_time: Optional[float] = None
-        self.last_pose: Optional[Pose] = None
+        self.start_time: float | None = None
+        self.last_pose: Pose | None = None
         self.driven_distance: float = 0.0
         self.crops_to_handle: dict[str, Point3d] = {}
         self.weeds_to_handle: dict[str, Point3d] = {}
         self.last_punches: deque[Point3d] = deque(maxlen=5)
         self.next_punch_y_position: float = 0
-
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -158,8 +156,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.weeds_to_handle = sorted_weeds
         return False
 
-
-
     def backup(self) -> dict:
         return {
             'with_drilling': self.with_drilling,
@@ -181,7 +177,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     def clear(self) -> None:
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
-
 
     def settings_ui(self):
         super().settings_ui()

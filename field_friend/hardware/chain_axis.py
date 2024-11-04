@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 import numpy as np
 import rosys
@@ -128,7 +127,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'chain_axis',
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  min_position: float = -0.10,
                  max_position: float = 0.10,
                  step_pin: int = 5,
@@ -433,7 +432,7 @@ class ChainAxisSimulation(ChainAxis, rosys.hardware.ModuleSimulation):
     def __init__(self) -> None:
         super().__init__()
         self.speed: int = 0
-        self.target_steps: Optional[int] = None
+        self.target_steps: int | None = None
         self.reference_steps: int = 0
         self.ref_t = True
 

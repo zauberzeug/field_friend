@@ -1,5 +1,3 @@
-from typing import Optional
-
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -12,7 +10,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'yaxis',
                  can: rosys.hardware.CanHardware,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  can_address: int = 0x60,
                  max_speed: int = 2000,
                  reference_speed: int = 40,

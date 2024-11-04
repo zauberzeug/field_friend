@@ -1,7 +1,5 @@
 import json
 import xml.etree.ElementTree as ET
-from pathlib import Path
-from typing import Optional
 
 import fiona
 import geopandas as gpd
@@ -9,7 +7,7 @@ import rosys
 from nicegui import events, ui
 from shapely.ops import transform
 
-from ...automations import Field, FieldProvider
+from ...automations import FieldProvider
 from ...localization import GeoPoint
 
 # Enable fiona driver
@@ -56,7 +54,7 @@ class geodata_importer(ui.dialog):
                 coordinates.append(GeoPoint(lat=lat, long=lon))
         return coordinates
 
-    def extract_coordinates_shp(self, event: events.UploadEventArguments) -> Optional[list]:
+    def extract_coordinates_shp(self, event: events.UploadEventArguments) -> list | None:
         coordinates = []
         print(event.content)
         try:

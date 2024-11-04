@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 import rosys
 from rosys.helpers import remove_indentation
@@ -15,7 +14,7 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
         self.hot_time: float = 0
         self.hot_duration: float = 0
 
-    async def activate(self, duration: Optional[float]) -> None:
+    async def activate(self, duration: float) -> None:
         async with self:
             await rosys.sleep(duration)
 
@@ -67,7 +66,7 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
 class FlashlightHardware(Flashlight, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  name: str = 'flashlight',
                  pin: int = 5) -> None:
         self.name = name

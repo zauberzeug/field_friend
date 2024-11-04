@@ -1,5 +1,4 @@
 import datetime
-from typing import Optional
 
 import pynmea2
 import rosys
@@ -45,7 +44,7 @@ class GnssHardware(Gnss):
             self.device = None
         self.log.info(f'Connected to GNSS device "{self.device}"')
 
-    async def _read(self) -> Optional[str]:
+    async def _read(self) -> str | None:
         if self.ser is None:
             self.log.debug('GNSS device not connected')
             return None

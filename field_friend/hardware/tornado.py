@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 import rosys
 from rosys.helpers import remove_indentation
@@ -50,7 +49,7 @@ class Tornado(rosys.hardware.Module, abc.ABC):
             raise RuntimeError(f'zaxis depth is out of range, min: {self.min_position}, given: {position}')
 
     @abc.abstractmethod
-    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
+    async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         if not self.z_is_referenced:
             raise RuntimeError('zaxis is not referenced, reference first')
 
@@ -97,8 +96,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'tornado',
                  can: rosys.hardware.CanHardware,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
-                 min_position,
+                 expander: rosys.hardware.ExpanderHardware | None,
+                 min_position: float,
                  z_can_address: int = 0x400,
                  turn_can_address: int = 0x500,
                  m_per_tick: float = 0.01,
@@ -236,7 +235,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.1)
         self.log.info(f'z axis moved to {position}')
 
-    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
+    async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         try:
             await super().move_down_until_reference()
         except RuntimeError as e:
@@ -481,7 +480,7 @@ class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
             raise Exception(e) from e
         self.position_z = position
 
-    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
+    async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         try:
             await super().move_down_until_reference()
         except RuntimeError as e:

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 import rosys
 from rosys.geometry import Pose
@@ -22,7 +20,7 @@ class GnssSimulation(Gnss):
         if self.allow_connection:
             self.device = 'simulation'
 
-    async def _create_new_record(self) -> Optional[GNSSRecord]:
+    async def _create_new_record(self) -> GNSSRecord | None:
         pose = self.wheels.pose
         if localization.reference.lat == 0 and localization.reference.long == 0:
             new_position = GeoPoint(lat=51.983159, long=7.434212)

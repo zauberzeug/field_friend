@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 import rosys
 
@@ -91,7 +90,7 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
                  reversed_direction: bool = False,
                  ) -> None:
         self.speed: int = 0
-        self.target_steps: Optional[int] = None
+        self.target_steps: int | None = None
         super().__init__(
             max_speed=max_speed,
             reference_speed=reference_speed,

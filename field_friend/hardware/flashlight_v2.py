@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 import rosys
 from rosys.helpers import remove_indentation
@@ -29,7 +28,7 @@ class FlashlightV2(rosys.hardware.Module, abc.ABC):
 class FlashlightHardwareV2(FlashlightV2, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  name: str = 'flashlight',
                  front_pin: int = 12,
                  back_pin: int = 23) -> None:

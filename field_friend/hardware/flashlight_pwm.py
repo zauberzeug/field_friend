@@ -1,5 +1,3 @@
-from typing import Optional
-
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -16,7 +14,7 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain,
                  bms: rosys.hardware.Bms, *,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  name: str = 'flashlight',
                  pin: int = 12,
                  rated_voltage: float = 23.0,

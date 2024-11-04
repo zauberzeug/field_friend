@@ -1,5 +1,3 @@
-from typing import Optional
-
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -11,7 +9,7 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'zaxis',
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  max_speed: float = 60_000,
                  reference_speed: float = 20_000,
                  min_position: float = -0.197,
