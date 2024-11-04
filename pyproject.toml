@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "field_friend"
+version = "0.6.0-dev"
+description = "Zauberzeug Field Friend with RoSys"
+authors = [{ name="Zauberzeug", email="info@zauberzeug.com" }]
+requires-python = ">=3.11, <3.12"
+readme = "README.md"
+
+[project.optional-dependencies]
+dev = [
+    "mypy ~= 1.10.1",
+    "pylint ~= 3.2.5",
+]
+
+[tool.mypy]
+python_version = "3.11"
+install_types = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "coloredlogs.*",
+    "icecream.*",
+]
+ignore_missing_imports = true
+
+[tool.pylint]
+disable = [
+    "C0103", # Invalid name (e.g., variable/function/class naming conventions)
+    "C0111", # Missing docstring (in function/class/method)
+    "C0301", # Line too long (exceeds character limit)
+]
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "W",  # pycodestyle
+    "B",  # bugbear
+    "I",  # isort
+    "RUF", # ruff
+    "UP", # pyupgrade
+    "PL", # pylint
+]
+
+[tool.ruff.format]
+quote-style = "single"
