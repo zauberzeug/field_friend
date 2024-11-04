@@ -1,8 +1,7 @@
-from typing import TYPE_CHECKING, Callable
-from uuid import uuid4
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import rosys
-import shapely
 from nicegui import ui
 
 from field_friend.automations.field import RowSupportPoint
@@ -71,7 +70,7 @@ class SupportPointDialog:
 
     def confirm_support_point(self) -> None:
         assert self.gnss.current is not None
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.support_point_coordinates = self.gnss.current.location

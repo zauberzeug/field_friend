@@ -4,7 +4,7 @@ from rosys.driving import Odometer, robot_object
 from rosys.geometry import Prism
 from rosys.vision import CameraProjector, CameraProvider, camera_objects
 
-from ...hardware import ChainAxis, FieldFriend, Tornado, Axis
+from ...hardware import Axis, ChainAxis, FieldFriend, Tornado
 
 
 class field_friend_object(robot_object):

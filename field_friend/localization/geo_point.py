@@ -36,7 +36,7 @@ class GeoPoint:
         The azimuth angle is measured clockwise from the north direction, and the resulting Cartesian coordinates have the x-axis to north and y-axis to west.
 
         Returns:
-        rosys.geometry.Point: A Point object representing the Cartesian coordinates (x, y) 
+        rosys.geometry.Point: A Point object representing the Cartesian coordinates (x, y)
                             relative to the reference point, where:
                             - x is the eastward distance in meters,
                             - y is the northward distance in meters.

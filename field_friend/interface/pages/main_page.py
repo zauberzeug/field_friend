@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-class main_page():
+class main_page:
 
     def __init__(self, page_wrapper, system: 'System') -> None:
         self.system = system
@@ -36,7 +36,7 @@ class main_page():
                 with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
                     camera_card(self.system)
                     robot_scene(self.system)
-                    with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
+                    with ui.row().style('margin: 1rem; width: calc(100% - 2rem);'):
                         with ui.column():
                             ui.button('emergency stop', on_click=lambda: self.system.field_friend.estop.set_soft_estop(True)).props('color=red') \
                                 .classes('py-3 px-6 text-lg').bind_visibility_from(self.system.field_friend.estop, 'is_soft_estop_active', value=False)

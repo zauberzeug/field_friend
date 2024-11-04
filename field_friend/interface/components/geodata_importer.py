@@ -22,13 +22,13 @@ class geodata_importer(ui.dialog):
         self.field_provider = field_provider
         with self, ui.card():
             with ui.row():
-                ui.label("Upload a file.").classes('text-xl w-80')
+                ui.label('Upload a file.').classes('text-xl w-80')
             with ui.row():
                 ui.label(
-                    "Only a single polygon will be processed. Supported file formates: .xml with ISO 11783, .shp, .kml.").classes('w-80')
+                    'Only a single polygon will be processed. Supported file formates: .xml with ISO 11783, .shp, .kml.').classes('w-80')
             with ui.row():
                 ui.label(
-                    "If you want to upload a shape,  create a zip-file containing all files  (minimum: .shp, .shx, .dbf) and upload the zip.").classes('w-80')
+                    'If you want to upload a shape,  create a zip-file containing all files  (minimum: .shp, .shx, .dbf) and upload the zip.').classes('w-80')
             with ui.row():
                 ui.upload(on_upload=self.restore_from_file, multiple=False)
             with ui.row().classes('w-full justify-end'):
@@ -36,9 +36,9 @@ class geodata_importer(ui.dialog):
 
     def extract_coordinates_kml(self, event: events.UploadEventArguments) -> list:
         coordinates = []
-        gdf = gpd.read_file(event.content, drivr="KML")
+        gdf = gpd.read_file(event.content, drivr='KML')
         x_coordinate, y_coordinate = gdf['geometry'].iloc[0].xy
-        extracted_points = list(zip(x_coordinate, y_coordinate))
+        extracted_points = list(zip(x_coordinate, y_coordinate, strict=False))
         for point in extracted_points:
             coordinates.append(GeoPoint(lat=point[1], long=point[0]))
         return coordinates
@@ -62,12 +62,12 @@ class geodata_importer(ui.dialog):
             print(gdf)
             gdf['geometry'] = gdf['geometry'].apply(lambda geom: transform(self.swap_coordinates, geom))
             feature = json.loads(gdf.to_json())
-            shp_coordinates = feature["features"][0]["geometry"]["coordinates"][0]
+            shp_coordinates = feature['features'][0]['geometry']['coordinates'][0]
             for point in shp_coordinates:
                 coordinates.append(GeoPoint(lat=point[0], long=point[1]))
             return coordinates
         except:
-            rosys.notify("The .zip file does not contain a shape file.", type='warning')
+            rosys.notify('The .zip file does not contain a shape file.', type='warning')
             return None
 
     def swap_coordinates(self, lon, lat):
@@ -77,19 +77,19 @@ class geodata_importer(ui.dialog):
         self.close()
         coordinates: list = []
         if e is None or e.content is None:
-            rosys.notify("You can only upload the following file formates: .kml ,.xml. with ISO  and shape files.", type='warning')
+            rosys.notify('You can only upload the following file formates: .kml ,.xml. with ISO  and shape files.', type='warning')
             return
-        elif e.name[-3:].casefold() == "zip":
+        elif e.name[-3:].casefold() == 'zip':
             coordinates = self.extract_coordinates_shp(e)
-        elif e.name[-3:].casefold() == "kml":
+        elif e.name[-3:].casefold() == 'kml':
             coordinates = self.extract_coordinates_kml(e)
-        elif e.name[-3:].casefold() == "xml":
+        elif e.name[-3:].casefold() == 'xml':
             coordinates = self.extract_coordinates_xml(e)
         else:
-            rosys.notify("You can only upload the following file formates: .kml ,.xml. with ISO  and shape files.", type='warning')
+            rosys.notify('You can only upload the following file formates: .kml ,.xml. with ISO  and shape files.', type='warning')
             return
         if coordinates is None:
-            rosys.notify("An error occurred while importing the file.", type='negative')
+            rosys.notify('An error occurred while importing the file.', type='negative')
             return
         if len(coordinates) > 1 and coordinates[0] == coordinates[-1]:
             coordinates.pop()

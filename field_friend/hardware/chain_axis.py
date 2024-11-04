@@ -147,7 +147,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             bool {name}_ref_r_is_referencing = false
             bool {name}_ref_l_is_referencing = false
             bool {name}_ref_t_stop_enabled = false
-            bool {name}_ref_r_return = false 
+            bool {name}_ref_r_return = false
             bool {name}_ref_l_return = false
             bool {name}_resetting = false
 
@@ -213,7 +213,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         self.log.info(f'>>>{self.name} is moving to {position}mm with speed {speed}...')
         steps = self.compute_steps(position)
         self.log.info(f'>>>steps: {steps}')
-        self.log.info(f'>>>Sending move chain axis command to lizard...')
+        self.log.info('>>>Sending move chain axis command to lizard...')
         await self.robot_brain.send(
             f'{self.name}.position({steps}, {speed}, 40000);'
         )
@@ -360,7 +360,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         while not self.idle and not self.alarm:
             await rosys.sleep(0.2)
         if self.alarm:
-            self.log.info("zaxis alarm")
+            self.log.info('zaxis alarm')
             return False
         return True
 

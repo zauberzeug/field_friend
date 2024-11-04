@@ -82,7 +82,7 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         while not self.idle and not self.alarm:
             await rosys.sleep(0.2)
         if self.alarm:
-            self.log.info("zaxis alarm")
+            self.log.info('zaxis alarm')
             return False
         return True
 

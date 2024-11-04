@@ -4,10 +4,8 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import rosys
 from nicegui import ui
-from rosys.geometry import Point3d
 from rosys.vision import Autoupload
 
-from ..vision import CalibratableUsbCamera
 from ..vision.zedxmini_camera import StereoCamera
 from .plant import Plant
 
@@ -206,8 +204,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def set_upload_images(self):
         if self.teltonika_router.mobile_upload_permission:
             self.upload_images = True
+        elif self.teltonika_router.current_connection == 'wifi' or self.teltonika_router.current_connection == 'ether':
+            self.upload_images = True
         else:
-            if self.teltonika_router.current_connection == 'wifi' or self.teltonika_router.current_connection == 'ether':
-                self.upload_images = True
-            else:
-                self.upload_images = False
+            self.upload_images = False

@@ -86,7 +86,7 @@ class GnssHardware(Gnss):
                     if msg.sentence_type == 'GNS' and getattr(msg, 'mode_indicator', None):
                         if isinstance(msg.timestamp, datetime.time):
                             dt = datetime.datetime.combine(datetime.date.today(), msg.timestamp)
-                            dt.replace(tzinfo=datetime.timezone.utc)
+                            dt.replace(tzinfo=datetime.UTC)
                             data['timestamp'] = dt.timestamp()
                         else:
                             data['timestamp'] = msg.timestamp

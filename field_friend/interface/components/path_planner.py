@@ -67,7 +67,7 @@ class path_planner:
         self.show_path_settings.refresh()
 
     def add_path(self) -> None:
-        path = Path(name=f'{str(uuid.uuid4())}')
+        path = Path(name=f'{uuid.uuid4()!s}')
         self.path_provider.add_path(path)
         self.show_path_settings.refresh()
 

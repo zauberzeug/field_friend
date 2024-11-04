@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import rosys
-from nicegui import events, ui
+from nicegui import ui
 
 from .key_controls import KeyControls
 

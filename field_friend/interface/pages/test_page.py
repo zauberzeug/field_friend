@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from field_friend.system import System
 
 
-class test_page():
+class test_page:
 
     def __init__(self, page_wrapper, system: 'System') -> None:
         self.system = system

@@ -1,9 +1,7 @@
-import asyncio
 from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
-from rosys.system.wifi_button_ import has_internet
 
 from field_friend.system import System
 
@@ -17,10 +15,10 @@ if TYPE_CHECKING:
 class header_bar:
     def __init__(self, system: 'System', right_drawer: ui.right_drawer):
         self.system = system
-        self.drawer_icon = "expand_more"
+        self.drawer_icon = 'expand_more'
         self.toggled = False
         self.STATUS_DRAWER_TOGGLED = rosys.event.Event()
-        "tells if the status drawer is toggled or not."
+        'tells if the status drawer is toggled or not.'
 
         with ui.header().classes('items-center'):
             with ui.link(target='/'):
@@ -61,9 +59,9 @@ class header_bar:
             @ui.refreshable
             def change_drawer_icon() -> None:
                 if not self.toggled:
-                    self.drawer_icon = "expand_more"
+                    self.drawer_icon = 'expand_more'
                 else:
-                    self.drawer_icon = "chevron_right"
+                    self.drawer_icon = 'chevron_right'
                 ui.button(on_click=handle_toggle).props(f'icon={self.drawer_icon} flat color=white')
             change_drawer_icon()
             self.STATUS_DRAWER_TOGGLED.register_ui(change_drawer_icon.refresh)

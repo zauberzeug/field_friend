@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import rosys
@@ -61,7 +62,7 @@ class FieldCreator:
     def get_infos(self) -> None:
         self.headline.text = 'Field Parameters'
         assert self.gnss.current is not None
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_start = self.gnss.current.location
@@ -114,7 +115,7 @@ class FieldCreator:
 
     def confirm_geometry(self) -> None:
         assert self.gnss.current is not None
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location

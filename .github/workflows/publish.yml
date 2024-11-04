@@ -31,7 +31,7 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
           branch: gh-pages
-          folder: site  
+          folder: site
       - name: set version
         run: |
           VERSION=${{ env.VERSION }}

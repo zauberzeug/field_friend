@@ -5,8 +5,7 @@ from dotenv import load_dotenv
 from nicegui import app, ui
 from rosys.analysis import logging_page, videos_page
 
-import field_friend.log_configuration as log_configuration
-from field_friend import interface
+from field_friend import interface, log_configuration
 from field_friend.interface.components import header_bar, status_drawer, system_bar
 from field_friend.system import System
 

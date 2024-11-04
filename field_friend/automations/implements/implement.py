@@ -8,7 +8,7 @@ class Implement(abc.ABC):
         self.is_active = False
 
     async def prepare(self) -> bool:
-        """Prepare the implement once at the beginning (for reference points, etc.); 
+        """Prepare the implement once at the beginning (for reference points, etc.);
 
         return False if preparation failed."""
         return True
@@ -39,4 +39,3 @@ class Implement(abc.ABC):
 
     def settings_ui(self):
         """Create UI for settings and configuration."""
-

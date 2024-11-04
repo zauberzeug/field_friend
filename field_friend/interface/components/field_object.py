@@ -5,7 +5,6 @@ from nicegui.elements.scene_objects import Box, Curve, Cylinder, Group
 from rosys.geometry import Spline
 
 from ...automations import Field, FieldProvider
-from ...automations.navigation import FieldNavigation
 
 if TYPE_CHECKING:
     from field_friend.system import System

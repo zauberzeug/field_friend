@@ -109,7 +109,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         if not await super().try_reference():
             return False
         try:
-            self.log.info("enabling h motors")
+            self.log.info('enabling h motors')
             await self.enable_motor()
             await self.robot_brain.send(
                 f'{self.name}_motor.position_offset = 0;'

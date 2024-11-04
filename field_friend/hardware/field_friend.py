@@ -1,9 +1,9 @@
 import logging
-from typing import Union
 
 import numpy as np
 import rosys
 
+from .axis import Axis
 from .chain_axis import ChainAxis
 from .external_mower import Mower
 from .flashlight import Flashlight
@@ -11,7 +11,6 @@ from .flashlight_pwm import FlashlightPWM
 from .flashlight_v2 import FlashlightV2
 from .safety import Safety
 from .tornado import Tornado
-from .axis import Axis
 
 
 class FieldFriend(rosys.hardware.Robot):
@@ -32,12 +31,12 @@ class FieldFriend(rosys.hardware.Robot):
             self, *,
             implement_name: str,
             wheels: rosys.hardware.Wheels,
-            flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, None],
-            y_axis: Union[Axis, ChainAxis, None],
-            z_axis: Union[Axis, Tornado, None],
-            mower: Union[Mower, None],
+            flashlight: Flashlight | FlashlightV2 | FlashlightPWM | None,
+            y_axis: Axis | ChainAxis | None,
+            z_axis: Axis | Tornado | None,
+            mower: Mower | None,
             estop: rosys.hardware.EStop,
-            bumper: Union[rosys.hardware.Bumper, None],
+            bumper: rosys.hardware.Bumper | None,
             bms: rosys.hardware.Bms,
             safety: Safety,
             **kwargs) -> None:

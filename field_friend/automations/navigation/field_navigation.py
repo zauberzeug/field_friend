@@ -9,7 +9,6 @@ from rosys.geometry import Point, Pose
 
 from ..field import Field, Row
 from ..implements import Implement
-from .follow_crops_navigation import FollowCropsNavigation
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:

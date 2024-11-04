@@ -21,7 +21,6 @@ from .automations import (
     Puncher,
 )
 from .automations.implements import (
-    ChopAndScrew,
     ExternalMower,
     Implement,
     Recorder,
@@ -258,7 +257,7 @@ class System(rosys.persistence.PersistentModule):
         self.camera_provider.add_camera(camera)
 
     def get_jetson_cpu_temperature(self):
-        with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
+        with open('/sys/devices/virtual/thermal/thermal_zone0/temp') as f:
             temp = f.read().strip()
         return float(temp) / 1000.0  # Convert from milli °C to °C
 

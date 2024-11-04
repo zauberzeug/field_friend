@@ -2,7 +2,6 @@ import dataclasses
 import importlib
 import inspect
 import logging
-import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -12,7 +11,7 @@ nav = mkdocs_gen_files.Nav()
 
 
 def extract_events(filepath: str) -> dict[str, str]:
-    with open(filepath, 'r') as f:
+    with open(filepath) as f:
         lines = f.read().splitlines()
     events = {}
     for l, line in enumerate(lines):

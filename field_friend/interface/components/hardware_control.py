@@ -3,9 +3,22 @@ from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
-from ...hardware import (Axis, ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, Mower, MowerHardware, MowerSimulation, Tornado, YAxisCanOpenHardware,
-                         ZAxisCanOpenHardware)
+from ...hardware import (
+    Axis,
+    ChainAxis,
+    FieldFriend,
+    FieldFriendHardware,
+    Flashlight,
+    FlashlightPWM,
+    FlashlightPWMV2,
+    FlashlightV2,
+    Mower,
+    MowerHardware,
+    MowerSimulation,
+    Tornado,
+    YAxisCanOpenHardware,
+    ZAxisCanOpenHardware,
+)
 from .confirm_dialog import ConfirmDialog as confirm_dialog
 from .status_bulb import StatusBulb as status_bulb
 

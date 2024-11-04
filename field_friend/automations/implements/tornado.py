@@ -1,5 +1,4 @@
 
-from collections import deque
 from typing import TYPE_CHECKING, Any
 
 import rosys
@@ -77,8 +76,7 @@ class Tornado(WeedingImplement):
         if stretch < - self.system.field_friend.DRILL_RADIUS:
             self.log.info(f'Skipping crop {closest_crop_id} because it is behind the robot')
             return self.WORKING_DISTANCE
-        if stretch < 0:
-            stretch = 0
+        stretch = max(stretch, 0)
         if stretch < max_distance:
             self.next_punch_y_position = closest_crop_position.y
             return stretch

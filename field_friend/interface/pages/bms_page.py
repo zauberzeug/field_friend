@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import pandas as pd
 import rosys
 from nicegui import ui
+
 from ...log_configuration import PATH as LOG_PATH
 
 if TYPE_CHECKING:
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
 
 class bms_page:
 
-    def __init__(self, page_wrapper, system: 'System') -> None:
+    def __init__(self, page_wrapper, system: System) -> None:
         self.system = system
 
         @ui.page('/bms')

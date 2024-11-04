@@ -1,7 +1,6 @@
 
-from field_friend.automations import Field
 import logging
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import rosys
@@ -46,10 +45,10 @@ def gnss(system: System) -> GnssSimulation:
     return system.gnss
 
 
-class TestField():
+class TestField:
     def __init__(self):
-        self.id = "test_field_id"
-        self.name = "Test Field"
+        self.id = 'test_field_id'
+        self.name = 'Test Field'
         self.first_row_start = FIELD_FIRST_ROW_START
         self.first_row_end = FIELD_FIRST_ROW_END
         self.row_spacing = 0.45
@@ -57,19 +56,19 @@ class TestField():
         self.outline_buffer_width = 2
         self.row_support_points = []
         self.rows = [
-            Row(id=f"field_{self.id}_row_1", name="row_1", points=[
+            Row(id=f'field_{self.id}_row_1', name='row_1', points=[
                 self.first_row_start,
                 self.first_row_end
             ]),
-            Row(id=f"field_{self.id}_row_2", name="row_2", points=[
+            Row(id=f'field_{self.id}_row_2', name='row_2', points=[
                 self.first_row_start.shifted(Point(x=0, y=-0.45)),
                 self.first_row_end.shifted(Point(x=0, y=-0.45))
             ]),
-            Row(id=f"field_{self.id}_row_3", name="row_3", points=[
+            Row(id=f'field_{self.id}_row_3', name='row_3', points=[
                 self.first_row_start.shifted(Point(x=0, y=-0.9)),
                 self.first_row_end.shifted(Point(x=0, y=-0.9))
             ]),
-            Row(id=f"field_{self.id}_row_4", name="row_4", points=[
+            Row(id=f'field_{self.id}_row_4', name='row_4', points=[
                 self.first_row_start.shifted(Point(x=0, y=-1.35)),
                 self.first_row_end.shifted(Point(x=0, y=-1.35))
             ])
@@ -90,7 +89,7 @@ async def field(system: System) -> AsyncGenerator[TestField, None]:
     test_field = TestField()
     system.field_provider.create_field(Field(
         id=test_field.id,
-        name="Test Field",
+        name='Test Field',
         first_row_start=test_field.first_row_start,
         first_row_end=test_field.first_row_end,
         row_spacing=test_field.row_spacing,
@@ -105,7 +104,7 @@ async def field_with_beds(system: System) -> AsyncGenerator[TestField, None]:
     test_field = TestField()
     system.field_provider.create_field(Field(
         id=test_field.id,
-        name="Test Field With Beds",
+        name='Test Field With Beds',
         first_row_start=test_field.first_row_start,
         first_row_end=test_field.first_row_end,
         row_spacing=test_field.row_spacing,

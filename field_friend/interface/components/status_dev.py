@@ -8,7 +8,6 @@ from nicegui import ui
 from ... import localization
 from ...hardware import (
     Axis,
-    AxisD1,
     ChainAxis,
     FieldFriend,
     FieldFriendHardware,

@@ -1,5 +1,4 @@
 import abc
-from typing import Union
 
 import rosys
 
@@ -33,10 +32,10 @@ class Safety(rosys.hardware.Module, abc.ABC):
     def __init__(self, *,
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[Axis, ChainAxis, None] = None,
-                 z_axis: Union[Axis, Tornado, None] = None,
-                 flashlight: Union[Flashlight, FlashlightV2, FlashlightPWM, FlashlightPWMV2, None] = None,
-                 mower: Union[Mower, None] = None,
+                 y_axis: Axis | ChainAxis | None = None,
+                 z_axis: Axis | Tornado | None = None,
+                 flashlight: Flashlight | FlashlightV2 | FlashlightPWM | FlashlightPWMV2 | None = None,
+                 mower: Mower | None = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.wheels = wheels
@@ -51,15 +50,13 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
     """This module implements safety hardware."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 wheels: Union[rosys.hardware.WheelsHardware, DoubleWheelsHardware],
+                 wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware,
                  estop: rosys.hardware.EStopHardware,
-                 bumper: Union[rosys.hardware.BumperHardware, None] = None,
-                 y_axis: Union[ChainAxisHardware,
-                               YAxisStepperHardware, YAxisCanOpenHardware, None] = None,
-                 z_axis: Union[ZAxisCanOpenHardware, ZAxisStepperHardware,
-                               TornadoHardware, ZAxisCanOpenHardware, None] = None,
-                 flashlight: Union[FlashlightHardware, FlashlightHardwareV2, FlashlightPWMHardware, FlashlightPWMHardwareV2, None],
-                 mower: Union[MowerHardware, None] = None,
+                 bumper: rosys.hardware.BumperHardware | None = None,
+                 y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | None = None,
+                 z_axis: ZAxisCanOpenHardware | ZAxisStepperHardware | TornadoHardware | ZAxisCanOpenHardware | None = None,
+                 flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None,
+                 mower: MowerHardware | None = None,
                  ) -> None:
 
         # implement lizard stop method for available hardware
@@ -118,10 +115,10 @@ class SafetySimulation(Safety, rosys.hardware.ModuleSimulation):
     def __init__(self, *,
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
-                 y_axis: Union[AxisSimulation, ChainAxisSimulation, None] = None,
-                 z_axis: Union[AxisSimulation, TornadoSimulation, None] = None,
-                 flashlight: Union[FlashlightSimulation, FlashlightSimulationV2, FlashlightPWMSimulation, FlashlightPWMSimulationV2, None],
-                 mower: Union[MowerSimulation, None] = None) -> None:
+                 y_axis: AxisSimulation | ChainAxisSimulation | None = None,
+                 z_axis: AxisSimulation | TornadoSimulation | None = None,
+                 flashlight: FlashlightSimulation | FlashlightSimulationV2 | FlashlightPWMSimulation | FlashlightPWMSimulationV2 | None,
+                 mower: MowerSimulation | None = None) -> None:
         super().__init__(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)
 
     async def step(self, dt: float) -> None:

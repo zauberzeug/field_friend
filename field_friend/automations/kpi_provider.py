@@ -44,7 +44,6 @@ class KpiProvider(KpiLogger):
             new_value = getattr(self.all_time_kpis, indicator)+increment
         setattr(self.all_time_kpis, indicator, new_value)
         self.invalidate()
-        return
 
     def get_time_kpi(self) -> str:
         total_seconds = int(self.all_time_kpis.time)

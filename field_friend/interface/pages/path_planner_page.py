@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from field_friend.system import System
 
 
-class path_planner_page():
+class path_planner_page:
 
     def __init__(self, page_wrapper, system: 'System') -> None:
         self.system = system

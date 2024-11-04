@@ -63,8 +63,7 @@ class WeedingScrew(WeedingImplement):
             if stretch < - self.system.field_friend.DRILL_RADIUS:
                 self.log.info(f'Skipping weed {next_weed_id} because it is behind the robot')
                 continue
-            if stretch < 0:
-                stretch = 0
+            stretch = max(stretch, 0)
             self.log.info(f'Targeting weed {next_weed_id} which is {stretch} away at world: '
                           f'{weed_world_position}, local: {next_weed_position}')
             if stretch < max_distance:

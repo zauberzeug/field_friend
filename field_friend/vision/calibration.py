@@ -1,6 +1,6 @@
-import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Self, Sequence
+from typing import Self
 
 import cv2
 import numpy as np
