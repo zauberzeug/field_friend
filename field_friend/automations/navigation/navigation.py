@@ -6,7 +6,7 @@ import numpy as np
 import rosys
 from nicegui import ui
 
-from ..implements import Implement
+from ..implements.implement import Implement
 
 if TYPE_CHECKING:
     from system import System

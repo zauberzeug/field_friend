@@ -8,7 +8,7 @@ from nicegui import ui
 from rosys.geometry import Point, Pose
 
 from ..field import Field, Row
-from ..implements import Implement
+from ..implements.implement import Implement
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:

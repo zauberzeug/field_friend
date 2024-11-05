@@ -8,7 +8,7 @@ from nicegui import ui
 
 from ...hardware import MowerHardware
 from ..navigation import WorkflowException
-from .weeding_implement import Implement
+from .implement import Implement
 
 if TYPE_CHECKING:
     from system import System

@@ -8,8 +8,7 @@ from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point
 
-from field_friend.automations.implements.weeding_implement import WeedingImplement
-
+from ...automations.implements.weeding_implement import WeedingImplement
 from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Tornado
 from ...vision import CalibratableUsbCamera
 from ...vision.zedxmini_camera import StereoCamera
