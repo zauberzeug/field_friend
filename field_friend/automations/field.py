@@ -144,14 +144,24 @@ class Field:
 
     def _generate_outline(self) -> list[GeoPoint]:
         assert len(self.rows) > 0
-        outline_unbuffered: list[Point] = []
-        for p in self.rows[-1].points:
-            outline_unbuffered.append(p.cartesian())
-        outline_unbuffered.append(self.first_row_end.cartesian())
-        outline_unbuffered.append(self.first_row_start.cartesian())
-        outline_polygon = Polygon([p.tuple for p in outline_unbuffered])
-        bufferd_polygon = outline_polygon.buffer(
-            self.outline_buffer_width, join_style='mitre', mitre_limit=math.inf)
+        bufferd_polygon = None
+        if len(self.rows) > 1:
+            outline_unbuffered: list[Point] = []
+            for p in self.rows[-1].points:
+                outline_unbuffered.append(p.cartesian())
+            outline_unbuffered.append(self.first_row_end.cartesian())
+            outline_unbuffered.append(self.first_row_start.cartesian())
+            outline_polygon = Polygon([p.tuple for p in outline_unbuffered])
+            bufferd_polygon = outline_polygon.buffer(
+                self.outline_buffer_width, join_style='mitre', mitre_limit=math.inf)
+        else:
+            outline_unbuffered: list[Point] = []
+            for p in self.rows[0].points:
+                outline_unbuffered.append(p.cartesian())
+            outline_linestring = LineString([p.tuple for p in outline_unbuffered])
+            bufferd_polygon = outline_linestring.buffer(
+                self.outline_buffer_width, cap_style='square', join_style='mitre', mitre_limit=math.inf)
+    
         bufferd_polygon_coords = bufferd_polygon.exterior.coords
         outline: list[GeoPoint] = [localization.reference.shifted(
             Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
