@@ -17,7 +17,7 @@ MINIMUM_WEED_CONFIDENCE = 0.3
 
 
 if TYPE_CHECKING:
-    from system import System
+    from ..system import System
 
 
 class DetectorError(Exception):
@@ -44,7 +44,8 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         if isinstance(self.detector, rosys.vision.DetectorHardware):
-            rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port), 1.0)
+            port = self.detector.port
+            rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=port), 1.0)
         if system.is_real:
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
@@ -146,8 +147,9 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.log.info('resuming plant detection')
         self.is_paused = False
 
-    async def get_outbox_mode(self, port: int) -> bool:
+    async def get_outbox_mode(self, port: int) -> bool | None:
         # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
+        # TODO: active cleaner already has implemented this
         url = f'http://localhost:{port}/outbox_mode'
         async with aiohttp.request('GET', url) as response:
             if response.status != 200:

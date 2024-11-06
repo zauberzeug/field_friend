@@ -7,7 +7,7 @@ from nicegui import ui
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class WeedingScrew(WeedingImplement):
@@ -36,7 +36,7 @@ class WeedingScrew(WeedingImplement):
                 self.system.detector.simulated_objects = [
                     obj for obj in self.system.detector.simulated_objects
                     if obj.position.projection().distance(punch_position) > self.system.field_friend.DRILL_RADIUS]
-            return True  # NOTE no weeds to work on at this position -> advance robot
+            # NOTE no weeds to work on at this position -> advance robot
         except Exception as e:
             raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
 

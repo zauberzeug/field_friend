@@ -7,7 +7,7 @@ from shapely.geometry import LineString, MultiLineString, Polygon
 from shapely.ops import unary_union
 
 if TYPE_CHECKING:
-    from ..automations import CoverageNavigation
+    from . import CoverageNavigation
 
 
 class CoveragePlanner:

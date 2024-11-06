@@ -30,7 +30,7 @@ class operation:
                     with ui.row():
                         ui.label('Settings').classes('text-xl')
                     with ui.expansion('Fields').classes('w-full').bind_value(app.storage.user, 'show_fields_settings'):
-                        self.field_setting()
+                        self.field_setting()  # type: ignore
                     with ui.expansion('Navigation').classes('w-full').bind_value(app.storage.user, 'show_navigation_settings'):
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):

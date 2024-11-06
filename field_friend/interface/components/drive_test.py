@@ -10,10 +10,10 @@ from rosys.pathplanning import path_object
 from rosys.vision import CameraProvider
 
 from ...hardware import FieldFriend
-from .field_friend_object import robot_object
+from .field_friend_object import field_friend_object
 
 
-class test:
+class DriveTest:
 
     def __init__(self,
                  field_friend: FieldFriend,
@@ -42,7 +42,7 @@ class test:
                     scene.move_camera(x=event.hits[0].x-0.5, y=event.hits[0].y-1, z=1.5,
                                       look_at_x=event.hits[0].x, look_at_y=event.hits[0].y)
             with ui.scene(400, 300, on_click=handle_click) as scene:
-                robot_object(self.odometer, self.camera_provider, self.field_friend)
+                field_friend_object(self.odometer, self.camera_provider, self.field_friend)
                 driver_object(self.driver)
                 self.path3d = path_object()
                 scene.move_camera(-0.5, -1, 1.5)
@@ -61,14 +61,15 @@ class test:
                 async def odometry_push() -> None:
                     time = rosys.time()
                     linear_target_speed = self.field_friend.wheels.linear_target_speed
-                    linear_speed = self.odometer.current_velocity.linear
+                    # TODO: does 0 make sense if we have no velocity?
+                    linear_speed = self.odometer.current_velocity.linear if self.odometer.current_velocity else 0
                     angular_target_speed = self.field_friend.wheels.angular_target_speed
-                    angular_speed = self.odometer.current_velocity.angular
+                    angular_speed = self.odometer.current_velocity.angular if self.odometer.current_velocity else 0
                     linear_plot.push([time], [[linear_target_speed], [linear_speed]])
                     angular_plot.push([time], [[angular_target_speed], [angular_speed]])
 
                 line_updates = ui.timer(0.1, odometry_push, active=False)
-                updates_checkbox = ui.checkbox('active plots').bind_value(line_updates, 'active')
+                ui.checkbox('active plots').bind_value(line_updates, 'active')
 
             with ui.row():
                 with ui.column():

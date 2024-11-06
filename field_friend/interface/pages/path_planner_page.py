@@ -2,7 +2,8 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
-from ..components import leaflet_map, operation, path_planner
+from ..components import PathPlanner as path_planner
+from ..components import leaflet_map, operation
 
 if TYPE_CHECKING:
     from field_friend.system import System

@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
-from ..components import test
+from ..components import DriveTest as drive_test
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -21,5 +21,5 @@ class test_page:
     def content(self):
         with ui.column().classes('w-full items-stretch'):
             with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
-                test(self.system.field_friend, self.system.steerer, self.system.odometer, self.system.automator, self.system.driver,
-                     self.system.camera_provider)
+                drive_test(self.system.field_friend, self.system.steerer, self.system.odometer, self.system.automator,
+                           self.system.driver, self.system.camera_provider)

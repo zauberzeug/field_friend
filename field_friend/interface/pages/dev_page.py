@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
-from ..components import development
+from ..components import create_development_ui
 
 if TYPE_CHECKING:
     from field_friend.system import System
@@ -19,4 +19,4 @@ class dev_page:
             self.content()
 
     def content(self) -> None:
-        development(self.system)
+        create_development_ui(self.system)

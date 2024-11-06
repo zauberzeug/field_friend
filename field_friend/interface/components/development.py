@@ -10,10 +10,10 @@ from .settings import settings
 from .status_dev import status_dev_page
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-def development(system: 'System') -> None:
+def create_development_ui(system: 'System') -> None:
     with ui.row().style('width: calc(100vw - 2rem); flex-wrap: nowrap;'):
         with ui.card().style('background-color: #2E5396; width: 100%;'):
             with ui.column().style('width: 100%;'):

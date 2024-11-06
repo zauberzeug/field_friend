@@ -3,12 +3,13 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
+from rosys.geometry import Point3d
 
 from ..puncher import PuncherException
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class Tornado(WeedingImplement):
@@ -27,7 +28,7 @@ class Tornado(WeedingImplement):
             # TODO: do we need to set self.next_crop_id = '' on every return?
             punch_position = self.system.odometer.prediction.transform(
                 rosys.geometry.Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
-            self.last_punches.append(punch_position)
+            self.last_punches.append(Point3d.from_point(punch_position))
             self.log.info(f'Drilling crop at {punch_position} with angle {self.tornado_angle}°')
             open_drill = False
             if self.drill_with_open_tornado:
@@ -55,20 +56,20 @@ class Tornado(WeedingImplement):
         if len(self.crops_to_handle) == 0:
             return self.WORKING_DISTANCE
         closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
-        closest_crop_world_position = self.system.odometer.prediction.transform(closest_crop_position)
+        closest_crop_world_position = self.system.odometer.prediction.transform3d(closest_crop_position)
 
         # for p in self.last_punches:
         #     self.log.info(f'Last punch: {p} - {p.distance(closest_crop_world_position)} - {self.crop_safety_distance} - {closest_crop_world_position}')
         if any(p.distance(closest_crop_world_position) < self.field_friend.DRILL_RADIUS for p in self.last_punches):
             self.log.info('Skipping weed because it was already punched')
             return self.WORKING_DISTANCE
-        if not self.system.field_friend.can_reach(closest_crop_position):
+        if not self.system.field_friend.can_reach(closest_crop_position.projection()):
             self.log.info('Target crop is not reachable')
             return self.WORKING_DISTANCE
         if closest_crop_position.x >= self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
             self.log.info('Closest crop is out of working area')
             return self.WORKING_DISTANCE
-        if self._crops_in_drill_range(closest_crop_id, closest_crop_position, self.tornado_angle):
+        if self._crops_in_drill_range(closest_crop_id, closest_crop_position.projection(), self.tornado_angle):
             self.log.info('Crops in drill range')
             return self.WORKING_DISTANCE
 
@@ -87,7 +88,7 @@ class Tornado(WeedingImplement):
         crop_world_position = self.system.odometer.prediction.transform(crop_position)
         for crop in self.system.plant_provider.crops:
             if crop.id != crop_id:
-                distance = crop_world_position.distance(crop.position)
+                distance = crop_world_position.distance(crop.position.projection())
                 if distance >= inner_diameter/2 and distance <= outer_diameter/2:
                     return True
         return False

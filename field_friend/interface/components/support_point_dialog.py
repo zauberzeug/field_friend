@@ -4,12 +4,12 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-from field_friend.automations.field import RowSupportPoint
-from field_friend.interface.components.monitoring import CameraPosition
-from field_friend.localization import GeoPoint
+from ...automations.field import RowSupportPoint
+from ...interface.components.monitoring import CameraPosition
+from ...localization import GeoPoint
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class SupportPointDialog:
@@ -54,7 +54,7 @@ class SupportPointDialog:
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the row number you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
-            else:
+            elif self.field_provider.selected_field is not None:
                 ui.label('2. Enter the bed and row number for the support point:').classes('text-lg')
                 ui.number(
                     label='Bed Number', min=1, max=self.field_provider.selected_field.bed_count, step=1, value=1) \
@@ -91,6 +91,9 @@ class SupportPointDialog:
             ui.notify('No valid point coordinates.')
             return
         field = self.field_provider.selected_field
+        if field is None:
+            ui.notify('No field selected.')
+            return
         row_index = (self.bed_number - 1) * field.row_count + self.row_name - 1
         row_support_point = RowSupportPoint.from_geopoint(self.support_point_coordinates, row_index)
         self.field_provider.add_row_support_point(field.id, row_support_point)

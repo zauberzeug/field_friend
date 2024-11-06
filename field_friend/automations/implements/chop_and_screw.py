@@ -2,11 +2,13 @@
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
+import rosys
+
 from ..puncher import PuncherException
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class ChopAndScrew(WeedingImplement):

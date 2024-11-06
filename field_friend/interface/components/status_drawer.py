@@ -1,17 +1,19 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import rosys
 from nicegui import ui
 
 from ... import localization
-from ...hardware import Axis, ChainAxis, FieldFriend, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado
-from ...localization import Gnss
+from ...hardware import Axis, ChainAxis, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: rosys.driving.Odometer, automator: rosys.automation.Automator):
+def create_status_drawer(system: 'System') -> ui.right_drawer:
+    robot = system.field_friend
+    gnss = system.gnss
+    odometer = system.odometer
     with ui.right_drawer(value=False).classes('bg-[#edf4fa]') as status_drawer, ui.column():
         with ui.row().classes('w-full place-content-end'):
             info_dialog = system.info.create_dialog()
@@ -26,11 +28,11 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     ui.separator()
                     ui.menu_item('Restart RoSys', on_click=system.restart)
                     if system.is_real:
-                        ui.menu_item('Restart Lizard', on_click=system.field_friend.robot_brain.restart)
+                        ui.menu_item('Restart Lizard', on_click=cast(FieldFriendHardware, robot).robot_brain.restart)
 
         ui.label('System Status').classes('text-xl')
 
-        ui.markdown('**Hardware**').style('color: #6E93D6').classes('w-full text-center')
+        ui.label('Hardware').style('color: #6E93D6').classes('w-full text-center font-bold')
         ui.separator()
 
         with ui.row().bind_visibility_from(robot.estop, 'active'):
@@ -69,55 +71,55 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                     ui.icon('report').props('size=md').classes('text-yellow')
                     ui.label('Bumper triggered, warning!').classes('text-orange mt-1')
                     with ui.row().classes('place-items-center'):
-                        ui.markdown('**Bumper:**').style('color: #6E93D6')
+                        ui.label('Bumper:').style('color: #6E93D6').classes('font-bold')
                         bumper_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Tool:**').style('color: #6E93D6')
+            ui.label('Tool:').style('color: #6E93D6')
             ui.label(robot.implement_name)
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
-                ui.markdown('**Status Control:**').style('color: #6E93D6')
+                ui.label('Status Control:').style('color: #6E93D6').classes('font-bold')
                 status_control_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Flashlight:**').style('color: #6E93D6')
+            ui.label('Flashlight:').style('color: #6E93D6').classes('font-bold')
             flashlight_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Axis:**').style('color: #6E93D6')
+            ui.label('Axis:').style('color: #6E93D6').classes('font-bold')
             axis_label = ui.label()
 
-        ui.markdown('**Performance**').style('color: #6E93D6').classes('w-full text-center')
+        ui.label('Performance').style('color: #6E93D6').classes('w-full text-center font-bold')
         ui.separator()
 
         with ui.row().classes('place-items-center').bind_visibility_from(system.automator, 'is_running', backward=lambda x: not x):
-            ui.markdown('**No automation running**').style('color: #6E93D6')
+            ui.label('No automation running').style('color: #6E93D6').classes('font-bold')
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Time in Automation**').style('color: #6E93D6')
+            ui.label('Time in Automation').style('color: #6E93D6').classes('font-bold')
             kpi_time_in_automation_off = ui.label()
 
-        ui.markdown('**Positioning**').style('color: #6E93D6').classes('w-full text-center')
+        ui.label('Positioning').style('color: #6E93D6').classes('w-full text-center font-bold')
         ui.separator()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**GNSS-Device:**').style('color: #6E93D6')
+            ui.label('GNSS-Device:').style('color: #6E93D6').classes('font-bold')
             gnss_device_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Reference position:**').style('color: #6E93D6')
+            ui.label('Reference position:').style('color: #6E93D6').classes('font-bold')
             reference_position_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Position:**').style('color: #6E93D6')
+            ui.label('Position:').style('color: #6E93D6').classes('font-bold')
             gnss_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**Heading:**').style('color: #6E93D6')
+            ui.label('Heading:').style('color: #6E93D6').classes('font-bold')
             heading_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.markdown('**RTK-Fix:**').style('color: #6E93D6')
+            ui.label('RTK-Fix:').style('color: #6E93D6').classes('font-bold')
             rtk_fix_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.markdown('**odometry:**').style('color: #6E93D6')
+            ui.label('odometry:').style('color: #6E93D6').classes('font-bold')
             odometry_label = ui.label()
 
         def update_status() -> None:
@@ -182,6 +184,7 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
+            # TODO: move this into gnss since it is used multiple times, check stuff above this too!
             direction_flag = '?' if gnss.current is None or gnss.current.heading is None else \
                 'N' if gnss.current.heading <= 23 else \
                 'NE' if gnss.current.heading <= 68 else \
@@ -192,8 +195,6 @@ def status_drawer(system: 'System', robot: FieldFriend, gnss: Gnss, odometer: ro
                 'W' if gnss.current.heading <= 293 else \
                 'NW' if gnss.current.heading <= 338 else \
                 'N'
-
-
 
             kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_kpi()}'
             gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'

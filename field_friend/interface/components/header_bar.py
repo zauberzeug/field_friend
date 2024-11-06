@@ -1,19 +1,13 @@
-from typing import TYPE_CHECKING
-
 import rosys
 from nicegui import ui
 
-from field_friend.system import System
-
 from ...hardware import FieldFriend
+from ...system import System
 from .manual_steerer_dialog import manual_steerer_dialog
-
-if TYPE_CHECKING:
-    from field_friend.system import System
 
 
 class header_bar:
-    def __init__(self, system: 'System', right_drawer: ui.right_drawer):
+    def __init__(self, system: System, right_drawer: ui.right_drawer):
         self.system = system
         self.drawer_icon = 'expand_more'
         self.toggled = False

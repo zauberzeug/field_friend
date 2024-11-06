@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import binding, ui
 
-from ..components import camera_card, leaflet_map, operation, robot_scene
+from ..components import LeafletMap as leaflet_map
+from ..components import camera_card, operation, robot_scene
 
 if TYPE_CHECKING:
     from ...system import System

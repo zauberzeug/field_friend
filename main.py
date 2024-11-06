@@ -6,7 +6,7 @@ from nicegui import app, ui
 from rosys.analysis import logging_page, videos_page
 
 from field_friend import interface, log_configuration
-from field_friend.interface.components import header_bar, status_drawer, system_bar
+from field_friend.interface.components import create_status_drawer, header_bar, system_bar
 from field_friend.system import System
 
 logger = log_configuration.configure()
@@ -28,7 +28,7 @@ def startup() -> None:
     system = System()
 
     def page_wrapper() -> None:
-        drawer = status_drawer(system, system.field_friend, system.gnss, system.odometer, system.automator)
+        drawer = create_status_drawer(system)
         header_bar(system, drawer)
         system_bar()
 

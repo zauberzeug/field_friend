@@ -24,11 +24,11 @@ class geodata_importer(ui.dialog):
             with ui.row():
                 ui.label('Upload a file.').classes('text-xl w-80')
             with ui.row():
-                ui.label(
-                    'Only a single polygon will be processed. Supported file formates: .xml with ISO 11783, .shp, .kml.').classes('w-80')
+                ui.label('Only a single polygon will be processed. Supported file formates: '
+                         '.xml with ISO 11783, .shp, .kml.').classes('w-80')
             with ui.row():
-                ui.label(
-                    'If you want to upload a shape,  create a zip-file containing all files  (minimum: .shp, .shx, .dbf) and upload the zip.').classes('w-80')
+                ui.label('If you want to upload a shape, create a zip-file containing all files '
+                         '(minimum: .shp, .shx, .dbf) and upload the zip.').classes('w-80')
             with ui.row():
                 ui.upload(on_upload=self.restore_from_file, multiple=False)
             with ui.row().classes('w-full justify-end'):
@@ -75,7 +75,7 @@ class geodata_importer(ui.dialog):
 
     async def restore_from_file(self, e: events.UploadEventArguments) -> None:
         self.close()
-        coordinates: list = []
+        coordinates: list | None = []
         if e is None or e.content is None:
             rosys.notify('You can only upload the following file formates: .kml ,.xml. with ISO  and shape files.', type='warning')
             return
@@ -93,5 +93,6 @@ class geodata_importer(ui.dialog):
             return
         if len(coordinates) > 1 and coordinates[0] == coordinates[-1]:
             coordinates.pop()
+        # TODO: how to create field from coordinates?
         self.field_provider.create_field(points=coordinates)
         return

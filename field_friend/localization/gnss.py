@@ -145,7 +145,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
         self.needed_poses = data.get('needed_poses', self.needed_poses)
 
     async def update_reference(self) -> None:

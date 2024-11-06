@@ -174,6 +174,7 @@ class System(rosys.persistence.PersistentModule):
         self._current_navigation: Navigation = self.straight_line_navigation
         self._current_implement = self._current_navigation
         self.automator.default_automation = self._current_navigation.start
+        # TODO: let's keep the interface components in the interface package and pages
         self.info = Info(self)
         self.current_implement = self.monitoring
         if self.field_friend.bumper:

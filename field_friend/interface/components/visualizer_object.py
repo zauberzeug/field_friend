@@ -19,14 +19,14 @@ class visualizer_object(Object3D):
         self.refresh()
 
     def refresh(self) -> None:
-        automation = self.system.current_implement
         # TODO visualization should be part of tool and navigation strategy
+        # automation = self.system.current_implement
         # if automation == 'weeding':
         #     segments = self.system.weeding.weeding_plan + self.system.weeding.turn_paths
         # elif automation == 'mowing':
         #     segments = self.system.mowing.paths
         # else:
-        segments = []
+        segments: list[list[rosys.driving.PathSegment]] = []
         self.update_path([path_segment for path in segments for path_segment in path])
 
     def update_path(self, path: list[rosys.driving.PathSegment], height: float = 0.02) -> None:
