@@ -71,6 +71,7 @@ class FlashlightHardware(Flashlight, rosys.hardware.ModuleHardware):
                  pin: int = 5) -> None:
         self.name = name
         self.expander = expander
+        # TODO: is this always on the expander? otherwise it will break
         lizard_code = remove_indentation(f'''
             {name} = {expander.name}.Output({pin})
             {name}.on()
@@ -94,8 +95,7 @@ class FlashlightSimulation(Flashlight, rosys.hardware.ModuleSimulation):
         super().__init__()
 
     async def turn_on(self) -> None:
-        if not await super().turn_on():
-            return
+        await super().turn_on()
 
     async def turn_off(self) -> None:
         await super().turn_off()

@@ -12,7 +12,7 @@ from ..implements.implement import Implement
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class State(Enum):
@@ -165,7 +165,9 @@ class FieldNavigation(StraightLineNavigation):
             await self._drive_towards_target(drive_step, target, timeout=timeout)
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
 
-    async def turn_to_yaw(self, target_yaw, angle_threshold=np.deg2rad(1.0)) -> None:
+    async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
+        if angle_threshold is None:
+            angle_threshold = np.deg2rad(1.0)
         while True:
             angle = rosys.helpers.eliminate_2pi(target_yaw - self.odometer.prediction.yaw)
             if abs(angle) < angle_threshold:

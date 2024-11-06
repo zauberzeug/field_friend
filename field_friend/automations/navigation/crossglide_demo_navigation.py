@@ -7,7 +7,7 @@ from ...automations.implements.implement import Implement
 from .navigation import Navigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class WorkflowException(Exception):
@@ -43,6 +43,8 @@ class CrossglideDemoNavigation(Navigation):
                 self.create_simulation()
             self.log.info('Navigation started')
             while not self._should_finish():
+                # TODO: implement has no attribute next_punch_y_position, only weeding implement has it
+                # what is the correct way to handle this? currently it's initialized with a recorder as the implement
                 self.implement.next_punch_y_position = np.random.uniform(-0.11, 0.1)
                 await self.implement.start_workflow()
         except WorkflowException as e:

@@ -9,7 +9,7 @@ from ...automations.implements.implement import Implement
 from .navigation import Navigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class StraightLineNavigation(Navigation):

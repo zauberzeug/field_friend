@@ -59,7 +59,6 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
-        await super().stop()
         await self.robot_brain.send(f'{self.name}.stop()')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
@@ -68,10 +67,8 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         try:
             await super().move_to(position, speed)
         except RuntimeError as error:
-            self.log.info(
-                f'could not move yaxis to {position} because of {error}')
-            raise Exception(
-                f'could not move yaxis to {position} because of {error}')
+            self.log.info(f'could not move yaxis to {position} because of {error}')
+            raise Exception(f'could not move yaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
         await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 250000);')
         await rosys.sleep(0.2)

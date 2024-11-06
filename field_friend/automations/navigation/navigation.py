@@ -9,7 +9,7 @@ from nicegui import ui
 from ..implements.implement import Implement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class WorkflowException(Exception):

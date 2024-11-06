@@ -10,7 +10,7 @@ from shapely.geometry import Polygon as ShapelyPolygon
 from field_friend.localization import GeoPoint
 
 if TYPE_CHECKING:
-    from system import System
+    from ..system import System
 
 DEFAULT_RESUME_DELAY = 1.0
 RESET_POSE_DISTANCE = 1.0

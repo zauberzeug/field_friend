@@ -5,7 +5,7 @@ import rosys
 from nicegui.elements.scene_objects import Group, Sphere
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class plant_objects(Group):

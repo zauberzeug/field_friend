@@ -35,7 +35,7 @@ class WeedingScrew(WeedingImplement):
                               f'with radius {self.system.field_friend.DRILL_RADIUS}')
                 self.system.detector.simulated_objects = [
                     obj for obj in self.system.detector.simulated_objects
-                    if obj.position.projection().distance(punch_position) > self.system.field_friend.DRILL_RADIUS]
+                    if obj.position.projection().distance(punch_position.projection()) > self.system.field_friend.DRILL_RADIUS]
             # NOTE no weeds to work on at this position -> advance robot
         except Exception as e:
             raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
@@ -44,7 +44,7 @@ class WeedingScrew(WeedingImplement):
         await super().get_stretch(max_distance)
         super()._has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
-                          if self.system.field_friend.can_reach(position)}
+                          if self.system.field_friend.can_reach(position.projection())}
         if not weeds_in_range:
             self.log.info('No weeds in range')
             return self.WORKING_DISTANCE

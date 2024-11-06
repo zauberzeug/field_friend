@@ -5,6 +5,7 @@ import rosys
 
 class Axis(rosys.hardware.Module, abc.ABC):
 
+    # TODO: type annotations please
     def __init__(self,
                  max_speed,
                  reference_speed,
@@ -102,7 +103,6 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
         )
 
     async def stop(self) -> None:
-        await super().stop()
         self.speed = 0
         self.target_steps = None
 

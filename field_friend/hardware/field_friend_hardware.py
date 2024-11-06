@@ -41,20 +41,22 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
         self.ANTENNA_OFFSET: float = config_params['antenna_offset']
+        self.WORK_X: float
+        self.DRILL_RADIUS: float
         implement: str = config_params['tool']
         if implement in ['tornado', 'weed_screw', 'none']:
-            self.WORK_X: float = config_params['work_x']
+            self.WORK_X = config_params['work_x']
             if 'work_y' in config_params:
                 self.WORK_Y: float = config_params['work_y']
-            self.DRILL_RADIUS: float = config_params['drill_radius']
+            self.DRILL_RADIUS = config_params['drill_radius']
         elif implement in ['dual_mechanism']:
             self.WORK_X_CHOP: float = config_params['work_x_chop']
-            self.WORK_X: float = config_params['work_x_drill']
+            self.WORK_X = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS: float = config_params['chop_radius']
         elif implement in ['mower']:  # front mower for trees
-            self.WORK_X: float = 0.0
-            self.DRILL_RADIUS: float = 0.0
+            self.WORK_X = 0.0
+            self.DRILL_RADIUS = 0.0
         else:
             raise NotImplementedError(f'Unknown FieldFriend implement: {implement}')
 
@@ -141,9 +143,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         elif config_hardware['y_axis']['version'] == 'y_axis_stepper':
             try:
                 alarm_inverted: bool = config_hardware['y_axis']['alarm_inverted']
-            except KeyError:
-                raise KeyError(
-                    '\'alarm_inverted\' not found in config_hardware[\'y_axis\']. Robots with a Closed-Loop-Step-Direction-Motor (U4 and before) has an inverted motor alarm input. Check your robot\'s setup.')
+            except KeyError as e:
+                raise KeyError("'alarm_inverted' not found in config_hardware['y_axis']. Robots with a "
+                               'Closed-Loop-Step-Direction-Motor (U4 and before) has an inverted motor alarm input. '
+                               "Check your robot's setup.") from e
             y_axis = YAxisStepperHardware(robot_brain,
                                           expander=expander,
                                           name=config_hardware['y_axis']['name'],

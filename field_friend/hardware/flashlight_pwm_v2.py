@@ -1,7 +1,7 @@
 import rosys
 from rosys.helpers import remove_indentation
 
-from .flashlight_v2 import FlashlightV2
+from .flashlight_v2 import FlashlightSimulationV2, FlashlightV2
 
 
 class FlashlightPWMV2(FlashlightV2):
@@ -49,20 +49,11 @@ class FlashlightPWMHardwareV2(FlashlightPWMV2, rosys.hardware.ModuleHardware):
         )
 
 
-class FlashlightPWMSimulationV2(FlashlightPWMV2, rosys.hardware.ModuleSimulation):
+class FlashlightPWMSimulationV2(FlashlightPWMV2, FlashlightSimulationV2):
 
-    def __init__(self, *,
-                 name: str = 'flashlight') -> None:
-        self.name = name
+    def __init__(self) -> None:
         self.duty_cycle = 1
         super().__init__()
-
-    async def turn_on(self) -> None:
-        if not await super().turn_on():
-            return
-
-    async def turn_off(self) -> None:
-        await super().turn_off()
 
     async def set_duty_cycle(self) -> None:
         pass

@@ -49,12 +49,13 @@ class Safety(rosys.hardware.Module, abc.ABC):
 class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
     """This module implements safety hardware."""
 
+    # TODO: add support for AxisD1
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware,
                  estop: rosys.hardware.EStopHardware,
                  bumper: rosys.hardware.BumperHardware | None = None,
-                 y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | None = None,
-                 z_axis: ZAxisCanOpenHardware | ZAxisStepperHardware | TornadoHardware | ZAxisCanOpenHardware | None = None,
+                 y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None = None,
+                 z_axis: ZAxisCanOpenHardware | ZAxisStepperHardware | TornadoHardware | ZAxisCanOpenHardware | AxisD1 | None = None,
                  flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None,
                  mower: MowerHardware | None = None,
                  ) -> None:

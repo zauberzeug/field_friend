@@ -117,7 +117,7 @@ class Puncher:
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
-        elif isinstance(self.field_friend.y_axis, Axis):
+        if isinstance(self.field_friend.y_axis, Axis):
             if isinstance(self.field_friend.z_axis, Axis):
                 if self.field_friend.z_axis.position != 0:
                     await self.field_friend.z_axis.return_to_reference()
@@ -167,5 +167,6 @@ class Puncher:
         except Exception as e:
             raise PuncherException(f'tornado drill failed because of: {e}') from e
         finally:
-            await self.field_friend.y_axis.stop()
+            if self.field_friend.y_axis:
+                await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()

@@ -11,7 +11,7 @@ from nicegui import ui
 from ...log_configuration import PATH as LOG_PATH
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class bms_page:

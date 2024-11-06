@@ -49,6 +49,7 @@ class field_friend_object(robot_object):
         elif isinstance(self.robot.y_axis, ChainAxis):
             if self.robot.y_axis.MIN_POSITION <= self.robot.y_axis.position <= self.robot.y_axis.MAX_POSITION:
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.position)
+                # TODO: what to do if z_axis is not an Axis?
                 self.second_tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position,
                                       z=self.robot.z_axis.position)
             elif self.robot.y_axis.position > self.robot.y_axis.MAX_POSITION:

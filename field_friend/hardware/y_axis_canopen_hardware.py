@@ -64,7 +64,6 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
-        await super().stop()
         await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(false);')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
@@ -74,7 +73,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             await super().move_to(position, speed)
         except RuntimeError as error:
             self.log.error(f'could not move yaxis to {position} because of {error}')
-            raise Exception(f'could not move yaxis to {position} because of {error}')
+            raise Exception(f'could not move yaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
         self.log.info(f'moving to steps: {steps}')
         await self.enable_motor()

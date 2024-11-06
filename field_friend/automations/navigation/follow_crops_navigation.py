@@ -10,7 +10,7 @@ from ..implements.implement import Implement
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class FollowCropsNavigation(StraightLineNavigation):

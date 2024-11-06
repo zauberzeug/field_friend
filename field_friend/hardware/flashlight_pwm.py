@@ -1,7 +1,7 @@
 import rosys
 from rosys.helpers import remove_indentation
 
-from .flashlight_v2 import FlashlightV2
+from .flashlight_v2 import FlashlightSimulationV2, FlashlightV2
 
 
 class FlashlightPWM(FlashlightV2):
@@ -55,7 +55,8 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
 
             self.duty_cycle = self._calculate_duty_cycle(voltage)
             # get a 8 bit value for the duty cycle (0-255) no negative values
-            duty = int(self.duty_cycle * 255)
+            # TODO: line below was uncommented, what should we do with this code block?
+            # duty = int(self.duty_cycle * 255)
 
             # await self.robot_brain.send(
             #     f'{self.name}.duty={duty};'
@@ -70,16 +71,5 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
         return min(max(duty_cycle, 0), 1)
 
 
-class FlashlightPWMSimulation(FlashlightPWM, rosys.hardware.ModuleSimulation):
-
-    def __init__(self, *,
-                 name: str = 'flashlight') -> None:
-        self.name = name
-        super().__init__()
-
-    async def turn_on(self) -> None:
-        if not await super().turn_on():
-            return
-
-    async def turn_off(self) -> None:
-        await super().turn_off()
+class FlashlightPWMSimulation(FlashlightPWM, FlashlightSimulationV2):
+    ...

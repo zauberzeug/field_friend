@@ -2,11 +2,12 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
+from ..components import LeafletMap as leaflet_map
 from ..components import PathPlanner as path_planner
-from ..components import leaflet_map, operation
+from ..components import operation
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class path_planner_page:

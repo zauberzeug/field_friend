@@ -59,7 +59,6 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         )
 
     async def stop(self) -> None:
-        await super().stop()
         await self.robot_brain.send(f'{self.name}.stop()')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:

@@ -7,7 +7,7 @@ import rosys
 from .weeding_implement import Implement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class Recorder(Implement):
