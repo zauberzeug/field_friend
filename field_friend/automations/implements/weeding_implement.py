@@ -89,7 +89,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
-    async def _check_hardware_ready(self) -> bool:
+    # TODO: can we get rid of the pylint disable?
+    async def _check_hardware_ready(self) -> bool:  # pylint: disable=too-many-return-statements
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')

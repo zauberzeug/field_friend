@@ -1,3 +1,5 @@
+# pylint: disable=attribute-defined-outside-init
+# TODO: refactor this or delete it
 import logging
 from typing import TYPE_CHECKING
 

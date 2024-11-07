@@ -3,15 +3,13 @@ from typing import Any
 
 import rosys
 
-from ..localization import Gnss
 from . import Field, Row, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
-    def __init__(self, gnss: Gnss) -> None:
+    def __init__(self) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.field_provider')
-        self.gnss = gnss
         self.fields: list[Field] = []
         self.needs_backup: bool = False
 

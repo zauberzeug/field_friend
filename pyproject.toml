@@ -36,9 +36,21 @@ ignore_missing_imports = true
 
 [tool.pylint]
 disable = [
-    "C0103", # Invalid name (e.g., variable/function/class naming conventions)
-    "C0111", # Missing docstring (in function/class/method)
-    "C0301", # Line too long (exceeds character limit)
+    "C0103",  # Invalid name (e.g., variable/function/class naming conventions)
+    "C0111",  # Missing docstring (in function/class/method)
+    "C0301",  # Line too long (exceeds character limit)
+    "R0902",  # Too many public methods
+    "R0903",  # Too few public methods
+    "R0904",  # Too many public methods
+    "R0912",  # Too many branches
+    "R0913",  # Too many arguments
+    "R0914",  # Too many local variables
+    "R0915",  # Too many statements
+    "W0102",  # Dangerous default value as argument
+    "W0718",  # Catching too general exception
+    "W1203",  # Use % formatting in logging functions
+    "W1514",  # Using open without explicitly specifying an encoding
+    "W0511",  # TODO: comments
 ]
 
 [tool.ruff]

@@ -1,3 +1,5 @@
+# pylint: disable=broad-exception-raised
+# TODO: we need a useful exception here
 import abc
 
 import numpy as np
@@ -474,7 +476,7 @@ class ChainAxisSimulation(ChainAxis, rosys.hardware.ModuleSimulation):
         while self.target_steps is not None:
             await rosys.sleep(0.2)
 
-    # TODO: is this correct?
+    # TODO: is this correct? (casting to int)
     async def return_to_l_ref(self, speed: int = int(ChainAxis.DEFAULT_SPEED/4)) -> None:
         try:
             await super().return_to_l_ref()

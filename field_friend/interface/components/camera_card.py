@@ -1,3 +1,8 @@
+# pylint: disable=attribute-defined-outside-init
+# pylint: disable=duplicate-code
+# TODO: refactor this and monitoring.py
+from __future__ import annotations
+
 import colorsys
 import logging
 from typing import TYPE_CHECKING
@@ -21,7 +26,7 @@ if TYPE_CHECKING:
 
 class CameraCard:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.camera_card')
         self.automator = system.automator
         self.camera_provider = system.camera_provider
@@ -45,7 +50,7 @@ class CameraCard:
             ui.image('assets/field_friend.webp').classes('w-full')
         ui.timer(0.2 if system.is_real else 0.05, self.update_content)
 
-    # TODO: move class properties to __init__
+    # TODO: refactor this and use refreshable, remove pylint ignore at top
     def use_camera(self, cam: CalibratableCamera) -> None:
         self.camera = cam
         self.camera_card.clear()

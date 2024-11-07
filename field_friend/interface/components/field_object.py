@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-class field_object(Group):
+class FieldObject(Group):
 
     def __init__(self, system: 'System') -> None:
         super().__init__()
@@ -49,9 +49,10 @@ class field_object(Group):
         self.update(self.system.field_provider.selected_field)
 
     def update(self, active_field: Field | None) -> None:
-        # TODO: properly delete objects
-        [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
-        [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
+        # TODO: now we have empty keys in our objects dict. Is this intended?
+        for obj in list(self.scene.objects.values()):
+            if obj.name and (obj.name.startswith('field_') or obj.name.startswith('row_')):
+                obj.delete()
 
         if active_field is None:
             return
@@ -77,4 +78,4 @@ class field_object(Group):
             for point in row_points:
                 # TODO: fix access to row
                 Cylinder(0.04, 0.04, 0.7).move(x=point.x, y=point.y, z=0.35).material(
-                    'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)
+                    'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)  # pylint: disable=undefined-loop-variable

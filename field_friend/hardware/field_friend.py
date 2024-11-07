@@ -70,13 +70,11 @@ class FieldFriend(rosys.hardware.Robot):
         """
         if self.implement_name in ['weed_screw', 'tornado'] and isinstance(self.y_axis, Axis):
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
-        elif self.implement_name in ['dual_mechanism'] and isinstance(self.y_axis, ChainAxis):
+        if self.implement_name in ['dual_mechanism'] and isinstance(self.y_axis, ChainAxis):
             if second_tool:
                 return self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
-            else:
-                return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
-        else:
-            raise NotImplementedError(f'Tool {self.implement_name} is not implemented for reachability check')
+            return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
+        raise NotImplementedError(f'Tool {self.implement_name} is not implemented for reachability check')
 
     def tornado_diameters(self, angle: float) -> tuple:
         angle = np.clip(angle, 0, 180)

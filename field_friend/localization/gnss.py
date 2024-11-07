@@ -15,8 +15,7 @@ from nicegui import ui
 from rosys.persistence.registry import backup
 
 from .. import localization
-from .geo_point import GeoPoint
-from .point_transformation import get_new_position
+from .geo_point import GeoPoint, get_new_position
 
 
 @dataclass

@@ -122,7 +122,7 @@ class System(rosys.persistence.PersistentModule):
         rosys.on_repeat(watch_robot, 1.0)
 
         self.path_provider = PathProvider()
-        self.field_provider = FieldProvider(self.gnss)
+        self.field_provider = FieldProvider()
         width = 0.64
         length = 0.78
         offset = 0.36

@@ -1,3 +1,5 @@
+# pylint: disable-all
+# TODO: this will be refactored
 import datetime
 
 import pynmea2

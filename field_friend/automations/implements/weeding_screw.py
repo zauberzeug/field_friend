@@ -69,8 +69,7 @@ class WeedingScrew(WeedingImplement):
             if stretch < max_distance:
                 self.next_punch_y_position = next_weed_position.y
                 return stretch
-            else:
-                break
+            break
         return self.WORKING_DISTANCE
 
     def settings_ui(self):

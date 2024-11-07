@@ -1,4 +1,5 @@
-
+# pylint: disable-all
+# TODO: refactor this or delete it
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 

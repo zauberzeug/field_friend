@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+# TODO: refactor this and status_dev.py
 from typing import TYPE_CHECKING, cast
 
 import rosys
@@ -56,7 +58,7 @@ def create_status_drawer(system: 'System') -> ui.right_drawer:
                 with ui.row().bind_visibility_from(robot.z_axis, 'alarm'):
                     ui.icon('report').props('size=md').classes('text-yellow')
                     ui.label('Z-axis in alarm, warning!').classes('text-orange mt-1')
-            if isinstance(robot.y_axis, ChainAxis) or isinstance(robot.y_axis, Axis):
+            if isinstance(robot.y_axis, Axis | ChainAxis):
                 with ui.row().bind_visibility_from(robot.y_axis, 'alarm'):
                     ui.icon('report').props('size=md').classes('text-yellow')
                     ui.label('Y-axis in alarm, warning!').classes('text-orange mt-1')
@@ -175,7 +177,7 @@ def create_status_drawer(system: 'System') -> ui.right_drawer:
             z_axis_text = ', '.join(flag for flag in z_axis_flags if flag)
             axis_label.text = f'Y-AXIS: {y_axis_text} | Z-AXIS: {z_axis_text}'
 
-            if isinstance(robot.flashlight, FlashlightPWMHardware) or isinstance(robot.flashlight, FlashlightPWMHardwareV2):
+            if isinstance(robot.flashlight, FlashlightPWMHardware | FlashlightPWMHardwareV2):
                 flashlight_label.text = f'{"On" if robot.flashlight.is_active else "Off"}  {f"at {robot.flashlight.duty_cycle * 100:.0f}%" if robot.flashlight.is_active else ""}'
             else:
                 flashlight_label.text = 'simulated'

@@ -1,3 +1,5 @@
+# pylint: disable=broad-exception-raised
+# TODO: we need a useful exception here
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -24,8 +26,6 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
                  end_stops_on_expander: bool = True,
                  end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
-                 acceleration: int = 500,
-                 quick_stop_deceleration: int = 2000,
                  ) -> None:
         self.name = name
         self.expander = expander

@@ -177,7 +177,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'minimum_weed_confidence') \
             .tooltip(f'Set the minimum weed confidence for the detection  (default: {MINIMUM_WEED_CONFIDENCE:.2f})')
-        options = [autoupload for autoupload in rosys.vision.Autoupload]
+        options = list(rosys.vision.Autoupload)
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')

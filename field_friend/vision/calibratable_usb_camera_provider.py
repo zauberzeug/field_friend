@@ -22,10 +22,9 @@ class CalibratableUsbCameraProvider(rosys.vision.CameraProvider[CalibratableUsbC
     def backup(self) -> dict:
         for camera in self._cameras.values():
             self.log.info(f'backing up camera: {camera.name}')
-        return {
-            'cameras': {camera.id: camera.to_dict() for camera in self._cameras.values()}
-        }
+        return super().backup()
 
+    # TODO: same as in zedxmini_camera_provider.py, refactor!
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
             self.add_camera(CalibratableUsbCamera.from_dict(camera_data))

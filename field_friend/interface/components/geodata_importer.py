@@ -67,7 +67,7 @@ class geodata_importer(ui.dialog):
                 coordinates.append(GeoPoint(lat=point[0], long=point[1]))
             return coordinates
         # TODO: what kind of exception are we catching here?
-        except:  # noqa: E722
+        except:  # noqa: E722 # pylint: disable=bare-except
             rosys.notify('The .zip file does not contain a shape file.', type='warning')
             return None
 
@@ -80,7 +80,7 @@ class geodata_importer(ui.dialog):
         if e is None or e.content is None:
             rosys.notify('You can only upload the following file formates: .kml ,.xml. with ISO  and shape files.', type='warning')
             return
-        elif e.name[-3:].casefold() == 'zip':
+        if e.name[-3:].casefold() == 'zip':
             coordinates = self.extract_coordinates_shp(e)
         elif e.name[-3:].casefold() == 'kml':
             coordinates = self.extract_coordinates_kml(e)

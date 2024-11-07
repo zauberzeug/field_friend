@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+# TODO: refactor this and z_axis_stepper_hardware.py
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -68,12 +70,14 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             await super().move_to(position, speed)
         except RuntimeError as error:
             self.log.info(f'could not move yaxis to {position} because of {error}')
-            raise Exception(f'could not move yaxis to {position} because of {error}') from error
+            # TODO: we need a useful exception here
+            raise Exception(  # pylint: disable=broad-exception-raised
+                f'could not move yaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
         await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 250000);')
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
-            raise Exception
+            raise Exception  # pylint: disable=broad-exception-raised
 
     async def check_idle_or_alarm(self) -> bool:
         while not self.idle and not self.alarm:

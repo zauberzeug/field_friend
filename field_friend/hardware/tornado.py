@@ -1,3 +1,5 @@
+# pylint: disable=broad-exception-raised
+# TODO: we need a useful exception here
 import abc
 
 import rosys
@@ -296,7 +298,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         target_angle = angle - self.last_angle
         if target_angle == 0:
             return
-        elif target_angle < 0:
+        if target_angle < 0:
             target_angle = 360 - self.last_angle + angle
         target = (self.position_turn - target_angle)/360
         await self.robot_brain.send(f'{self.name}_motor_turn.position({target});')

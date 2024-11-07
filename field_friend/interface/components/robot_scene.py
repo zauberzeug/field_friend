@@ -7,8 +7,8 @@ import rosys
 from nicegui import events, ui
 
 from .field_friend_object import field_friend_object
-from .field_object import field_object
-from .plant_object import plant_objects
+from .field_object import FieldObject as field_object
+from .plant_object import PlantObjects as plant_objects
 from .visualizer_object import visualizer_object
 
 if TYPE_CHECKING:

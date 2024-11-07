@@ -1,3 +1,5 @@
+# pylint: disable=broad-exception-raised
+# TODO: we need a useful exception here
 import rosys
 from rosys.helpers import remove_indentation
 

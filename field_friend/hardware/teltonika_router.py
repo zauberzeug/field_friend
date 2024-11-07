@@ -34,7 +34,6 @@ class TeltonikaRouter:
             msg = 'The admin password for the Teltonika router is not set. Please set it in the .env file.'
             self.log.warning(msg)
             ui.label(msg).classes('text-xl')
-            return
 
     async def get_current_connection(self) -> None:
         if self.connection_check_running is True:

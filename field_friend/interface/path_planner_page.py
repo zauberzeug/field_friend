@@ -2,8 +2,9 @@ from nicegui import ui
 
 from ..system import System
 from .components import LeafletMap as leaflet_map
+from .components import Operation as operation
 from .components import PathPlanner as path_planner
-from .components import create_header, operation
+from .components import create_header
 
 
 class PathPlannerPage:

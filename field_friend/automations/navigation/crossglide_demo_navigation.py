@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+# TODO: refactor this and navigation.py
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -68,12 +70,9 @@ class CrossglideDemoNavigation(Navigation):
         pass
         # TODO: implement create_simulation
 
-    def settings_ui(self) -> None:
-        super().settings_ui()
-
     def backup(self) -> dict:
         return super().backup() | {
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+        return None

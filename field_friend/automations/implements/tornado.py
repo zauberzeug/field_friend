@@ -43,14 +43,15 @@ class Tornado(WeedingImplement):
                 # inner_radius = inner_diameter / 2
                 # outer_radius = outer_diameter / 2
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
-                                                          if not (inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius)]
+                                                          if not inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius]
                 self.log.info(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
         except PuncherException:
             self.log.error('Error in Tornado Workflow')
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
-    async def get_stretch(self, max_distance: float) -> float:
+    # TODO: can we get rid of the pylint disable?
+    async def get_stretch(self, max_distance: float) -> float:  # pylint: disable=too-many-return-statements
         await super().get_stretch(max_distance)
         super()._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
@@ -89,7 +90,7 @@ class Tornado(WeedingImplement):
         for crop in self.system.plant_provider.crops:
             if crop.id != crop_id:
                 distance = crop_world_position.distance(crop.position.projection())
-                if distance >= inner_diameter/2 and distance <= outer_diameter/2:
+                if inner_diameter/2 <= distance <= outer_diameter/2:
                     return True
         return False
 

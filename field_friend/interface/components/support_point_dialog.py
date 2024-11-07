@@ -1,3 +1,7 @@
+# pylint: disable=duplicate-code
+# TODO: refactor this and field_creator.py
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -14,7 +18,7 @@ if TYPE_CHECKING:
 
 class SupportPointDialog:
 
-    def __init__(self, system: 'System'):
+    def __init__(self, system: System) -> None:
         self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
         self.steerer = system.steerer
@@ -32,7 +36,7 @@ class SupportPointDialog:
                     self.headline = ui.label().classes('text-lg font-bold')
                     self.content = ui.column().classes('items-center')
                     # NOTE: the next function is replaced, hence we need the lambda
-                    ui.button('Next', on_click=lambda: self.next())
+                    ui.button('Next', on_click=lambda: self.next())  # pylint: disable=unnecessary-lambda
         ui.timer(0.1, self.update_front_cam)
         self.open()
 

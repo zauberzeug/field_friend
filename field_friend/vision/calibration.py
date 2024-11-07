@@ -1,3 +1,5 @@
+# pylint: disable=no-member
+# TODO: how to get better type checking for cv2?
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Self
@@ -91,7 +93,8 @@ class Network:
         return network
 
     def try_refine(self, dot: Dot, *, tolerance: float = 0) -> None:
-        for dx in np.arange(0, tolerance + 1, 10):
+        # TODO: can we get rid of the pylint disable?
+        for dx in np.arange(0, tolerance + 1, 10):  # pylint: disable=too-many-nested-blocks
             for dy in np.arange(0, tolerance + 1, 10):
                 for sign_x in [-1, 1] if dx else [0]:
                     for sign_y in [-1, 1] if dy else [0]:

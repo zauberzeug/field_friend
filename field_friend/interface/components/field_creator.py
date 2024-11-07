@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -15,7 +17,7 @@ if TYPE_CHECKING:
 
 class FieldCreator:
 
-    def __init__(self, system: 'System'):
+    def __init__(self, system: System) -> None:
         self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
         self.steerer = system.steerer
