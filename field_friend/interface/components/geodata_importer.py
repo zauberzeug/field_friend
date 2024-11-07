@@ -66,7 +66,8 @@ class geodata_importer(ui.dialog):
             for point in shp_coordinates:
                 coordinates.append(GeoPoint(lat=point[0], long=point[1]))
             return coordinates
-        except:
+        # TODO: what kind of exception are we catching here?
+        except:  # noqa: E722
             rosys.notify('The .zip file does not contain a shape file.', type='warning')
             return None
 

@@ -11,7 +11,7 @@ from .gnss import GeoPoint, Gnss, GNSSRecord
 
 class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
-    TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
+    TYPES_NEEDED = ('GGA', 'GNS', 'HDT')
 
     def __init__(self, odometer: Odometer, antenna_offset: float) -> None:
         super().__init__(odometer, antenna_offset)

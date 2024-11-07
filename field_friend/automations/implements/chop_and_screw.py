@@ -22,7 +22,7 @@ class ChopAndScrew(WeedingImplement):
             moved = False
             starting_position = deepcopy(self.system.odometer.prediction)
             if self.crops_to_handle:
-                next_crop_position = list(self.crops_to_handle.values())[0]
+                next_crop_position = next(iter(self.crops_to_handle.values()))
                 # first: check if weeds near crop
                 if self.with_drilling:
                     self.log.info(f'Drilling allowed: only drilling is {self.with_drilling}')
@@ -33,7 +33,7 @@ class ChopAndScrew(WeedingImplement):
                     if weeds_in_range:
                         self.log.info(f' {len(weeds_in_range)} Weeds in range for drilling')
                         while weeds_in_range:
-                            next_weed_id, next_weed_position = list(self.crops_to_handle.items())[0]
+                            next_weed_id, next_weed_position = next(iter(self.crops_to_handle.items()))
                             self.log.info(f'Next weed position: {next_weed_position}')
                             weed_world_position = starting_position.transform(next_weed_position)
                             corrected_relative_weed_position = self.system.odometer.prediction.relative_point(
@@ -84,7 +84,7 @@ class ChopAndScrew(WeedingImplement):
                 weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items() if self.system.field_friend.WORK_X_CHOP <
                                   position.x < self.system.field_friend.WORK_X + self.WORKING_DISTANCE and self.system.field_friend.can_reach(position)}
                 if weeds_in_range:
-                    next_weed_position = list(weeds_in_range.values())[0]
+                    next_weed_position = next(iter(weeds_in_range.values()))
                     axis_distance = next_weed_position.x - self.system.field_friend.WORK_X_CHOP + self.system.field_friend.CHOP_RADIUS
                     if axis_distance >= 0:
                         local_target = rosys.geometry.Point(x=axis_distance, y=0)

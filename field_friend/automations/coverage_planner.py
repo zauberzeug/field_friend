@@ -142,9 +142,10 @@ class CoveragePlanner:
             padded_polygon = Polygon([(point.x, point.y) for point in self.field.outline]) \
                 .buffer(-self.mowing.padding-self.mowing.lane_distance*i)
             outline_coords = list(padded_polygon.exterior.coords)
-            for i in range(len(outline_coords) - 1):
-                p1 = outline_coords[i]
-                p2 = outline_coords[i + 1]
+            # TODO: j was i before, what does this and does it still work?
+            for j in range(len(outline_coords) - 1):
+                p1 = outline_coords[j]
+                p2 = outline_coords[j + 1]
                 line = LineString([p1, p2])
                 outer_lanes.append(line)
             outer_lanes_groups.append(outer_lanes)

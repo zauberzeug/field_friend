@@ -55,7 +55,7 @@ class Tornado(WeedingImplement):
         super()._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
             return self.WORKING_DISTANCE
-        closest_crop_id, closest_crop_position = list(self.crops_to_handle.items())[0]
+        closest_crop_id, closest_crop_position = next(iter(self.crops_to_handle.items()))
         closest_crop_world_position = self.system.odometer.prediction.transform3d(closest_crop_position)
 
         # for p in self.last_punches:

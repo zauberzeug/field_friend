@@ -141,7 +141,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         }
 
         # keep crops safe by pushing weeds away so the implement does not accidentally hit a crop
-        for crop, crop_position in sorted_crops.items():
+        for _, crop_position in sorted_crops.items():
             for weed, weed_position in upcoming_weed_positions.items():
                 offset = self.system.field_friend.DRILL_RADIUS + \
                     self.crop_safety_distance - crop_position.distance(weed_position)
@@ -181,7 +181,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
-    def settings_ui(self):
+    def settings_ui(self) -> None:
         super().settings_ui()
         ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \

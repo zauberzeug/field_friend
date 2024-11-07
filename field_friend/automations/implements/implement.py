@@ -1,7 +1,8 @@
 import abc
 
 
-class Implement(abc.ABC):
+# TODO: should some of these methods be abstract?
+class Implement(abc.ABC):  # noqa: B024
 
     def __init__(self, name: str) -> None:
         self.name = name
@@ -15,6 +16,7 @@ class Implement(abc.ABC):
 
     async def finish(self) -> None:
         """Finish the implement once at the end"""
+        return None
 
     async def activate(self):
         """Activate the implement (for example to start weeding in a new row)"""
@@ -33,9 +35,13 @@ class Implement(abc.ABC):
 
         Returns True if the robot can drive forward, if the implement whishes to stay at the current location, return False
         """
+        # TODO: docstring says returns True, but type hints say None
+        return None
 
     async def stop_workflow(self) -> None:
         """Called after workflow has been performed to stop the workflow"""
+        return None
 
-    def settings_ui(self):
+    def settings_ui(self) -> None:
         """Create UI for settings and configuration."""
+        return None
