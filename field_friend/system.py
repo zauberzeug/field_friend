@@ -148,11 +148,11 @@ class System(rosys.persistence.PersistentModule):
         self.field_navigation = FieldNavigation(self, self.monitoring)
 
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, self.monitoring)
-        self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
-                                                          self.follow_crops_navigation,
-                                                          self.field_navigation,
-                                                          self.crossglide_demo_navigation,
-                                                          ]}
+        self.navigation_strategies: dict[str, Navigation] = {n.name: n for n in [self.straight_line_navigation,
+                                                                                 self.follow_crops_navigation,
+                                                                                 self.field_navigation,
+                                                                                 self.crossglide_demo_navigation,
+                                                                                 ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
             case 'tornado':
@@ -170,7 +170,7 @@ class System(rosys.persistence.PersistentModule):
                 implements = [ExternalMower(self)]
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
-        self.implements = {t.name: t for t in implements}
+        self.implements: dict[str, Implement] = {t.name: t for t in implements}
         self._current_navigation: Navigation = self.straight_line_navigation
         self._current_implement = self._current_navigation
         self.automator.default_automation = self._current_navigation.start
