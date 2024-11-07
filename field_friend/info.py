@@ -7,10 +7,10 @@ from nicegui import background_tasks, ui
 from nicegui.version import __version__ as nicegui_version
 from rosys.version import __version__ as rosys_version
 
-from ...hardware import FieldFriendHardware
+from .hardware import FieldFriendHardware
 
 if TYPE_CHECKING:
-    from ...system import System
+    from .system import System
 
 MUTEX_PATH = Path('.livesync_mutex')
 

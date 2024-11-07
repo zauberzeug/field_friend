@@ -5,7 +5,7 @@ import rosys
 from nicegui import ui
 
 
-def system_bar() -> None:
+def SystemBar() -> None:
     with ui.footer():
         timer = ui.label().classes('flex-grow')
         cpu_label = ui.label().classes('flex-grow')

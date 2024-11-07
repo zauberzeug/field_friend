@@ -1,22 +1,18 @@
-from typing import TYPE_CHECKING
-
 from nicegui import ui
 
-from ..components.monitoring import monitoring
-
-if TYPE_CHECKING:
-    from field_friend.system import System
+from ..system import System
+from .components import create_header, monitoring
 
 
-class monitor_page:
+class MonitorPage:
 
-    def __init__(self, page_wrapper, system: 'System', dev: bool = False) -> None:
+    def __init__(self, system: System, dev: bool = False) -> None:
         self.system = system
         self.dev = dev
 
         @ui.page('/monitor')
         def page() -> None:
-            page_wrapper()
+            create_header(system)
             self.content()
 
     def content(self) -> None:

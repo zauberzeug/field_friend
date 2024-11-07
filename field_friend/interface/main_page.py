@@ -1,26 +1,22 @@
-from typing import TYPE_CHECKING
-
 import rosys
 from nicegui import binding, ui
 
-from ..components import LeafletMap as leaflet_map
-from ..components import camera_card, operation, robot_scene
-
-if TYPE_CHECKING:
-    from ...system import System
+from ..system import System
+from .components import LeafletMap as leaflet_map
+from .components import camera_card, create_header, operation, robot_scene
 
 
-class main_page:
+class MainPage:
 
-    def __init__(self, page_wrapper, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.system = system
 
         @ui.page('/')
         def page() -> None:
-            page_wrapper()
+            create_header(system)
             self.content(devmode=False)
 
-    def content(self, devmode) -> None:
+    def content(self, devmode: bool) -> None:
         page_height = '50vh' if devmode else 'calc(100vh - 170px)'
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         self.system.gnss.reference_warning_dialog()

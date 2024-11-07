@@ -1,19 +1,14 @@
-from __future__ import annotations
+from rosys.analysis import KpiChart, kpi_page
 
-from typing import TYPE_CHECKING
-
-from rosys.analysis import KpiChart
-from rosys.analysis import kpi_page as rosys_kpi_page
-
-if TYPE_CHECKING:
-    from field_friend.system import System
+from ..system import System
+from .components import create_header
 
 
-class kpi_page(rosys_kpi_page):
+class KpiPage(kpi_page):
 
-    def __init__(self, page_wrapper, system: System) -> None:
+    def __init__(self, system: System) -> None:
         super().__init__(system.kpi_provider)
-        page_wrapper()
+        create_header(system)
 
     @property
     def language(self) -> str:

@@ -40,7 +40,7 @@ from .hardware import (
     FieldFriendSimulation,
     TeltonikaRouter,
 )
-from .interface.components.info import Info
+from .info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware

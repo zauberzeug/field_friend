@@ -15,7 +15,7 @@ from .field_friend_object import field_friend_object
 
 class DriveTest:
 
-    def __init__(self,
+    def __init__(self, *,
                  field_friend: FieldFriend,
                  steerer: Steerer,
                  odometer: Odometer,

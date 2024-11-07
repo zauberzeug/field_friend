@@ -1,23 +1,19 @@
-from typing import TYPE_CHECKING
-
 from nicegui import ui
 
-from ..components import LeafletMap as leaflet_map
-from ..components import PathPlanner as path_planner
-from ..components import operation
-
-if TYPE_CHECKING:
-    from ...system import System
+from ..system import System
+from .components import LeafletMap as leaflet_map
+from .components import PathPlanner as path_planner
+from .components import create_header, operation
 
 
-class path_planner_page:
+class PathPlannerPage:
 
-    def __init__(self, page_wrapper, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.system = system
 
         @ui.page('/path')
         def page() -> None:
-            page_wrapper()
+            create_header(system)
             self.content()
 
     def content(self):
