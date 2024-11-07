@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
@@ -10,12 +12,12 @@ from .plant_object import plant_objects
 from .visualizer_object import visualizer_object
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-class robot_scene:
+class RobotScene:
 
-    def __init__(self, system: 'System'):
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.robot_scene')
         self.system = system
         self.scene_card = ui.card()

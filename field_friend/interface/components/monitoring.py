@@ -1,15 +1,16 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import events, ui
 
-from ...automations import PlantLocator
-from ...hardware import FieldFriend, FlashlightPWM
+from ...hardware import FlashlightPWM
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class CameraPosition:
@@ -19,29 +20,20 @@ class CameraPosition:
     LEFT = '-4'
 
 
-class monitoring:
+class Monitoring:
 
-    def __init__(self,
-                 camera_provider: rosys.vision.CameraProvider,
-                 mjpeg_camera_provider: rosys.vision.CameraProvider,
-                 detector: rosys.vision.Detector,
-                 monitoring_detector: rosys.vision.Detector,
-                 plant_locator: PlantLocator,
-                 automator: rosys.automation.Automator,
-                 field_friend: FieldFriend,
-                 system: 'System',
-                 *,
-                 shrink_factor: int = 1,
-                 ) -> None:
+    def __init__(self, system: System, *,
+                 shrink_factor: int = 1) -> None:
         self.log = logging.getLogger('field_friend.monitoring')
-        self.usb_camera_provider = camera_provider
-        self.mjpg_camera_provider = mjpeg_camera_provider
-        self.detector = detector
-        self.monitoring_detector = monitoring_detector
+        self.usb_camera_provider = system.camera_provider
+        # TODO: in simulation there is no mjpeg camera provider
+        self.mjpg_camera_provider = system.mjpeg_camera_provider
+        self.detector = system.detector
+        self.monitoring_detector = system.monitoring_detector
         self.monitoring_active = False
-        self.plant_locator = plant_locator
-        self.automator = automator
-        self.field_friend = field_friend
+        self.plant_locator = system.plant_locator
+        self.field_friend = system.field_friend
+        self.automator = system.automator
         self.system = system
         self.person_count = 0
         self.animal_count = 0

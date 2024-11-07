@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
@@ -8,12 +10,12 @@ from .key_controls import KeyControls
 from .support_point_dialog import SupportPointDialog
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-class operation:
+class Operation:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.operation')
         self.system = system
         self.field_provider = system.field_provider
@@ -42,7 +44,7 @@ class operation:
 
         with activities:
             self.navigation_selection = ui.select(
-                [key for key in self.system.navigation_strategies.keys()],
+                list(self.system.navigation_strategies.keys()),
                 on_change=self.handle_navigation_changed,
                 label='Navigation'
             ).classes('w-32') \
@@ -51,7 +53,7 @@ class operation:
             self.navigation_selection.value = self.system.current_navigation.name
 
             self.implement_selection = ui.select(
-                [key for key in self.system.implements.keys()],
+                list(self.system.implements.keys()),
                 on_change=self.handle_implement_changed,
                 label='Implement') \
                 .classes('w-32') \

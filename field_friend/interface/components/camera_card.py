@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-class camera_card:
+class CameraCard:
 
     def __init__(self, system: 'System') -> None:
         self.log = logging.getLogger('field_friend.camera_card')

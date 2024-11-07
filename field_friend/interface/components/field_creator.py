@@ -10,7 +10,7 @@ from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class FieldCreator:
