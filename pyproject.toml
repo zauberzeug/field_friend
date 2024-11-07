@@ -45,6 +45,7 @@ disable = [
 line-length = 120
 indent-width = 4
 target-version = "py311"
+exclude = ["odrive/*"]
 
 [tool.ruff.lint]
 select = [
@@ -63,6 +64,7 @@ ignore = [
     "PLR0913", # Too many arguments
     "PLR0915", # Too many arguments
     "PLR2004", # Magic value comparison
+    "PLR0911", # Too many return statements
 ]
 
 [tool.ruff.format]
