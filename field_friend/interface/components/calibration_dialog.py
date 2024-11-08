@@ -8,15 +8,17 @@ from nicegui import events, ui
 from PIL import Image
 from rosys.driving import Odometer
 from rosys.geometry import Point3d
-from rosys.vision import Calibration, Camera, CameraProvider, SimulatedCalibratableCamera
+from rosys.vision import CalibratableCamera, Calibration, SimulatedCalibratableCamera, SimulatedCameraProvider
 
 from ...vision import DOT_DISTANCE, CalibratableUsbCamera, Dot, Network
-from ...vision.zedxmini_camera import ZedxminiCamera
+from ...vision.calibratable_usb_camera_provider import CalibratableUsbCameraProvider
+from ...vision.zedxmini_camera import ZedxminiCamera, ZedxminiCameraProvider
 
 
-class calibration_dialog(ui.dialog):
+class CalibrationDialog(ui.dialog):
 
-    def __init__(self, camera_provider: CameraProvider, odometer: Odometer) -> None:
+    # TODO: check typing
+    def __init__(self, camera_provider: CalibratableUsbCameraProvider | ZedxminiCameraProvider | SimulatedCameraProvider, odometer: Odometer) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.calibration')
         self.odometer = odometer
@@ -26,7 +28,7 @@ class calibration_dialog(ui.dialog):
         self.mouse_x: float = 0
         self.mouse_y: float = 0
         self.moving_dot: Dot | None = None
-        self.camera: Camera | None = None
+        self.camera: CalibratableCamera | None = None
         with self, ui.card().tight().style('max-width: 1000px'):
             ui.keyboard(self.handle_key)
             self.calibration_image = ui.interactive_image(on_mouse=self.handle_mouse,
@@ -35,23 +37,23 @@ class calibration_dialog(ui.dialog):
             with ui.dialog() as help_dialog, ui.card():
                 ui.markdown('''
                     1. Drag points to lock them to their corresponding contours.
-                    
-                        You can lock a point without a contour by pressing "Enter". 
-                        
+
+                        You can lock a point without a contour by pressing "Enter".
+
                         This will turn the point green.
-                    
-                        You can unlock a point by pressing "Delete" or "Backspace". 
-                            
+
+                        You can unlock a point by pressing "Delete" or "Backspace".
+
                         This will turn the point orange.
-                    
+
                     2. Use arrow keys to shift the entire grid to the correct origin.
-                            
+
                         (0,0,0) point should be on the marked center of the calibration plate
 
-                    3. Click "Calibrate" to run the image calibration. 
-                            
+                    3. Click "Calibrate" to run the image calibration.
+
                         Red dots will appear at the projected positions of the grid points.
-                            
+
                     4. Click "Apply Calibration" to save the calibration to the camera.
                 ''')
 
@@ -64,7 +66,7 @@ class calibration_dialog(ui.dialog):
                 ui.button('Cancel', on_click=self.close).props('color=warning outline')
                 ui.button('Apply Calibration', on_click=self.apply_calibration).bind_enabled(self, 'calibration')
 
-    async def edit(self, camera: Camera) -> bool:
+    async def edit(self, camera: CalibratableCamera) -> bool:
         self.log.info(f'editing camera calibration for: {camera.id}')
         self.camera = camera
         if not isinstance(camera, SimulatedCalibratableCamera):
@@ -72,7 +74,7 @@ class calibration_dialog(ui.dialog):
             if image is None:
                 self.log.warning('No image available')
                 return False
-            if camera.calibration:
+            if hasattr(camera, 'calibration') and camera.calibration:
                 self.calibration = camera.calibration
             self.calibration_image.source = camera.get_latest_image_url()
             img = Image.open(io.BytesIO(image.data))

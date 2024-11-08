@@ -18,7 +18,7 @@ from ...automations.implements.weeding_implement import WeedingImplement
 from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Tornado
 from ...vision import CalibratableUsbCamera
 from ...vision.zedxmini_camera import StereoCamera
-from .calibration_dialog import calibration_dialog
+from .calibration_dialog import CalibrationDialog as calibration_dialog
 
 if TYPE_CHECKING:
     from ...system import System
