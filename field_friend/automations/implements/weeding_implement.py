@@ -7,7 +7,6 @@ from nicegui import ui
 from rosys.geometry import Point3d, Pose
 
 from ...hardware import ChainAxis
-from ...vision.calibratable_usb_camera import CalibratableUsbCamera
 from .implement import Implement
 
 if TYPE_CHECKING:
@@ -99,7 +98,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         if not camera:
             rosys.notify('no camera connected')
             return False
-        if not isinstance(camera, CalibratableUsbCamera) or camera.calibration is None:
+        if hasattr(camera, 'calibration') and camera.calibration is None:
             rosys.notify('camera has no calibration')
             return False
         if self.system.field_friend.y_axis and self.system.field_friend.y_axis.alarm:
