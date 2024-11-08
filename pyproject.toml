@@ -16,6 +16,10 @@ dev = [
     "pylint ~= 3.2.5",
     "pre-commit ~= 3.7.1",
 ]
+test = [
+    "pytest ~= 8.2.2",
+    "pytest-asyncio ~= 0.23.7",
+]
 
 [tool.mypy]
 python_version = "3.11"
