@@ -34,8 +34,10 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
             {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
+            {name}_end_t.active = false
             {name}_end_t.inverted = {str(end_stops_inverted).lower()}
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
+            {name}_end_b.active = false
             {name}_end_b.inverted = {str(end_stops_inverted).lower()}
             {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
         ''')
