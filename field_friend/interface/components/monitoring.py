@@ -81,6 +81,9 @@ class Monitoring:
                         self.flashlight_toggled = False
 
                         async def toggle_flashlight():
+                            if not self.field_friend.flashlight:
+                                rosys.notify('No flashlight found')
+                                return
                             self.flashlight_toggled = not self.flashlight_toggled
                             flashlight_button.props(
                                 f'flat color={"primary" if not self.flashlight_toggled else "grey"} icon={"flashlight_on" if not self.flashlight_toggled else "flashlight_off"}')
@@ -163,13 +166,13 @@ class Monitoring:
                         self.plant_locator.minimum_crop_confidence])
             weeds = len([p for p in image.detections.points if p.category_name in self.plant_locator.weed_category_names and p.confidence >
                         self.plant_locator.minimum_weed_confidence])
-            self.crops_count_label.set_text(crops)
+            self.crops_count_label.set_text(str(crops))
             self.crops_label.set_text('Crop' if crops == 1 else 'Crops')
-            self.weeds_count_label.set_text(weeds)
+            self.weeds_count_label.set_text(str(weeds))
             self.weeds_label.set_text('Weed' if weeds == 1 else 'Weeds')
         else:
-            self.weeds_count_label.set_text(0)
-            self.crops_count_label.set_text(0)
+            self.weeds_count_label.set_text('0')
+            self.crops_count_label.set_text('0')
             self.bottom_view.set_content('')
 
     def to_svg(self, detections: rosys.vision.Detections) -> str:

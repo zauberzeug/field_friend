@@ -138,10 +138,10 @@ class FieldNavigation(StraightLineNavigation):
         self.set_start_and_end_points()
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn towards row start
+        assert self.start_point is not None
         target_yaw = self.odometer.prediction.direction(self.start_point)
         await self.turn_in_steps(target_yaw)
         # drive to row start
-        assert self.start_point is not None
         await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn to row
@@ -274,6 +274,7 @@ class FieldNavigation(StraightLineNavigation):
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
 
     def create_simulation(self, crop_distance: float = 0.3) -> None:
+        assert isinstance(self.detector, rosys.vision.DetectorSimulation)
         self.detector.simulated_objects.clear()
         self.plant_provider.clear()
         if self.field is None:

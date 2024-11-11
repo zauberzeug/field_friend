@@ -18,7 +18,8 @@ def create_status_drawer(system: 'System') -> ui.right_drawer:
     odometer = system.odometer
     with ui.right_drawer(value=False).classes('bg-[#edf4fa]') as status_drawer, ui.column():
         with ui.row().classes('w-full place-content-end'):
-            info_dialog = system.info.create_dialog()
+            # TODO: remove type ignore, not clear why mypy doesn't see that info is of type Info
+            info_dialog = system.info.create_dialog()  # type: ignore
             ui.button(on_click=info_dialog.open).props('icon=info flat dense').style('color: #6E93D6;')
             with ui.button().props('icon=settings flat').style('color: #6E93D6'):
                 with ui.menu().props(remove='no-parent-event'):

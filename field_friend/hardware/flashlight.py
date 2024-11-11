@@ -72,7 +72,7 @@ class FlashlightHardware(Flashlight, rosys.hardware.ModuleHardware):
         self.expander = expander
         # TODO: is this always on the expander? otherwise it will break
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name}.Output({pin})
+            {name} = {expander.name + "." if expander else ""}Output({pin})
             {name}.on()
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)

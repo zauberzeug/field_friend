@@ -138,7 +138,6 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.z_error = 0
         self.motor_error = False
 
-        # TODO: check if this still (or now) works as intended
         lizard_code = remove_indentation(f'''
             {name}_motor_z = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {z_can_address}{', 6'if self.odrive_version == 6 else ''})
             {name}_motor_turn = {expander.name + "." if motors_on_expander and expander else ""}ODriveMotor({can.name}, {turn_can_address}{', 6'if self.odrive_version == 6 else ''})

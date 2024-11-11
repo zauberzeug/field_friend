@@ -95,5 +95,5 @@ class geodata_importer(ui.dialog):
         if len(coordinates) > 1 and coordinates[0] == coordinates[-1]:
             coordinates.pop()
         # TODO: how to create field from coordinates?
-        self.field_provider.create_field(points=coordinates)
+        # self.field_provider.create_field(points=coordinates)
         return

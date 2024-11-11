@@ -49,6 +49,7 @@ class StraightLineNavigation(Navigation):
         return end_pose.relative_point(self.odometer.prediction.point).x > 0
 
     def create_simulation(self):
+        assert isinstance(self.detector, rosys.vision.DetectorSimulation)
         crop_distance = 0.2
         for i in range(0, round(self.length / crop_distance)):
             p = self.odometer.prediction.point.polar(crop_distance*i,

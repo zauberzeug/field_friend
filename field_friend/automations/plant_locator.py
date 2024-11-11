@@ -186,9 +186,15 @@ class PlantLocator(rosys.persistence.PersistentModule):
         def chips():
             with ui.row().classes('gap-0'):
                 ui.chip(self.robot_name).props('outline')
+
+                def update_tags(tag_to_remove: str) -> None:
+                    self.tags.remove(tag_to_remove)
+                    chips.refresh()
+                    self.request_backup()
+                    self.log.info(f'tags: {self.tags}')
                 for tag in self.tags:
                     ui.chip(tag, removable=True).props('outline') \
-                        .on('remove', lambda t=tag: (self.tags.remove(t), chips.refresh(), self.request_backup()))
+                        .on('remove', lambda t=tag: update_tags(t))
 
         def add_chip():
             self.tags.append(label_input.value)

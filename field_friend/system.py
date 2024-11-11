@@ -254,6 +254,7 @@ class System(rosys.persistence.PersistentModule):
                                                                             color='#cccccc',
                                                                             frame=self.odometer.prediction_frame,
                                                                             )
+        assert isinstance(self.camera_provider, rosys.vision.SimulatedCameraProvider)
         self.camera_provider.add_camera(camera)
 
     def get_jetson_cpu_temperature(self):

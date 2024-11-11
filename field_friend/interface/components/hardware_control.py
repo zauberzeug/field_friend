@@ -178,6 +178,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.button('m2 Error', on_click=field_friend.mower.set_m2_error)
                 elif isinstance(field_friend.mower, MowerHardware):
                     async def turn_on_motor():
+                        assert field_friend.mower is not None
                         if await confirm_dialog('Are you sure to turn on the mower?', delay=2.0):
                             automator.start(field_friend.mower.turn_on())
                     ui.button('Mower ON', on_click=turn_on_motor)

@@ -62,7 +62,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await super().finish()
 
     async def activate(self):
-        await self.system.field_friend.flashlight.turn_on()
+        if self.system.field_friend.flashlight:
+            await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
         await rosys.sleep(3)
         self.system.plant_locator.resume()
@@ -73,7 +74,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def deactivate(self):
         await super().deactivate()
         self.system.timelapse_recorder.camera = None
-        await self.system.field_friend.flashlight.turn_off()
+        if self.system.field_friend.flashlight:
+            await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
 
     async def start_workflow(self) -> None:

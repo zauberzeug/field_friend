@@ -34,10 +34,10 @@ class FlashlightHardwareV2(FlashlightV2, rosys.hardware.ModuleHardware):
                  back_pin: int = 23) -> None:
         self.name = name
         self.expander = expander
-        # TODO: is this always on the expander? otherwise it will break
+        # TODO: is this always on the expander? otherwise it will break -> config mit Flashlight auf dem Expander? Sonst nicht optional
         lizard_code = remove_indentation(f'''
-            {name}_front = {expander.name}.Output({front_pin})
-            {name}_back = {expander.name}.Output({back_pin})
+            {name}_front = {expander.name + "." if expander else ""}Output({front_pin})
+            {name}_back = {expander.name + "." if expander else ""}Output({back_pin})
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 

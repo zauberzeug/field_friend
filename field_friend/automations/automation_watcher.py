@@ -84,6 +84,8 @@ class AutomationWatcher:
 
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
+        # TODO: what to do if we don't have bumpers?
+        assert self.field_friend.bumper is not None
         bumper_condition = not bool(self.field_friend.bumper.active_bumpers) if self.bumper_watch_active else True
         gnss_condition = (self.gnss.current is not None and ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS')) \
             if self.gnss_watch_active else True

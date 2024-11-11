@@ -47,7 +47,8 @@ class CrossglideDemoNavigation(Navigation):
             while not self._should_finish():
                 # TODO: implement has no attribute next_punch_y_position, only weeding implement has it
                 # what is the correct way to handle this? currently it's initialized with a recorder as the implement
-                self.implement.next_punch_y_position = np.random.uniform(-0.11, 0.1)
+                if isinstance(self.implement, WeedingImplement):
+                    self.implement.next_punch_y_position = np.random.uniform(-0.11, 0.1)
                 await self.implement.start_workflow()
         except WorkflowException as e:
             self.log.error(f'WorkflowException: {e}')

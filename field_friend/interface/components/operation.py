@@ -24,6 +24,8 @@ class Operation:
         self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
         self.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
         self.selected_beds: set[int] = set()
+        self.delete_field_dialog: ui.dialog | None = None
+        self.edit_field_dialog: ui.dialog | None = None
 
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
@@ -90,7 +92,8 @@ class Operation:
             ui.notify(f'Parameters of Field "{name}" has been changed')
         else:
             ui.notify('No field selected', color='warning')
-        self.edit_field_dialog.close()
+        if self.edit_field_dialog:
+            self.edit_field_dialog.close()
 
     def delete_selected_field(self):
         if self.system.field_provider.selected_field:
@@ -99,7 +102,8 @@ class Operation:
             ui.notify(f'Field "{name}" has been deleted')
         else:
             ui.notify('No field selected', color='warning')
-        self.delete_field_dialog.close()
+        if self.delete_field_dialog:
+            self.delete_field_dialog.close()
 
     @ui.refreshable
     def field_setting(self) -> None:

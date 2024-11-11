@@ -60,6 +60,9 @@ class CameraCard:
 
                 async def toggle_flashlight():
                     # TODO: move into flashlight class
+                    if not self.field_friend.flashlight:
+                        rosys.notify('No flashlight found')
+                        return
                     self.flashlight_toggled = not self.flashlight_toggled
                     flashlight_button.props(f'flat color={"grey" if not self.flashlight_toggled else "primary"} '
                                             f'icon={"flashlight_off" if not self.flashlight_toggled else "flashlight_on"}')

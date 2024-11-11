@@ -74,14 +74,16 @@ class WeedingScrew(WeedingImplement):
 
     def settings_ui(self):
         super().settings_ui()
-        ui.number('Drill depth', format='%.2f', step=0.01,
-                  min=self.system.field_friend.z_axis.max_position,
-                  max=self.system.field_friend.z_axis.min_position*-1,
-                  on_change=self.request_backup) \
-            .props('dense outlined suffix=°') \
-            .classes('w-24') \
-            .bind_value(self, 'weed_screw_depth') \
-            .tooltip('Set the drill depth for the weeding automation')
+        # TODO: handle Tornado case -> no max_position property
+        if self.system.field_friend.z_axis and not isinstance(self.system.field_friend.z_axis, Tornado):
+            ui.number('Drill depth', format='%.2f', step=0.01,
+                      min=self.system.field_friend.z_axis.max_position,
+                      max=self.system.field_friend.z_axis.min_position*-1,
+                      on_change=self.request_backup) \
+                .props('dense outlined suffix=°') \
+                .classes('w-24') \
+                .bind_value(self, 'weed_screw_depth') \
+                .tooltip('Set the drill depth for the weeding automation')
         ui.number('Maximum weed distance from crop', step=0.001, min=0.001, max=1.00, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
