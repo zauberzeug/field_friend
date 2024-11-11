@@ -6,6 +6,8 @@ import icecream
 import numpy as np
 import psutil
 import rosys
+from rosys.geometry import Point
+from rosys.vision import Image
 
 import config.config_selection as config_selector
 
@@ -41,11 +43,13 @@ from .hardware import (
     FieldFriendSimulation,
     TeltonikaRouter,
 )
+from .hardware.laser_scanner import LaserScannerHardware, LaserScannerSimulation, Scan
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
+from .mcap_recorder import McapRecorder
 from .vision import CalibratableUsbCameraProvider, CameraConfigurator
 from .vision.zedxmini_camera import ZedxminiCameraProvider
 
@@ -68,6 +72,7 @@ class System(rosys.persistence.PersistentModule):
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.field_friend: FieldFriend
+        self.laser_scanner: LaserScannerHardware | LaserScannerSimulation
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
@@ -79,6 +84,7 @@ class System(rosys.persistence.PersistentModule):
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
             self.camera_configurator = CameraConfigurator(self.camera_provider, odometer=self.odometer)
+            self.laser_scanner = LaserScannerHardware('/dev/ttyUSB0')
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
@@ -87,6 +93,7 @@ class System(rosys.persistence.PersistentModule):
             self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
             self.camera_configurator = CameraConfigurator(
                 self.camera_provider, odometer=self.odometer, robot_id=self.version)
+            self.laser_scanner = LaserScannerSimulation()
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.gnss: GnssHardware | GnssSimulation
@@ -186,6 +193,45 @@ class System(rosys.persistence.PersistentModule):
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
             rosys.on_repeat(self.log_status, 60*5)
+
+        self.recorder = McapRecorder()
+
+        async def _new_scan(scan: Scan):
+            if not self.recorder.is_recording:
+                return
+            ranges = [Point(x=0, y=0).distance(p) for p in scan.points]
+            await self.recorder.write_laser_scan(ranges, timestamp=scan.time, frame_id='feldfreund')
+
+        async def _new_image(image: Image):
+            if not self.recorder.is_recording:
+                return
+            await self.recorder.write_image(image.to_array(), timestamp=image.time, frame_id='feldfreund')
+        self.camera_provider.NEW_IMAGE.register(_new_image)
+        self.laser_scanner.NEW_SCAN.register(_new_scan)
+
+        async def get_gnss_data():
+            gnss_data = {
+                "timestamp": rosys.time(),
+                "location": {
+                    "lat": 51.9825599767391,
+                    "long": 7.43417917903821
+                },
+                "latitude_std_dev": 0.005,
+                "longitude_std_dev": 0.005,
+                "mode": "RRRN",
+                "gps_qual": 4,
+                "altitude": 68.0758,
+                "separation": 47.2372,
+                "heading": 268.29,
+                "speed_kmh": 0,
+                "num_sats": 17
+            }
+            gnss_data['latitude'] = gnss_data['location']['lat']
+            gnss_data['longitude'] = gnss_data['location']['long']
+            del gnss_data['location']
+            if self.recorder.is_recording:
+                await self.recorder.write_gnss(gnss_data['latitude'], gnss_data['longitude'], gnss_data['altitude'], gnss_data['latitude_std_dev'], gnss_data['longitude_std_dev'], timestamp=gnss_data['timestamp'])
+        rosys.on_repeat(get_gnss_data, interval=1.0)
 
     def restart(self) -> None:
         os.utime('main.py')

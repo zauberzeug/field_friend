@@ -4,6 +4,11 @@ services:
     network_mode: host
     restart: always
     privileged: true
+    volumes:
+      - ~/recordings:/home/zauberzeug/recordings
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+      - "/dev/ttyUSB1:/dev/ttyUSB1"
 
   detector:
     image: "zauberzeug/yolov5-detector:0.1.6-nlv0.10.15-35.4.1"

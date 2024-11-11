@@ -39,6 +39,7 @@ def startup() -> None:
     interface.pages.test_page(page_wrapper, system)  # /test
     interface.pages.monitor_page(page_wrapper, system)  # /monitor
     interface.pages.bms_page(page_wrapper, system)  # /bms
+    interface.pages.solar_page(page_wrapper, system)  # /solar
 
     @app.get('/status')  # /status
     def status():

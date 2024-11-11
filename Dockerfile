@@ -10,6 +10,15 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     avahi-utils iputils-ping \
     jq
 
+COPY rplidar /usr/local/src/rplidar
+RUN cd /usr/local/src/rplidar/rplidar_sdk && \
+    make clean && \
+    make && \
+    cd /usr/local/src/rplidar && \
+    make && \
+    cp /usr/local/src/rplidar/rplidar_sdk/output/Linux/Release/rp_lidar /usr/local/bin/rplidar && \
+    make clean
+    
 ARG USERNAME=zauberzeug
 ARG USER_UID=1000
 ARG USER_GID=1000

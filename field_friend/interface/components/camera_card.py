@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 class camera_card:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: 'System', shrink_factor: float = 4.0) -> None:
         self.log = logging.getLogger('field_friend.camera_card')
         self.automator = system.automator
         self.camera_provider = system.camera_provider
@@ -33,7 +33,7 @@ class camera_card:
         self.puncher = system.puncher
         self.system = system
         self.punching_enabled: bool = False
-        self.shrink_factor: float = 4.0
+        self.shrink_factor = shrink_factor
         self.show_weeds_to_handle: bool = False
         self.camera: Optional[rosys.vision.CalibratableCamera] = None
         self.image_view: Optional[ui.interactive_image] = None
@@ -200,11 +200,16 @@ class camera_card:
         cross_size = 20
         for point in detections.points:
             if point.category_name in self.plant_locator.crop_category_names:
-                svg += f'<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}" r="18" stroke-width="8" stroke="green" fill="none" />'
+                svg += f'''<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}" \
+                    r="18" stroke-width="8" stroke="green" fill="none"/>'''
             elif point.category_name in self.plant_locator.weed_category_names:
-                svg += f'''<line x1="{int(point.x / self.shrink_factor) - cross_size}" y1="{int(point.y / self.shrink_factor)}" x2="{int(point.x / self.shrink_factor) + cross_size}" y2="{int(point.y / self.shrink_factor)}" stroke="red" stroke-width="8" 
-    transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/><line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - cross_size}" x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + cross_size}" stroke="red" stroke-width="8" 
-    transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
+                svg += f'''<line x1="{int(point.x / self.shrink_factor) - cross_size}" y1="{int(point.y / self.shrink_factor)}" \
+                        x2="{int(point.x / self.shrink_factor) + cross_size}" y2="{int(point.y / self.shrink_factor)}" \
+                        stroke="red" stroke-width="8" transform="rotate(45, {int(point.x / self.shrink_factor)}, \
+                        {int(point.y / self.shrink_factor)})"/>\
+                        <line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - cross_size}" \
+                        x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + cross_size}" \
+                        transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
         return svg
 
     def build_svg_for_implement(self) -> str:
@@ -221,14 +226,17 @@ class camera_card:
         max_tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.max_position, z=0).in_frame(
             self.odometer.prediction_frame).resolve().point_3d
         max_tool_2d = self.camera.calibration.project_to_image(max_tool_3d) / self.shrink_factor
-        svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="2" />'
+        svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)} \
+            " y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="2" />'
         if self.show_weeds_to_handle:
             for i, plant in enumerate(self.system.current_implement.weeds_to_handle.values()):
                 position_3d = self.odometer.prediction.point_3d() + rosys.geometry.Point3d(x=plant.x, y=plant.y, z=0)
                 screen = self.camera.calibration.project_to_image(position_3d)
                 if screen is not None:
-                    svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="6" stroke="blue" fill="transparent" stroke-width="2" />'
-                    svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+4}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
+                    svg += f'''<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y / self.shrink_factor)}" \
+                        r="6" stroke="blue" fill="transparent" stroke-width="2" />'''
+                    svg += f'''<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y / self.shrink_factor)+4}"\
+                        fill="blue" font-size="9" text-anchor="middle">{i}</text>'''
         return svg
 
     def build_svg_for_plant_provider(self) -> str:
@@ -241,8 +249,10 @@ class camera_card:
         for plant in self.plant_provider.get_relevant_weeds(position):
             screen = self.camera.calibration.project_to_image(plant.position)
             if screen is not None:
-                svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="5" fill="white" />'
-                svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{plant.id[:4]}</text>'
+                svg += f'''<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y / self.shrink_factor)}"\
+                    r="5" fill="white" />'''
+                svg += f'''<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor) + 16}"\
+                    fill="black" font-size="9" text-anchor="middle">{plant.id[:4]}</text>'''
         return svg
 
     # async def save_last_image(self) -> None:
