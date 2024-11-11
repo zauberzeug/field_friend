@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 import os
 from typing import Any
@@ -6,8 +7,6 @@ import icecream
 import numpy as np
 import psutil
 import rosys
-from rosys.geometry import Point
-from rosys.vision import Image
 
 import config.config_selection as config_selector
 
@@ -44,7 +43,7 @@ from .hardware import (
     FieldFriendSimulation,
     TeltonikaRouter,
 )
-from .hardware.laser_scanner import LaserScannerHardware, LaserScannerSimulation, Scan
+from .hardware.laser_scanner import LaserScannerHardware, LaserScannerSimulation
 from .interface.components.info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
@@ -218,22 +217,9 @@ class System(rosys.persistence.PersistentModule):
             await self.file_recorder.write_image('camera', image.time, image.to_array())
 
         async def get_gnss_data():
-            gnss_data = {
-                "timestamp": rosys.time(),
-                "location": {
-                    "lat": 51.9825599767391,
-                    "long": 7.43417917903821
-                },
-                "latitude_std_dev": 0.005,
-                "longitude_std_dev": 0.005,
-                "mode": "RRRN",
-                "gps_qual": 4,
-                "altitude": 68.0758,
-                "separation": 47.2372,
-                "heading": 268.29,
-                "speed_kmh": 0,
-                "num_sats": 17
-            }
+            if self.gnss.current is None:
+                return
+            gnss_data = dataclasses.asdict(self.gnss.current)
             if self.file_recorder.is_recording:
                 await self.file_recorder.write_json('gnss', gnss_data['timestamp'], gnss_data)
 

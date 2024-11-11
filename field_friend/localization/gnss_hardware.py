@@ -86,8 +86,8 @@ class GnssHardware(Gnss):
                         types_seen.add(msg.sentence_type)
                         gga = msg
                     if msg.sentence_type == 'GST':
-                        data['latitude_std_dev'] = msg.std_dev_latitude
-                        data['longitude_std_dev'] = msg.std_dev_longitude
+                        data['latitude_std_dev'] = msg.std_dev_latitude if msg.std_dev_latitude else -1.0
+                        data['longitude_std_dev'] = msg.std_dev_longitude if msg.std_dev_longitude else -1.0
                         types_seen.add(msg.sentence_type)
                     if msg.sentence_type == 'GNS' and getattr(msg, 'mode_indicator', None):
                         if isinstance(msg.timestamp, datetime.time):
