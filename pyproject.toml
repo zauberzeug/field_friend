@@ -24,6 +24,7 @@ module = [
     "pynmea2.*",
     "serial.*",
     "shapely.*",
+    "geographiclib.*",
 ]
 ignore_missing_imports = true
 
