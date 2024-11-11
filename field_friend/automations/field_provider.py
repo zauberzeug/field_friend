@@ -3,7 +3,7 @@ import logging
 import rosys
 
 from ..localization import Gnss
-from . import Field, RowSupportPoint
+from . import Field, Row, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
@@ -22,6 +22,16 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.selected_field: Field | None = None
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
+
+        self._selected_beds: list[int] = []
+
+    @property
+    def selected_beds(self) -> list[int]:
+        return self._selected_beds
+
+    @selected_beds.setter
+    def selected_beds(self, value: list[int]) -> None:
+        self._selected_beds = sorted(value)
 
     def backup(self) -> dict:
         return {
@@ -45,6 +55,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED.emit()
         if self.selected_field and self.selected_field not in self.fields:
             self.selected_field = None
+            self.selected_beds = []
             self.FIELD_SELECTED.emit()
 
     def get_field(self, id_: str | None) -> Field | None:
@@ -95,15 +106,35 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.selected_field = self.get_field(id_)
         self.FIELD_SELECTED.emit()
 
-    def update_field_parameters(self, field_id: str, name: str, row_number: int, row_spacing: float, outline_buffer_width: float) -> None:
+    def update_field_parameters(self, field_id: str, name: str, row_count: int, row_spacing: float, outline_buffer_width: float, bed_count: int, bed_spacing: float) -> None:
         field = self.get_field(field_id)
         if not field:
             self.log.warning('Field with id %s not found. Cannot update parameters.', field_id)
             return
         field.name = name
-        field.row_number = row_number
+        field.row_count = row_count
         field.row_spacing = row_spacing
+        field.bed_count = bed_count
+        field.bed_spacing = bed_spacing
         field.outline_buffer_width = outline_buffer_width
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
-                      field.name, row_number, row_spacing)
+                      field.name, row_count, row_spacing)
         self.invalidate()
+
+    def clear_selected_beds(self) -> None:
+        self.selected_beds = []
+
+    def get_rows_to_work_on(self) -> list[Row]:
+        if not self.selected_field:
+            self.log.warning('No field selected. Cannot get rows to work on.')
+            return []
+        if self.selected_field.bed_count == 1:
+            return self.selected_field.rows
+        if len(self.selected_beds) == 0:
+            self.log.warning('No beds selected. Cannot get rows to work on.')
+            return []
+        row_indices = []
+        for bed in self.selected_beds:
+            for row_index in range(self.selected_field.row_count):
+                row_indices.append((bed - 1) * self.selected_field.row_count + row_index)
+        return [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
