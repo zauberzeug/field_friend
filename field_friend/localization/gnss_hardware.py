@@ -12,7 +12,7 @@ from .gnss import GeoPoint, Gnss, GNSSRecord
 
 class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
-    TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
+    TYPES_NEEDED = {'GGA', 'GNS', 'HDT', 'GST'}
 
     def __init__(self, odometer: Odometer, antenna_offset: float) -> None:
         super().__init__(odometer, antenna_offset)
@@ -82,8 +82,13 @@ class GnssHardware(Gnss):
                         data['gps_qual'] = msg.gps_qual
                         data['altitude'] = msg.altitude
                         data['separation'] = msg.geo_sep
+                        data['num_sats'] = msg.num_sats
                         types_seen.add(msg.sentence_type)
                         gga = msg
+                    if msg.sentence_type == 'GST':
+                        data['latitude_std_dev'] = msg.std_dev_latitude
+                        data['longitude_std_dev'] = msg.std_dev_longitude
+                        types_seen.add(msg.sentence_type)
                     if msg.sentence_type == 'GNS' and getattr(msg, 'mode_indicator', None):
                         if isinstance(msg.timestamp, datetime.time):
                             dt = datetime.datetime.combine(datetime.date.today(), msg.timestamp)

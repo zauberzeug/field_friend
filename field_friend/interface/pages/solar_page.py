@@ -36,6 +36,10 @@ def gnss_ui(system: 'System') -> None:
         ui.label('Position:').classes('text-bold')
         ui.label('No location' if system.gnss.current is None else f'{system.gnss.current.location}°')
     with ui.row().classes('place-items-center'):
+        ui.label('StdDev:').classes('text-bold')
+        ui.label('No location' if system.gnss.current is None else
+                 f'({system.gnss.current.latitude_std_dev:.4f}, {system.gnss.current.longitude_std_dev:.4f})')
+    with ui.row().classes('place-items-center'):
         ui.label('Heading:').classes('text-bold')
         ui.label(f'{system.gnss.current.heading:.2f}° \
                  {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading')
@@ -43,6 +47,9 @@ def gnss_ui(system: 'System') -> None:
         ui.label('RTK-Fix:').classes('text-bold')
         ui.label(
             f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix')
+    with ui.row().classes('place-items-center'):
+        ui.label('Satellites:').classes('text-bold')
+        ui.label(f'{system.gnss.current.num_sats}' if system.gnss.current is not None else 'No satellites')
     with ui.row().classes('place-items-center'):
         ui.label('Odometry:').classes('text-bold')
         ui.label(str(system.odometer.prediction))

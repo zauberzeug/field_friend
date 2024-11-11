@@ -23,12 +23,15 @@ from .point_transformation import get_new_position
 class GNSSRecord:
     timestamp: float
     location: GeoPoint
+    latitude_std_dev: float = 0.0
+    longitude_std_dev: float = 0.0
     mode: str = ''
     gps_qual: int = 0
     altitude: float = 0.0
     separation: float = 0.0
     heading: float | None = None
     speed_kmh: float = 0.0
+    num_sats: int = 0
 
 
 class Gnss(rosys.persistence.PersistentModule, ABC):
