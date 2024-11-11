@@ -1,10 +1,10 @@
 from . import (
     automations,
+    file_recorder,
     hardware,
     interface,
     localization,
     log_configuration,
-    mcap_recorder,
     vision,
 )
 from .system import System
@@ -17,5 +17,5 @@ __all__ = [
     'vision',
     'log_configuration',
     'System',
-    'mcap_recorder',
+    'file_recorder',
 ]

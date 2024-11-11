@@ -2,9 +2,10 @@ import abc
 import logging
 from dataclasses import dataclass
 
+import numpy as np
 from nicegui import ui
 from rosys.event import Event
-from rosys.geometry import Point
+from rosys.geometry import Point, Pose
 
 
 @dataclass
@@ -12,12 +13,19 @@ class Scan:
     time: float
     points: list[Point]
 
+    def __dict__(self) -> dict:
+        return {
+            'time': self.time,
+            'points': [p.tuple for p in self.points],
+        }
+
 
 class LaserScanner(abc.ABC):
 
-    def __init__(self) -> None:
+    def __init__(self, pose: Pose | None = None) -> None:
         self.log = logging.getLogger('laser_scanner')
-        self.last_scan: Scan | None = None
+        self.pose = Pose(x=0, y=0, yaw=np.deg2rad(180)) if pose is None else pose
+        self.latest_scan: Scan | None = None
         self.is_active: bool = False
 
         self.svg_size = (360, 360)
@@ -36,15 +44,15 @@ class LaserScanner(abc.ABC):
         ui.interactive_image(size=self.svg_size) \
             .bind_content_from(self, '_map_content') \
             .classes(f'w-[{self.svg_size[0]}px] h-[{self.svg_size[1]}px] bg-gray-100')
-        ui.timer(0.5, self.draw_last_scan)
+        ui.timer(0.5, self.draw_lastest_scan)
 
-    def draw_last_scan(self):
-        if self.last_scan is None:
+    def draw_lastest_scan(self):
+        if self.latest_scan is None:
             return
-        if self.last_draw_timestamp >= self.last_scan.time:
+        if self.last_draw_timestamp >= self.latest_scan.time:
             return
-        self.draw(self.last_scan)
-        self.last_draw_timestamp = self.last_scan.time
+        self.draw(self.latest_scan)
+        self.last_draw_timestamp = self.latest_scan.time
 
     def draw(self, scan: Scan):
         svg = self.base_svg

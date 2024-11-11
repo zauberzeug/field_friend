@@ -37,6 +37,7 @@ from .automations.navigation import (
     Navigation,
     StraightLineNavigation,
 )
+from .file_recorder import FileRecorder
 from .hardware import (
     FieldFriend,
     FieldFriendHardware,
@@ -49,7 +50,6 @@ from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
-from .mcap_recorder import McapRecorder
 from .vision import CalibratableUsbCameraProvider, CameraConfigurator
 from .vision.zedxmini_camera import ZedxminiCameraProvider
 
@@ -194,20 +194,28 @@ class System(rosys.persistence.PersistentModule):
             rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
             rosys.on_repeat(self.log_status, 60*5)
 
-        self.recorder = McapRecorder()
+        self.file_recorder = FileRecorder()
 
-        async def _new_scan(scan: Scan):
-            if not self.recorder.is_recording:
+        async def new_scan():
+            if not self.file_recorder.is_recording:
                 return
-            ranges = [Point(x=0, y=0).distance(p) for p in scan.points]
-            await self.recorder.write_laser_scan(ranges, timestamp=scan.time, frame_id='feldfreund')
+            if self.laser_scanner is None:
+                return
+            scan = self.laser_scanner.latest_scan
+            if scan is None:
+                return
+            await self.file_recorder.write_json('laser_scanner', scan.time, scan.__dict__())
 
-        async def _new_image(image: Image):
-            if not self.recorder.is_recording:
+        async def new_image():
+            if not self.file_recorder.is_recording:
                 return
-            await self.recorder.write_image(image.to_array(), timestamp=image.time, frame_id='feldfreund')
-        self.camera_provider.NEW_IMAGE.register(_new_image)
-        self.laser_scanner.NEW_SCAN.register(_new_scan)
+            camera = self.camera_provider.first_connected_camera
+            if camera is None:
+                return
+            image = camera.latest_captured_image
+            if image is None:
+                return
+            await self.file_recorder.write_image('camera', image.time, image.to_array())
 
         async def get_gnss_data():
             gnss_data = {
@@ -226,12 +234,12 @@ class System(rosys.persistence.PersistentModule):
                 "speed_kmh": 0,
                 "num_sats": 17
             }
-            gnss_data['latitude'] = gnss_data['location']['lat']
-            gnss_data['longitude'] = gnss_data['location']['long']
-            del gnss_data['location']
-            if self.recorder.is_recording:
-                await self.recorder.write_gnss(gnss_data['latitude'], gnss_data['longitude'], gnss_data['altitude'], gnss_data['latitude_std_dev'], gnss_data['longitude_std_dev'], timestamp=gnss_data['timestamp'])
-        rosys.on_repeat(get_gnss_data, interval=1.0)
+            if self.file_recorder.is_recording:
+                await self.file_recorder.write_json('gnss', gnss_data['timestamp'], gnss_data)
+
+        rosys.on_repeat(new_image, interval=0.5)
+        rosys.on_repeat(new_scan, interval=0.5)
+        rosys.on_repeat(get_gnss_data, interval=0.5)
 
     def restart(self) -> None:
         os.utime('main.py')

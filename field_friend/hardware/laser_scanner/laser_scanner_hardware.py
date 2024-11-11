@@ -40,7 +40,7 @@ class LaserScannerHardware(LaserScanner):
                         scan = self._process_data(data)
                         if len(scan.points) < 10:
                             return
-                        self.last_scan = scan
+                        self.latest_scan = scan
                         self.NEW_SCAN.emit(scan)
                 except ValueError as e:
                     self.log.warning('Could not parse lidar data:')
@@ -51,12 +51,11 @@ class LaserScannerHardware(LaserScanner):
 
     def _process_data(self, data: np.ndarray) -> Scan:
         now = rosys.time()
-        zero_point = Point(x=0, y=0)
         points = []
         for quality, angle, distance in data:
             if quality == 0 or distance == 0:
                 continue
-            point = zero_point.polar(distance / 1000.0, np.deg2rad(angle))
+            point = self.pose.point.polar(distance / 1000.0, np.deg2rad(angle) + self.pose.yaw)
             points.append(point)
         return Scan(time=now, points=points)
 

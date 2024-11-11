@@ -54,7 +54,7 @@ class solar_page():
         self.gnss = system.gnss
         self.laser_scanner = system.laser_scanner
         self.camera_provider = system.camera_provider
-        self.recorder = system.recorder
+        self.file_recorder = system.file_recorder
 
         @ui.page('/solar')
         def page() -> None:
@@ -72,7 +72,7 @@ class solar_page():
                     refreshable(self.system)
                     ui.timer(rosys.config.ui_update_interval, lambda: refreshable.refresh(self.system))
                 with ui.card().classes('w-full'):
-                    self.recorder.recorder_ui()
+                    self.file_recorder.recorder_ui()
             with ui.card().tight():
                 self.laser_scanner.ui()
             with ui.card().tight().classes('w-auto'):
