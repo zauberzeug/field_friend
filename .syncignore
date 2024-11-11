@@ -13,3 +13,4 @@ nicegui
 rosys
 .nicegui
 .venv
+.DS_Store
