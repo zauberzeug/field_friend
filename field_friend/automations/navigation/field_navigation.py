@@ -105,17 +105,39 @@ class FieldNavigation(StraightLineNavigation):
         relative_point_0 = self.odometer.prediction.distance(self.current_row.points[0].cartesian())
         relative_point_1 = self.odometer.prediction.distance(self.current_row.points[-1].cartesian())
         # self.log.info(f'Relative point 0: {relative_point_0} Relative point 1: {relative_point_1}')
-        if relative_point_0 < relative_point_1:
-            self.start_point = self.current_row.points[0].cartesian()
-            self.end_point = self.current_row.points[-1].cartesian()
-        elif relative_point_1 < relative_point_0:
-            self.start_point = self.current_row.points[-1].cartesian()
-            self.end_point = self.current_row.points[0].cartesian()
 
-        relative_start = self.odometer.prediction.relative_point(self.start_point).x
-        relative_end = self.odometer.prediction.relative_point(self.end_point).x
-        if relative_start < 0 <= relative_end:
-            self.start_point, self.end_point = self.end_point, self.start_point
+        rel_to_start = self.odometer.prediction.relative_point(self.current_row.points[0].cartesian())
+        rel_to_end = self.odometer.prediction.relative_point(self.current_row.points[-1].cartesian())
+        robot_on_field = rel_to_start.x * rel_to_end.x <= 0
+
+        if not robot_on_field:
+            if relative_point_0 < relative_point_1:
+                self.start_point = self.current_row.points[0].cartesian()
+                self.end_point = self.current_row.points[-1].cartesian()
+            elif relative_point_1 < relative_point_0:
+                self.start_point = self.current_row.points[-1].cartesian()
+                self.end_point = self.current_row.points[0].cartesian()
+            relative_start = self.odometer.prediction.relative_point(self.start_point).x
+            relative_end = self.odometer.prediction.relative_point(self.end_point).x
+            if relative_start < 0 <= relative_end:
+                self.start_point, self.end_point = self.end_point, self.start_point
+        else:
+            foot_point = self.current_row.line_segment().line.foot_point(self.odometer.prediction.point)
+            distance_to_line = foot_point.distance(self.odometer.prediction.point)
+            if distance_to_line <= 0.05:
+                # TODO check if this is correct. Not done yet.
+                robot_heading = self.odometer.prediction.yaw
+                angle_to_start = abs(np.arctan2(rel_to_start.y, rel_to_start.x) - robot_heading)
+                angle_to_end = abs(np.arctan2(rel_to_end.y, rel_to_end.x) - robot_heading)
+                if angle_to_start < angle_to_end:
+                    self.start_point = self.current_row.points[0].cartesian()
+                    self.end_point = self.current_row.points[-1].cartesian()
+                else:
+                    self.start_point = self.current_row.points[-1].cartesian()
+                    self.end_point = self.current_row.points[0].cartesian()
+                # TODO and then make the robot drive to the end point not to the start point first (make current position as start point?)
+            else:
+                raise RuntimeError("Robot is on field but too far from row line to determine direction")
         self.update_target()
         # self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 
