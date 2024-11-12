@@ -132,7 +132,7 @@ class FieldNavigation(StraightLineNavigation):
                 angle_to_start = abs(np.arctan2(rel_to_start.y, rel_to_start.x) - robot_heading)
                 angle_to_end = abs(np.arctan2(rel_to_end.y, rel_to_end.x) - robot_heading)
                 self.start_point = foot_point
-                if angle_to_start < angle_to_end:
+                if angle_to_start > angle_to_end:
                     self.end_point = self.current_row.points[-1].cartesian()
                 else:
                     self.end_point = self.current_row.points[0].cartesian()
