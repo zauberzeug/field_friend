@@ -108,29 +108,41 @@ class operation:
                 'row_spacing': self.field_provider.selected_field.row_spacing if self.field_provider.selected_field else 0.0,
                 'outline_buffer_width': self.field_provider.selected_field.outline_buffer_width if self.field_provider.selected_field else 2.0,
                 'bed_count': self.field_provider.selected_field.bed_count if self.field_provider.selected_field else 1,
-                'bed_spacing': self.field_provider.selected_field.bed_spacing if self.field_provider.selected_field else 0.5
+                'bed_spacing': self.field_provider.selected_field.bed_spacing if self.field_provider.selected_field else 0.5,
+                'bed_crops': self.field_provider.selected_field.bed_crops if self.field_provider.selected_field else [None]
             }
-            ui.input('Field Name', value=parameters['name']) \
-                .props('dense outlined').classes('w-full') \
-                .bind_value(parameters, 'name')
-            ui.number('Number of Beds', value=parameters['bed_count'], min=1, step=1) \
-                .props('dense outlined').classes('w-full') \
-                .bind_value(parameters, 'bed_count')
-            ui.number('Bed Spacing', value=parameters['bed_spacing'], suffix='cm', min=1, step=1) \
-                .props('dense outlined').classes('w-full') \
-                .bind_value(parameters, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
-                .bind_visibility_from(parameters, 'bed_count', backward=lambda v: v is not None and v > 1)
-            ui.input('Row Number (per Bed)', value=parameters['row_count']) \
-                .props('dense outlined').classes('w-full') \
-                .bind_value(parameters, 'row_count') \
-                .tooltip('Set the number of rows per bed.')
-            ui.number('Row Spacing', value=parameters['row_spacing'], suffix='cm', min=1, step=1) \
-                .props('dense outlined').classes('w-full') \
-                .bind_value(parameters, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
-            ui.number('Outline Buffer Width', value=parameters.get('outline_buffer_width', 2.0), min=1, max=10, step=0.1, suffix='m') \
-                .props('dense outlined').classes('w-full') \
-                .bind_value(parameters, 'outline_buffer_width') \
-                .tooltip('Set the outline buffer width')
+            with ui.tabs().classes('w-full') as tabs:
+                one = ui.tab('General')
+                two = ui.tab('Beds')
+            with ui.tab_panels(tabs, value=two).classes('w-full'):
+                with ui.tab_panel(one):
+                    ui.input('Field Name', value=parameters['name']) \
+                        .props('dense outlined').classes('w-full') \
+                        .bind_value(parameters, 'name')
+                    ui.number('Bed Spacing', value=parameters['bed_spacing'], suffix='cm', min=1, step=1) \
+                        .props('dense outlined').classes('w-full') \
+                        .bind_value(parameters, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
+                        .bind_visibility_from(parameters, 'bed_count', backward=lambda v: v is not None and v > 1)
+                    ui.input('Row Number (per Bed)', value=parameters['row_count']) \
+                        .props('dense outlined').classes('w-full') \
+                        .bind_value(parameters, 'row_count') \
+                        .tooltip('Set the number of rows per bed.')
+                    ui.number('Row Spacing', value=parameters['row_spacing'], suffix='cm', min=1, step=1) \
+                        .props('dense outlined').classes('w-full') \
+                        .bind_value(parameters, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
+                    ui.number('Outline Buffer Width', value=parameters.get('outline_buffer_width', 2.0), min=1, max=10, step=0.1, suffix='m') \
+                        .props('dense outlined').classes('w-full') \
+                        .bind_value(parameters, 'outline_buffer_width') \
+                        .tooltip('Set the outline buffer width')
+                with ui.tab_panel(two):
+                    ui.number('Number of Beds', value=parameters['bed_count'], min=1, step=1) \
+                        .props('dense outlined').classes('w-full') \
+                        .bind_value(parameters, 'bed_count')
+                    for i in range(parameters['bed_count']):
+
+                        ui.input(f'Crop {i + 1}', value=parameters['bed_crops'][i]) \
+                            .props('dense outlined').classes('w-full') \
+                            .bind_value(parameters, 'bed_crops', index=i)
             with ui.row():
                 ui.button('Cancel', on_click=self.edit_field_dialog.close)
                 ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters))

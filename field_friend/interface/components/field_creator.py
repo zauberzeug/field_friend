@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Callable
 from uuid import uuid4
 
 import rosys
-from nicegui import ui
+from nicegui import ui, events
 
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
@@ -28,6 +28,7 @@ class FieldCreator:
         self.outline_buffer_width: float = 2.0
         self.bed_count: int = 1
         self.bed_spacing: float = 0.5
+        self.bed_crops: dict[int, str | None] = {0: None}
         self.next: Callable = self.find_first_row
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
@@ -56,9 +57,9 @@ class FieldCreator:
                 'text-lg')
             ui.label('• The blue line should be in the center of the row.') \
                 .classes('text-lg ps-8')
-        self.next = self.get_infos
+        self.next = self.field_infos
 
-    def get_infos(self) -> None:
+    def field_infos(self) -> None:
         self.headline.text = 'Field Parameters'
         assert self.gnss.current is not None
         if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
@@ -72,12 +73,39 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Enter a name for the field') \
                 .bind_value(self, 'field_name')
+            ui.number('Row Spacing', suffix='cm',
+                      value=50, step=1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the distance between the rows') \
+                .bind_value(self, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
+            ui.number('Outline Buffer Width', suffix='m',
+                      value=2, step=0.1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the width of the buffer around the field outline') \
+                .bind_value(self, 'outline_buffer_width')
+        self.next = self.bed_infos
+
+    def bed_infos(self) -> None:
+        self.headline.text = 'Beds'
+        assert self.gnss.current is not None
+        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+            with self.content:
+                ui.label('No RTK fix available.').classes('text-red')
+        self.first_row_start = self.gnss.current.location
+
+        def reset_bed_crops() -> None:
+            self.bed_crops = {i: None for i in range(self.bed_count)}
+
+        self.row_sight.content = ''
+        self.content.clear()
+        with self.content:
             beds_switch = ui.switch('Field has multiple beds')
             ui.number('Number of Beds',
-                      value=10, step=1, min=1) \
+                      value=5, step=1, min=1, on_change=lambda: reset_bed_crops()) \
                 .props('dense outlined').classes('w-40') \
-                .tooltip('Set the number of beds.')\
-                .bind_value(self, 'bed_count').bind_visibility_from(beds_switch, 'value')
+                .tooltip('Set the number of beds.') \
+                .bind_value(self, 'bed_count') \
+                .bind_visibility_from(beds_switch, 'value')
             ui.number('Bed Spacing', suffix='cm',
                       value=50, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
@@ -94,11 +122,37 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the distance between the rows') \
                 .bind_value(self, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
-            ui.number('Outline Buffer Width', suffix='m',
-                      value=2, step=0.1, min=1) \
-                .props('dense outlined').classes('w-40') \
-                .tooltip('Set the width of the buffer around the field outline') \
-                .bind_value(self, 'outline_buffer_width')
+
+            @refreshable
+            def bed_crop_list() -> None:
+                columns = [
+                    {'name': 'bed_number', 'label': 'Bed-Number', 'field': 'bed_number'},
+                    {'name': 'crop', 'label': 'Crop', 'field': 'crop'},
+                ]
+                rows = []
+                for i in range(self.bed_count):
+                    rows.append({'bed_number': i+1, 'crop': self.bed_crops[i]})
+                crop_options = ['Jasione', 'Salat', 'Rübe']
+
+                def change_crop(e: events.GenericEventArguments) -> None:
+                    for row in rows:
+                        if row['id'] == e.args['id']:
+                            row['crop'] = e.args['crop']
+                    ui.notify(f'Table.rows is now: {table.rows}')
+
+                table = ui.table(columns=columns, rows=rows).classes('w-full')
+                table.add_slot('body-cell-name', r'''
+                    <q-td key="name" :props="props">
+                        <q-select
+                            v-model="props.row.crop"
+                            :options="''' + str(crop_options) + r'''"
+                            @update:model-value="() => $parent.$emit('change_crop', props.row)"
+                        />
+                    </q-td>
+                ''')
+                table.on('change_crop', change_crop)
+
+            bed_crop_list()
         self.next = self.find_row_ending
 
     def find_row_ending(self) -> None:
@@ -129,6 +183,8 @@ class FieldCreator:
                 if self.bed_count > 1:
                     ui.label(f'Number of Beds: {self.bed_count}').classes('text-lg')
                     ui.label(f'Bed Spacing: {self.bed_spacing*100} cm').classes('text-lg')
+                for i in range(self.bed_count):
+                    ui.label(f'Crop {i + 1}: {self.bed_crops[i]}').classes('text-lg')
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
                 ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
@@ -150,7 +206,8 @@ class FieldCreator:
                                                    row_count=int(self.row_count),
                                                    outline_buffer_width=self.outline_buffer_width,
                                                    bed_count=int(self.bed_count),
-                                                   bed_spacing=self.bed_spacing))
+                                                   bed_spacing=self.bed_spacing,
+                                                   bed_crops=self.bed_crops))
         else:
             self.field_provider.create_field(Field(id=str(uuid4()),
                                                    name=self.field_name,
