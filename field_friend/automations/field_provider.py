@@ -3,7 +3,7 @@ from typing import Any
 
 import rosys
 
-from . import Field, Row, RowSupportPoint
+from .field import Field, Row, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
