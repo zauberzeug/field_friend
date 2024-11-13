@@ -4,7 +4,7 @@ import sys
 import time
 
 import odrive
-from odrive import enums
+import odrive.enums as enums  # noqa: PLR0402
 
 odrv0 = odrive.find_any()
 
