@@ -50,6 +50,7 @@ class FieldNavigation(StraightLineNavigation):
         self._turn_step = self.TURN_STEP
         self._max_gnss_waiting_time = self.MAX_GNSS_WAITING_TIME
         self.rows_to_work_on: list[Row] = []
+        self.robot_on_field = False
 
     @property
     def current_row(self) -> Row:
@@ -110,9 +111,8 @@ class FieldNavigation(StraightLineNavigation):
 
         rel_to_start = self.odometer.prediction.relative_point(self.current_row.points[0].cartesian())
         rel_to_end = self.odometer.prediction.relative_point(self.current_row.points[-1].cartesian())
-        robot_on_field = rel_to_start.x * rel_to_end.x <= 0
-
-        if not robot_on_field:
+        self.robot_on_field = rel_to_start.x * rel_to_end.x <= 0
+        if not self.robot_on_field:
             if relative_point_0 < relative_point_1:
                 self.start_point = self.current_row.points[0].cartesian()
                 self.end_point = self.current_row.points[-1].cartesian()
@@ -124,21 +124,15 @@ class FieldNavigation(StraightLineNavigation):
             if relative_start < 0 <= relative_end:
                 self.start_point, self.end_point = self.end_point, self.start_point
         else:
-            foot_point = self.current_row.line_segment().line.foot_point(self.odometer.prediction.point)
-            distance_to_line = foot_point.distance(self.odometer.prediction.point)
-            if distance_to_line <= 0.05:
-                # TODO check if this is correct. Not done yet.
-                robot_heading = self.odometer.prediction.yaw
-                angle_to_start = abs(np.arctan2(rel_to_start.y, rel_to_start.x) - robot_heading)
-                angle_to_end = abs(np.arctan2(rel_to_end.y, rel_to_end.x) - robot_heading)
-                self.start_point = foot_point
-                if angle_to_start > angle_to_end:
-                    self.end_point = self.current_row.points[-1].cartesian()
-                else:
-                    self.end_point = self.current_row.points[0].cartesian()
-                # TODO and then make the robot drive to the end point not to the start point first (make current position as start point?)
+            robot_heading = self.odometer.prediction.yaw
+            angle_to_start = abs(np.arctan2(rel_to_start.y, rel_to_start.x) - robot_heading)
+            angle_to_end = abs(np.arctan2(rel_to_end.y, rel_to_end.x) - robot_heading)
+            if angle_to_start > angle_to_end:
+                self.start_point = self.current_row.points[0].cartesian()
+                self.end_point = self.current_row.points[-1].cartesian()
             else:
-                raise RuntimeError("Robot is on field but too far from row line to determine direction")
+                self.start_point = self.current_row.points[-1].cartesian()
+                self.end_point = self.current_row.points[0].cartesian()
         self.update_target()
         # self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 
@@ -162,6 +156,7 @@ class FieldNavigation(StraightLineNavigation):
             self._state = await self._run_row_completed()
 
     async def _run_approaching_row_start(self) -> State:
+        self.robot_on_field = False
         self.set_start_and_end_points()
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
@@ -169,21 +164,22 @@ class FieldNavigation(StraightLineNavigation):
             self.plant_provider.clear()
 
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+
+        if self.robot_on_field:
+            distance_to_row = self.current_row.line_segment().line.foot_point(
+                self.odometer.prediction.point).distance(self.odometer.prediction.point)
+            if distance_to_row < 0.1:
+                # turn towards row end
+                target_yaw = self.odometer.prediction.direction(self.end_point)
+                await self.turn_in_steps(target_yaw)
+                rosys.notify('Inside field area', 'positive')
+                return State.FOLLOWING_ROW
+            else:
+                rosys.notify('Between rows', 'negative')
+                return State.FIELD_COMPLETED
         # turn towards row start
         target_yaw = self.odometer.prediction.direction(self.start_point)
         await self.turn_in_steps(target_yaw)
-
-        # TODO: IF INSIDE FIELD AREA:
-        # distance_to_row = self.current_row.line_segment().line.foot_point(
-        #     self.odometer.prediction.point).distance(self.odometer.prediction.point)
-        # if distance_to_row < 0.1:
-        #     rosys.notify('Inside field area', 'positive')
-        #     return State.FOLLOWING_ROW
-        # else:
-        #     rosys.notify('Between rows', 'negative')
-        #     return State.FIELD_COMPLETED
-        # END TODO
-
         # drive to row start
         await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
