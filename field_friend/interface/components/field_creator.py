@@ -1,3 +1,4 @@
+from nicegui import ui
 from typing import TYPE_CHECKING, Callable
 from uuid import uuid4
 
@@ -57,15 +58,36 @@ class FieldCreator:
                 'text-lg')
             ui.label('• The blue line should be in the center of the row.') \
                 .classes('text-lg ps-8')
-        self.next = self.field_infos
+        self.next = self.find_row_ending
 
-    def field_infos(self) -> None:
-        self.headline.text = 'Field Parameters'
+    def find_row_ending(self) -> None:
         assert self.gnss.current is not None
         if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_start = self.gnss.current.location
+        assert self.first_row_start is not None
+        # TODO: save the point somewhere to be able to use it in case of restarting the creator
+
+        self.headline.text = 'Find Row Ending'
+        self.content.clear()
+        with self.content:
+            rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
+            ui.label('1. Drive the robot to the end of the current row.') \
+                .classes('text-lg')
+            ui.label('2. Place the robot about 1 meter after the last crop.') \
+                .classes('text-lg')
+        self.next = self.field_infos
+
+    def field_infos(self) -> None:
+        assert self.gnss.current is not None
+        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+            with self.content:
+                ui.label('No RTK fix available.').classes('text-red')
+        self.first_row_end = self.gnss.current.location
+        assert self.first_row_end is not None
+
+        self.headline.text = 'Field Parameters'
         self.row_sight.content = ''
         self.content.clear()
         with self.content:
@@ -73,39 +95,12 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Enter a name for the field') \
                 .bind_value(self, 'field_name')
-            ui.number('Row Spacing', suffix='cm',
-                      value=50, step=1, min=1) \
-                .props('dense outlined').classes('w-40') \
-                .tooltip('Set the distance between the rows') \
-                .bind_value(self, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
-            ui.number('Outline Buffer Width', suffix='m',
-                      value=2, step=0.1, min=1) \
-                .props('dense outlined').classes('w-40') \
-                .tooltip('Set the width of the buffer around the field outline') \
-                .bind_value(self, 'outline_buffer_width')
-        self.next = self.bed_infos
-
-    def bed_infos(self) -> None:
-        self.headline.text = 'Beds'
-        assert self.gnss.current is not None
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
-            with self.content:
-                ui.label('No RTK fix available.').classes('text-red')
-        self.first_row_start = self.gnss.current.location
-
-        def reset_bed_crops() -> None:
-            self.bed_crops = {i: None for i in range(self.bed_count)}
-
-        self.row_sight.content = ''
-        self.content.clear()
-        with self.content:
             beds_switch = ui.switch('Field has multiple beds')
             ui.number('Number of Beds',
-                      value=5, step=1, min=1, on_change=lambda: reset_bed_crops()) \
+                      value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
-                .tooltip('Set the number of beds.') \
-                .bind_value(self, 'bed_count') \
-                .bind_visibility_from(beds_switch, 'value')
+                .tooltip('Set the number of beds.')\
+                .bind_value(self, 'bed_count').bind_visibility_from(beds_switch, 'value')
             ui.number('Bed Spacing', suffix='cm',
                       value=50, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
@@ -122,57 +117,35 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the distance between the rows') \
                 .bind_value(self, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
+            ui.number('Outline Buffer Width', suffix='m',
+                      value=2, step=0.1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the width of the buffer around the field outline') \
+                .bind_value(self, 'outline_buffer_width')
+        self.next = self.crop_infos
 
-            @refreshable
-            def bed_crop_list() -> None:
-                columns = [
-                    {'name': 'bed_number', 'label': 'Bed-Number', 'field': 'bed_number'},
-                    {'name': 'crop', 'label': 'Crop', 'field': 'crop'},
-                ]
-                rows = []
-                for i in range(self.bed_count):
-                    rows.append({'bed_number': i+1, 'crop': self.bed_crops[i]})
-                crop_options = ['Jasione', 'Salat', 'Rübe']
-
-                def change_crop(e: events.GenericEventArguments) -> None:
-                    for row in rows:
-                        if row['id'] == e.args['id']:
-                            row['crop'] = e.args['crop']
-                    ui.notify(f'Table.rows is now: {table.rows}')
-
-                table = ui.table(columns=columns, rows=rows).classes('w-full')
-                table.add_slot('body-cell-name', r'''
-                    <q-td key="name" :props="props">
-                        <q-select
-                            v-model="props.row.crop"
-                            :options="''' + str(crop_options) + r'''"
-                            @update:model-value="() => $parent.$emit('change_crop', props.row)"
-                        />
-                    </q-td>
-                ''')
-                table.on('change_crop', change_crop)
-
-            bed_crop_list()
-        self.next = self.find_row_ending
-
-    def find_row_ending(self) -> None:
-        self.headline.text = 'Find Row Ending'
-        self.content.clear()
-        with self.content:
-            rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
-            ui.label('1. Drive the robot to the end of the current row.') \
-                .classes('text-lg')
-            ui.label('2. Place the robot about 1 meter after the last crop.') \
-                .classes('text-lg')
-        self.next = self.confirm_geometry
-
-    def confirm_geometry(self) -> None:
+    def crop_infos(self) -> None:
         assert self.gnss.current is not None
         if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location
         assert self.first_row_end is not None
+
+        self.headline.text = 'Field Parameters'
+        self.row_sight.content = ''
+        self.content.clear()
+        with self.content:
+            for i in range(self.bed_count):
+                ui.label(f'Bed {i + 1}:').classes('text-lg')
+                ui.input(f'Crop {i + 1}') \
+                    .props('dense outlined').classes('w-40') \
+                    .tooltip('Enter the crop name for bed {i + 1}') \
+                    .bind_value(self, f'bed_crops[{i}]')
+                # TODO check if the bindvalue can handle the f string otherwise use forward and backward
+        self.next = self.confirm_geometry
+
+    def confirm_geometry(self) -> None:
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
         with self.content:
