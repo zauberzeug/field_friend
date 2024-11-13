@@ -18,7 +18,7 @@ class HeaderBar:
         self.drawer_icon = 'expand_more'
         self.toggled = False
         self.STATUS_DRAWER_TOGGLED = rosys.event.Event()
-        'tells if the status drawer is toggled or not.'
+        '''tells if the status drawer is toggled or not.'''
 
         with ui.header().classes('items-center'):
             with ui.link(target='/'):
@@ -37,7 +37,6 @@ class HeaderBar:
 
             with ui.row():
                 # ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
-                # ui.link('Path recorder', '/path').classes('text-white text-lg !no-underline')
                 ui.link('Circle Sight', '/monitor').classes('text-white text-lg !no-underline')
                 # ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
 
