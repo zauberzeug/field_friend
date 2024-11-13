@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import rosys
@@ -14,7 +16,7 @@ if TYPE_CHECKING:
 
 class Tornado(WeedingImplement):
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         super().__init__('Tornado', system)
         self.tornado_angle: float = 30.0
         self.drill_with_open_tornado: bool = False

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -22,7 +24,7 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-def status_dev_page(robot: FieldFriend, system: 'System'):
+def status_dev_page(robot: FieldFriend, system: System):
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.label('Hardware').style('color: #6E93D6;').classes('w-full text-center font-bold')
         ui.separator()

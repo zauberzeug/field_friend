@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import logging
 from typing import TYPE_CHECKING, Any
@@ -21,7 +23,7 @@ class Navigation(rosys.persistence.PersistentModule):
     DEFAULT_DRIVE_DISTANCE: float = 0.02
     LINEAR_SPEED_LIMIT: float = 0.13
 
-    def __init__(self, system: 'System', implement: Implement) -> None:
+    def __init__(self, system: System, implement: Implement) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.navigation')
         self.driver = system.driver

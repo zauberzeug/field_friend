@@ -1,5 +1,7 @@
 
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import rosys
@@ -12,7 +14,7 @@ if TYPE_CHECKING:
 
 class Recorder(Implement):
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         super().__init__('Recorder')
         self.system = system
 

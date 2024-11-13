@@ -1,5 +1,7 @@
 # pylint: disable=duplicate-code
 # TODO: refactor this and status_dev.py
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, cast
 
 import rosys
@@ -12,7 +14,7 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-def create_status_drawer(system: 'System') -> ui.right_drawer:
+def create_status_drawer(system: System) -> ui.right_drawer:
     robot = system.field_friend
     gnss = system.gnss
     odometer = system.odometer

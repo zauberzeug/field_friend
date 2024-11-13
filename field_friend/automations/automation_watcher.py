@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from copy import deepcopy
 from typing import TYPE_CHECKING
@@ -7,7 +9,7 @@ from rosys.geometry import Pose
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
-from field_friend.localization import GeoPoint
+from ..localization import GeoPoint
 
 if TYPE_CHECKING:
     from ..system import System
@@ -18,7 +20,7 @@ RESET_POSE_DISTANCE = 1.0
 
 class AutomationWatcher:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.automation_watcher')
 
         self.automator = system.automator

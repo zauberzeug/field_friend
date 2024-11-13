@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -10,11 +11,11 @@ from ...localization.gnss_simulation import GnssSimulation
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class LeafletMap:
-    def __init__(self, system: 'System', draw_tools: bool) -> None:
+    def __init__(self, system: System, draw_tools: bool) -> None:
         self.log = logging.getLogger('field_friend.leaflet_map')
         self.system = system
         self.field_provider = system.field_provider
@@ -91,6 +92,7 @@ class LeafletMap:
                                                             args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
+        # TODO: where does the dialog come from?
         if dialog:
             self.on_dialog_close()
             dialog.close()

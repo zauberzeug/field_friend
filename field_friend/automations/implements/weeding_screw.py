@@ -1,9 +1,12 @@
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
 
+from ...hardware import Tornado
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
@@ -12,7 +15,7 @@ if TYPE_CHECKING:
 
 class WeedingScrew(WeedingImplement):
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         super().__init__('Weed Screw', system, 'weeding_screw')
         self.relevant_weeds = system.plant_locator.weed_category_names
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')

@@ -8,9 +8,8 @@ from rosys.geometry import Point
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 
-from field_friend.localization import GeoPoint, GeoPointCollection
-
 from .. import localization
+from ..localization import GeoPoint, GeoPointCollection
 
 
 @dataclass(slots=True, kw_only=True)

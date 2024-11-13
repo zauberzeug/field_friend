@@ -4,7 +4,7 @@ import shutil
 import rosys
 from rosys.vision.usb_camera.usb_camera_scanner import scan_for_connected_devices
 
-from . import CalibratableUsbCamera
+from .calibratable_usb_camera import CalibratableUsbCamera
 
 SCAN_INTERVAL = 10
 

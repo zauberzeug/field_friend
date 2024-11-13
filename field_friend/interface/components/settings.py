@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from nicegui import ui
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 def settings(system: 'System') -> None:

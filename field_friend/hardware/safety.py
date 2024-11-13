@@ -8,16 +8,8 @@ from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
 from .external_mower import Mower, MowerHardware, MowerSimulation
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
-from .flashlight_pwm import (
-    FlashlightPWM,
-    FlashlightPWMHardware,
-    FlashlightPWMSimulation,
-)
-from .flashlight_pwm_v2 import (
-    FlashlightPWMHardwareV2,
-    FlashlightPWMSimulationV2,
-    FlashlightPWMV2,
-)
+from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
+from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis_canopen_hardware import YAxisCanOpenHardware

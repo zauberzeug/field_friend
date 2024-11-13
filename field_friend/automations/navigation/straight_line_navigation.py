@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from random import randint
 from typing import TYPE_CHECKING, Any
 
@@ -15,7 +17,7 @@ if TYPE_CHECKING:
 class StraightLineNavigation(Navigation):
     LENGTH: float = 2.0
 
-    def __init__(self, system: 'System', tool: Implement) -> None:
+    def __init__(self, system: System, tool: Implement) -> None:
         super().__init__(system, tool)
         self.detector = system.detector
         self.length = self.LENGTH

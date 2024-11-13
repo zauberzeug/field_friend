@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -12,7 +14,7 @@ if TYPE_CHECKING:
 
 class FieldObject(Group):
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         super().__init__()
         self.system = system
         self.field_provider: FieldProvider = system.field_provider

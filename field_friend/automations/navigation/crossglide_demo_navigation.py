@@ -1,11 +1,14 @@
 # pylint: disable=duplicate-code
 # TODO: refactor this and navigation.py
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
 
 from ...automations.implements.implement import Implement
+from ...automations.implements.weeding_implement import WeedingImplement
 from .navigation import Navigation
 
 if TYPE_CHECKING:
@@ -18,7 +21,7 @@ class WorkflowException(Exception):
 
 class CrossglideDemoNavigation(Navigation):
 
-    def __init__(self, system: 'System', tool: Implement) -> None:
+    def __init__(self, system: System, tool: Implement) -> None:
         super().__init__(system, tool)
         self.MAX_STRETCH_DISTANCE: float = 5.0
         self.detector = system.detector

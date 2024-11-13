@@ -5,11 +5,7 @@ from .external_mower import Mower, MowerHardware, MowerSimulation
 from .field_friend import FieldFriend
 from .field_friend_hardware import FieldFriendHardware
 from .field_friend_simulation import FieldFriendSimulation
-from .flashlight_pwm import (
-    FlashlightPWM,
-    FlashlightPWMHardware,
-    FlashlightPWMSimulation,
-)
+from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMV2
 from .flashlight_v2 import FlashlightV2
 from .teltonika_router import TeltonikaRouter
