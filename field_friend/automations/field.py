@@ -18,12 +18,14 @@ from .. import localization
 @dataclass(slots=True, kw_only=True)
 class Row(GeoPointCollection):
     reverse: bool = False
+    crop: str | None = None
 
     def reversed(self):
         return Row(
             id=self.id,
             name=self.name,
             points=list(reversed(self.points)),
+            crop=self.crop
         )
 
     def line_segment(self) -> rosys.geometry.LineSegment:
@@ -51,7 +53,8 @@ class Field:
                  outline_buffer_width: float = 2,
                  row_support_points: list[RowSupportPoint] | None = None,
                  bed_count: int = 1,
-                 bed_spacing: float = 0.5) -> None:
+                 bed_spacing: float = 0.5,
+                 bed_crops: dict[int, str | None] = {1: None}) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
@@ -66,6 +69,7 @@ class Field:
         self.visualized: bool = False
         self.rows: list[Row] = []
         self.outline: list[GeoPoint] = []
+        self.bed_crops: dict[int, str | None] = bed_crops or {i: None for i in range(bed_count)}
         self.refresh()
 
     @property
@@ -138,7 +142,8 @@ class Field:
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = [localization.reference.shifted(
                 Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            row = Row(id=f'field_{self.id}_row_{str(i + 1)}', name=f'row_{i + 1}', points=row_points)
+            row = Row(id=f'field_{self.id}_row_{str(i + 1)}', name=f'row_{i + 1}',
+                      points=row_points, crop=self.bed_crops[bed_index])
             rows.append(row)
         return rows
 
@@ -173,6 +178,7 @@ class Field:
             'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
             'bed_count': self.bed_count,
             'bed_spacing': self.bed_spacing,
+            'bed_crops': self.bed_crops,
         }
 
     def shapely_polygon(self) -> shapely.geometry.Polygon:

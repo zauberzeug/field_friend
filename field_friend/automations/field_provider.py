@@ -106,7 +106,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.selected_field = self.get_field(id_)
         self.FIELD_SELECTED.emit()
 
-    def update_field_parameters(self, field_id: str, name: str, row_count: int, row_spacing: float, outline_buffer_width: float, bed_count: int, bed_spacing: float) -> None:
+    def update_field_parameters(self, field_id: str, name: str, row_count: int, row_spacing: float, outline_buffer_width: float, bed_count: int, bed_spacing: float, bed_crops: dict[int, str | None]) -> None:
         field = self.get_field(field_id)
         if not field:
             self.log.warning('Field with id %s not found. Cannot update parameters.', field_id)
@@ -117,6 +117,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         field.bed_count = bed_count
         field.bed_spacing = bed_spacing
         field.outline_buffer_width = outline_buffer_width
+        field.bed_crops = bed_crops
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
                       field.name, row_count, row_spacing)
         self.invalidate()
