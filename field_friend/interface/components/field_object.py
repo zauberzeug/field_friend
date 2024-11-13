@@ -53,7 +53,7 @@ class FieldObject(Group):
     def update(self, active_field: Field | None) -> None:
         # TODO: now we have empty keys in our objects dict. Is this intended?
         for obj in list(self.scene.objects.values()):
-            if obj.name and (obj.name.startswith('field_') or obj.name.startswith('row_')):
+            if obj.name and obj.name.startswith(('field_', 'row_')):
                 obj.delete()
 
         if active_field is None:
@@ -78,6 +78,6 @@ class FieldObject(Group):
                     ).material('#6c541e').with_name(f'row_{row.id}_{i}')
 
             for point in row_points:
-                # TODO: fix access to row
+                # TODO: fix access to row and row_points
                 Cylinder(0.04, 0.04, 0.7).move(x=point.x, y=point.y, z=0.35).material(
                     'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)  # pylint: disable=undefined-loop-variable

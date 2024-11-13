@@ -95,7 +95,7 @@ class Operation:
         if self.edit_field_dialog:
             self.edit_field_dialog.close()
 
-    def delete_selected_field(self):
+    def _delete_selected_field(self):
         if self.system.field_provider.selected_field:
             name = self.system.field_provider.selected_field.name
             self.system.field_provider.delete_selected_field()
@@ -145,7 +145,7 @@ class Operation:
             ui.label('Are you sure you want to delete this field?')
             with ui.row():
                 ui.button('Cancel', on_click=self.delete_field_dialog.close)
-                ui.button('Delete', on_click=self.delete_selected_field).props('color=red')
+                ui.button('Delete', on_click=self._delete_selected_field, color='red')
 
         with ui.row().style('width:100%;'):
             ui.button(icon='add_box', text='Field', on_click=lambda: FieldCreator(self.system)) \

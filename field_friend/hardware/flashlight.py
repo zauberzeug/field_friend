@@ -30,8 +30,8 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
 
     async def _activation(self) -> None:
         if self.is_active:
-            # TODO: we need a useful exception here
-            raise Exception('flashlight was already "on"')  # pylint: disable=broad-exception-raised
+            self.log.debug('flashlight was already "on"')
+            return
         await self.turn_on()
         if rosys.time() - 10 > self.hot_time:  # reset hot_duration, hot lamp is some time ago
             self.hot_duration = 0
@@ -40,6 +40,7 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
 
     async def _deactivation(self) -> None:
         if not self.is_active:
+            self.log.debug('flashlight was already "off"')
             return
         await self.turn_off()
         self.is_active = False

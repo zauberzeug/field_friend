@@ -42,7 +42,7 @@ class AutomationWatcher:
         self.field_watch_active: bool = False
         self.last_robot_pose = self.odometer.prediction
 
-        self.start_time = None
+        self.start_time: float | None = None
         rosys.on_repeat(self._update_time, 0.1)
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
