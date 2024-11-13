@@ -27,9 +27,7 @@ def startup() -> None:
     system = System()
 
     interface.main_page(system)  # /
-    # interface.path_planner_page(system)  # /path
     interface.dev_page(system)  # /dev
-    interface.test_page(system)  # /test
     interface.monitor_page(system)  # /monitor
     interface.bms_page(system)  # /bms
 

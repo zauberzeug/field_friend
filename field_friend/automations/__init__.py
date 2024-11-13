@@ -6,7 +6,6 @@ from .field_provider import FieldProvider
 from .implements.implement import Implement
 from .kpi_provider import KpiProvider
 from .path_provider import Path, PathProvider
-from .path_recorder import PathRecorder
 from .plant import Plant
 from .plant_locator import PlantLocator
 from .plant_provider import PlantProvider
@@ -21,7 +20,6 @@ __all__ = [
     'KpiProvider',
     'Path',
     'PathProvider',
-    'PathRecorder',
     'PlantLocator',
     'PlantProvider',
     'Plant',
