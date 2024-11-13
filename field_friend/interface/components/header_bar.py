@@ -6,7 +6,7 @@ import rosys
 from nicegui import ui
 
 from ...hardware import FieldFriend
-from .manual_steerer_dialog import manual_steerer_dialog
+from .manual_steerer_dialog import ManualSteererDialog as manual_steerer_dialog
 
 if TYPE_CHECKING:
     from ...system import System

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import rosys
@@ -8,8 +10,8 @@ if TYPE_CHECKING:
     from ... import System
 
 
-class visualizer_object(Object3D):
-    def __init__(self, system: 'System') -> None:
+class VisualizerObject(Object3D):
+    def __init__(self, system: System) -> None:
         super().__init__('group')
         self.system = system
         self.system.path_provider.SHOW_PATH.register_ui(self.update_path)

@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-def settings(system: 'System') -> None:
+def create_settings_ui(system: System) -> None:
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.markdown('**Settings**').style('color: #6E93D6;').classes('w-full text-center')
         ui.separator()

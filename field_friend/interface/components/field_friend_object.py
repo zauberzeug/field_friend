@@ -7,7 +7,7 @@ from rosys.vision import CameraProjector, CameraProvider, camera_objects
 from ...hardware import Axis, ChainAxis, FieldFriend, Tornado
 
 
-class field_friend_object(robot_object):
+class FieldFriendObject(robot_object):
 
     def __init__(self, odometer: Odometer, camera_provider: CameraProvider,
                  field_friend: FieldFriend) -> None:

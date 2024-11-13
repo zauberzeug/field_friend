@@ -16,7 +16,7 @@ fiona.drvsupport.supported_drivers['KML'] = 'rw'
 fiona.drvsupport.supported_drivers['LIBKML'] = 'rw'
 
 
-class geodata_importer(ui.dialog):
+class GeodataImporter(ui.dialog):
     def __init__(self, field_provider: FieldProvider) -> None:
         super().__init__()
         self.field_provider = field_provider
