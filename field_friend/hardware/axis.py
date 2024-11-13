@@ -5,7 +5,6 @@ import rosys
 
 class Axis(rosys.hardware.Module, abc.ABC):
 
-    # TODO: type annotations please
     def __init__(self, *,
                  max_speed: int,
                  reference_speed: int,
