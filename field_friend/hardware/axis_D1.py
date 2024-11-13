@@ -115,7 +115,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
                 await rosys.sleep(0.1)
         return self.is_referenced
 
-    async def speed_Mode(self, speed: int):
+    async def speed_mode(self, speed: int):
         # due to some timing issues, the speed command is sent twice
         await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')
         await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')

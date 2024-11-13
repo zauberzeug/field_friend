@@ -63,9 +63,11 @@ select = [
     "RUF", # ruff
     "UP", # pyupgrade
     "PL", # pylint
+    "N", # pep8-naming
 ]
 ignore = [
     "E501", # Line too long
+    "N813", # CamelCase imported as lower_case
     "PLR0912", # Too many branches
     "PLR0913", # Too many arguments
     "PLR0915", # Too many arguments
