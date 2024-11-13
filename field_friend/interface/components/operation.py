@@ -81,13 +81,13 @@ class Operation:
         if self.system.field_provider.selected_field:
             name = self.system.field_provider.selected_field.name
             self.system.field_provider.update_field_parameters(
-                self.system.field_provider.selected_field.id,
-                parameters['name'],
-                int(parameters['row_count']),
-                float(parameters['row_spacing']),
-                float(parameters['outline_buffer_width']),
-                int(parameters['bed_count']),
-                float(parameters['bed_spacing'])
+                field_id=self.system.field_provider.selected_field.id,
+                name=parameters['name'],
+                row_count=int(parameters['row_count']),
+                row_spacing=float(parameters['row_spacing']),
+                outline_buffer_width=float(parameters['outline_buffer_width']),
+                bed_count=int(parameters['bed_count']),
+                bed_spacing=float(parameters['bed_spacing'])
             )
             ui.notify(f'Parameters of Field "{name}" has been changed')
         else:

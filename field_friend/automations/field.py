@@ -38,7 +38,7 @@ class RowSupportPoint(GeoPoint):
 
 
 class Field:
-    def __init__(self,
+    def __init__(self, *,
                  id: str,  # pylint: disable=redefined-builtin
                  name: str,
                  first_row_start: GeoPoint,

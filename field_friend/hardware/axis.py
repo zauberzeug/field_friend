@@ -6,24 +6,24 @@ import rosys
 class Axis(rosys.hardware.Module, abc.ABC):
 
     # TODO: type annotations please
-    def __init__(self,
-                 max_speed,
-                 reference_speed,
-                 min_position,
-                 max_position,
-                 axis_offset,
-                 steps_per_m,
-                 reversed_direction,
+    def __init__(self, *,
+                 max_speed: int,
+                 reference_speed: int,
+                 min_position: float,
+                 max_position: float,
+                 axis_offset: float,
+                 steps_per_m: float,
+                 reversed_direction: bool,
                  **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.max_speed: int = max_speed
-        self.reference_speed: int = reference_speed
-        self.min_position: float = min_position
-        self.max_position: float = max_position
-        self.axis_offset: float = axis_offset
-        self.steps_per_m: float = steps_per_m
-        self.reversed_direction: bool = reversed_direction
+        self.max_speed = max_speed
+        self.reference_speed = reference_speed
+        self.min_position = min_position
+        self.max_position = max_position
+        self.axis_offset = axis_offset
+        self.steps_per_m = steps_per_m
+        self.reversed_direction = reversed_direction
 
         self.steps: int = 0
         self.is_referenced: bool = False
@@ -81,7 +81,7 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
     '''The z axis simulation module is a simple example for a representation of simulated robot hardware.
     '''
 
-    def __init__(self,
+    def __init__(self, *,
                  max_speed: int = 80_000,
                  reference_speed: int = 40,
                  min_position: float = -0.12,
