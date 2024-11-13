@@ -3,7 +3,7 @@ import abc
 import rosys
 
 from .axis import Axis, AxisSimulation
-from .axis_D1 import AxisD1
+from .axis_d1 import AxisD1
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
 from .double_wheels import DoubleWheelsHardware
 from .external_mower import Mower, MowerHardware, MowerSimulation
