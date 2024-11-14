@@ -1,5 +1,3 @@
-from typing import Optional
-
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -7,7 +5,7 @@ from rosys.helpers import remove_indentation
 class LedEyesHardware(rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  name: str = 'led_eyes',
                  eyes_pin: int = 25,
                  ) -> None:

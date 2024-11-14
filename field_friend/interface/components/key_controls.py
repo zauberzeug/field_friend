@@ -1,15 +1,17 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import rosys
 from nicegui.events import KeyEventArguments
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class KeyControls(rosys.driving.keyboard_control):
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         super().__init__(system.steerer)
         self.field_friend = system.field_friend
         self.wheels = system.field_friend.wheels

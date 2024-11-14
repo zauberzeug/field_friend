@@ -1,7 +1,6 @@
-import asyncio
 import logging
 from collections import deque
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
@@ -11,7 +10,7 @@ from ...hardware import ChainAxis
 from .implement import Implement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class ImplementException(Exception):
@@ -39,14 +38,13 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.with_chopping: bool = False
         self.chop_if_no_crops: bool = False
 
-        self.start_time: Optional[float] = None
-        self.last_pose: Optional[Pose] = None
+        self.start_time: float | None = None
+        self.last_pose: Pose | None = None
         self.driven_distance: float = 0.0
         self.crops_to_handle: dict[str, Point3d] = {}
         self.weeds_to_handle: dict[str, Point3d] = {}
         self.last_punches: deque[Point3d] = deque(maxlen=5)
         self.next_punch_y_position: float = 0
-
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -64,7 +62,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await super().finish()
 
     async def activate(self):
-        await self.system.field_friend.flashlight.turn_on()
+        if self.system.field_friend.flashlight:
+            await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
         await rosys.sleep(3)
         self.system.plant_locator.resume()
@@ -75,7 +74,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def deactivate(self):
         await super().deactivate()
         self.system.timelapse_recorder.camera = None
-        await self.system.field_friend.flashlight.turn_off()
+        if self.system.field_friend.flashlight:
+            await self.system.field_friend.flashlight.turn_off()
         self.system.plant_locator.pause()
 
     async def start_workflow(self) -> None:
@@ -90,7 +90,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
-    async def _check_hardware_ready(self) -> bool:
+    # TODO: can we get rid of the pylint disable?
+    async def _check_hardware_ready(self) -> bool:  # pylint: disable=too-many-return-statements
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active, aborting', 'negative')
             self.log.error('E-Stop is active, aborting')
@@ -99,10 +100,10 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         if not camera:
             rosys.notify('no camera connected')
             return False
-        if camera.calibration is None:
+        if hasattr(camera, 'calibration') and camera.calibration is None:
             rosys.notify('camera has no calibration')
             return False
-        if self.system.field_friend.y_axis.alarm:
+        if self.system.field_friend.y_axis and self.system.field_friend.y_axis.alarm:
             rosys.notify('Y-Axis is in alarm, aborting', 'negative')
             self.log.error('Y-Axis is in alarm, aborting')
             return False
@@ -119,7 +120,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def _has_plants_to_handle(self) -> bool:
         relative_crop_positions = {
-            c.id: Point3d.from_point(self.system.odometer.prediction.relative_point(c.position))
+            c.id: Point3d.from_point(self.system.odometer.prediction.relative_point(c.position.projection()))
             for c in self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point_3d())
             if self.cultivated_crop is None or c.type == self.cultivated_crop
         }
@@ -132,7 +133,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.crops_to_handle = sorted_crops
 
         relative_weed_positions = {
-            w.id: Point3d.from_point(self.system.odometer.prediction.relative_point(w.position))
+            w.id: Point3d.from_point(self.system.odometer.prediction.relative_point(w.position.projection()))
             for w in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point_3d())
             if w.type in self.relevant_weeds
         }
@@ -142,14 +143,16 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         }
 
         # keep crops safe by pushing weeds away so the implement does not accidentally hit a crop
-        for crop, crop_position in sorted_crops.items():
+        for _, crop_position in sorted_crops.items():
             for weed, weed_position in upcoming_weed_positions.items():
                 offset = self.system.field_friend.DRILL_RADIUS + \
                     self.crop_safety_distance - crop_position.distance(weed_position)
                 if offset > 0:
-                    safe_weed_position = Point3d.from_point(Point3d.projection(weed_position).polar(
-                        offset, Point3d.projection(crop_position).direction(weed_position)))
-                    upcoming_weed_positions[weed] = safe_weed_position
+                    # TODO: check if this is correct
+                    weed_position_2d = weed_position.projection()
+                    crop_position_2d = crop_position.projection()
+                    safe_weed_position_2d = weed_position_2d.polar(offset, crop_position_2d.direction(weed_position_2d))
+                    upcoming_weed_positions[weed] = Point3d.from_point(safe_weed_position_2d)
                     # self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
                     #               f'by {offset} to safe {crop} at {crop_position}')
 
@@ -157,8 +160,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds
         return False
-
-
 
     def backup(self) -> dict:
         return {
@@ -182,8 +183,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
-
-    def settings_ui(self):
+    def settings_ui(self) -> None:
         super().settings_ui()
         ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \

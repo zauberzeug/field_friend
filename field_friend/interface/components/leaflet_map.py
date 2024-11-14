@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -6,14 +7,15 @@ from nicegui import app, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
 
 from ...localization.geo_point import GeoPoint
+from ...localization.gnss_simulation import GnssSimulation
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-class leaflet_map:
-    def __init__(self, system: 'System', draw_tools: bool) -> None:
+class LeafletMap:
+    def __init__(self, system: System, draw_tools: bool) -> None:
         self.log = logging.getLogger('field_friend.leaflet_map')
         self.system = system
         self.field_provider = system.field_provider
@@ -63,12 +65,10 @@ class leaflet_map:
             .tooltip('Switch to satellite view')
         ui.button(icon='my_location', on_click=self.zoom_to_robot).props('dense flat') \
             .tooltip('Center map on robot position').classes('ml-0')
-        ui.button(on_click=self.zoom_to_field) \
-            .props('icon=polyline dense flat') \
+        ui.button(icon='polyline', on_click=self.zoom_to_field).props('dense flat') \
             .tooltip('center map on field boundaries').classes('ml-0')
         ui.button('Update reference', on_click=self.gnss.update_reference).props('outline color=warning') \
-            .tooltip('Set current position as geo reference and restart the system').classes('ml-auto') \
-            .style('display: block; margin-top:auto; margin-bottom: auto;')
+            .tooltip('Set current position as geo reference and restart the system').classes('ml-auto')
 
     def abort_point_drawing(self, dialog) -> None:
         self.on_dialog_close()
@@ -92,10 +92,13 @@ class leaflet_map:
                                                             args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
+        # TODO: where does the dialog come from?
         if dialog:
             self.on_dialog_close()
             dialog.close()
-            self.gnss.relocate(position)
+            # TODO why can we only relocate in simulation?
+            if isinstance(self.gnss, GnssSimulation):
+                self.gnss.relocate(position)
         self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
@@ -106,7 +109,8 @@ class leaflet_map:
             self.log.warning('No GNSS position available, could not zoom to robot')
             return
         self.m.set_center(self.gnss.current.location.tuple)
-        self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
+        if self.current_basemap is not None:
+            self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
     def zoom_to_field(self) -> None:
         field = self.field_provider.selected_field if self.field_provider.selected_field else None
@@ -115,7 +119,8 @@ class leaflet_map:
         coords = field.outline_as_tuples
         center = sum(lat for lat, _ in coords) / len(coords), sum(lon for _, lon in coords) / len(coords)
         self.m.set_center(center)
-        self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)  # TODO use field boundaries to calculate zoom
+        if self.current_basemap is not None:
+            self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)  # TODO use field boundaries to calculate zoom
 
     def toggle_basemap(self) -> None:
         use_satellite = app.storage.user.get('use_satellite', False)

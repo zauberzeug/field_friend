@@ -3,18 +3,31 @@ from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
 from ...automations import Puncher
-from ...hardware import (Axis, ChainAxis, FieldFriend, FieldFriendHardware, Flashlight, FlashlightPWM, FlashlightPWMV2,
-                         FlashlightV2, Mower, MowerHardware, MowerSimulation, Tornado, YAxisCanOpenHardware,
-                         ZAxisCanOpenHardware)
+from ...hardware import (
+    Axis,
+    ChainAxis,
+    FieldFriend,
+    FieldFriendHardware,
+    FlashlightPWM,
+    FlashlightPWMHardwareV2,
+    FlashlightPWMV2,
+    FlashlightV2,
+    Mower,
+    MowerHardware,
+    MowerSimulation,
+    Tornado,
+    YAxisCanOpenHardware,
+    ZAxisCanOpenHardware,
+)
 from .confirm_dialog import ConfirmDialog as confirm_dialog
 from .status_bulb import StatusBulb as status_bulb
 
 
-def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
+def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
     with ui.card().style('background-color: #3E63A6; color: white;'), ui.row():
         with ui.column().classes('items-stretch'):
             if isinstance(field_friend, FieldFriendHardware):
-                ui.markdown('**Robot Brain Control**')
+                ui.label('Robot Brain Control').classes('font-bold')
                 with ui.row().classes('items-center'):
                     ui.label('EN3').classes('mr-auto')
                     ui.button('OFF', on_click=lambda: automator.start(field_friend.robot_brain.send('en3.off()')))
@@ -32,10 +45,11 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                             field_friend.robot_brain.send(f'{field_friend.battery_control.name}_reset.on()')))
         if field_friend.flashlight is not None:
             with ui.column():
-                ui.markdown('**Flashlight**')
+                ui.label('Flashlight').classes('font-bold')
 
-                if isinstance(field_friend.flashlight, Flashlight):
-                    async def toggle_flashlight(e: ValueChangeEventArguments) -> None:
+                async def toggle_flashlight(e: ValueChangeEventArguments) -> None:
+                    assert field_friend.flashlight is not None
+                    if not isinstance(field_friend.flashlight, FlashlightV2):
                         if e.value == field_friend.flashlight.is_active:
                             return
                         if e.value:
@@ -45,11 +59,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                             await field_friend.flashlight.deactivate()
                             rosys.notify('Flashlight turned off')
 
-                    ui.switch(
-                        'On for 10s', on_change=toggle_flashlight).bind_value_from(
-                        field_friend.flashlight, 'is_active')
-                elif isinstance(field_friend.flashlight, FlashlightV2) or isinstance(field_friend.flashlight, FlashlightPWM) or isinstance(field_friend.flashlight, FlashlightPWMV2):
-                    async def toggle_flashlight(e: ValueChangeEventArguments) -> None:
+                    elif isinstance(field_friend.flashlight, FlashlightV2 | FlashlightPWM | FlashlightPWMV2):
                         if e.value:
                             await field_friend.flashlight.turn_on()
                             rosys.notify('Flashlight turned on')
@@ -57,16 +67,20 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                             await field_friend.flashlight.turn_off()
                             rosys.notify('Flashlight turned off')
 
-                ui.switch('Turn On/Off', on_change=toggle_flashlight)
+                if not isinstance(field_friend.flashlight, FlashlightV2):
+                    ui.switch('On for 10s', on_change=toggle_flashlight) \
+                        .bind_value_from(field_friend.flashlight, 'is_active')
+                else:
+                    ui.switch('Turn On/Off', on_change=toggle_flashlight)
 
-                if isinstance(field_friend.flashlight, FlashlightPWMV2):
-                    ui.slider(min=0, max=1, step=0.01, on_change=field_friend.flashlight.set_duty_cycle).bind_value(
-                        field_friend.flashlight, 'duty_cycle')
+                if isinstance(field_friend.flashlight, FlashlightPWMHardwareV2):
+                    ui.slider(min=0, max=1, step=0.01, on_change=field_friend.flashlight.set_duty_cycle) \
+                        .bind_value(field_friend.flashlight, 'duty_cycle')
 
         if field_friend.y_axis is not None:
             if isinstance(field_friend.y_axis, Axis):
                 with ui.column():
-                    ui.markdown('**Y-Axis**')
+                    ui.label('Y-Axis').classes('font-bold')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
                     ui.button('Move to min', on_click=lambda: automator.start(
                         field_friend.y_axis.move_to(field_friend.y_axis.min_position)))
@@ -78,7 +92,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.y_axis.reset_fault()))
             elif isinstance(field_friend.y_axis, ChainAxis):
                 with ui.column():
-                    ui.markdown('**Chain-Axis**')
+                    ui.label('Chain-Axis').classes('font-bold')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.y_axis.try_reference()))
                     ui.button('Reset', on_click=lambda: automator.start(field_friend.y_axis.reset()))
                     ui.button('Return to r ref', on_click=lambda: automator.start(
@@ -91,7 +105,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
         if field_friend.z_axis is not None:
             if isinstance(field_friend.z_axis, Axis):
                 with ui.column():
-                    ui.markdown('**Z-Axis**')
+                    ui.label('Z-Axis').classes('font-bold')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
                     ui.button('Return to reference', on_click=lambda: automator.start(
                         field_friend.z_axis.return_to_reference()))
@@ -101,7 +115,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                         ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.z_axis.reset_fault()))
             elif isinstance(field_friend.z_axis, Tornado):
                 with ui.column():
-                    ui.markdown('**Z-Axis**')
+                    ui.label('Z-Axis').classes('font-bold')
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
                     ui.button('Reference Z', on_click=lambda: automator.start(field_friend.z_axis.try_reference_z()))
                     ui.button('Reference Turn', on_click=lambda: automator.start(
@@ -113,7 +127,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
 
         if field_friend.z_axis is not None and field_friend.y_axis is not None:
             with ui.column():
-                ui.markdown('**Punch control**')
+                ui.label('Punch control').classes('font-bold')
                 ui.button('Reference all', on_click=lambda: automator.start(puncher.try_home()))
                 ui.button('clear view', on_click=lambda: automator.start(puncher.clear_view()))
                 if isinstance(field_friend.y_axis, ChainAxis):
@@ -146,7 +160,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
 
         if isinstance(field_friend.mower, Mower):
             with ui.column():
-                ui.markdown('**Mower**')
+                ui.label('Mower').classes('font-bold')
                 with ui.row():
                     status_bulb().bind_value_from(field_friend.mower, 'm0_error', lambda m0_error: not m0_error)
                     ui.label('m0')
@@ -164,6 +178,7 @@ def hardware_control(field_friend: FieldFriend, automator: rosys.automation.Auto
                     ui.button('m2 Error', on_click=field_friend.mower.set_m2_error)
                 elif isinstance(field_friend.mower, MowerHardware):
                     async def turn_on_motor():
+                        assert field_friend.mower is not None
                         if await confirm_dialog('Are you sure to turn on the mower?', delay=2.0):
                             automator.start(field_friend.mower.turn_on())
                     ui.button('Mower ON', on_click=turn_on_motor)

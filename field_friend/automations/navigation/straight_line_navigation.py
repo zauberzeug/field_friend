@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from random import randint
 from typing import TYPE_CHECKING, Any
 
@@ -9,13 +11,13 @@ from ...automations.implements.implement import Implement
 from .navigation import Navigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class StraightLineNavigation(Navigation):
     LENGTH: float = 2.0
 
-    def __init__(self, system: 'System', tool: Implement) -> None:
+    def __init__(self, system: System, tool: Implement) -> None:
         super().__init__(system, tool)
         self.detector = system.detector
         self.length = self.LENGTH
@@ -49,6 +51,7 @@ class StraightLineNavigation(Navigation):
         return end_pose.relative_point(self.odometer.prediction.point).x > 0
 
     def create_simulation(self):
+        assert isinstance(self.detector, rosys.vision.DetectorSimulation)
         crop_distance = 0.2
         for i in range(0, round(self.length / crop_distance)):
             p = self.odometer.prediction.point.polar(crop_distance*i,

@@ -1,5 +1,6 @@
+# pylint: disable=broad-exception-raised
+# TODO: we need a useful exception here
 import abc
-from typing import Optional
 
 import rosys
 from rosys.helpers import remove_indentation
@@ -50,7 +51,7 @@ class Tornado(rosys.hardware.Module, abc.ABC):
             raise RuntimeError(f'zaxis depth is out of range, min: {self.min_position}, given: {position}')
 
     @abc.abstractmethod
-    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
+    async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         if not self.z_is_referenced:
             raise RuntimeError('zaxis is not referenced, reference first')
 
@@ -97,8 +98,8 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'tornado',
                  can: rosys.hardware.CanHardware,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
-                 min_position,
+                 expander: rosys.hardware.ExpanderHardware | None,
+                 min_position: float,
                  z_can_address: int = 0x400,
                  turn_can_address: int = 0x500,
                  m_per_tick: float = 0.01,
@@ -146,17 +147,17 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {name}_motor_turn.limits({self.turn_speed_limit}, {self.current_limit})
             {name}_motor_z.reversed = {'true' if is_z_reversed else 'false'}
             {name}_motor_turn.reversed = {'true' if is_turn_reversed else 'false'}
-            {name}_end_top = {expander.name + "." if end_stops_on_expander or end_top_pin_expander and expander else ""}Input({end_top_pin})
+            {name}_end_top = {expander.name + "." if (end_stops_on_expander or end_top_pin_expander) and expander else ""}Input({end_top_pin})
             {name}_end_top.inverted = true
-            {name}_end_bottom = {expander.name + "." if end_stops_on_expander or end_bottom_pin_expander and expander else ""}Input({end_bottom_pin})
+            {name}_end_bottom = {expander.name + "." if (end_stops_on_expander or end_bottom_pin_expander) and expander else ""}Input({end_bottom_pin})
             {name}_end_bottom.inverted = true
-            {name}_ref_motor = {expander.name + "." if end_stops_on_expander or ref_motor_pin_expander and expander else ""}Input({ref_motor_pin})
+            {name}_ref_motor = {expander.name + "." if (end_stops_on_expander or ref_motor_pin_expander) and expander else ""}Input({ref_motor_pin})
             {name}_ref_motor.inverted = true
-            {name}_ref_gear = {expander.name + "." if end_stops_on_expander or ref_gear_pin_expander and expander else ""}Input({ref_gear_pin})
+            {name}_ref_gear = {expander.name + "." if (end_stops_on_expander or ref_gear_pin_expander) and expander else ""}Input({ref_gear_pin})
             {name}_ref_gear.inverted = false
-            {name}_ref_knife_stop = {expander.name + "." if end_stops_on_expander or ref_knife_stop_pin_expander and expander else ""}Input({ref_knife_stop_pin})
+            {name}_ref_knife_stop = {expander.name + "." if (end_stops_on_expander or ref_knife_stop_pin_expander) and expander else ""}Input({ref_knife_stop_pin})
             {name}_ref_knife_stop.inverted = false
-            {name}_ref_knife_ground = {expander.name + "." if end_stops_on_expander or ref_knife_ground_pin_expander and expander else ""}Input({ref_knife_ground_pin})
+            {name}_ref_knife_ground = {expander.name + "." if (end_stops_on_expander or ref_knife_ground_pin_expander) and expander else ""}Input({ref_knife_ground_pin})
             {name}_ref_knife_ground.inverted = true
 
             # TODO: remove when lizard issue 66 is fixed.
@@ -217,11 +218,9 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         )
 
     async def stop_z(self) -> None:
-        await super().stop_z()
         await self.robot_brain.send(f'{self.name}_z.speed(0, 0)')
 
     async def stop_turn(self) -> None:
-        await super().stop_turn()
         await self.robot_brain.send(f'{self.name}_motor_turn.speed(0)')
 
     async def move_to(self, position: float) -> None:
@@ -236,7 +235,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.1)
         self.log.info(f'z axis moved to {position}')
 
-    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
+    async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         try:
             await super().move_down_until_reference()
         except RuntimeError as e:
@@ -284,7 +283,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         try:
             await super().turn_by(turns)
         except RuntimeError as e:
-            raise Exception(e)
+            raise Exception(e) from e
         target = self.position_turn/360 + turns
         await self.robot_brain.send(f'{self.name}_motor_turn.position({target});')
         while not target - 0.01 < self.position_turn/360 < target + 0.01:
@@ -298,7 +297,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         target_angle = angle - self.last_angle
         if target_angle == 0:
             return
-        elif target_angle < 0:
+        if target_angle < 0:
             target_angle = 360 - self.last_angle + angle
         target = (self.position_turn - target_angle)/360
         await self.robot_brain.send(f'{self.name}_motor_turn.position({target});')
@@ -441,15 +440,15 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.z_error = int(words.pop(0))
             if self.turn_error == 1 or self.z_error == 1:
                 self.motor_error = True
-                rosys.notify('warning', 'Tornado Motor Error')
+                rosys.notify('Tornado Motor Error', 'warning')
 
-    def reset_motors(self) -> None:
+    async def reset_motors(self) -> None:
         if not self.motor_error:
             return
         if self.z_error == 1:
-            self.robot_brain.send(f'{self.name}_motor_z.reset_motor()')
+            await self.robot_brain.send(f'{self.name}_motor_z.reset_motor()')
         if self.turn_error == 1:
-            self.robot_brain.send(f'{self.name}_motor_turn.reset_motor()')
+            await self.robot_brain.send(f'{self.name}_motor_turn.reset_motor()')
         self.motor_error = False
 
 
@@ -469,10 +468,10 @@ class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
         super().__init__(min_position=min_position)
 
     async def stop_z(self) -> None:
-        await super().stop_z()
+        self.log.debug('stopping tornado z')
 
     async def stop_turn(self) -> None:
-        await super().stop_turn()
+        self.log.debug('stopping tornado turn')
 
     async def move_to(self, position: float) -> None:
         try:
@@ -481,32 +480,25 @@ class TornadoSimulation(Tornado, rosys.hardware.ModuleSimulation):
             raise Exception(e) from e
         self.position_z = position
 
-    async def move_down_until_reference(self, *, min_position: Optional[float] = None) -> None:
+    async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         try:
             await super().move_down_until_reference()
         except RuntimeError as e:
             raise Exception(e) from e
         self.position_z = self.min_position
 
-    async def turn_by(self, angle: float) -> None:
+    async def turn_by(self, turns: float) -> None:
         try:
-            await super().turn_by(angle)
+            await super().turn_by(turns)
         except RuntimeError as e:
             raise Exception(e) from e
-        self.position_turn = angle
+        self.position_turn = turns
 
     async def turn_knifes_to(self, angle: float) -> None:
         try:
             await super().turn_knifes_to(angle)
         except RuntimeError as e:
             raise Exception(e) from e
-        self.position_turn = angle
-
-    async def turn_knifes_to(self, angle: float) -> None:
-        try:
-            await super().turn_knifes_to(angle)
-        except RuntimeError as e:
-            raise Exception(e)
         self.position_turn = angle
 
     async def try_reference_z(self) -> bool:

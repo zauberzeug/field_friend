@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
@@ -8,12 +10,12 @@ from .key_controls import KeyControls
 from .support_point_dialog import SupportPointDialog
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-class operation:
+class Operation:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.operation')
         self.system = system
         self.field_provider = system.field_provider
@@ -22,6 +24,8 @@ class operation:
         self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
         self.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
         self.selected_beds: set[int] = set()
+        self.delete_field_dialog: ui.dialog | None = None
+        self.edit_field_dialog: ui.dialog | None = None
 
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
@@ -30,7 +34,7 @@ class operation:
                     with ui.row():
                         ui.label('Settings').classes('text-xl')
                     with ui.expansion('Fields').classes('w-full').bind_value(app.storage.user, 'show_fields_settings'):
-                        self.field_setting()
+                        self.field_setting()  # type: ignore
                     with ui.expansion('Navigation').classes('w-full').bind_value(app.storage.user, 'show_navigation_settings'):
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
@@ -42,7 +46,7 @@ class operation:
 
         with activities:
             self.navigation_selection = ui.select(
-                [key for key in self.system.navigation_strategies.keys()],
+                list(self.system.navigation_strategies.keys()),
                 on_change=self.handle_navigation_changed,
                 label='Navigation'
             ).classes('w-32') \
@@ -51,7 +55,7 @@ class operation:
             self.navigation_selection.value = self.system.current_navigation.name
 
             self.implement_selection = ui.select(
-                [key for key in self.system.implements.keys()],
+                list(self.system.implements.keys()),
                 on_change=self.handle_implement_changed,
                 label='Implement') \
                 .classes('w-32') \
@@ -77,27 +81,29 @@ class operation:
         if self.system.field_provider.selected_field:
             name = self.system.field_provider.selected_field.name
             self.system.field_provider.update_field_parameters(
-                self.system.field_provider.selected_field.id,
-                parameters['name'],
-                int(parameters['row_count']),
-                float(parameters['row_spacing']),
-                float(parameters['outline_buffer_width']),
-                int(parameters['bed_count']),
-                float(parameters['bed_spacing'])
+                field_id=self.system.field_provider.selected_field.id,
+                name=parameters['name'],
+                row_count=int(parameters['row_count']),
+                row_spacing=float(parameters['row_spacing']),
+                outline_buffer_width=float(parameters['outline_buffer_width']),
+                bed_count=int(parameters['bed_count']),
+                bed_spacing=float(parameters['bed_spacing'])
             )
             ui.notify(f'Parameters of Field "{name}" has been changed')
         else:
             ui.notify('No field selected', color='warning')
-        self.edit_field_dialog.close()
+        if self.edit_field_dialog:
+            self.edit_field_dialog.close()
 
-    def delete_selected_field(self):
+    def _delete_selected_field(self):
         if self.system.field_provider.selected_field:
             name = self.system.field_provider.selected_field.name
             self.system.field_provider.delete_selected_field()
             ui.notify(f'Field "{name}" has been deleted')
         else:
             ui.notify('No field selected', color='warning')
-        self.delete_field_dialog.close()
+        if self.delete_field_dialog:
+            self.delete_field_dialog.close()
 
     @ui.refreshable
     def field_setting(self) -> None:
@@ -139,7 +145,7 @@ class operation:
             ui.label('Are you sure you want to delete this field?')
             with ui.row():
                 ui.button('Cancel', on_click=self.delete_field_dialog.close)
-                ui.button('Delete', on_click=self.delete_selected_field).props('color=red')
+                ui.button('Delete', on_click=self._delete_selected_field, color='red')
 
         with ui.row().style('width:100%;'):
             ui.button(icon='add_box', text='Field', on_click=lambda: FieldCreator(self.system)) \

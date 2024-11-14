@@ -1,5 +1,5 @@
-from typing import Optional
-
+# pylint: disable=broad-exception-raised
+# TODO: we need a useful exception here
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -11,9 +11,9 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'zaxis',
-                 expander: Optional[rosys.hardware.ExpanderHardware],
-                 max_speed: float = 60_000,
-                 reference_speed: float = 20_000,
+                 expander: rosys.hardware.ExpanderHardware | None,
+                 max_speed: int = 60_000,
+                 reference_speed: int = 20_000,
                  min_position: float = -0.197,
                  max_position: float = 0.00,
                  axis_offset: float = 0.0,
@@ -61,7 +61,6 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         )
 
     async def stop(self) -> None:
-        await super().stop()
         await self.robot_brain.send(f'{self.name}.stop()')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
@@ -84,7 +83,7 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         while not self.idle and not self.alarm:
             await rosys.sleep(0.2)
         if self.alarm:
-            self.log.info("zaxis alarm")
+            self.log.info('zaxis alarm')
             return False
         return True
 

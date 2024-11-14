@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -5,15 +7,14 @@ from nicegui.elements.scene_objects import Box, Curve, Cylinder, Group
 from rosys.geometry import Spline
 
 from ...automations import Field, FieldProvider
-from ...automations.navigation import FieldNavigation
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-class field_object(Group):
+class FieldObject(Group):
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         super().__init__()
         self.system = system
         self.field_provider: FieldProvider = system.field_provider
@@ -50,31 +51,33 @@ class field_object(Group):
         self.update(self.system.field_provider.selected_field)
 
     def update(self, active_field: Field | None) -> None:
-        [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('field_')]
-        [obj.delete() for obj in list(self.scene.objects.values()) if obj.name and obj.name.startswith('row_')]
+        # TODO: now we have empty keys in our objects dict. Is this intended?
+        for obj in list(self.scene.objects.values()):
+            if obj.name and obj.name.startswith(('field_', 'row_')):
+                obj.delete()
+
         if active_field is None:
             return
         outline = [point.cartesian().tuple for point in active_field.outline]
         if len(outline) > 1:  # Make sure there are at least two points to form a segment
-            for i in range(len(outline)):
-                start = outline[i]
+            for i, start in enumerate(outline):
                 end = outline[(i + 1) % len(outline)]  # Loop back to the first point
                 self.create_fence(start, end)
 
             for row in active_field.rows:
                 if len(row.points) == 1:
                     continue
-                else:
-                    row_points = row.cartesian()
-                    for i in range(len(row_points) - 1):
-                        spline = Spline.from_points(row_points[i], row_points[i + 1])
-                        Curve(
-                            [spline.start.x, spline.start.y, 0],
-                            [spline.control1.x, spline.control1.y, 0],
-                            [spline.control2.x, spline.control2.y, 0],
-                            [spline.end.x, spline.end.y, 0],
-                        ).material('#6c541e').with_name(f'row_{row.id}_{i}')
+                row_points = row.cartesian()
+                for i in range(len(row_points) - 1):
+                    spline = Spline.from_points(row_points[i], row_points[i + 1])
+                    Curve(
+                        [spline.start.x, spline.start.y, 0],
+                        [spline.control1.x, spline.control1.y, 0],
+                        [spline.control2.x, spline.control2.y, 0],
+                        [spline.end.x, spline.end.y, 0],
+                    ).material('#6c541e').with_name(f'row_{row.id}_{i}')
 
             for point in row_points:
+                # TODO: fix access to row and row_points
                 Cylinder(0.04, 0.04, 0.7).move(x=point.x, y=point.y, z=0.35).material(
-                    'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)
+                    'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)  # pylint: disable=undefined-loop-variable

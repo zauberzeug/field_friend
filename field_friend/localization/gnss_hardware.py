@@ -1,5 +1,6 @@
+# pylint: disable-all
+# TODO: this will be refactored
 import datetime
-from typing import Optional
 
 import pynmea2
 import rosys
@@ -12,7 +13,7 @@ from .gnss import GeoPoint, Gnss, GNSSRecord
 
 class GnssHardware(Gnss):
     PORT = '/dev/cu.usbmodem36307295'
-    TYPES_NEEDED = {'GGA', 'GNS', 'HDT'}
+    TYPES_NEEDED = ('GGA', 'GNS', 'HDT')
 
     def __init__(self, odometer: Odometer, antenna_offset: float) -> None:
         super().__init__(odometer, antenna_offset)
@@ -45,7 +46,7 @@ class GnssHardware(Gnss):
             self.device = None
         self.log.info(f'Connected to GNSS device "{self.device}"')
 
-    async def _read(self) -> Optional[str]:
+    async def _read(self) -> str | None:
         if self.ser is None:
             self.log.debug('GNSS device not connected')
             return None
@@ -87,7 +88,7 @@ class GnssHardware(Gnss):
                     if msg.sentence_type == 'GNS' and getattr(msg, 'mode_indicator', None):
                         if isinstance(msg.timestamp, datetime.time):
                             dt = datetime.datetime.combine(datetime.date.today(), msg.timestamp)
-                            dt.replace(tzinfo=datetime.timezone.utc)
+                            dt.replace(tzinfo=datetime.UTC)
                             data['timestamp'] = dt.timestamp()
                         else:
                             data['timestamp'] = msg.timestamp

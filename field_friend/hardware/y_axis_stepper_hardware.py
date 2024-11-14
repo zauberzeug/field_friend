@@ -1,5 +1,5 @@
-from typing import Optional
-
+# pylint: disable=duplicate-code
+# TODO: refactor this and z_axis_stepper_hardware.py
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -11,7 +11,7 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'yaxis_tornado',
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  max_speed: int = 80_000,
                  reference_speed: int = 15_000,
                  min_position: float = -0.12,
@@ -34,7 +34,7 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
             {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
-            {name}_alarm.inverted = {str(alarm_inverted).lower()} 
+            {name}_alarm.inverted = {str(alarm_inverted).lower()}
             {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
             {name}_end_l.inverted = {str(end_stops_inverted).lower()}
             {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
@@ -61,7 +61,6 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
-        await super().stop()
         await self.robot_brain.send(f'{self.name}.stop()')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
@@ -70,15 +69,15 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         try:
             await super().move_to(position, speed)
         except RuntimeError as error:
-            self.log.info(
-                f'could not move yaxis to {position} because of {error}')
-            raise Exception(
-                f'could not move yaxis to {position} because of {error}')
+            self.log.info(f'could not move yaxis to {position} because of {error}')
+            # TODO: we need a useful exception here
+            raise Exception(  # pylint: disable=broad-exception-raised
+                f'could not move yaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
         await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 250000);')
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
-            raise Exception
+            raise Exception  # pylint: disable=broad-exception-raised
 
     async def check_idle_or_alarm(self) -> bool:
         while not self.idle and not self.alarm:

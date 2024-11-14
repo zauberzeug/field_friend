@@ -1,6 +1,8 @@
-import logging
+# pylint: disable=no-member
+# TODO: how to get better type checking for cv2?
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Self, Sequence
+from typing import Self
 
 import cv2
 import numpy as np
@@ -31,7 +33,8 @@ class Contour:
         shape_similarity = cv2.matchShapes(self.points, ellipse_contour, cv2.CONTOURS_MATCH_I3, 0.0)
         return shape_similarity < shape_threshold
 
-    def fit_ellipse(self) -> tuple[Sequence[float], Sequence[int], float]:
+    # TODO: return type was tuple[Sequence[float], Sequence[int], float] <- do we now break things with the new one
+    def fit_ellipse(self) -> tuple[Sequence[float], Sequence[float], float]:
         return cv2.fitEllipse(self.points)
 
     def contains(self, x: float, y: float) -> bool:
@@ -91,7 +94,8 @@ class Network:
         return network
 
     def try_refine(self, dot: Dot, *, tolerance: float = 0) -> None:
-        for dx in np.arange(0, tolerance + 1, 10):
+        # TODO: can we get rid of the pylint disable? -> no, we live with it, but maybe document it?
+        for dx in np.arange(0, tolerance + 1, 10):  # pylint: disable=too-many-nested-blocks
             for dy in np.arange(0, tolerance + 1, 10):
                 for sign_x in [-1, 1] if dx else [0]:
                     for sign_y in [-1, 1] if dy else [0]:

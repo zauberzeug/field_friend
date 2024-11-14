@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import odrive
-import odrive.enums as enums
 import inspect
-import time
 import sys
+import time
+
+import odrive
+import odrive.enums as enums  # noqa: PLR0402
 
 odrv0 = odrive.find_any()
 
@@ -84,7 +85,6 @@ except:
 finally:
     time.sleep(1.0)
     odrv0 = odrive.find_any()
-
 
 
 print('- Calibration axis 0...')

@@ -1,9 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import rosys
-
-from ..localization import GeoPoint
 
 
 @dataclass(slots=True, kw_only=True)

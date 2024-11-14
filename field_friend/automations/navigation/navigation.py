@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import logging
 from typing import TYPE_CHECKING, Any
@@ -6,10 +8,10 @@ import numpy as np
 import rosys
 from nicegui import ui
 
-from ..implements import Implement
+from ..implements.implement import Implement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class WorkflowException(Exception):
@@ -21,7 +23,7 @@ class Navigation(rosys.persistence.PersistentModule):
     DEFAULT_DRIVE_DISTANCE: float = 0.02
     LINEAR_SPEED_LIMIT: float = 0.13
 
-    def __init__(self, system: 'System', implement: Implement) -> None:
+    def __init__(self, system: System, implement: Implement) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.navigation')
         self.driver = system.driver
