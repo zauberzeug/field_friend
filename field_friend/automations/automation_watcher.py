@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import rosys
 from rosys.geometry import Pose
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
-from field_friend.localization import GeoPoint
+from ..localization import GeoPoint
 
 if TYPE_CHECKING:
-    from system import System
+    from ..system import System
 
 DEFAULT_RESUME_DELAY = 1.0
 RESET_POSE_DISTANCE = 1.0
@@ -18,7 +20,7 @@ RESET_POSE_DISTANCE = 1.0
 
 class AutomationWatcher:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.automation_watcher')
 
         self.automator = system.automator
@@ -32,7 +34,7 @@ class AutomationWatcher:
         self.incidence_time: float = 0.0
         self.incidence_pose: Pose = Pose()
         self.resume_delay: float = DEFAULT_RESUME_DELAY
-        self.field_polygon: Optional[ShapelyPolygon] = None
+        self.field_polygon: ShapelyPolygon | None = None
         self.kpi_provider = system.kpi_provider
 
         self.bumper_watch_active: bool = False
@@ -40,7 +42,7 @@ class AutomationWatcher:
         self.field_watch_active: bool = False
         self.last_robot_pose = self.odometer.prediction
 
-        self.start_time = None
+        self.start_time: float | None = None
         rosys.on_repeat(self._update_time, 0.1)
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
@@ -84,8 +86,10 @@ class AutomationWatcher:
 
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
+        # TODO: what to do if we don't have bumpers?
+        assert self.field_friend.bumper is not None
         bumper_condition = not bool(self.field_friend.bumper.active_bumpers) if self.bumper_watch_active else True
-        gnss_condition = (self.gnss.current is not None and ('R' in self.gnss.current.mode or self.gnss.current.mode == "SSSS")) \
+        gnss_condition = (self.gnss.current is not None and ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS')) \
             if self.gnss_watch_active else True
 
         # Enable automator only if all relevant conditions are True

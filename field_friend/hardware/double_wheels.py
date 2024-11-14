@@ -82,17 +82,17 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
         if self.odrive_version == 6:
             self.l0_error = int(words.pop(0))
             if self.l0_error == 1:
-                rosys.notify('warning' 'Left Back Motor Error')
+                rosys.notify('Left Back Motor Error', 'warning')
                 self.motor_error = True
             self.r0_error = int(words.pop(0))
             if self.r0_error == 1:
-                rosys.notify('warning' 'Right Back Motor Error')
+                rosys.notify('Right Back Motor Error', 'warning')
                 self.motor_error = True
             self.l1_error = int(words.pop(0))
             if self.l1_error == 1:
-                rosys.notify('warning' 'Left Front Motor Error')
+                rosys.notify('Left Front Motor Error', 'warning')
                 self.motor_error = True
             self.r1_error = int(words.pop(0))
             if self.r1_error == 1:
-                rosys.notify('warning' 'Right Front Motor Error')
+                rosys.notify('Right Front Motor Error', 'warning')
                 self.motor_error = True

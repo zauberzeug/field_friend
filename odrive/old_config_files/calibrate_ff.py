@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import odrive
-import odrive.enums as enums
 import inspect
-import time
 import sys
+import time
+
+import odrive
+import odrive.enums as enums  # noqa: PLR0402
 
 odrv0 = odrive.find_any()
 

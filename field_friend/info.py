@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from nicegui import background_tasks, ui
 from nicegui.version import __version__ as nicegui_version
 from rosys.version import __version__ as rosys_version
 
+from .hardware import FieldFriendHardware
+
 if TYPE_CHECKING:
-    from ...system import System
+    from .system import System
 
 MUTEX_PATH = Path('.livesync_mutex')
 
@@ -30,7 +32,7 @@ class Info:
                 ui.label(nicegui_version)
 
                 if self.system.is_real:
-                    lizard_firmware = self.system.field_friend.robot_brain.lizard_firmware
+                    lizard_firmware = cast(FieldFriendHardware, self.system.field_friend).robot_brain.lizard_firmware
 
                     async def read_lizard_versions() -> None:
                         await lizard_firmware.read_core_version()

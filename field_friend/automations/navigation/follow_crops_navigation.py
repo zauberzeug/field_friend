@@ -10,7 +10,7 @@ from ..implements.implement import Implement
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class FollowCropsNavigation(StraightLineNavigation):
@@ -31,13 +31,15 @@ class FollowCropsNavigation(StraightLineNavigation):
         self.log.info(f'Activating {self.implement.name}...')
         self.plant_provider.clear()
         await self.implement.activate()
-        await self.flashlight.turn_on()
+        if self.flashlight:
+            await self.flashlight.turn_on()
         self.plant_locator.resume()
         return True
 
     async def finish(self) -> None:
         await super().finish()
-        await self.flashlight.turn_off()
+        if self.flashlight:
+            await self.flashlight.turn_off()
         self.plant_locator.pause()
         await self.implement.deactivate()
 
@@ -78,6 +80,7 @@ class FollowCropsNavigation(StraightLineNavigation):
         return eliminate_2pi(combined_angle)
 
     def create_simulation(self) -> None:
+        assert isinstance(self.detector, rosys.vision.DetectorSimulation)
         for i in range(100):
             x = i/10.0
             y = (x/4) ** 3

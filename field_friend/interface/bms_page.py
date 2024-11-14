@@ -1,26 +1,23 @@
-from __future__ import annotations
-
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 import pandas as pd
 import rosys
 from nicegui import ui
-from ...log_configuration import PATH as LOG_PATH
 
-if TYPE_CHECKING:
-    from system import System
+from ..log_configuration import PATH as LOG_PATH
+from ..system import System
+from .components import create_header
 
 
-class bms_page:
+class BmsPage:
 
-    def __init__(self, page_wrapper, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.system = system
 
         @ui.page('/bms')
         def page() -> None:
-            page_wrapper()
+            create_header(system)
             self.content()
 
     def content(self) -> None:

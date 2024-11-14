@@ -1,5 +1,4 @@
 import abc
-import asyncio
 import logging
 from typing import Any, Self
 
@@ -46,19 +45,19 @@ class ZedxminiCamera(StereoCamera):
         data: dict[str, Any] | None = None
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.get(url, timeout=2.0) as response:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(2.0)) as response:
                     if response.status != 200:
-                        logging.warning(f"response.status: {response.status}")
+                        logging.warning(f'response.status: {response.status}')
                         return None
                     data = await response.json()
             except aiohttp.ClientError as e:
-                logging.error(f"Error capturing image: {str(e)}")
+                logging.error(f'Error capturing image: {e!s}')
                 return None
-            except asyncio.TimeoutError:
-                logging.error("Request timed out")
+            except TimeoutError:
+                logging.error('Request timed out')
                 return None
         if data is None:
-            return
+            return None
         return data
 
     async def setup_camera_information(self) -> bool:
@@ -79,15 +78,15 @@ class ZedxminiCamera(StereoCamera):
         data: dict[str, Any] | None = None
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.get(url, timeout=2.0) as response:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(2.0)) as response:
                     if response.status != 200:
-                        self.log.warning(f"response.status: {response.status}")
+                        self.log.warning(f'response.status: {response.status}')
                         return
                     data = await response.json()
             except aiohttp.ClientError as e:
-                self.log.error(f"Error capturing image: {str(e)}")
-            except asyncio.TimeoutError:
-                self.log.error("Request timed out")
+                self.log.error(f'Error capturing image: {e!s}')
+            except TimeoutError:
+                self.log.error('Request timed out')
         if data is None:
             return
         assert 'image' in data
@@ -107,15 +106,15 @@ class ZedxminiCamera(StereoCamera):
         data: dict[str, Any] | None = None
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.get(url, timeout=2.0) as response:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(2.0)) as response:
                     if response.status != 200:
-                        self.log.warning(f"response.status: {response.status}")
+                        self.log.warning(f'response.status: {response.status}')
                         return None
                     data = await response.json()
             except aiohttp.ClientError as e:
-                self.log.error(f"Error capturing image: {str(e)}")
-            except asyncio.TimeoutError:
-                self.log.error("Request timed out")
+                self.log.error(f'Error capturing image: {e!s}')
+            except TimeoutError:
+                self.log.error('Request timed out')
         if data is None:
             return None
         assert 'x' in data

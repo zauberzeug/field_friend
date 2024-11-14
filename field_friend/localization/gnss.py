@@ -15,8 +15,7 @@ from nicegui import ui
 from rosys.persistence.registry import backup
 
 from .. import localization
-from .geo_point import GeoPoint
-from .point_transformation import get_new_position
+from .geo_point import GeoPoint, get_new_position
 
 
 @dataclass
@@ -83,7 +82,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
                 self.log.warning('new GNSS record is None')
                 self.GNSS_CONNECTION_LOST.emit()
                 return
-            if ("R" in previous.mode or previous.mode == "SSSS") and ("R" not in self.current.mode and self.current.mode != "SSSS"):
+            if ('R' in previous.mode or previous.mode == 'SSSS') and ('R' not in self.current.mode and self.current.mode != 'SSSS'):
                 self.log.warning('GNSS RTK fix lost')
                 self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
                 self.RTK_FIX_LOST.emit()
@@ -93,7 +92,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         try:
             # TODO also do antenna_offset correction for this event
             self.ROBOT_GNSS_POSITION_CHANGED.emit(self.current.location)
-            if "R" in self.current.mode or self.current.mode == "SSSS":
+            if 'R' in self.current.mode or self.current.mode == 'SSSS':
                 await self._on_rtk_fix()
         except Exception:
             self.log.exception('gnss record could not be applied')
@@ -145,7 +144,6 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
         self.needed_poses = data.get('needed_poses', self.needed_poses)
 
     async def update_reference(self) -> None:
@@ -161,8 +159,8 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
         with ui.dialog() as self.reference_alert_dialog, ui.card():
             ui.label('The reference is to far away from the current position which would lead to issues in the navigation. Do you want to set it now?')
             with ui.row():
-                ui.button("Update reference", on_click=self.update_reference).props("outline color=warning") \
-                    .tooltip("Set current position as geo reference and restart the system").classes("ml-auto").style("display: block; margin-top:auto; margin-bottom: auto;")
+                ui.button('Update reference', on_click=self.update_reference).props('outline color=warning') \
+                    .tooltip('Set current position as geo reference and restart the system').classes('ml-auto').style('display: block; margin-top:auto; margin-bottom: auto;')
                 ui.button('Cancel', on_click=self.reference_alert_dialog.close)
 
     def check_distance_to_reference(self) -> bool:

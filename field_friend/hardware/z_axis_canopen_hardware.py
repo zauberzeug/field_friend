@@ -1,5 +1,5 @@
-from typing import Optional
-
+# pylint: disable=broad-exception-raised
+# TODO: we need a useful exception here
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -12,7 +12,7 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'zaxis',
                  can: rosys.hardware.CanHardware,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  can_address: int = 0x60,
                  max_speed: int = 2000,
                  reference_speed: int = 40,
@@ -26,8 +26,6 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
                  end_stops_on_expander: bool = True,
                  end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
-                 acceleration: int = 500,
-                 quick_stop_deceleration: int = 2000,
                  ) -> None:
         self.name = name
         self.expander = expander
@@ -35,8 +33,14 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
             {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
             {name}_end_t.inverted = {str(end_stops_inverted).lower()}
+            # TODO: remove when lizard issue 66 is fixed.
+            {name}_end_b.level = 0
+            {name}_end_t.active = false
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
             {name}_end_b.inverted = {str(end_stops_inverted).lower()}
+            # TODO: remove when lizard issue 66 is fixed.
+            {name}_end_b.level = 0
+            {name}_end_b.active = false
             {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
         ''')
         core_message_fields = [
@@ -59,7 +63,6 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
-        await super().stop()
         await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(false);')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
@@ -107,7 +110,7 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         if not await super().try_reference():
             return False
         try:
-            self.log.info("enabling h motors")
+            self.log.info('enabling h motors')
             await self.enable_motor()
             await self.robot_brain.send(
                 f'{self.name}_motor.position_offset = 0;'

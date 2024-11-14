@@ -4,10 +4,10 @@ from rosys.driving import Odometer, robot_object
 from rosys.geometry import Prism
 from rosys.vision import CameraProjector, CameraProvider, camera_objects
 
-from ...hardware import ChainAxis, FieldFriend, Tornado, Axis
+from ...hardware import Axis, ChainAxis, FieldFriend, Tornado
 
 
-class field_friend_object(robot_object):
+class FieldFriendObject(robot_object):
 
     def __init__(self, odometer: Odometer, camera_provider: CameraProvider,
                  field_friend: FieldFriend) -> None:
@@ -49,8 +49,9 @@ class field_friend_object(robot_object):
         elif isinstance(self.robot.y_axis, ChainAxis):
             if self.robot.y_axis.MIN_POSITION <= self.robot.y_axis.position <= self.robot.y_axis.MAX_POSITION:
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.position)
+                # TODO: what to do if z_axis is not an Axis?
                 self.second_tool.move(x=self.robot.WORK_X, y=self.robot.y_axis.position,
-                                      z=self.robot.z_axis.position)
+                                      z=self.robot.z_axis.position)  # type: ignore
             elif self.robot.y_axis.position > self.robot.y_axis.MAX_POSITION:
                 difference = self.robot.y_axis.position - self.robot.y_axis.MAX_POSITION
                 self.tool.move(x=self.robot.WORK_X_CHOP, y=self.robot.y_axis.MAX_POSITION - difference)

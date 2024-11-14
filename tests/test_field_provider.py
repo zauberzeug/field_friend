@@ -1,8 +1,9 @@
 import json
-from pathlib import Path
 import uuid
+from pathlib import Path
+
 import pytest
-from conftest import FIELD_FIRST_ROW_START, FIELD_FIRST_ROW_END
+from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 from rosys.geometry import Point
 
 from field_friend import System
@@ -151,7 +152,7 @@ def test_create_multiple_fields(system: System):
     # Create first field
     field1 = Field(
         id=str(uuid.uuid4()),
-        name="Field 1",
+        name='Field 1',
         first_row_start=FIELD_FIRST_ROW_START,
         first_row_end=FIELD_FIRST_ROW_END,
         row_count=5,
@@ -164,7 +165,7 @@ def test_create_multiple_fields(system: System):
     # Create second field
     field2 = Field(
         id=str(uuid.uuid4()),
-        name="Field 2",
+        name='Field 2',
         first_row_start=FIELD_FIRST_ROW_START.shifted(Point(x=10, y=10)),
         first_row_end=FIELD_FIRST_ROW_END.shifted(Point(x=10, y=10)),
         row_count=3,
@@ -174,13 +175,13 @@ def test_create_multiple_fields(system: System):
     assert len(field_provider.fields) == 2
     assert field_provider.get_field(created_field2.id) == created_field2
 
-    assert field_provider.fields[0].name == "Field 1"
+    assert field_provider.fields[0].name == 'Field 1'
     assert field_provider.fields[0].row_count == 5
     assert field_provider.fields[0].row_spacing == 0.5
     assert field_provider.fields[0].bed_count == 1
     assert field_provider.fields[0].bed_spacing == 0.5
 
-    assert field_provider.fields[1].name == "Field 2"
+    assert field_provider.fields[1].name == 'Field 2'
     assert field_provider.fields[1].row_count == 3
     assert field_provider.fields[1].row_spacing == 0.75
     assert field_provider.fields[1].bed_count == 1
@@ -214,7 +215,7 @@ def test_create_field_with_multiple_beds(system: System, field: Field):
 
     field_with_beds = Field(
         id=str(uuid.uuid4()),
-        name="Multi-bed Field",
+        name='Multi-bed Field',
         first_row_start=FIELD_FIRST_ROW_START,
         first_row_end=FIELD_FIRST_ROW_END,
         row_count=row_count,

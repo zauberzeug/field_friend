@@ -8,10 +8,10 @@ from nicegui import ui
 
 from ...hardware import MowerHardware
 from ..navigation import WorkflowException
-from .weeding_implement import Implement
+from .implement import Implement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class ExternalMower(Implement, rosys.persistence.PersistentModule):
@@ -20,9 +20,9 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
     def __init__(self, system: 'System') -> None:
         super().__init__('Mower')
         self.log = logging.getLogger('field_friend.mower')
+        assert system.field_friend.mower is not None and isinstance(system.field_friend.mower, MowerHardware)
         self.mower_hardware: MowerHardware = system.field_friend.mower
         self.driver = system.driver
-        assert self.mower_hardware is not None
         assert self.driver is not None
         self.is_demo: bool = False
         self.stretch_distance: float = self.STRETCH_DISTANCE
@@ -60,7 +60,6 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
         self.is_demo = data.get('is_demo', self.is_demo)
         self.stretch_distance = data.get('stretch_distance', self.stretch_distance)
 

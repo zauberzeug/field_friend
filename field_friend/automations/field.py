@@ -1,18 +1,15 @@
 import math
 from dataclasses import dataclass
-from typing import Any
-from uuid import uuid4
+from typing import Any, Self
 
 import rosys
 import shapely
 from rosys.geometry import Point
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
-from typing_extensions import Self
-
-from field_friend.localization import GeoPoint, GeoPointCollection
 
 from .. import localization
+from ..localization import GeoPoint, GeoPointCollection
 
 
 @dataclass(slots=True, kw_only=True)
@@ -41,7 +38,7 @@ class RowSupportPoint(GeoPoint):
 
 
 class Field:
-    def __init__(self,
+    def __init__(self, *,
                  id: str,  # pylint: disable=redefined-builtin
                  name: str,
                  first_row_start: GeoPoint,
@@ -119,26 +116,25 @@ class Field:
                     [support_point_cartesian.x, support_point_cartesian.y]))
                 last_support_point = support_point
                 last_support_point_offset = offset
-            else:
-                if last_support_point:
-                    rows_since_support = i - last_support_point.row_index
-                    beds_crossed = bed_index - (last_support_point.row_index // self.row_count)
-                    offset = last_support_point_offset
-                    if beds_crossed > 0:
-                        offset += beds_crossed * self.bed_spacing
-                        rows_in_complete_beds = rows_since_support - (row_in_bed + 1)
-                        offset += rows_in_complete_beds * self.row_spacing
-                        offset += row_in_bed * self.row_spacing
-                    else:
-                        offset += rows_since_support * self.row_spacing
+            elif last_support_point:
+                rows_since_support = i - last_support_point.row_index
+                beds_crossed = bed_index - (last_support_point.row_index // self.row_count)
+                offset = last_support_point_offset
+                if beds_crossed > 0:
+                    offset += beds_crossed * self.bed_spacing
+                    rows_in_complete_beds = rows_since_support - (row_in_bed + 1)
+                    offset += rows_in_complete_beds * self.row_spacing
+                    offset += row_in_bed * self.row_spacing
                 else:
-                    base_offset = row_in_bed * self.row_spacing
-                    bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
-                    offset = base_offset + bed_offset
+                    offset += rows_since_support * self.row_spacing
+            else:
+                base_offset = row_in_bed * self.row_spacing
+                bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
+                offset = base_offset + bed_offset
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = [localization.reference.shifted(
                 Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            row = Row(id=f'field_{self.id}_row_{str(i + 1)}', name=f'row_{i + 1}', points=row_points)
+            row = Row(id=f'field_{self.id}_row_{i + 1!s}', name=f'row_{i + 1}', points=row_points)
             rows.append(row)
         return rows
 

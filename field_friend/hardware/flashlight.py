@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 import rosys
 from rosys.helpers import remove_indentation
@@ -15,7 +14,7 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
         self.hot_time: float = 0
         self.hot_duration: float = 0
 
-    async def activate(self, duration: Optional[float]) -> None:
+    async def activate(self, duration: float) -> None:
         async with self:
             await rosys.sleep(duration)
 
@@ -31,7 +30,8 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
 
     async def _activation(self) -> None:
         if self.is_active:
-            raise Exception('flashlight was already "on"')
+            self.log.debug('flashlight was already "on"')
+            return
         await self.turn_on()
         if rosys.time() - 10 > self.hot_time:  # reset hot_duration, hot lamp is some time ago
             self.hot_duration = 0
@@ -40,6 +40,7 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
 
     async def _deactivation(self) -> None:
         if not self.is_active:
+            self.log.debug('flashlight was already "off"')
             return
         await self.turn_off()
         self.is_active = False
@@ -56,24 +57,23 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
     @abc.abstractmethod
     async def turn_on(self) -> None:
         self.log.info('turning on flashlight')
-        pass
 
     @abc.abstractmethod
     async def turn_off(self) -> None:
         self.log.info('turning off flashlight')
-        pass
 
 
 class FlashlightHardware(Flashlight, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  name: str = 'flashlight',
                  pin: int = 5) -> None:
         self.name = name
         self.expander = expander
+        # TODO: is this always on the expander? otherwise it will break
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name}.Output({pin})
+            {name} = {expander.name + "." if expander else ""}Output({pin})
             {name}.on()
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
@@ -95,8 +95,7 @@ class FlashlightSimulation(Flashlight, rosys.hardware.ModuleSimulation):
         super().__init__()
 
     async def turn_on(self) -> None:
-        if not await super().turn_on():
-            return
+        await super().turn_on()
 
     async def turn_off(self) -> None:
         await super().turn_off()
