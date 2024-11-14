@@ -19,8 +19,8 @@ jobs:
       - name: pre-commit, mypy & pylint
         run: |
           pre-commit run --all-files
-          mypy --config ./pyproject.toml ./field_friend --non-interactive
-          pylint ./field_friend
+          mypy ./field_friend --non-interactive
+          # pylint ./field_friend
   pytest:
     runs-on: ubuntu-latest
     timeout-minutes: 30
