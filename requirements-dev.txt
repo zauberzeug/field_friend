@@ -4,3 +4,4 @@ pytest-asyncio
 mypy
 pylint
 pre-commit
+autopep8
