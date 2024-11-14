@@ -22,8 +22,12 @@ class FieldCreator:
         self.field_provider = system.field_provider
         self.first_row_start: GeoPoint | None = None
         self.first_row_end: GeoPoint | None = None
-        self.row_spacing = 0.5
-        self.row_number = 10
+        self.field_name: str = 'Field'
+        self.row_spacing: float = 0.5
+        self.row_count: int = 10
+        self.outline_buffer_width: float = 2.0
+        self.bed_count: int = 1
+        self.bed_spacing: float = 0.5
         self.next: Callable = self.find_first_row
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
@@ -33,7 +37,7 @@ class FieldCreator:
                     self.headline = ui.label().classes('text-lg font-bold')
                     self.content = ui.column().classes('items-center')
                     # NOTE: the next function is replaced, hence we need the lambda
-                    ui.button('Next', on_click=lambda: self.next())
+                    ui.button('Next', on_click=lambda: self.next())  # pylint: disable=unnecessary-lambda
         ui.timer(0.1, self.update_front_cam)
         self.open()
 
@@ -64,16 +68,37 @@ class FieldCreator:
         self.row_sight.content = ''
         self.content.clear()
         with self.content:
-            ui.number('Number of rows',
+            ui.input('Field Name') \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Enter a name for the field') \
+                .bind_value(self, 'field_name')
+            beds_switch = ui.switch('Field has multiple beds')
+            ui.number('Number of Beds',
                       value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
-                .tooltip('Set the number of rows.')\
-                .bind_value(self, 'row_number')
+                .tooltip('Set the number of beds.')\
+                .bind_value(self, 'bed_count').bind_visibility_from(beds_switch, 'value')
+            ui.number('Bed Spacing', suffix='cm',
+                      value=50, step=1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the distance between the beds') \
+                .bind_value(self, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
+                .bind_visibility_from(beds_switch, 'value')
+            ui.number('Number of Rows (per Bed)',
+                      value=10, step=1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the number of rows (per bed, if multiple beds are selected).')\
+                .bind_value(self, 'row_count')
             ui.number('Row Spacing', suffix='cm',
                       value=50, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the distance between the rows') \
                 .bind_value(self, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
+            ui.number('Outline Buffer Width', suffix='m',
+                      value=2, step=0.1, min=1) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Set the width of the buffer around the field outline') \
+                .bind_value(self, 'outline_buffer_width')
         self.next = self.find_row_ending
 
     def find_row_ending(self) -> None:
@@ -98,10 +123,15 @@ class FieldCreator:
         self.content.clear()
         with self.content:
             with ui.row().classes('items-center'):
+                ui.label(f'Field Name: {self.field_name}').classes('text-lg')
                 ui.label(f'First Row Start: {self.first_row_start}').classes('text-lg')
                 ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
-                ui.label(f'Row Spacing: {self.row_spacing} m').classes('text-lg')
-                ui.label(f'Number of Rows: {self.row_number}').classes('text-lg')
+                if self.bed_count > 1:
+                    ui.label(f'Number of Beds: {self.bed_count}').classes('text-lg')
+                    ui.label(f'Bed Spacing: {self.bed_spacing*100} cm').classes('text-lg')
+                ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
+                ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
+                ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
             with ui.row().classes('items-center'):
                 ui.button('Cancel', on_click=self.dialog.close).props('color=red')
         self.next = self._apply
@@ -111,12 +141,24 @@ class FieldCreator:
         if self.first_row_start is None or self.first_row_end is None:
             ui.notify('No valid field parameters.')
             return
-        self.field_provider.create_field(Field(id=str(uuid4()),
-                                               name='Field 1',
-                                               first_row_start=self.first_row_start,
-                                               first_row_end=self.first_row_end,
-                                               row_spacing=self.row_spacing,
-                                               row_number=self.row_number))
+        if self.bed_count > 1:
+            self.field_provider.create_field(Field(id=str(uuid4()),
+                                                   name=self.field_name,
+                                                   first_row_start=self.first_row_start,
+                                                   first_row_end=self.first_row_end,
+                                                   row_spacing=self.row_spacing,
+                                                   row_count=int(self.row_count),
+                                                   outline_buffer_width=self.outline_buffer_width,
+                                                   bed_count=int(self.bed_count),
+                                                   bed_spacing=self.bed_spacing))
+        else:
+            self.field_provider.create_field(Field(id=str(uuid4()),
+                                                   name=self.field_name,
+                                                   first_row_start=self.first_row_start,
+                                                   first_row_end=self.first_row_end,
+                                                   row_spacing=self.row_spacing,
+                                                   row_count=int(self.row_count),
+                                                   outline_buffer_width=self.outline_buffer_width))
         self.first_row_start = None
         self.first_row_end = None
 

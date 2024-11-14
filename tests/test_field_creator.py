@@ -12,9 +12,9 @@ def test_field_creation(system: System, field_creator: FieldCreator):
     assert len(system.field_provider.fields) == 0
     field_creator.next()
     assert len(system.field_provider.fields) == 1
-    assert system.field_provider.fields[0].name == 'Field 1'
+    assert system.field_provider.fields[0].name == 'Field'
     assert system.field_provider.fields[0].row_spacing == 0.5
-    assert system.field_provider.fields[0].row_number == 10
+    assert system.field_provider.fields[0].row_count == 10
     assert system.field_provider.fields[0].first_row_start == FIELD_FIRST_ROW_START
     assert system.field_provider.fields[0].first_row_end == FIELD_FIRST_ROW_END
     assert len(system.field_provider.fields[0].rows) == 10

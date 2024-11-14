@@ -166,7 +166,7 @@ class Gnss(rosys.persistence.PersistentModule, ABC):
                 ui.button('Cancel', on_click=self.reference_alert_dialog.close)
 
     def check_distance_to_reference(self) -> bool:
-        if self.current is not None and self.current.location.distance(localization.reference) > self.max_distance_to_reference:
+        if self.current is not None and self.current.gps_qual > 0 and self.current.location.distance(localization.reference) > self.max_distance_to_reference:
             self.reference_alert_dialog.open()
             return True
         return False

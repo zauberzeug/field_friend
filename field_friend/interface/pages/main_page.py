@@ -27,8 +27,6 @@ class main_page():
             with ui.column().classes('h-full w-1/2 p-2'):
                 leaflet = leaflet_map(self.system, False)
                 leaflet.m.classes('h-full w-full')
-                if self.system.field_navigation.field is not None:
-                    leaflet.active_field = self.system.field_navigation.field.id
                 binding.bind_to(self.system.field_navigation, 'field', leaflet, 'active_field',
                                 lambda f: f.id if f else None)
                 with ui.row():
