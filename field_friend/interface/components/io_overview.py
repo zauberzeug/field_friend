@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-class IOOverview:
+class IoOverview:
     def __init__(self, system: System) -> None:
         self.system = system
         with ui.card().style('background-color: #2E5396; color: white;'), ui.row():

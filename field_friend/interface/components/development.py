@@ -5,7 +5,7 @@ from nicegui import ui
 from rosys.hardware import EspPins
 
 from .hardware_control import create_hardware_control_ui
-from .io_overview import IOOverview as io_overview
+from .io_overview import IoOverview as io_overview
 from .settings import create_settings_ui
 from .status_dev import status_dev_page
 
