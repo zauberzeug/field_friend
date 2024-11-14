@@ -21,3 +21,4 @@ repos:
         exclude: *exclusions
       - id: double-quote-string-fixer
         exclude: *exclusions
+      - id: requirements-txt-fixer
