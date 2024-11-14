@@ -17,6 +17,8 @@ class KPIs:
     soft_e_stop_triggered:  int = 0
     imu_rolling_detected: int = 0
     gnss_connection_lost: int = 0
+
+
 class KpiProvider(KpiLogger):
     def __init__(self) -> None:
         super().__init__()
@@ -36,7 +38,7 @@ class KpiProvider(KpiLogger):
     def invalidate(self) -> None:
         self.request_backup()
 
-    def increment_all_time_kpi(self, indicator: str,increment:float=1) -> None:
+    def increment_all_time_kpi(self, indicator: str, increment: float = 1) -> None:
         self.increment(indicator)
         if getattr(self.all_time_kpis, indicator) is None:
             new_value = increment
