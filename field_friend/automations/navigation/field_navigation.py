@@ -27,6 +27,7 @@ class FieldNavigation(StraightLineNavigation):
     DRIVE_STEP = 0.2
     TURN_STEP = np.deg2rad(25.0)
     MAX_GNSS_WAITING_TIME = 15.0
+    MAX_ROW_DISTANCE = 0.05
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__(system, implement)
@@ -124,9 +125,17 @@ class FieldNavigation(StraightLineNavigation):
             if relative_start < 0 <= relative_end:
                 self.start_point, self.end_point = self.end_point, self.start_point
         else:
-            robot_heading = self.odometer.prediction.yaw
-            angle_to_start = abs(np.arctan2(rel_to_start.y, rel_to_start.x) - robot_heading)
-            angle_to_end = abs(np.arctan2(rel_to_end.y, rel_to_end.x) - robot_heading)
+            robot_heading = self.odometer.prediction.yaw  # global heading?
+            # the angles between the robot and the row?
+            # Isn't the np.arctan2(rel_to_start.y, rel_to_start.x) is the angle between the robot and the start point already..?
+            angle_to_start = abs(rosys.helpers.angle(robot_heading, np.arctan2(rel_to_start.y, rel_to_start.x)))
+            angle_to_end = abs(rosys.helpers.angle(robot_heading, np.arctan2(rel_to_end.y, rel_to_end.x)))
+            print(f'angle_to_start 🔴: {angle_to_start} angle_to_end 🔴: {angle_to_end}')
+            # if both angles are greater than 10 degrees, the robot heading deviates too much from the row direction
+            if angle_to_start > np.pi/18 and angle_to_end > np.pi/18:  # 10 degrees = pi/18 radians
+                self.log.warning('Robot heading deviates too much from row direction')
+                rosys.notify('Robot heading deviates too much from row direction', 'negative')
+                return State.FIELD_COMPLETED
             if angle_to_start > angle_to_end:
                 self.start_point = self.current_row.points[0].cartesian()
                 self.end_point = self.current_row.points[-1].cartesian()
@@ -168,7 +177,7 @@ class FieldNavigation(StraightLineNavigation):
         if self.robot_on_field:
             distance_to_row = self.current_row.line_segment().line.foot_point(
                 self.odometer.prediction.point).distance(self.odometer.prediction.point)
-            if distance_to_row < 0.1:
+            if distance_to_row < self.MAX_ROW_DISTANCE:
                 # turn towards row end
                 target_yaw = self.odometer.prediction.direction(self.end_point)
                 await self.turn_in_steps(target_yaw)
