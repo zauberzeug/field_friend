@@ -445,6 +445,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          safety=safety,
                          flashlight=flashlight,
                          mower=mower,
+                         imu=self.imu,
                          modules=active_modules,
                          robot_brain=robot_brain)
 
