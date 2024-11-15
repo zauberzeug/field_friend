@@ -65,7 +65,7 @@ class FieldNavigation(StraightLineNavigation):
         if not self.rows_to_work_on or len(self.rows_to_work_on) == 0:
             rosys.notify('No rows available', 'negative')
             return False
-        if self.gnss.device is None:
+        if not self.gnss.is_connected:
             rosys.notify('GNSS is not available', 'negative')
             return False
         for idx, row in enumerate(self.rows_to_work_on):
@@ -92,8 +92,8 @@ class FieldNavigation(StraightLineNavigation):
 
     def get_nearest_row(self) -> Row:
         assert self.field is not None
-        assert self.gnss.device is not None
-        row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
+        assert self.gnss.is_connected
+        row = min(self.field.rows, key=lambda r: r.line_segment(self.gnss.reference).line.foot_point(
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
         self.log.info(f'Nearest row is {row.name}')
         self.row_index = self.field.rows.index(row)
@@ -103,15 +103,17 @@ class FieldNavigation(StraightLineNavigation):
         assert self.field is not None
         self.start_point = None
         self.end_point = None
-        relative_point_0 = self.odometer.prediction.distance(self.current_row.points[0].cartesian())
-        relative_point_1 = self.odometer.prediction.distance(self.current_row.points[-1].cartesian())
+        relative_point_0 = self.odometer.prediction.distance(
+            self.gnss.reference.point_to_local(self.current_row.points[0]))
+        relative_point_1 = self.odometer.prediction.distance(
+            self.gnss.reference.point_to_local(self.current_row.points[-1]))
         # self.log.info(f'Relative point 0: {relative_point_0} Relative point 1: {relative_point_1}')
         if relative_point_0 < relative_point_1:
-            self.start_point = self.current_row.points[0].cartesian()
-            self.end_point = self.current_row.points[-1].cartesian()
+            self.start_point = self.gnss.reference.point_to_local(self.current_row.points[0])
+            self.end_point = self.gnss.reference.point_to_local(self.current_row.points[-1])
         elif relative_point_1 < relative_point_0:
-            self.start_point = self.current_row.points[-1].cartesian()
-            self.end_point = self.current_row.points[0].cartesian()
+            self.start_point = self.gnss.reference.point_to_local(self.current_row.points[-1])
+            self.end_point = self.gnss.reference.point_to_local(self.current_row.points[0])
         self.update_target()
         # self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 
@@ -123,10 +125,6 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
-        # TODO: remove temporary fix for GNSS waiting
-        if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 1.0:  # pylint: disable=protected-access
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
-
         if self._state == State.APPROACHING_ROW_START:
             self._state = await self._run_approaching_row_start()
         elif self._state == State.FOLLOWING_ROW:
@@ -136,14 +134,14 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _run_approaching_row_start(self) -> State:
         self.set_start_and_end_points()
-        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+        await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
         # turn towards row start
         assert self.start_point is not None
         target_yaw = self.odometer.prediction.direction(self.start_point)
         await self.turn_in_steps(target_yaw)
         # drive to row start
         await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
-        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+        await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
         # turn to row
         assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
@@ -163,7 +161,7 @@ class FieldNavigation(StraightLineNavigation):
             # Calculate timeout based on linear speed limit and drive step
             timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 3.0
             await self._drive_towards_target(drive_step, target, timeout=timeout)
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+            await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
 
     async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
         if angle_threshold is None:
@@ -188,7 +186,7 @@ class FieldNavigation(StraightLineNavigation):
                 await self.turn_to_yaw(next_angle)
             else:
                 await self.turn_to_yaw(target_yaw)
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+            await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
             angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
 
     async def _run_following_row(self, distance: float) -> State:

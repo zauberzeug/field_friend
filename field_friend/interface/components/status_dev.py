@@ -7,7 +7,6 @@ import psutil
 import rosys
 from nicegui import ui
 
-from ... import localization
 from ...hardware import (
     Axis,
     ChainAxis,
@@ -165,14 +164,14 @@ def status_dev_page(robot: FieldFriend, system: System):
         ui.separator()
         with ui.row().classes('place-items-center'):
             ui.label('GNSS Device:').style('color: #EDF4FB').classes('font-bold')
-            ui.label().bind_text_from(system.gnss, 'device', backward=lambda x: 'No connection' if x is None else 'Connected')
+            ui.label().bind_text_from(system.gnss, 'is_connected', backward=lambda x: 'Connected' if x else 'No connection')
         with ui.row().classes('place-items-center'):
             ui.label('Reference Position:').style('color: #EDF4FB').classes('font-bold')
             reference_position_label = ui.label()
         with ui.row().classes('place-items-center'):
             ui.label('Position:').style('color: #EDF4FB').classes('font-bold')
-            ui.label().bind_text_from(system.gnss, 'current',
-                                      backward=lambda x: 'No position' if x is None else str(x.location))
+            ui.label().bind_text_from(system.gnss, 'last_measurement',
+                                      backward=lambda x: 'No position' if x is None else str(x.location.point))
         with ui.row().classes('place-items-center'):
             ui.label('Heading:').style('color: #EDF4FB').classes('font-bold')
             heading_label = ui.label()
@@ -182,7 +181,7 @@ def status_dev_page(robot: FieldFriend, system: System):
 
         with ui.row().classes('place-items-center'):
             ui.label('Odometry:').style('color: #EDF4FB').classes('font-bold')
-            ui.label().bind_text_from(system.odometer, 'prediction')
+            odometer_label = ui.label()
 
         with ui.row().classes('place-items-center'):
             ui.label('Since last update:').style('color: #EDF4FB').classes('font-bold')
@@ -250,22 +249,23 @@ def status_dev_page(robot: FieldFriend, system: System):
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-        direction_flag = '?' if system.gnss.current is None or system.gnss.current.heading is None else \
-            'N' if system.gnss.current.heading <= 23 else \
-            'NE' if system.gnss.current.heading <= 68 else \
-            'E' if system.gnss.current.heading <= 113 else \
-            'SE' if system.gnss.current.heading <= 158 else \
-            'S' if system.gnss.current.heading <= 203 else \
-            'SW' if system.gnss.current.heading <= 248 else \
+        # TODO: move this into gnss since it is used multiple times, check stuff above this too!
+        direction_flag = '?' if system.gnss.last_measurement is None or system.gnss.last_measurement.location.heading is None else \
+            'N' if system.gnss.last_measurement.location.heading <= 23 else \
+            'NE' if system.gnss.last_measurement.location.heading <= 68 else \
+            'E' if system.gnss.last_measurement.location.heading <= 113 else \
+            'SE' if system.gnss.last_measurement.location.heading <= 158 else \
+            'S' if system.gnss.last_measurement.location.heading <= 203 else \
+            'SW' if system.gnss.last_measurement.location.heading <= 248 else \
             'W' if system.gnss.current.heading <= 293 else \
             'NW' if system.gnss.current.heading <= 338 else \
             'N'
 
-        reference_position_label.text = 'No reference' if localization.reference is None or (
-            localization.reference.lat == 0 and localization.reference.long == 0) else str(localization.reference)
-        heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
-        rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
-        update_label.text = f'{timedelta(seconds=rosys.time() - system.gnss._last_gnss_pose.time)}'  # pylint: disable=protected-access
+        reference_position_label.text = 'No reference' if system.gnss.reference is None else system.gnss.reference.origin
+        heading_label.text = f'{system.gnss.last_measurement.location.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
+        rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
+        odometer_label.text = f'{system.odometer.prediction}'
+        update_label.text = f'{timedelta(seconds=rosys.time() - system.gnss.last_measurement.time)}' if system.gnss.last_measurement is not None else ''
 
     ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page

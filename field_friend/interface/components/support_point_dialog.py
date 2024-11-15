@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
+from rosys.geometry.geo import GeoPoint
 
 from ...automations.field import RowSupportPoint
 from ...interface.components.monitoring import CameraPosition
-from ...localization import GeoPoint
 
 if TYPE_CHECKING:
     from ...system import System

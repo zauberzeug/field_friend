@@ -17,6 +17,7 @@ class FieldObject(Group):
     def __init__(self, system: System) -> None:
         super().__init__()
         self.system = system
+        self.gnss = system.gnss
         self.field_provider: FieldProvider = system.field_provider
         self._update()
         self.field_provider.FIELDS_CHANGED.register_ui(self._update)
@@ -58,7 +59,7 @@ class FieldObject(Group):
 
         if active_field is None:
             return
-        outline = [point.cartesian().tuple for point in active_field.outline]
+        outline = [self.gnss.reference.point_to_local(point).tuple for point in active_field.outline]
         if len(outline) > 1:  # Make sure there are at least two points to form a segment
             for i, start in enumerate(outline):
                 end = outline[(i + 1) % len(outline)]  # Loop back to the first point
@@ -67,7 +68,7 @@ class FieldObject(Group):
             for row in active_field.rows:
                 if len(row.points) == 1:
                     continue
-                row_points = row.cartesian()
+                row_points = [self.gnss.reference.point_to_local(point) for point in row.points]
                 for i in range(len(row_points) - 1):
                     spline = Spline.from_points(row_points[i], row_points[i + 1])
                     Curve(

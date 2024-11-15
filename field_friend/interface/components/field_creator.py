@@ -6,10 +6,10 @@ from uuid import uuid4
 
 import rosys
 from nicegui import ui
+from rosys.geometry.geo import GeoPoint
 
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
-from field_friend.localization import GeoPoint
 
 if TYPE_CHECKING:
     from ...system import System
@@ -63,11 +63,8 @@ class FieldCreator:
 
     def get_infos(self) -> None:
         self.headline.text = 'Field Parameters'
-        assert self.gnss.current is not None
-        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
-            with self.content:
-                ui.label('No RTK fix available.').classes('text-red')
-        self.first_row_start = self.gnss.current.location
+        assert self.gnss.last_measurement is not None
+        self.first_row_start = self.gnss.last_measurement.location.point
         self.row_sight.content = ''
         self.content.clear()
         with self.content:
@@ -116,11 +113,8 @@ class FieldCreator:
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
-        assert self.gnss.current is not None
-        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
-            with self.content:
-                ui.label('No RTK fix available.').classes('text-red')
-        self.first_row_end = self.gnss.current.location
+        assert self.gnss.last_measurement is not None
+        self.first_row_end = self.gnss.last_measurement.location.point
         assert self.first_row_end is not None
         self.headline.text = 'Confirm Geometry'
         self.content.clear()

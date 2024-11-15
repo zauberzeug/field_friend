@@ -7,11 +7,20 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.hardware import Gnss
 
 from ..implements.implement import Implement
 
 if TYPE_CHECKING:
     from ...system import System
+
+
+def check_distance_to_reference(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
+    if gnss.last_measurement is not None and gnss.last_measurement.gps_qual > 0 and gnss.last_measurement.location.point.distance(gnss.reference.origin) > max_distance:
+        # TODO: show dialog
+        # reference_alert_dialog(gnss)
+        return True
+    return False
 
 
 class WorkflowException(Exception):
@@ -46,7 +55,7 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
-            if self.gnss.check_distance_to_reference():
+            if check_distance_to_reference(self.gnss):
                 raise WorkflowException('reference to far away from robot')
             self.start_position = self.odometer.prediction.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
