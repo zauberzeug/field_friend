@@ -1,0 +1,29 @@
+import rosys
+import numpy as np
+from .gnss import Gnss
+
+
+class GnssCorrectionService():
+    def __init__(self, imu: rosys.hardware.Imu | None, gnss: Gnss, robot_height: float) -> None:
+        self.imu = imu
+        self.gnss = gnss
+        self.CORRECTED_ROBOT_POSE = rosys.event.Event()
+        """the robot pose corrected for the robot roll (argument: Pose)"""
+        if self.imu:
+            self.imu.NEW_MEASUREMENT.register(self.update_imu)
+        self.gnss.ROBOT_POSE_LOCATED.register(self.update_gnss)
+        self._last_offset = 0.0
+        self._robot_height = robot_height
+
+    def update_imu(self, euler: tuple[float, float, float]) -> None:
+        roll = euler[0]
+        self._last_offset = self._robot_height * np.sin(np.radians(roll))
+
+    def update_gnss(self, measured_pose: rosys.geometry.Pose) -> None:
+        corrected_pose = measured_pose.transform_pose(rosys.geometry.Pose(
+            x=0,
+            y=self._last_offset,
+            yaw=0,
+            time=measured_pose.time,
+        ))
+        self.CORRECTED_ROBOT_POSE.emit(corrected_pose)

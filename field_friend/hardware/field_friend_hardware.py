@@ -40,6 +40,11 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
         self.ANTENNA_OFFSET: float = config_params['antenna_offset']
+        if 'robot_height' in config_params:
+            self.ROBOT_HEIGHT: float = config_params['robot_height']
+        else:
+            # TODO: set a default value for normal robots
+            self.ROBOT_HEIGHT = 0.0
         self.WORK_X: float
         self.DRILL_RADIUS: float
         implement: str = config_params['tool']
