@@ -15,7 +15,6 @@ from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
-from .imu import IMUHardware
 from .led_eyes import LedEyesHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware
@@ -396,11 +395,12 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             bumper = None
 
-        self.imu: IMUHardware | None
+        self.imu: rosys.hardware.Imu | None
         if 'imu' in config_hardware:
-            self.imu = IMUHardware(robot_brain,
-                                   name=config_hardware['imu']['name'],
-                                   )
+            self.imu = rosys.hardware.Imu(robot_brain,
+                                            name=config_hardware['imu']['name'],
+                                            offset_rotation=config_hardware['imu']['offset_rotation'],
+                                            )
         else:
             self.imu = None
 
