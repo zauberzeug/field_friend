@@ -20,9 +20,7 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
     def backup(self) -> dict:
         for camera in self._cameras.values():
             self.log.info(f'backing up camera: {camera.name}')
-        return {
-            'cameras': {camera.id: camera.to_dict() for camera in self._cameras.values()}
-        }
+        return super().backup()
 
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
@@ -34,7 +32,7 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
             if camera_information is None:
                 return
             self.add_camera(ZedxminiCamera(id=str(camera_information['serial_number'])))
-        camera = list(self._cameras.values())[0]
+        camera = next(iter(self._cameras.values()))
         if camera.is_connected:
             return
         await camera.reconnect()

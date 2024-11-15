@@ -1,18 +1,21 @@
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
 
-from . import ImplementException, WeedingImplement
+from ...hardware import Tornado
+from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class WeedingScrew(WeedingImplement):
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         super().__init__('Weed Screw', system, 'weeding_screw')
         self.relevant_weeds = system.plant_locator.weed_category_names
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
@@ -35,8 +38,8 @@ class WeedingScrew(WeedingImplement):
                               f'with radius {self.system.field_friend.DRILL_RADIUS}')
                 self.system.detector.simulated_objects = [
                     obj for obj in self.system.detector.simulated_objects
-                    if obj.position.projection().distance(punch_position) > self.system.field_friend.DRILL_RADIUS]
-            return True  # NOTE no weeds to work on at this position -> advance robot
+                    if obj.position.projection().distance(punch_position.projection()) > self.system.field_friend.DRILL_RADIUS]
+            # NOTE no weeds to work on at this position -> advance robot
         except Exception as e:
             raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
 
@@ -44,7 +47,7 @@ class WeedingScrew(WeedingImplement):
         await super().get_stretch(max_distance)
         super()._has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
-                          if self.system.field_friend.can_reach(position)}
+                          if self.system.field_friend.can_reach(position.projection())}
         if not weeds_in_range:
             self.log.info('No weeds in range')
             return self.WORKING_DISTANCE
@@ -63,27 +66,27 @@ class WeedingScrew(WeedingImplement):
             if stretch < - self.system.field_friend.DRILL_RADIUS:
                 self.log.info(f'Skipping weed {next_weed_id} because it is behind the robot')
                 continue
-            if stretch < 0:
-                stretch = 0
+            stretch = max(stretch, 0)
             self.log.info(f'Targeting weed {next_weed_id} which is {stretch} away at world: '
                           f'{weed_world_position}, local: {next_weed_position}')
             if stretch < max_distance:
                 self.next_punch_y_position = next_weed_position.y
                 return stretch
-            else:
-                break
+            break
         return self.WORKING_DISTANCE
 
     def settings_ui(self):
         super().settings_ui()
-        ui.number('Drill depth', format='%.2f', step=0.01,
-                  min=self.system.field_friend.z_axis.max_position,
-                  max=self.system.field_friend.z_axis.min_position*-1,
-                  on_change=self.request_backup) \
-            .props('dense outlined suffix=°') \
-            .classes('w-24') \
-            .bind_value(self, 'weed_screw_depth') \
-            .tooltip('Set the drill depth for the weeding automation')
+        # TODO: handle Tornado case -> no max_position property
+        if self.system.field_friend.z_axis and not isinstance(self.system.field_friend.z_axis, Tornado):
+            ui.number('Drill depth', format='%.2f', step=0.01,
+                      min=self.system.field_friend.z_axis.max_position,
+                      max=self.system.field_friend.z_axis.min_position*-1,
+                      on_change=self.request_backup) \
+                .props('dense outlined suffix=°') \
+                .classes('w-24') \
+                .bind_value(self, 'weed_screw_depth') \
+                .tooltip('Set the drill depth for the weeding automation')
         ui.number('Maximum weed distance from crop', step=0.001, min=0.001, max=1.00, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \

@@ -1,27 +1,32 @@
+# pylint: disable=attribute-defined-outside-init
+# pylint: disable=duplicate-code
+# TODO: refactor this and monitoring.py
+from __future__ import annotations
+
 import colorsys
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import rosys
 from nicegui import ui
 from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point
+from rosys.vision import CalibratableCamera
 
-from field_friend.automations.implements.weeding_implement import WeedingImplement
-
+from ...automations.implements.weeding_implement import WeedingImplement
 from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Tornado
 from ...vision import CalibratableUsbCamera
 from ...vision.zedxmini_camera import StereoCamera
-from .calibration_dialog import calibration_dialog
+from .calibration_dialog import CalibrationDialog as calibration_dialog
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
-class camera_card:
+class CameraCard:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.camera_card')
         self.automator = system.automator
         self.camera_provider = system.camera_provider
@@ -35,26 +40,32 @@ class camera_card:
         self.punching_enabled: bool = False
         self.shrink_factor: float = 4.0
         self.show_weeds_to_handle: bool = False
-        self.camera: Optional[rosys.vision.CalibratableCamera] = None
-        self.image_view: Optional[ui.interactive_image] = None
+        self.camera: CalibratableCamera | None = None
+        self.image_view: ui.interactive_image | None = None
         self.calibration_dialog = calibration_dialog(self.camera_provider, self.odometer)
         self.camera_card = ui.card()
+        self.flashlight_toggled: bool = False
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
         ui.timer(0.2 if system.is_real else 0.05, self.update_content)
 
-    def use_camera(self, cam: rosys.vision.CalibratableCamera) -> None:
+    # TODO: refactor this and use refreshable, remove pylint ignore at top
+    def use_camera(self, cam: CalibratableCamera) -> None:
         self.camera = cam
         self.camera_card.clear()
         with self.camera_card.style('position: relative;'):
-            if self.field_friend.flashlight and (isinstance(self.field_friend.flashlight, FlashlightPWM) or isinstance(self.field_friend.flashlight, FlashlightPWMV2)):
+            if self.field_friend.flashlight and isinstance(self.field_friend.flashlight, FlashlightPWM | FlashlightPWMV2):
                 self.flashlight_toggled = False
 
                 async def toggle_flashlight():
+                    # TODO: move into flashlight class
+                    if not self.field_friend.flashlight:
+                        rosys.notify('No flashlight found')
+                        return
                     self.flashlight_toggled = not self.flashlight_toggled
-                    flashlight_button.props(
-                        f'flat color={"grey" if not self.flashlight_toggled else "primary"} icon={"flashlight_off" if not self.flashlight_toggled else "flashlight_on"}')
+                    flashlight_button.props(f'flat color={"grey" if not self.flashlight_toggled else "primary"} '
+                                            f'icon={"flashlight_off" if not self.flashlight_toggled else "flashlight_on"}')
                     if self.flashlight_toggled:
                         await self.field_friend.flashlight.turn_on()
                         rosys.notify('Flashlight turned on')
@@ -65,17 +76,19 @@ class camera_card:
                     'position: absolute; left: 1px; top: 1px; z-index: 500;').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
 
             with ui.button(icon='menu').props('flat color=primary').style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
-                with ui.menu() as menu:
+                with ui.menu():
                     with ui.menu_item():
                         with ui.row():
                             ui.checkbox('Punching').bind_value(self, 'punching_enabled').tooltip(
                                 'Enable punching mode').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                             if isinstance(self.field_friend.z_axis, Axis):
                                 self.depth = ui.number('depth', value=0.02, format='%.2f',
-                                                       step=0.01, min=self.field_friend.z_axis.max_position, max=-self.field_friend.z_axis.min_position).classes('w-16').bind_visibility_from(self, 'punching_enabled')
+                                                       step=0.01, min=self.field_friend.z_axis.max_position,
+                                                       max=-self.field_friend.z_axis.min_position).classes('w-16') \
+                                    .bind_visibility_from(self, 'punching_enabled')
                             elif isinstance(self.field_friend.z_axis, Tornado):
-                                self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180).classes(
-                                    'w-16').bind_visibility_from(self, 'punching_enabled')
+                                self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180) \
+                                    .classes('w-16').bind_visibility_from(self, 'punching_enabled')
                     with ui.menu_item():
                         ui.checkbox('Detecting Plants').bind_value(self.plant_locator, 'is_paused',
                                                                    backward=lambda x: not x, forward=lambda x: not x) \
@@ -113,7 +126,7 @@ class camera_card:
                     ui.label('no camera available').classes('text-center')
                     ui.image('assets/field_friend.webp').classes('w-full')
             return
-        if self.camera is None or self.camera != active_camera:
+        if (self.camera is None or self.camera != active_camera) and isinstance(active_camera, CalibratableCamera):
             self.use_camera(active_camera)
         if self.shrink_factor > 1:
             url = f'{active_camera.get_latest_image_url()}?shrink={self.shrink_factor}'
@@ -122,7 +135,7 @@ class camera_card:
         if self.image_view is None:
             return
         self.image_view.set_source(url)
-        if self.camera.calibration is None:
+        if self.camera is None or self.camera.calibration is None:
             return
         image = active_camera.latest_detected_image
         svg = ''
@@ -164,11 +177,13 @@ class camera_card:
                 self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
                 if self.puncher is not None and self.punching_enabled:
                     self.log.info(f'punching {point3d}')
+                    # TODO: how to call puncher here?
                     if isinstance(self.field_friend.z_axis, Axis):
-                        self.automator.start(self.puncher.drive_and_punch(point3d.x, point3d.y, self.depth.value))
+                        self.log.info(f'should start punching at {point3d.x:.2f}, but puncher was reworked')
+                        # self.automator.start(self.puncher.drive_to_punch(point3d.x, point3d.y, self.depth.value))
                     elif isinstance(self.field_friend.z_axis, Tornado):
-                        self.automator.start(self.puncher.drive_and_punch(
-                            point3d.x, point3d.y, angle=self.angle.value))
+                        self.log.info(f'should start punching at {point3d.x:.2f}, but puncher was reworked')
+                        # self.automator.start(self.puncher.drive_to_punch(point3d.x, point3d.y, angle=self.angle.value))
         if e.type == 'mouseout':
             self.debug_position.set_text('')
 
@@ -193,7 +208,7 @@ class camera_card:
         colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
         self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'
-                                          for p, color in zip(image_points, colors_hex))
+                                          for p, color in zip(image_points, colors_hex, strict=False))
 
     def to_svg(self, detections: rosys.vision.Detections) -> str:
         svg = ''
@@ -202,26 +217,33 @@ class camera_card:
             if point.category_name in self.plant_locator.crop_category_names:
                 svg += f'<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}" r="18" stroke-width="8" stroke="green" fill="none" />'
             elif point.category_name in self.plant_locator.weed_category_names:
-                svg += f'''<line x1="{int(point.x / self.shrink_factor) - cross_size}" y1="{int(point.y / self.shrink_factor)}" x2="{int(point.x / self.shrink_factor) + cross_size}" y2="{int(point.y / self.shrink_factor)}" stroke="red" stroke-width="8" 
-    transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/><line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - cross_size}" x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + cross_size}" stroke="red" stroke-width="8" 
+                svg += f'''<line x1="{int(point.x / self.shrink_factor) - cross_size}" y1="{int(point.y / self.shrink_factor)}" x2="{int(point.x / self.shrink_factor) + cross_size}" y2="{int(point.y / self.shrink_factor)}" stroke="red" stroke-width="8"
+    transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/><line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - cross_size}" x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + cross_size}" stroke="red" stroke-width="8"
     transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
         return svg
 
     def build_svg_for_implement(self) -> str:
-        if not isinstance(self.system.current_implement, WeedingImplement) or self.camera is None or self.camera.calibration is None:
+        if not isinstance(self.system.current_implement, WeedingImplement) or self.camera is None \
+                or self.camera.calibration is None or self.field_friend.y_axis is None:
             return ''
+        svg = ''
         tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0).in_frame(
             self.odometer.prediction_frame).resolve().point_3d
-        tool_2d = self.camera.calibration.project_to_image(tool_3d) / self.shrink_factor
-        svg = f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" fill="black"/>'
+        tool_2d = self.camera.calibration.project_to_image(tool_3d)
+        if tool_2d:
+            tool_2d = tool_2d / self.shrink_factor
+            svg = f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" fill="black"/>'
 
         min_tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position, z=0).in_frame(
             self.odometer.prediction_frame).resolve().point_3d
-        min_tool_2d = self.camera.calibration.project_to_image(min_tool_3d) / self.shrink_factor
+        min_tool_2d = self.camera.calibration.project_to_image(min_tool_3d)
         max_tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.max_position, z=0).in_frame(
             self.odometer.prediction_frame).resolve().point_3d
-        max_tool_2d = self.camera.calibration.project_to_image(max_tool_3d) / self.shrink_factor
-        svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="2" />'
+        max_tool_2d = self.camera.calibration.project_to_image(max_tool_3d)
+        if min_tool_2d and max_tool_2d:
+            min_tool_2d = min_tool_2d / self.shrink_factor
+            max_tool_2d = max_tool_2d / self.shrink_factor
+            svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="2" />'
         if self.show_weeds_to_handle:
             for i, plant in enumerate(self.system.current_implement.weeds_to_handle.values()):
                 position_3d = self.odometer.prediction.point_3d() + rosys.geometry.Point3d(x=plant.x, y=plant.y, z=0)

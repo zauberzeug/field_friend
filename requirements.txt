@@ -1,10 +1,10 @@
+fiona
+geopandas
+geopy
 icecream
 pillow
 prompt-toolkit # for lizard monitor
 pynmea2
-geopy
-shapely
-fiona
-geopandas
 rosys == v0.19.0
+shapely
 uvicorn == 0.28.1

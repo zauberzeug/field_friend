@@ -5,9 +5,7 @@ from dotenv import load_dotenv
 from nicegui import app, ui
 from rosys.analysis import logging_page, videos_page
 
-import field_friend.log_configuration as log_configuration
-from field_friend import interface
-from field_friend.interface.components import header_bar, status_drawer, system_bar
+from field_friend import interface, log_configuration
 from field_friend.system import System
 
 logger = log_configuration.configure()
@@ -24,21 +22,14 @@ def startup() -> None:
         logger.warning(msg)
         ui.label(msg).classes('text-xl')
         return
-    logger.info(f'Starting Field Friend for robot {robot_id}')
+    logger.info('Starting Field Friend for robot %s', robot_id)
     System.version = os.environ.get('VERSION') or robot_id
     system = System()
 
-    def page_wrapper() -> None:
-        drawer = status_drawer(system, system.field_friend, system.gnss, system.odometer, system.automator)
-        header_bar(system, drawer)
-        system_bar()
-
-    interface.pages.main_page(page_wrapper, system)  # /
-    # interface.pages.path_planner_page(page_wrapper, system)  # /path
-    interface.pages.dev_page(page_wrapper, system)  # /dev
-    interface.pages.test_page(page_wrapper, system)  # /test
-    interface.pages.monitor_page(page_wrapper, system)  # /monitor
-    interface.pages.bms_page(page_wrapper, system)  # /bms
+    interface.main_page(system)  # /
+    interface.dev_page(system)  # /dev
+    interface.monitor_page(system)  # /monitor
+    interface.bms_page(system)  # /bms
 
     @app.get('/status')  # /status
     def status():

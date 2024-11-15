@@ -2,7 +2,7 @@ import pytest
 from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 from rosys.geometry import Point
 
-from field_friend import System, localization
+from field_friend import System
 from field_friend.automations.field import Field
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.interface.components.support_point_dialog import SupportPointDialog

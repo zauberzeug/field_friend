@@ -21,7 +21,6 @@ from .automations import (
     Puncher,
 )
 from .automations.implements import (
-    ChopAndScrew,
     ExternalMower,
     Implement,
     Recorder,
@@ -41,7 +40,7 @@ from .hardware import (
     FieldFriendSimulation,
     TeltonikaRouter,
 )
-from .interface.components.info import Info
+from .info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
 from .localization.gnss_hardware import GnssHardware
@@ -123,7 +122,7 @@ class System(rosys.persistence.PersistentModule):
         rosys.on_repeat(watch_robot, 1.0)
 
         self.path_provider = PathProvider()
-        self.field_provider = FieldProvider(self.gnss)
+        self.field_provider = FieldProvider()
         width = 0.64
         length = 0.78
         offset = 0.36
@@ -149,11 +148,11 @@ class System(rosys.persistence.PersistentModule):
         self.field_navigation = FieldNavigation(self, self.monitoring)
 
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, self.monitoring)
-        self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
-                                                          self.follow_crops_navigation,
-                                                          self.field_navigation,
-                                                          self.crossglide_demo_navigation,
-                                                          ]}
+        self.navigation_strategies: dict[str, Navigation] = {n.name: n for n in [self.straight_line_navigation,
+                                                                                 self.follow_crops_navigation,
+                                                                                 self.field_navigation,
+                                                                                 self.crossglide_demo_navigation,
+                                                                                 ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
             case 'tornado':
@@ -171,7 +170,7 @@ class System(rosys.persistence.PersistentModule):
                 implements = [ExternalMower(self)]
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
-        self.implements = {t.name: t for t in implements}
+        self.implements: dict[str, Implement] = {t.name: t for t in implements}
         self._current_navigation: Navigation = self.straight_line_navigation
         self._current_implement = self._current_navigation
         self.automator.default_automation = self._current_navigation.start
@@ -255,10 +254,11 @@ class System(rosys.persistence.PersistentModule):
                                                                             color='#cccccc',
                                                                             frame=self.odometer.prediction_frame,
                                                                             )
+        assert isinstance(self.camera_provider, rosys.vision.SimulatedCameraProvider)
         self.camera_provider.add_camera(camera)
 
     def get_jetson_cpu_temperature(self):
-        with open("/sys/devices/virtual/thermal/thermal_zone0/temp", "r") as f:
+        with open('/sys/devices/virtual/thermal/thermal_zone0/temp') as f:
             temp = f.read().strip()
         return float(temp) / 1000.0  # Convert from milli °C to °C
 

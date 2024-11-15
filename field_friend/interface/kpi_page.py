@@ -1,27 +1,22 @@
-from __future__ import annotations
+from rosys.analysis import KpiChart, kpi_page
 
-from typing import TYPE_CHECKING
-
-from rosys.analysis import KpiChart
-from rosys.analysis import kpi_page as rosys_kpi_page
-
-if TYPE_CHECKING:
-    from field_friend.system import System
+from ..system import System
+from .components import create_header
 
 
-class kpi_page(rosys_kpi_page):
+class KpiPage(kpi_page):
 
-    def __init__(self, page_wrapper, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         super().__init__(system.kpi_provider)
-        page_wrapper()
+        create_header(system)
 
     @property
     def language(self) -> str:
-        return "en"
+        return 'en'
 
     @property
     def title(self) -> str:
-        return "Key Performance Indicators"
+        return 'Key Performance Indicators'
 
     @property
     def charts(self) -> list[KpiChart]:
@@ -44,7 +39,7 @@ class kpi_page(rosys_kpi_page):
             'reference_tool_failed': 'reference tool failed',
             'punching_failed': 'punching failed'
         }, colormap='Reds')
-        activities = KpiChart(title="Automation Statistics", indicators={
+        activities = KpiChart(title='Automation Statistics', indicators={
             'mowing_completed': 'mowing completed',
             'weeding_completed': 'weeding completed',
             'coin_collecting_completed': 'coin collecting completed'
@@ -54,7 +49,7 @@ class kpi_page(rosys_kpi_page):
     @property
     def timespans(self) -> dict[int, str]:
         return {
-            7: "7 days",
-            28: "4 weeks",
-            90: "3 months",
+            7: '7 days',
+            28: '4 weeks',
+            90: '3 months',
         }

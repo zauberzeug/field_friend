@@ -1,6 +1,5 @@
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Optional
 from uuid import uuid4
 
 from rosys.geometry import Point3d
@@ -14,7 +13,7 @@ class Plant:
     positions: deque[Point3d] = field(default_factory=lambda: deque(maxlen=20))
     detection_time: float
     confidences: deque[float] = field(default_factory=lambda: deque(maxlen=20))
-    detection_image: Optional[Image] = None
+    detection_image: Image | None = None
 
     @property
     def position(self) -> Point3d:
