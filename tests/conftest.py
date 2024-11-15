@@ -5,17 +5,19 @@ from collections.abc import AsyncGenerator, Generator
 import pytest
 import rosys
 from rosys.geometry import Point
+from rosys.geometry.geo import GeoPoint, GeoReference
+from rosys.hardware import GnssSimulation
 from rosys.testing import forward, helpers
 
-from field_friend import localization
 from field_friend.automations import Field, Row
 from field_friend.interface.components.field_creator import FieldCreator
-from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
-ROBOT_GEO_START_POSITION = GeoPoint(lat=51.98333489813455, long=7.434242465994318)
+# TODO: heading?
+ROBOT_GEO_START_POSITION = GeoReference(lat=51.98333489813455, lon=7.434242465994318)
 
-FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, long=7.434242765994318)
+FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, lon=7.434242765994318)
+# TODO: shift geopoint
 FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=10, y=0))
 
 log = logging.getLogger('field_friend.testing')
@@ -27,7 +29,7 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     s = System()
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
-    localization.reference = ROBOT_GEO_START_POSITION
+    s.gnss.reference = ROBOT_GEO_START_POSITION
     helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
@@ -46,7 +48,7 @@ def gnss(system: System) -> GnssSimulation:
 
 
 class TestField:
-    def __init__(self):
+    def __init__(self, reference: GeoReference):
         self.id = 'test_field_id'
         self.name = 'Test Field'
         self.first_row_start = FIELD_FIRST_ROW_START
@@ -55,6 +57,7 @@ class TestField:
         self.row_count = 4
         self.outline_buffer_width = 2
         self.row_support_points = []
+        # TODO: shift geopoint
         self.rows = [
             Row(id=f'field_{self.id}_row_1', name='row_1', points=[
                 self.first_row_start,

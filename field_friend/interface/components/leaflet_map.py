@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 
 from nicegui import app, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
+from rosys.geometry.geo import GeoPoint
+from rosys.hardware import GnssMeasurement
 
-from ...localization.geo_point import GeoPoint
-from ...localization.gnss_simulation import GnssSimulation
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
@@ -33,14 +33,14 @@ class LeafletMap:
             },
             'edit': False,
         }
-        center_point = GeoPoint(lat=51.983159, long=7.434212)
-        if self.system.gnss.current is not None and self.system.gnss.current.location is not None:
-            center_point = self.system.gnss.current.location
+        center_point = GeoPoint(lat=0.9072773, lon=0.1297515)
+        if self.system.gnss.last_measurement is not None:
+            center_point = self.system.gnss.last_measurement.location.point
         self.m: ui.leaflet
         if draw_tools:
-            self.m = ui.leaflet(center=center_point.tuple, zoom=13, draw_control=self.draw_control)
+            self.m = ui.leaflet(center=center_point.degree_tuple, zoom=13, draw_control=self.draw_control)
         else:
-            self.m = ui.leaflet(center=center_point.tuple, zoom=13)
+            self.m = ui.leaflet(center=center_point.degree_tuple, zoom=13)
         self.m.clear_layers()
         self.current_basemap: TileLayer | None = None
         self.toggle_basemap()
@@ -53,7 +53,7 @@ class LeafletMap:
         self.field_provider.FIELDS_CHANGED.register_ui(self.update_layers)
         self.field_provider.FIELD_SELECTED.register_ui(self.update_layers)
 
-        self.gnss.ROBOT_GNSS_POSITION_CHANGED.register_ui(self.update_robot_position)
+        self.gnss.NEW_MEASUREMENT.register_ui(self.update_robot_position)
 
     def buttons(self) -> None:
         """Builds additional buttons to interact with the map."""
@@ -81,34 +81,36 @@ class LeafletMap:
         self.field_layers = []
         for field in self.field_provider.fields:
             color = '#6E93D6' if self.field_provider.selected_field is not None and field.id == self.field_provider.selected_field.id else '#999'
+            field_outline = [p.degree_tuple for p in field.outline]
             self.field_layers.append(self.m.generic_layer(name='polygon',
-                                                          args=[field.outline_as_tuples, {'color': color}]))
+                                                          args=[field_outline, {'color': color}]))
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
         if self.field_provider.selected_field is not None:
             for row in self.field_provider.selected_field.rows:
+                row_points = [p.degree_tuple for p in row.points]
                 self.row_layers.append(self.m.generic_layer(name='polyline',
-                                                            args=[row.points_as_tuples, {'color': '#F2C037'}]))
+                                                            args=[row_points, {'color': '#F2C037'}]))
 
-    def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
+    def update_robot_position(self, measurement: GnssMeasurement, dialog=None) -> None:
         # TODO: where does the dialog come from?
         if dialog:
             self.on_dialog_close()
             dialog.close()
             # TODO why can we only relocate in simulation?
-            if isinstance(self.gnss, GnssSimulation):
-                self.gnss.relocate(position)
-        self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
+            # if isinstance(self.gnss, GnssSimulation):
+            #     self.gnss.relocate(position)
+        self.robot_marker = self.robot_marker or self.m.marker(latlng=measurement.location.point.degree_tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
-        self.robot_marker.move(*position.tuple)
+        self.robot_marker.move(*measurement.location.point.degree_tuple)
 
     def zoom_to_robot(self) -> None:
-        if self.gnss.current is None:
+        if self.gnss.last_measurement is None:
             self.log.warning('No GNSS position available, could not zoom to robot')
             return
-        self.m.set_center(self.gnss.current.location.tuple)
+        self.m.set_center(self.gnss.last_measurement.location.point.degree_tuple)
         if self.current_basemap is not None:
             self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 

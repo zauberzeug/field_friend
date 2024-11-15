@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, cast
 import rosys
 from nicegui import ui
 
-from ... import localization
 from ...hardware import Axis, ChainAxis, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado
 
 if TYPE_CHECKING:
@@ -190,23 +189,24 @@ def create_status_drawer(system: System) -> ui.right_drawer:
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
             # TODO: move this into gnss since it is used multiple times, check stuff above this too!
-            direction_flag = '?' if gnss.current is None or gnss.current.heading is None else \
-                'N' if gnss.current.heading <= 23 else \
-                'NE' if gnss.current.heading <= 68 else \
-                'E' if gnss.current.heading <= 113 else \
-                'SE' if gnss.current.heading <= 158 else \
-                'S' if gnss.current.heading <= 203 else \
-                'SW' if gnss.current.heading <= 248 else \
+            direction_flag = '?' if gnss.last_measurement is None or gnss.last_measurement.location.heading is None else \
+                'N' if gnss.last_measurement.location.heading <= 23 else \
+                'NE' if gnss.last_measurement.location.heading <= 68 else \
+                'E' if gnss.last_measurement.location.heading <= 113 else \
+                'SE' if gnss.last_measurement.location.heading <= 158 else \
+                'S' if gnss.last_measurement.location.heading <= 203 else \
+                'SW' if gnss.last_measurement.location.heading <= 248 else \
                 'W' if gnss.current.heading <= 293 else \
                 'NW' if gnss.current.heading <= 338 else \
                 'N'
 
             kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_kpi()}'
-            gnss_device_label.text = 'No connection' if gnss.device is None else 'Connected'
-            reference_position_label.text = 'No reference' if localization.reference is None else 'Set'
-            gnss_label.text = str(system.gnss.current.location) if system.gnss.current is not None else 'No position'
-            heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
-            rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
+            gnss_device_label.text = 'Connected' if gnss.is_connected else 'No Connection'
+            reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'
+            gnss_label.text = str(
+                system.gnss.last_measurement.location.point) if system.gnss.last_measurement is not None else 'No position'
+            heading_label.text = f'{system.gnss.last_measurement.location.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
+            rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
             odometry_label.text = str(odometer.prediction)
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer

@@ -5,15 +5,16 @@ from typing import Any, Self
 import rosys
 import shapely
 from rosys.geometry import Point
+from rosys.geometry.geo import GeoPoint, GeoReference
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 
-from .. import localization
-from ..localization import GeoPoint, GeoPointCollection
-
 
 @dataclass(slots=True, kw_only=True)
-class Row(GeoPointCollection):
+class Row:
+    id: str
+    name: str
+    points: list[GeoPoint]
     reverse: bool = False
 
     def reversed(self):
@@ -23,9 +24,13 @@ class Row(GeoPointCollection):
             points=list(reversed(self.points)),
         )
 
-    def line_segment(self) -> rosys.geometry.LineSegment:
-        return rosys.geometry.LineSegment(point1=self.points[0].cartesian(),
-                                          point2=self.points[-1].cartesian())
+    def line_segment(self, reference: GeoReference) -> rosys.geometry.LineSegment:
+        return rosys.geometry.LineSegment(point1=reference.point_to_local(self.points[0]),
+                                          point2=reference.point_to_local(self.points[-1]))
+
+    @property
+    def points_as_tuples(self) -> list[tuple[float, float]]:
+        return [p.tuple for p in self.points]
 
 
 @dataclass(slots=True, kw_only=True)
@@ -34,7 +39,7 @@ class RowSupportPoint(GeoPoint):
 
     @classmethod
     def from_geopoint(cls, geopoint: GeoPoint, row_index: int) -> Self:
-        return cls(lat=geopoint.lat, long=geopoint.long, row_index=row_index)
+        return cls(lat=geopoint.lat, lon=geopoint.lon, row_index=row_index)
 
 
 class Field:
@@ -43,6 +48,7 @@ class Field:
                  name: str,
                  first_row_start: GeoPoint,
                  first_row_end: GeoPoint,
+                 reference: GeoReference,
                  row_spacing: float = 0.5,
                  row_count: int = 10,
                  outline_buffer_width: float = 2,
@@ -53,6 +59,7 @@ class Field:
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
         self.first_row_end: GeoPoint = first_row_end
+        self.reference: GeoReference = reference
         self.row_spacing: float = row_spacing
         self.row_count: int = row_count  # rows per bed
         self.bed_count: int = bed_count
@@ -67,7 +74,7 @@ class Field:
 
     @property
     def outline_cartesian(self) -> list[rosys.geometry.Point]:
-        return [p.cartesian() for p in self.outline]
+        return [self.reference.point_to_local(p) for p in self.outline]
 
     @property
     def outline_as_tuples(self) -> list[tuple[float, float]]:
@@ -96,9 +103,11 @@ class Field:
         self.outline = self._generate_outline()
 
     def _generate_rows(self) -> list[Row]:
+        assert self.reference is not None
         assert self.first_row_start is not None
         assert self.first_row_end is not None
-        ab_line_cartesian = LineString([self.first_row_start.cartesian().tuple, self.first_row_end.cartesian().tuple])
+        ab_line_cartesian = LineString([self.reference.point_to_local(self.first_row_start).tuple,
+                                        self.reference.point_to_local(self.first_row_end).tuple])
         rows: list[Row] = []
 
         last_support_point = None
@@ -111,7 +120,7 @@ class Field:
 
             support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
             if support_point:
-                support_point_cartesian = support_point.cartesian()
+                support_point_cartesian = self.reference.point_to_local(support_point)
                 offset = ab_line_cartesian.distance(shapely.geometry.Point(
                     [support_point_cartesian.x, support_point_cartesian.y]))
                 last_support_point = support_point
@@ -132,8 +141,8 @@ class Field:
                 bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
                 offset = base_offset + bed_offset
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
-            row_points: list[GeoPoint] = [localization.reference.shifted(
-                Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
+            row_points: list[GeoPoint] = [self.reference.origin.shifted(
+                Point(x=p[0], y=p[1]), reference=self.reference) for p in offset_row_coordinated]
             row = Row(id=f'field_{self.id}_row_{i + 1!s}', name=f'row_{i + 1}', points=row_points)
             rows.append(row)
         return rows
@@ -141,20 +150,20 @@ class Field:
     def _generate_outline(self) -> list[GeoPoint]:
         assert len(self.rows) > 0
         outline_unbuffered: list[Point] = [
-            self.first_row_end.cartesian(),
-            self.first_row_start.cartesian()
+            self.reference.point_to_local(self.first_row_end),
+            self.reference.point_to_local(self.first_row_start),
         ]
         if len(self.rows) > 1:
             for p in self.rows[-1].points:
-                outline_unbuffered.append(p.cartesian())
+                outline_unbuffered.append(self.reference.point_to_local(p))
             outline_shape = Polygon([p.tuple for p in outline_unbuffered])
         else:
             outline_shape = LineString([p.tuple for p in outline_unbuffered])
         bufferd_polygon = outline_shape.buffer(
             self.outline_buffer_width, cap_style='square', join_style='mitre', mitre_limit=math.inf)
         bufferd_polygon_coords = bufferd_polygon.exterior.coords
-        outline: list[GeoPoint] = [localization.reference.shifted(
-            Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
+        outline: list[GeoPoint] = [self.reference.origin.shifted(
+            Point(x=p[0], y=p[1]), reference=self.reference) for p in bufferd_polygon_coords]
         return outline
 
     def to_dict(self) -> dict:
@@ -179,10 +188,17 @@ class Field:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Self:
-        data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'], long=data['first_row_start']['long'])
-        data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], long=data['first_row_end']['long'])
+    def from_dict(cls, data: dict[str, Any], reference: GeoReference) -> Self:
+        # TODO: handle old fields
+        if 'long' in data['first_row_start']:
+            data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'],
+                                               lon=data['first_row_start']['long'])
+            data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], lon=data['first_row_end']['long'])
+        else:
+            data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'],
+                                               lon=data['first_row_start']['lon'])
+            data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], lon=data['first_row_end']['lon'])
         data['row_support_points'] = [rosys.persistence.from_dict(
             RowSupportPoint, sp) for sp in data['row_support_points']] if 'row_support_points' in data else []
-        field_data = cls(**cls.args_from_dict(data))
+        field_data = cls(**cls.args_from_dict(data), reference=reference)
         return field_data
