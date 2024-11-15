@@ -43,9 +43,9 @@ from .hardware import (
 from .info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
+from .localization.gnss_correction_service import GnssCorrectionService
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
-from .localization.gnss_correction_service import GnssCorrectionService
 from .vision import CalibratableUsbCameraProvider, CameraConfigurator
 from .vision.zedxmini_camera import ZedxminiCameraProvider
 

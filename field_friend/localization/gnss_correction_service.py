@@ -1,9 +1,10 @@
-import rosys
 import numpy as np
+import rosys
+
 from .gnss import Gnss
 
 
-class GnssCorrectionService():
+class GnssCorrectionService:
     def __init__(self, imu: rosys.hardware.Imu | None, gnss: Gnss, robot_height: float) -> None:
         self.imu = imu
         self.gnss = gnss
