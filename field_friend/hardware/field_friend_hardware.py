@@ -402,7 +402,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         self.imu: rosys.hardware.Imu | None
         if 'imu' in config_hardware:
-            self.imu = rosys.hardware.Imu(robot_brain,
+            self.imu = rosys.hardware.ImuHardware(robot_brain,
                                             name=config_hardware['imu']['name'],
                                             offset_rotation=config_hardware['imu']['offset_rotation'],
                                             )
