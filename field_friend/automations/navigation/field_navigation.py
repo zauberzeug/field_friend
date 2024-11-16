@@ -27,7 +27,8 @@ class FieldNavigation(StraightLineNavigation):
     DRIVE_STEP = 0.2
     TURN_STEP = np.deg2rad(25.0)
     MAX_GNSS_WAITING_TIME = 15.0
-    MAX_ROW_DISTANCE = 0.05
+    MAX_DISTANCE_DEVIATION = 0.05
+    MAX_ANGLE_DEVIATION = np.deg2rad(10.0)
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__(system, implement)
@@ -86,8 +87,6 @@ class FieldNavigation(StraightLineNavigation):
         return True
 
     def _should_finish(self) -> bool:
-        is_in = self._state in (State.FIELD_COMPLETED, State.ERROR)
-        self.log.error(f'State: {self._state} - {is_in}')
         return self._state in (State.FIELD_COMPLETED, State.ERROR)
 
     async def finish(self) -> None:
@@ -110,7 +109,6 @@ class FieldNavigation(StraightLineNavigation):
         self.end_point = None
         start_point = self.current_row.points[0].cartesian()
         end_point = self.current_row.points[-1].cartesian()
-
         distance_to_start = self.odometer.prediction.distance(start_point)
         distance_to_end = self.odometer.prediction.distance(end_point)
         relative_start = self.odometer.prediction.relative_point(start_point)
@@ -119,7 +117,20 @@ class FieldNavigation(StraightLineNavigation):
                        f'and relative end: {relative_end} with distance {distance_to_end}')
 
         self.robot_on_field = relative_start.x * relative_end.x <= 0
-        if not self.robot_on_field:
+        if self.robot_on_field:
+            distance_to_row = self.current_row.line_segment().line.foot_point(
+                self.odometer.prediction.point).distance(self.odometer.prediction.point)
+            if distance_to_row > self.MAX_DISTANCE_DEVIATION:
+                rosys.notify('Between two rows', 'negative')
+                return
+            angle_to_start = self.odometer.prediction.relative_direction(start_point)
+            angle_to_end = self.odometer.prediction.relative_direction(end_point)
+            if abs(angle_to_start) > self.MAX_ANGLE_DEVIATION and abs(angle_to_end) > self.MAX_ANGLE_DEVIATION:
+                rosys.notify('Robot heading deviates too much from row direction', 'negative')
+                return
+            if abs(angle_to_start) < abs(angle_to_end):
+                start_point, end_point = end_point, start_point
+        else:
             # TODO: try it with only one swap
             if distance_to_start > distance_to_end:
                 start_point, end_point = end_point, start_point
@@ -129,20 +140,6 @@ class FieldNavigation(StraightLineNavigation):
                 start_point, end_point = end_point, start_point
                 distance_to_start, distance_to_end = distance_to_end, distance_to_start
                 relative_start, relative_end = relative_end, relative_start
-        else:
-            robot_heading = self.odometer.prediction.yaw  # global heading?
-            # the angles between the robot and the row?
-            # Isn't the np.arctan2(rel_to_start.y, rel_to_start.x) is the angle between the robot and the start point already..?
-            angle_to_start = abs(rosys.helpers.angle(robot_heading, np.arctan2(relative_start.y, relative_start.x)))
-            angle_to_end = abs(rosys.helpers.angle(robot_heading, np.arctan2(relative_end.y, relative_end.x)))
-            print(f'angle_to_start 🔴: {angle_to_start} angle_to_end 🔴: {angle_to_end}')
-            # if both angles are greater than 10 degrees, the robot heading deviates too much from the row direction
-            if angle_to_start > np.deg2rad(10) and angle_to_end > np.deg2rad(10):
-                self.log.warning('Robot heading deviates too much from row direction')
-                rosys.notify('Robot heading deviates too much from row direction', 'negative')
-                return
-            if angle_to_start < angle_to_end:
-                start_point, end_point = end_point, start_point
 
         self.start_point = start_point
         self.end_point = end_point
@@ -179,7 +176,6 @@ class FieldNavigation(StraightLineNavigation):
             self.plant_provider.clear()
 
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
-
         if not self.robot_on_field:
             # turn towards row start
             assert self.start_point is not None
@@ -188,23 +184,11 @@ class FieldNavigation(StraightLineNavigation):
             # drive to row start
             await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
-            # turn to row
-            assert self.end_point is not None
-            row_yaw = self.start_point.direction(self.end_point)
-            await self.turn_in_steps(row_yaw)
-            return State.FOLLOWING_ROW
-
-        distance_to_row = self.current_row.line_segment().line.foot_point(
-            self.odometer.prediction.point).distance(self.odometer.prediction.point)
-        if distance_to_row < self.MAX_ROW_DISTANCE:
-            # turn towards row end
-            target_yaw = self.odometer.prediction.direction(self.end_point)
-            await self.turn_in_steps(target_yaw)
-            rosys.notify('Inside field area', 'positive')
-            return State.FOLLOWING_ROW
-
-        rosys.notify('Between rows', 'negative')
-        return State.ERROR
+        # turn to row
+        assert self.end_point is not None
+        row_yaw = self.start_point.direction(self.end_point)
+        await self.turn_in_steps(row_yaw)
+        return State.FOLLOWING_ROW
 
     async def drive_in_steps(self, target: Pose) -> None:
         while True:
