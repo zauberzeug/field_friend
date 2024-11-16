@@ -1,25 +1,25 @@
-from typing import TYPE_CHECKING
-
 import rosys
 from nicegui import binding, ui
 
-from ..components import camera_card, leaflet_map, operation, robot_scene
+from ..system import System
+from .components import CameraCard as camera_card
+from .components import LeafletMap as leaflet_map
+from .components import Operation as operation
+from .components import RobotScene as robot_scene
+from .components import create_header
 
-if TYPE_CHECKING:
-    from ...system import System
 
+class MainPage:
 
-class main_page():
-
-    def __init__(self, page_wrapper, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.system = system
 
         @ui.page('/')
         def page() -> None:
-            page_wrapper()
+            create_header(system)
             self.content(devmode=False)
 
-    def content(self, devmode) -> None:
+    def content(self, devmode: bool) -> None:
         page_height = '50vh' if devmode else 'calc(100vh - 170px)'
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         self.system.gnss.reference_warning_dialog()
@@ -36,7 +36,7 @@ class main_page():
                 with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
                     camera_card(self.system)
                     robot_scene(self.system)
-                    with ui.row().style("margin: 1rem; width: calc(100% - 2rem);"):
+                    with ui.row().style('margin: 1rem; width: calc(100% - 2rem);'):
                         with ui.column():
                             ui.button('emergency stop', on_click=lambda: self.system.field_friend.estop.set_soft_estop(True)).props('color=red') \
                                 .classes('py-3 px-6 text-lg').bind_visibility_from(self.system.field_friend.estop, 'is_soft_estop_active', value=False)

@@ -10,8 +10,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'axis_D1',
                  can: rosys.hardware.CanHardware,
-                 max_position: int = -0.1,
-                 min_position: int = 0.1,
+                 max_position: float = -0.1,
+                 min_position: float = 0.1,
                  axis_offset: int = 0,
                  can_address: int = 0x60,
                  homing_acceleration: int = 100,
@@ -115,7 +115,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
                 await rosys.sleep(0.1)
         return self.is_referenced
 
-    async def speed_Mode(self, speed: int):
+    async def speed_mode(self, speed: int):
         # due to some timing issues, the speed command is sent twice
         await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')
         await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')

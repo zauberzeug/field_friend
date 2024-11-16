@@ -1,13 +1,18 @@
+# pylint: disable=duplicate-code
+# TODO: refactor this and navigation.py
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
 
 from ...automations.implements.implement import Implement
+from ...automations.implements.weeding_implement import WeedingImplement
 from .navigation import Navigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class WorkflowException(Exception):
@@ -16,7 +21,7 @@ class WorkflowException(Exception):
 
 class CrossglideDemoNavigation(Navigation):
 
-    def __init__(self, system: 'System', tool: Implement) -> None:
+    def __init__(self, system: System, tool: Implement) -> None:
         super().__init__(system, tool)
         self.MAX_STRETCH_DISTANCE: float = 5.0
         self.detector = system.detector
@@ -43,7 +48,10 @@ class CrossglideDemoNavigation(Navigation):
                 self.create_simulation()
             self.log.info('Navigation started')
             while not self._should_finish():
-                self.implement.next_punch_y_position = np.random.uniform(-0.11, 0.1)
+                # TODO: implement has no attribute next_punch_y_position, only weeding implement has it
+                # what is the correct way to handle this? currently it's initialized with a recorder as the implement
+                if isinstance(self.implement, WeedingImplement):
+                    self.implement.next_punch_y_position = np.random.uniform(-0.11, 0.1)
                 await self.implement.start_workflow()
         except WorkflowException as e:
             self.log.error(f'WorkflowException: {e}')
@@ -66,12 +74,9 @@ class CrossglideDemoNavigation(Navigation):
         pass
         # TODO: implement create_simulation
 
-    def settings_ui(self) -> None:
-        super().settings_ui()
-
     def backup(self) -> dict:
         return super().backup() | {
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+        return None

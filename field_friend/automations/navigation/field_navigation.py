@@ -8,12 +8,11 @@ from nicegui import ui
 from rosys.geometry import Point, Pose
 
 from ..field import Field, Row
-from ..implements import Implement
-from .follow_crops_navigation import FollowCropsNavigation
+from ..implements.implement import Implement
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
-    from system import System
+    from ...system import System
 
 
 class State(Enum):
@@ -187,13 +186,13 @@ class FieldNavigation(StraightLineNavigation):
                 rosys.notify('Between rows', 'negative')
                 return State.FIELD_COMPLETED
         # turn towards row start
+        assert self.start_point is not None
         target_yaw = self.odometer.prediction.direction(self.start_point)
         await self.turn_in_steps(target_yaw)
         # drive to row start
         await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn to row
-        assert self.start_point is not None
         assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
         await self.turn_in_steps(row_yaw)
@@ -209,7 +208,9 @@ class FieldNavigation(StraightLineNavigation):
             await self._drive_towards_target(drive_step, target, timeout=timeout)
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
 
-    async def turn_to_yaw(self, target_yaw, angle_threshold=np.deg2rad(1.0)) -> None:
+    async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
+        if angle_threshold is None:
+            angle_threshold = np.deg2rad(1.0)
         while True:
             angle = rosys.helpers.eliminate_2pi(target_yaw - self.odometer.prediction.yaw)
             if abs(angle) < angle_threshold:
@@ -234,6 +235,8 @@ class FieldNavigation(StraightLineNavigation):
             angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
 
     async def _run_following_row(self, distance: float) -> State:
+        assert self.end_point is not None
+        assert self.start_point is not None
         end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
                                        yaw=self.start_point.direction(self.end_point), time=0)
         if end_pose.relative_point(self.odometer.prediction.point).x > 0:
@@ -314,6 +317,7 @@ class FieldNavigation(StraightLineNavigation):
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
 
     def create_simulation(self, crop_distance: float = 0.3) -> None:
+        assert isinstance(self.detector, rosys.vision.DetectorSimulation)
         self.detector.simulated_objects.clear()
         self.plant_provider.clear()
         if self.field is None:

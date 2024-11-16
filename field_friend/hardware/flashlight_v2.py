@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 import rosys
 from rosys.helpers import remove_indentation
@@ -29,15 +28,16 @@ class FlashlightV2(rosys.hardware.Module, abc.ABC):
 class FlashlightHardwareV2(FlashlightV2, rosys.hardware.ModuleHardware):
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  name: str = 'flashlight',
                  front_pin: int = 12,
                  back_pin: int = 23) -> None:
         self.name = name
         self.expander = expander
+        # TODO: is this always on the expander? otherwise it will break -> config mit Flashlight auf dem Expander? Sonst nicht optional
         lizard_code = remove_indentation(f'''
-            {name}_front = {expander.name}.Output({front_pin})
-            {name}_back = {expander.name}.Output({back_pin})
+            {name}_front = {expander.name + "." if expander else ""}Output({front_pin})
+            {name}_back = {expander.name + "." if expander else ""}Output({back_pin})
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 
@@ -64,8 +64,7 @@ class FlashlightSimulationV2(FlashlightV2, rosys.hardware.ModuleSimulation):
         super().__init__()
 
     async def turn_on(self) -> None:
-        if not await super().turn_on():
-            return
+        await super().turn_on()
 
     async def turn_off(self) -> None:
         await super().turn_off()

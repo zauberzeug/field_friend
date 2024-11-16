@@ -1,21 +1,24 @@
-from typing import TYPE_CHECKING, Callable
-from uuid import uuid4
+# pylint: disable=duplicate-code
+# TODO: refactor this and field_creator.py
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import rosys
-import shapely
 from nicegui import ui
 
-from field_friend.automations.field import RowSupportPoint
-from field_friend.interface.components.monitoring import CameraPosition
-from field_friend.localization import GeoPoint
+from ...automations.field import RowSupportPoint
+from ...interface.components.monitoring import CameraPosition
+from ...localization import GeoPoint
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class SupportPointDialog:
 
-    def __init__(self, system: 'System'):
+    def __init__(self, system: System) -> None:
         self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
         self.steerer = system.steerer
@@ -33,7 +36,7 @@ class SupportPointDialog:
                     self.headline = ui.label().classes('text-lg font-bold')
                     self.content = ui.column().classes('items-center')
                     # NOTE: the next function is replaced, hence we need the lambda
-                    ui.button('Next', on_click=lambda: self.next())
+                    ui.button('Next', on_click=lambda: self.next())  # pylint: disable=unnecessary-lambda
         ui.timer(0.1, self.update_front_cam)
         self.open()
 
@@ -55,7 +58,7 @@ class SupportPointDialog:
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the row number you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
-            else:
+            elif self.field_provider.selected_field is not None:
                 ui.label('2. Enter the bed and row number for the support point:').classes('text-lg')
                 ui.number(
                     label='Bed Number', min=1, max=self.field_provider.selected_field.bed_count, step=1, value=1) \
@@ -71,7 +74,7 @@ class SupportPointDialog:
 
     def confirm_support_point(self) -> None:
         assert self.gnss.current is not None
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.support_point_coordinates = self.gnss.current.location
@@ -92,6 +95,9 @@ class SupportPointDialog:
             ui.notify('No valid point coordinates.')
             return
         field = self.field_provider.selected_field
+        if field is None:
+            ui.notify('No field selected.')
+            return
         row_index = (self.bed_number - 1) * field.row_count + self.row_name - 1
         row_support_point = RowSupportPoint.from_geopoint(self.support_point_coordinates, row_index)
         self.field_provider.add_row_support_point(field.id, row_support_point)

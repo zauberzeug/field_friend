@@ -1,16 +1,15 @@
 import logging
+from typing import Any
 
 import rosys
 
-from ..localization import Gnss
-from . import Field, Row, RowSupportPoint
+from .field import Field, Row, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
-    def __init__(self, gnss: Gnss) -> None:
+    def __init__(self) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.field_provider')
-        self.gnss = gnss
         self.fields: list[Field] = []
         self.needs_backup: bool = False
 
@@ -39,12 +38,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
             'selected_field': self.selected_field.id if self.selected_field else None,
         }
 
-    def restore(self, data: dict[str, dict]) -> None:
+    def restore(self, data: dict[str, Any]) -> None:
         fields_data: dict[str, dict] = data.get('fields', {})
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)
             self.fields.append(new_field)
-        selected_field_id = data.get('selected_field')
+        selected_field_id: str | None = data.get('selected_field')
         if selected_field_id:
             self.selected_field = self.get_field(selected_field_id)
             self.FIELD_SELECTED.emit()
@@ -106,7 +105,14 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.selected_field = self.get_field(id_)
         self.FIELD_SELECTED.emit()
 
-    def update_field_parameters(self, field_id: str, name: str, row_count: int, row_spacing: float, outline_buffer_width: float, bed_count: int, bed_spacing: float) -> None:
+    def update_field_parameters(self, *,
+                                field_id: str,
+                                name: str,
+                                row_count: int,
+                                row_spacing: float,
+                                outline_buffer_width: float,
+                                bed_count: int,
+                                bed_spacing: float) -> None:
         field = self.get_field(field_id)
         if not field:
             self.log.warning('Field with id %s not found. Cannot update parameters.', field_id)

@@ -1,0 +1,94 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "field_friend"
+version = "0.6.0-dev"
+description = "Zauberzeug Field Friend with RoSys"
+authors = [{ name="Zauberzeug", email="info@zauberzeug.com" }]
+requires-python = ">=3.11, <3.12"
+readme = "README.md"
+
+[tool.mypy]
+python_version = "3.11"
+install_types = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "coloredlogs.*",
+    "fiona.*",
+    "icecream.*",
+    "geopandas.*",
+    "pynmea2.*",
+    "serial.*",
+    "shapely.*",
+    "geographiclib.*",
+]
+ignore_missing_imports = true
+
+[tool.pylint]
+disable = [
+    "C0103",  # Invalid name (e.g., variable/function/class naming conventions)
+    "C0111",  # Missing docstring (in function/class/method)
+    "C0301",  # Line too long (exceeds character limit)
+    "R0902",  # Too many public methods
+    "R0903",  # Too few public methods
+    "R0904",  # Too many public methods
+    "R0912",  # Too many branches
+    "R0913",  # Too many arguments
+    "R0914",  # Too many local variables
+    "R0915",  # Too many statements
+    "W0102",  # Dangerous default value as argument
+    "W0718",  # Catching too general exception
+    "W1203",  # Use % formatting in logging functions
+    "W1514",  # Using open without explicitly specifying an encoding
+    "W0511",  # TODO: comments
+]
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py311"
+exclude = ["odrive/*"]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "W",  # pycodestyle
+    "B",  # bugbear
+    "I",  # isort
+    "RUF", # ruff
+    "UP", # pyupgrade
+    "PL", # pylint
+    "N", # pep8-naming
+]
+ignore = [
+    "E501", # Line too long
+    "N806", # variable should be lowercase
+    "N813", # CamelCase imported as lower_case
+    "N818", # enforce CustomError(Exception) name suffix
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments
+    "PLR0915", # Too many arguments
+    "PLR2004", # Magic value comparison
+    "PLR0911", # Too many return statements
+]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+cache_dir = "../.pytest_cache"
+testpaths = [
+    "tests"
+]
+python_files = "test_*.py"
+python_functions = "test_*"
+asyncio_mode = "auto"

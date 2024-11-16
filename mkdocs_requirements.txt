@@ -1,10 +1,10 @@
-mkdocs==1.5.3
-mkdocs-material
-mdx-include
-mkdocs-pymdownx-material-extras
+black
 mdx-footnotes2
-mkdocstrings-python
+mdx-include
+mkdocs==1.5.3
 mkdocs-gen-files
 mkdocs-literate-nav
+mkdocs-material
+mkdocs-pymdownx-material-extras
 mkdocs-section-index
-black
+mkdocstrings-python

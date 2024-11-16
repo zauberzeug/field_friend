@@ -35,22 +35,22 @@ RUN python3 -m pip install --upgrade pip
 WORKDIR /app
 # NOTE installing some older version of rosys beforehand will improves overall build times because most of the dependencies are already installed
 # this obviously only works if we do not change the old version of rosys (here 0.9.5)
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install rosys==0.9.5
 # we also preinstall some other dependencies of Field Friend which take quite some time to compile and do not change often
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install pillow
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install pyudev
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install geopandas
 
 COPY requirements.txt ./
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \ 
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install -r requirements.txt
 
 # for flashing esp32 as root
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip sudo pip install esptool 
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip sudo pip install esptool
 
 RUN mkdir -p /home/zauberzeug/.lizard # ensure dir is owned by zauberzeug
 WORKDIR /home/zauberzeug/.lizard
@@ -61,7 +61,7 @@ RUN CURL="curl -s https://api.github.com/repos/zauberzeug/lizard/releases" && \
     rm *zip && \
     ls -lha
 
-# for Lizard monitor 
+# for Lizard monitor
 RUN pip install --no-cache prompt-toolkit
 WORKDIR /app
 COPY  --chown=${USERNAME}:${USER_GID} field_friend ./field_friend/
