@@ -113,8 +113,8 @@ class FieldNavigation(StraightLineNavigation):
         distance_to_end = self.odometer.prediction.distance(end_point)
         relative_start = self.odometer.prediction.relative_point(start_point)
         relative_end = self.odometer.prediction.relative_point(end_point)
-        self.log.debug(f'Start: {start_point} Relative: {relative_start} Distance: {distance_to_start}')
-        self.log.debug(f'End: {end_point} Relative: {relative_end} Distance: {distance_to_end}')
+        self.log.debug('Start: %s Relative: %s Distance: %s', start_point, relative_start, distance_to_start)
+        self.log.debug('End: %s Relative: %s Distance: %s', end_point, relative_end, distance_to_end)
 
         swap_points: bool
         self.robot_on_field = relative_start.x * relative_end.x <= 0
