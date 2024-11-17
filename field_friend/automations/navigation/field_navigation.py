@@ -113,33 +113,33 @@ class FieldNavigation(StraightLineNavigation):
         distance_to_end = self.odometer.prediction.distance(end_point)
         relative_start = self.odometer.prediction.relative_point(start_point)
         relative_end = self.odometer.prediction.relative_point(end_point)
-        self.log.debug(f'Relative start: {relative_start} with distance {distance_to_start} '
-                       f'and relative end: {relative_end} with distance {distance_to_end}')
+        self.log.debug(f'Start: {start_point} Relative: {relative_start} Distance: {distance_to_start}')
+        self.log.debug(f'End: {end_point} Relative: {relative_end} Distance: {distance_to_end}')
 
+        swap_points: bool
         self.robot_on_field = relative_start.x * relative_end.x <= 0
         if self.robot_on_field:
-            distance_to_row = self.current_row.line_segment().line.foot_point(
-                self.odometer.prediction.point).distance(self.odometer.prediction.point)
+            self.log.debug('Robot on field')
+            foot_point = self.current_row.line_segment().line.foot_point(self.odometer.prediction.point)
+            distance_to_row = foot_point.distance(self.odometer.prediction.point)
             if distance_to_row > self.MAX_DISTANCE_DEVIATION:
                 rosys.notify('Between two rows', 'negative')
                 return
-            angle_to_start = self.odometer.prediction.relative_direction(start_point)
-            angle_to_end = self.odometer.prediction.relative_direction(end_point)
-            if abs(angle_to_start) > self.MAX_ANGLE_DEVIATION and abs(angle_to_end) > self.MAX_ANGLE_DEVIATION:
+            abs_angle_to_start = abs(self.odometer.prediction.relative_direction(start_point))
+            abs_angle_to_end = abs(self.odometer.prediction.relative_direction(end_point))
+            if abs_angle_to_start > self.MAX_ANGLE_DEVIATION and abs_angle_to_end > self.MAX_ANGLE_DEVIATION:
                 rosys.notify('Robot heading deviates too much from row direction', 'negative')
                 return
-            if abs(angle_to_start) < abs(angle_to_end):
-                start_point, end_point = end_point, start_point
+            swap_points = abs_angle_to_start < abs_angle_to_end
         else:
-            # TODO: try it with only one swap
-            if distance_to_start > distance_to_end:
-                start_point, end_point = end_point, start_point
-                distance_to_start, distance_to_end = distance_to_end, distance_to_start
-                relative_start, relative_end = relative_end, relative_start
-            if relative_start.x < 0 <= relative_end.x:
-                start_point, end_point = end_point, start_point
-                distance_to_start, distance_to_end = distance_to_end, distance_to_start
-                relative_start, relative_end = relative_end, relative_start
+            self.log.debug('Robot outside of field')
+            swap_points = distance_to_start > distance_to_end
+
+        if swap_points:
+            self.log.debug('Swapping start and end points')
+            start_point, end_point = end_point, start_point
+            distance_to_start, distance_to_end = distance_to_end, distance_to_start
+            relative_start, relative_end = relative_end, relative_start
 
         self.start_point = start_point
         self.end_point = end_point
