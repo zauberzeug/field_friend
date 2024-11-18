@@ -187,7 +187,7 @@ class FieldNavigation(StraightLineNavigation):
         # turn to row
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
-        await self.turn_in_steps(row_yaw)
+        await self.turn_in_steps(driving_yaw)
         return State.FOLLOWING_ROW
 
     async def drive_in_steps(self, target: Pose) -> None:
