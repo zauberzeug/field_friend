@@ -31,6 +31,7 @@ class FieldNavigation(StraightLineNavigation):
         super().__init__(system, implement)
         self.name = 'Field Navigation'
         self.gnss = system.gnss
+        self.gnss_correction_service = system.gnss_correction_service
         self.bms = system.field_friend.bms
         self.automator = system.automator
         self.automation_watcher = system.automation_watcher
@@ -125,7 +126,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.field is not None
         # TODO: remove temporary fix for GNSS waiting
         if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 1.0:  # pylint: disable=protected-access
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+            await self.gnss_correction_service.CORRECTED_ROBOT_POSE.emitted(self._max_gnss_waiting_time)
 
         if self._state == State.APPROACHING_ROW_START:
             self._state = await self._run_approaching_row_start()
@@ -136,14 +137,14 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _run_approaching_row_start(self) -> State:
         self.set_start_and_end_points()
-        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+        await self.gnss_correction_service.CORRECTED_ROBOT_POSE.emitted(self._max_gnss_waiting_time)
         # turn towards row start
         assert self.start_point is not None
         target_yaw = self.odometer.prediction.direction(self.start_point)
         await self.turn_in_steps(target_yaw)
         # drive to row start
         await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
-        await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+        await self.gnss_correction_service.CORRECTED_ROBOT_POSE.emitted(self._max_gnss_waiting_time)
         # turn to row
         assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
@@ -163,7 +164,7 @@ class FieldNavigation(StraightLineNavigation):
             # Calculate timeout based on linear speed limit and drive step
             timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 3.0
             await self._drive_towards_target(drive_step, target, timeout=timeout)
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+            await self.gnss_correction_service.CORRECTED_ROBOT_POSE.emitted(self._max_gnss_waiting_time)
 
     async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
         if angle_threshold is None:
@@ -188,7 +189,7 @@ class FieldNavigation(StraightLineNavigation):
                 await self.turn_to_yaw(next_angle)
             else:
                 await self.turn_to_yaw(target_yaw)
-            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+            await self.gnss_correction_service.CORRECTED_ROBOT_POSE.emitted(self._max_gnss_waiting_time)
             angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
 
     async def _run_following_row(self, distance: float) -> State:
