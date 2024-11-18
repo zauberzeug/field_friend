@@ -52,7 +52,7 @@ class FieldNavigation(StraightLineNavigation):
         self._turn_step = self.TURN_STEP
         self._max_gnss_waiting_time = self.MAX_GNSS_WAITING_TIME
         self.rows_to_work_on: list[Row] = []
-        self.robot_on_field = False
+        self.robot_in_working_area = False
 
     @property
     def current_row(self) -> Row:
