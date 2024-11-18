@@ -404,7 +404,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         if 'imu' in config_hardware:
             self.imu = rosys.hardware.ImuHardware(robot_brain,
                                             name=config_hardware['imu']['name'],
-                                            offset_rotation=config_hardware['imu']['offset_rotation'],
+                                            offset_rotation=rosys.geometry.Rotation.from_euler(*config_hardware['imu']['offset_rotation']),
                                             )
         else:
             self.imu = None
