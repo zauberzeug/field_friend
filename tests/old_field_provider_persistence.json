@@ -4,10 +4,13 @@
       "id": "eb24db0f-d48e-4a88-b23a-4833cda55483",
       "name": "field_1",
       "first_row_start": {
-        "lat": 51.98333789813455,
-        "long": 7.434242765994318
+        "lat": 0.9072804024991966,
+        "lon": 0.1297520136591712
       },
-      "first_row_end": { "lat": 51.98334192260392, "long": 7.434293309874038 },
+      "first_row_end": {
+        "lat": 0.9072804727394377,
+        "lon": 0.12975289581628902
+      },
       "row_spacing": 0.5,
       "row_count": 10,
       "outline_buffer_width": 2,

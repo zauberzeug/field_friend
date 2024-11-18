@@ -5,7 +5,8 @@ from collections.abc import AsyncGenerator, Generator
 import pytest
 import rosys
 from rosys.geometry import Point
-from rosys.geometry.geo import GeoPoint, GeoReference
+from rosys.geometry.geo.geo_point import GeoPoint
+from rosys.geometry.geo.geo_reference import GeoReference
 from rosys.hardware import GnssSimulation
 from rosys.testing import forward, helpers
 
@@ -14,11 +15,11 @@ from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.system import System
 
 # TODO: heading?
-ROBOT_GEO_START_POSITION = GeoReference(lat=51.98333489813455, lon=7.434242465994318)
+GEO_REFERENCE = GeoReference(GeoPoint.from_degrees(lat=51.98333489813455, lon=7.434242465994318))
+ROBOT_GEO_START_POSITION = GEO_REFERENCE.origin
 
-FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, lon=7.434242765994318)
-# TODO: shift geopoint
-FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=10, y=0))
+FIELD_FIRST_ROW_START = GeoPoint.from_degrees(lat=51.98333789813455, lon=7.434242765994318)
+FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=10, y=0), reference=GEO_REFERENCE)
 
 log = logging.getLogger('field_friend.testing')
 
@@ -29,15 +30,13 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     s = System()
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
-    s.gnss.reference = ROBOT_GEO_START_POSITION
+    s.gnss.reference = GEO_REFERENCE
     helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
-    await forward(1)
-    assert s.gnss.device is None, 'device should not be created yet'
     await forward(3)
-    assert s.gnss.device is not None, 'device should be created'
-    assert s.gnss.current.location.distance(ROBOT_GEO_START_POSITION) == 0
+    assert s.gnss.is_connected, 'device should be created'
+    assert s.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) == 0
     yield s
 
 
@@ -57,44 +56,47 @@ class TestField:
         self.row_count = 4
         self.outline_buffer_width = 2
         self.row_support_points = []
-        # TODO: shift geopoint
         self.rows = [
             Row(id=f'field_{self.id}_row_1', name='row_1', points=[
                 self.first_row_start,
                 self.first_row_end
             ]),
             Row(id=f'field_{self.id}_row_2', name='row_2', points=[
-                self.first_row_start.shifted(Point(x=0, y=-0.45)),
-                self.first_row_end.shifted(Point(x=0, y=-0.45))
+                self.first_row_start.shifted(Point(x=0, y=-0.45), reference=reference),
+                self.first_row_end.shifted(Point(x=0, y=-0.45), reference=reference)
             ]),
             Row(id=f'field_{self.id}_row_3', name='row_3', points=[
-                self.first_row_start.shifted(Point(x=0, y=-0.9)),
-                self.first_row_end.shifted(Point(x=0, y=-0.9))
+                self.first_row_start.shifted(Point(x=0, y=-0.9), reference=reference),
+                self.first_row_end.shifted(Point(x=0, y=-0.9), reference=reference)
             ]),
             Row(id=f'field_{self.id}_row_4', name='row_4', points=[
-                self.first_row_start.shifted(Point(x=0, y=-1.35)),
-                self.first_row_end.shifted(Point(x=0, y=-1.35))
+                self.first_row_start.shifted(Point(x=0, y=-1.35), reference=reference),
+                self.first_row_end.shifted(Point(x=0, y=-1.35), reference=reference)
             ])
         ]
         self.outline = [
-            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=self.outline_buffer_width)),
-            self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=self.outline_buffer_width)),
+            self.first_row_start.shifted(Point(x=-self.outline_buffer_width,
+                                         y=self.outline_buffer_width), reference=reference),
+            self.first_row_end.shifted(Point(x=self.outline_buffer_width,
+                                       y=self.outline_buffer_width), reference=reference),
             self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=-
-                                       self.outline_buffer_width - (self.row_count - 1) * self.row_spacing)),
+                                       self.outline_buffer_width - (self.row_count - 1) * self.row_spacing), reference=reference),
             self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=-
-                                         self.outline_buffer_width - (self.row_count - 1) * self.row_spacing)),
-            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=self.outline_buffer_width))
+                                         self.outline_buffer_width - (self.row_count - 1) * self.row_spacing), reference=reference),
+            self.first_row_start.shifted(Point(x=-self.outline_buffer_width,
+                                         y=self.outline_buffer_width), reference=reference)
         ]
 
 
 @pytest.fixture
 async def field(system: System) -> AsyncGenerator[TestField, None]:
-    test_field = TestField()
+    test_field = TestField(system.gnss.reference)
     system.field_provider.create_field(Field(
         id=test_field.id,
         name='Test Field',
         first_row_start=test_field.first_row_start,
         first_row_end=test_field.first_row_end,
+        reference=system.gnss.reference,
         row_spacing=test_field.row_spacing,
         row_count=test_field.row_count,
         row_support_points=[]
@@ -104,12 +106,13 @@ async def field(system: System) -> AsyncGenerator[TestField, None]:
 
 @pytest.fixture
 async def field_with_beds(system: System) -> AsyncGenerator[TestField, None]:
-    test_field = TestField()
+    test_field = TestField(system.gnss.reference)
     system.field_provider.create_field(Field(
         id=test_field.id,
         name='Test Field With Beds',
         first_row_start=test_field.first_row_start,
         first_row_end=test_field.first_row_end,
+        reference=system.gnss.reference,
         row_spacing=test_field.row_spacing,
         row_count=1,
         row_support_points=[],

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import rosys
 from nicegui import ui
-from rosys.geometry.geo import GeoPoint
+from rosys.geometry.geo.geo_point import GeoPoint
 
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
@@ -64,7 +64,7 @@ class FieldCreator:
     def get_infos(self) -> None:
         self.headline.text = 'Field Parameters'
         assert self.gnss.last_measurement is not None
-        self.first_row_start = self.gnss.last_measurement.location.point
+        self.first_row_start = self.gnss.last_measurement.location
         self.row_sight.content = ''
         self.content.clear()
         with self.content:
@@ -114,7 +114,7 @@ class FieldCreator:
 
     def confirm_geometry(self) -> None:
         assert self.gnss.last_measurement is not None
-        self.first_row_end = self.gnss.last_measurement.location.point
+        self.first_row_end = self.gnss.last_measurement.location
         assert self.first_row_end is not None
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
@@ -143,6 +143,7 @@ class FieldCreator:
                                                    name=self.field_name,
                                                    first_row_start=self.first_row_start,
                                                    first_row_end=self.first_row_end,
+                                                   reference=self.gnss.reference,
                                                    row_spacing=self.row_spacing,
                                                    row_count=int(self.row_count),
                                                    outline_buffer_width=self.outline_buffer_width,
@@ -153,6 +154,7 @@ class FieldCreator:
                                                    name=self.field_name,
                                                    first_row_start=self.first_row_start,
                                                    first_row_end=self.first_row_end,
+                                                   reference=self.gnss.reference,
                                                    row_spacing=self.row_spacing,
                                                    row_count=int(self.row_count),
                                                    outline_buffer_width=self.outline_buffer_width))

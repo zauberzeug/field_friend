@@ -73,11 +73,11 @@ class SupportPointDialog:
         self.next = self.confirm_support_point
 
     def confirm_support_point(self) -> None:
-        assert self.gnss.current is not None
-        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
+        assert self.gnss.last_measurement is not None
+        if not ('R' in self.gnss.last_measurement.mode or self.gnss.last_measurement.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
-        self.support_point_coordinates = self.gnss.current.location
+        self.support_point_coordinates = self.gnss.last_measurement.location
         self.headline.text = 'Confirm Values'
         self.content.clear()
         with self.content:

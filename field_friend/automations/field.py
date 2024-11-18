@@ -192,11 +192,12 @@ class Field:
         # TODO: handle old fields
         if 'long' in data['first_row_start']:
             data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'],
-                                               lon=data['first_row_start']['long'])
-            data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], lon=data['first_row_end']['long'])
-        else:
-            data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'],
                                                lon=data['first_row_start']['lon'])
+            data['first_row_end'] = GeoPoint.from_degrees(lat=data['first_row_end']['lat'],
+                                                          lon=data['first_row_end']['lon'])
+        else:
+            data['first_row_start'] = GeoPoint.from_degrees(lat=data['first_row_start']['lat'],
+                                                            lon=data['first_row_start']['lon'])
             data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], lon=data['first_row_end']['lon'])
         data['row_support_points'] = [rosys.persistence.from_dict(
             RowSupportPoint, sp) for sp in data['row_support_points']] if 'row_support_points' in data else []
