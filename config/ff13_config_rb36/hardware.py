@@ -98,6 +98,10 @@ configuration = {
     'bluetooth': {
         'name': 'fieldfriend-f13',
     },
+    'imu': {
+        'name': 'imu',
+        'offset_rotation': (0, 0, 0),
+    },
     'serial': {
         'name': 'serial',
         'rx_pin': 26,
