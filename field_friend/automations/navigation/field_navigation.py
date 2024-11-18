@@ -176,7 +176,7 @@ class FieldNavigation(StraightLineNavigation):
             self.plant_provider.clear()
 
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
-        if not self.robot_on_field:
+        if not self.robot_in_working_area:
             # turn towards row start
             assert self.start_point is not None
             target_yaw = self.odometer.prediction.direction(self.start_point)
