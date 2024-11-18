@@ -186,7 +186,7 @@ class FieldNavigation(StraightLineNavigation):
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn to row
         assert self.end_point is not None
-        row_yaw = self.start_point.direction(self.end_point)
+        driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(row_yaw)
         return State.FOLLOWING_ROW
 
