@@ -166,7 +166,7 @@ class FieldNavigation(StraightLineNavigation):
             self._state = await self._run_row_completed()
 
     async def _run_approaching_row_start(self) -> State:
-        self.robot_on_field = False
+        self.robot_in_working_area = False
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
             return State.ERROR
