@@ -67,7 +67,6 @@ class System(rosys.persistence.PersistentModule):
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
-        self.gnss: GnssHardware | GnssSimulation
         self.field_friend: FieldFriend
         if self.is_real:
             try:
@@ -80,8 +79,6 @@ class System(rosys.persistence.PersistentModule):
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
             self.camera_configurator = CameraConfigurator(self.camera_provider, odometer=self.odometer)
-            self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
-            self.gnss_correction_service = GnssCorrectionService(imu=self.field_friend.imu, gnss=self.gnss, robot_height=self.field_friend.ROBOT_HEIGHT)
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
@@ -90,9 +87,16 @@ class System(rosys.persistence.PersistentModule):
             self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
             self.camera_configurator = CameraConfigurator(
                 self.camera_provider, odometer=self.odometer, robot_id=self.version)
-            self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
+        self.gnss: GnssHardware | GnssSimulation
+        if self.is_real:
+            assert isinstance(self.field_friend, FieldFriendHardware)
+            self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
+            self.gnss_correction_service = GnssCorrectionService(imu=self.field_friend.imu, gnss=self.gnss, robot_height=self.field_friend.ROBOT_HEIGHT)
+        else:
+            assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
+            self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
         self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
