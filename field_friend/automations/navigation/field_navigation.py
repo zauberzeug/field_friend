@@ -132,7 +132,7 @@ class FieldNavigation(StraightLineNavigation):
                 return
             swap_points = abs_angle_to_start < abs_angle_to_end
         else:
-            self.log.debug('Robot outside of field')
+            self.log.debug('Robot outside of work area')
             swap_points = distance_to_start > distance_to_end
 
         if swap_points:
