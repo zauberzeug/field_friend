@@ -117,7 +117,7 @@ class FieldNavigation(StraightLineNavigation):
         self.log.debug('End: %s Relative: %s Distance: %s', end_point, relative_end, distance_to_end)
 
         swap_points: bool
-        self.robot_on_field = relative_start.x * relative_end.x <= 0
+        self.robot_in_working_area = relative_start.x * relative_end.x <= 0
         if self.robot_on_field:
             self.log.debug('Robot on field')
             foot_point = self.current_row.line_segment().line.foot_point(self.odometer.prediction.point)
