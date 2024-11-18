@@ -119,7 +119,7 @@ class FieldNavigation(StraightLineNavigation):
         swap_points: bool
         self.robot_in_working_area = relative_start.x * relative_end.x <= 0
         if self.robot_on_field:
-            self.log.debug('Robot on field')
+            self.log.debug('Robot in work area')
             foot_point = self.current_row.line_segment().line.foot_point(self.odometer.prediction.point)
             distance_to_row = foot_point.distance(self.odometer.prediction.point)
             if distance_to_row > self.MAX_DISTANCE_DEVIATION:
