@@ -4,9 +4,7 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import rosys
-from rosys.geometry import Point
-from rosys.geometry.geo.geo_point import GeoPoint
-from rosys.geometry.geo.geo_reference import GeoReference
+from rosys.geometry import GeoPoint, GeoReference, Point
 from rosys.hardware import GnssSimulation
 from rosys.testing import forward, helpers
 
@@ -14,7 +12,6 @@ from field_friend.automations import Field, Row
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.system import System
 
-# TODO: heading?
 GEO_REFERENCE = GeoReference(GeoPoint.from_degrees(lat=51.98333489813455, lon=7.434242465994318))
 ROBOT_GEO_START_POSITION = GEO_REFERENCE.origin
 
@@ -36,7 +33,7 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     helpers.automator = s.automator
     await forward(3)
     assert s.gnss.is_connected, 'device should be created'
-    assert s.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) == 0
+    assert s.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) == 0
     yield s
 
 

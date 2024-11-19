@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pytest
 from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
-from rosys.geometry import Point
-from rosys.geometry.geo.geo_point import GeoPoint
+from rosys.geometry import GeoPoint, Point
 
 from field_friend import System
 from field_friend.automations import Field, RowSupportPoint

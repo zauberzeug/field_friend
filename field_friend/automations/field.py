@@ -4,8 +4,7 @@ from typing import Any, Self
 
 import rosys
 import shapely
-from rosys.geometry import Point
-from rosys.geometry.geo import GeoPoint, GeoReference
+from rosys.geometry import GeoPoint, GeoReference, Point
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 

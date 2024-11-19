@@ -172,7 +172,7 @@ def status_dev_page(robot: FieldFriend, system: System):
         with ui.row().classes('place-items-center'):
             ui.label('Position:').style('color: #EDF4FB').classes('font-bold')
             ui.label().bind_text_from(system.gnss, 'last_measurement',
-                                      backward=lambda x: 'No position' if x is None else str(x.location))
+                                      backward=lambda x: 'No position' if x is None else str(x.point))
         with ui.row().classes('place-items-center'):
             ui.label('Heading:').style('color: #EDF4FB').classes('font-bold')
             heading_label = ui.label()

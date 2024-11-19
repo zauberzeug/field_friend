@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 def check_distance_to_reference(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
-    if gnss.last_measurement is not None and gnss.last_measurement.gps_qual > 0 and gnss.last_measurement.location.distance(gnss.reference.origin) > max_distance:
+    if gnss.last_measurement is not None and gnss.last_measurement.gps_qual > 0 and gnss.last_measurement.point.distance(gnss.reference.origin) > max_distance:
         # TODO: show dialog
         # reference_alert_dialog(gnss)
         return True

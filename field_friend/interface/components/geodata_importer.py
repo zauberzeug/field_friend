@@ -5,7 +5,7 @@ import fiona
 import geopandas as gpd
 import rosys
 from nicegui import events, ui
-from rosys.geometry.geo import GeoPoint
+from rosys.geometry import GeoPoint
 from shapely.ops import transform
 
 from ...automations import FieldProvider

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import app, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
-from rosys.geometry.geo import GeoPoint
+from rosys.geometry import GeoPoint
 from rosys.hardware import GnssMeasurement
 
 from .key_controls import KeyControls
@@ -35,7 +35,7 @@ class LeafletMap:
         }
         center_point = GeoPoint(lat=0.9072773, lon=0.1297515)
         if self.system.gnss.last_measurement is not None:
-            center_point = self.system.gnss.last_measurement.location
+            center_point = self.system.gnss.last_measurement.point
         self.m: ui.leaflet
         if draw_tools:
             self.m = ui.leaflet(center=center_point.degree_tuple, zoom=13, draw_control=self.draw_control)
@@ -101,16 +101,16 @@ class LeafletMap:
             # TODO why can we only relocate in simulation?
             # if isinstance(self.gnss, GnssSimulation):
             #     self.gnss.relocate(position)
-        self.robot_marker = self.robot_marker or self.m.marker(latlng=measurement.location.degree_tuple)
+        self.robot_marker = self.robot_marker or self.m.marker(latlng=measurement.point.degree_tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
-        self.robot_marker.move(*measurement.location.degree_tuple)
+        self.robot_marker.move(*measurement.point.degree_tuple)
 
     def zoom_to_robot(self) -> None:
         if self.gnss.last_measurement is None:
             self.log.warning('No GNSS position available, could not zoom to robot')
             return
-        self.m.set_center(self.gnss.last_measurement.location.degree_tuple)
+        self.m.set_center(self.gnss.last_measurement.point.degree_tuple)
         if self.current_basemap is not None:
             self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 

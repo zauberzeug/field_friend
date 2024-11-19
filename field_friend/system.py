@@ -6,7 +6,7 @@ import icecream
 import numpy as np
 import psutil
 import rosys
-from rosys.geometry.geo import GeoPoint, GeoReference
+from rosys.geometry import GeoPoint, GeoReference
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
 import config.config_selection as config_selector

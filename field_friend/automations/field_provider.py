@@ -1,9 +1,7 @@
 import logging
 from typing import Any
 
-import numpy as np
 import rosys
-from rosys.geometry.geo import GeoPoint
 from rosys.hardware import Gnss
 
 from .field import Field, Row, RowSupportPoint

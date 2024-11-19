@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
-from rosys.geometry.geo import GeoPoint
+from rosys.geometry import GeoPoint
 
 from ...automations.field import RowSupportPoint
 from ...interface.components.monitoring import CameraPosition
@@ -77,7 +77,7 @@ class SupportPointDialog:
         if not ('R' in self.gnss.last_measurement.mode or self.gnss.last_measurement.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
-        self.support_point_coordinates = self.gnss.last_measurement.location
+        self.support_point_coordinates = self.gnss.last_measurement.point
         self.headline.text = 'Confirm Values'
         self.content.clear()
         with self.content:

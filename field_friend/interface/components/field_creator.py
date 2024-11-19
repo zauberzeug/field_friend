@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import rosys
 from nicegui import ui
-from rosys.geometry.geo.geo_point import GeoPoint
+from rosys.geometry import GeoPoint
 
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
@@ -64,7 +64,7 @@ class FieldCreator:
     def get_infos(self) -> None:
         self.headline.text = 'Field Parameters'
         assert self.gnss.last_measurement is not None
-        self.first_row_start = self.gnss.last_measurement.location
+        self.first_row_start = self.gnss.last_measurement.point
         self.row_sight.content = ''
         self.content.clear()
         with self.content:
@@ -114,7 +114,7 @@ class FieldCreator:
 
     def confirm_geometry(self) -> None:
         assert self.gnss.last_measurement is not None
-        self.first_row_end = self.gnss.last_measurement.location
+        self.first_row_end = self.gnss.last_measurement.point
         assert self.first_row_end is not None
         self.headline.text = 'Confirm Geometry'
         self.content.clear()

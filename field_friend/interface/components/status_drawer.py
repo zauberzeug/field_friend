@@ -205,7 +205,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
             gnss_device_label.text = 'Connected' if gnss.is_connected else 'No Connection'
             reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'
             gnss_label.text = str(
-                system.gnss.last_measurement.location) if system.gnss.last_measurement is not None else 'No position'
+                system.gnss.last_measurement.point) if system.gnss.last_measurement is not None else 'No position'
             heading_label.text = f'{system.gnss.last_measurement.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
             rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
             odometry_label.text = str(odometer.prediction)

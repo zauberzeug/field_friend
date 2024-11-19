@@ -5,8 +5,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import rosys
-from rosys.geometry import Pose
-from rosys.geometry.geo import GeoPoint
+from rosys.geometry import GeoPoint, Pose
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 

@@ -10,7 +10,7 @@ async def test_driving(gnss_driving: System):
     assert gnss_driving.odometer.prediction.point.x == 0
     assert gnss_driving.odometer.prediction.point.y == 0
     assert gnss_driving.gnss.last_measurement is not None
-    assert gnss_driving.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert gnss_driving.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     await forward(x=2.0)
     assert_point(gnss_driving.odometer.prediction.point, rosys.geometry.Point(x=2.0, y=0))
 

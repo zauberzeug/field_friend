@@ -267,7 +267,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
 async def test_approaching_first_row(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
-    assert system.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
     system.automator.start()
@@ -289,7 +289,7 @@ async def test_approaching_first_row(system: System, field: Field):
 async def test_approaching_first_row_from_other_side(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
-    assert system.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     start_point = system.gnss.reference.point_to_local(field.rows[0].points[-1])
     end_point = system.gnss.reference.point_to_local(field.rows[0].points[0])
     safe_start_point = start_point.polar(-1.0, start_point.direction(end_point))
@@ -322,7 +322,7 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
 async def test_approaching_first_row_when_outside_of_field(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
-    assert system.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     point_outside = rosys.geometry.Point(x=-10, y=0)
 
     async def drive_away():
@@ -351,7 +351,7 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
 async def test_complete_row(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
-    assert system.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
     system.automator.start()
@@ -393,7 +393,7 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
 async def test_complete_field(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
-    assert system.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
     system.automator.start()
@@ -408,7 +408,7 @@ async def test_complete_field(system: System, field: Field):
 async def test_complete_field_with_selected_beds(system: System, field_with_beds: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
-    assert system.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.selected_beds = [1, 3]
     system.field_provider.select_field(field_with_beds.id)
     system.current_navigation = system.field_navigation
@@ -424,7 +424,7 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
 async def test_complete_field_without_first_beds(system: System, field_with_beds: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
-    assert system.gnss.last_measurement.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.selected_beds = [2, 3, 4]
     system.field_provider.select_field(field_with_beds.id)
     system.current_navigation = system.field_navigation
