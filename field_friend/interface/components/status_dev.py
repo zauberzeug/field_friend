@@ -167,7 +167,7 @@ def status_dev_page(robot: FieldFriend, system: System):
             ui.label('GNSS Device:').style('color: #EDF4FB').classes('font-bold')
             ui.label().bind_text_from(system.gnss, 'is_connected', backward=lambda x: 'Connected' if x else 'No connection')
         with ui.row().classes('place-items-center'):
-            ui.label('Reference Position:').style('color: #EDF4FB').classes('font-bold')
+            ui.label('Reference:').style('color: #EDF4FB').classes('font-bold')
             reference_position_label = ui.label()
         with ui.row().classes('place-items-center'):
             ui.label('Position:').style('color: #EDF4FB').classes('font-bold')
@@ -262,7 +262,7 @@ def status_dev_page(robot: FieldFriend, system: System):
             'NW' if system.gnss.last_measurement.heading <= np.deg2rad(338) else \
             'N'
 
-        reference_position_label.text = 'No reference' if system.gnss.reference is None else system.gnss.reference.origin
+        reference_position_label.text = 'No reference' if system.local_gnss_pose_provider.reference is None else f'{system.local_gnss_pose_provider.reference.origin.degree_tuple}, {system.local_gnss_pose_provider.reference.direction:.2f}°'
         heading_label.text = f'{system.gnss.last_measurement.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
         odometer_label.text = str(system.odometer.prediction)

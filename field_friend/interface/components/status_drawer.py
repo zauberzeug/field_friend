@@ -111,7 +111,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
             ui.label('GNSS-Device:').style('color: #6E93D6').classes('font-bold')
             gnss_device_label = ui.label()
         with ui.row().classes('place-items-center'):
-            ui.label('Reference position:').style('color: #6E93D6').classes('font-bold')
+            ui.label('Reference:').style('color: #6E93D6').classes('font-bold')
             reference_position_label = ui.label()
         with ui.row().classes('place-items-center'):
             ui.label('Position:').style('color: #6E93D6').classes('font-bold')
@@ -203,7 +203,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
 
             kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_kpi()}'
             gnss_device_label.text = 'Connected' if gnss.is_connected else 'No Connection'
-            reference_position_label.text = 'No reference' if gnss.reference is None else 'Set'
+            reference_position_label.text = 'No reference' if system.local_gnss_pose_provider.reference is None else f'{system.local_gnss_pose_provider.reference.origin.degree_tuple}, {system.local_gnss_pose_provider.reference.direction:.2f}°'
             gnss_label.text = str(
                 system.gnss.last_measurement.point) if system.gnss.last_measurement is not None else 'No position'
             heading_label.text = f'{system.gnss.last_measurement.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'

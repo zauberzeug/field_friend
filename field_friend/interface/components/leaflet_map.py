@@ -67,7 +67,7 @@ class LeafletMap:
             .tooltip('Center map on robot position').classes('ml-0')
         ui.button(icon='polyline', on_click=self.zoom_to_field).props('dense flat') \
             .tooltip('center map on field boundaries').classes('ml-0')
-        ui.button('Update reference', on_click=self.gnss.update_reference).props('outline color=warning') \
+        ui.button('Update reference', on_click=self.system.update_gnss_reference).props('outline color=warning') \
             .tooltip('Set current position as geo reference and restart the system').classes('ml-auto')
 
     def abort_point_drawing(self, dialog) -> None:
@@ -118,7 +118,7 @@ class LeafletMap:
         field = self.field_provider.selected_field if self.field_provider.selected_field else None
         if field is None:
             return
-        coords = field.outline_as_tuples
+        coords = [geo_point.degree_tuple for geo_point in field.outline]
         center = sum(lat for lat, _ in coords) / len(coords), sum(lon for _, lon in coords) / len(coords)
         self.m.set_center(center)
         if self.current_basemap is not None:

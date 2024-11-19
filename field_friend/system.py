@@ -6,8 +6,8 @@ import icecream
 import numpy as np
 import psutil
 import rosys
-from rosys.geometry import GeoPoint, GeoReference
-from rosys.hardware.gnss import GnssHardware, GnssSimulation
+from rosys.geometry import GeoPoint, GeoReference, Pose
+from rosys.hardware.gnss import GnssHardware, GnssSimulation, LocalGnssPoseProvider
 
 import config.config_selection as config_selector
 
@@ -55,6 +55,7 @@ class System(rosys.persistence.PersistentModule):
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.gnss: GnssHardware | GnssSimulation
         self.field_friend: FieldFriend
+        gnss_reference = GeoReference(GeoPoint.from_degrees(lat=51.98321168406289, lon=7.434228829357077))
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
@@ -66,7 +67,8 @@ class System(rosys.persistence.PersistentModule):
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
             self.camera_configurator = CameraConfigurator(self.camera_provider, odometer=self.odometer)
-            self.gnss = GnssHardware(antenna_offset=self.field_friend.ANTENNA_OFFSET)
+            self.gnss = GnssHardware(antenna_pose=Pose(
+                x=0.0, y=self.field_friend.ANTENNA_OFFSET, yaw=np.deg2rad(-90.0)))
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
@@ -75,7 +77,8 @@ class System(rosys.persistence.PersistentModule):
             self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
             self.camera_configurator = CameraConfigurator(
                 self.camera_provider, odometer=self.odometer, robot_id=self.version)
-            self.gnss = GnssSimulation(self.field_friend.wheels)
+            self.gnss = GnssSimulation(wheels=self.field_friend.wheels, reference=gnss_reference)
+        self.local_gnss_pose_provider = LocalGnssPoseProvider(gnss=self.gnss, reference=gnss_reference)
         # TODO: handle gnss measurements
         # self.gnss.NEW_MEASUREMENT.register(self.odometer.handle_detection)
         self.plant_provider = PlantProvider()
@@ -106,7 +109,7 @@ class System(rosys.persistence.PersistentModule):
         rosys.on_repeat(watch_robot, 1.0)
 
         self.path_provider = PathProvider()
-        self.field_provider = FieldProvider(self.gnss)
+        self.field_provider = FieldProvider(self.local_gnss_pose_provider)
         width = 0.64
         length = 0.78
         offset = 0.36
@@ -177,7 +180,7 @@ class System(rosys.persistence.PersistentModule):
         return {
             'navigation': self.current_navigation.name,
             'implement': self.current_implement.name,
-            'gnss_reference': self.gnss.reference.tuple,
+            'gnss_reference': self.local_gnss_pose_provider.reference.tuple,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -188,14 +191,15 @@ class System(rosys.persistence.PersistentModule):
         if navigation is not None:
             self.current_navigation = navigation
 
-        # TODO: handle old references
+        reference_tuple = None
         if 'gnss_reference' in data:
             reference_tuple = data['gnss_reference']
         elif 'reference_lat' in data and 'reference_long' in data:
             reference_tuple = (np.deg2rad(data['reference_lat']), np.deg2rad(data['reference_long']), 0)
         if reference_tuple is not None:
-            self.gnss.reference = GeoReference(origin=GeoPoint(
+            reference = GeoReference(origin=GeoPoint(
                 lat=reference_tuple[0], lon=reference_tuple[1]), direction=reference_tuple[2])
+            self.update_gnss_reference(reference=reference)
 
     @property
     def current_implement(self) -> Implement:
@@ -245,6 +249,15 @@ class System(rosys.persistence.PersistentModule):
                                                                             )
         assert isinstance(self.camera_provider, rosys.vision.SimulatedCameraProvider)
         self.camera_provider.add_camera(camera)
+
+    def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
+        if reference is None:
+            reference = GeoReference(origin=self.gnss.last_measurement.point,
+                                     direction=self.gnss.last_measurement.heading)
+        self.log.debug('Updating GNSS reference to %s', reference)
+        self.gnss.reference = reference
+        self.local_gnss_pose_provider.reference = reference
+        self.request_backup()
 
     def get_jetson_cpu_temperature(self):
         with open('/sys/devices/virtual/thermal/thermal_zone0/temp') as f:

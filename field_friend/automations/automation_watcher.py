@@ -25,6 +25,7 @@ class AutomationWatcher:
         self.odometer = system.odometer
         self.field_friend = system.field_friend
         self.gnss = system.gnss
+        self.local_gnss_pose_provider = system.local_gnss_pose_provider
         self.steerer = system.steerer
         # self.path_recorder = system.path_recorder
 
@@ -113,7 +114,7 @@ class AutomationWatcher:
 
     def start_field_watch(self, field_boundaries: list[GeoPoint]) -> None:
         self.field_polygon = ShapelyPolygon(
-            [self.gnss.reference.point_to_local(point).tuple for point in field_boundaries])
+            [self.local_gnss_pose_provider.reference.point_to_local(point).tuple for point in field_boundaries])
         self.field_watch_active = True
 
     def stop_field_watch(self) -> None:

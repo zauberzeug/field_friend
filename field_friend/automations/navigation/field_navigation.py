@@ -31,6 +31,7 @@ class FieldNavigation(StraightLineNavigation):
         super().__init__(system, implement)
         self.name = 'Field Navigation'
         self.gnss = system.gnss
+        self.local_gnss_pose_provider = system.local_gnss_pose_provider
         self.bms = system.field_friend.bms
         self.automator = system.automator
         self.automation_watcher = system.automation_watcher
@@ -93,7 +94,7 @@ class FieldNavigation(StraightLineNavigation):
     def get_nearest_row(self) -> Row:
         assert self.field is not None
         assert self.gnss.is_connected
-        row = min(self.field.rows, key=lambda r: r.line_segment(self.gnss.reference).line.foot_point(
+        row = min(self.field.rows, key=lambda r: r.line_segment(self.local_gnss_pose_provider.reference).line.foot_point(
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
         self.log.info(f'Nearest row is {row.name}')
         self.row_index = self.field.rows.index(row)
@@ -104,16 +105,16 @@ class FieldNavigation(StraightLineNavigation):
         self.start_point = None
         self.end_point = None
         relative_point_0 = self.odometer.prediction.distance(
-            self.gnss.reference.point_to_local(self.current_row.points[0]))
+            self.local_gnss_pose_provider.reference.point_to_local(self.current_row.points[0]))
         relative_point_1 = self.odometer.prediction.distance(
-            self.gnss.reference.point_to_local(self.current_row.points[-1]))
+            self.local_gnss_pose_provider.reference.point_to_local(self.current_row.points[-1]))
         # self.log.info(f'Relative point 0: {relative_point_0} Relative point 1: {relative_point_1}')
         if relative_point_0 < relative_point_1:
-            self.start_point = self.gnss.reference.point_to_local(self.current_row.points[0])
-            self.end_point = self.gnss.reference.point_to_local(self.current_row.points[-1])
+            self.start_point = self.local_gnss_pose_provider.reference.point_to_local(self.current_row.points[0])
+            self.end_point = self.local_gnss_pose_provider.reference.point_to_local(self.current_row.points[-1])
         elif relative_point_1 < relative_point_0:
-            self.start_point = self.gnss.reference.point_to_local(self.current_row.points[-1])
-            self.end_point = self.gnss.reference.point_to_local(self.current_row.points[0])
+            self.start_point = self.local_gnss_pose_provider.reference.point_to_local(self.current_row.points[-1])
+            self.end_point = self.local_gnss_pose_provider.reference.point_to_local(self.current_row.points[0])
         self.update_target()
         # self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 

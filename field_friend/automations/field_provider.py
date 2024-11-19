@@ -2,15 +2,15 @@ import logging
 from typing import Any
 
 import rosys
-from rosys.hardware import Gnss
+from rosys.hardware import LocalGnssPoseProvider
 
 from .field import Field, Row, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
-    def __init__(self, gnss: Gnss) -> None:
+    def __init__(self, local_gnss_pose_provider: LocalGnssPoseProvider) -> None:
         super().__init__()
-        self.gnss = gnss
+        self.local_gnss_pose_provider = local_gnss_pose_provider
         self.log = logging.getLogger('field_friend.field_provider')
         self.fields: list[Field] = []
         self.needs_backup: bool = False
@@ -43,7 +43,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def restore(self, data: dict[str, Any]) -> None:
         fields_data: dict[str, dict] = data.get('fields', {})
         for field in list(fields_data.values()):
-            new_field = Field.from_dict(field, self.gnss.reference)
+            new_field = Field.from_dict(field, self.local_gnss_pose_provider.reference)
             # TODO: import old fields?
             # new_field.first_row_start = GeoPoint(lat=np.deg2rad(new_field.first_row_start.lat),
             #                                      lon=np.deg2rad(new_field.first_row_start.lon))
