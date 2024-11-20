@@ -10,9 +10,7 @@ from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Implement, Recorder
 from field_friend.automations.navigation import StraightLineNavigation
-from field_friend.automations.navigation.field_navigation import (
-    State as FieldNavigationState,
-)
+from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
 from field_friend.localization import GnssSimulation
 
 
@@ -364,7 +362,7 @@ async def test_complete_row(system: System, field: Field):
         assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-8)
     assert system.field_navigation.automation_watcher.field_watch_active
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     end_point = field.rows[0].points[1].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
