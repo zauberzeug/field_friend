@@ -22,6 +22,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
 
+        self._only_specific_beds: bool = False
         self._selected_beds: list[int] = []
 
     @property
@@ -54,6 +55,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED.emit()
         if self.selected_field and self.selected_field not in self.fields:
             self.selected_field = None
+            self._only_specific_beds = False
             self.selected_beds = []
             self.FIELD_SELECTED.emit()
 
@@ -135,6 +137,8 @@ class FieldProvider(rosys.persistence.PersistentModule):
             self.log.warning('No field selected. Cannot get rows to work on.')
             return []
         if self.selected_field.bed_count == 1:
+            return self.selected_field.rows
+        if not self._only_specific_beds:
             return self.selected_field.rows
         if len(self.selected_beds) == 0:
             self.log.warning('No beds selected. Cannot get rows to work on.')
