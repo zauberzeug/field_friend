@@ -16,11 +16,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED = rosys.event.Event()
         """The dict of fields has changed."""
 
-        self.FIELDS_CHANGED.register(self.refresh_fields)
-
         self.selected_field: Field | None = None
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
+
+        self.FIELDS_CHANGED.register(self.refresh_fields)
+        self.FIELD_SELECTED.register(self.clear_selected_beds)
 
         self._only_specific_beds: bool = False
         self._selected_beds: list[int] = []
@@ -130,6 +131,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.invalidate()
 
     def clear_selected_beds(self) -> None:
+        self._only_specific_beds = False
         self.selected_beds = []
 
     def get_rows_to_work_on(self) -> list[Row]:

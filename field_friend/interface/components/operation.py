@@ -172,8 +172,8 @@ class Operation:
                         .tooltip('Delete the selected field')
                 if self.system.field_provider.selected_field.bed_count > 1:
                     with ui.row().classes('w-full'):
-                        beds_checkbox = ui.checkbox('Select specific beds').classes(
-                            'w-full').bind_value(self.system.field_provider, '_only_specific_beds')
+                        beds_checkbox = ui.checkbox('Select specific beds').classes('w-full') \
+                            .bind_value(self.system.field_provider, '_only_specific_beds')
                         with ui.row().bind_visibility_from(beds_checkbox, 'value').classes('w-full'):
                             ui.select(list(range(1, int(self.system.field_provider.selected_field.bed_count) + 1)), multiple=True, label='selected beds', clearable=True) \
                                 .classes('grow').props('use-chips').bind_value(self.system.field_provider, 'selected_beds')
