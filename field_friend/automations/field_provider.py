@@ -17,8 +17,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED = rosys.event.Event()
         """The dict of fields has changed."""
 
-        self.FIELDS_CHANGED.register(self.refresh_fields)
-
         self.selected_field: Field | None = None
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
@@ -36,7 +34,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def backup(self) -> dict:
         return {
             'fields': {f.id: f.to_dict() for f in self.fields},
-            'selected_field': self.selected_field.id if self.selected_field else None,
+            'selected_field': self.selected_field.id if self.selected_field else None
         }
 
     def restore(self, data: dict[str, dict]) -> None:
@@ -46,17 +44,16 @@ class FieldProvider(rosys.persistence.PersistentModule):
             self.fields.append(new_field)
         selected_field_id = data.get('selected_field')
         if selected_field_id:
-            self.selected_field = self.get_field(selected_field_id)
-            self.FIELD_SELECTED.emit()
+            self.select_field(selected_field_id)
+        self.refresh_fields()
         self.FIELDS_CHANGED.emit()
 
     def invalidate(self) -> None:
         self.request_backup()
+        self.refresh_fields()
         self.FIELDS_CHANGED.emit()
         if self.selected_field and self.selected_field not in self.fields:
-            self.selected_field = None
-            self.selected_beds = []
-            self.FIELD_SELECTED.emit()
+            self.select_field(None)
 
     def get_field(self, id_: str | None) -> Field | None:
         return next((f for f in self.fields if f.id == id_), None)
@@ -104,7 +101,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def select_field(self, id_: str | None) -> None:
         self.selected_field = self.get_field(id_)
+        self.reset_selected_beds()
         self.FIELD_SELECTED.emit()
+        self.request_backup()
 
     def update_field_parameters(self, field_id: str, name: str, row_count: int, row_spacing: float, outline_buffer_width: float, bed_count: int, bed_spacing: float, bed_crops: dict[int, str | None]) -> None:
         field = self.get_field(field_id)
@@ -122,8 +121,11 @@ class FieldProvider(rosys.persistence.PersistentModule):
                       field.name, row_count, row_spacing)
         self.invalidate()
 
-    def clear_selected_beds(self) -> None:
-        self.selected_beds = []
+    def reset_selected_beds(self) -> None:
+        if self.selected_field is None:
+            self.selected_beds = []
+        else:
+            self.selected_beds = list(range(1, self.selected_field.bed_count + 1))
 
     def get_rows_to_work_on(self) -> list[Row]:
         if not self.selected_field:

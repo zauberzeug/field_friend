@@ -211,3 +211,18 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 self.upload_images = True
             else:
                 self.upload_images = False
+
+    async def get_crop_names(self) -> list[str]:
+        if isinstance(self.detector, rosys.vision.DetectorHardware):
+            port = self.detector.port
+            url = f'http://localhost:{port}/about'
+            async with aiohttp.request('GET', url) as response:
+                if response.status != 200:
+                    self.log.error(f'Could not get crop names on port {port} - status code: {response.status}')
+                    return None
+                response_text = await response.text()
+            crop_names = [category['name'] for category in response_text['model_info']['categories']]
+            return crop_names
+        else:
+            simulated_crop_names = ['sugar_beet', 'garlic', 'onion', 'pastinake', 'maize', 'jasione']
+            return simulated_crop_names
