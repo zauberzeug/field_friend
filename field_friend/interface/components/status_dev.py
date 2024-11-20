@@ -182,7 +182,7 @@ def status_dev_page(robot: FieldFriend, system: System):
 
         with ui.row().classes('place-items-center'):
             ui.label('Odometry:').style('color: #EDF4FB').classes('font-bold')
-            ui.label().bind_text_from(system.odometer, 'prediction')
+            odometry_label = ui.label()
 
         with ui.row().classes('place-items-center'):
             ui.label('Since last update:').style('color: #EDF4FB').classes('font-bold')
@@ -265,6 +265,7 @@ def status_dev_page(robot: FieldFriend, system: System):
             localization.reference.lat == 0 and localization.reference.long == 0) else str(localization.reference)
         heading_label.text = f'{system.gnss.current.heading:.2f}° {direction_flag}' if system.gnss.current is not None and system.gnss.current.heading is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.current.gps_qual}, mode: {system.gnss.current.mode}' if system.gnss.current is not None else 'No fix'
+        odometry_label.text = str(system.odometer.prediction)
         update_label.text = f'{timedelta(seconds=rosys.time() - system.gnss._last_gnss_pose.time)}'  # pylint: disable=protected-access
 
     ui.timer(rosys.config.ui_update_interval, update_status)
