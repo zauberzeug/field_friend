@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 
 
 class State(Enum):
-    APPROACHING_ROW_START = auto()
+    APPROACH_START_ROW = auto()
     CHANGE_ROW = auto()
-    FOLLOWING_ROW = auto()
+    FOLLOW_ROW = auto()
     ROW_COMPLETED = auto()
     FIELD_COMPLETED = auto()
     ERROR = auto()
@@ -40,7 +40,7 @@ class FieldNavigation(StraightLineNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
-        self._state = State.APPROACHING_ROW_START
+        self._state = State.APPROACH_START_ROW
         self.row_index = 0
         self.start_point: Point | None = None
         self.end_point: Point | None = None
@@ -78,7 +78,7 @@ class FieldNavigation(StraightLineNavigation):
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
         self.row_index = self.field.rows.index(self.get_nearest_row())
-        self._state = State.APPROACHING_ROW_START
+        self._state = State.APPROACH_START_ROW
         self.plant_provider.clear()
 
         self.automation_watcher.start_field_watch(self.field.outline)
@@ -142,16 +142,16 @@ class FieldNavigation(StraightLineNavigation):
         if self.odometer.prediction.distance(self.gnss._last_gnss_pose) > 1.0:  # pylint: disable=protected-access
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
 
-        if self._state == State.APPROACHING_ROW_START:
-            self._state = await self._run_approaching_row_start()
+        if self._state == State.APPROACH_START_ROW:
+            self._state = await self._run_approach_start_row()
         elif self._state == State.CHANGE_ROW:
             self._state = await self._run_change_row()
-        elif self._state == State.FOLLOWING_ROW:
-            self._state = await self._run_following_row(distance)
+        elif self._state == State.FOLLOW_ROW:
+            self._state = await self._run_follow_row(distance)
         elif self._state == State.ROW_COMPLETED:
             self._state = await self._run_row_completed()
 
-    async def _run_approaching_row_start(self) -> State:
+    async def _run_approach_start_row(self) -> State:
         self.robot_in_working_area = False
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
@@ -177,7 +177,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(driving_yaw)
-        return State.FOLLOWING_ROW
+        return State.FOLLOW_ROW
 
     async def _run_change_row(self) -> State:
         self.robot_in_working_area = False
@@ -202,7 +202,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(driving_yaw)
-        return State.FOLLOWING_ROW
+        return State.FOLLOW_ROW
 
     async def drive_in_steps(self, target: Pose) -> None:
         while True:
@@ -240,7 +240,7 @@ class FieldNavigation(StraightLineNavigation):
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
             angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
 
-    async def _run_following_row(self, distance: float) -> State:
+    async def _run_follow_row(self, distance: float) -> State:
         assert self.end_point is not None
         assert self.start_point is not None
         end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
@@ -253,7 +253,7 @@ class FieldNavigation(StraightLineNavigation):
             await self.implement.activate()
         self.update_target()
         await super()._drive(distance)
-        return State.FOLLOWING_ROW
+        return State.FOLLOW_ROW
 
     async def _run_row_completed(self) -> State:
         await self.driver.wheels.stop()
@@ -311,7 +311,7 @@ class FieldNavigation(StraightLineNavigation):
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self.row_index = data.get('row_index', 0)
-        self._state = State[data.get('state', State.APPROACHING_ROW_START.name)]
+        self._state = State[data.get('state', State.APPROACH_START_ROW.name)]
         self._loop = data.get('loop', False)
         self._drive_step = data.get('drive_step', self.DRIVE_STEP)
         self._turn_step = data.get('turn_step', self.TURN_STEP)
