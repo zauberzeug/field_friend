@@ -13,7 +13,8 @@ class GnssCorrectionService:
         if self.imu:
             self.imu.NEW_MEASUREMENT.register(self.update_imu)
         self.gnss.ROBOT_POSE_LOCATED.register(self.update_gnss)
-        self._last_offset = 0.0
+        self._last_offset_y = 0.0
+        self._last_offset_x = 0.0
         self._robot_height = robot_height
 
     def update_imu(self, euler: tuple[float, float, float]) -> None:
