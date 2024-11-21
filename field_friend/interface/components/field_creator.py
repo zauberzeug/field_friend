@@ -1,21 +1,22 @@
-from nicegui import ui
-from typing import TYPE_CHECKING, Callable
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 from uuid import uuid4
-import asyncio
 import rosys
-from nicegui import ui, events
+from nicegui import ui
 
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class FieldCreator:
 
-    def __init__(self, system: 'System'):
+    def __init__(self, system: System) -> None:
         self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
         self.steerer = system.steerer
@@ -65,7 +66,7 @@ class FieldCreator:
 
     def find_row_ending(self) -> None:
         assert self.gnss.current is not None
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_start = self.gnss.current.location
@@ -129,7 +130,7 @@ class FieldCreator:
 
     def crop_infos(self) -> None:
         assert self.gnss.current is not None
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location

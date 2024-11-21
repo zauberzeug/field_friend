@@ -1,12 +1,14 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import rosys
-from nicegui import events, ui
+from nicegui import ui
 
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 SHORTCUT_INFO = '''
     Steer the robot manually with the JOYSTICK. <br>
@@ -14,8 +16,8 @@ SHORTCUT_INFO = '''
 '''
 
 
-class manual_steerer_dialog(ui.dialog):
-    def __init__(self, system: 'System') -> None:
+class ManualSteererDialog(ui.dialog):
+    def __init__(self, system: System) -> None:
         super().__init__()
         self.system = system
         with self, ui.card().classes('place-items-center'):

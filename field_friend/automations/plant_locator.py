@@ -4,10 +4,8 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import rosys
 from nicegui import ui
-from rosys.geometry import Point3d
 from rosys.vision import Autoupload
 
-from ..vision import CalibratableUsbCamera
 from ..vision.zedxmini_camera import StereoCamera
 from .plant import Plant
 
@@ -19,7 +17,7 @@ MINIMUM_WEED_CONFIDENCE = 0.3
 
 
 if TYPE_CHECKING:
-    from system import System
+    from ..system import System
 
 
 class DetectorError(Exception):
@@ -46,7 +44,8 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         if isinstance(self.detector, rosys.vision.DetectorHardware):
-            rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=self.detector.port), 1.0)
+            port = self.detector.port
+            rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=port), 1.0)
         if system.is_real:
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
@@ -88,7 +87,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         if new_image is None or new_image.detections:
             await rosys.sleep(0.01)
             return
-        await self.detector.detect(new_image, autoupload=self.autoupload, tags=self.tags + [self.robot_name, 'autoupload'])
+        await self.detector.detect(new_image, autoupload=self.autoupload, tags=[*self.tags, self.robot_name, 'autoupload'])
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
             await rosys.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
@@ -148,8 +147,9 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.log.info('resuming plant detection')
         self.is_paused = False
 
-    async def get_outbox_mode(self, port: int) -> bool:
+    async def get_outbox_mode(self, port: int) -> bool | None:
         # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
+        # TODO: active cleaner already has implemented this
         url = f'http://localhost:{port}/outbox_mode'
         async with aiohttp.request('GET', url) as response:
             if response.status != 200:
@@ -177,7 +177,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'minimum_weed_confidence') \
             .tooltip(f'Set the minimum weed confidence for the detection  (default: {MINIMUM_WEED_CONFIDENCE:.2f})')
-        options = [autoupload for autoupload in rosys.vision.Autoupload]
+        options = list(rosys.vision.Autoupload)
         ui.select(options, label='Autoupload', on_change=self.request_backup) \
             .bind_value(self, 'autoupload') \
             .classes('w-24').tooltip('Set the autoupload for the weeding automation')
@@ -186,9 +186,15 @@ class PlantLocator(rosys.persistence.PersistentModule):
         def chips():
             with ui.row().classes('gap-0'):
                 ui.chip(self.robot_name).props('outline')
+
+                def update_tags(tag_to_remove: str) -> None:
+                    self.tags.remove(tag_to_remove)
+                    chips.refresh()
+                    self.request_backup()
+                    self.log.info(f'tags: {self.tags}')
                 for tag in self.tags:
                     ui.chip(tag, removable=True).props('outline') \
-                        .on('remove', lambda t=tag: (self.tags.remove(t), chips.refresh(), self.request_backup()))
+                        .on('remove', lambda t=tag: update_tags(t))
 
         def add_chip():
             self.tags.append(label_input.value)
@@ -206,11 +212,10 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def set_upload_images(self):
         if self.teltonika_router.mobile_upload_permission:
             self.upload_images = True
+        elif self.teltonika_router.current_connection in ['wifi', 'ether']:
+            self.upload_images = True
         else:
-            if self.teltonika_router.current_connection == 'wifi' or self.teltonika_router.current_connection == 'ether':
-                self.upload_images = True
-            else:
-                self.upload_images = False
+            self.upload_images = False
 
     async def get_crop_names(self) -> list[str]:
         if isinstance(self.detector, rosys.vision.DetectorHardware):

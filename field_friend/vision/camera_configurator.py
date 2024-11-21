@@ -49,7 +49,7 @@ class CameraConfigurator:
                         self.log.info(f'{camera.parameters[name]} != {value}')
                         await camera.set_parameters({name: value})
                         parameters_changed = True
-            if not camera.calibration.extrinsics._frame_id:
+            if not camera.calibration.extrinsics.frame_id:
                 camera.calibration.extrinsics.in_frame(self.odometer.prediction_frame)
             if 'crop' in self.config:
                 # Fetch new cropping parameters
@@ -84,7 +84,7 @@ class CameraConfigurator:
                     parameters_changed = True
                     self.log.info(f'camera rotation: {camera.rotation}; {camera.rotation_angle}')
             else:
-                camera.rotation = 0
+                camera.rotation_angle = 0
 
         elif isinstance(camera, rosys.vision.SimulatedCalibratableCamera):
             if camera.resolution.width != self.config['parameters']['width'] or camera.resolution.height != self.config['parameters']['height']:

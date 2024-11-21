@@ -1,28 +1,12 @@
 import logging
-import os
-import sys
 from pathlib import Path
 
 import icecream
+from rosys import helpers
 
 project = 'field_friend'
 
 PATH = Path('~/.rosys').expanduser()
-
-
-class PackagePathFilter(logging.Filter):
-    # https://stackoverflow.com/a/52582536/3419103
-    def filter(self, record):
-        pathname = record.pathname
-        record.relativepath = None
-        abs_sys_paths = map(os.path.abspath, sys.path)
-        for path in sorted(abs_sys_paths, key=len, reverse=True):  # longer paths first
-            if not path.endswith(os.sep):
-                path += os.sep
-            if pathname.startswith(path):
-                record.relativepath = os.path.relpath(pathname, path)
-                break
-        return True
 
 
 def configure():
@@ -35,13 +19,13 @@ def configure():
         'disable_existing_loggers': True,
         'formatters': {
             'default': {
-                'format': '%(asctime)s.%(msecs)03d [%(levelname)s] %(relativepath)s:%(lineno)d: %(message)s',
-                'datefmt': '%Y-%m-%d %H:%M:%S',
+                'format': r'%(asctime)s.%(msecs)03d [%(levelname)s] %(relative_path)s:%(lineno)d: %(message)s',
+                'datefmt': r'%Y-%m-%d %H:%M:%S',
             },
         },
         'filters': {
             'package_path_filter': {
-                '()': PackagePathFilter,
+                '()': helpers.PackagePathFilter,
             },
         },
         'handlers': {

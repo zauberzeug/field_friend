@@ -1,21 +1,23 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import events, ui
 
-from .field_friend_object import field_friend_object
-from .field_object import field_object
-from .plant_object import plant_objects
-from .visualizer_object import visualizer_object
+from .field_friend_object import FieldFriendObject as field_friend_object
+from .field_object import FieldObject as field_object
+from .plant_object import PlantObjects as plant_objects
+from .visualizer_object import VisualizerObject as visualizer_object
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-class robot_scene:
+class RobotScene:
 
-    def __init__(self, system: 'System'):
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.robot_scene')
         self.system = system
         self.scene_card = ui.card()

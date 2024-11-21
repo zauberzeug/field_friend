@@ -1,5 +1,5 @@
-from typing import Optional
-
+# pylint: disable=broad-exception-raised
+# TODO: we need a useful exception here
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -12,7 +12,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  name: str = 'yaxis',
                  can: rosys.hardware.CanHardware,
-                 expander: Optional[rosys.hardware.ExpanderHardware],
+                 expander: rosys.hardware.ExpanderHardware | None,
                  can_address: int = 0x60,
                  max_speed: int = 2000,
                  reference_speed: int = 40,
@@ -26,8 +26,6 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
                  end_stops_on_expander: bool = True,
                  end_stops_inverted: bool = False,
                  reversed_direction: bool = False,
-                 acceleration: int = 500,
-                 quick_stop_deceleration: int = 2000,
                  ) -> None:
         self.name = name
         self.expander = expander
@@ -66,7 +64,6 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
-        await super().stop()
         await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(false);')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
@@ -76,7 +73,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             await super().move_to(position, speed)
         except RuntimeError as error:
             self.log.error(f'could not move yaxis to {position} because of {error}')
-            raise Exception(f'could not move yaxis to {position} because of {error}')
+            raise Exception(f'could not move yaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
         self.log.info(f'moving to steps: {steps}')
         await self.enable_motor()
@@ -111,7 +108,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         if not await super().try_reference():
             return False
         try:
-            self.log.info("enabling h motors")
+            self.log.info('enabling h motors')
             await self.enable_motor()
             await self.robot_brain.send(
                 f'{self.name}_motor.position_offset = 0;'

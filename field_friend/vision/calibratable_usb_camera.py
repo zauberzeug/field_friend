@@ -1,4 +1,4 @@
-from typing import Any, Optional, Self
+from typing import Any, Self
 
 import rosys
 from rosys import persistence
@@ -8,8 +8,8 @@ class CalibratableUsbCamera(rosys.vision.CalibratableCamera, rosys.vision.UsbCam
 
     def __init__(self,
                  *,
-                 calibration: Optional[rosys.vision.Calibration] = None,
-                 focal_length: Optional[float] = None,
+                 calibration: rosys.vision.Calibration | None = None,
+                 focal_length: float | None = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.focal_length = focal_length

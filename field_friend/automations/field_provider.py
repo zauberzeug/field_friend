@@ -1,16 +1,15 @@
 import logging
+from typing import Any
 
 import rosys
 
-from ..localization import Gnss
-from . import Field, Row, RowSupportPoint
+from .field import Field, Row, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.PersistentModule):
-    def __init__(self, gnss: Gnss) -> None:
+    def __init__(self) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.field_provider')
-        self.gnss = gnss
         self.fields: list[Field] = []
         self.needs_backup: bool = False
 
@@ -21,6 +20,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
 
+        self.FIELDS_CHANGED.register(self.refresh_fields)
+        self.FIELD_SELECTED.register(self.clear_selected_beds)
+
+        self._only_specific_beds: bool = False
         self._selected_beds: list[int] = []
 
     @property
@@ -37,12 +40,12 @@ class FieldProvider(rosys.persistence.PersistentModule):
             'selected_field': self.selected_field.id if self.selected_field else None
         }
 
-    def restore(self, data: dict[str, dict]) -> None:
+    def restore(self, data: dict[str, Any]) -> None:
         fields_data: dict[str, dict] = data.get('fields', {})
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)
             self.fields.append(new_field)
-        selected_field_id = data.get('selected_field')
+        selected_field_id: str | None = data.get('selected_field')
         if selected_field_id:
             self.select_field(selected_field_id)
         self.refresh_fields()
@@ -53,7 +56,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.refresh_fields()
         self.FIELDS_CHANGED.emit()
         if self.selected_field and self.selected_field not in self.fields:
-            self.select_field(None)
+            self.selected_field = None
+            self._only_specific_beds = False
+            self.selected_beds = []
+            self.FIELD_SELECTED.emit()
 
     def get_field(self, id_: str | None) -> Field | None:
         return next((f for f in self.fields if f.id == id_), None)
@@ -105,7 +111,15 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELD_SELECTED.emit()
         self.request_backup()
 
-    def update_field_parameters(self, field_id: str, name: str, row_count: int, row_spacing: float, outline_buffer_width: float, bed_count: int, bed_spacing: float, bed_crops: dict[int, str | None]) -> None:
+    def update_field_parameters(self, *,
+                                field_id: str,
+                                name: str,
+                                row_count: int,
+                                row_spacing: float,
+                                outline_buffer_width: float,
+                                bed_count: int,
+                                bed_spacing: float,
+                                bed_crops: dict[int, str | None]) -> None:
         field = self.get_field(field_id)
         if not field:
             self.log.warning('Field with id %s not found. Cannot update parameters.', field_id)
@@ -121,17 +135,17 @@ class FieldProvider(rosys.persistence.PersistentModule):
                       field.name, row_count, row_spacing)
         self.invalidate()
 
-    def reset_selected_beds(self) -> None:
-        if self.selected_field is None:
-            self.selected_beds = []
-        else:
-            self.selected_beds = list(range(1, self.selected_field.bed_count + 1))
+    def clear_selected_beds(self) -> None:
+        self._only_specific_beds = False
+        self.selected_beds = []
 
     def get_rows_to_work_on(self) -> list[Row]:
         if not self.selected_field:
             self.log.warning('No field selected. Cannot get rows to work on.')
             return []
         if self.selected_field.bed_count == 1:
+            return self.selected_field.rows
+        if not self._only_specific_beds:
             return self.selected_field.rows
         if len(self.selected_beds) == 0:
             self.log.warning('No beds selected. Cannot get rows to work on.')

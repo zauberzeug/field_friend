@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 import rosys
@@ -8,12 +10,12 @@ from .key_controls import KeyControls
 from .support_point_dialog import SupportPointDialog
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
-class operation:
+class Operation:
 
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.operation')
         self.system = system
         self.plant_locator = system.plant_locator
@@ -26,6 +28,8 @@ class operation:
         self.selected_beds: set[int] = set()
         self.crop_names: list[str] = []
         rosys.on_startup(self.load_crop_names)
+        self.delete_field_dialog: ui.dialog | None = None
+        self.edit_field_dialog: ui.dialog | None = None
 
         with ui.row().classes('w-full').style('min-height: 100%; width: 55%;'):
             with ui.row().classes('m-4').style('width: calc(100% - 2rem)'):
@@ -34,7 +38,7 @@ class operation:
                     with ui.row():
                         ui.label('Settings').classes('text-xl')
                     with ui.expansion('Fields').classes('w-full').bind_value(app.storage.user, 'show_fields_settings'):
-                        self.field_setting()
+                        self.field_setting()  # type: ignore
                     with ui.expansion('Navigation').classes('w-full').bind_value(app.storage.user, 'show_navigation_settings'):
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
@@ -46,7 +50,7 @@ class operation:
 
         with activities:
             self.navigation_selection = ui.select(
-                [key for key in self.system.navigation_strategies.keys()],
+                list(self.system.navigation_strategies.keys()),
                 on_change=self.handle_navigation_changed,
                 label='Navigation'
             ).classes('w-32') \
@@ -55,7 +59,7 @@ class operation:
             self.navigation_selection.value = self.system.current_navigation.name
 
             self.implement_selection = ui.select(
-                [key for key in self.system.implements.keys()],
+                list(self.system.implements.keys()),
                 on_change=self.handle_implement_changed,
                 label='Implement') \
                 .classes('w-32') \
@@ -81,19 +85,20 @@ class operation:
         if self.field_provider.selected_field:
             name = self.field_provider.selected_field.name
             self.field_provider.update_field_parameters(
-                self.field_provider.selected_field.id,
-                parameters['name'],
-                int(parameters['row_count']),
-                float(parameters['row_spacing']),
-                float(parameters['outline_buffer_width']),
-                int(parameters['bed_count']),
-                float(parameters['bed_spacing']),
-                parameters['bed_crops']
+                field_id=self.field_provider.selected_field.id,
+                name=parameters['name'],
+                row_count=int(parameters['row_count']),
+                row_spacing=float(parameters['row_spacing']),
+                outline_buffer_width=float(parameters['outline_buffer_width']),
+                bed_count=int(parameters['bed_count']),
+                bed_spacing=float(parameters['bed_spacing']),
+                bed_crops=parameters['bed_crops']
             )
             ui.notify(f'Parameters of Field "{name}" has been changed')
         else:
             ui.notify('No field selected', color='warning')
-        self.edit_field_dialog.close()
+        if self.edit_field_dialog:
+            self.edit_field_dialog.close()
 
     def delete_selected_field(self):
         if self.field_provider.selected_field:
@@ -102,9 +107,10 @@ class operation:
             ui.notify(f'Field "{name}" has been deleted')
         else:
             ui.notify('No field selected', color='warning')
-        self.delete_field_dialog.close()
+        if self.delete_field_dialog:
+            self.delete_field_dialog.close()
 
-    @ui.refreshable
+    @ ui.refreshable
     def field_setting(self) -> None:
         with ui.dialog() as self.edit_field_dialog, ui.card():
             parameters: dict = {
@@ -134,15 +140,18 @@ class operation:
                         .tooltip('Set the number of rows per bed.')
                     ui.number('Row Spacing', value=parameters['row_spacing'], suffix='cm', min=1, step=1) \
                         .props('dense outlined').classes('w-full') \
-                        .bind_value(parameters, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0)
-                    ui.number('Outline Buffer Width', value=parameters.get('outline_buffer_width', 2.0), min=1, max=10, step=0.1, suffix='m') \
+                        .bind_value(parameters, 'row_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
+                        .tooltip('Set the spacing between rows')
+                    ui.number('Outline Buffer Width', value=parameters.get(
+                        'outline_buffer_width', 2.0), min=1, max=10, step=0.1, suffix='m') \
                         .props('dense outlined').classes('w-full') \
                         .bind_value(parameters, 'outline_buffer_width') \
                         .tooltip('Set the outline buffer width')
                 with ui.tab_panel(two):
                     ui.number('Number of Beds', value=parameters['bed_count'], min=1, step=1) \
                         .props('dense outlined').classes('w-full') \
-                        .bind_value(parameters, 'bed_count')
+                        .bind_value(parameters, 'bed_count') \
+                        .tooltip('Set the number of beds')
                     for i in range(parameters['bed_count']):
                         ui.select(self.crop_names) \
                             .props('dense outlined').classes('w-full') \
@@ -157,13 +166,14 @@ class operation:
             ui.label('Are you sure you want to delete this field?')
             with ui.row():
                 ui.button('Cancel', on_click=self.delete_field_dialog.close)
-                ui.button('Delete', on_click=self.delete_selected_field).props('color=red')
+                ui.button('Delete', on_click=self._delete_selected_field, color='red')
 
         with ui.row().style('width:100%;'):
             ui.button(icon='add_box', text='Field', on_click=lambda: FieldCreator(self.system)) \
                 .tooltip('Create a field with AB-line in a few simple steps')
             ui.button(icon='save', on_click=self.plant_locator.get_crop_names) \
-                .classes('ml-2')
+                .classes('ml-2') \
+                .tooltip('Update the list of crops')
         if len(self.field_provider.fields) <= 0:
             return
         with ui.row().classes('w-full mt-2'):
@@ -186,11 +196,13 @@ class operation:
                         .tooltip('Delete the selected field')
                 if self.field_provider.selected_field.bed_count > 1:
                     with ui.row().classes('w-full'):
-                        beds_checkbox = ui.checkbox('Select specific beds').classes(
-                            'w-full').on_value_change(self.field_provider.reset_selected_beds)
+                        beds_checkbox = ui.checkbox('Select specific beds').classes('w-full') \
+                            .bind_value(self.system.field_provider, '_only_specific_beds')
                         with ui.row().bind_visibility_from(beds_checkbox, 'value').classes('w-full'):
-                            ui.select(list(range(1, int(self.field_provider.selected_field.bed_count) + 1)), multiple=True, label='selected beds', clearable=True) \
-                                .classes('grow').props('use-chips').bind_value(self.field_provider, 'selected_beds')
+                            ui.select(list(range(1, int(self.field_provider.selected_field.bed_count) + 1)),
+                                      multiple=True, label='selected beds', clearable=True) \
+                                .classes('grow').props('use-chips') \
+                                .bind_value(self.field_provider, 'selected_beds')
 
     async def load_crop_names(self) -> None:
         self.crop_names = await self.plant_locator.get_crop_names()

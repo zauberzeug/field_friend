@@ -1,15 +1,16 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import events, ui
 
-from ...automations import PlantLocator
-from ...hardware import FieldFriend, FlashlightPWM
+from ...hardware import FlashlightPWM
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
-    from field_friend.system import System
+    from ...system import System
 
 
 class CameraPosition:
@@ -19,29 +20,20 @@ class CameraPosition:
     LEFT = '-4'
 
 
-class monitoring:
+class Monitoring:
 
-    def __init__(self,
-                 camera_provider: rosys.vision.CameraProvider,
-                 mjpeg_camera_provider: rosys.vision.CameraProvider,
-                 detector: rosys.vision.Detector,
-                 monitoring_detector: rosys.vision.Detector,
-                 plant_locator: PlantLocator,
-                 automator: rosys.automation.Automator,
-                 field_friend: FieldFriend,
-                 system: 'System',
-                 *,
-                 shrink_factor: int = 1,
-                 ) -> None:
+    def __init__(self, system: System, *,
+                 shrink_factor: int = 1) -> None:
         self.log = logging.getLogger('field_friend.monitoring')
-        self.usb_camera_provider = camera_provider
-        self.mjpg_camera_provider = mjpeg_camera_provider
-        self.detector = detector
-        self.monitoring_detector = monitoring_detector
+        self.usb_camera_provider = system.camera_provider
+        # TODO: in simulation there is no mjpeg camera provider
+        self.mjpg_camera_provider = system.mjpeg_camera_provider
+        self.detector = system.detector
+        self.monitoring_detector = system.monitoring_detector
         self.monitoring_active = False
-        self.plant_locator = plant_locator
-        self.automator = automator
-        self.field_friend = field_friend
+        self.plant_locator = system.plant_locator
+        self.field_friend = system.field_friend
+        self.automator = system.automator
         self.system = system
         self.person_count = 0
         self.animal_count = 0
@@ -89,6 +81,9 @@ class monitoring:
                         self.flashlight_toggled = False
 
                         async def toggle_flashlight():
+                            if not self.field_friend.flashlight:
+                                rosys.notify('No flashlight found')
+                                return
                             self.flashlight_toggled = not self.flashlight_toggled
                             flashlight_button.props(
                                 f'flat color={"primary" if not self.flashlight_toggled else "grey"} icon={"flashlight_on" if not self.flashlight_toggled else "flashlight_off"}')
@@ -171,13 +166,13 @@ class monitoring:
                         self.plant_locator.minimum_crop_confidence])
             weeds = len([p for p in image.detections.points if p.category_name in self.plant_locator.weed_category_names and p.confidence >
                         self.plant_locator.minimum_weed_confidence])
-            self.crops_count_label.set_text(crops)
+            self.crops_count_label.set_text(str(crops))
             self.crops_label.set_text('Crop' if crops == 1 else 'Crops')
-            self.weeds_count_label.set_text(weeds)
+            self.weeds_count_label.set_text(str(weeds))
             self.weeds_label.set_text('Weed' if weeds == 1 else 'Weeds')
         else:
-            self.weeds_count_label.set_text(0)
-            self.crops_count_label.set_text(0)
+            self.weeds_count_label.set_text('0')
+            self.crops_count_label.set_text('0')
             self.bottom_view.set_content('')
 
     def to_svg(self, detections: rosys.vision.Detections) -> str:
@@ -198,9 +193,9 @@ class monitoring:
                 svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
             elif point.category_name in self.plant_locator.weed_category_names and point.confidence > self.plant_locator.minimum_weed_confidence:
                 svg += f'''
-                        <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="red" stroke-width="8" 
+                        <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="red" stroke-width="8"
                             transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
-                        <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="red" stroke-width="8" 
+                        <line x1="{point.x / self.shrink_factor}" y1="{point.y / self.shrink_factor - cross_size}" x2="{point.x / self.shrink_factor}" y2="{point.y / self.shrink_factor + cross_size}" stroke="red" stroke-width="8"
                             transform="rotate(45, {point.x / self.shrink_factor}, {point.y / self.shrink_factor})"/>
                         <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Weed</text>
                 '''
