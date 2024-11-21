@@ -63,7 +63,6 @@ class FieldNavigation(StraightLineNavigation):
             rosys.notify('No field selected', 'negative')
             return False
         self.rows_to_work_on = self.field_provider.get_rows_to_work_on()
-        print(f'self.field_provider.current_field.rows 🔴: {self.field_provider.selected_field.rows[1].crop}')
         if not self.rows_to_work_on or len(self.rows_to_work_on) == 0:
             rosys.notify('No rows available', 'negative')
             return False

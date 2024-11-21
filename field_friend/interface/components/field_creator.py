@@ -33,7 +33,7 @@ class FieldCreator:
         self.bed_crops: dict[int, str | None] = {0: None}
         self.next: Callable = self.find_first_row
         self.crop_names: list[str] = []
-        asyncio.create_task(self.load_crop_names())
+        rosys.on_startup(self.load_crop_names)
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
@@ -127,7 +127,6 @@ class FieldCreator:
                 .bind_value(self, 'outline_buffer_width')
         self.next = self.crop_infos
 
-    @ui.refreshable
     def crop_infos(self) -> None:
         assert self.gnss.current is not None
         if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
@@ -146,8 +145,8 @@ class FieldCreator:
                     .props('dense outlined').classes('w-40') \
                     .tooltip(f'Enter the crop name for bed {i + 1}') \
                     .bind_value(self, 'bed_crops',
-                                forward=lambda v, idx=i: {**self.bed_crops, idx: v},
-                                backward=lambda v, idx=i: v.get(idx))
+                                forward=lambda v, idx=i: {**self.bed_crops, str(idx): v},
+                                backward=lambda v, idx=i: v.get(str(idx)))
 
         self.next = self.confirm_geometry
 
@@ -155,7 +154,6 @@ class FieldCreator:
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
         with self.content:
-            print('small change')
             with ui.row().classes('items-center'):
                 ui.label(f'Field Name: {self.field_name}').classes('text-lg')
                 ui.label(f'First Row Start: {self.first_row_start}').classes('text-lg')
@@ -164,7 +162,7 @@ class FieldCreator:
                     ui.label(f'Number of Beds: {self.bed_count}').classes('text-lg')
                     ui.label(f'Bed Spacing: {self.bed_spacing*100} cm').classes('text-lg')
                 for i in range(int(self.bed_count)):
-                    ui.label(f'Crop {i + 1}: {self.bed_crops[i]}').classes('text-lg')
+                    ui.label(f'Crop {int(i) + 1}: {self.bed_crops[str(i)]}').classes('text-lg')
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
                 ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')

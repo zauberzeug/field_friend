@@ -69,7 +69,7 @@ class Field:
         self.visualized: bool = False
         self.rows: list[Row] = []
         self.outline: list[GeoPoint] = []
-        self.bed_crops: dict[int, str | None] = bed_crops or {i: None for i in range(bed_count)}
+        self.bed_crops: dict[str, str | None] = bed_crops or {str(i): None for i in range(bed_count)}
         self.refresh()
 
     @property
@@ -142,9 +142,8 @@ class Field:
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = [localization.reference.shifted(
                 Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            print(self.bed_crops)
             row = Row(id=f'field_{self.id}_row_{str(i + 1)}', name=f'row_{i + 1}',
-                      points=row_points, crop=self.bed_crops[bed_index])
+                      points=row_points, crop=self.bed_crops[str(bed_index)])
             rows.append(row)
         return rows
 
