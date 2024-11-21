@@ -15,7 +15,6 @@ from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
-from .imu import IMUHardware
 from .led_eyes import LedEyesHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware
@@ -41,6 +40,11 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
         self.ANTENNA_OFFSET: float = config_params['antenna_offset']
+        if 'robot_height' in config_params:
+            self.ROBOT_HEIGHT: float = config_params['robot_height']
+        else:
+            # TODO: set a default value for normal robots
+            self.ROBOT_HEIGHT = 0.0
         self.WORK_X: float
         self.DRILL_RADIUS: float
         implement: str = config_params['tool']
@@ -396,11 +400,12 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             bumper = None
 
-        self.imu: IMUHardware | None
+        self.imu: rosys.hardware.Imu | None
         if 'imu' in config_hardware:
-            self.imu = IMUHardware(robot_brain,
-                                   name=config_hardware['imu']['name'],
-                                   )
+            self.imu = rosys.hardware.ImuHardware(robot_brain,
+                                            name=config_hardware['imu']['name'],
+                                            offset_rotation=rosys.geometry.Rotation.from_euler(*config_hardware['imu']['offset_rotation']),
+                                            )
         else:
             self.imu = None
 
@@ -440,6 +445,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          safety=safety,
                          flashlight=flashlight,
                          mower=mower,
+                         imu=self.imu,
                          modules=active_modules,
                          robot_brain=robot_brain)
 

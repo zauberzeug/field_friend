@@ -117,5 +117,6 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                          estop=estop,
                          bumper=bumper,
                          bms=bms,
+                         imu=None,
                          safety=safety,
                          modules=active_modules)

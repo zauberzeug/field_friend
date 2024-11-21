@@ -1,5 +1,6 @@
 from .geo_point import GeoPoint, GeoPointCollection
 from .gnss import Gnss
+from .gnss_correction_service import GnssCorrectionService
 from .gnss_hardware import GnssHardware
 from .gnss_simulation import GnssSimulation
 
@@ -11,4 +12,5 @@ __all__ = [
     'Gnss',
     'GnssHardware',
     'GnssSimulation',
+    'GnssCorrectionService',
 ]

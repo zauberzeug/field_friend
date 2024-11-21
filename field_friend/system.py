@@ -43,6 +43,7 @@ from .hardware import (
 from .info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
+from .localization.gnss_correction_service import GnssCorrectionService
 from .localization.gnss_hardware import GnssHardware
 from .localization.gnss_simulation import GnssSimulation
 from .vision import CalibratableUsbCameraProvider, CameraConfigurator
@@ -92,10 +93,12 @@ class System(rosys.persistence.PersistentModule):
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(self.odometer, self.field_friend.ANTENNA_OFFSET)
+            self.gnss_correction_service = GnssCorrectionService(imu=self.field_friend.imu, gnss=self.gnss, robot_height=self.field_friend.ROBOT_HEIGHT)
         else:
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = GnssSimulation(self.odometer, self.field_friend.wheels)
-        self.gnss.ROBOT_POSE_LOCATED.register(self.odometer.handle_detection)
+            self.gnss_correction_service = GnssCorrectionService(imu=None, gnss=self.gnss, robot_height=0)
+        self.gnss_correction_service.CORRECTED_ROBOT_POSE.register(self.odometer.handle_detection)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
         self.driver.parameters.linear_speed_limit = 0.3
         self.driver.parameters.angular_speed_limit = 0.2
