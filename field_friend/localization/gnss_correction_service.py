@@ -18,12 +18,14 @@ class GnssCorrectionService:
 
     def update_imu(self, euler: tuple[float, float, float]) -> None:
         roll = euler[0]
-        self._last_offset = self._robot_height * np.sin(np.radians(roll))
+        pitch = euler[1]
+        self._last_offset_y = self._robot_height * np.sin(np.radians(roll))
+        self._last_offset_x = self._robot_height * np.sin(np.radians(pitch))
 
     def update_gnss(self, measured_pose: rosys.geometry.Pose) -> None:
         corrected_pose = measured_pose.transform_pose(rosys.geometry.Pose(
-            x=0,
-            y=self._last_offset,
+            x=self._last_offset_x,
+            y=self._last_offset_y,
             yaw=0,
             time=measured_pose.time,
         ))
