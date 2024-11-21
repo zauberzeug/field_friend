@@ -107,7 +107,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def select_field(self, id_: str | None) -> None:
         self.selected_field = self.get_field(id_)
-        self.reset_selected_beds()
+        self.clear_selected_beds()
         self.FIELD_SELECTED.emit()
         self.request_backup()
 

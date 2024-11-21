@@ -100,7 +100,7 @@ class Operation:
         if self.edit_field_dialog:
             self.edit_field_dialog.close()
 
-    def delete_selected_field(self):
+    def _delete_selected_field(self):
         if self.field_provider.selected_field:
             name = self.field_provider.selected_field.name
             self.field_provider.delete_selected_field()
