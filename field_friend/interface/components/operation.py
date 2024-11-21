@@ -152,7 +152,9 @@ class Operation:
                         .props('dense outlined').classes('w-full') \
                         .bind_value(parameters, 'bed_count') \
                         .tooltip('Set the number of beds')
+                    ui.separator()
                     for i in range(parameters['bed_count']):
+                        ui.label(f'Bed {i + 1}:').classes('w-full')
                         ui.select(self.crop_names) \
                             .props('dense outlined').classes('w-full') \
                             .bind_value(parameters, 'bed_crops',
@@ -167,13 +169,9 @@ class Operation:
             with ui.row():
                 ui.button('Cancel', on_click=self.delete_field_dialog.close)
                 ui.button('Delete', on_click=self._delete_selected_field, color='red')
-
         with ui.row().style('width:100%;'):
             ui.button(icon='add_box', text='Field', on_click=lambda: FieldCreator(self.system)) \
                 .tooltip('Create a field with AB-line in a few simple steps')
-            ui.button(icon='save', on_click=self.plant_locator.get_crop_names) \
-                .classes('ml-2') \
-                .tooltip('Update the list of crops')
         if len(self.field_provider.fields) <= 0:
             return
         with ui.row().classes('w-full mt-2'):

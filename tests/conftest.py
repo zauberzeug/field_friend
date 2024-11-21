@@ -111,7 +111,13 @@ async def field_with_beds(system: System) -> AsyncGenerator[TestField, None]:
         row_count=1,
         row_support_points=[],
         bed_count=4,
-        bed_spacing=0.45
+        bed_spacing=0.45,
+        bed_crops={
+            '0': 'sugar_beet',
+            '1': 'garlic',
+            '2': 'onion',
+            '3': 'lettuce'
+        }
     ))
     yield test_field
 
@@ -122,6 +128,12 @@ def field_creator(system: System) -> FieldCreator:
     fc.first_row_start = FIELD_FIRST_ROW_START
     fc.row_spacing = 0.5
     fc.row_count = 10
+    fc.bed_count = 2
+    fc.bed_spacing = 1.0
+    fc.bed_crops = {
+        '0': 'sugar_beet',
+        '1': 'garlic'
+    }
     fc.confirm_geometry()
     fc.first_row_end = FIELD_FIRST_ROW_END
     return fc
