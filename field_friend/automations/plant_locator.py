@@ -10,8 +10,7 @@ from ..vision.zedxmini_camera import StereoCamera
 from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'weedy_area', ]
-CROP_CATEGORY_NAME = ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
-                      'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]
+CROP_CATEGORY_NAME = {}
 MINIMUM_CROP_CONFIDENCE = 0.3
 MINIMUM_WEED_CONFIDENCE = 0.3
 
@@ -50,6 +49,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
             self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
+        rosys.on_startup(self.get_crop_names)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
@@ -217,7 +217,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         else:
             self.upload_images = False
 
-    async def get_crop_names(self) -> list[str]:
+    async def get_crop_names(self) -> dict[str, str]:
         if isinstance(self.detector, rosys.vision.DetectorHardware):
             port = self.detector.port
             url = f'http://localhost:{port}/about'
@@ -226,11 +226,15 @@ class PlantLocator(rosys.persistence.PersistentModule):
                     self.log.error(f'Could not get crop names on port {port} - status code: {response.status}')
                     return []
                 response_text = await response.json()
-            crop_names = [category['name'] for category in response_text['model_info']['categories']]
-            weeds = ['weed', 'weed_area', 'coin', 'danger', 'big_weed']
+            crop_names: list[str] = [category['name'] for category in response_text['model_info']['categories']]
+            weeds = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
             for weed in weeds:
                 crop_names.remove(weed)
-            return crop_names
+            CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in crop_names})
+            return CROP_CATEGORY_NAME
         else:
-            simulated_crop_names = ['sugar_beet', 'garlic', 'onion', 'pastinake', 'maize', 'jasione']
-            return simulated_crop_names
+            simulated_crop_names: list[str] = ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
+                                               'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]
+
+            CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in simulated_crop_names})
+            return CROP_CATEGORY_NAME

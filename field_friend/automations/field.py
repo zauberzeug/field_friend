@@ -51,7 +51,7 @@ class Field:
                  row_support_points: list[RowSupportPoint] | None = None,
                  bed_count: int = 1,
                  bed_spacing: float = 0.5,
-                 bed_crops: dict[int, str | None] | None = None) -> None:
+                 bed_crops: dict[str, str | None] | None = None) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start

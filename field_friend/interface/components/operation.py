@@ -26,8 +26,6 @@ class Operation:
         self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
         self.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
         self.selected_beds: set[int] = set()
-        self.crop_names: list[str] = []
-        rosys.on_startup(self.load_crop_names)
         self.delete_field_dialog: ui.dialog | None = None
         self.edit_field_dialog: ui.dialog | None = None
 
@@ -153,13 +151,17 @@ class Operation:
                         .bind_value(parameters, 'bed_count') \
                         .tooltip('Set the number of beds')
                     ui.separator()
-                    for i in range(parameters['bed_count']):
-                        ui.label(f'Bed {i + 1}:').classes('w-full')
-                        ui.select(self.crop_names) \
-                            .props('dense outlined').classes('w-full') \
-                            .bind_value(parameters, 'bed_crops',
-                                        forward=lambda v, idx=i: {**parameters.get('bed_crops', {}), str(idx): v},
-                                        backward=lambda v, idx=i: v.get(str(idx)))
+                    with ui.column().classes('w-full').style('max-height: 500px; overflow-y: auto;'):
+                        for i in range(parameters['bed_count']):
+                            with ui.row().classes('w-full item-center'):
+                                ui.label(f'Bed {i + 1}:').classes('text-lg')
+                                ui.select(self.plant_locator.crop_category_names) \
+                                    .props('dense outlined').classes('w-40') \
+                                    .bind_value(parameters, 'bed_crops',
+                                                forward=lambda v, idx=i: {
+                                                    **parameters.get('bed_crops', {}), str(idx): v},
+                                                backward=lambda v, idx=i: v.get(str(idx)))
+                        # TODO dynamic adding and deleting the beds when the number of beds is changed
             with ui.row():
                 ui.button('Cancel', on_click=self.edit_field_dialog.close)
                 ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters))
@@ -201,7 +203,3 @@ class Operation:
                                       multiple=True, label='selected beds', clearable=True) \
                                 .classes('grow').props('use-chips') \
                                 .bind_value(self.field_provider, 'selected_beds')
-
-    async def load_crop_names(self) -> None:
-        self.crop_names = await self.plant_locator.get_crop_names()
-        self.field_setting.refresh()

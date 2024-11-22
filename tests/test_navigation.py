@@ -429,6 +429,7 @@ async def test_complete_field_without_first_beds(system: System, field_with_beds
     system.field_provider._only_specific_beds = True
     system.field_provider.selected_beds = [2, 3, 4]
     system.current_navigation = system.field_navigation
+    system.current_implement = system.implements['Weed Screw']
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
@@ -436,8 +437,6 @@ async def test_complete_field_without_first_beds(system: System, field_with_beds
     end_point = field_with_beds.rows[-1].points[1].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
-
-    # TODO adding tests for field navigation with different bed crops
 
 
 async def test_field_with_bed_crops(system: System, field_with_beds: Field):

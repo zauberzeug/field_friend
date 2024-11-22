@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 import rosys
 from nicegui import ui
-
+from . import LeafletMap as leaflet_map
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
@@ -17,8 +17,11 @@ if TYPE_CHECKING:
 class FieldCreator:
 
     def __init__(self, system: System) -> None:
+        self.system = system
         self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
+        self.back_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
+                              if CameraPosition.BACK in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
         self.steerer = system.steerer
         self.gnss = system.gnss
         self.plant_locator = system.plant_locator
@@ -31,20 +34,20 @@ class FieldCreator:
         self.outline_buffer_width: float = 2.0
         self.bed_count: int = 1
         self.bed_spacing: float = 0.5
-        self.bed_crops: dict[int, str | None] = {0: None}
+        self.bed_crops: dict[str, str | None] = {'0': None}
         self.next: Callable = self.find_first_row
-        self.crop_names: list[str] = []
-        rosys.on_startup(self.load_crop_names)
+        self.default_crop: str | None = None
 
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
-                self.row_sight = ui.interactive_image().classes('w-3/5')
+                with ui.column().classes('w-3/5') as self.view_column:
+                    self.row_sight = ui.interactive_image().classes('w-full')
+                    self.camera_updater = ui.timer(0.1, self.update_front_cam)
                 with ui.column().classes('items-center  w-2/5 p-8'):
                     self.headline = ui.label().classes('text-lg font-bold')
                     self.content = ui.column().classes('items-center')
                     # NOTE: the next function is replaced, hence we need the lambda
                     ui.button('Next', on_click=lambda: self.next())  # pylint: disable=unnecessary-lambda
-        ui.timer(0.1, self.update_front_cam)
         self.open()
 
     def open(self) -> None:
@@ -72,7 +75,11 @@ class FieldCreator:
         self.first_row_start = self.gnss.current.location
         assert self.first_row_start is not None
         # TODO: save the point somewhere to be able to use it in case of restarting the creator
-
+        self.view_column.clear()
+        with self.view_column:
+            self.row_sight = ui.interactive_image().classes('w-full')
+            self.row_sight.content = '<line x1="50%" y1="0" x2="50%" y2="100%" stroke="#6E93D6" stroke-width="6"/>'
+            self.camera_updater = ui.timer(0.1, self.update_back_cam)
         self.headline.text = 'Find Row Ending'
         self.content.clear()
         with self.content:
@@ -90,7 +97,10 @@ class FieldCreator:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location
         assert self.first_row_end is not None
-
+        self.view_column.clear()
+        # TODO: add map for showing ab line
+        # with self.view_column:
+        #     self.map = self.ab_line_map()
         self.headline.text = 'Field Parameters'
         self.row_sight.content = ''
         self.content.clear()
@@ -99,6 +109,7 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Enter a name for the field') \
                 .bind_value(self, 'field_name')
+            ui.separator()
             beds_switch = ui.switch('Field has multiple beds')
             ui.number('Number of Beds',
                       value=10, step=1, min=1) \
@@ -111,6 +122,11 @@ class FieldCreator:
                 .tooltip('Set the distance between the beds') \
                 .bind_value(self, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
                 .bind_visibility_from(beds_switch, 'value')
+            ui.select(label='Default Crop', options=self.plant_locator.crop_category_names) \
+                .props('dense outlined').classes('w-40') \
+                .tooltip('Enter the default crop for all beds') \
+                .bind_value(self, 'default_crop')
+            ui.separator()
             ui.number('Number of Rows (per Bed)',
                       value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
@@ -129,6 +145,7 @@ class FieldCreator:
         self.next = self.crop_infos
 
     def crop_infos(self) -> None:
+        print(self.default_crop)
         assert self.gnss.current is not None
         if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
@@ -136,34 +153,40 @@ class FieldCreator:
         self.first_row_end = self.gnss.current.location
         assert self.first_row_end is not None
 
-        self.headline.text = 'Field Parameters'
-        self.row_sight.content = ''
+        self.headline.text = 'Crops'
         self.content.clear()
         with self.content:
             for i in range(int(self.bed_count)):
-                ui.label(f'Bed {i + 1}:').classes('text-lg')
-                ui.select(self.crop_names) \
-                    .props('dense outlined').classes('w-40') \
-                    .tooltip(f'Enter the crop name for bed {i + 1}') \
-                    .bind_value(self, 'bed_crops',
-                                forward=lambda v, idx=i: {**self.bed_crops, str(idx): v},
-                                backward=lambda v, idx=i: v.get(str(idx)))
+                with ui.row().classes('w-full'):
+                    ui.label(f'Bed {i + 1}:').classes('text-lg')
+                    ui.select(options=self.plant_locator.crop_category_names) \
+                        .props('dense outlined').classes('w-40') \
+                        .tooltip(f'Enter the crop name for bed {i + 1}') \
+                        .bind_value(self, 'bed_crops',
+                                    forward=lambda v, idx=i: {**self.bed_crops,
+                                                              str(idx): v if v is not None else self.default_crop},
+                                    backward=lambda v, idx=i: v.get(str(idx)))
 
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
-        with self.content:
+        with self.content.style('max-height: 100%; overflow-y: auto'):
             with ui.row().classes('items-center'):
                 ui.label(f'Field Name: {self.field_name}').classes('text-lg')
+                # TODO: delete the points when map is shown
                 ui.label(f'First Row Start: {self.first_row_start}').classes('text-lg')
                 ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
+                ui.separator()
                 if self.bed_count > 1:
-                    ui.label(f'Number of Beds: {self.bed_count}').classes('text-lg')
+                    ui.label(f'Number of Beds: {int(self.bed_count)}').classes('text-lg')
                     ui.label(f'Bed Spacing: {self.bed_spacing*100} cm').classes('text-lg')
-                for i in range(int(self.bed_count)):
-                    ui.label(f'Crop {int(i) + 1}: {self.bed_crops[str(i)]}').classes('text-lg')
+                with ui.expansion('Crops').classes('w-full'):
+                    for i in range(int(self.bed_count)):
+                        ui.label(
+                            f'Crop {int(i) + 1}: {self.plant_locator.crop_category_names[self.bed_crops[str(i)]]}').classes('text-lg')
+                ui.separator()
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
                 ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
@@ -204,5 +227,17 @@ class FieldCreator:
             return
         self.row_sight.set_source(self.front_cam.get_latest_image_url())
 
-    async def load_crop_names(self) -> None:
-        self.crop_names = await self.plant_locator.get_crop_names()
+    def update_back_cam(self) -> None:
+        if self.back_cam is None:
+            return
+        self.row_sight.set_source(self.back_cam.get_latest_image_url())
+
+    # def ab_line_map(self) -> None:
+    #     m = ui.leaflet(self.system, False)
+    #     robot_marker = m.marker(latlng=self.gnss.current.location.tuple)
+    #     icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
+    #     robot_marker.run_method(':setIcon', icon)
+    #     # self.robot_marker.move(*self.gnss.current.location.tuple)
+    #     m.generic_layer(name='polyline', args=[
+    #         [self.first_row_start.tuple, self.first_row_end.tuple], {'color': '#F2C037'}])
+    #     m.set_center(self.gnss.current.location.tuple)
