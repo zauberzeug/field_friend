@@ -5,10 +5,9 @@ import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import forward
-
 from field_friend import System
 from field_friend.automations import Field
-from field_friend.automations.implements import Implement, Recorder
+from field_friend.automations.implements import Implement, Recorder, WeedingImplement
 from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
 from field_friend.localization import GnssSimulation
@@ -437,3 +436,24 @@ async def test_complete_field_without_first_beds(system: System, field_with_beds
     end_point = field_with_beds.rows[-1].points[1].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+
+    # TODO adding tests for field navigation with different bed crops
+
+
+async def test_field_with_bed_crops(system: System, field_with_beds: Field):
+    # pylint: disable=protected-access
+    assert system.gnss.current
+    assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    system.field_provider.select_field(field_with_beds.id)
+    system.current_navigation = system.field_navigation
+    system.current_implement = system.implements['Weed Screw']
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    assert isinstance(system.current_implement, WeedingImplement)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
+    assert system.current_implement.cultivated_crop == system.field_navigation.current_row.crop
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    end_point = field_with_beds.rows[-1].points[0].cartesian()
+    assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
+    assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+    assert system.automator.is_stopped

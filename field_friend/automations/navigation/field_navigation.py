@@ -1,3 +1,7 @@
+from .straight_line_navigation import StraightLineNavigation
+from ..implements.implement import Implement
+from ..implements.weeding_implement import WeedingImplement
+from ..field import Field, Row
 from enum import Enum, auto
 from random import randint
 from typing import TYPE_CHECKING, Any
@@ -6,10 +10,6 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.geometry import Point, Pose
-
-from ..field import Field, Row
-from ..implements.implement import Implement
-from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
     from ...system import System
@@ -153,6 +153,11 @@ class FieldNavigation(StraightLineNavigation):
             self.create_simulation()
         else:
             self.plant_provider.clear()
+
+        if isinstance(self.implement, WeedingImplement):
+            rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
+            self.implement.cultivated_crop = self.current_row.crop
+            self.implement.request_backup()
         return State.FOLLOWING_ROW
 
     async def drive_in_steps(self, target: Pose) -> None:
