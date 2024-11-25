@@ -6,7 +6,7 @@ import icecream
 import numpy as np
 import psutil
 import rosys
-
+from .app_controls import AppControls as app_controls
 import config.config_selection as config_selector
 
 from . import localization
@@ -183,7 +183,9 @@ class System(rosys.persistence.PersistentModule):
             assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
-            rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
+            # rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
+            app_controls(
+                robot_brain=self.field_friend.robot_brain, automator=self.automator, robot=self.field_friend)
             rosys.on_repeat(self.log_status, 60*5)
 
     def restart(self) -> None:
