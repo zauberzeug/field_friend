@@ -145,7 +145,6 @@ class FieldCreator:
         self.next = self.crop_infos
 
     def crop_infos(self) -> None:
-        print(self.default_crop)
         assert self.gnss.current is not None
         if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
