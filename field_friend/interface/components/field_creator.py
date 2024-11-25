@@ -5,11 +5,10 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 import rosys
 from nicegui import ui
-from . import LeafletMap as leaflet_map
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
-
+from nicegui.elements.leaflet_layers import Marker
 if TYPE_CHECKING:
     from ...system import System
 
@@ -37,7 +36,9 @@ class FieldCreator:
         self.bed_crops: dict[str, str | None] = {'0': None}
         self.next: Callable = self.find_first_row
         self.default_crop: str | None = None
-
+        self.m: ui.leaflet
+        self.robot_marker: Marker | None = None
+        self.gnss.ROBOT_GNSS_POSITION_CHANGED.register_ui(self.update_robot_position)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
                 with ui.column().classes('w-3/5') as self.view_column:
@@ -98,9 +99,8 @@ class FieldCreator:
         self.first_row_end = self.gnss.current.location
         assert self.first_row_end is not None
         self.view_column.clear()
-        # TODO: add map for showing ab line
-        # with self.view_column:
-        #     self.map = self.ab_line_map()
+        with self.view_column:
+            self.map = self.ab_line_map()
         self.headline.text = 'Field Parameters'
         self.row_sight.content = ''
         self.content.clear()
@@ -175,9 +175,6 @@ class FieldCreator:
         with self.content.style('max-height: 100%; overflow-y: auto'):
             with ui.row().classes('items-center'):
                 ui.label(f'Field Name: {self.field_name}').classes('text-lg')
-                # TODO: delete the points when map is shown
-                ui.label(f'First Row Start: {self.first_row_start}').classes('text-lg')
-                ui.label(f'First Row End: {self.first_row_end}').classes('text-lg')
                 ui.separator()
                 if self.bed_count > 1:
                     ui.label(f'Number of Beds: {int(self.bed_count)}').classes('text-lg')
@@ -185,7 +182,7 @@ class FieldCreator:
                 with ui.expansion('Crops').classes('w-full'):
                     for i in range(int(self.bed_count)):
                         ui.label(
-                            f'Crop {int(i) + 1}: {self.plant_locator.crop_category_names[self.bed_crops[str(i)]]}').classes('text-lg')
+                            f'Bed {int(i) + 1}: {self.plant_locator.crop_category_names[self.bed_crops[str(i)]]}').classes('text-lg')
                 ui.separator()
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
@@ -232,12 +229,16 @@ class FieldCreator:
             return
         self.row_sight.set_source(self.back_cam.get_latest_image_url())
 
-    # def ab_line_map(self) -> None:
-    #     m = ui.leaflet(self.system, False)
-    #     robot_marker = m.marker(latlng=self.gnss.current.location.tuple)
-    #     icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
-    #     robot_marker.run_method(':setIcon', icon)
-    #     # self.robot_marker.move(*self.gnss.current.location.tuple)
-    #     m.generic_layer(name='polyline', args=[
-    #         [self.first_row_start.tuple, self.first_row_end.tuple], {'color': '#F2C037'}])
-    #     m.set_center(self.gnss.current.location.tuple)
+    def ab_line_map(self) -> None:
+        self.m = ui.leaflet(self.system, False).classes('w-full min-h-[500px]')
+        self.m.generic_layer(name='polyline', args=[
+            (self.first_row_start.tuple, self.first_row_end.tuple), {'color': '#F44336'}])
+        self.m.set_center(self.gnss.current.location.tuple)
+        self.m.set_zoom(18)
+
+    def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
+        if isinstance(self.m, ui.leaflet):
+            self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
+            icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [24,24], iconAnchor:[12,12]})'
+            self.robot_marker.run_method(':setIcon', icon)
+            self.robot_marker.move(*position.tuple)

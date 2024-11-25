@@ -138,8 +138,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
             field.bed_crops = bed_crops
         else:
             field.bed_crops = bed_crops
-        print(bed_crops)
-        print(field.bed_crops)
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
                       field.name, row_count, row_spacing)
         self.invalidate()

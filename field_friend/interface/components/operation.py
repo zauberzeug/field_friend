@@ -108,7 +108,7 @@ class Operation:
         if self.delete_field_dialog:
             self.delete_field_dialog.close()
 
-    @ ui.refreshable
+    @ui.refreshable
     def field_setting(self) -> None:
         with ui.dialog() as self.edit_field_dialog, ui.card():
             parameters: dict = {

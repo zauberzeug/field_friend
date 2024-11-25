@@ -224,7 +224,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             async with aiohttp.request('GET', url) as response:
                 if response.status != 200:
                     self.log.error(f'Could not get crop names on port {port} - status code: {response.status}')
-                    return []
+                    return {}
                 response_text = await response.json()
             crop_names: list[str] = [category['name'] for category in response_text['model_info']['categories']]
             weeds = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
