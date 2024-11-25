@@ -100,7 +100,7 @@ class FieldCreator:
         assert self.first_row_end is not None
         self.view_column.clear()
         with self.view_column:
-            self.map = self.ab_line_map()
+            self.ab_line_map()
         self.headline.text = 'Field Parameters'
         self.row_sight.content = ''
         self.content.clear()
@@ -230,10 +230,12 @@ class FieldCreator:
         self.row_sight.set_source(self.back_cam.get_latest_image_url())
 
     def ab_line_map(self) -> None:
-        self.m = ui.leaflet(self.system, False).classes('w-full min-h-[500px]')
-        self.m.generic_layer(name='polyline', args=[
-            (self.first_row_start.tuple, self.first_row_end.tuple), {'color': '#F44336'}])
-        self.m.set_center(self.gnss.current.location.tuple)
+        if self.gnss.current is None:
+            return
+        self.m = ui.leaflet(self.gnss.current.location.tuple).classes('w-full min-h-[500px]')
+        if self.first_row_start is not None and self.first_row_end is not None:
+            self.m.generic_layer(name='polyline', args=[
+                (self.first_row_start.tuple, self.first_row_end.tuple), {'color': '#F44336'}])
         self.m.set_zoom(18)
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
