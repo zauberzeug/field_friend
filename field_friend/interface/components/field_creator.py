@@ -181,8 +181,9 @@ class FieldCreator:
                     ui.label(f'Bed Spacing: {self.bed_spacing*100} cm').classes('text-lg')
                 with ui.expansion('Crops').classes('w-full'):
                     for i in range(int(self.bed_count)):
-                        ui.label(
-                            f'Bed {int(i) + 1}: {self.plant_locator.crop_category_names[self.bed_crops[str(i)]]}').classes('text-lg')
+                        crop = self.bed_crops[str(i)]
+                        crop_name = self.plant_locator.crop_category_names[crop] if crop is not None else 'No crop selected'
+                        ui.label(f'Bed {int(i) + 1}: {crop_name}').classes('text-lg')
                 ui.separator()
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')

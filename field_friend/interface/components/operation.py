@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
-import rosys
 from nicegui import app, events, ui
-import asyncio
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
 from .support_point_dialog import SupportPointDialog
