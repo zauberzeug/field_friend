@@ -239,7 +239,7 @@ class FieldCreator:
         self.m.set_zoom(18)
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
-        if isinstance(self.m, ui.leaflet):
+        if hasattr(self, 'm') and self.m and isinstance(self.m, ui.leaflet):
             self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
             icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [24,24], iconAnchor:[12,12]})'
             self.robot_marker.run_method(':setIcon', icon)

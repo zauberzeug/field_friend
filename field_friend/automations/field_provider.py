@@ -161,4 +161,11 @@ class FieldProvider(rosys.persistence.PersistentModule):
         for bed in self.selected_beds:
             for row_index in range(self.selected_field.row_count):
                 row_indices.append((bed - 1) * self.selected_field.row_count + row_index)
-        return [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
+        rows_to_work_on = [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
+        return rows_to_work_on
+
+    def is_row_in_selected_beds(self, row_index: int) -> bool:
+        if not self._only_specific_beds:
+            return True
+        bed_index = row_index // self.selected_field.row_count + 1
+        return bed_index in self.selected_beds

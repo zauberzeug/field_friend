@@ -72,7 +72,10 @@ class FieldNavigation(StraightLineNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
-        self.row_index = self.field.rows.index(self.get_nearest_row())
+        nearest_row = self.get_nearest_row()
+        if nearest_row is None:
+            return False
+        self.row_index = self.field.rows.index(nearest_row)
         self._state = State.APPROACHING_ROW_START
         self.plant_provider.clear()
 
@@ -97,6 +100,9 @@ class FieldNavigation(StraightLineNavigation):
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
         self.log.info(f'Nearest row is {row.name}')
         self.row_index = self.field.rows.index(row)
+        if not self.field_provider.is_row_in_selected_beds(self.row_index):
+            rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
+            return None
         return row
 
     def set_start_and_end_points(self):
