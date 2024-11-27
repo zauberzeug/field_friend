@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.geometry import current_geo_reference
 from rosys.hardware import Gnss
 
 from ..implements.implement import Implement
@@ -16,7 +17,9 @@ if TYPE_CHECKING:
 
 
 def check_distance_to_reference(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
-    if gnss.last_measurement is not None and gnss.last_measurement.gps_qual > 0 and gnss.last_measurement.point.distance(gnss.reference.origin) > max_distance:
+    if current_geo_reference.origin is None:
+        return True
+    if gnss.last_measurement is not None and gnss.last_measurement.gps_qual > 0 and gnss.last_measurement.point.distance(current_geo_reference.origin) > max_distance:
         # TODO: show dialog
         # reference_alert_dialog(gnss)
         return True

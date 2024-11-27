@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.geometry import current_geo_reference
 
 from ...hardware import Axis, ChainAxis, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado
 
@@ -203,7 +204,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
 
             kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_kpi()}'
             gnss_device_label.text = 'Connected' if gnss.is_connected else 'No Connection'
-            reference_position_label.text = 'No reference' if system.local_gnss_pose_provider.reference is None else f'{system.local_gnss_pose_provider.reference.origin.degree_tuple}, {system.local_gnss_pose_provider.reference.direction:.2f}°'
+            reference_position_label.text = 'No reference' if current_geo_reference.origin is None else f'{current_geo_reference.origin.degree_tuple}, {current_geo_reference.direction:.2f}°'
             gnss_label.text = str(
                 system.gnss.last_measurement.point) if system.gnss.last_measurement is not None else 'No position'
             heading_label.text = f'{system.gnss.last_measurement.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'

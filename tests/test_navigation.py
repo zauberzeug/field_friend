@@ -280,7 +280,7 @@ async def test_approaching_first_row(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
     assert system.automator.is_running
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
-    start_point = system.gnss.reference.point_to_local(field.rows[0].points[0])
+    start_point = field.rows[0].points[0].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(start_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(start_point.y, abs=0.05)
     assert system.field_navigation.automation_watcher.field_watch_active
@@ -290,8 +290,8 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    start_point = system.gnss.reference.point_to_local(field.rows[0].points[-1])
-    end_point = system.gnss.reference.point_to_local(field.rows[0].points[0])
+    start_point = field.rows[0].points[-1].cartesian()
+    end_point = field.rows[0].points[0].cartesian()
     safe_start_point = start_point.polar(-1.0, start_point.direction(end_point))
 
     async def drive_to_start():
@@ -363,7 +363,7 @@ async def test_complete_row(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
-    end_point = system.gnss.reference.point_to_local(field.rows[0].points[1])
+    end_point = field.rows[0].points[1].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
     assert system.field_navigation.automation_watcher.field_watch_active
@@ -400,7 +400,7 @@ async def test_complete_field(system: System, field: Field):
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     assert system.automator.is_stopped
-    end_point = system.gnss.reference.point_to_local(field.rows[-1].points[0])
+    end_point = field.rows[-1].points[0].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
 
@@ -416,7 +416,7 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     assert system.automator.is_stopped
-    end_point = system.gnss.reference.point_to_local(field_with_beds.rows[2].points[0])
+    end_point = field_with_beds.rows[2].points[0].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
 
@@ -432,6 +432,6 @@ async def test_complete_field_without_first_beds(system: System, field_with_beds
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     assert system.automator.is_stopped
-    end_point = system.gnss.reference.point_to_local(field_with_beds.rows[-1].points[1])
+    end_point = field_with_beds.rows[-1].points[1].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)

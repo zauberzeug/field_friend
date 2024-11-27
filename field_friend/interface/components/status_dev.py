@@ -7,6 +7,7 @@ import numpy as np
 import psutil
 import rosys
 from nicegui import ui
+from rosys.geometry import current_geo_reference
 
 from ...hardware import (
     Axis,
@@ -262,7 +263,7 @@ def status_dev_page(robot: FieldFriend, system: System):
             'NW' if system.gnss.last_measurement.heading <= np.deg2rad(338) else \
             'N'
 
-        reference_position_label.text = 'No reference' if system.local_gnss_pose_provider.reference is None else f'{system.local_gnss_pose_provider.reference.origin.degree_tuple}, {system.local_gnss_pose_provider.reference.direction:.2f}°'
+        reference_position_label.text = 'No reference' if current_geo_reference.origin is None else f'{current_geo_reference.origin.degree_tuple}, {current_geo_reference.direction:.2f}°'
         heading_label.text = f'{system.gnss.last_measurement.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
         odometer_label.text = str(system.odometer.prediction)

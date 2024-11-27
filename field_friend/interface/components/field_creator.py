@@ -143,7 +143,6 @@ class FieldCreator:
                                                    name=self.field_name,
                                                    first_row_start=self.first_row_start,
                                                    first_row_end=self.first_row_end,
-                                                   reference=self.gnss.reference,
                                                    row_spacing=self.row_spacing,
                                                    row_count=int(self.row_count),
                                                    outline_buffer_width=self.outline_buffer_width,
@@ -154,7 +153,6 @@ class FieldCreator:
                                                    name=self.field_name,
                                                    first_row_start=self.first_row_start,
                                                    first_row_end=self.first_row_end,
-                                                   reference=self.gnss.reference,
                                                    row_spacing=self.row_spacing,
                                                    row_count=int(self.row_count),
                                                    outline_buffer_width=self.outline_buffer_width))
