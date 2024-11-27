@@ -482,17 +482,12 @@ async def test_field_with_bed_crops(system: System, field_with_beds: Field):
     await forward(until=lambda: system.automator.is_running)
     assert isinstance(system.current_implement, WeedingImplement)
     for bed_number in range(field_with_beds.bed_count):
-        await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
-        assert system.current_implement.cultivated_crop == system.field_navigation.current_row.crop
-        expected_crop = {
-            0: 'sugar_beet',
-            1: 'garlic',
-            2: 'onion',
-            3: 'lettuce'
-        }[bed_number]
+        await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
+        expected_crop = field_with_beds.bed_crops[str(bed_number)]
+        print(bed_number, expected_crop, system.current_implement.cultivated_crop)
         assert system.current_implement.cultivated_crop == expected_crop
         if bed_number != field_with_beds.bed_count - 1:
-            await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
+            await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)
     end_point = field_with_beds.rows[-1].points[0].cartesian()
@@ -544,7 +539,7 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
     assert isinstance(system.current_implement, WeedingImplement)
 
     for bed_number in range(field_with_beds.bed_count):
-        await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
+        await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
         expected_crop = field_with_beds.bed_crops[str(bed_number)]
         assert system.current_implement.cultivated_crop == system.field_navigation.current_row.crop == expected_crop
         current_y = bed_number * -field_with_beds.bed_spacing
@@ -557,7 +552,7 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
                       and obj.position.y == current_y]
         assert len(wrong_crop) == 1, f'Tornado should have skipped 1 wrong crop in bed {bed_number}'
         if bed_number != field_with_beds.bed_count - 1:
-            await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
+            await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)
     end_point = field_with_beds.rows[-1].points[0].cartesian()

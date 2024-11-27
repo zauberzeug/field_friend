@@ -184,6 +184,11 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(driving_yaw)
+        # update implement crop
+        if isinstance(self.implement, WeedingImplement):
+            rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
+            self.implement.cultivated_crop = self.current_row.crop
+            self.implement.request_backup()
         return State.FOLLOW_ROW
 
     async def _run_change_row(self) -> State:
@@ -196,7 +201,6 @@ class FieldNavigation(StraightLineNavigation):
             self.create_simulation()
         else:
             self.plant_provider.clear()
-
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn towards row start
         assert self.start_point is not None
@@ -209,12 +213,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(driving_yaw)
-
-        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
-            self.create_simulation()
-        else:
-            self.plant_provider.clear()
-
+        # update implement crop
         if isinstance(self.implement, WeedingImplement):
             rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
             self.implement.cultivated_crop = self.current_row.crop
