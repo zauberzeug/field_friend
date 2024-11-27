@@ -93,7 +93,7 @@ class FieldCreator:
 
     def field_infos(self) -> None:
         assert self.gnss.current is not None
-        if not ("R" in self.gnss.current.mode or self.gnss.current.mode == "SSSS"):
+        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
         self.first_row_end = self.gnss.current.location

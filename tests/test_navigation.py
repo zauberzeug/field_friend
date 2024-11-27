@@ -550,11 +550,11 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
         worked_crops = [obj for obj in detector.simulated_objects
                         if obj.category_name == expected_crop
                         and obj.position.y == current_y]
-        assert len(worked_crops) == 2, f"Tornado should have worked on 2 {expected_crop} crops in bed {bed_number}"
+        assert len(worked_crops) == 2, f'Tornado should have worked on 2 {expected_crop} crops in bed {bed_number}'
         wrong_crop = [obj for obj in detector.simulated_objects
                       if obj.category_name != expected_crop
                       and obj.position.y == current_y]
-        assert len(wrong_crop) == 1, f"Tornado should have skipped 1 wrong crop in bed {bed_number}"
+        assert len(wrong_crop) == 1, f'Tornado should have skipped 1 wrong crop in bed {bed_number}'
         if bed_number != field_with_beds.bed_count - 1:
             await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
