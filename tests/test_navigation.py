@@ -411,6 +411,8 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.selected_beds = [1, 3]
     system.field_provider.select_field(field_with_beds.id)
+    system.field_provider._only_specific_beds = True
+    system.field_provider.selected_beds = [1, 3]
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -427,6 +429,8 @@ async def test_complete_field_without_first_beds(system: System, field_with_beds
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.selected_beds = [2, 3, 4]
     system.field_provider.select_field(field_with_beds.id)
+    system.field_provider._only_specific_beds = True
+    system.field_provider.selected_beds = [2, 3, 4]
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
