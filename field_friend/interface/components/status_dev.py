@@ -264,7 +264,7 @@ def status_dev_page(robot: FieldFriend, system: System):
             'N'
 
         reference_position_label.text = 'No reference' if current_geo_reference.origin is None else f'{current_geo_reference.origin.degree_tuple}, {current_geo_reference.direction:.2f}°'
-        heading_label.text = f'{system.gnss.last_measurement.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
+        heading_label.text = f'{np.rad2deg(system.gnss.last_measurement.heading):.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
         rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
         odometer_label.text = str(system.odometer.prediction)
         update_label.text = f'{timedelta(seconds=rosys.time() - system.gnss.last_measurement.time)}' if system.gnss.last_measurement is not None else ''

@@ -207,7 +207,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
             reference_position_label.text = 'No reference' if current_geo_reference.origin is None else f'{current_geo_reference.origin.degree_tuple}, {current_geo_reference.direction:.2f}°'
             gnss_label.text = str(
                 system.gnss.last_measurement.point) if system.gnss.last_measurement is not None else 'No position'
-            heading_label.text = f'{system.gnss.last_measurement.heading:.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
+            heading_label.text = f'{np.rad2deg(system.gnss.last_measurement.heading):.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
             rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
             odometry_label.text = str(odometer.prediction)
         ui.timer(rosys.config.ui_update_interval, update_status)
