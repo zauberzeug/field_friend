@@ -3,12 +3,15 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 from uuid import uuid4
+
 import rosys
 from nicegui import ui
+from nicegui.elements.leaflet_layers import Marker
+
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
-from nicegui.elements.leaflet_layers import Marker
+
 if TYPE_CHECKING:
     from ...system import System
 

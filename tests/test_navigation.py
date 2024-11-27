@@ -5,9 +5,10 @@ import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import forward
+
 from field_friend import System
 from field_friend.automations import Field
-from field_friend.automations.implements import Implement, Recorder, WeedingImplement, Tornado
+from field_friend.automations.implements import Implement, Recorder, Tornado, WeedingImplement
 from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
 from field_friend.localization import GnssSimulation

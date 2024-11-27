@@ -1,7 +1,3 @@
-from .straight_line_navigation import StraightLineNavigation
-from ..implements.implement import Implement
-from ..implements.weeding_implement import WeedingImplement
-from ..field import Field, Row
 from enum import Enum, auto
 from random import randint
 from typing import TYPE_CHECKING, Any
@@ -10,6 +6,11 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.geometry import Point, Pose
+
+from ..field import Field, Row
+from ..implements.implement import Implement
+from ..implements.weeding_implement import WeedingImplement
+from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
     from ...system import System

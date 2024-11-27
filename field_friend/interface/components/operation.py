@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
+
 from nicegui import app, events, ui
+
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
 from .support_point_dialog import SupportPointDialog
