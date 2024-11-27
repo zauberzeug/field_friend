@@ -93,7 +93,7 @@ class FieldNavigation(StraightLineNavigation):
         self.automation_watcher.stop_field_watch()
         await self.implement.deactivate()
 
-    def get_nearest_row(self) -> Row:
+    def get_nearest_row(self) -> Row | None:
         assert self.field is not None
         assert self.gnss.device is not None
         row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(

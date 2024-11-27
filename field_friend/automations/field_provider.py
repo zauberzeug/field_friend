@@ -167,5 +167,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def is_row_in_selected_beds(self, row_index: int) -> bool:
         if not self._only_specific_beds:
             return True
+        if self.selected_field is None:
+            return False
         bed_index = row_index // self.selected_field.row_count + 1
         return bed_index in self.selected_beds
