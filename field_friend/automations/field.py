@@ -145,22 +145,7 @@ class Field:
 
     def _generate_outline(self) -> list[GeoPoint]:
         assert len(self.rows) > 0
-        outline_unbuffered: list[Point] = [
-            self.first_row_end.cartesian(),
-            self.first_row_start.cartesian()
-        ]
-        if len(self.rows) > 1:
-            for p in self.rows[-1].points:
-                outline_unbuffered.append(p.cartesian())
-            outline_shape = Polygon([p.tuple for p in outline_unbuffered])
-        else:
-            outline_shape = LineString([p.tuple for p in outline_unbuffered])
-        bufferd_polygon = outline_shape.buffer(
-            self.outline_buffer_width, cap_style='square', join_style='mitre', mitre_limit=math.inf)
-        bufferd_polygon_coords = bufferd_polygon.exterior.coords
-        outline: list[GeoPoint] = [localization.reference.shifted(
-            Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
-        return outline
+        return self.get_buffered_area(self.rows, self.outline_buffer_width)
 
     def to_dict(self) -> dict:
         return {
@@ -192,3 +177,21 @@ class Field:
             RowSupportPoint, sp) for sp in data['row_support_points']] if 'row_support_points' in data else []
         field_data = cls(**cls.args_from_dict(data))
         return field_data
+
+    def get_buffered_area(self, rows: list[Row], buffer_width: float) -> list[GeoPoint]:
+        outline_unbuffered: list[Point] = [
+            self.first_row_end.cartesian(),
+            self.first_row_start.cartesian()
+        ]
+        if len(self.rows) > 1:
+            for p in self.rows[-1].points:
+                outline_unbuffered.append(p.cartesian())
+            outline_shape = Polygon([p.tuple for p in outline_unbuffered])
+        else:
+            outline_shape = LineString([p.tuple for p in outline_unbuffered])
+        bufferd_polygon = outline_shape.buffer(
+            self.outline_buffer_width, cap_style='square', join_style='mitre', mitre_limit=math.inf)
+        bufferd_polygon_coords = bufferd_polygon.exterior.coords
+        outline: list[GeoPoint] = [localization.reference.shifted(
+            Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
+        return outline
