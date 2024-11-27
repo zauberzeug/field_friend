@@ -40,6 +40,24 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
 
 
 @pytest.fixture
+async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[System, None]:
+    System.version = getattr(request, 'param', 'rb28')
+    s = System()
+    assert isinstance(s.detector, rosys.vision.DetectorSimulation)
+    s.detector.detection_delay = 0.1
+    localization.reference = ROBOT_GEO_START_POSITION
+    helpers.odometer = s.odometer
+    helpers.driver = s.driver
+    helpers.automator = s.automator
+    await forward(1)
+    assert s.gnss.device is None, 'device should not be created yet'
+    await forward(3)
+    assert s.gnss.device is not None, 'device should be created'
+    assert s.gnss.current.location.distance(ROBOT_GEO_START_POSITION) == 0
+    yield s
+
+
+@pytest.fixture
 def gnss(system: System) -> GnssSimulation:
     assert isinstance(system.gnss, GnssSimulation)
     return system.gnss
@@ -102,6 +120,30 @@ async def field(system: System) -> AsyncGenerator[TestField, None]:
 @pytest.fixture
 async def field_with_beds(system: System) -> AsyncGenerator[TestField, None]:
     test_field = TestField()
+    system.field_provider.create_field(Field(
+        id=test_field.id,
+        name='Test Field With Beds',
+        first_row_start=test_field.first_row_start,
+        first_row_end=test_field.first_row_end,
+        row_spacing=test_field.row_spacing,
+        row_count=1,
+        row_support_points=[],
+        bed_count=4,
+        bed_spacing=0.45,
+        bed_crops={
+            '0': 'sugar_beet',
+            '1': 'garlic',
+            '2': 'onion',
+            '3': 'lettuce'
+        }
+    ))
+    yield test_field
+
+
+@pytest.fixture
+async def field_with_beds_tornado(system_with_tornado: System) -> AsyncGenerator[TestField, None]:
+    test_field = TestField()
+    system = system_with_tornado
     system.field_provider.create_field(Field(
         id=test_field.id,
         name='Test Field With Beds',

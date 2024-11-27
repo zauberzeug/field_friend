@@ -7,7 +7,7 @@ from conftest import ROBOT_GEO_START_POSITION
 from rosys.testing import forward
 from field_friend import System
 from field_friend.automations import Field
-from field_friend.automations.implements import Implement, Recorder, WeedingImplement
+from field_friend.automations.implements import Implement, Recorder, WeedingImplement, Tornado
 from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
 from field_friend.localization import GnssSimulation
@@ -421,15 +421,14 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
 
 
-async def test_complete_field_without_first_beds(system: System, field_with_beds: Field):
+async def test_complete_field_without_second_bed(system: System, field_with_beds: Field):
     # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.select_field(field_with_beds.id)
     system.field_provider._only_specific_beds = True
-    system.field_provider.selected_beds = [2, 3, 4]
+    system.field_provider.selected_beds = [1, 3, 4]
     system.current_navigation = system.field_navigation
-    system.current_implement = system.implements['Weed Screw']
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
@@ -437,6 +436,8 @@ async def test_complete_field_without_first_beds(system: System, field_with_beds
     end_point = field_with_beds.rows[-1].points[1].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+
+# TODO add a test that leaves ouzt the first row. The robot should not move and the automation should break because the nearest row is the first row and the first is not part of the selected beds
 
 
 async def test_field_with_bed_crops(system: System, field_with_beds: Field):
@@ -450,9 +451,49 @@ async def test_field_with_bed_crops(system: System, field_with_beds: Field):
     await forward(until=lambda: system.automator.is_running)
     assert isinstance(system.current_implement, WeedingImplement)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
+    # TODO check for each row
     assert system.current_implement.cultivated_crop == system.field_navigation.current_row.crop
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    await forward(until=lambda: system.automator.is_stopped)
     end_point = field_with_beds.rows[-1].points[0].cartesian()
     assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+    assert system.automator.is_stopped
+
+
+async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, field_with_beds_tornado: Field):
+    # pylint: disable=protected-access
+    system = system_with_tornado
+    field_with_beds = field_with_beds_tornado
+    assert system.gnss.current
+    assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    system.field_provider.select_field(field_with_beds.id)
+    system.current_navigation = system.field_navigation
+    system.current_implement = system.implements['Tornado']
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    assert isinstance(system.current_implement, WeedingImplement)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
+    # TODO check for each row
+    assert system.current_implement.cultivated_crop == system.field_navigation.current_row.crop
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    await forward(until=lambda: system.automator.is_stopped)
+    end_point = field_with_beds.rows[-1].points[0].cartesian()
+    assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
+    assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+    assert system.automator.is_stopped
+
+
+async def test_straight_line_screw(system_with_tornado: System):
+    system = system_with_tornado
+    assert system.odometer.prediction.point.x == 0
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.current_implement = system.implements['Tornado']
+    assert isinstance(system.current_navigation.implement, Tornado)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert not system.automator.is_running, 'automation should stop after default length'
+    assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
     assert system.automator.is_stopped
