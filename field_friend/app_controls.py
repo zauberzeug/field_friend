@@ -1,8 +1,8 @@
 from rosys.automation import Automator
 from rosys.automation import app_controls as RosysAppControls
 from rosys.hardware import RobotBrain
-import rosys
 from .hardware.field_friend import FieldFriend
+import rosys
 
 
 class AppControls(RosysAppControls):
@@ -16,7 +16,9 @@ class AppControls(RosysAppControls):
         self.robot = robot
         self.last_info: str = ''
         self.APP_CONNECTED.register(self.reset)
-        rosys.on_repeat(self.sync, 1.0)
+        self.robot.bumper.BUMPER_TRIGGERED.register(self.sync)
+        self.robot.estop.ESTOP_TRIGGERED.register(self.sync)
+        rosys.on_repeat(self.sync, 60.0)
 
     async def sync(self) -> None:
         await super().sync()
