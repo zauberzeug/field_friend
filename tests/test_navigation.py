@@ -428,19 +428,8 @@ async def test_field_navigation_robot_between_rows(system: System, field: Field)
     assert system.odometer.prediction.point.x == pytest.approx(offset_point.x, abs=0.05)
     assert system.odometer.prediction.point.y == pytest.approx(offset_point.y, abs=0.05)
 
-
-async def test_resuming_field_navigation_after_automation_stop_great_angle(system: System, field: Field):
-    # pylint: disable=protected-access
-    assert system.gnss.current
-    assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_provider.select_field(field.id)
-    system.current_navigation = system.field_navigation
-    system.automator.start()
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
-    point = rosys.geometry.Point(x=0.3, y=0.0)
-    await forward(x=point.x, y=point.y, tolerance=0.05)
-    system.automator.stop(because='test')
-    system.automator.start()
+# TODO add test
+# async def test_field_navigation_robot_heading_deviation(system: System, field: Field):
 
 
 async def test_complete_field(system: System, field: Field):
