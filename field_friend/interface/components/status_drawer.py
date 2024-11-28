@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-import numpy as np
 import rosys
 from nicegui import ui
-from rosys.geometry import current_geo_reference
 
 from ...hardware import Axis, ChainAxis, FieldFriendHardware, FlashlightPWMHardware, FlashlightPWMHardwareV2, Tornado
 
@@ -17,8 +15,6 @@ if TYPE_CHECKING:
 
 def create_status_drawer(system: System) -> ui.right_drawer:
     robot = system.field_friend
-    gnss = system.gnss
-    odometer = system.odometer
     with ui.right_drawer(value=False).classes('bg-[#edf4fa]') as status_drawer, ui.column():
         with ui.row().classes('w-full place-content-end'):
             # TODO: remove type ignore, not clear why mypy doesn't see that info is of type Info
@@ -105,29 +101,6 @@ def create_status_drawer(system: System) -> ui.right_drawer:
             ui.label('Time in Automation').style('color: #6E93D6').classes('font-bold')
             kpi_time_in_automation_off = ui.label()
 
-        ui.label('Positioning').style('color: #6E93D6').classes('w-full text-center font-bold')
-        ui.separator()
-
-        with ui.row().classes('place-items-center'):
-            ui.label('GNSS-Device:').style('color: #6E93D6').classes('font-bold')
-            gnss_device_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.label('Reference:').style('color: #6E93D6').classes('font-bold')
-            reference_position_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.label('Position:').style('color: #6E93D6').classes('font-bold')
-            gnss_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.label('Heading:').style('color: #6E93D6').classes('font-bold')
-            heading_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.label('RTK-Fix:').style('color: #6E93D6').classes('font-bold')
-            rtk_fix_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.label('odometry:').style('color: #6E93D6').classes('font-bold')
-            odometry_label = ui.label()
-
         def update_status() -> None:
             if isinstance(robot.y_axis, ChainAxis):
                 y_axis_flags = [
@@ -190,25 +163,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-            # TODO: move this into gnss since it is used multiple times, check stuff above this too!
-            direction_flag = '?' if gnss.last_measurement is None or gnss.last_measurement.heading is None else \
-                'N' if gnss.last_measurement.heading <= np.deg2rad(23) else \
-                'NE' if gnss.last_measurement.heading <= np.deg2rad(68) else \
-                'E' if gnss.last_measurement.heading <= np.deg2rad(113) else \
-                'SE' if gnss.last_measurement.heading <= np.deg2rad(158) else \
-                'S' if gnss.last_measurement.heading <= np.deg2rad(203) else \
-                'SW' if gnss.last_measurement.heading <= np.deg2rad(248) else \
-                'W' if gnss.last_measurement.heading <= np.deg2rad(293) else \
-                'NW' if gnss.last_measurement.heading <= np.deg2rad(338) else \
-                'N'
-
             kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_kpi()}'
-            gnss_device_label.text = 'Connected' if gnss.is_connected else 'No Connection'
-            reference_position_label.text = 'No reference' if current_geo_reference.origin is None else f'{current_geo_reference.origin.degree_tuple}, {current_geo_reference.direction:.2f}°'
-            gnss_label.text = str(
-                system.gnss.last_measurement.point) if system.gnss.last_measurement is not None else 'No position'
-            heading_label.text = f'{np.rad2deg(system.gnss.last_measurement.heading):.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
-            rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
-            odometry_label.text = str(odometer.prediction)
+
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer

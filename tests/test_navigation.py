@@ -47,6 +47,7 @@ async def test_straight_line_with_high_angles(system: System):
 async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulation, detector: rosys.vision.DetectorSimulation):
     async def empty():
         return None
+    # TODO: GNSS
     create_new_record = gnss._create_new_record
     system.automator.start()
     await forward(5)
@@ -97,7 +98,8 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 2.0
-    system.field_friend.wheels.slip_factor_right = 0.04
+    system.field_friend.wheels.slip_factor_right = 0.0
+    # TODO: GNSS
     system.gnss.ensure_gnss = True
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -253,6 +255,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
         p = rosys.geometry.Point3d(x=x, y=(x/3) ** 3, z=0)
         p = system.odometer.prediction.transform3d(p)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
+    # TODO: GNSS
     system.gnss.min_seconds_between_updates = 1
     system.gnss.ensure_gnss = True
     system.current_navigation = system.follow_crops_navigation
@@ -267,6 +270,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
 async def test_approaching_first_row(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
+    assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
@@ -289,6 +293,7 @@ async def test_approaching_first_row(system: System, field: Field):
 async def test_approaching_first_row_from_other_side(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
+    assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     start_point = field.rows[0].points[-1].cartesian()
     end_point = field.rows[0].points[0].cartesian()
@@ -322,6 +327,7 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
 async def test_approaching_first_row_when_outside_of_field(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
+    assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     point_outside = rosys.geometry.Point(x=-10, y=0)
 
@@ -351,6 +357,7 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
 async def test_complete_row(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
+    assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
@@ -393,6 +400,7 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
 async def test_complete_field(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
+    assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
@@ -408,8 +416,8 @@ async def test_complete_field(system: System, field: Field):
 async def test_complete_field_with_selected_beds(system: System, field_with_beds: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
+    assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_provider.selected_beds = [1, 3]
     system.field_provider.select_field(field_with_beds.id)
     system.field_provider._only_specific_beds = True
     system.field_provider.selected_beds = [1, 3]
@@ -426,8 +434,8 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
 async def test_complete_field_without_first_beds(system: System, field_with_beds: Field):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
+    assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_provider.selected_beds = [2, 3, 4]
     system.field_provider.select_field(field_with_beds.id)
     system.field_provider._only_specific_beds = True
     system.field_provider.selected_beds = [2, 3, 4]

@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import rosys
-from rosys.geometry import GeoPoint, GeoReference, Point, current_geo_reference
+from rosys.geometry import GeoPoint, GeoReference, current_geo_reference
 from rosys.hardware import GnssSimulation
 from rosys.testing import forward, helpers
 
@@ -16,7 +16,7 @@ GEO_REFERENCE = GeoReference(GeoPoint.from_degrees(lat=51.98333489813455, lon=7.
 ROBOT_GEO_START_POSITION = GEO_REFERENCE.origin
 
 FIELD_FIRST_ROW_START = GeoPoint.from_degrees(lat=51.98333789813455, lon=7.434242765994318)
-FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=10, y=0))
+FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(x=10, y=0)
 
 log = logging.getLogger('field_friend.testing')
 
@@ -33,7 +33,9 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     helpers.automator = s.automator
     await forward(3)
     assert s.gnss.is_connected, 'device should be created'
-    assert s.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) == pytest.approx(0, abs=1e-8)
+    assert s.gnss.last_measurement is not None
+    assert current_geo_reference.origin is not None
+    assert s.gnss.last_measurement.point.distance(current_geo_reference.origin) == pytest.approx(0, abs=1e-8)
     yield s
 
 
@@ -59,29 +61,29 @@ class TestField:
                 self.first_row_end
             ]),
             Row(id=f'field_{self.id}_row_2', name='row_2', points=[
-                self.first_row_start.shifted(Point(x=0, y=-0.45)),
-                self.first_row_end.shifted(Point(x=0, y=-0.45))
+                self.first_row_start.shifted(x=0, y=-0.45),
+                self.first_row_end.shifted(x=0, y=-0.45)
             ]),
             Row(id=f'field_{self.id}_row_3', name='row_3', points=[
-                self.first_row_start.shifted(Point(x=0, y=-0.9)),
-                self.first_row_end.shifted(Point(x=0, y=-0.9))
+                self.first_row_start.shifted(x=0, y=-0.9),
+                self.first_row_end.shifted(x=0, y=-0.9)
             ]),
             Row(id=f'field_{self.id}_row_4', name='row_4', points=[
-                self.first_row_start.shifted(Point(x=0, y=-1.35)),
-                self.first_row_end.shifted(Point(x=0, y=-1.35))
+                self.first_row_start.shifted(x=0, y=-1.35),
+                self.first_row_end.shifted(x=0, y=-1.35)
             ])
         ]
         self.outline = [
-            self.first_row_start.shifted(Point(x=-self.outline_buffer_width,
-                                         y=self.outline_buffer_width)),
-            self.first_row_end.shifted(Point(x=self.outline_buffer_width,
-                                       y=self.outline_buffer_width)),
-            self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=-
-                                       self.outline_buffer_width - (self.row_count - 1) * self.row_spacing)),
-            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=-
-                                         self.outline_buffer_width - (self.row_count - 1) * self.row_spacing)),
-            self.first_row_start.shifted(Point(x=-self.outline_buffer_width,
-                                         y=self.outline_buffer_width))
+            self.first_row_start.shifted(x=-self.outline_buffer_width,
+                                         y=self.outline_buffer_width),
+            self.first_row_end.shifted(x=self.outline_buffer_width,
+                                       y=self.outline_buffer_width),
+            self.first_row_end.shifted(x=self.outline_buffer_width, y=-
+                                       self.outline_buffer_width - (self.row_count - 1) * self.row_spacing),
+            self.first_row_start.shifted(x=-self.outline_buffer_width, y=-
+                                         self.outline_buffer_width - (self.row_count - 1) * self.row_spacing),
+            self.first_row_start.shifted(x=-self.outline_buffer_width,
+                                         y=self.outline_buffer_width)
         ]
 
 

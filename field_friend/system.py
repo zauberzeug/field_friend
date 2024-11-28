@@ -7,7 +7,7 @@ import numpy as np
 import psutil
 import rosys
 from rosys.geometry import GeoPoint, GeoReference, Pose, current_geo_reference
-from rosys.hardware.gnss import GnssHardware, GnssSimulation
+from rosys.hardware.gnss import GnssHardware, GnssMeasurement, GnssSimulation
 
 import config.config_selection as config_selector
 
@@ -53,6 +53,7 @@ class System(rosys.persistence.PersistentModule):
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
+        self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation
         self.field_friend: FieldFriend
         if self.is_real:
@@ -77,9 +78,7 @@ class System(rosys.persistence.PersistentModule):
             self.camera_configurator = CameraConfigurator(
                 self.camera_provider, odometer=self.odometer, robot_id=self.version)
             self.gnss = GnssSimulation(wheels=self.field_friend.wheels)
-        self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
-        # TODO: handle gnss measurements
-        # self.gnss.NEW_MEASUREMENT.register(self.odometer.handle_detection)
+        self.gnss.NEW_MEASUREMENT.register(self.handle_gnss_measurement)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
@@ -255,6 +254,9 @@ class System(rosys.persistence.PersistentModule):
         self.log.debug('Updating GNSS reference to %s', reference)
         current_geo_reference.update(reference)
         self.request_backup()
+
+    def handle_gnss_measurement(self, measurement: GnssMeasurement) -> None:
+        self.odometer.handle_detection(measurement.pose.cartesian())
 
     def get_jetson_cpu_temperature(self):
         with open('/sys/devices/virtual/thermal/thermal_zone0/temp') as f:

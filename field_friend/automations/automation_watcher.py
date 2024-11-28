@@ -87,8 +87,10 @@ class AutomationWatcher:
         # TODO: what to do if we don't have bumpers?
         assert self.field_friend.bumper is not None
         bumper_condition = not bool(self.field_friend.bumper.active_bumpers) if self.bumper_watch_active else True
-        gnss_condition = (self.gnss.last_measurement is not None and ('R' in self.gnss.last_measurement.mode or self.gnss.last_measurement.mode == 'SSSS')) \
-            if self.gnss_watch_active else True
+        # TODO: gnss has no mode anymore
+        # gnss_condition = (self.gnss.last_measurement is not None and ('R' in self.gnss.last_measurement.mode or self.gnss.last_measurement.mode == 'SSSS')) \
+        #     if self.gnss_watch_active else True
+        gnss_condition = True
 
         # Enable automator only if all relevant conditions are True
         self.automator.enabled = bumper_condition and gnss_condition

@@ -1,6 +1,6 @@
 import pytest
 from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
-from rosys.geometry import GeoPose, Point
+from rosys.geometry import GeoPose
 
 from field_friend import System
 from field_friend.automations.field import Field
@@ -32,7 +32,7 @@ def test_support_point_dialog(system: System, field: Field):
     dialog = SupportPointDialog(system)
     row_index = 2
     dialog.row_name = row_index+1
-    test_location = FIELD_FIRST_ROW_START.shifted(point=Point(x=0, y=-1.5))
+    test_location = FIELD_FIRST_ROW_START.shifted(x=0, y=-1.5)
     system.gnss.last_measurement.pose = GeoPose(lat=test_location.lat, lon=test_location.lon, heading=0)
     dialog.next()
     dialog.next()

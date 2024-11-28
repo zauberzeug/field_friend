@@ -247,6 +247,7 @@ class FieldNavigation(StraightLineNavigation):
 
     def developer_ui(self) -> None:
         # super().developer_ui()
+        ui.label('Field Navigation').classes('text-center text-bold')
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')

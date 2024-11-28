@@ -3,11 +3,9 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
-import numpy as np
 import psutil
 import rosys
 from nicegui import ui
-from rosys.geometry import current_geo_reference
 
 from ...hardware import (
     Axis,
@@ -161,34 +159,6 @@ def status_dev_page(robot: FieldFriend, system: System):
             ui.label('Temperature:').style('color: #EDF4FB').classes('font-bold')
             temperature_label = ui.label()
 
-    with ui.card().style('background-color: #3E63A6; color: white;'):
-        ui.label('Positioning').style('color: #6E93D6').classes('w-full text-center font-bold')
-        ui.separator()
-        with ui.row().classes('place-items-center'):
-            ui.label('GNSS Device:').style('color: #EDF4FB').classes('font-bold')
-            ui.label().bind_text_from(system.gnss, 'is_connected', backward=lambda x: 'Connected' if x else 'No connection')
-        with ui.row().classes('place-items-center'):
-            ui.label('Reference:').style('color: #EDF4FB').classes('font-bold')
-            reference_position_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.label('Position:').style('color: #EDF4FB').classes('font-bold')
-            ui.label().bind_text_from(system.gnss, 'last_measurement',
-                                      backward=lambda x: 'No position' if x is None else str(x.point))
-        with ui.row().classes('place-items-center'):
-            ui.label('Heading:').style('color: #EDF4FB').classes('font-bold')
-            heading_label = ui.label()
-        with ui.row().classes('place-items-center'):
-            ui.label('RTK Fix:').style('color: #EDF4FB').classes('font-bold')
-            rtk_fix_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.label('Odometry:').style('color: #EDF4FB').classes('font-bold')
-            odometer_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.label('Since last update:').style('color: #EDF4FB').classes('font-bold')
-            update_label = ui.label()
-
     def update_status() -> None:
         if isinstance(robot.y_axis, ChainAxis):
             y_axis_flags = [
@@ -251,23 +221,6 @@ def status_dev_page(robot: FieldFriend, system: System):
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-        # TODO: move this into gnss since it is used multiple times, check stuff above this too!
-        direction_flag = '?' if system.gnss.last_measurement is None or system.gnss.last_measurement.heading is None else \
-            'N' if system.gnss.last_measurement.heading <= np.deg2rad(23) else \
-            'NE' if system.gnss.last_measurement.heading <= np.deg2rad(68) else \
-            'E' if system.gnss.last_measurement.heading <= np.deg2rad(113) else \
-            'SE' if system.gnss.last_measurement.heading <= np.deg2rad(158) else \
-            'S' if system.gnss.last_measurement.heading <= np.deg2rad(203) else \
-            'SW' if system.gnss.last_measurement.heading <= np.deg2rad(248) else \
-            'W' if system.gnss.last_measurement.heading <= np.deg2rad(293) else \
-            'NW' if system.gnss.last_measurement.heading <= np.deg2rad(338) else \
-            'N'
-
-        reference_position_label.text = 'No reference' if current_geo_reference.origin is None else f'{current_geo_reference.origin.degree_tuple}, {current_geo_reference.direction:.2f}°'
-        heading_label.text = f'{np.rad2deg(system.gnss.last_measurement.heading):.2f}° {direction_flag}' if system.gnss.last_measurement is not None else 'No heading'
-        rtk_fix_label.text = f'gps_qual: {system.gnss.last_measurement.gps_qual}, mode: {system.gnss.last_measurement.mode}' if system.gnss.last_measurement is not None else 'No fix'
-        odometer_label.text = str(system.odometer.prediction)
-        update_label.text = f'{timedelta(seconds=rosys.time() - system.gnss.last_measurement.time)}' if system.gnss.last_measurement is not None else ''
 
     ui.timer(rosys.config.ui_update_interval, update_status)
     return status_dev_page
