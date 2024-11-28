@@ -393,7 +393,43 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     assert field.rows[1].id == system.field_navigation.current_row.id
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)
+    end_point = field.rows[-1].points[0].cartesian()
+    assert system.odometer.prediction.point.distance(end_point) < 0.1
+
+
+async def test_resuming_field_navigation_after_automation_stop_between_rows(system: System, field: Field):
+    # pylint: disable=protected-access
+    assert system.gnss.current
+    # move the start position on the first row in the middle of the row
+    start_point = field.rows[0].points[len(field.rows[0].points) // 2]
+    ROBOT_ON_FIRST_ROW = start_point
+    system.gnss.relocate(ROBOT_ON_FIRST_ROW)
+    assert system.gnss.current.location.distance(ROBOT_ON_FIRST_ROW) < 0.01
+    system.field_provider.select_field(field.id)
+    system.current_navigation = system.field_navigation
+
+    system.automator.start()
+    await forward(1.0)  # Give time for automation to potentially start
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    await forward(until=lambda: system.automator.is_stopped)
     assert system.odometer.prediction.point.distance(point) > 0.1
+    # # Verify automation did not start because robot is too far from row
+    # assert not system.automator.is_running, 'Automation should not start when robot is too far from row'
+    # assert system.odometer.prediction.point.y == pytest.approx(0.06, abs=0.01)
+
+
+async def test_resuming_field_navigation_after_automation_stop_great_angle(system: System, field: Field):
+    # pylint: disable=protected-access
+    assert system.gnss.current
+    assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    system.field_provider.select_field(field.id)
+    system.current_navigation = system.field_navigation
+    system.automator.start()
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
+    point = rosys.geometry.Point(x=0.3, y=0.0)
+    await forward(x=point.x, y=point.y, tolerance=0.05)
+    system.automator.stop(because='test')
+    system.automator.start()
 
 
 async def test_complete_field(system: System, field: Field):
