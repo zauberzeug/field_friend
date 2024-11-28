@@ -1,3 +1,4 @@
+import math
 import random
 
 import numpy as np
@@ -397,25 +398,35 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     assert system.odometer.prediction.point.distance(end_point) < 0.1
 
 
-async def test_resuming_field_navigation_after_automation_stop_between_rows(system: System, field: Field):
+async def test_field_navigation_robot_between_rows(system: System, field: Field):
     # pylint: disable=protected-access
     assert system.gnss.current
-    # move the start position on the first row in the middle of the row
-    start_point = field.rows[0].points[len(field.rows[0].points) // 2]
-    ROBOT_ON_FIRST_ROW = start_point
-    system.gnss.relocate(ROBOT_ON_FIRST_ROW)
-    assert system.gnss.current.location.distance(ROBOT_ON_FIRST_ROW) < 0.01
-    system.field_provider.select_field(field.id)
-    system.current_navigation = system.field_navigation
+    assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
 
-    system.automator.start()
-    await forward(1.0)  # Give time for automation to potentially start
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    # Get the first row's start point and move 5cm perpendicular to it
+    row_start = field.rows[0].points[0].cartesian()
+    row_end = field.rows[0].points[1].cartesian()
+    row_direction = row_start.direction(row_end)
+    offset_direction = row_direction + math.pi/2  # perpendicular to row direction
+    offset_point = row_start.polar(0.5, row_direction)
+    offset_point = offset_point.polar(-0.06, offset_direction)  # 6cm offset
+
+    async def drive_to_offset():
+        await system.driver.drive_to(offset_point)
+    system.automator.start(drive_to_offset())
+    await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.point.distance(point) > 0.1
-    # # Verify automation did not start because robot is too far from row
-    # assert not system.automator.is_running, 'Automation should not start when robot is too far from row'
-    # assert system.odometer.prediction.point.y == pytest.approx(0.06, abs=0.01)
+    assert system.odometer.prediction.point.distance(offset_point) < 0.01
+    system.field_navigation.field_id = field.id
+    system.current_navigation = system.field_navigation
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped, timeout=1500)
+    end_point = field.rows[-1].points[0].cartesian()
+    assert system.odometer.prediction.point.x != pytest.approx(end_point.x, abs=0.05)
+    assert system.odometer.prediction.point.y != pytest.approx(end_point.y, abs=0.05)
+    assert system.odometer.prediction.point.x == pytest.approx(offset_point.x, abs=0.05)
+    assert system.odometer.prediction.point.y == pytest.approx(offset_point.y, abs=0.05)
 
 
 async def test_resuming_field_navigation_after_automation_stop_great_angle(system: System, field: Field):
