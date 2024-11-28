@@ -369,24 +369,30 @@ async def test_complete_row(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-@pytest.mark.skip('TODO: rework in a later PR')
 async def test_resuming_field_navigation_after_automation_stop(system: System, field: Field):
     # pylint: disable=protected-access
-    system.field_navigation.field = field
+    assert system.gnss.current
+    assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
+    system.field_provider.select_field(field.id)
     system.current_navigation = system.field_navigation
     system.automator.start()
-    await forward(1)  # update gnss reference to use the fields reference
-    point = rosys.geometry.Point(x=1.54, y=-6.1)
-    await forward(x=point.x, y=point.y, tolerance=0.01)  # drive until we are on first row
-    await forward(2)
-    assert system.field_navigation._state == FieldNavigationState.FOLLOW_ROW
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
+    point = rosys.geometry.Point(x=0.3, y=0.0)
+    await forward(x=point.x, y=point.y, tolerance=0.05)
     system.automator.stop(because='test')
-    await forward(2)
     system.automator.start()
-    await forward(5)
-    assert system.field_navigation._state == FieldNavigationState.FOLLOW_ROW
-    assert not system.plant_locator.is_paused
-    await forward(20)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
+    current_row = system.field_navigation.current_row
+    assert system.field_navigation.start_point == current_row.points[0].cartesian()
+    assert system.field_navigation.end_point == current_row.points[1].cartesian()
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
+    current_row = system.field_navigation.current_row
+    assert system.field_navigation.start_point == current_row.points[1].cartesian()
+    assert system.field_navigation.end_point == current_row.points[0].cartesian()
+    assert field.rows[1].id == system.field_navigation.current_row.id
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    await forward(until=lambda: system.automator.is_stopped)
     assert system.odometer.prediction.point.distance(point) > 0.1
 
 
