@@ -6,7 +6,7 @@ import icecream
 import numpy as np
 import psutil
 import rosys
-from rosys.geometry import GeoPoint, GeoReference, Pose, current_geo_reference
+from rosys.geometry import GeoPoint, GeoReference, Pose
 from rosys.hardware.gnss import GnssHardware, GnssMeasurement, GnssSimulation
 
 import config.config_selection as config_selector
@@ -32,6 +32,7 @@ from .automations.navigation import (
 from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
 from .kpi_generator import generate_kpis
+from .robot_locator import RobotLocator
 from .vision import CalibratableUsbCameraProvider, CameraConfigurator
 from .vision.zedxmini_camera import ZedxminiCameraProvider
 
@@ -78,10 +79,11 @@ class System(rosys.persistence.PersistentModule):
             self.camera_configurator = CameraConfigurator(
                 self.camera_provider, odometer=self.odometer, robot_id=self.version)
             self.gnss = GnssSimulation(wheels=self.field_friend.wheels)
-        self.gnss.NEW_MEASUREMENT.register(self.handle_gnss_measurement)
+        self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
+        # self.gnss.NEW_MEASUREMENT.register(self.handle_gnss_measurement)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
-        self.driver = rosys.driving.Driver(self.field_friend.wheels, self.odometer)
+        self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
         self.driver.parameters.linear_speed_limit = 0.3
         self.driver.parameters.angular_speed_limit = 0.2
         self.driver.parameters.can_drive_backwards = True

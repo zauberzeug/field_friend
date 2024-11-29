@@ -34,6 +34,8 @@ def create_development_ui(system: 'System') -> None:
 
     with ui.row():
         with ui.card():
+            system.robot_locator.developer_ui()
+        with ui.card():
             system.gnss.developer_ui()
         with ui.card():
             system.field_navigation.developer_ui()
