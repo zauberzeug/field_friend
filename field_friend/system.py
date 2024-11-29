@@ -179,7 +179,7 @@ class System(rosys.persistence.PersistentModule):
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
         else:
-            self.log.warning('Bumper is not available, does robot has bumpers?')
+            self.log.warning('Bumper is not available, does robot have bumpers?')
 
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
