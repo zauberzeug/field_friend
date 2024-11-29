@@ -178,7 +178,7 @@ class System(rosys.persistence.PersistentModule):
         return {
             'navigation': self.current_navigation.name,
             'implement': self.current_implement.name,
-            'gnss_reference': current_geo_reference.origin.degree_tuple,
+            'gnss_reference': GeoReference.current.origin.degree_tuple,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -252,11 +252,11 @@ class System(rosys.persistence.PersistentModule):
         reference = GeoReference(origin=self.gnss.last_measurement.point,
                                  direction=self.gnss.last_measurement.heading) if reference is None else reference
         self.log.debug('Updating GNSS reference to %s', reference)
-        current_geo_reference.update(reference)
+        GeoReference.update_current(reference)
         self.request_backup()
 
     def handle_gnss_measurement(self, measurement: GnssMeasurement) -> None:
-        self.odometer.handle_detection(measurement.pose.cartesian())
+        self.odometer.handle_detection(measurement.pose.to_local())
 
     def get_jetson_cpu_temperature(self):
         with open('/sys/devices/virtual/thermal/thermal_zone0/temp') as f:

@@ -32,12 +32,12 @@ def test_support_point_dialog(system: System, field: Field):
     dialog = SupportPointDialog(system)
     row_index = 2
     dialog.row_name = row_index+1
-    test_location = FIELD_FIRST_ROW_START.shifted(x=0, y=-1.5)
+    test_location = FIELD_FIRST_ROW_START.shift_by(x=0, y=-1.5)
     system.gnss.last_measurement.pose = GeoPose(lat=test_location.lat, lon=test_location.lon, heading=0)
     dialog.next()
     dialog.next()
-    row_support_point_cartesian = system.field_provider.fields[0].row_support_points[0].cartesian()
-    row_start_cartesian = FIELD_FIRST_ROW_START.cartesian()
+    row_support_point_cartesian = system.field_provider.fields[0].row_support_points[0].to_local()
+    row_start_cartesian = FIELD_FIRST_ROW_START.to_local()
     assert row_support_point_cartesian.x - row_start_cartesian.x == pytest.approx(0, abs=0.001)
     assert row_support_point_cartesian.y - row_start_cartesian.y == pytest.approx(-1.5, abs=0.001)
     assert system.field_provider.fields[0].row_support_points[0].row_index == row_index

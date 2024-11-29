@@ -115,7 +115,7 @@ class AutomationWatcher:
 
     def start_field_watch(self, field_boundaries: list[GeoPoint]) -> None:
         self.field_polygon = ShapelyPolygon(
-            [point.cartesian().tuple for point in field_boundaries])
+            [point.to_local().tuple for point in field_boundaries])
         self.field_watch_active = True
 
     def stop_field_watch(self) -> None:

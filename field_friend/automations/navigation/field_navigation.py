@@ -103,15 +103,15 @@ class FieldNavigation(StraightLineNavigation):
         assert self.field is not None
         self.start_point = None
         self.end_point = None
-        relative_point_0 = self.odometer.prediction.distance(self.current_row.points[0].cartesian())
-        relative_point_1 = self.odometer.prediction.distance(self.current_row.points[-1].cartesian())
+        relative_point_0 = self.odometer.prediction.distance(self.current_row.points[0].to_local())
+        relative_point_1 = self.odometer.prediction.distance(self.current_row.points[-1].to_local())
         # self.log.info(f'Relative point 0: {relative_point_0} Relative point 1: {relative_point_1}')
         if relative_point_0 < relative_point_1:
-            self.start_point = self.current_row.points[0].cartesian()
-            self.end_point = self.current_row.points[-1].cartesian()
+            self.start_point = self.current_row.points[0].to_local()
+            self.end_point = self.current_row.points[-1].to_local()
         elif relative_point_1 < relative_point_0:
-            self.start_point = self.current_row.points[-1].cartesian()
-            self.end_point = self.current_row.points[0].cartesian()
+            self.start_point = self.current_row.points[-1].to_local()
+            self.end_point = self.current_row.points[0].to_local()
         self.update_target()
         # self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 

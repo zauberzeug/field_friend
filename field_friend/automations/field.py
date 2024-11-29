@@ -24,8 +24,8 @@ class Row:
         )
 
     def line_segment(self) -> rosys.geometry.LineSegment:
-        return rosys.geometry.LineSegment(point1=self.points[0].cartesian(),
-                                          point2=self.points[-1].cartesian())
+        return rosys.geometry.LineSegment(point1=self.points[0].to_local(),
+                                          point2=self.points[-1].to_local())
 
     @property
     def points_as_tuples(self) -> list[tuple[float, float]]:
@@ -71,7 +71,7 @@ class Field:
 
     @property
     def outline_cartesian(self) -> list[rosys.geometry.Point]:
-        return [p.cartesian() for p in self.outline]
+        return [p.to_local() for p in self.outline]
 
     @property
     def outline_as_tuples(self) -> list[tuple[float, float]]:
@@ -102,8 +102,8 @@ class Field:
     def _generate_rows(self) -> list[Row]:
         assert self.first_row_start is not None
         assert self.first_row_end is not None
-        ab_line_cartesian = LineString([self.first_row_start.cartesian().tuple,
-                                        self.first_row_end.cartesian().tuple])
+        ab_line_cartesian = LineString([self.first_row_start.to_local().tuple,
+                                        self.first_row_end.to_local().tuple])
         rows: list[Row] = []
 
         last_support_point = None
@@ -116,7 +116,7 @@ class Field:
 
             support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
             if support_point:
-                support_point_cartesian = support_point.cartesian()
+                support_point_cartesian = support_point.to_local()
                 offset = ab_line_cartesian.distance(shapely.geometry.Point(
                     [support_point_cartesian.x, support_point_cartesian.y]))
                 last_support_point = support_point
@@ -145,12 +145,12 @@ class Field:
     def _generate_outline(self) -> list[GeoPoint]:
         assert len(self.rows) > 0
         outline_unbuffered: list[Point] = [
-            self.first_row_end.cartesian(),
-            self.first_row_start.cartesian(),
+            self.first_row_end.to_local(),
+            self.first_row_start.to_local(),
         ]
         if len(self.rows) > 1:
             for p in self.rows[-1].points:
-                outline_unbuffered.append(p.cartesian())
+                outline_unbuffered.append(p.to_local())
             outline_shape = Polygon([p.tuple for p in outline_unbuffered])
         else:
             outline_shape = LineString([p.tuple for p in outline_unbuffered])
