@@ -10,7 +10,7 @@
       "first_row_end": { "lat": 51.98334192260392, "long": 7.434293309874038 },
       "row_spacing": 0.5,
       "row_count": 10,
-      "outline_buffer_width": 2,
+      "not_existing_value": true,
       "row_support_points": [],
       "bed_count": 1,
       "bed_spacing": 0.5
