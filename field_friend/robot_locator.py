@@ -1,8 +1,11 @@
+import logging
 from typing import Any
 
 import numpy as np
 import rosys
+import rosys.helpers
 from nicegui import ui
+from rosys.geometry import Pose3d, Rotation
 from rosys.hardware import Gnss, GnssMeasurement
 
 
@@ -74,6 +77,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         ```
         """
         super().__init__(persistence_key='field_friend.robot_locator')
+        self.log = logging.getLogger('field_friend.robot_locator')
+        self.pose_frame = Pose3d().as_frame('field_friend.robot_locator.pose')
         self.x = np.zeros((6, 1))
         self.Sxx = np.zeros((6, 6))
         self.t = rosys.time()
@@ -149,14 +154,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
     def handle_gnss_measurement(self, gnss_measurement: GnssMeasurement) -> None:
         self.predict()
         if not self.ignore_gnss:
-            yaw = gnss_measurement.heading
-            cartesian_coords = gnss_measurement.point.to_local()
-            # TODO: heading?
-            pose = rosys.geometry.Pose(
-                x=cartesian_coords.x,
-                y=cartesian_coords.y,
-                yaw=self.x[2, 0] + rosys.helpers.angle(self.x[2, 0], yaw),
-            )
+            pose = gnss_measurement.pose.to_local()
             z = [[pose.x], [pose.y], [pose.yaw]]
             h = [[self.x[0, 0]], [self.x[1, 0]], [self.x[2, 0]]]
             H = [
@@ -192,13 +190,22 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.x[0] += v * np.cos(theta) * dt
         self.x[1] += v * np.sin(theta) * dt
         self.x[2] += omega * dt
+        self.x[2] = rosys.helpers.eliminate_2pi(self.x[2])
         self.x[3] += a * dt
         self.Sxx = F @ self.Sxx @ F.T + R
+        self.update_frame()
 
     def update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         K = self.Sxx @ H.T @ np.linalg.inv(H @ self.Sxx @ H.T + Q)
         self.x = self.x + K @ (z - h)
         self.Sxx = (np.eye(self.Sxx.shape[0]) - K @ H) @ self.Sxx
+        self.update_frame()
+
+    def update_frame(self):
+        pose = self.pose
+        self.pose_frame.x = pose.x
+        self.pose_frame.y = pose.y
+        self.pose_frame.rotation = Rotation.from_euler(0, 0, pose.yaw)
 
     def reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
         self.x = np.array([[x, y, yaw, 0, 0, 0]], dtype=float).T
@@ -223,9 +230,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     'r_a': 'R a',
                 }.items():
                     with ui.column().classes('w-full gap-0'):
-                        # ui.label(label)
-                        # ui.slider(min=0, max=1, step=0.01, on_change=self.request_backup) \
-                        #     .bind_value(self, key).props('label')
                         ui.number(label, min=0, max=1, step=0.01, format='%.3f', on_change=self.request_backup) \
                             .bind_value(self, key)
             with ui.grid(columns=2).classes('w-full gap-0'):
@@ -233,7 +237,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
                 ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[0, 0]:.3f}')
                 ui.label().bind_text_from(self, 'pose', lambda p: f'y: {p.y:.3f}'.ljust(16))
                 ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[1, 1]:.3f}')
-                ui.label().bind_text_from(self, 'pose', lambda p: f'θ: {p.yaw:.2f}'.ljust(16))
+                ui.label().bind_text_from(self, 'pose', lambda p: f'θ: {p.yaw_deg:.2f}'.ljust(16))
                 ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[2, 2]:.2f}')
                 ui.label().bind_text_from(self, 'velocity', lambda v: f'v: {v.linear:.2f}'.ljust(16))
                 ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[3, 3]:.2f}')

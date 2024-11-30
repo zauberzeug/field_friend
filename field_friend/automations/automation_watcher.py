@@ -22,7 +22,7 @@ class AutomationWatcher:
         self.log = logging.getLogger('field_friend.automation_watcher')
 
         self.automator = system.automator
-        self.odometer = system.odometer
+        self.robot_locator = system.robot_locator
         self.field_friend = system.field_friend
         self.gnss = system.gnss
         self.steerer = system.steerer
@@ -38,7 +38,7 @@ class AutomationWatcher:
         self.bumper_watch_active: bool = False
         self.gnss_watch_active: bool = False
         self.field_watch_active: bool = False
-        self.last_robot_pose = self.odometer.prediction
+        self.last_robot_pose = self.robot_locator.pose
 
         self.start_time: float | None = None
         rosys.on_repeat(self._update_time, 0.1)
@@ -73,14 +73,14 @@ class AutomationWatcher:
             self.automator.pause(because=f'{reason} (waiting {self.resume_delay:.0f}s)')
             self.try_resume_active = True
         self.incidence_time = rosys.time()
-        self.incidence_pose = deepcopy(self.odometer.prediction)
+        self.incidence_pose = deepcopy(self.robot_locator.pose)
 
     def stop(self, reason: str) -> None:
         if self.automator.is_running:
             self.automator.stop(because=f'{reason}')
             self.try_resume_active = False
         self.incidence_time = rosys.time()
-        self.incidence_pose = deepcopy(self.odometer.prediction)
+        self.incidence_pose = deepcopy(self.robot_locator.pose)
 
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
@@ -108,7 +108,7 @@ class AutomationWatcher:
             self.automator.resume()
             self.try_resume_active = False
 
-        if self.odometer.prediction.distance(self.incidence_pose) > RESET_POSE_DISTANCE:
+        if self.robot_locator.pose.distance(self.incidence_pose) > RESET_POSE_DISTANCE:
             if self.resume_delay != DEFAULT_RESUME_DELAY:
                 self.log.info('resetting resume_delay')
                 self.resume_delay = DEFAULT_RESUME_DELAY
@@ -125,7 +125,7 @@ class AutomationWatcher:
     def check_field_bounds(self) -> None:
         if not self.field_watch_active or not self.field_polygon:
             return
-        position = ShapelyPoint(self.odometer.prediction.x, self.odometer.prediction.y)
+        position = ShapelyPoint(self.robot_locator.pose.x, self.robot_locator.pose.y)
         if not self.field_polygon.contains(position):
             self.log.warning(f'robot at {position} is outside of field boundaries {self.field_polygon}')
             if self.automator.is_running:

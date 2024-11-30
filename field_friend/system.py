@@ -7,7 +7,7 @@ import numpy as np
 import psutil
 import rosys
 from rosys.geometry import GeoPoint, GeoReference, Pose
-from rosys.hardware.gnss import GnssHardware, GnssMeasurement, GnssSimulation
+from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
 import config.config_selection as config_selector
 
@@ -63,24 +63,25 @@ class System(rosys.persistence.PersistentModule):
                 self.teltonika_router = TeltonikaRouter()
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
+            self.gnss = GnssHardware(antenna_pose=Pose(
+                x=0.0, y=self.field_friend.ANTENNA_OFFSET, yaw=np.deg2rad(-90.0)))
+            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
-            self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
-            self.camera_configurator = CameraConfigurator(self.camera_provider, odometer=self.odometer)
-            self.gnss = GnssHardware(antenna_pose=Pose(
-                x=0.0, y=self.field_friend.ANTENNA_OFFSET, yaw=np.deg2rad(-90.0)))
+            self.camera_configurator = CameraConfigurator(self.camera_provider, robot_locator=self.robot_locator)
+
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
+            self.gnss = GnssSimulation(wheels=self.field_friend.wheels,
+                                       lat_std_dev=0.00000000000002, lon_std_dev=0.00000000000002, heading_std_dev=0.00000000000002)
+            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
-            self.odometer = rosys.driving.Odometer(self.field_friend.wheels)
             self.camera_configurator = CameraConfigurator(
-                self.camera_provider, odometer=self.odometer, robot_id=self.version)
-            self.gnss = GnssSimulation(wheels=self.field_friend.wheels)
-        self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
-        # self.gnss.NEW_MEASUREMENT.register(self.handle_gnss_measurement)
+                self.camera_provider, robot_locator=self.robot_locator, robot_id=self.version)
+
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
@@ -245,7 +246,7 @@ class System(rosys.persistence.PersistentModule):
                                                                             pitch=np.deg2rad(0),
                                                                             yaw=np.deg2rad(90),
                                                                             color='#cccccc',
-                                                                            frame=self.odometer.prediction_frame,
+                                                                            frame=self.robot_locator.pose_frame,
                                                                             )
         assert isinstance(self.camera_provider, rosys.vision.SimulatedCameraProvider)
         self.camera_provider.add_camera(camera)
@@ -256,9 +257,6 @@ class System(rosys.persistence.PersistentModule):
         self.log.debug('Updating GNSS reference to %s', reference)
         GeoReference.update_current(reference)
         self.request_backup()
-
-    def handle_gnss_measurement(self, measurement: GnssMeasurement) -> None:
-        self.odometer.handle_detection(measurement.pose.to_local())
 
     def get_jetson_cpu_temperature(self):
         with open('/sys/devices/virtual/thermal/thermal_zone0/temp') as f:

@@ -28,7 +28,6 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
-    helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)

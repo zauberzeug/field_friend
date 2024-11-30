@@ -32,7 +32,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.camera_provider = system.camera_provider
         self.detector = system.detector
         self.plant_provider = system.plant_provider
-        self.odometer = system.odometer
+        self.robot_locator = system.robot_locator
         self.robot_name = system.version
         self.tags: list[str] = []
         self.is_paused = True
@@ -112,7 +112,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 #     self.log.error('could not get a depth value for detection')
                 #     continue
                 # camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
-                #     'zedxmini').in_frame(self.odometer.prediction_frame)
+                #     'zedxmini').in_frame(self.robot_locator.pose_frame)
                 # world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
             else:
                 world_point_3d = camera.calibration.project_from_image(image_point)

@@ -94,7 +94,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.field is not None
         assert self.gnss.is_connected
         row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
-            self.odometer.prediction.point).distance(self.odometer.prediction.point))
+            self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
         self.log.info(f'Nearest row is {row.name}')
         self.row_index = self.field.rows.index(row)
         return row
@@ -103,8 +103,8 @@ class FieldNavigation(StraightLineNavigation):
         assert self.field is not None
         self.start_point = None
         self.end_point = None
-        relative_point_0 = self.odometer.prediction.distance(self.current_row.points[0].to_local())
-        relative_point_1 = self.odometer.prediction.distance(self.current_row.points[-1].to_local())
+        relative_point_0 = self.robot_locator.pose.distance(self.current_row.points[0].to_local())
+        relative_point_1 = self.robot_locator.pose.distance(self.current_row.points[-1].to_local())
         # self.log.info(f'Relative point 0: {relative_point_0} Relative point 1: {relative_point_1}')
         if relative_point_0 < relative_point_1:
             self.start_point = self.current_row.points[0].to_local()
@@ -116,7 +116,7 @@ class FieldNavigation(StraightLineNavigation):
         # self.log.info(f'Start point: {self.start_point} End point: {self.end_point}')
 
     def update_target(self) -> None:
-        self.origin = self.odometer.prediction.point
+        self.origin = self.robot_locator.pose.point
         if self.end_point is None:
             return
         self.target = self.end_point
@@ -135,7 +135,7 @@ class FieldNavigation(StraightLineNavigation):
         await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
         # turn towards row start
         assert self.start_point is not None
-        target_yaw = self.odometer.prediction.direction(self.start_point)
+        target_yaw = self.robot_locator.pose.direction(self.start_point)
         await self.turn_in_steps(target_yaw)
         # drive to row start
         await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
@@ -153,9 +153,9 @@ class FieldNavigation(StraightLineNavigation):
 
     async def drive_in_steps(self, target: Pose) -> None:
         while True:
-            if target.relative_point(self.odometer.prediction.point).x > 0:
+            if target.relative_point(self.robot_locator.pose.point).x > 0:
                 return
-            drive_step = min(self._drive_step, self.odometer.prediction.distance(target))
+            drive_step = min(self._drive_step, self.robot_locator.pose.distance(target))
             # Calculate timeout based on linear speed limit and drive step
             timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 3.0
             await self._drive_towards_target(drive_step, target, timeout=timeout)
@@ -165,7 +165,7 @@ class FieldNavigation(StraightLineNavigation):
         if angle_threshold is None:
             angle_threshold = np.deg2rad(1.0)
         while True:
-            angle = rosys.helpers.eliminate_2pi(target_yaw - self.odometer.prediction.yaw)
+            angle = rosys.helpers.eliminate_2pi(target_yaw - self.robot_locator.pose.yaw)
             if abs(angle) < angle_threshold:
                 break
             linear = 0.5
@@ -176,23 +176,23 @@ class FieldNavigation(StraightLineNavigation):
         await self.driver.wheels.stop()
 
     async def turn_in_steps(self, target_yaw: float) -> None:
-        angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
+        angle_difference = rosys.helpers.angle(self.robot_locator.pose.yaw, target_yaw)
         while abs(angle_difference) > np.deg2rad(1.0):
             next_angle = rosys.helpers.eliminate_2pi(
-                self.odometer.prediction.yaw + np.sign(angle_difference) * self._turn_step)
+                self.robot_locator.pose.yaw + np.sign(angle_difference) * self._turn_step)
             if abs(angle_difference) > self._turn_step:
                 await self.turn_to_yaw(next_angle)
             else:
                 await self.turn_to_yaw(target_yaw)
             await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
-            angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
+            angle_difference = rosys.helpers.angle(self.robot_locator.pose.yaw, target_yaw)
 
     async def _run_following_row(self, distance: float) -> State:
         assert self.end_point is not None
         assert self.start_point is not None
         end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
                                        yaw=self.start_point.direction(self.end_point), time=0)
-        if end_pose.relative_point(self.odometer.prediction.point).x > 0:
+        if end_pose.relative_point(self.robot_locator.pose.point).x > 0:
             await self.driver.wheels.stop()
             await self.implement.deactivate()
             return State.ROW_COMPLETED
@@ -291,6 +291,6 @@ class FieldNavigation(StraightLineNavigation):
 
                 for _ in range(1, 7):
                     p = self.start_point.polar(crop_distance * (i+1) + randint(-5, 5) * 0.01, self.start_point.direction(self.end_point)) \
-                        .polar(randint(-15, 15)*0.01, self.odometer.prediction.yaw + np.pi/2)
+                        .polar(randint(-15, 15)*0.01, self.robot_locator.pose.yaw + np.pi/2)
                     self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                                         position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))

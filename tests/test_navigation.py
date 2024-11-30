@@ -15,32 +15,32 @@ from field_friend.automations.navigation.field_navigation import State as FieldN
 
 
 async def test_straight_line(system: System):
-    assert system.odometer.prediction.point.x == 0
+    assert system.robot_locator.pose.point.x == 0
     assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
     assert not system.automator.is_running, 'automation should stop after default length'
-    assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
+    assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
 
 
 async def test_straight_line_with_high_angles(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     predicted_yaw = 190
-    start_yaw = system.odometer.prediction.yaw
+    start_yaw = system.robot_locator.pose.yaw
     target_yaw = start_yaw + np.deg2rad(predicted_yaw)
     await system.driver.wheels.drive(*system.driver._throttle(0, 0.1))  # pylint: disable=protected-access
-    await forward(until=lambda: abs(rosys.helpers.angle(system.odometer.prediction.yaw, target_yaw)) < np.deg2rad(0.01))
+    await forward(until=lambda: abs(rosys.helpers.angle(system.robot_locator.pose.yaw, target_yaw)) < np.deg2rad(0.01))
     await system.driver.wheels.stop()
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 1.0
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.point.x == pytest.approx(-0.985, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(-0.174, abs=0.1)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(predicted_yaw, abs=5)
+    assert system.robot_locator.pose.point.x == pytest.approx(-0.985, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(-0.174, abs=0.1)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(predicted_yaw, abs=5)
 
 
 @pytest.mark.skip(reason='TODO: how to simulate gnss failure?')
@@ -57,7 +57,7 @@ async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulat
     await forward(5)
     assert system.automator.is_running
     assert len(detector.simulated_objects) == 0
-    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=1)
 
 
 async def test_driving_to_exact_positions(system: System):
@@ -86,9 +86,9 @@ async def test_driving_to_exact_positions(system: System):
 
     await forward(until=lambda: system.automator.is_running, dt=0.01)
     for _ in range(20):
-        old_position = system.odometer.prediction.point
+        old_position = system.robot_locator.pose.point
         await forward(until=lambda: stopper.workflow_started and system.automator.is_running, dt=0.01)
-        distance = old_position.distance(system.odometer.prediction.point)
+        distance = old_position.distance(system.robot_locator.pose.point)
         assert distance == pytest.approx(stopper.current_stretch, abs=0.001)
         stopper.workflow_started = False
         await forward(0.1)  # give robot time to update position
@@ -104,8 +104,8 @@ async def test_driving_straight_line_with_slippage(system: System):
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.point.x == pytest.approx(2.0, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.1)
+    assert system.robot_locator.pose.point.x == pytest.approx(2.0, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(0.0, abs=0.1)
 
 
 async def test_follow_crops_no_direction(system: System, detector: rosys.vision.DetectorSimulation):
@@ -121,10 +121,10 @@ async def test_follow_crops_no_direction(system: System, detector: rosys.vision.
     assert system.automator.is_running
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.distance(rosys.geometry.Point3d(x=0, y=0, z=0)) == pytest.approx(2.0, abs=0.1)
-    assert system.odometer.prediction.point.x == pytest.approx(2.0, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.01)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
+    assert system.robot_locator.pose.distance(rosys.geometry.Point3d(x=0, y=0, z=0)) == pytest.approx(2.0, abs=0.1)
+    assert system.robot_locator.pose.point.x == pytest.approx(2.0, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(0, abs=0.01)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=1.0)
 
 
 async def test_follow_crops_empty(system: System, detector: rosys.vision.DetectorSimulation):
@@ -135,9 +135,9 @@ async def test_follow_crops_empty(system: System, detector: rosys.vision.Detecto
     assert system.automator.is_running
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(2.0, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.01)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
+    assert system.robot_locator.pose.point.x == pytest.approx(2.0, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(0, abs=0.01)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=1.0)
 
 
 async def test_follow_crops_straight(system: System, detector: rosys.vision.DetectorSimulation):
@@ -152,9 +152,9 @@ async def test_follow_crops_straight(system: System, detector: rosys.vision.Dete
     assert system.automator.is_running
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(2.0, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.1)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=1.0)
+    assert system.robot_locator.pose.point.x == pytest.approx(2.0, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(0, abs=0.1)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=1.0)
 
 
 async def test_follow_crops_continue(system: System, detector: rosys.vision.DetectorSimulation):
@@ -169,9 +169,9 @@ async def test_follow_crops_continue(system: System, detector: rosys.vision.Dete
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(4.0, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(3.0, abs=0.1)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(45, abs=1.0)
+    assert system.robot_locator.pose.point.x == pytest.approx(4.0, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(3.0, abs=0.1)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(45, abs=1.0)
 
 
 async def test_follow_crops_adjust(system: System, detector: rosys.vision.DetectorSimulation):
@@ -187,9 +187,9 @@ async def test_follow_crops_adjust(system: System, detector: rosys.vision.Detect
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(9.93, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(-1.24, abs=0.1)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(-7.2, abs=1.0)
+    assert system.robot_locator.pose.point.x == pytest.approx(9.93, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(-1.24, abs=0.1)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(-7.2, abs=1.0)
 
 
 async def test_follow_crops_curve(system: System, detector: rosys.vision.DetectorSimulation):
@@ -197,7 +197,7 @@ async def test_follow_crops_curve(system: System, detector: rosys.vision.Detecto
     for i in range(1, 56):
         x = i/10.0
         p = rosys.geometry.Point3d(x=x, y=(x/4) ** 2, z=0)
-        p = system.odometer.prediction.transform3d(p)
+        p = system.robot_locator.pose.transform3d(p)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
         end = p.projection()
     system.current_navigation = system.follow_crops_navigation
@@ -205,8 +205,8 @@ async def test_follow_crops_curve(system: System, detector: rosys.vision.Detecto
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.odometer.prediction.distance(end) < 0.2)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(34, abs=5.0)
+    await forward(until=lambda: system.robot_locator.pose.distance(end) < 0.2)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(34, abs=5.0)
 
 
 async def test_follow_crops_outlier(system: System, detector: rosys.vision.DetectorSimulation):
@@ -223,9 +223,9 @@ async def test_follow_crops_outlier(system: System, detector: rosys.vision.Detec
     assert system.automator.is_running
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(2.6, abs=0.1)
-    assert system.odometer.prediction.point.y == pytest.approx(0, abs=0.05)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(0, abs=2)
+    assert system.robot_locator.pose.point.x == pytest.approx(2.6, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(0, abs=0.05)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=2)
 
 
 async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.DetectorSimulation):
@@ -244,16 +244,16 @@ async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.
     assert system.automator.is_running
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.odometer.prediction.point.x == pytest.approx(2.6, abs=0.1)
-    assert 0 >= system.odometer.prediction.point.y >= -0.25
-    assert 0 >= system.odometer.prediction.yaw_deg >= -45
+    assert system.robot_locator.pose.point.x == pytest.approx(2.6, abs=0.1)
+    assert 0 >= system.robot_locator.pose.point.y >= -0.25
+    assert 0 >= system.robot_locator.pose.yaw_deg >= -45
 
 
 async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(20):
         x = i/10.0
         p = rosys.geometry.Point3d(x=x, y=(x/3) ** 3, z=0)
-        p = system.odometer.prediction.transform3d(p)
+        p = system.robot_locator.pose.transform3d(p)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     # TODO: GNSS
     system.gnss.min_seconds_between_updates = 1
@@ -264,7 +264,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.yaw_deg == pytest.approx(16.5, abs=0.2)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(16.5, abs=0.2)
 
 
 async def test_approaching_first_row(system: System, field: Field):
@@ -285,8 +285,8 @@ async def test_approaching_first_row(system: System, field: Field):
     assert system.automator.is_running
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
     start_point = field.rows[0].points[0].to_local()
-    assert system.odometer.prediction.point.x == pytest.approx(start_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(start_point.y, abs=0.05)
+    assert system.robot_locator.pose.point.x == pytest.approx(start_point.x, abs=0.05)
+    assert system.robot_locator.pose.point.y == pytest.approx(start_point.y, abs=0.05)
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
@@ -304,8 +304,8 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
     system.automator.start(drive_to_start())
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.point.x == pytest.approx(safe_start_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(safe_start_point.y, abs=0.05)
+    assert system.robot_locator.pose.point.x == pytest.approx(safe_start_point.x, abs=0.05)
+    assert system.robot_locator.pose.point.y == pytest.approx(safe_start_point.y, abs=0.05)
 
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
@@ -319,8 +319,8 @@ async def test_approaching_first_row_from_other_side(system: System, field: Fiel
     assert system.field_navigation.automation_watcher.field_watch_active
     assert system.automator.is_running
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
-    assert system.odometer.prediction.point.x == pytest.approx(start_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(start_point.y, abs=0.05)
+    assert system.robot_locator.pose.point.x == pytest.approx(start_point.x, abs=0.05)
+    assert system.robot_locator.pose.point.y == pytest.approx(start_point.y, abs=0.05)
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
@@ -336,8 +336,8 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
     system.automator.start(drive_away())
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.odometer.prediction.point.x == pytest.approx(point_outside.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(point_outside.y, abs=0.05)
+    assert system.robot_locator.pose.point.x == pytest.approx(point_outside.x, abs=0.05)
+    assert system.robot_locator.pose.point.y == pytest.approx(point_outside.y, abs=0.05)
 
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
@@ -349,8 +349,8 @@ async def test_approaching_first_row_when_outside_of_field(system: System, field
         assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-8)
     await forward(until=lambda: system.automator.is_stopped)
     assert system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START
-    assert system.odometer.prediction.point.x == pytest.approx(-10, abs=1.0)
-    assert system.odometer.prediction.point.y == pytest.approx(0.0, abs=0.5)
+    assert system.robot_locator.pose.point.x == pytest.approx(-10, abs=1.0)
+    assert system.robot_locator.pose.point.y == pytest.approx(0.0, abs=0.5)
     assert not system.automator.is_running, 'should have been stopped because robot is outside of field boundaries'
 
 
@@ -371,8 +371,8 @@ async def test_complete_row(system: System, field: Field):
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.APPROACHING_ROW_START)
     end_point = field.rows[0].points[1].to_local()
-    assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+    assert system.robot_locator.pose.point.x == pytest.approx(end_point.x, abs=0.05)
+    assert system.robot_locator.pose.point.y == pytest.approx(end_point.y, abs=0.05)
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
@@ -394,7 +394,7 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     assert system.field_navigation._state == FieldNavigationState.FOLLOWING_ROW
     assert not system.plant_locator.is_paused
     await forward(20)
-    assert system.odometer.prediction.point.distance(point) > 0.1
+    assert system.robot_locator.pose.point.distance(point) > 0.1
 
 
 async def test_complete_field(system: System, field: Field):
@@ -409,8 +409,8 @@ async def test_complete_field(system: System, field: Field):
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     assert system.automator.is_stopped
     end_point = field.rows[-1].points[0].to_local()
-    assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+    assert system.robot_locator.pose.point.x == pytest.approx(end_point.x, abs=0.05)
+    assert system.robot_locator.pose.point.y == pytest.approx(end_point.y, abs=0.05)
 
 
 async def test_complete_field_with_selected_beds(system: System, field_with_beds: Field):
@@ -427,8 +427,8 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     assert system.automator.is_stopped
     end_point = field_with_beds.rows[2].points[0].to_local()
-    assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+    assert system.robot_locator.pose.point.x == pytest.approx(end_point.x, abs=0.05)
+    assert system.robot_locator.pose.point.y == pytest.approx(end_point.y, abs=0.05)
 
 
 async def test_complete_field_without_first_beds(system: System, field_with_beds: Field):
@@ -445,5 +445,5 @@ async def test_complete_field_without_first_beds(system: System, field_with_beds
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     assert system.automator.is_stopped
     end_point = field_with_beds.rows[-1].points[1].to_local()
-    assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
+    assert system.robot_locator.pose.point.x == pytest.approx(end_point.x, abs=0.05)
+    assert system.robot_locator.pose.point.y == pytest.approx(end_point.y, abs=0.05)

@@ -20,7 +20,7 @@ class FollowCropsNavigation(StraightLineNavigation):
         super().__init__(system, tool)
         self.plant_provider = system.plant_provider
         self.detector = system.detector
-        self.start_position = self.odometer.prediction.point
+        self.start_position = self.robot_locator.pose.point
         self.flashlight = system.field_friend.flashlight
         self.plant_locator = system.plant_locator
         self.name = 'Follow Crops'
@@ -44,12 +44,12 @@ class FollowCropsNavigation(StraightLineNavigation):
         await self.implement.deactivate()
 
     def update_target(self) -> None:
-        self.origin = self.odometer.prediction.point
-        distance = self.length - self.odometer.prediction.point.distance(self.start_position)
-        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
+        self.origin = self.robot_locator.pose.point
+        distance = self.length - self.robot_locator.pose.point.distance(self.start_position)
+        self.target = self.robot_locator.pose.transform(rosys.geometry.Point(x=distance, y=0))
 
     async def _drive(self, distance: float) -> None:
-        row = self.plant_provider.get_relevant_crops(point=self.odometer.prediction.point_3d(), max_distance=1.0)
+        row = self.plant_provider.get_relevant_crops(point=self.robot_locator.pose.point_3d(), max_distance=1.0)
         if len(row) >= 3:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
             # Fit a line using least squares
@@ -57,10 +57,10 @@ class FollowCropsNavigation(StraightLineNavigation):
             m, c = np.linalg.lstsq(A, points_array[:, 1], rcond=None)[0]
             yaw = np.arctan(m)
             # flip if it is pointing backwards
-            if np.abs(yaw - self.odometer.prediction.yaw) > math.pi / 2:
+            if np.abs(yaw - self.robot_locator.pose.yaw) > math.pi / 2:
                 yaw = yaw + math.pi
             fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
-            closest_point = fitted_line.foot_point(self.odometer.prediction.point)
+            closest_point = fitted_line.foot_point(self.robot_locator.pose.point)
             target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
             await self._drive_towards_target(distance, target)
         else:
@@ -87,7 +87,7 @@ class FollowCropsNavigation(StraightLineNavigation):
             if i % 10 == 0:  # create some outliers
                 y += 0.2
             p = rosys.geometry.Point3d(x=x, y=y, z=0)
-            p = self.odometer.prediction.transform3d(p)
+            p = self.robot_locator.pose.transform3d(p)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
 
     def settings_ui(self) -> None:

@@ -6,10 +6,10 @@ import logging
 import numpy as np
 from nicegui import events, ui
 from PIL import Image
-from rosys.driving import Odometer
 from rosys.geometry import Point3d
 from rosys.vision import CalibratableCamera, Calibration, SimulatedCalibratableCamera, SimulatedCameraProvider
 
+from ...robot_locator import RobotLocator
 from ...vision import DOT_DISTANCE, CalibratableUsbCamera, Dot, Network
 from ...vision.calibratable_usb_camera_provider import CalibratableUsbCameraProvider
 from ...vision.zedxmini_camera import ZedxminiCamera, ZedxminiCameraProvider
@@ -18,10 +18,10 @@ from ...vision.zedxmini_camera import ZedxminiCamera, ZedxminiCameraProvider
 class CalibrationDialog(ui.dialog):
 
     # TODO: check typing
-    def __init__(self, camera_provider: CalibratableUsbCameraProvider | ZedxminiCameraProvider | SimulatedCameraProvider, odometer: Odometer) -> None:
+    def __init__(self, camera_provider: CalibratableUsbCameraProvider | ZedxminiCameraProvider | SimulatedCameraProvider, robot_locator: RobotLocator) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.calibration')
-        self.odometer = odometer
+        self.robot_locator = robot_locator
         self.camera_provider = camera_provider
         self.network: Network | None = None
         self.calibration: Calibration | None = None
@@ -194,7 +194,7 @@ class CalibrationDialog(ui.dialog):
     def _set_calibration(self) -> None:
         if not self.network:
             return
-        self.calibration = self.network.calibrate(self.focal_length_input.value, self.odometer.prediction_frame)
+        self.calibration = self.network.calibrate(self.focal_length_input.value, self.robot_locator.pose_frame)
         self.render()
 
     def apply_calibration(self) -> None:
