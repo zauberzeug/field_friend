@@ -81,12 +81,9 @@ class FieldNavigation(StraightLineNavigation):
         nearest_row = self.get_nearest_row()
         if nearest_row is None:
             return False
-        self.row_index = self.field.rows.index(nearest_row)
         self._state = State.APPROACH_START_ROW
         self.plant_provider.clear()
-
         self.automation_watcher.start_field_watch(self.field.outline)
-
         self.log.info(f'Activating {self.implement.name}...')
         await self.implement.activate()
         return True
@@ -105,11 +102,12 @@ class FieldNavigation(StraightLineNavigation):
         row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
         self.log.info(f'Nearest row is {row.name}')
-        self.row_index = self.field.rows.index(row)
-        if not self.field_provider.is_row_in_selected_beds(self.row_index):
+        try:
+            self.row_index = next(i for i, row in enumerate(self.rows_to_work_on) if row.id == row.id)
+            return self.rows_to_work_on[self.row_index]
+        except StopIteration:
             rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
-            return None
-        return row
+        return None
 
     def set_start_and_end_points(self):
         assert self.field is not None
