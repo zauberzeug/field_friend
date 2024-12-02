@@ -103,7 +103,7 @@ class FieldNavigation(StraightLineNavigation):
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
         self.log.info(f'Nearest row is {row.name}')
         try:
-            self.row_index = next(i for i, row in enumerate(self.rows_to_work_on) if row.id == row.id)
+            self.row_index = next(i for i, r in enumerate(self.rows_to_work_on) if row.id == r.id)
             return self.rows_to_work_on[self.row_index]
         except StopIteration:
             rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
@@ -158,6 +158,7 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _run_approach_start_row(self) -> State:
         self.robot_in_working_area = False
+        rosys.notify(f'Approaching start row {self.current_row.name}')
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
             return State.ERROR
