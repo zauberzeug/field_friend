@@ -127,10 +127,10 @@ class PlantLocator(rosys.persistence.PersistentModule):
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
                 # self.log.info('weed found')
                 await self.plant_provider.add_weed(plant)
-            elif d.category_name in self.crop_category_names.keys() and d.confidence >= self.minimum_crop_confidence:
+            elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 # self.log.info(f'{d.category_name} found')
                 self.plant_provider.add_crop(plant)
-            elif d.category_name not in self.crop_category_names.keys() and d.category_name not in self.weed_category_names:
+            elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
             # else:
             #     self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
@@ -218,25 +218,24 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.upload_images = False
 
     async def get_crop_names(self) -> dict[str, str]:
-        if isinstance(self.detector, rosys.vision.DetectorHardware):
-            port = self.detector.port
-            url = f'http://localhost:{port}/about'
-            async with aiohttp.request('GET', url) as response:
-                if response.status != 200:
-                    self.log.error(f'Could not get crop names on port {port} - status code: {response.status}')
-                    return {}
-                response_text = await response.json()
-            crop_names: list[str] = [category['name'] for category in response_text['model_info']['categories']]
-            weeds = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
-            for weed in weeds:
-                crop_names.remove(weed)
-            CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in crop_names})
-            self.crop_category_names = CROP_CATEGORY_NAME
-            return CROP_CATEGORY_NAME
-        else:
+        if isinstance(self.detector, rosys.vision.DetectorSimulation):
             simulated_crop_names: list[str] = ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
                                                'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]
 
             CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in simulated_crop_names})
             self.crop_category_names = CROP_CATEGORY_NAME
             return CROP_CATEGORY_NAME
+        port = self.detector.port
+        url = f'http://localhost:{port}/about'
+        async with aiohttp.request('GET', url) as response:
+            if response.status != 200:
+                self.log.error(f'Could not get crop names on port {port} - status code: {response.status}')
+                return {}
+            response_text = await response.json()
+        crop_names: list[str] = [category['name'] for category in response_text['model_info']['categories']]
+        weeds = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
+        for weed in weeds:
+            crop_names.remove(weed)
+        CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in crop_names})
+        self.crop_category_names = CROP_CATEGORY_NAME
+        return CROP_CATEGORY_NAME

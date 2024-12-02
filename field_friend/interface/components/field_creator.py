@@ -241,7 +241,7 @@ class FieldCreator:
                 (self.first_row_start.tuple, self.first_row_end.tuple), {'color': '#F44336'}])
         self.m.set_zoom(18)
 
-    def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
+    def update_robot_position(self, position: GeoPoint, dialog=None) -> None:  # pylint: disable=unused-argument
         if hasattr(self, 'm') and self.m and isinstance(self.m, ui.leaflet):
             self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
             icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [24,24], iconAnchor:[12,12]})'
