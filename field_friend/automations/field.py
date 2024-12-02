@@ -146,7 +146,7 @@ class Field:
 
     def _generate_outline(self) -> list[GeoPoint]:
         assert len(self.rows) > 0
-        return self.get_buffered_area(self.rows, self.outline_buffer_width)
+        return self.get_buffered_area()
 
     def to_dict(self) -> dict:
         return {
@@ -200,7 +200,7 @@ class Field:
             field_data.id = str(uuid.uuid4())
         return field_data
 
-    def get_buffered_area(self, rows: list[Row], buffer_width: float) -> list[GeoPoint]:
+    def get_buffered_area(self) -> list[GeoPoint]:
         outline_unbuffered: list[Point] = [
             self.first_row_end.cartesian(),
             self.first_row_start.cartesian()
