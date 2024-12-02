@@ -105,7 +105,7 @@ class FieldNavigation(StraightLineNavigation):
         if row not in self.rows_to_work_on:
             rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
             return None
-        self.row_index = next(i for i, r in enumerate(self.rows_to_work_on) if row.id == r.id)
+        self.row_index = self.rows_to_work_on.index(row)
         return self.rows_to_work_on[self.row_index]
 
     def set_start_and_end_points(self):
@@ -182,12 +182,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(driving_yaw)
-        # update implement crop
-        if isinstance(self.implement, WeedingImplement):
-            if self.current_row.crop != self.implement.cultivated_crop:
-                rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
-            self.implement.cultivated_crop = self.current_row.crop
-            self.implement.request_backup()
+        self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
     async def _run_change_row(self) -> State:
@@ -212,11 +207,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(driving_yaw)
-        # update implement crop
-        if isinstance(self.implement, WeedingImplement):
-            rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
-            self.implement.cultivated_crop = self.current_row.crop
-            self.implement.request_backup()
+        self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
     async def drive_in_steps(self, target: Pose) -> None:
@@ -286,6 +277,15 @@ class FieldNavigation(StraightLineNavigation):
             else:
                 next_state = State.FIELD_COMPLETED
         return next_state
+
+    def _set_cultivated_crop(self) -> None:
+        if not isinstance(self.implement, WeedingImplement):
+            return
+        if self.implement.cultivated_crop == self.current_row.crop:
+            return
+        rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
+        self.implement.cultivated_crop = self.current_row.crop
+        self.implement.request_backup()
 
     def _is_in_working_area(self, start_point: Point, end_point: Point) -> bool:
         # TODO: check if in working rectangle, current just checks if between start and stop
