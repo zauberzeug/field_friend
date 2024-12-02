@@ -41,17 +41,10 @@ class FieldProvider(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        none_value_warnings = list()
         fields_data: dict[str, dict] = data.get('fields', {})
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)
             self.fields.append(new_field)
-            # if any value of new_field is None, set none_value_warning to True
-            if any(value is None for value in vars(new_field).values()):
-                none_value_warnings.append(new_field.name)
-        if none_value_warnings:
-            for warning in none_value_warnings:
-                rosys.notify(f'Field {warning} had missing values. Replaced by default. Please check the field data.')
         selected_field_id: str | None = data.get('selected_field')
         if selected_field_id:
             self.selected_field = self.get_field(selected_field_id)
