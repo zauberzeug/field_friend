@@ -398,7 +398,8 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     assert system.odometer.prediction.point.distance(end_point) < 0.1
 
 
-async def test_field_navigation_robot_between_rows(system: System, field: Field):
+@pytest.mark.parametrize('offset', (0, -0.06))
+async def test_field_navigation_robot_between_rows(system: System, field: Field, offset: float):
     # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -408,7 +409,8 @@ async def test_field_navigation_robot_between_rows(system: System, field: Field)
     row_direction = row_start.direction(row_end)
     offset_direction = row_direction + math.pi/2
     offset_point = row_start.polar(0.5, row_direction)
-    offset_point = offset_point.polar(-0.06, offset_direction)  # 6cm offset
+    if offset > 0:
+        offset_point = offset_point.polar(offset, offset_direction)
 
     async def drive_to_offset():
         await system.driver.drive_to(offset_point)
@@ -425,13 +427,18 @@ async def test_field_navigation_robot_between_rows(system: System, field: Field)
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped, timeout=1500)
     end_point = field.rows[-1].points[0].cartesian()
-    assert system.odometer.prediction.point.x != pytest.approx(end_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y != pytest.approx(end_point.y, abs=0.05)
-    assert system.odometer.prediction.point.x == pytest.approx(offset_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(offset_point.y, abs=0.05)
+    if offset > system.field_navigation.MAX_DISTANCE_DEVIATION:
+        assert system.odometer.prediction.point.x != pytest.approx(end_point.x, abs=0.05)
+        assert system.odometer.prediction.point.y != pytest.approx(end_point.y, abs=0.05)
+        assert system.odometer.prediction.point.x == pytest.approx(offset_point.x, abs=0.05)
+        assert system.odometer.prediction.point.y == pytest.approx(offset_point.y, abs=0.05)
+    else:
+        assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
+        assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
 
 
-async def test_field_navigation_robot_heading_deviation(system: System, field: Field):
+@pytest.mark.parametrize('heading_degrees', (0, 40))
+async def test_field_navigation_robot_heading_deviation(system: System, field: Field, heading_degrees: float):
     # pylint: disable=protected-access
     assert system.gnss.current
     assert system.gnss.current.location.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -443,7 +450,7 @@ async def test_field_navigation_robot_heading_deviation(system: System, field: F
 
     async def drive_to_offset():
         await system.driver.drive_to(offset_point)
-        target_yaw = offset_point.direction(row_end) + np.deg2rad(40)
+        target_yaw = offset_point.direction(row_end) + np.deg2rad(heading_degrees)
         await system.field_navigation.turn_in_steps(target_yaw)
     system.automator.start(drive_to_offset())
     await forward(until=lambda: system.automator.is_running)
@@ -456,10 +463,14 @@ async def test_field_navigation_robot_heading_deviation(system: System, field: F
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped, timeout=1500)
     end_point = field.rows[-1].points[0].cartesian()
-    assert system.odometer.prediction.point.x != pytest.approx(end_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y != pytest.approx(end_point.y, abs=0.05)
-    assert system.odometer.prediction.point.x == pytest.approx(offset_point.x, abs=0.05)
-    assert system.odometer.prediction.point.y == pytest.approx(offset_point.y, abs=0.05)
+    if np.deg2rad(heading_degrees) > system.field_navigation.MAX_ANGLE_DEVIATION:
+        assert system.odometer.prediction.point.x != pytest.approx(end_point.x, abs=0.05)
+        assert system.odometer.prediction.point.y != pytest.approx(end_point.y, abs=0.05)
+        assert system.odometer.prediction.point.x == pytest.approx(offset_point.x, abs=0.05)
+        assert system.odometer.prediction.point.y == pytest.approx(offset_point.y, abs=0.05)
+    else:
+        assert system.odometer.prediction.point.x == pytest.approx(end_point.x, abs=0.05)
+        assert system.odometer.prediction.point.y == pytest.approx(end_point.y, abs=0.05)
 
 
 async def test_complete_field(system: System, field: Field):
