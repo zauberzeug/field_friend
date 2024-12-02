@@ -102,12 +102,11 @@ class FieldNavigation(StraightLineNavigation):
         row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
         self.log.info(f'Nearest row is {row.name}')
-        try:
-            self.row_index = next(i for i, r in enumerate(self.rows_to_work_on) if row.id == r.id)
-            return self.rows_to_work_on[self.row_index]
-        except StopIteration:
+        if row not in self.rows_to_work_on:
             rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
-        return None
+            return None
+        self.row_index = next(i for i, r in enumerate(self.rows_to_work_on) if row.id == r.id)
+        return self.rows_to_work_on[self.row_index]
 
     def set_start_and_end_points(self):
         assert self.field is not None
