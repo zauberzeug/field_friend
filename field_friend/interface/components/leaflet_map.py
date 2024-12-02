@@ -7,7 +7,6 @@ from nicegui import app, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
 
 from ...localization.geo_point import GeoPoint
-from ...localization.gnss_simulation import GnssSimulation
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
@@ -92,13 +91,6 @@ class LeafletMap:
                                                             args=[row.points_as_tuples, {'color': '#F2C037'}]))
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:
-        # TODO: where does the dialog come from?
-        if dialog:
-            self.on_dialog_close()
-            dialog.close()
-            # TODO why can we only relocate in simulation?
-            if isinstance(self.gnss, GnssSimulation):
-                self.gnss.relocate(position)
         self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)

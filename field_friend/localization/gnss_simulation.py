@@ -32,10 +32,6 @@ class GnssSimulation(Gnss):
         await rosys.sleep(0.1)  # NOTE simulation does not be so fast and only eats a lot of cpu time
         return record
 
-    def relocate(self, position: GeoPoint) -> None:
-        localization.reference = position
-        self.wheels.pose = Pose(x=position.lat, y=position.long, yaw=0.0, time=rosys.time())
-
     def disconnect(self):
         """Simulate serial disconnection.
 
