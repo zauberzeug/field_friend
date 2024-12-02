@@ -152,6 +152,10 @@ class Operation:
                         .tooltip('Set the number of beds')
                     ui.separator()
                     with ui.column().classes('w-full').style('max-height: 500px; overflow-y: auto;'):
+                        # if any value of bed_crops is None add a button to set the Nones to the first bed crop
+                        if any(value is None for value in parameters['bed_crops'].values()):
+                            ui.button('Set missing crops to first bed\'s crop',
+                                      on_click=lambda: self.set_missing_crops_to_default())
                         for i in range(parameters['bed_count']):
                             with ui.row().classes('w-full item-center'):
                                 ui.label(f'Bed {i + 1}:').classes('text-lg')
@@ -161,7 +165,6 @@ class Operation:
                                                 forward=lambda v, idx=i: {
                                                     **parameters.get('bed_crops', {}), str(idx): v},
                                                 backward=lambda v, idx=i: v.get(str(idx)))
-                        # TODO dynamic adding and deleting the beds when the number of beds is changed
             with ui.row():
                 ui.button('Cancel', on_click=self.edit_field_dialog.close)
                 ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters))
@@ -203,3 +206,11 @@ class Operation:
                                       multiple=True, label='selected beds', clearable=True) \
                                 .classes('grow').props('use-chips') \
                                 .bind_value(self.field_provider, 'selected_beds')
+
+    def set_missing_crops_to_default(self):
+        if self.field_provider.selected_field:
+            if self.field_provider.selected_field.bed_crops:
+                first_bed_crop = next(iter(self.field_provider.selected_field.bed_crops.values()))
+            for i in range(self.field_provider.selected_field.bed_count):
+                if self.field_provider.selected_field.bed_crops[str(i)] is None:
+                    self.field_provider.selected_field.bed_crops[str(i)] = first_bed_crop
