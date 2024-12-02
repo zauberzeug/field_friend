@@ -179,7 +179,8 @@ class Field:
             'outline_buffer_width': 1,
             'row_support_points': [],
             'bed_count': 1,
-            'bed_spacing': 1
+            'bed_spacing': 1,
+            'bed_crops': {}
         }
         for key in defaults:
             if key in data:
