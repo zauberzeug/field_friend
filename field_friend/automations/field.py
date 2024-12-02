@@ -1,4 +1,5 @@
 import math
+import uuid
 from dataclasses import dataclass
 from typing import Any, Self
 
@@ -167,15 +168,36 @@ class Field:
 
     @classmethod
     def args_from_dict(cls, data: dict[str, Any]) -> dict:
-        return data
+        # Ensure all required fields exist with defaults
+        defaults: dict[str, Any] = {
+            'id': str(uuid.uuid4()),
+            'name': 'Field',
+            'first_row_start': None,
+            'first_row_end': None,
+            'row_spacing': 1,
+            'row_count': 1,
+            'outline_buffer_width': 1,
+            'row_support_points': [],
+            'bed_count': 1,
+            'bed_spacing': 1
+        }
+        for key in defaults:
+            if key in data:
+                defaults[key] = data[key]
+        return defaults
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
-        data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'], long=data['first_row_start']['long'])
-        data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], long=data['first_row_end']['long'])
+        data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'],
+                                           long=data['first_row_start']['long']) if data.get('first_row_start') else GeoPoint(lat=0, long=0)
+        data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'],
+                                         long=data['first_row_end']['long']) if data.get('first_row_end') else GeoPoint(lat=1, long=1)
         data['row_support_points'] = [rosys.persistence.from_dict(
-            RowSupportPoint, sp) for sp in data['row_support_points']] if 'row_support_points' in data else []
+            RowSupportPoint, sp) for sp in data['row_support_points']] if data.get('row_support_points') else []
         field_data = cls(**cls.args_from_dict(data))
+        # if id is None, set it to a random uuid
+        if field_data.id is None:
+            field_data.id = str(uuid.uuid4())
         return field_data
 
     def get_buffered_area(self, rows: list[Row], buffer_width: float) -> list[GeoPoint]:

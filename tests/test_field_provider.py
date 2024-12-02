@@ -11,13 +11,32 @@ from field_friend.automations import Field, RowSupportPoint
 from field_friend.localization import GeoPoint
 
 
-def test_loading_from_old_persistence(system: System):
+def test_loading_from_persistence(system: System):
     system.field_provider.restore(json.loads(Path('tests/old_field_provider_persistence.json').read_text()))
     assert len(system.field_provider.fields) == 1
     field = system.field_provider.fields[0]
     assert field.row_count == 10
     assert field.row_spacing == 0.5
     assert field.outline_buffer_width == 2
+    assert len(field.outline) == 5
+    assert len(field.rows) == 10
+    assert len(field.row_support_points) == 0
+    for row in field.rows:
+        assert len(row.points) == 2
+    assert field.first_row_start == FIELD_FIRST_ROW_START
+    assert field.first_row_end == GeoPoint(lat=51.98334192260392, long=7.434293309874038)
+
+
+def test_loading_from_persistence_with_errors(system: System):
+    system.field_provider.restore(json.loads(Path('tests/old_field_provider_persistence_with_errors.json').read_text()))
+    assert len(system.field_provider.fields) == 1
+    field = system.field_provider.fields[0]
+    # should set outline_buffer_width to default value because it is missing in the persistence data
+    assert field.outline_buffer_width == 1
+    # should not write the not_existing_value to the field
+    assert not hasattr(field, 'not_existing_value')
+    assert field.row_count == 10
+    assert field.row_spacing == 0.5
     assert len(field.outline) == 5
     assert len(field.rows) == 10
     assert len(field.row_support_points) == 0
