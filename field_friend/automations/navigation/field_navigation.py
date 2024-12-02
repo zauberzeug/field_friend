@@ -184,7 +184,8 @@ class FieldNavigation(StraightLineNavigation):
         await self.turn_in_steps(driving_yaw)
         # update implement crop
         if isinstance(self.implement, WeedingImplement):
-            rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
+            if self.current_row.crop != self.implement.cultivated_crop:
+                rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
             self.implement.cultivated_crop = self.current_row.crop
             self.implement.request_backup()
         return State.FOLLOW_ROW
