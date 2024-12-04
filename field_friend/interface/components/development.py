@@ -1,3 +1,4 @@
+import math
 from typing import TYPE_CHECKING
 
 import rosys
@@ -42,6 +43,9 @@ def create_development_ui(system: 'System') -> None:
                 ui.label().bind_text_from(system.field_friend.wheels.pose, 'x', lambda x: f'x: {x}')
                 ui.label().bind_text_from(system.field_friend.wheels.pose, 'y', lambda y: f'y: {y}')
                 ui.label().bind_text_from(system.field_friend.wheels.pose, 'yaw_deg', lambda yaw: f'yaw: {yaw}')
+        with ui.card():
+            ui.button('0°', on_click=lambda: system.field_navigation.turn_to_yaw(0.0))
+            ui.button('90°', on_click=lambda: system.field_navigation.turn_to_yaw(math.radians(90)))
         with ui.card():
             system.field_navigation.developer_ui()
         if isinstance(system.field_friend, rosys.hardware.RobotHardware):
