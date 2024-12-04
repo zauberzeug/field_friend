@@ -78,7 +78,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
         """
         super().__init__(persistence_key='field_friend.robot_locator')
         self.log = logging.getLogger('field_friend.robot_locator')
-        self.pose_frame = Pose3d().as_frame('field_friend.robot_locator.pose')
+        self.pose_frame = Pose3d().as_frame('field_friend.robot_locator')
         self.x = np.zeros((6, 1))
         self.Sxx = np.zeros((6, 6))
         self.t = rosys.time()
