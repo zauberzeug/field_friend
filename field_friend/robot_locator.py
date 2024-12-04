@@ -209,7 +209,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
         self.x = np.array([[x, y, yaw, 0, 0, 0]], dtype=float).T
-        self.Sxx = np.diag([0.01, 0.01, 0.01, 0.01, 0.01, 0.01])**2
+        self.Sxx = np.diag([self.r_x, self.r_y, self.r_theta, self.r_v, self.r_omega, self.r_a])**2.0
 
     def developer_ui(self) -> None:
         with ui.column():

@@ -63,6 +63,7 @@ class System(rosys.persistence.PersistentModule):
                 self.teltonika_router = TeltonikaRouter()
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
+            assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = GnssHardware(antenna_pose=Pose(
                 x=0.0, y=self.field_friend.ANTENNA_OFFSET, yaw=np.deg2rad(-90.0)))
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
@@ -73,6 +74,7 @@ class System(rosys.persistence.PersistentModule):
 
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
+            assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = GnssSimulation(wheels=self.field_friend.wheels,
                                        lat_std_dev=0.005, lon_std_dev=0.005, heading_std_dev=0.01)
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
@@ -181,7 +183,7 @@ class System(rosys.persistence.PersistentModule):
         return {
             'navigation': self.current_navigation.name,
             'implement': self.current_implement.name,
-            'gnss_reference': GeoReference.current.origin.degree_tuple,
+            'gnss_reference': GeoReference.current.origin.degree_tuple if GeoReference.current is not None else None
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -252,6 +254,9 @@ class System(rosys.persistence.PersistentModule):
         self.camera_provider.add_camera(camera)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
+        if self.gnss.last_measurement is None:
+            self.log.warning('Not updating GNSS reference: No GNSS measurement received')
+            return
         reference = GeoReference(origin=self.gnss.last_measurement.point,
                                  direction=self.gnss.last_measurement.heading) if reference is None else reference
         self.log.debug('Updating GNSS reference to %s', reference)

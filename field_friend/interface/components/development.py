@@ -37,10 +37,11 @@ def create_development_ui(system: 'System') -> None:
             system.robot_locator.developer_ui()
         with ui.card():
             system.gnss.developer_ui()
-        with ui.card():
-            ui.label().bind_text_from(system.field_friend.wheels.pose, 'x', lambda x: f'x: {x}')
-            ui.label().bind_text_from(system.field_friend.wheels.pose, 'y', lambda y: f'y: {y}')
-            ui.label().bind_text_from(system.field_friend.wheels.pose, 'yaw_deg', lambda yaw: f'yaw: {yaw}')
+        if isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation):
+            with ui.card():
+                ui.label().bind_text_from(system.field_friend.wheels.pose, 'x', lambda x: f'x: {x}')
+                ui.label().bind_text_from(system.field_friend.wheels.pose, 'y', lambda y: f'y: {y}')
+                ui.label().bind_text_from(system.field_friend.wheels.pose, 'yaw_deg', lambda yaw: f'yaw: {yaw}')
         with ui.card():
             system.field_navigation.developer_ui()
         if isinstance(system.field_friend, rosys.hardware.RobotHardware):

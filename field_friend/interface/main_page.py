@@ -3,7 +3,6 @@ from nicegui import binding, ui
 
 from ..system import System
 from .components import CameraCard as camera_card
-from .components import GnssReferenceDialog as gnss_reference_dialog
 from .components import LeafletMap as leaflet_map
 from .components import Operation as operation
 from .components import RobotScene as robot_scene
@@ -23,7 +22,6 @@ class MainPage:
     def content(self, devmode: bool) -> None:
         page_height = '50vh' if devmode else 'calc(100vh - 170px)'
         ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
-        gnss_reference_dialog(self.system.gnss)
         with ui.row().style(f'height:{page_height}; width: calc(100vw - 2rem); flex-wrap: nowrap;'):
             with ui.column().classes('h-full w-1/2 p-2'):
                 leaflet = leaflet_map(self.system, False)
