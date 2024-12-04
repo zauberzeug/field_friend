@@ -254,11 +254,12 @@ class System(rosys.persistence.PersistentModule):
         self.camera_provider.add_camera(camera)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
-        if self.gnss.last_measurement is None:
-            self.log.warning('Not updating GNSS reference: No GNSS measurement received')
-            return
-        reference = GeoReference(origin=self.gnss.last_measurement.point,
-                                 direction=self.gnss.last_measurement.heading) if reference is None else reference
+        if reference is None:
+            if self.gnss.last_measurement is None:
+                self.log.warning('Not updating GNSS reference: No GNSS measurement received')
+                return
+            reference = GeoReference(origin=self.gnss.last_measurement.point,
+                                     direction=self.gnss.last_measurement.heading) if reference is None else reference
         self.log.debug('Updating GNSS reference to %s', reference)
         GeoReference.update_current(reference)
         self.request_backup()
