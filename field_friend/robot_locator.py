@@ -243,3 +243,5 @@ class RobotLocator(rosys.persistence.PersistentModule):
                 ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[3, 3]:.2f}')
                 ui.label().bind_text_from(self, 'velocity', lambda v: f'ω: {v.angular: 2.2f}'.rjust(16))
                 ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[4, 4]:.2f}')
+            with ui.column():
+                ui.button('Reset', on_click=self.reset)
