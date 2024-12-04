@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
-from rosys.geometry import Point, Pose
+from rosys.geometry import Point
 
 from ..field import Field, Row
 from ..implements.implement import Implement
@@ -132,34 +132,23 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _run_approaching_row_start(self) -> State:
         self.set_start_and_end_points()
-        await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
         # turn towards row start
         assert self.start_point is not None
         target_yaw = self.robot_locator.pose.direction(self.start_point)
-        await self.turn_in_steps(target_yaw)
+        await self.turn_to_yaw(target_yaw)
         # drive to row start
-        await self.drive_in_steps(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
-        await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
+        await self.driver.drive_to(self.start_point, backward=False)
         # turn to row
         assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
-        await self.turn_in_steps(row_yaw)
+        await self.turn_to_yaw(row_yaw)
 
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
         else:
             self.plant_provider.clear()
+        await rosys.sleep(2)
         return State.FOLLOWING_ROW
-
-    async def drive_in_steps(self, target: Pose) -> None:
-        while True:
-            if target.relative_point(self.robot_locator.pose.point).x > 0:
-                return
-            drive_step = min(self._drive_step, self.robot_locator.pose.distance(target))
-            # Calculate timeout based on linear speed limit and drive step
-            timeout = (drive_step / self.driver.parameters.linear_speed_limit) + 3.0
-            await self._drive_towards_target(drive_step, target, timeout=timeout)
-            await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
 
     async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
         if angle_threshold is None:
@@ -174,18 +163,6 @@ class FieldNavigation(StraightLineNavigation):
             await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
             await rosys.sleep(0.1)
         await self.driver.wheels.stop()
-
-    async def turn_in_steps(self, target_yaw: float) -> None:
-        angle_difference = rosys.helpers.angle(self.robot_locator.pose.yaw, target_yaw)
-        while abs(angle_difference) > np.deg2rad(1.0):
-            next_angle = rosys.helpers.eliminate_2pi(
-                self.robot_locator.pose.yaw + np.sign(angle_difference) * self._turn_step)
-            if abs(angle_difference) > self._turn_step:
-                await self.turn_to_yaw(next_angle)
-            else:
-                await self.turn_to_yaw(target_yaw)
-            await self.gnss.NEW_MEASUREMENT.emitted(self._max_gnss_waiting_time)
-            angle_difference = rosys.helpers.angle(self.robot_locator.pose.yaw, target_yaw)
 
     async def _run_following_row(self, distance: float) -> State:
         assert self.end_point is not None
@@ -222,24 +199,14 @@ class FieldNavigation(StraightLineNavigation):
     def backup(self) -> dict:
         return super().backup() | {
             'field_id': self.field.id if self.field else None,
-            'row_index': self.row_index,
-            'state': self._state.name,
             'loop': self._loop,
-            'drive_step': self._drive_step,
-            'turn_step': self._turn_step,
-            'max_gnss_waiting_time': self._max_gnss_waiting_time,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         super().restore(data)
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
-        self.row_index = data.get('row_index', 0)
-        self._state = State[data.get('state', State.APPROACHING_ROW_START.name)]
         self._loop = data.get('loop', False)
-        self._drive_step = data.get('drive_step', self.DRIVE_STEP)
-        self._turn_step = data.get('turn_step', self.TURN_STEP)
-        self._max_gnss_waiting_time = data.get('max_gnss_waiting_time', self.MAX_GNSS_WAITING_TIME)
 
     def settings_ui(self) -> None:
         with ui.row():
@@ -251,21 +218,6 @@ class FieldNavigation(StraightLineNavigation):
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
-        ui.number('Drive Step', step=0.01, min=0.01, max=10.0, format='%.2f', suffix='m', on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, '_drive_step') \
-            .tooltip(f'DRIVE_STEP (default: {self.DRIVE_STEP:.2f})')
-        ui.number('Turn Step', step=1.0, min=1.0, max=180.0, format='%.1f', suffix='°', on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, '_turn_step', forward=np.deg2rad, backward=np.rad2deg) \
-            .tooltip(f'TURN_STEP (default: {np.rad2deg(self.TURN_STEP):.2f})')
-        ui.number('Max GNSS Waiting Time', step=0.1, min=0.1, format='%.1f', suffix='s', on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, '_max_gnss_waiting_time') \
-            .tooltip(f'MAX_GNSS_WAITING_TIME (default: {self.MAX_GNSS_WAITING_TIME:.2f})')
 
     def _set_field_id(self) -> None:
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
