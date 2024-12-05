@@ -9,6 +9,7 @@ from rosys.geometry import Point, Pose
 
 from ..field import Field, Row
 from ..implements.implement import Implement
+from ..implements.weeding_implement import WeedingImplement
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
@@ -77,12 +78,12 @@ class FieldNavigation(StraightLineNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
-        self.row_index = self.field.rows.index(self.get_nearest_row())
+        nearest_row = self.get_nearest_row()
+        if nearest_row is None:
+            return False
         self._state = State.APPROACH_START_ROW
         self.plant_provider.clear()
-
         self.automation_watcher.start_field_watch(self.field.outline)
-
         self.log.info(f'Activating {self.implement.name}...')
         await self.implement.activate()
         return True
@@ -95,14 +96,17 @@ class FieldNavigation(StraightLineNavigation):
         self.automation_watcher.stop_field_watch()
         await self.implement.deactivate()
 
-    def get_nearest_row(self) -> Row:
+    def get_nearest_row(self) -> Row | None:
         assert self.field is not None
         assert self.gnss.device is not None
         row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
         self.log.info(f'Nearest row is {row.name}')
-        self.row_index = self.field.rows.index(row)
-        return row
+        if row not in self.rows_to_work_on:
+            rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
+            return None
+        self.row_index = self.rows_to_work_on.index(row)
+        return self.rows_to_work_on[self.row_index]
 
     def set_start_and_end_points(self):
         assert self.field is not None
@@ -153,6 +157,7 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _run_approach_start_row(self) -> State:
         self.robot_in_working_area = False
+        rosys.notify(f'Approaching row {self.current_row.name}')
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
             return State.ERROR
@@ -177,6 +182,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(driving_yaw)
+        self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
     async def _run_change_row(self) -> State:
@@ -189,7 +195,6 @@ class FieldNavigation(StraightLineNavigation):
             self.create_simulation()
         else:
             self.plant_provider.clear()
-
         await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
         # turn towards row start
         assert self.start_point is not None
@@ -202,6 +207,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         driving_yaw = self.odometer.prediction.direction(self.end_point)
         await self.turn_in_steps(driving_yaw)
+        self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
     async def drive_in_steps(self, target: Pose) -> None:
@@ -271,6 +277,15 @@ class FieldNavigation(StraightLineNavigation):
             else:
                 next_state = State.FIELD_COMPLETED
         return next_state
+
+    def _set_cultivated_crop(self) -> None:
+        if not isinstance(self.implement, WeedingImplement):
+            return
+        if self.implement.cultivated_crop == self.current_row.crop:
+            return
+        rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
+        self.implement.cultivated_crop = self.current_row.crop
+        self.implement.request_backup()
 
     def _is_in_working_area(self, start_point: Point, end_point: Point) -> bool:
         # TODO: check if in working rectangle, current just checks if between start and stop

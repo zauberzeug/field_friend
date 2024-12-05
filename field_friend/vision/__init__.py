@@ -5,12 +5,12 @@ from .camera_configurations import configurations
 from .camera_configurator import CameraConfigurator
 
 __all__ = [
+    'DOT_DISTANCE',
     'CalibratableUsbCamera',
     'CalibratableUsbCameraProvider',
     'CameraConfigurator',
-    'configurations',
     'Contour',
     'Dot',
     'Network',
-    'DOT_DISTANCE',
+    'configurations',
 ]

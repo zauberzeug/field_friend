@@ -5,10 +5,10 @@ from .navigation import Navigation, WorkflowException
 from .straight_line_navigation import StraightLineNavigation
 
 __all__ = [
-    'Navigation',
-    'WorkflowException',
-    'StraightLineNavigation',
-    'FollowCropsNavigation',
-    'FieldNavigation',
     'CrossglideDemoNavigation',
+    'FieldNavigation',
+    'FollowCropsNavigation',
+    'Navigation',
+    'StraightLineNavigation',
+    'WorkflowException',
 ]
