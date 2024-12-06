@@ -17,7 +17,8 @@ class AppControls(RosysAppControls):
         self.robot = robot
         self.last_info: str = ''
         self.APP_CONNECTED.register(self.reset)
-        self.robot.bumper.BUMPER_TRIGGERED.register(self.sync)
+        if self.robot.bumper:
+            self.robot.bumper.BUMPER_TRIGGERED.register(self.sync)
         self.robot.estop.ESTOP_TRIGGERED.register(self.sync)
         rosys.on_repeat(self.sync, 60.0)
 
@@ -27,7 +28,7 @@ class AppControls(RosysAppControls):
 
         if self.robot.estop.active:
             infos.append('E Stop active')
-        if self.robot.bumper.active_bumpers:
+        if self.robot.bumper and self.robot.bumper.active_bumpers:
             infos.append(f'Bumper ({" ".join(self.robot.bumper.active_bumpers)}) active')
         if self.robot.bms.state.is_charging:
             infos.append('charging battery')
