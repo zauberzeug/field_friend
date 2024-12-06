@@ -6,10 +6,11 @@ import icecream
 import numpy as np
 import psutil
 import rosys
-from .app_controls import AppControls as app_controls
+
 import config.config_selection as config_selector
 
 from . import localization
+from .app_controls import AppControls as app_controls
 from .automations import (
     AutomationWatcher,
     BatteryWatcher,

@@ -1,8 +1,9 @@
-from rosys.automation import Automator
-from rosys.automation import app_controls as RosysAppControls
-from rosys.hardware import RobotBrain
-from .hardware.field_friend import FieldFriend
 import rosys
+from rosys.automation import Automator
+from rosys.automation import app_controls as RosysAppControls  # noqa ignore this due to being a class
+from rosys.hardware import RobotBrain
+
+from .hardware.field_friend import FieldFriend
 
 
 class AppControls(RosysAppControls):
@@ -25,7 +26,7 @@ class AppControls(RosysAppControls):
         infos = []
 
         if self.robot.estop.active:
-            infos.append("E Stop active")
+            infos.append('E Stop active')
         if self.robot.bumper.active_bumpers:
             infos.append(f'Bumper ({" ".join(self.robot.bumper.active_bumpers)}) active')
         if self.robot.bms.state.is_charging:
