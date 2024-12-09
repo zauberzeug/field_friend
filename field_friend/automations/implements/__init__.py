@@ -6,11 +6,11 @@ from .weeding_implement import ImplementException, WeedingImplement
 from .weeding_screw import WeedingScrew
 
 __all__ = [
-    'Implement',
-    'WeedingImplement',
-    'Recorder',
-    'WeedingScrew',
-    'Tornado',
     'ExternalMower',
+    'Implement',
     'ImplementException',
+    'Recorder',
+    'Tornado',
+    'WeedingImplement',
+    'WeedingScrew',
 ]

@@ -20,9 +20,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
 
-        self.FIELDS_CHANGED.register(self.refresh_fields)
-        self.FIELD_SELECTED.register(self.clear_selected_beds)
-
         self._only_specific_beds: bool = False
         self._selected_beds: list[int] = []
 
@@ -37,7 +34,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def backup(self) -> dict:
         return {
             'fields': {f.id: f.to_dict() for f in self.fields},
-            'selected_field': self.selected_field.id if self.selected_field else None,
+            'selected_field': self.selected_field.id if self.selected_field else None
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -47,17 +44,18 @@ class FieldProvider(rosys.persistence.PersistentModule):
             self.fields.append(new_field)
         selected_field_id: str | None = data.get('selected_field')
         if selected_field_id:
-            self.selected_field = self.get_field(selected_field_id)
-            self.FIELD_SELECTED.emit()
+            self.select_field(selected_field_id)
+        self.refresh_fields()
         self.FIELDS_CHANGED.emit()
 
     def invalidate(self) -> None:
         self.request_backup()
+        self.refresh_fields()
         self.FIELDS_CHANGED.emit()
         if self.selected_field and self.selected_field not in self.fields:
             self.selected_field = None
             self._only_specific_beds = False
-            self.selected_beds = []
+            self.clear_selected_beds()
             self.FIELD_SELECTED.emit()
 
     def get_field(self, id_: str | None) -> Field | None:
@@ -106,7 +104,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
 
     def select_field(self, id_: str | None) -> None:
         self.selected_field = self.get_field(id_)
+        self.clear_selected_beds()
         self.FIELD_SELECTED.emit()
+        self.request_backup()
 
     def update_field_parameters(self, *,
                                 field_id: str,
@@ -115,7 +115,8 @@ class FieldProvider(rosys.persistence.PersistentModule):
                                 row_spacing: float,
                                 outline_buffer_width: float,
                                 bed_count: int,
-                                bed_spacing: float) -> None:
+                                bed_spacing: float,
+                                bed_crops: dict[str, str | None]) -> None:
         field = self.get_field(field_id)
         if not field:
             self.log.warning('Field with id %s not found. Cannot update parameters.', field_id)
@@ -126,6 +127,17 @@ class FieldProvider(rosys.persistence.PersistentModule):
         field.bed_count = bed_count
         field.bed_spacing = bed_spacing
         field.outline_buffer_width = outline_buffer_width
+        bed_crops = bed_crops.copy()
+        if len(bed_crops) < bed_count:
+            for i in range(bed_count - len(bed_crops)):
+                bed_crops[str(i+len(field.bed_crops))] = None
+            field.bed_crops = bed_crops
+        elif len(bed_crops) > bed_count:
+            for i in range(len(bed_crops) - bed_count):
+                bed_crops.pop(str(bed_count + i))
+            field.bed_crops = bed_crops
+        else:
+            field.bed_crops = bed_crops
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
                       field.name, row_count, row_spacing)
         self.invalidate()
@@ -149,4 +161,13 @@ class FieldProvider(rosys.persistence.PersistentModule):
         for bed in self.selected_beds:
             for row_index in range(self.selected_field.row_count):
                 row_indices.append((bed - 1) * self.selected_field.row_count + row_index)
-        return [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
+        rows_to_work_on = [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
+        return rows_to_work_on
+
+    def is_row_in_selected_beds(self, row_index: int) -> bool:
+        if not self._only_specific_beds:
+            return True
+        if self.selected_field is None:
+            return False
+        bed_index = row_index // self.selected_field.row_count + 1
+        return bed_index in self.selected_beds

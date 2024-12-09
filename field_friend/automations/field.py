@@ -1,4 +1,5 @@
 import math
+import uuid
 from dataclasses import dataclass
 from typing import Any, Self
 
@@ -15,12 +16,14 @@ from ..localization import GeoPoint, GeoPointCollection
 @dataclass(slots=True, kw_only=True)
 class Row(GeoPointCollection):
     reverse: bool = False
+    crop: str | None = None
 
     def reversed(self):
         return Row(
             id=self.id,
             name=self.name,
             points=list(reversed(self.points)),
+            crop=self.crop
         )
 
     def line_segment(self) -> rosys.geometry.LineSegment:
@@ -48,7 +51,8 @@ class Field:
                  outline_buffer_width: float = 2,
                  row_support_points: list[RowSupportPoint] | None = None,
                  bed_count: int = 1,
-                 bed_spacing: float = 0.5) -> None:
+                 bed_spacing: float = 0.5,
+                 bed_crops: dict[str, str | None] | None = None) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
@@ -63,6 +67,7 @@ class Field:
         self.visualized: bool = False
         self.rows: list[Row] = []
         self.outline: list[GeoPoint] = []
+        self.bed_crops: dict[str, str | None] = bed_crops or {str(i): None for i in range(bed_count)}
         self.refresh()
 
     @property
@@ -134,12 +139,69 @@ class Field:
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points: list[GeoPoint] = [localization.reference.shifted(
                 Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            row = Row(id=f'field_{self.id}_row_{i + 1!s}', name=f'row_{i + 1}', points=row_points)
+            row = Row(id=f'field_{self.id}_row_{i + 1!s}', name=f'row_{i + 1}',
+                      points=row_points, crop=self.bed_crops[str(bed_index)])
             rows.append(row)
         return rows
 
     def _generate_outline(self) -> list[GeoPoint]:
         assert len(self.rows) > 0
+        return self.get_buffered_area()
+
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'first_row_start':  rosys.persistence.to_dict(self.first_row_start),
+            'first_row_end': rosys.persistence.to_dict(self.first_row_end),
+            'row_spacing': self.row_spacing,
+            'row_count': self.row_count,
+            'outline_buffer_width': self.outline_buffer_width,
+            'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
+            'bed_count': self.bed_count,
+            'bed_spacing': self.bed_spacing,
+            'bed_crops': self.bed_crops,
+        }
+
+    def shapely_polygon(self) -> shapely.geometry.Polygon:
+        return shapely.geometry.Polygon([p.tuple for p in self.outline])
+
+    @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        # Ensure all required fields exist with defaults
+        defaults: dict[str, Any] = {
+            'id': str(uuid.uuid4()),
+            'name': 'Field',
+            'first_row_start': None,
+            'first_row_end': None,
+            'row_spacing': 1,
+            'row_count': 1,
+            'outline_buffer_width': 1,
+            'row_support_points': [],
+            'bed_count': 1,
+            'bed_spacing': 1,
+            'bed_crops': {}
+        }
+        for key in defaults:
+            if key in data:
+                defaults[key] = data[key]
+        return defaults
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'],
+                                           long=data['first_row_start']['long']) if data.get('first_row_start') else GeoPoint(lat=0, long=0)
+        data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'],
+                                         long=data['first_row_end']['long']) if data.get('first_row_end') else GeoPoint(lat=1, long=1)
+        data['row_support_points'] = [rosys.persistence.from_dict(
+            RowSupportPoint, sp) for sp in data['row_support_points']] if data.get('row_support_points') else []
+        field_data = cls(**cls.args_from_dict(data))
+        # if id is None, set it to a random uuid
+        if field_data.id is None:
+            field_data.id = str(uuid.uuid4())
+        return field_data
+
+    def get_buffered_area(self) -> list[GeoPoint]:
         outline_unbuffered: list[Point] = [
             self.first_row_end.cartesian(),
             self.first_row_start.cartesian()
@@ -156,33 +218,3 @@ class Field:
         outline: list[GeoPoint] = [localization.reference.shifted(
             Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
         return outline
-
-    def to_dict(self) -> dict:
-        return {
-            'id': self.id,
-            'name': self.name,
-            'first_row_start':  rosys.persistence.to_dict(self.first_row_start),
-            'first_row_end': rosys.persistence.to_dict(self.first_row_end),
-            'row_spacing': self.row_spacing,
-            'row_count': self.row_count,
-            'outline_buffer_width': self.outline_buffer_width,
-            'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
-            'bed_count': self.bed_count,
-            'bed_spacing': self.bed_spacing,
-        }
-
-    def shapely_polygon(self) -> shapely.geometry.Polygon:
-        return shapely.geometry.Polygon([p.tuple for p in self.outline])
-
-    @classmethod
-    def args_from_dict(cls, data: dict[str, Any]) -> dict:
-        return data
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Self:
-        data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'], long=data['first_row_start']['long'])
-        data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'], long=data['first_row_end']['long'])
-        data['row_support_points'] = [rosys.persistence.from_dict(
-            RowSupportPoint, sp) for sp in data['row_support_points']] if 'row_support_points' in data else []
-        field_data = cls(**cls.args_from_dict(data))
-        return field_data
