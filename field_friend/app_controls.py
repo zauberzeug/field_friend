@@ -1,6 +1,6 @@
 import rosys
 from rosys.automation import Automator
-from rosys.automation import app_controls as RosysAppControls  # noqa ignore this due to being a class
+from rosys.automation.app_controls_ import AppControls as RosysAppControls
 from rosys.hardware import RobotBrain
 
 from .hardware.field_friend import FieldFriend
@@ -11,36 +11,35 @@ class AppControls(RosysAppControls):
     def __init__(self,
                  robot_brain: RobotBrain,
                  automator: Automator,
-                 robot: FieldFriend,
+                 field_friend: FieldFriend,
                  ) -> None:
         super().__init__(robot_brain, automator)
-        self.robot = robot
-        self.last_battery_percentage: float | None = self.robot.bms.state.percentage
-        self.last_charging: bool | None = self.robot.bms.state.is_charging
+        self.field_friend = field_friend
+        self.last_battery_percentage: float | None = self.field_friend.bms.state.percentage
+        self.last_charging: bool | None = self.field_friend.bms.state.is_charging
         self.last_info: str = ''
         self.APP_CONNECTED.register(self.reset)
-        if self.robot.bumper:
-            self.robot.bumper.BUMPER_TRIGGERED.register(self.sync)
-        self.robot.estop.ESTOP_TRIGGERED.register(self.sync)
+        if self.field_friend.bumper:
+            self.field_friend.bumper.BUMPER_TRIGGERED.register(self.sync)
+        self.field_friend.estop.ESTOP_TRIGGERED.register(self.sync)
         rosys.on_repeat(self.check_battery, 5.0)
 
     async def check_battery(self) -> None:
-        if self.robot.bms.state.percentage != self.last_battery_percentage or self.robot.bms.state.is_charging != self.last_charging:
-            self.last_battery_percentage = self.robot.bms.state.percentage
-            self.last_charging = self.robot.bms.state.is_charging
+        if self.field_friend.bms.state.percentage != self.last_battery_percentage or self.field_friend.bms.state.is_charging != self.last_charging:
+            self.last_battery_percentage = self.field_friend.bms.state.percentage
+            self.last_charging = self.field_friend.bms.state.is_charging
             await self.sync()
 
     async def sync(self) -> None:
         await super().sync()
         infos = []
-
-        if self.robot.estop.active:
+        if self.field_friend.estop.active:
             infos.append('E Stop active')
-        if self.robot.bumper and self.robot.bumper.active_bumpers:
-            infos.append(f'Bumper ({" ".join(self.robot.bumper.active_bumpers)}) active')
-        if self.robot.bms.state.is_charging:
+        if self.field_friend.bumper and self.field_friend.bumper.active_bumpers:
+            infos.append(f'Bumper ({" ".join(self.field_friend.bumper.active_bumpers)}) active')
+        if self.field_friend.bms.state.is_charging:
             infos.append('charging battery')
-        battery = f'{self.robot.bms.state.percentage:.0f}%' if self.robot.bms.state.percentage is not None else '?'
+        battery = f'{self.field_friend.bms.state.percentage:.0f}%' if self.field_friend.bms.state.percentage is not None else '?'
         infos.append(f'Battery: {battery}')
 
         info = ' | '.join(infos)
