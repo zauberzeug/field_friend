@@ -100,7 +100,7 @@ class Network:
                 for sign_x in [-1, 1] if dx else [0]:
                     for sign_y in [-1, 1] if dy else [0]:
                         for contour in self.contours:
-                            if contour.contains(dot.x + sign_x * dx, dot.y + sign_y * dy):
+                            if contour.contains(float(dot.x + sign_x * dx), float(dot.y + sign_y * dy)):
                                 dot.snap_to(contour)
                                 return
 
