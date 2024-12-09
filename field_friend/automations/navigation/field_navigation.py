@@ -150,6 +150,7 @@ class FieldNavigation(StraightLineNavigation):
         await rosys.sleep(2)
         return State.FOLLOWING_ROW
 
+    # TODO: growing error because of the threshold
     async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
         if angle_threshold is None:
             angle_threshold = np.deg2rad(1.0)
