@@ -15,12 +15,20 @@ class AppControls(RosysAppControls):
                  ) -> None:
         super().__init__(robot_brain, automator)
         self.robot = robot
+        self.last_battery_percentage: float | None = self.robot.bms.state.percentage
+        self.last_charging: bool | None = self.robot.bms.state.is_charging
         self.last_info: str = ''
         self.APP_CONNECTED.register(self.reset)
         if self.robot.bumper:
             self.robot.bumper.BUMPER_TRIGGERED.register(self.sync)
         self.robot.estop.ESTOP_TRIGGERED.register(self.sync)
-        rosys.on_repeat(self.sync, 60.0)
+        rosys.on_repeat(self.check_battery, 5.0)
+
+    async def check_battery(self) -> None:
+        if self.robot.bms.state.percentage != self.last_battery_percentage or self.robot.bms.state.is_charging != self.last_charging:
+            self.last_battery_percentage = self.robot.bms.state.percentage
+            self.last_charging = self.robot.bms.state.is_charging
+            await self.sync()
 
     async def sync(self) -> None:
         await super().sync()
