@@ -18,7 +18,6 @@ class AppControls(RosysAppControls):
         self.last_battery_percentage: float | None = self.field_friend.bms.state.percentage
         self.last_charging: bool | None = self.field_friend.bms.state.is_charging
         self.last_estops_pressed: list[int] = []
-        self.last_estop_active: bool = self.field_friend.estop.active
         self.last_estop_soft_active: bool = self.field_friend.estop.is_soft_estop_active
         self.last_bumpers_active: list[str] = []
         self.last_info: str = ''
@@ -26,9 +25,8 @@ class AppControls(RosysAppControls):
         rosys.on_repeat(self.check_status, 2.0)
 
     async def check_status(self) -> None:
-        estop_changed = self.field_friend.estop.active != self.last_estop_active or self.field_friend.estop.pressed_estops != self.last_estops_pressed or self.field_friend.estop.is_soft_estop_active != self.last_estop_soft_active
+        estop_changed = self.field_friend.estop.pressed_estops != self.last_estops_pressed or self.field_friend.estop.is_soft_estop_active != self.last_estop_soft_active
         if estop_changed:
-            self.last_estop_active = self.field_friend.estop.active
             self.last_estops_pressed = list(self.field_friend.estop.pressed_estops)
             self.last_estop_soft_active = self.field_friend.estop.is_soft_estop_active
         battery_changed = self.field_friend.bms.state.percentage != self.last_battery_percentage or self.field_friend.bms.state.is_charging != self.last_charging
