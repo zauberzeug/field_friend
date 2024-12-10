@@ -28,7 +28,6 @@ class AppControls(RosysAppControls):
         estop_changed = self.field_friend.estop.active != self.last_estop_active or self.field_friend.estop.is_soft_estop_active != self.last_estop_soft_active
         if estop_changed:
             self.last_estop_active = self.field_friend.estop.active
-            self.last_estop_pressed = self.field_friend.estop.pressed_estops
             self.last_estop_soft_active = self.field_friend.estop.is_soft_estop_active
         battery_changed = self.field_friend.bms.state.percentage != self.last_battery_percentage or self.field_friend.bms.state.is_charging != self.last_charging
         if battery_changed:
@@ -39,7 +38,6 @@ class AppControls(RosysAppControls):
             assert self.field_friend.bumper is not None
             self.last_bumpers_active = self.field_friend.bumper.active_bumpers
         if estop_changed or battery_changed or bumpers_changed:
-            print(self.field_friend.estop.pressed_estops)
             await self.sync()
 
     async def sync(self) -> None:
