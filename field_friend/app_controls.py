@@ -1,5 +1,3 @@
-import logging
-
 import rosys
 from rosys.automation import Automator
 from rosys.automation.app_controls_ import AppControls as RosysAppControls
@@ -28,9 +26,6 @@ class AppControls(RosysAppControls):
         rosys.on_repeat(self.check_status, 2.0)
 
     async def check_status(self) -> None:
-        logging.warning("checking status")
-        logging.warning(self.field_friend.estop.pressed_estops)
-        logging.warning(self.last_estops_pressed)
         estop_changed = self.field_friend.estop.active != self.last_estop_active or self.field_friend.estop.pressed_estops != self.last_estops_pressed or self.field_friend.estop.is_soft_estop_active != self.last_estop_soft_active
         if estop_changed:
             self.last_estop_active = self.field_friend.estop.active
