@@ -39,7 +39,6 @@ class AppControls(RosysAppControls):
         if bumpers_changed:
             assert self.field_friend.bumper is not None
             self.last_bumpers_active = self.field_friend.bumper.active_bumpers
-        print(estop_changed, battery_changed, bumpers_changed)
         if estop_changed or battery_changed or bumpers_changed:
             await self.sync()
 
