@@ -10,6 +10,7 @@ import rosys
 import config.config_selection as config_selector
 
 from . import localization
+from .app_controls import AppControls as app_controls
 from .automations import (
     AutomationWatcher,
     BatteryWatcher,
@@ -20,13 +21,7 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
-from .automations.implements import (
-    ExternalMower,
-    Implement,
-    Recorder,
-    Tornado,
-    WeedingScrew,
-)
+from .automations.implements import ExternalMower, Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
@@ -34,12 +29,7 @@ from .automations.navigation import (
     Navigation,
     StraightLineNavigation,
 )
-from .hardware import (
-    FieldFriend,
-    FieldFriendHardware,
-    FieldFriendSimulation,
-    TeltonikaRouter,
-)
+from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
 from .kpi_generator import generate_kpis
 from .localization.geo_point import GeoPoint
@@ -185,7 +175,7 @@ class System(rosys.persistence.PersistentModule):
             assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
-            rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
+            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend)
             rosys.on_repeat(self.log_status, 60*5)
 
     def restart(self) -> None:
