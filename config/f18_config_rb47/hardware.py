@@ -8,6 +8,7 @@ configuration = {
         'right_front_can_address': 0x300,
         'is_left_reversed': False,
         'is_right_reversed': True,
+        'odrive_version': 6,
     },
     'y_axis': {
         'version': 'y_axis_canopen',
@@ -19,8 +20,8 @@ configuration = {
         'max_position': 0.125,
         'axis_offset': 0.13,
         'steps_per_m': 1_666_666.667,  # 4000steps/turn motor; 1/10 gear; 0.024m/u
-        'end_r_pin': 12,
-        'end_l_pin': 25,
+        'end_r_pin': 33,
+        'end_l_pin': 32,
         'motor_on_expander': False,
         'end_stops_on_expander': True,
         'reversed_direction': False,
@@ -38,8 +39,8 @@ configuration = {
         'max_position': 0.0,
         'axis_offset': 0.0,
         'steps_per_m': 4_000_000,  # 4000steps/turn motor; 1/20 gear; 0.02m/u
-        'end_t_pin': 22,
-        'end_b_pin': 23,
+        'end_t_pin': 25,
+        'end_b_pin': 22,
         'motor_on_expander': False,
         'end_stops_on_expander': True,
         'reversed_direction': False,
@@ -75,7 +76,7 @@ configuration = {
     'bumper': {
         'name': 'bumper',
         'on_expander': True,
-        'pins': {'front_top': 35, 'front_bottom': 18, 'back': 21},
+        'pins': {'front_top': 21, 'back': 18},
     },
     'status_control': {
         'name': 'status_control',
