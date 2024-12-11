@@ -21,6 +21,10 @@ class AppControls(RosysAppControls):
         self.last_estop_soft_active: bool = self.field_friend.estop.is_soft_estop_active
         self.last_bumpers_active: list[str] = []
         self.last_info: str = ''
+        self.estops: dict[int, str] = {
+            0: 'Front E-Stop',
+            1: 'Back E-Stop',
+        }
         self.APP_CONNECTED.register(self.reset)
         rosys.on_repeat(self.check_status, 2.0)
 
@@ -42,20 +46,17 @@ class AppControls(RosysAppControls):
 
     async def sync(self) -> None:
         await super().sync()
-        infos = []
+        info = ''
         if self.field_friend.estop.active:
-            infos.append(
-                f'E-Stop {" and ".join(str(estop) for estop in self.field_friend.estop.pressed_estops)} active. Please check the robot.')
+            info = 'E-Stop active. Please check the robot.'
         elif self.field_friend.estop.is_soft_estop_active:
-            infos.append('Soft E-Stop active. Please check the robot.')
+            info = 'Software E-Stop active. Please check the robot.'
         elif self.field_friend.bumper and self.field_friend.bumper.active_bumpers:
-            infos.append('A bumper is active. Please check the robot.')
-        else:
+            info = 'A bumper is active. Please check the robot.'
+        elif self.field_friend.bms.state.percentage is not None:
+            info = f'{self.field_friend.bms.state.percentage:.0f}%'
             if self.field_friend.bms.state.is_charging:
-                infos.append('charging battery')
-            battery = f'{self.field_friend.bms.state.percentage:.0f}%' if self.field_friend.bms.state.percentage is not None else '?'
-            infos.append(f'Battery: {battery}')
-        info = ' | '.join(infos)
+                info += ' is charging'
         if info != self.last_info:
             await self.set_info(info)
             self.last_info = info
