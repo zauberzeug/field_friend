@@ -51,9 +51,9 @@ configuration = {
     'flashlight': {
         'version': 'flashlight_pwm_v2',
         'name': 'flashlight',
-        'on_expander': False,
-        'front_pin': 5,
-        'back_pin': 4,
+        'on_expander': True,
+        'front_pin': 12,
+        'back_pin': 23,
     },
     'estop': {
         'name': 'estop',
