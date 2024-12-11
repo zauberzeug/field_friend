@@ -21,10 +21,6 @@ class AppControls(RosysAppControls):
         self.last_estop_soft_active: bool = self.field_friend.estop.is_soft_estop_active
         self.last_bumpers_active: list[str] = []
         self.last_info: str = ''
-        self.estops: dict[int, str] = {
-            0: 'Front E-Stop',
-            1: 'Back E-Stop',
-        }
         self.APP_CONNECTED.register(self.reset)
         rosys.on_repeat(self.check_status, 2.0)
 
