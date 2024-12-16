@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import events, ui
 
+import config.config_selection as config_selector
+
 from ...hardware import FlashlightPWM
 from .key_controls import KeyControls
 
@@ -39,6 +41,11 @@ class Monitoring:
         self.animal_count = 0
         self.shrink_factor = shrink_factor
         self.sights: dict[str, ui.interactive_image] = {}
+        if system.is_real:
+            self.config = config_selector.import_config(module='camera')
+        else:
+            self.config = config_selector.import_config_simulation(module='camera', robot_id=system.robot_id)
+        self.camera_positions = self.load_camera_positions()
         KeyControls(system)
         ui.keyboard(self.handle_key)
         with ui.row().classes('w-full items-stretch gap-0'):
@@ -106,22 +113,22 @@ class Monitoring:
         for camera in self.mjpg_camera_provider.cameras.values():
             if camera.id in self.sights or not camera.is_connected:
                 continue
-            if CameraPosition.FRONT in camera.id:
+            if self.camera_positions['front'] in camera.id:
                 self.front_view.clear()
                 with self.front_view:
                     ui.label('Front').classes('text-2xl text-bold')
                     self.sights[camera.id] = ui.interactive_image().classes('w-full')
-            elif CameraPosition.BACK in camera.id:
+            elif self.camera_positions['back'] in camera.id:
                 self.back_view.clear()
                 with self.back_view:
                     ui.label('Back').classes('text-2xl text-bold')
                     self.sights[camera.id] = ui.interactive_image().classes('w-full')
-            elif CameraPosition.LEFT in camera.id:
+            elif self.camera_positions['left'] in camera.id:
                 self.left_view.clear()
                 with self.left_view:
                     ui.label('Left').classes('text-2xl text-bold')
                     self.sights[camera.id] = ui.interactive_image().classes('w-full')
-            elif CameraPosition.RIGHT in camera.id:
+            elif self.camera_positions['right'] in camera.id:
                 self.right_view.clear()
                 with self.right_view:
                     ui.label('Right').classes('text-2xl text-bold')
@@ -180,17 +187,25 @@ class Monitoring:
         cross_size = 20
         for point in detections.points:
             if point.category_name == 'person' and point.confidence > 0.3:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="red" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Person</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
+                                                                          self.shrink_factor}" r="8" fill="red" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
+                                                                         self.shrink_factor+30}" font-size="20" fill="red">Person</text>'
             elif 'bird' in point.category_name and point.confidence > 0.3:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="orange" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="blue">Bird</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
+                                                                          self.shrink_factor}" r="8" fill="orange" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
+                                                                         self.shrink_factor+30}" font-size="20" fill="blue">Bird</text>'
             elif 'animal' in point.category_name and point.confidence > 0.3:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="orange" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Animal</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
+                                                                          self.shrink_factor}" r="8" fill="orange" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
+                                                                         self.shrink_factor+30}" font-size="20" fill="green">Animal</text>'
             elif point.category_name in self.plant_locator.crop_category_names and point.confidence > self.plant_locator.minimum_crop_confidence:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
+                                                                          self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
+                                                                         self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
             elif point.category_name in self.plant_locator.weed_category_names and point.confidence > self.plant_locator.minimum_weed_confidence:
                 svg += f'''
                         <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="red" stroke-width="8"
@@ -200,8 +215,10 @@ class Monitoring:
                         <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Weed</text>
                 '''
             else:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="yellow" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">{point.category_name}</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
+                                                                          self.shrink_factor}" r="8" fill="yellow" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
+                                                                         self.shrink_factor+30}" font-size="20" fill="yellow">{point.category_name}</text>'
         return svg
 
     def handle_key(self, e: events.KeyEventArguments) -> None:
@@ -243,3 +260,12 @@ class Monitoring:
                                    add='w-1/4').style(remove='border: 5px solid #6E93D6; border-radius: 5px; background-color: #6E93D6; color: white')
             self.right_view.classes(remove='hidden w-1/2',
                                     add='w-1/4').style(remove='border: 5px solid #6E93D6; border-radius: 5px; background-color: #6E93D6; color: white')
+
+    def load_camera_positions(self) -> dict:
+        config_positions = self.config.get('circle_sight_positions', {})
+        return {
+            'left': config_positions.get('left', CameraPosition.LEFT),
+            'right': config_positions.get('right', CameraPosition.RIGHT),
+            'front': config_positions.get('front', CameraPosition.FRONT),
+            'back': config_positions.get('back', CameraPosition.BACK),
+        }
