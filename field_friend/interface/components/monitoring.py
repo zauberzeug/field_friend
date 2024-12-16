@@ -41,8 +41,6 @@ class Monitoring:
         self.animal_count = 0
         self.shrink_factor = shrink_factor
         self.sights: dict[str, ui.interactive_image] = {}
-        if system.is_real:
-            self.config = config_selector.import_config(module='camera')
         self.camera_positions = self.load_camera_positions()
         KeyControls(system)
         ui.keyboard(self.handle_key)
@@ -250,7 +248,8 @@ class Monitoring:
                                     add='w-1/4').style(remove='border: 5px solid #6E93D6; border-radius: 5px; background-color: #6E93D6; color: white')
 
     def load_camera_positions(self) -> dict:
-        config_positions = self.config.get('circle_sight_positions', {})
+        config = config_selector.import_config(module='camera')
+        config_positions = config.get('circle_sight_positions', {})
         return {
             'left': config_positions.get('left', CameraPosition.LEFT),
             'right': config_positions.get('right', CameraPosition.RIGHT),
