@@ -187,25 +187,17 @@ class Monitoring:
         cross_size = 20
         for point in detections.points:
             if point.category_name == 'person' and point.confidence > 0.3:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
-                                                                          self.shrink_factor}" r="8" fill="red" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
-                                                                         self.shrink_factor+30}" font-size="20" fill="red">Person</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="red" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Person</text>'
             elif 'bird' in point.category_name and point.confidence > 0.3:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
-                                                                          self.shrink_factor}" r="8" fill="orange" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
-                                                                         self.shrink_factor+30}" font-size="20" fill="blue">Bird</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="orange" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="blue">Bird</text>'
             elif 'animal' in point.category_name and point.confidence > 0.3:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
-                                                                          self.shrink_factor}" r="8" fill="orange" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
-                                                                         self.shrink_factor+30}" font-size="20" fill="green">Animal</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="orange" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Animal</text>'
             elif point.category_name in self.plant_locator.crop_category_names and point.confidence > self.plant_locator.minimum_crop_confidence:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
-                                                                          self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
-                                                                         self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="18" stroke-width="8" stroke="green" fill="none" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="green">Crop</text>'
             elif point.category_name in self.plant_locator.weed_category_names and point.confidence > self.plant_locator.minimum_weed_confidence:
                 svg += f'''
                         <line x1="{point.x / self.shrink_factor - cross_size}" y1="{point.y / self.shrink_factor}" x2="{point.x / self.shrink_factor + cross_size}" y2="{point.y / self.shrink_factor}" stroke="red" stroke-width="8"
@@ -215,10 +207,8 @@ class Monitoring:
                         <text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="red">Weed</text>
                 '''
             else:
-                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y /
-                                                                          self.shrink_factor}" r="8" fill="yellow" />'
-                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y /
-                                                                         self.shrink_factor+30}" font-size="20" fill="yellow">{point.category_name}</text>'
+                svg += f'<circle cx="{point.x / self.shrink_factor}" cy="{point.y / self.shrink_factor}" r="8" fill="yellow" />'
+                svg += f'<text x="{point.x / self.shrink_factor-30}" y="{point.y / self.shrink_factor+30}" font-size="20" fill="yellow">{point.category_name}</text>'
         return svg
 
     def handle_key(self, e: events.KeyEventArguments) -> None:
