@@ -43,8 +43,6 @@ class Monitoring:
         self.sights: dict[str, ui.interactive_image] = {}
         if system.is_real:
             self.config = config_selector.import_config(module='camera')
-        else:
-            self.config = config_selector.import_config_simulation(module='camera', robot_id=system.robot_id)
         self.camera_positions = self.load_camera_positions()
         KeyControls(system)
         ui.keyboard(self.handle_key)
