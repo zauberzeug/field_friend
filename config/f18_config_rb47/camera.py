@@ -9,5 +9,11 @@ configuration = {'parameters': {
     'right': 0,
     'up': 0,
     'down': 0,
+},
+    'circle_sight_positions': {
+        'right': '-4',
+        'left': '-3',
+        'front': '-1',
+        'back': '-2',
 }
 }
