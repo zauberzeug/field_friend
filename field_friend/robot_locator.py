@@ -138,7 +138,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         )
 
     def handle_velocity_measurement(self, velocities: list[rosys.geometry.Velocity]) -> None:
-        self.predict()
+        # TODO: predict for every velocity (its always just one velocity)
+        self.predict(velocities[-1].time)
         if not self.ignore_odometry:
             for velocity in velocities:
                 self.update(
@@ -152,7 +153,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
                 )
 
     def handle_gnss_measurement(self, gnss_measurement: GnssMeasurement) -> None:
-        self.predict()
+        self.predict(gnss_measurement.time)
         if not self.ignore_gnss:
             pose = gnss_measurement.pose.to_local()
             z = [[pose.x], [pose.y], [pose.yaw]]
@@ -167,9 +168,11 @@ class RobotLocator(rosys.persistence.PersistentModule):
             Q = np.diag([r_xy, r_xy, r_theta])**2
             self.update(z=np.array(z), h=np.array(h), H=np.array(H), Q=Q)
 
-    def predict(self) -> None:
-        dt = rosys.time() - self.t
-        self.t = rosys.time()
+    def predict(self, time: float | None = None) -> None:
+        if time is None:
+            time = rosys.time()
+        dt = time - self.t
+        self.t = time
 
         theta = self.x[2, 0]
         v = self.x[3, 0]
