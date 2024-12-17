@@ -158,6 +158,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             return
         self.predict(gnss_measurement.time)
         pose = gnss_measurement.pose.to_local()
+        pose.yaw = self.x[2, 0] + rosys.helpers.angle(self.x[2, 0], pose.yaw)
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self.x[0, 0]], [self.x[1, 0]], [self.x[2, 0]]]
         H = [
@@ -195,7 +196,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.x[0] += v * np.cos(theta) * dt
         self.x[1] += v * np.sin(theta) * dt
         self.x[2] += omega * dt
-        self.x[2] = rosys.helpers.eliminate_2pi(self.x[2])
         self.x[3] += a * dt
         self.Sxx = F @ self.Sxx @ F.T + R
         self.update_frame()
