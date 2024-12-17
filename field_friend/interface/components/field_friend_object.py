@@ -16,7 +16,7 @@ class RobotLocatorOdometer:
         self.robot_locator = robot_locator
 
     @property
-    def pose(self) -> Pose:
+    def prediction(self) -> Pose:
         return self.robot_locator.pose
 
 
