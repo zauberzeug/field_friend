@@ -127,7 +127,7 @@ class AutomationWatcher:
             return
         position = ShapelyPoint(self.robot_locator.pose.x, self.robot_locator.pose.y)
         if not self.field_polygon.contains(position):
-            self.log.warning(f'robot at {position} is outside of field boundaries {self.field_polygon}')
+            self.log.debug(f'robot at {position} is outside of field boundaries {self.field_polygon}')
             if self.automator.is_running:
                 self.stop('robot is outside of field boundaries')
                 self.field_watch_active = False
