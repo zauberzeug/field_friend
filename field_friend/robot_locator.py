@@ -195,6 +195,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.x[2] += omega * dt
         self.x[2] = rosys.helpers.eliminate_2pi(self.x[2])
         self.x[3] += a * dt
+        # needed here?
+        # self.x[4] = rosys.helpers.angle(self.x[2], theta) / dt
         self.Sxx = F @ self.Sxx @ F.T + R
         self.update_frame()
 
