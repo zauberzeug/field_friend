@@ -219,6 +219,17 @@ class RobotLocator(rosys.persistence.PersistentModule):
     def developer_ui(self) -> None:
         with ui.column():
             ui.label('Kalman Filter').classes('text-center text-bold')
+            with ui.grid(columns=2).classes('w-full gap-0'):
+                ui.label().bind_text_from(self, 'pose', lambda p: f'x: {p.x:.3f}m')
+                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[0, 0]:.3f}m')
+                ui.label().bind_text_from(self, 'pose', lambda p: f'y: {p.y:.3f}m')
+                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[1, 1]:.3f}m')
+                ui.label().bind_text_from(self, 'pose', lambda p: f'θ: {p.yaw_deg:.2f}°')
+                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {np.rad2deg(m[2, 2]):.2f}°')
+                ui.label().bind_text_from(self, 'velocity', lambda v: f'v: {v.linear:.2f}m/s')
+                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[3, 3]:.2f}m/s')
+                ui.label().bind_text_from(self, 'velocity', lambda v: f'ω: {np.rad2deg(v.angular): 2.2f}°/s')
+                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {np.rad2deg(m[4, 4]):.2f}°/s')
             with ui.grid(columns=2).classes('w-full'):
                 ui.checkbox('Ignore Odometry').props('dense color=red').classes('col-span-2') \
                     .bind_value(self, 'ignore_odometry')
@@ -235,18 +246,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     'r_a': 'R a',
                 }.items():
                     with ui.column().classes('w-full gap-0'):
-                        ui.number(label, min=0, max=1, step=0.01, format='%.3f', on_change=self.request_backup) \
+                        ui.number(label, min=0, step=0.01, format='%.6f', on_change=self.request_backup) \
                             .bind_value(self, key)
-            with ui.grid(columns=2).classes('w-full gap-0'):
-                ui.label().bind_text_from(self, 'pose', lambda p: f'x: {p.x:.3f}'.ljust(16))
-                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[0, 0]:.3f}')
-                ui.label().bind_text_from(self, 'pose', lambda p: f'y: {p.y:.3f}'.ljust(16))
-                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[1, 1]:.3f}')
-                ui.label().bind_text_from(self, 'pose', lambda p: f'θ: {p.yaw_deg:.2f}'.ljust(16))
-                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[2, 2]:.2f}')
-                ui.label().bind_text_from(self, 'velocity', lambda v: f'v: {v.linear:.2f}'.ljust(16))
-                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[3, 3]:.2f}')
-                ui.label().bind_text_from(self, 'velocity', lambda v: f'ω: {v.angular: 2.2f}'.rjust(16))
-                ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {m[4, 4]:.2f}')
             with ui.column():
                 ui.button('Reset', on_click=self.reset)
