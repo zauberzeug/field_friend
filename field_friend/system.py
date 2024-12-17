@@ -6,6 +6,7 @@ import icecream
 import numpy as np
 import psutil
 import rosys
+from rosys.driving import Odometer
 from rosys.geometry import GeoPoint, GeoReference, Pose
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
@@ -71,7 +72,6 @@ class System(rosys.persistence.PersistentModule):
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
             self.camera_configurator = CameraConfigurator(self.camera_provider, robot_locator=self.robot_locator)
-
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
@@ -84,6 +84,7 @@ class System(rosys.persistence.PersistentModule):
             self.camera_configurator = CameraConfigurator(
                 self.camera_provider, robot_locator=self.robot_locator, robot_id=self.version)
 
+        self.odometer = Odometer(self.field_friend.wheels)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
