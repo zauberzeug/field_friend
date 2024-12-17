@@ -10,7 +10,8 @@ from rosys.hardware import Gnss, GnssMeasurement
 
 
 class RobotLocator(rosys.persistence.PersistentModule):
-    def __init__(self, wheels: rosys.hardware.Wheels, gnss: Gnss):
+
+    def __init__(self, wheels: rosys.hardware.Wheels, gnss: Gnss) -> None:
         """ Robot Locator based on an extended Kalman filter.
 
         ### State
@@ -138,35 +139,36 @@ class RobotLocator(rosys.persistence.PersistentModule):
         )
 
     def handle_velocity_measurement(self, velocities: list[rosys.geometry.Velocity]) -> None:
-        # TODO: predict for every velocity (its always just one velocity)
-        self.predict(velocities[-1].time)
-        if not self.ignore_odometry:
-            for velocity in velocities:
-                self.update(
-                    z=np.array([[velocity.linear, velocity.angular]]).T,
-                    h=np.array([[self.x[3, 0], self.x[4, 0]]]).T,
-                    H=np.array([
-                        [0, 0, 0, 1, 0, 0],
-                        [0, 0, 0, 0, 1, 0],
-                    ]),
-                    Q=np.diag([self.q_odometry_v, self.q_odometry_omega])**2,
-                )
+        if self.ignore_odometry:
+            return
+        for velocity in velocities:
+            self.predict(velocity.time)
+            self.update(
+                z=np.array([[velocity.linear, velocity.angular]]).T,
+                h=np.array([[self.x[3, 0], self.x[4, 0]]]).T,
+                H=np.array([
+                    [0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 1, 0],
+                ]),
+                Q=np.diag([self.q_odometry_v, self.q_odometry_omega])**2,
+            )
 
     def handle_gnss_measurement(self, gnss_measurement: GnssMeasurement) -> None:
+        if self.ignore_gnss:
+            return
         self.predict(gnss_measurement.time)
-        if not self.ignore_gnss:
-            pose = gnss_measurement.pose.to_local()
-            z = [[pose.x], [pose.y], [pose.yaw]]
-            h = [[self.x[0, 0]], [self.x[1, 0]], [self.x[2, 0]]]
-            H = [
-                [1, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0],
-            ]
-            r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
-            r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
-            Q = np.diag([r_xy, r_xy, r_theta])**2
-            self.update(z=np.array(z), h=np.array(h), H=np.array(H), Q=Q)
+        pose = gnss_measurement.pose.to_local()
+        z = [[pose.x], [pose.y], [pose.yaw]]
+        h = [[self.x[0, 0]], [self.x[1, 0]], [self.x[2, 0]]]
+        H = [
+            [1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+        ]
+        r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
+        r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
+        Q = np.diag([r_xy, r_xy, r_theta])**2
+        self.update(z=np.array(z), h=np.array(h), H=np.array(H), Q=Q)
 
     def predict(self, time: float | None = None) -> None:
         if time is None:
@@ -195,8 +197,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.x[2] += omega * dt
         self.x[2] = rosys.helpers.eliminate_2pi(self.x[2])
         self.x[3] += a * dt
-        # needed here?
-        # self.x[4] = rosys.helpers.angle(self.x[2], theta) / dt
         self.Sxx = F @ self.Sxx @ F.T + R
         self.update_frame()
 
@@ -206,11 +206,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.Sxx = (np.eye(self.Sxx.shape[0]) - K @ H) @ self.Sxx
         self.update_frame()
 
-    def update_frame(self):
-        pose = self.pose
-        self.pose_frame.x = pose.x
-        self.pose_frame.y = pose.y
-        self.pose_frame.rotation = Rotation.from_euler(0, 0, pose.yaw)
+    def update_frame(self) -> None:
+        self.pose_frame.x = self.x[0, 0]
+        self.pose_frame.y = self.x[1, 0]
+        self.pose_frame.rotation = Rotation.from_euler(0, 0, self.x[2, 0])
 
     def reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
         self.x = np.array([[x, y, yaw, 0, 0, 0]], dtype=float).T
@@ -248,5 +247,4 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     with ui.column().classes('w-full gap-0'):
                         ui.number(label, min=0, step=0.01, format='%.6f', on_change=self.request_backup) \
                             .bind_value(self, key)
-            with ui.column():
-                ui.button('Reset', on_click=self.reset)
+            ui.button('Reset', on_click=self.reset)

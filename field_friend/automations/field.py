@@ -27,10 +27,6 @@ class Row:
         return rosys.geometry.LineSegment(point1=self.points[0].to_local(),
                                           point2=self.points[-1].to_local())
 
-    @property
-    def points_as_tuples(self) -> list[tuple[float, float]]:
-        return [p.tuple for p in self.points]
-
 
 @dataclass(slots=True, kw_only=True)
 class RowSupportPoint(GeoPoint):
@@ -166,11 +162,11 @@ class Field:
             'name': self.name,
             'first_row_start': {
                 'lat': math.degrees(self.first_row_start.lat),
-                'long': math.degrees(self.first_row_start.lon),
+                'lon': math.degrees(self.first_row_start.lon),
             },
             'first_row_end': {
                 'lat': math.degrees(self.first_row_end.lat),
-                'long': math.degrees(self.first_row_end.lon),
+                'lon': math.degrees(self.first_row_end.lon),
             },
             'row_spacing': self.row_spacing,
             'row_count': self.row_count,
@@ -189,18 +185,9 @@ class Field:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
-        # TODO: handle old fields
-        if 'long' in data['first_row_start']:
-            data['first_row_start'] = GeoPoint.from_degrees(lat=data['first_row_start']['lat'],
-                                                            lon=data['first_row_start']['long'])
-            data['first_row_end'] = GeoPoint.from_degrees(lat=data['first_row_end']['lat'],
-                                                          lon=data['first_row_end']['long'])
-        else:
-            data['first_row_start'] = GeoPoint.from_degrees(lat=data['first_row_start']['lat'],
-                                                            lon=data['first_row_start']['lon'])
-            data['first_row_end'] = GeoPoint.from_degrees(lat=data['first_row_end']['lat'],
-                                                          lon=data['first_row_end']['lon'])
-        data['row_support_points'] = [rosys.persistence.from_dict(
-            RowSupportPoint, sp) for sp in data['row_support_points']] if 'row_support_points' in data else []
-        field_data = cls(**cls.args_from_dict(data))
-        return field_data
+        for key in ['first_row_start', 'first_row_end']:
+            data[key] = GeoPoint.from_degrees(lat=data[key]['lat'],
+                                              lon=data[key]['lon'] if 'lon' in data[key] else data[key]['long'])
+        data['row_support_points'] = [rosys.persistence.from_dict(RowSupportPoint, sp)
+                                      for sp in data.get('row_support_points', [])]
+        return cls(**cls.args_from_dict(data))

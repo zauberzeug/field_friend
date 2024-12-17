@@ -33,7 +33,7 @@ class LeafletMap:
             },
             'edit': False,
         }
-        center_point = GeoPoint(lat=0.9072773, lon=0.1297515)
+        center_point = GeoPoint.from_degrees(51.983159, 7.434212)
         if self.system.gnss.last_measurement is not None:
             center_point = self.system.gnss.last_measurement.point
         self.m: ui.leaflet
@@ -82,16 +82,14 @@ class LeafletMap:
         for field in self.field_provider.fields:
             color = '#6E93D6' if self.field_provider.selected_field is not None and field.id == self.field_provider.selected_field.id else '#999'
             field_outline = [p.degree_tuple for p in field.outline]
-            self.field_layers.append(self.m.generic_layer(name='polygon',
-                                                          args=[field_outline, {'color': color}]))
+            self.field_layers.append(self.m.generic_layer(name='polygon', args=[field_outline, {'color': color}]))
         for layer in self.row_layers:
             self.m.remove_layer(layer)
         self.row_layers = []
         if self.field_provider.selected_field is not None:
             for row in self.field_provider.selected_field.rows:
                 row_points = [p.degree_tuple for p in row.points]
-                self.row_layers.append(self.m.generic_layer(name='polyline',
-                                                            args=[row_points, {'color': '#F2C037'}]))
+                self.row_layers.append(self.m.generic_layer(name='polyline', args=[row_points, {'color': '#F2C037'}]))
 
     def update_robot_position(self, measurement: GnssMeasurement, dialog=None) -> None:
         # TODO: where does the dialog come from?

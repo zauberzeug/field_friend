@@ -65,13 +65,12 @@ class System(rosys.persistence.PersistentModule):
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             assert isinstance(self.field_friend, FieldFriendHardware)
-            self.gnss = GnssHardware(antenna_pose=Pose(
-                x=0.0, y=self.field_friend.ANTENNA_OFFSET, yaw=np.deg2rad(-90.0)))
+            self.gnss = GnssHardware(antenna_pose=Pose(x=0.0, y=self.field_friend.ANTENNA_OFFSET, yaw=np.deg2rad(-90)))
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
-            self.camera_configurator = CameraConfigurator(self.camera_provider, robot_locator=self.robot_locator)
+            self.camera_configurator = CameraConfigurator(self.camera_provider, self.robot_locator)
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
@@ -81,8 +80,7 @@ class System(rosys.persistence.PersistentModule):
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
-            self.camera_configurator = CameraConfigurator(
-                self.camera_provider, robot_locator=self.robot_locator, robot_id=self.version)
+            self.camera_configurator = CameraConfigurator(self.camera_provider, self.robot_locator, self.version)
 
         self.odometer = Odometer(self.field_friend.wheels)
         self.plant_provider = PlantProvider()
@@ -184,7 +182,7 @@ class System(rosys.persistence.PersistentModule):
         return {
             'navigation': self.current_navigation.name,
             'implement': self.current_implement.name,
-            'gnss_reference': GeoReference.current.origin.degree_tuple if GeoReference.current is not None else None
+            'gnss_reference': GeoReference.current.origin.degree_tuple if GeoReference.current is not None else None,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -201,8 +199,7 @@ class System(rosys.persistence.PersistentModule):
         elif 'reference_lat' in data and 'reference_long' in data:
             reference_tuple = (np.deg2rad(data['reference_lat']), np.deg2rad(data['reference_long']), 0)
         if reference_tuple is not None:
-            reference = GeoReference(origin=GeoPoint(
-                lat=np.deg2rad(reference_tuple[0]), lon=np.deg2rad(reference_tuple[1])))
+            reference = GeoReference(origin=GeoPoint.from_degrees(*reference_tuple))
             self.update_gnss_reference(reference=reference)
 
     @property
@@ -260,7 +257,7 @@ class System(rosys.persistence.PersistentModule):
                 self.log.warning('Not updating GNSS reference: No GNSS measurement received')
                 return
             reference = GeoReference(origin=self.gnss.last_measurement.point,
-                                     direction=self.gnss.last_measurement.heading) if reference is None else reference
+                                     direction=self.gnss.last_measurement.heading)
         self.log.debug('Updating GNSS reference to %s', reference)
         GeoReference.update_current(reference)
         self.request_backup()

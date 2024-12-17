@@ -147,7 +147,6 @@ class FieldNavigation(StraightLineNavigation):
             self.create_simulation()
         else:
             self.plant_provider.clear()
-        await rosys.sleep(2)
         return State.FOLLOWING_ROW
 
     # TODO: growing error because of the threshold

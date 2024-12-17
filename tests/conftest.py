@@ -72,17 +72,14 @@ class TestField:
                 self.first_row_end.shift_by(x=0, y=-1.35)
             ])
         ]
+        buffer = self.outline_buffer_width
+        row_offset = self.row_spacing * (self.row_count - 1)
         self.outline = [
-            self.first_row_start.shift_by(x=-self.outline_buffer_width,
-                                          y=self.outline_buffer_width),
-            self.first_row_end.shift_by(x=self.outline_buffer_width,
-                                        y=self.outline_buffer_width),
-            self.first_row_end.shift_by(x=self.outline_buffer_width, y=-
-                                        self.outline_buffer_width - (self.row_count - 1) * self.row_spacing),
-            self.first_row_start.shift_by(x=-self.outline_buffer_width, y=-
-                                          self.outline_buffer_width - (self.row_count - 1) * self.row_spacing),
-            self.first_row_start.shift_by(x=-self.outline_buffer_width,
-                                          y=self.outline_buffer_width)
+            self.first_row_start.shift_by(x=-buffer, y=buffer),
+            self.first_row_end.shift_by(x=buffer, y=buffer),
+            self.first_row_end.shift_by(x=buffer, y=-buffer - row_offset),
+            self.first_row_start.shift_by(x=-buffer, y=-buffer - row_offset),
+            self.first_row_start.shift_by(x=-buffer, y=buffer)
         ]
 
 

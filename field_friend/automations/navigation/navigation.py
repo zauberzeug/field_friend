@@ -16,14 +16,15 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-def check_distance_to_reference(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
+# TODO: still needed?
+def is_reference_invalid(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
     if GeoReference.current is None:
         return True
-    if gnss.last_measurement is not None and gnss.last_measurement.gps_quality > 0 and gnss.last_measurement.point.distance(GeoReference.current.origin) > max_distance:
-        # TODO: show dialog
-        # reference_alert_dialog(gnss)
-        return True
-    return False
+    if gnss.last_measurement is None:
+        return False
+    if gnss.last_measurement.gps_quality == 0:
+        return False
+    return gnss.last_measurement.point.distance(GeoReference.current.origin) <= max_distance
 
 
 class WorkflowException(Exception):
@@ -58,7 +59,7 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
-            if check_distance_to_reference(self.gnss):
+            if is_reference_invalid(self.gnss):
                 raise WorkflowException('reference to far away from robot')
             self.start_position = self.robot_locator.pose.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:

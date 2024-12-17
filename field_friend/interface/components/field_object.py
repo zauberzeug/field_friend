@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import pairwise
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -17,7 +18,6 @@ class FieldObject(Group):
     def __init__(self, system: System) -> None:
         super().__init__()
         self.system = system
-        self.gnss = system.gnss
         self.field_provider: FieldProvider = system.field_provider
         self._update()
         self.field_provider.FIELDS_CHANGED.register_ui(self._update)
@@ -69,8 +69,8 @@ class FieldObject(Group):
                 if len(row.points) == 1:
                     continue
                 row_points = [point.to_local() for point in row.points]
-                for i in range(len(row_points) - 1):
-                    spline = Spline.from_points(row_points[i], row_points[i + 1])
+                for i, (point1, point2) in enumerate(pairwise(row_points)):
+                    spline = Spline.from_points(point1, point2)
                     Curve(
                         [spline.start.x, spline.start.y, 0],
                         [spline.control1.x, spline.control1.y, 0],

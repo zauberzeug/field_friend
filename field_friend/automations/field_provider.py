@@ -44,11 +44,6 @@ class FieldProvider(rosys.persistence.PersistentModule):
         fields_data: dict[str, dict] = data.get('fields', {})
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)
-            # TODO: import old fields?
-            # new_field.first_row_start = GeoPoint(lat=np.deg2rad(new_field.first_row_start.lat),
-            #                                      lon=np.deg2rad(new_field.first_row_start.lon))
-            # new_field.first_row_end = GeoPoint(lat=np.deg2rad(new_field.first_row_end.lat),
-            #                                    lon=np.deg2rad(new_field.first_row_end.lon))
             self.fields.append(new_field)
         selected_field_id: str | None = data.get('selected_field')
         if selected_field_id:

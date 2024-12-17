@@ -46,6 +46,7 @@ class AutomationWatcher:
         rosys.on_repeat(self.check_field_bounds, 1.0)
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
+        # TODO
         # self.gnss.GNSS_CONNECTION_LOST.register(lambda: self.pause('GNSS connection lost'))
         # self.gnss.RTK_FIX_LOST.register(lambda: self.pause('GNSS RTK fix lost'))
 
@@ -114,8 +115,7 @@ class AutomationWatcher:
                 self.resume_delay = DEFAULT_RESUME_DELAY
 
     def start_field_watch(self, field_boundaries: list[GeoPoint]) -> None:
-        self.field_polygon = ShapelyPolygon(
-            [point.to_local().tuple for point in field_boundaries])
+        self.field_polygon = ShapelyPolygon([point.to_local().tuple for point in field_boundaries])
         self.field_watch_active = True
 
     def stop_field_watch(self) -> None:
