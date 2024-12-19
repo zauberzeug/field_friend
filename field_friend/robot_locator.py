@@ -87,15 +87,15 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.ignore_odometry = False
         self.ignore_gnss = False
 
-        self.q_odometry_v = 0.007
-        self.q_odometry_omega = 0.1
+        self.q_odometry_v = 0.01
+        self.q_odometry_omega = 0.01
 
-        self.r_x = 0.005
-        self.r_y = 0.005
-        self.r_theta = 0.005
-        self.r_v = 0.007
-        self.r_omega = 0.05
-        self.r_a = 0.001
+        self.r_x = 0.01
+        self.r_y = 0.01
+        self.r_theta = 0.01
+        self.r_v = 0.01
+        self.r_omega = 1.0
+        self.r_a = 1.0
 
         wheels.VELOCITY_MEASURED.register(self.handle_velocity_measurement)
         gnss.NEW_MEASUREMENT.register(self.handle_gnss_measurement)
