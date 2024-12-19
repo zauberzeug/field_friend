@@ -12,6 +12,7 @@ from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
 import config.config_selection as config_selector
 
+from .app_controls import AppControls as app_controls
 from .automations import (
     AutomationWatcher,
     BatteryWatcher,
@@ -167,12 +168,14 @@ class System(rosys.persistence.PersistentModule):
         self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
+        else:
+            self.log.warning('Bumper is not available, does robot have bumpers?')
 
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
-            rosys.automation.app_controls(self.field_friend.robot_brain, self.automator)
+            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend)
             rosys.on_repeat(self.log_status, 60*5)
 
     def restart(self) -> None:

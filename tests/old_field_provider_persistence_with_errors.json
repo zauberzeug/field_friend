@@ -5,15 +5,12 @@
       "name": "field_1",
       "first_row_start": {
         "lat": 51.98333789813455,
-        "lon": 7.434242765994318
+        "long": 7.434242765994318
       },
-      "first_row_end": {
-        "lat": 51.98334192260392,
-        "lon": 7.434293309874038
-      },
+      "first_row_end": { "lat": 51.98334192260392, "long": 7.434293309874038 },
       "row_spacing": 0.5,
       "row_count": 10,
-      "outline_buffer_width": 2,
+      "not_existing_value": true,
       "row_support_points": [],
       "bed_count": 1,
       "bed_spacing": 0.5

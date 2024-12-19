@@ -1,0 +1,72 @@
+{
+    "cameras": {
+        "b8:a4:4f:e8:c2:d5-1": {
+            "id": "b8:a4:4f:e8:c2:d5-1",
+            "name": "b8:a4:4f:e8:c2:d5-1",
+            "connect_after_init": true,
+            "image_history_length": 256,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
+            "username": "root",
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
+        },
+        "b8:a4:4f:e8:c2:d5-2": {
+            "id": "b8:a4:4f:e8:c2:d5-2",
+            "name": "b8:a4:4f:e8:c2:d5-2",
+            "connect_after_init": true,
+            "image_history_length": 256,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
+            "username": "root",
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
+        },
+        "b8:a4:4f:e8:c2:d5-4": {
+            "id": "b8:a4:4f:e8:c2:d5-4",
+            "name": "b8:a4:4f:e8:c2:d5-4",
+            "connect_after_init": true,
+            "image_history_length": 256,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
+            "username": "root",
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
+        },
+        "b8:a4:4f:e8:c2:d5-3": {
+            "id": "b8:a4:4f:e8:c2:d5-3",
+            "name": "b8:a4:4f:e8:c2:d5-3",
+            "connect_after_init": true,
+            "image_history_length": 256,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
+            "username": "root",
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
+        }
+    }
+}

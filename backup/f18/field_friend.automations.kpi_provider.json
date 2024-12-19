@@ -1,0 +1,24 @@
+{
+    "all_time_kpis": {
+        "distance": 0,
+        "time": 549.8703124523163,
+        "bumps": 0,
+        "low_battery": 0,
+        "can_failure": 0,
+        "automation_stopped": 0,
+        "e_stop_triggered": 0,
+        "soft_e_stop_triggered": 0,
+        "imu_rolling_detected": 0,
+        "gnss_connection_lost": 0
+    },
+    "days": [
+        {
+            "date": "2024-12-11",
+            "incidents": {
+                "bumps": 6,
+                "time": 539
+            }
+        }
+    ],
+    "months": []
+}

@@ -1,0 +1,10 @@
+{
+    "with_drilling": false,
+    "with_chopping": false,
+    "chop_if_no_crops": false,
+    "cultivated_crop": null,
+    "crop_safety_distance": 0.01,
+    "record_video": false,
+    "weed_screw_depth": 0.1,
+    "max_crop_distance": 0.08
+}

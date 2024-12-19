@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
-from rosys.hardware import EspPins
 
 from .hardware_control import create_hardware_control_ui
 from .io_overview import IoOverview as io_overview
@@ -70,10 +69,10 @@ def create_development_ui(system: System) -> None:
             system.field_navigation.developer_ui()
         if isinstance(system.field_friend, rosys.hardware.RobotHardware):
             with ui.card().style('min-width: 200px;'):
-                esp_pins_core = EspPins(name='core', robot_brain=system.field_friend.robot_brain)
+                esp_pins_core = system.field_friend.robot_brain.esp_pins_core
                 esp_pins_core.developer_ui()
             with ui.card().style('min-width: 200px;'):
-                esp_pins_p0 = EspPins(name='p0', robot_brain=system.field_friend.robot_brain)
+                esp_pins_p0 = system.field_friend.robot_brain.esp_pins_p0
                 esp_pins_p0.developer_ui()
 
     io_overview(system)

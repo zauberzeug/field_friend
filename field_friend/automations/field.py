@@ -1,4 +1,5 @@
 import math
+import uuid
 from dataclasses import dataclass
 from typing import Any, Self
 
@@ -15,12 +16,14 @@ class Row:
     name: str
     points: list[GeoPoint]
     reverse: bool = False
+    crop: str | None = None
 
     def reversed(self):
         return Row(
             id=self.id,
             name=self.name,
             points=list(reversed(self.points)),
+            crop=self.crop
         )
 
     def line_segment(self) -> rosys.geometry.LineSegment:
@@ -48,7 +51,8 @@ class Field:
                  outline_buffer_width: float = 2,
                  row_support_points: list[RowSupportPoint] | None = None,
                  bed_count: int = 1,
-                 bed_spacing: float = 0.5) -> None:
+                 bed_spacing: float = 0.5,
+                 bed_crops: dict[str, str | None] | None = None) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
@@ -63,6 +67,7 @@ class Field:
         self.visualized: bool = False
         self.rows: list[Row] = []
         self.outline: list[GeoPoint] = []
+        self.bed_crops: dict[str, str | None] = bed_crops or {str(i): None for i in range(bed_count)}
         self.refresh()
 
     @property
@@ -140,6 +145,42 @@ class Field:
 
     def _generate_outline(self) -> list[GeoPoint]:
         assert len(self.rows) > 0
+        return self.get_buffered_area()
+
+    def shapely_polygon(self) -> shapely.geometry.Polygon:
+        return shapely.geometry.Polygon([p.tuple for p in self.outline])
+
+    @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        # Ensure all required fields exist with defaults
+        defaults: dict[str, Any] = {
+            'id': str(uuid.uuid4()),
+            'name': 'Field',
+            'first_row_start': None,
+            'first_row_end': None,
+            'row_spacing': 1,
+            'row_count': 1,
+            'outline_buffer_width': 1,
+            'row_support_points': [],
+            'bed_count': 1,
+            'bed_spacing': 1,
+            'bed_crops': {}
+        }
+        for key in defaults:
+            if key in data:
+                defaults[key] = data[key]
+        return defaults
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        for key in ['first_row_start', 'first_row_end']:
+            data[key] = GeoPoint.from_degrees(lat=data[key]['lat'],
+                                              lon=data[key]['lon'] if 'lon' in data[key] else data[key]['long'])
+        data['row_support_points'] = [rosys.persistence.from_dict(RowSupportPoint, sp)
+                                      for sp in data.get('row_support_points', [])]
+        return cls(**cls.args_from_dict(data))
+
+    def get_buffered_area(self) -> list[GeoPoint]:
         outline_unbuffered: list[Point] = [
             self.first_row_end.to_local(),
             self.first_row_start.to_local(),
@@ -175,19 +216,3 @@ class Field:
             'bed_count': self.bed_count,
             'bed_spacing': self.bed_spacing,
         }
-
-    def shapely_polygon(self) -> shapely.geometry.Polygon:
-        return shapely.geometry.Polygon([p.tuple for p in self.outline])
-
-    @classmethod
-    def args_from_dict(cls, data: dict[str, Any]) -> dict:
-        return data
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Self:
-        for key in ['first_row_start', 'first_row_end']:
-            data[key] = GeoPoint.from_degrees(lat=data[key]['lat'],
-                                              lon=data[key]['lon'] if 'lon' in data[key] else data[key]['long'])
-        data['row_support_points'] = [rosys.persistence.from_dict(RowSupportPoint, sp)
-                                      for sp in data.get('row_support_points', [])]
-        return cls(**cls.args_from_dict(data))
