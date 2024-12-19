@@ -95,7 +95,7 @@ async def test_weeding_screw_advances_when_there_are_no_plants(system: System, d
     await forward(1)
     system.automator.start()
     await forward(60)
-    assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
+    assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
     if cultivated_crop is None:
         assert len(detector.simulated_objects) == 1
     elif cultivated_crop == 'maize':
@@ -123,7 +123,7 @@ async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_th
     system.current_implement.max_crop_distance = 0.050
     system.automator.start()
     await forward(50)
-    assert system.odometer.prediction.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
+    assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
     assert len(detector.simulated_objects) == 4, 'last weed should be removed'
 
 

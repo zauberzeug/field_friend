@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+import coloredlogs
 import icecream
 from rosys import helpers
 
@@ -19,6 +20,7 @@ def configure():
         'disable_existing_loggers': True,
         'formatters': {
             'default': {
+                '()': coloredlogs.ColoredFormatter,
                 'format': r'%(asctime)s.%(msecs)03d [%(levelname)s] %(relative_path)s:%(lineno)d: %(message)s',
                 'datefmt': r'%Y-%m-%d %H:%M:%S',
             },

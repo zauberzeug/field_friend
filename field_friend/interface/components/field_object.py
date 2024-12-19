@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import pairwise
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -58,7 +59,7 @@ class FieldObject(Group):
 
         if active_field is None:
             return
-        outline = [point.cartesian().tuple for point in active_field.outline]
+        outline = [point.to_local().tuple for point in active_field.outline]
         if len(outline) > 1:  # Make sure there are at least two points to form a segment
             for i, start in enumerate(outline):
                 end = outline[(i + 1) % len(outline)]  # Loop back to the first point
@@ -67,9 +68,9 @@ class FieldObject(Group):
             for row in active_field.rows:
                 if len(row.points) == 1:
                     continue
-                row_points = row.cartesian()
-                for i in range(len(row_points) - 1):
-                    spline = Spline.from_points(row_points[i], row_points[i + 1])
+                row_points = [point.to_local() for point in row.points]
+                for i, (point1, point2) in enumerate(pairwise(row_points)):
+                    spline = Spline.from_points(point1, point2)
                     Curve(
                         [spline.start.x, spline.start.y, 0],
                         [spline.control1.x, spline.control1.y, 0],

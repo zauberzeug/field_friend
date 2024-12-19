@@ -25,11 +25,11 @@ class WeedingScrew(WeedingImplement):
     async def start_workflow(self) -> None:
         await super().start_workflow()
         try:
-            punch_position = self.system.odometer.prediction.transform3d(
+            punch_position = self.system.robot_locator.pose.transform3d(
                 rosys.geometry.Point3d(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position, z=0))
             self.last_punches.append(punch_position)
             await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.weed_screw_depth)
-            punched_weeds = [weed.id for weed in self.system.plant_provider.get_relevant_weeds(self.system.odometer.prediction.point_3d())
+            punched_weeds = [weed.id for weed in self.system.plant_provider.get_relevant_weeds(self.system.robot_locator.pose.point_3d())
                              if weed.position.distance(punch_position) <= self.system.field_friend.DRILL_RADIUS]
             for weed_id in punched_weeds:
                 self.system.plant_provider.remove_weed(weed_id)
@@ -54,8 +54,8 @@ class WeedingScrew(WeedingImplement):
         self.log.info(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
         for next_weed_id, next_weed_position in weeds_in_range.items():
             # next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
-            weed_world_position = self.system.odometer.prediction.transform3d(next_weed_position)
-            crops = self.system.plant_provider.get_relevant_crops(self.system.odometer.prediction.point_3d())
+            weed_world_position = self.system.robot_locator.pose.transform3d(next_weed_position)
+            crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
             if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
                 self.log.info('Skipping weed because it is to far from the cultivated crops')
                 continue
