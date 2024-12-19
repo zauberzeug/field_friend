@@ -41,7 +41,7 @@ class FieldCreator:
         self.default_crop: str | None = None
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
-        self.gnss.ROBOT_GNSS_POSITION_CHANGED.register_ui(self.update_robot_position)
+        self.gnss.NEW_MEASUREMENT.register_ui(self.update_robot_position)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
                 with ui.column().classes('w-3/5') as self.view_column:
@@ -224,9 +224,9 @@ class FieldCreator:
         self.row_sight.set_source(self.back_cam.get_latest_image_url())
 
     def ab_line_map(self) -> None:
-        if self.gnss.current is None:
+        if self.gnss.last_measurement is None:
             return
-        self.m = ui.leaflet(self.gnss.current.location.tuple).classes('w-full min-h-[500px]')
+        self.m = ui.leaflet(self.gnss.last_measurement.pose.point.degree_tuple).classes('w-full min-h-[500px]')
         if self.first_row_start is not None and self.first_row_end is not None:
             self.m.generic_layer(name='polyline', args=[
                 (self.first_row_start.tuple, self.first_row_end.tuple), {'color': '#F44336'}])
