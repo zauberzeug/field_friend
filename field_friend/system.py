@@ -5,6 +5,7 @@ from typing import Any
 import icecream
 import numpy as np
 import psutil
+import requests
 import rosys
 
 import config.config_selection as config_selector
@@ -110,6 +111,7 @@ class System(rosys.persistence.PersistentModule):
         self.plant_locator = PlantLocator(self)
 
         rosys.on_repeat(watch_robot, 1.0)
+        rosys.on_repeat(self.send_status_to_robot_dashboard, 60)
 
         self.path_provider = PathProvider()
         self.field_provider = FieldProvider()
@@ -263,3 +265,29 @@ class System(rosys.persistence.PersistentModule):
 
         bms_logger = logging.getLogger('field_friend.bms')
         bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
+
+    def send_status_to_robot_dashboard(self) -> None:
+        rosys.notify('Sending status to dashboard')
+        dashboard_url = os.environ.get('DASHBOARD_URL')
+        if not dashboard_url:
+            rosys.notify('Dashboard URL is not set', type='negative')
+            return
+        try:
+            status = 'emergency stop' if len(self.field_friend.estop.pressed_estops) > 0 else \
+                'bumper active' if self.field_friend.bumper is not None and len(self.field_friend.bumper.active_bumpers) > 0 else \
+                'working' if self.automator.automation is not None and self.automator.automation.is_running else \
+                'idle'
+            position = self.gnss.current.location if self.gnss.current is not None else None
+            data = {
+                'battery': self.field_friend.bms.state.percentage,
+                'battery_charging': self.field_friend.bms.state.is_charging,
+                'status': status,
+                'position': position,
+                'implement': self.field_friend.implement_name
+            }
+            endpoint = f'{dashboard_url}/api/robot/{self.version}'
+            response = requests.post(endpoint, json=data, timeout=5)
+            if response.status_code != 200:
+                rosys.notify(f'Failed to send status. Response code {response.status_code}', type='negative')
+        except Exception as e:
+            rosys.notify(f'Error sending status: {e!s}', type='negative')
