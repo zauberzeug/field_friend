@@ -1,12 +1,13 @@
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 
 import icecream
 import numpy as np
 import psutil
 import requests
 import rosys
+from rosys.version import __version__ as rosys_version
 
 import config.config_selection as config_selector
 
@@ -266,7 +267,7 @@ class System(rosys.persistence.PersistentModule):
         bms_logger = logging.getLogger('field_friend.bms')
         bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
 
-    def send_status_to_robot_dashboard(self) -> None:
+    async def send_status_to_robot_dashboard(self) -> None:
         rosys.notify('Sending status to dashboard')
         dashboard_url = os.environ.get('DASHBOARD_URL')
         if not dashboard_url:
@@ -277,6 +278,15 @@ class System(rosys.persistence.PersistentModule):
                 'bumper active' if self.field_friend.bumper is not None and len(self.field_friend.bumper.active_bumpers) > 0 else \
                 'working' if self.automator.automation is not None and self.automator.automation.is_running else \
                 'idle'
+            if self.is_real:
+                lizard_firmware = cast(FieldFriendHardware, self.field_friend).robot_brain.lizard_firmware
+                await lizard_firmware.read_core_version()
+                await lizard_firmware.read_p0_version()
+                core_version = lizard_firmware.core_version
+                p0_version = lizard_firmware.p0_version
+            else:
+                core_version = 'simulation'
+                p0_version = 'simulation'
             position = self.gnss.current.location if self.gnss.current is not None else None
             data = {
                 'battery': self.field_friend.bms.state.percentage,
@@ -285,6 +295,10 @@ class System(rosys.persistence.PersistentModule):
                 'position': {'lat': position.lat, 'long': position.long} if position is not None else None,
                 'implement': self.field_friend.implement_name,
                 'navigation': self.current_navigation.name if self.current_navigation is not None else None,
+                'rosys_version': rosys_version,
+                'core_lizard_version': core_version,
+                'p0_lizard_version': p0_version,
+                # TODO if the current navigation is field navigation, the field and current row should be sent as well
             }
             endpoint = f'{dashboard_url}/api/robot/{self.version}'
             response = requests.post(endpoint, json=data, timeout=5)
