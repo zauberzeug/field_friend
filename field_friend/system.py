@@ -282,8 +282,9 @@ class System(rosys.persistence.PersistentModule):
                 'battery': self.field_friend.bms.state.percentage,
                 'battery_charging': self.field_friend.bms.state.is_charging,
                 'status': status,
-                'position': position,
-                'implement': self.field_friend.implement_name
+                'position': {'lat': position.lat, 'long': position.long} if position is not None else None,
+                'implement': self.field_friend.implement_name,
+                'navigation': self.current_navigation.name if self.current_navigation is not None else None,
             }
             endpoint = f'{dashboard_url}/api/robot/{self.version}'
             response = requests.post(endpoint, json=data, timeout=5)
