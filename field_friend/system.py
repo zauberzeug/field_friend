@@ -112,7 +112,10 @@ class System(rosys.persistence.PersistentModule):
         self.plant_locator = PlantLocator(self)
 
         rosys.on_repeat(watch_robot, 1.0)
-        rosys.on_repeat(self.send_status_to_robot_dashboard, 60)
+        if self.is_real and os.environ.get('DASHBOARD_URL'):
+            rosys.on_repeat(self.send_status_to_robot_dashboard, 60)
+        else:
+            rosys.notify('Dashboard URL is not set', type='negative')
 
         self.path_provider = PathProvider()
         self.field_provider = FieldProvider()
@@ -268,11 +271,7 @@ class System(rosys.persistence.PersistentModule):
         bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
 
     async def send_status_to_robot_dashboard(self) -> None:
-        rosys.notify('Sending status to dashboard')
         dashboard_url = os.environ.get('DASHBOARD_URL')
-        if not dashboard_url:
-            rosys.notify('Dashboard URL is not set', type='negative')
-            return
         try:
             status = 'emergency stop' if len(self.field_friend.estop.pressed_estops) > 0 else \
                 'bumper active' if self.field_friend.bumper is not None and len(self.field_friend.bumper.active_bumpers) > 0 else \
@@ -287,6 +286,12 @@ class System(rosys.persistence.PersistentModule):
             else:
                 core_version = 'simulation'
                 p0_version = 'simulation'
+            if self.current_navigation is not None and self.current_navigation is self.field_navigation:
+                field = self.field_navigation.field
+                row = self.field_navigation.current_row
+            else:
+                field = None
+                row = None
             position = self.gnss.current.location if self.gnss.current is not None else None
             data = {
                 'battery': self.field_friend.bms.state.percentage,
@@ -295,6 +300,8 @@ class System(rosys.persistence.PersistentModule):
                 'position': {'lat': position.lat, 'long': position.long} if position is not None else None,
                 'implement': self.field_friend.implement_name,
                 'navigation': self.current_navigation.name if self.current_navigation is not None else None,
+                'field': field,
+                'row': row,
                 'rosys_version': rosys_version,
                 'core_lizard_version': core_version,
                 'p0_lizard_version': p0_version,
