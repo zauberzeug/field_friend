@@ -11,9 +11,9 @@ configuration = {'parameters': {
     'down': 0,
 },
     'circle_sight_positions': {
-        'right': '-4',
-        'left': '-3',
-        'front': '-1',
-        'back': '-2',
+        'right': '-1',
+        'left': '-2',
+        'front': '-4',
+        'back': '-3',
 }
 }
