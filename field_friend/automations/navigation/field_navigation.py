@@ -106,15 +106,26 @@ class FieldNavigation(StraightLineNavigation):
         assert self.field is not None
         self.start_point = None
         self.end_point = None
-        relative_point_0 = self.robot_locator.pose.distance(self.current_row.points[0].to_local())
-        relative_point_1 = self.robot_locator.pose.distance(self.current_row.points[-1].to_local())
-        # self.log.info(f'Relative point 0: {relative_point_0} Relative point 1: {relative_point_1}')
-        if relative_point_0 < relative_point_1:
-            self.start_point = self.current_row.points[0].to_local()
-            self.end_point = self.current_row.points[-1].to_local()
-        elif relative_point_1 < relative_point_0:
-            self.start_point = self.current_row.points[-1].to_local()
-            self.end_point = self.current_row.points[0].to_local()
+        start_point = self.current_row.points[0].to_local()
+        end_point = self.current_row.points[-1].to_local()
+
+        swap_points: bool
+        self.robot_in_working_area = self._is_in_working_area(start_point, end_point)
+        if self.robot_in_working_area:
+            abs_angle_to_start = abs(self.robot_locator.pose.relative_direction(start_point))
+            abs_angle_to_end = abs(self.robot_locator.pose.relative_direction(end_point))
+            swap_points = abs_angle_to_start < abs_angle_to_end
+        else:
+            distance_to_start = self.robot_locator.pose.distance(start_point)
+            distance_to_end = self.robot_locator.pose.distance(end_point)
+            swap_points = distance_to_start > distance_to_end
+
+        if swap_points:
+            self.log.debug('Swapping start and end points')
+            start_point, end_point = end_point, start_point
+        self.start_point = start_point
+        self.end_point = end_point
+        self.log.debug('Start point: %s End point: %s', self.start_point, self.end_point)
         self.update_target()
 
     def update_target(self) -> None:
@@ -172,6 +183,7 @@ class FieldNavigation(StraightLineNavigation):
             self.create_simulation()
         else:
             self.plant_provider.clear()
+        self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
     # TODO: growing error because of the threshold
