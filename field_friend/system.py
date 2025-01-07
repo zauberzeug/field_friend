@@ -76,7 +76,7 @@ class System(rosys.persistence.PersistentModule):
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = GnssSimulation(wheels=self.field_friend.wheels,
-                                       lat_std_dev=0.005, lon_std_dev=0.005, heading_std_dev=0.01)
+                                       lat_std_dev=0.0, lon_std_dev=0.0, heading_std_dev=0.0)
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
