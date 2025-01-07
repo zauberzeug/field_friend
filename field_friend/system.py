@@ -66,8 +66,7 @@ class System(rosys.persistence.PersistentModule):
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             assert isinstance(self.field_friend, FieldFriendHardware)
-            # TODO: move Pose to config
-            self.gnss = GnssHardware(antenna_pose=Pose(x=0.041, y=-0.255, yaw=np.deg2rad(0)))
+            self.gnss = self.setup_gnss()
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
@@ -76,8 +75,7 @@ class System(rosys.persistence.PersistentModule):
         else:
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
-            self.gnss = GnssSimulation(wheels=self.field_friend.wheels,
-                                       lat_std_dev=0.0, lon_std_dev=0.0, heading_std_dev=0.0)
+            self.gnss = self.setup_gnss(self.field_friend.wheels)
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
@@ -254,6 +252,22 @@ class System(rosys.persistence.PersistentModule):
                                                                             )
         assert isinstance(self.camera_provider, rosys.vision.SimulatedCameraProvider)
         self.camera_provider.add_camera(camera)
+
+    def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation:
+        if self.is_real:
+            config_hardware: dict = config_selector.import_config(module='hardware')
+            # TODO: not pretty
+            if 'gnss' in config_hardware:
+                x = config_hardware['gnss'].get('x', 0.041)
+                y = config_hardware['gnss'].get('y', -0.255)
+                yaw_deg = config_hardware['gnss'].get('yaw_deg', 0.0)
+            else:
+                x = 0.041
+                y = -0.255
+                yaw_deg = 0.0
+            return GnssHardware(antenna_pose=Pose(x=x, y=y, yaw=np.deg2rad(yaw_deg)))
+        assert isinstance(wheels, rosys.hardware.WheelsSimulation)
+        return GnssSimulation(wheels=self.field_friend.wheels, lat_std_dev=0.0, lon_std_dev=0.0, heading_std_dev=0.0)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
         if reference is None:
