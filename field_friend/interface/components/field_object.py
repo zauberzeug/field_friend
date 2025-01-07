@@ -77,8 +77,3 @@ class FieldObject(Group):
                         [spline.control2.x, spline.control2.y, 0],
                         [spline.end.x, spline.end.y, 0],
                     ).material('#6c541e').with_name(f'row_{row.id}_{i}')
-
-            for point in row_points:
-                # TODO: fix access to row and row_points
-                Cylinder(0.04, 0.04, 0.7).move(x=point.x, y=point.y, z=0.35).material(
-                    'black').with_name(f'row_{row.id}_point').rotate(np.pi / 2, 0, 0)  # pylint: disable=undefined-loop-variable
