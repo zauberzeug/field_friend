@@ -8,6 +8,7 @@ import rosys
 from nicegui import ui
 from nicegui.elements.leaflet_layers import Marker
 from rosys.geometry import GeoPoint
+from rosys.hardware import GnssMeasurement
 
 from field_friend.automations.field import Field
 from field_friend.interface.components.monitoring import CameraPosition
@@ -41,7 +42,7 @@ class FieldCreator:
         self.default_crop: str | None = None
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
-        self.gnss.NEW_MEASUREMENT.register_ui(self.update_robot_position)
+        self.gnss.NEW_MEASUREMENT.register_ui(self.new_gnss_measurement)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
                 with ui.column().classes('w-3/5') as self.view_column:
@@ -231,6 +232,11 @@ class FieldCreator:
             self.m.generic_layer(name='polyline', args=[
                 (self.first_row_start.tuple, self.first_row_end.tuple), {'color': '#F44336'}])
         self.m.set_zoom(18)
+
+    def new_gnss_measurement(self, measurement: GnssMeasurement) -> None:
+        if measurement is None:
+            return
+        self.update_robot_position(measurement.point)
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:  # pylint: disable=unused-argument
         if hasattr(self, 'm') and self.m and isinstance(self.m, ui.leaflet):

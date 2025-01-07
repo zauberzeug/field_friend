@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import rosys
 from rosys.geometry import GeoPoint, Pose
+from rosys.hardware.gnss import GpsQuality
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
@@ -44,12 +45,9 @@ class AutomationWatcher:
         rosys.on_repeat(self._update_time, 0.1)
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
+        rosys.on_repeat(self.check_gnss, 0.1)
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
-        # TODO
-        # self.gnss.GNSS_CONNECTION_LOST.register(lambda: self.pause('GNSS connection lost'))
-        # self.gnss.RTK_FIX_LOST.register(lambda: self.pause('GNSS RTK fix lost'))
-
         self.steerer.STEERING_STARTED.register(lambda: self.pause('steering started'))
         # self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
 
@@ -83,15 +81,19 @@ class AutomationWatcher:
         self.incidence_time = rosys.time()
         self.incidence_pose = deepcopy(self.robot_locator.pose)
 
+    def is_gnss_ready(self) -> bool:
+        # pylint: disable=protected-access
+        return self.gnss._is_connected \
+            and self.gnss.last_measurement is not None \
+            and (rosys.time() - self.gnss.last_measurement.time) < 2.0 \
+            and self.gnss.last_measurement.gps_quality in (GpsQuality.RTK_FIXED, GpsQuality.RTK_FLOAT)
+
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
         # TODO: what to do if we don't have bumpers?
         assert self.field_friend.bumper is not None
         bumper_condition = not bool(self.field_friend.bumper.active_bumpers) if self.bumper_watch_active else True
-        # TODO: gnss has no mode anymore
-        # gnss_condition = (self.gnss.last_measurement is not None and ('R' in self.gnss.last_measurement.mode or self.gnss.last_measurement.mode == 'SSSS')) \
-        #     if self.gnss_watch_active else True
-        gnss_condition = True
+        gnss_condition = self.is_gnss_ready() if self.gnss_watch_active else True
 
         # Enable automator only if all relevant conditions are True
         self.automator.enabled = bumper_condition and gnss_condition
@@ -121,6 +123,14 @@ class AutomationWatcher:
     def stop_field_watch(self) -> None:
         self.field_watch_active = False
         self.field_polygon = None
+
+    def check_gnss(self) -> None:
+        if not self.gnss_watch_active:
+            return
+        if self.is_gnss_ready():
+            return
+        # TODO: use gps_quality here? or better robot locator uncertainty?
+        self.pause('GNSS failed')
 
     def check_field_bounds(self) -> None:
         if not self.field_watch_active or not self.field_polygon:
