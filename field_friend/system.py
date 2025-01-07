@@ -66,7 +66,8 @@ class System(rosys.persistence.PersistentModule):
             except Exception:
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             assert isinstance(self.field_friend, FieldFriendHardware)
-            self.gnss = GnssHardware(antenna_pose=Pose(x=0.0, y=self.field_friend.ANTENNA_OFFSET, yaw=np.deg2rad(-90)))
+            # TODO: move Pose to config
+            self.gnss = GnssHardware(antenna_pose=Pose(x=0.041, y=-0.255, yaw=np.deg2rad(0)))
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
