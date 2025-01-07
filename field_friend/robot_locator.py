@@ -131,6 +131,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
         )
 
     @property
+    def prediction(self) -> rosys.geometry.Pose:
+        return self.pose
+
+    @property
     def velocity(self) -> rosys.geometry.Velocity:
         return rosys.geometry.Velocity(
             linear=self.x[3, 0],
