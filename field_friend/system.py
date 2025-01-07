@@ -286,9 +286,9 @@ class System(rosys.persistence.PersistentModule):
             else:
                 core_version = 'simulation'
                 p0_version = 'simulation'
-            if self.current_navigation is not None and self.current_navigation is self.field_navigation:
-                field = self.field_navigation.field
-                row = self.field_navigation.current_row
+            if self.current_navigation is not None and self.current_navigation is FieldNavigation:
+                field = self.field_navigation.field if self.field_navigation.field is not None else None
+                row = self.field_navigation.current_row if self.field_navigation.current_row is not None else None
             else:
                 field = None
                 row = None
