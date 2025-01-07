@@ -5,6 +5,7 @@ icecream
 pillow
 prompt-toolkit # for lizard monitor
 pynmea2
-rosys == v0.21.0
+# rosys == v0.21.0
+git+https://github.com/zauberzeug/rosys.git@main#egg=rosys
 shapely
 uvicorn == 0.28.1
