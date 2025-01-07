@@ -42,7 +42,7 @@ def test_loading_from_persistence_with_errors(system: System):
     for row in field.rows:
         assert len(row.points) == 2
     assert field.first_row_start == FIELD_FIRST_ROW_START
-    assert field.first_row_end == GeoPoint(lat=51.98334192260392, long=7.434293309874038)
+    assert field.first_row_end == GeoPoint.from_degrees(lat=51.98334192260392, lon=7.434293309874038)
 
 
 def test_field_outline(system: System, field: Field):

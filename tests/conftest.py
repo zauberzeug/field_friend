@@ -25,6 +25,7 @@ log = logging.getLogger('field_friend.testing')
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     System.version = getattr(request, 'param', 'rb34')
     s = System()
+    helpers.odometer = s.robot_locator  # type: ignore
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
@@ -58,6 +59,7 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
 @pytest.fixture
 def gnss(system: System) -> GnssSimulation:
     assert isinstance(system.gnss, GnssSimulation)
+    # system.gnss.
     return system.gnss
 
 
@@ -178,6 +180,7 @@ async def field_with_beds_tornado(system_with_tornado: System) -> AsyncGenerator
         bed_spacing=test_field.bed_spacing,
         bed_crops=test_field.bed_crops
     ))
+    print(test_field.bed_crops)
     yield test_field
 
 
