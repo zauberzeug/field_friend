@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
-from rosys.hardware.gnss import GnssSimulation
 from rosys.testing import assert_point, forward
 
 from field_friend import System
@@ -57,23 +56,6 @@ async def test_straight_line_with_high_angles(system: System):
     assert system.robot_locator.pose.point.x == pytest.approx(-0.985, abs=0.1)
     assert system.robot_locator.pose.point.y == pytest.approx(-0.174, abs=0.1)
     assert system.robot_locator.pose.yaw_deg == pytest.approx(predicted_yaw, abs=5)
-
-
-@pytest.mark.skip(reason='TODO: how to simulate gnss failure?')
-async def test_straight_line_with_failing_gnss(system: System, gnss: GnssSimulation, detector: rosys.vision.DetectorSimulation):
-    async def empty():
-        return None
-    # TODO: GNSS
-    create_new_record = gnss._create_new_record
-    system.automator.start()
-    await forward(5)
-    gnss._create_new_record = empty  # type: ignore
-    await forward(0.5)
-    gnss._create_new_record = create_new_record
-    await forward(5)
-    assert system.automator.is_running
-    assert len(detector.simulated_objects) == 0
-    assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=1)
 
 
 async def test_driving_to_exact_positions(system: System):
