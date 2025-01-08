@@ -256,18 +256,16 @@ class System(rosys.persistence.PersistentModule):
     def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation:
         if self.is_real:
             config_hardware: dict = config_selector.import_config(module='hardware')
-            # TODO: not pretty
             if 'gnss' in config_hardware:
-                x = config_hardware['gnss'].get('x', 0.041)
-                y = config_hardware['gnss'].get('y', -0.255)
-                yaw_deg = config_hardware['gnss'].get('yaw_deg', 0.0)
+                antenna_pose = Pose(x=config_hardware['gnss']['x'],
+                                    y=config_hardware['gnss']['y'],
+                                    yaw=np.deg2rad(config_hardware['gnss']['yaw_deg']))
             else:
-                x = 0.041
-                y = -0.255
-                yaw_deg = 0.0
-            return GnssHardware(antenna_pose=Pose(x=x, y=y, yaw=np.deg2rad(yaw_deg)))
+                antenna_pose = Pose(x=0.041, y=-0.255, yaw=np.deg2rad(0.0))
+                self.log.warning('No GNSS antenna configuration found, using default values')
+            return GnssHardware(antenna_pose=antenna_pose)
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
-        return GnssSimulation(wheels=self.field_friend.wheels, lat_std_dev=0.0, lon_std_dev=0.0, heading_std_dev=0.0)
+        return GnssSimulation(wheels=wheels, lat_std_dev=0.0, lon_std_dev=0.0, heading_std_dev=0.0)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
         if reference is None:
