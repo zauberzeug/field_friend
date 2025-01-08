@@ -60,7 +60,7 @@ class Navigation(rosys.persistence.PersistentModule):
                 self.log.error('Preparation failed')
                 return
             if not is_reference_valid(self.gnss):
-                self.system.update_gnss_reference()
+                raise WorkflowException('reference to far away from robot')
             self.start_position = self.robot_locator.pose.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
