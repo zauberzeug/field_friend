@@ -99,7 +99,7 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive(self, distance: float) -> None:
         """Drives the vehicle a short distance forward"""
 
-    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, timeout: float = 3.0) -> None:
+    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, *, timeout: float = 3.0, max_turn_angle: float = 0.1) -> None:
         """Drives the vehicle a short distance forward while steering onto the line defined by the target pose.
         NOTE: the target pose should be the foot point of the current position on the line.
         """
@@ -109,6 +109,8 @@ class Navigation(rosys.persistence.PersistentModule):
         target_point = target.transform(carrot_offset)
         hook = self.robot_locator.pose.transform(hook_offset)
         turn_angle = rosys.helpers.angle(self.robot_locator.pose.yaw, hook.direction(target_point))
+        turn_angle = min(turn_angle, max_turn_angle)
+        turn_angle = max(turn_angle, -max_turn_angle)
         curvature = np.tan(turn_angle) / hook_offset.x
         if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
             curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius
