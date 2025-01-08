@@ -261,6 +261,7 @@ class System(rosys.persistence.PersistentModule):
                                     y=config_hardware['gnss']['y'],
                                     yaw=np.deg2rad(config_hardware['gnss']['yaw_deg']))
             else:
+                # the yaw should be 90°, but the offset is configured in the septentrio software
                 antenna_pose = Pose(x=0.041, y=-0.255, yaw=np.deg2rad(0.0))
                 self.log.warning('No GNSS antenna configuration found, using default values')
             return GnssHardware(antenna_pose=antenna_pose)
