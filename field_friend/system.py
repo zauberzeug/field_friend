@@ -273,8 +273,8 @@ class System(rosys.persistence.PersistentModule):
     async def send_status_to_robot_dashboard(self) -> None:
         dashboard_url = os.environ.get('DASHBOARD_URL')
         try:
-            status = 'emergency stop' if len(self.field_friend.estop.pressed_estops) > 0 else \
-                'bumper active' if self.field_friend.bumper is not None and len(self.field_friend.bumper.active_bumpers) > 0 else \
+            status = 'emergency stop' if len(self.field_friend.estop.pressed_estops) > 0 or self.field_friend.estop.is_soft_estop_active else \
+                'bumper active' if self.field_friend.bumper and self.field_friend.bumper.active_bumpers else \
                 'working' if self.automator.automation is not None and self.automator.automation.is_running else \
                 'idle'
             if self.is_real:
