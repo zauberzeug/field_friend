@@ -35,9 +35,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         config_params: dict = config_selector.import_config(module='params')
         self.check_pins(config_hardware)
         self.MOTOR_GEAR_RATIO: float = config_params['motor_gear_ratio']
-        self.THOOTH_COUNT: int = config_params['thooth_count']
+        self.TOOTH_COUNT: int = config_params['thooth_count']
         self.PITCH: float = config_params['pitch']
-        self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH / np.pi
+        self.WHEEL_DIAMETER: float = self.TOOTH_COUNT * self.PITCH / np.pi
         self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
         self.ANTENNA_OFFSET: float = config_params['antenna_offset']
