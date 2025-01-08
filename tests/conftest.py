@@ -59,7 +59,6 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
 @pytest.fixture
 def gnss(system: System) -> GnssSimulation:
     assert isinstance(system.gnss, GnssSimulation)
-    # system.gnss.
     return system.gnss
 
 
@@ -165,9 +164,7 @@ async def field_with_beds_tornado(system_with_tornado: System) -> AsyncGenerator
         '2': 'onion',
         '3': 'lettuce'
     }
-
-    system = system_with_tornado
-    system.field_provider.create_field(Field(
+    system_with_tornado.field_provider.create_field(Field(
         id=test_field.id,
         name='Test Field With Beds',
         first_row_start=test_field.first_row_start,
@@ -180,7 +177,6 @@ async def field_with_beds_tornado(system_with_tornado: System) -> AsyncGenerator
         bed_spacing=test_field.bed_spacing,
         bed_crops=test_field.bed_crops
     ))
-    print(test_field.bed_crops)
     yield test_field
 
 

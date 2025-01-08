@@ -26,7 +26,7 @@ class State(Enum):
 
 
 class FieldNavigation(StraightLineNavigation):
-    MAX_DISTANCE_DEVIATION = 0.5
+    MAX_DISTANCE_DEVIATION = 0.05
     MAX_ANGLE_DEVIATION = np.deg2rad(10.0)
 
     def __init__(self, system: 'System', implement: Implement) -> None:

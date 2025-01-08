@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-# TODO: still needed?
 def is_reference_valid(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
     if GeoReference.current is None:
         return False
@@ -39,6 +38,7 @@ class Navigation(rosys.persistence.PersistentModule):
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.navigation')
+        self.system = system
         self.driver = system.driver
         self.robot_locator = system.robot_locator
         self.gnss = system.gnss
@@ -60,7 +60,7 @@ class Navigation(rosys.persistence.PersistentModule):
                 self.log.error('Preparation failed')
                 return
             if not is_reference_valid(self.gnss):
-                raise WorkflowException('reference to far away from robot')
+                self.system.update_gnss_reference()
             self.start_position = self.robot_locator.pose.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()

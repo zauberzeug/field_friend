@@ -3,27 +3,17 @@ from __future__ import annotations
 import numpy as np
 from nicegui.elements.scene_objects import Box, Cylinder, Extrusion, Group
 from rosys.driving import robot_object
-from rosys.geometry import Pose, Prism
+from rosys.geometry import Prism
 from rosys.vision import CameraProjector, CameraProvider, camera_objects
 
 from ...hardware import Axis, ChainAxis, FieldFriend, Tornado
 from ...robot_locator import RobotLocator
 
 
-class RobotLocatorOdometer:
-
-    def __init__(self, robot_locator: RobotLocator) -> None:
-        self.robot_locator = robot_locator
-
-    @property
-    def prediction(self) -> Pose:
-        return self.robot_locator.pose
-
-
 class FieldFriendObject(robot_object):
 
     def __init__(self, robot_locator: RobotLocator, camera_provider: CameraProvider, field_friend: FieldFriend) -> None:
-        super().__init__(Prism(outline=[], height=0), RobotLocatorOdometer(robot_locator))  # type: ignore
+        super().__init__(Prism(outline=[], height=0), robot_locator)  # type: ignore
 
         self.robot = field_friend
 

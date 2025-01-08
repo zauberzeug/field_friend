@@ -39,7 +39,6 @@ class AutomationWatcher:
         self.bumper_watch_active: bool = False
         self.gnss_watch_active: bool = False
         self.field_watch_active: bool = False
-        self.last_robot_pose = self.robot_locator.pose
 
         self.start_time: float | None = None
         rosys.on_repeat(self._update_time, 0.1)

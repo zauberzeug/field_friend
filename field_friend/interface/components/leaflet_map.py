@@ -96,9 +96,6 @@ class LeafletMap:
         if dialog:
             self.on_dialog_close()
             dialog.close()
-            # TODO why can we only relocate in simulation?
-            # if isinstance(self.gnss, GnssSimulation):
-            #     self.gnss.relocate(position)
         self.robot_marker = self.robot_marker or self.m.marker(latlng=measurement.point.degree_tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
