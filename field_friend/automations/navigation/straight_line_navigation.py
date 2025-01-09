@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.analysis import track
 
 from ...automations.implements.implement import Implement
 from .navigation import Navigation
@@ -40,6 +41,7 @@ class StraightLineNavigation(Navigation):
         self.origin = self.odometer.prediction.point
         self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=self.length, y=0))
 
+    @track
     async def _drive(self, distance: float) -> None:
         start_position = self.odometer.prediction.point
         closest_point = rosys.geometry.Line.from_points(self.origin, self.target).foot_point(start_position)
