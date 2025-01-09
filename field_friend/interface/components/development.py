@@ -5,6 +5,7 @@ from nicegui import ui
 
 from .hardware_control import create_hardware_control_ui
 from .io_overview import IoOverview as io_overview
+from .log_view import LogView
 from .settings import create_settings_ui
 from .status_dev import status_dev_page
 
@@ -33,6 +34,7 @@ def create_development_ui(system: 'System') -> None:
                     with ui.card().style('background-color: #3E63A6; color: white;'):
                         ui.label('Field Navigation')
                         system.field_navigation.developer_ui()
+                    LogView().classes('w-100 h-60')
     with ui.row().style('width: calc(100vw - 2rem); flex-wrap: nowrap;'):
         io_overview(system)
     if isinstance(system.field_friend, rosys.hardware.RobotHardware):
