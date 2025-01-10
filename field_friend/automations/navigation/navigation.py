@@ -61,7 +61,6 @@ class Navigation(rosys.persistence.PersistentModule):
                 await self.implement.start_workflow()
                 await self.implement.stop_workflow()
         except WorkflowException as e:
-            self.log.error(f'WorkflowException: {e}')
             rosys.notify(f'An exception occurred during automation: {e}', 'negative')
         finally:
             await self.implement.finish()

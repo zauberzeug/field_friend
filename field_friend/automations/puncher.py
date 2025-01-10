@@ -35,6 +35,7 @@ class Puncher:
                 return False
             return True
         except Exception as e:
+            rosys.notify('homing failed', 'negative')
             raise PuncherException('homing failed') from e
         finally:
             await self.field_friend.y_axis.stop()
@@ -71,11 +72,8 @@ class Puncher:
         try:
             if not self.field_friend.y_axis.is_referenced or not self.field_friend.z_axis.is_referenced:
                 rosys.notify('axis are not referenced, homing!', type='info')
-                self.log.info('axis are not referenced, homing!')
                 success = await self.try_home()
                 if not success:
-                    rosys.notify('homing failed!', type='negative')
-                    self.log.error('homing failed!')
                     raise PuncherException('homing failed')
                 # await rosys.sleep(0.5)
             if isinstance(self.field_friend.y_axis, ChainAxis):
@@ -143,7 +141,6 @@ class Puncher:
                 rosys.notify('axis are not referenced, homing!', type='info')
                 success = await self.try_home()
                 if not success:
-                    rosys.notify('homing failed!', type='negative')
                     raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
             await self.field_friend.z_axis.move_down_until_reference(min_position=-0.058 if self.is_demo else None)

@@ -157,7 +157,7 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _run_approach_start_row(self) -> State:
         self.robot_in_working_area = False
-        rosys.notify(f'Approaching row {self.current_row.name}')
+        rosys.notify(f'Approaching row {self.current_row.name}')  # TOPO: is das relevant?
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
             return State.ERROR
@@ -301,7 +301,7 @@ class FieldNavigation(StraightLineNavigation):
         foot_point = self.current_row.line_segment().line.foot_point(self.odometer.prediction.point)
         distance_to_row = foot_point.distance(self.odometer.prediction.point)
         if distance_to_row > self.MAX_DISTANCE_DEVIATION:
-            rosys.notify('Between two rows', 'negative')
+            rosys.notify('Robot is between two rows', 'negative')
             return False
         abs_angle_to_start = abs(self.odometer.prediction.relative_direction(start_point))
         abs_angle_to_end = abs(self.odometer.prediction.relative_direction(end_point))

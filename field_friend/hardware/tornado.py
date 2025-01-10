@@ -438,7 +438,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         if self.odrive_version == 6:
             self.turn_error = int(words.pop(0))
             self.z_error = int(words.pop(0))
-            if self.turn_error == 1 or self.z_error == 1:
+            if (self.turn_error == 1 or self.z_error == 1) and not self.motor_error:
                 self.motor_error = True
                 rosys.notify('Tornado Motor Error', 'warning')
 
