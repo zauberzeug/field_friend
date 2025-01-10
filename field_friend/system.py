@@ -46,11 +46,15 @@ icecream.install()
 class System(rosys.persistence.PersistentModule):
 
     version = 'unknown'  # This is set in main.py through the environment variable VERSION or ROBOT_ID
+    robot_id = 'unknown'  # This is set in main.py through the environment variable ROBOT_ID
 
     def __init__(self) -> None:
         super().__init__()
         assert self.version is not None
         assert self.version != 'unknown'
+        assert self.robot_id is not None
+        assert self.robot_id != 'unknown'
+
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
@@ -294,10 +298,13 @@ class System(rosys.persistence.PersistentModule):
                 row = None
             position = self.gnss.current.location if self.gnss.current is not None else None
             data = {
+                'version': self.version,
                 'battery': self.field_friend.bms.state.percentage,
                 'battery_charging': self.field_friend.bms.state.is_charging,
                 'status': status,
                 'position': {'lat': position.lat, 'long': position.long} if position is not None else None,
+                # TODO: update the gnss quality with kalman filter
+                'gnss_quality': self.gnss.current.gps_qual if self.gnss.current is not None else None,
                 'implement': self.field_friend.implement_name,
                 'navigation': self.current_navigation.name if self.current_navigation is not None else None,
                 'field': field,
@@ -305,9 +312,8 @@ class System(rosys.persistence.PersistentModule):
                 'rosys_version': rosys_version,
                 'core_lizard_version': core_version,
                 'p0_lizard_version': p0_version,
-                # TODO if the current navigation is field navigation, the field and current row should be sent as well
             }
-            endpoint = f'{dashboard_url}/api/robot/{self.version}'
+            endpoint = f'{dashboard_url}/api/robot/{self.robot_id.lower()}'
             response = requests.post(endpoint, json=data, timeout=5)
             if response.status_code != 200:
                 rosys.notify(f'Failed to send status. Response code {response.status_code}', type='negative')
