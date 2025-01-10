@@ -32,9 +32,10 @@ class LogMonitor(rosys.persistence.PersistentModule):
 class LogView(ui.log):
 
     def __init__(self) -> None:
-        log_monitor = LogMonitor()
-        super().__init__(max_lines=log_monitor.MAX_LINES)
-        self.push('\n'.join(log_monitor.lines))
-        self.classes('text-xs')
-        log_monitor.NEW_LINE.register_ui(self.push)
-        ui.run_javascript(f'getElement({self.id}).scrollTop = getElement({self.id}).scrollHeight')
+        with ui.card().style('background-color: #3E63A6; color: white;'):
+            log_monitor = LogMonitor()
+            super().__init__(max_lines=log_monitor.MAX_LINES)
+            self.push('\n'.join(log_monitor.lines))
+            self.classes('text-xs')
+            log_monitor.NEW_LINE.register_ui(self.push)
+            ui.run_javascript(f'getElement({self.id}).scrollTop = getElement({self.id}).scrollHeight')
