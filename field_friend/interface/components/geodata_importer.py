@@ -77,9 +77,6 @@ class GeodataImporter(ui.dialog):
     async def restore_from_file(self, e: events.UploadEventArguments) -> None:
         self.close()
         coordinates: list | None = []
-        if e is None or e.content is None:
-            rosys.notify('You can only upload the following file formates: .kml ,.xml. with ISO  and shape files.', type='warning')
-            return
         if e.name[-3:].casefold() == 'zip':
             coordinates = self.extract_coordinates_shp(e)
         elif e.name[-3:].casefold() == 'kml':
