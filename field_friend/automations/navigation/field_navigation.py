@@ -48,7 +48,6 @@ class FieldNavigation(StraightLineNavigation):
         self.field_provider.FIELD_SELECTED.register(self._set_field_id)
         self._loop: bool = False
         self.rows_to_work_on: list[Row] = []
-        self.robot_in_working_area = False
 
     @property
     def current_row(self) -> Row:
@@ -108,10 +107,8 @@ class FieldNavigation(StraightLineNavigation):
         self.end_point = None
         start_point = self.current_row.points[0].to_local()
         end_point = self.current_row.points[-1].to_local()
-
         swap_points: bool
-        self.robot_in_working_area = self._is_in_working_area(start_point, end_point)
-        if self.robot_in_working_area:
+        if self._is_in_working_area(start_point, end_point):
             abs_angle_to_start = abs(self.robot_locator.pose.relative_direction(start_point))
             abs_angle_to_end = abs(self.robot_locator.pose.relative_direction(end_point))
             swap_points = abs_angle_to_start < abs_angle_to_end
@@ -119,7 +116,6 @@ class FieldNavigation(StraightLineNavigation):
             distance_to_start = self.robot_locator.pose.distance(start_point)
             distance_to_end = self.robot_locator.pose.distance(end_point)
             swap_points = distance_to_start > distance_to_end
-
         if swap_points:
             self.log.debug('Swapping start and end points')
             start_point, end_point = end_point, start_point
@@ -146,30 +142,29 @@ class FieldNavigation(StraightLineNavigation):
             self._state = await self._run_row_completed()
 
     async def _run_approach_start_row(self) -> State:
-        self.robot_in_working_area = False
-        rosys.notify(f'Approaching row {self.current_row.name}')
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
             return State.ERROR
-        if not self._is_start_allowed(self.start_point, self.end_point, self.robot_in_working_area):
+        robot_in_working_area = self._is_in_working_area(self.start_point, self.end_point, position_error_margin=0.0)
+        if not self._is_start_allowed(self.start_point, self.end_point, robot_in_working_area):
             return State.ERROR
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
         else:
             self.plant_provider.clear()
 
-        assert self.start_point is not None
-        target_yaw = self.robot_locator.pose.direction(self.start_point)
-        await self.turn_to_yaw(target_yaw)
-        await self.driver.drive_to(self.start_point, backward=False)
-        assert self.end_point is not None
+        if not robot_in_working_area:
+            assert self.start_point is not None
+            target_yaw = self.robot_locator.pose.direction(self.start_point)
+            await self.turn_to_yaw(target_yaw)
+            await self.driver.drive_to(self.start_point, backward=False)
+            assert self.end_point is not None
         driving_yaw = self.robot_locator.pose.direction(self.end_point)
         await self.turn_to_yaw(driving_yaw)
         self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
     async def _run_change_row(self) -> State:
-        self.robot_in_working_area = False
         self.set_start_and_end_points()
         assert self.start_point is not None
         target_yaw = self.robot_locator.pose.direction(self.start_point)
@@ -178,7 +173,6 @@ class FieldNavigation(StraightLineNavigation):
         assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
         await self.turn_to_yaw(row_yaw)
-
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
         else:
@@ -238,16 +232,16 @@ class FieldNavigation(StraightLineNavigation):
             return
         if self.implement.cultivated_crop == self.current_row.crop:
             return
-        rosys.notify(f'Setting crop {self.current_row.crop} for {self.implement.name}')
         self.implement.cultivated_crop = self.current_row.crop
         self.implement.request_backup()
 
-    def _is_in_working_area(self, start_point: Point, end_point: Point) -> bool:
+    def _is_in_working_area(self, start_point: Point, end_point: Point, *, position_error_margin: float = 0.05) -> bool:
         # TODO: check if in working rectangle, current just checks if between start and stop
         relative_start = self.robot_locator.pose.relative_point(start_point)
         relative_end = self.robot_locator.pose.relative_point(end_point)
-        robot_in_working_area = relative_start.x * relative_end.x <= 0
-        self.log.debug('Robot in working area: %s', robot_in_working_area)
+        robot_in_working_area = relative_start.x * relative_end.x <= 0.0
+        if abs(relative_start.x) < position_error_margin or abs(relative_end.x) < position_error_margin:
+            return False
         return robot_in_working_area
 
     def _is_start_allowed(self, start_point: Point, end_point: Point, robot_in_working_area: bool) -> bool:
