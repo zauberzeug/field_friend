@@ -459,7 +459,6 @@ async def test_field_navigation_robot_heading_deviation(system: System, field: F
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped, timeout=1500)
     end_point = field.rows[-1].points[0].to_local()
-    # TODO: robot_in_working_area
     if np.deg2rad(heading_degrees) > system.field_navigation.MAX_ANGLE_DEVIATION:
         assert system.odometer.prediction.point.x != pytest.approx(end_point.x, abs=0.05)
         assert system.odometer.prediction.point.y != pytest.approx(end_point.y, abs=0.05)
