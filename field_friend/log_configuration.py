@@ -1,24 +1,27 @@
-import logging
+import atexit
+import logging.config
+from logging.handlers import QueueListener
 from pathlib import Path
+from queue import Queue
 
+import coloredlogs
 import icecream
 from rosys import helpers
 
 project = 'field_friend'
-
 PATH = Path('~/.rosys').expanduser()
 
 
 def configure():
     icecream.install()
-
     PATH.mkdir(parents=True, exist_ok=True)
 
     config = {
         'version': 1,
-        'disable_existing_loggers': True,
+        'disable_existing_loggers': False,
         'formatters': {
             'default': {
+                '()': coloredlogs.ColoredFormatter,
                 'format': r'%(asctime)s.%(msecs)03d [%(levelname)s] %(relative_path)s:%(lineno)d: %(message)s',
                 'datefmt': r'%Y-%m-%d %H:%M:%S',
             },
@@ -42,61 +45,42 @@ def configure():
                 'formatter': 'default',
                 'filters': ['package_path_filter'],
                 'filename': PATH / 'debug.log',
-                'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
-                'backupCount': 10  # max 100 mb of logs
+                'maxBytes': 1024 * 1000 * 10,
+                'backupCount': 10
             },
-            'communicationfile': {
-                'level': 'DEBUG',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'formatter': 'default',
-                'filters': ['package_path_filter'],
-                'filename': PATH / 'communication.log',
-                'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
-                'backupCount': 50  # max 500 mb of logs
+            'debug_queue': {
+                'class': 'logging.handlers.QueueHandler',
+                'queue': Queue(),
             },
-            'batteryfile': {
-                'level': 'DEBUG',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'formatter': 'default',
-                'filters': ['package_path_filter'],
-                'filename': PATH / 'battery.log',
-                'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
-                'backupCount': 50  # max 500 mb of logs
-            }
         },
         'loggers': {
             '': {  # root logger
-                'handlers': ['console'],
-                'level': 'WARN',
-                'propagate': False,
-            },
-            'rosys.communication': {
-                'handlers': ['communicationfile'],
+                'handlers': ['debug_queue'],
                 'level': 'INFO',
-                'propagate': False,
             },
-            'field_friend.bms': {
-                'handlers': ['batteryfile'],
-                'level': 'INFO',
-                'propagate': False,
-            },
-            'asyncio': {
-                'handlers': ['debugfile'],
-                'level': 'WARNING',
-                'propagate': False,
-            },
-            'rosys': {
-                'handlers': ['console', 'debugfile'],
-                'level': 'INFO',
-                'propagate': False,
+            'DUMMY': {
+                # to be able to access these handlers below
+                'handlers': ['debugfile', 'console'],
             },
             project: {
-                'handlers': ['console', 'debugfile'],
                 'level': 'INFO',
-                'propagate': False,
+                'propagate': True,
+            },
+            'rosys': {
+                'level': 'INFO',
+                'propagate': True,
             },
         },
     }
 
     logging.config.dictConfig(config)
+
+    # Setup queue listeners
+    handlers = {h.name: h for h in logging.getLogger('DUMMY').handlers}
+
+    debug_queue = config['handlers']['debug_queue']['queue']
+    debug_listener = QueueListener(debug_queue, handlers['debugfile'], handlers['console'])
+    debug_listener.start()
+    atexit.register(debug_listener.stop)
+
     return logging.getLogger(project)
