@@ -86,7 +86,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.log.info(f'Handling plants with {self.name}...')
 
     async def stop_workflow(self) -> None:
-        self.log.info('workflow completed')
+        self.log.debug('workflow completed')
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 

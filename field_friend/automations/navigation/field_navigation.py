@@ -157,7 +157,7 @@ class FieldNavigation(StraightLineNavigation):
 
     async def _run_approach_start_row(self) -> State:
         self.robot_in_working_area = False
-        rosys.notify(f'Approaching row {self.current_row.name}')  # TOPO: is das relevant?
+        self.log.debug(f'Approaching row {self.current_row.name}')
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
             return State.ERROR

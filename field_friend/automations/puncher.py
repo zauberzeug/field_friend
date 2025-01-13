@@ -63,7 +63,7 @@ class Puncher:
                     with_open_tornado: bool = False,
                     ) -> None:
         y += self.field_friend.WORK_Y
-        self.log.info(f'Punching at {y} with depth {depth}...')
+        self.log.debug(f'Punching at {y} with depth {depth}...')
         rest_position = 'reference'
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
@@ -100,7 +100,7 @@ class Puncher:
                     rest_position = f'custom position {target}'
                 else:
                     await self.field_friend.z_axis.return_to_reference()
-            self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
+            self.log.debug(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
         except Exception as e:
             raise PuncherException('punching failed') from e
         finally:
@@ -111,7 +111,7 @@ class Puncher:
         if self.field_friend.y_axis is None:
             rosys.notify('no y axis', 'negative')
             return
-        self.log.info('Clearing view...')
+        self.log.debug('Clearing view...')
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
