@@ -155,7 +155,8 @@ async def test_follow_crops_straight(system: System, detector: rosys.vision.Dete
 async def test_follow_crops_continue(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(0, 20):
         x = i / 10
-        p = rosys.geometry.Point3d(x=x + 1, y=x, z=0)
+        y = x / 4
+        p = rosys.geometry.Point3d(x=x, y=y, z=0)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.current_navigation = system.follow_crops_navigation
     system.current_navigation.length = 5.0
@@ -164,9 +165,9 @@ async def test_follow_crops_continue(system: System, detector: rosys.vision.Dete
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: not system.automator.is_running, timeout=300)
     assert not system.automator.is_running, 'automation should stop if no crops are detected anymore'
-    assert system.robot_locator.pose.point.x == pytest.approx(4.0, abs=0.1)
-    assert system.robot_locator.pose.point.y == pytest.approx(3.0, abs=0.1)
-    assert system.robot_locator.pose.yaw_deg == pytest.approx(45, abs=1.0)
+    assert system.robot_locator.pose.point.x == pytest.approx(4.85, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(1.26, abs=0.1)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(15.5, abs=1.0)
 
 
 async def test_follow_crops_adjust(system: System, detector: rosys.vision.DetectorSimulation):
@@ -247,7 +248,8 @@ async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.
 async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(20):
         x = i/10.0
-        p = rosys.geometry.Point3d(x=x, y=(x/3) ** 3, z=0)
+        y = (x/3) ** 3
+        p = rosys.geometry.Point3d(x=x, y=y, z=0)
         p = system.robot_locator.pose.transform3d(p)
         detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize', position=p))
     system.current_navigation = system.follow_crops_navigation
@@ -256,9 +258,9 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.yaw_deg == pytest.approx(16.5, abs=1.0)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(10.3, abs=1.0)
     await forward(5)  # waiting for the kalman filter to catch up with gnss updates
-    assert system.robot_locator.pose.yaw_deg == pytest.approx(16.5, abs=0.5)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(10.3, abs=0.5)
 
 
 async def test_approach_first_row(system: System, field: Field):
