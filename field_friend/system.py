@@ -186,7 +186,7 @@ class System(rosys.persistence.PersistentModule):
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             app_controls(self.field_friend.robot_brain, self.automator, self.field_friend)
-            rosys.on_repeat(self.log_status, 60*5)
+            rosys.on_repeat(self.log_status, 60 * 5)
 
     def restart(self) -> None:
         os.utime('main.py')
@@ -314,8 +314,10 @@ class System(rosys.persistence.PersistentModule):
                 'p0_lizard_version': p0_version,
             }
             endpoint = f'{dashboard_url}/api/robot/{self.robot_id.lower()}'
-            response = requests.post(endpoint, json=data, timeout=5)
+            passphrase = os.environ.get('DASHBOARD_PASSPHRASE')
+            headers = {'passphrase': passphrase} if passphrase else {}
+            response = requests.post(endpoint, json=data, headers=headers, timeout=5)
             if response.status_code != 200:
-                rosys.notify(f'Failed to send status. Response code {response.status_code}', type='negative')
+                rosys.notify(f'Response code {response.status_code}.', type='negative')
         except Exception as e:
             rosys.notify(f'Error sending status: {e!s}', type='negative')
