@@ -25,7 +25,7 @@ class CameraConfigurator:
 
     async def update_camera_config(self):
         await rosys.sleep(15)
-        self.log.info('updating camera config')
+        self.log.debug('updating camera config')
         camera = None
         start_time = rosys.time()
         while not camera:
@@ -34,7 +34,7 @@ class CameraConfigurator:
             cameras = list(self.camera_provider.cameras.values())
             camera = next((camera for camera in cameras if camera.is_connected), None)
             await rosys.sleep(1)
-        self.log.info(f'camera: {camera.id} is active')
+        self.log.debug(f'camera: {camera.id} is active')
         parameters_changed = False
         if isinstance(camera, CalibratableUsbCamera):
             if 'u1' in list(self.config.keys()):
@@ -95,5 +95,5 @@ class CameraConfigurator:
                 parameters_changed = True
 
         if parameters_changed:
-            self.log.info(f'Updated camera {camera.id} parameters, requesting backup...')
+            self.log.debug(f'Updated camera {camera.id} parameters, requesting backup...')
             self.camera_provider.request_backup()

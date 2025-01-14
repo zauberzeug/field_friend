@@ -101,7 +101,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.gnss.device is not None
         row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
             self.odometer.prediction.point).distance(self.odometer.prediction.point))
-        self.log.info(f'Nearest row is {row.name}')
+        self.log.debug(f'Nearest row is {row.name}')
         if row not in self.rows_to_work_on:
             rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
             return None

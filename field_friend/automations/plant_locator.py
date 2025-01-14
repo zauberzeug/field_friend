@@ -52,7 +52,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         rosys.on_startup(self.get_crop_names)
 
     def backup(self) -> dict:
-        self.log.info(f'backup: autoupload: {self.autoupload}')
+        self.log.debug(f'backup: autoupload: {self.autoupload}')
         return {
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
@@ -66,7 +66,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
             if 'autoupload' in data else Autoupload.DISABLED
-        self.log.info(f'self.autoupload: {self.autoupload}')
+        self.log.debug(f'self.autoupload: {self.autoupload}')
         self.upload_images = data.get('upload_images', self.upload_images)
         self.tags = data.get('tags', self.tags)
 
@@ -138,13 +138,13 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def pause(self) -> None:
         if self.is_paused:
             return
-        self.log.info('pausing plant detection')
+        self.log.debug('pausing plant detection')
         self.is_paused = True
 
     def resume(self) -> None:
         if not self.is_paused:
             return
-        self.log.info('resuming plant detection')
+        self.log.debug('resuming plant detection')
         self.is_paused = False
 
     async def get_outbox_mode(self, port: int) -> bool | None:
