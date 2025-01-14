@@ -234,7 +234,7 @@ class FlashlightConfiguration:
     back_pin: int | None = None
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class BaseAxisConfiguration:
     name: str
     max_position: float
@@ -242,30 +242,30 @@ class BaseAxisConfiguration:
     version: Literal['axis_d1', 'chain_axis', 'y_axis_stepper', 'y_axis_canopen', 'tornado']
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class AxisCanOpenConfiguration:
     can_address: int
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class YAxisConfiguration:
     end_l_pin: int
     end_r_pin: int
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class ExtraPinsConfiguration:
     dir_pin: int
     step_pin: int
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class OnExpanderConfiguration:
     end_stops_on_expander: bool
     motor_on_expander: bool
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class StepperAndCanOpenConfiguration:
     end_stops_inverted: bool
     max_speed: int
@@ -273,13 +273,13 @@ class StepperAndCanOpenConfiguration:
     steps_per_m: int
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class EndPinsConfiguration:
     end_bottom_pin: int
     end_top_pin: int
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(kw_only=True)
 class AxisOffsetConfiguration:
     axis_offset: float
     reversed_direction: bool
