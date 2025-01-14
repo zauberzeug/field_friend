@@ -11,6 +11,7 @@ class RobotBrainConfiguration:
     Defaults:
         enable_esp_on_startup: None
     """
+    name: str
     flash_params: list[str]
     enable_esp_on_startup: bool | None = None
 
