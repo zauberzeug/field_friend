@@ -250,6 +250,16 @@ class FlashlightConfiguration:
     back_pin: int | None = None
 
 
+@dataclass(slots=True, kw_only=True)
+class IMUConfiguration:
+    """Configuration for the IMU of the FieldFriend robot.
+
+    Defaults:
+        name: 'imu'
+    """
+    name: str = 'imu'
+
+
 @dataclass(kw_only=True)
 class BaseAxisConfiguration:
     name: str
@@ -404,6 +414,30 @@ class ZCanOpenConfiguration(BaseAxisConfiguration,
 
 
 @dataclass(slots=True, kw_only=True)
+class ExternalMowerConfiguration:
+    """Configuration for an external mower of a FieldFriend robot.
+
+    Defaults:
+        name: 'mower'
+        m_per_tick: 0.01
+        is_m0_reversed: False
+        is_m1_reversed: False
+        is_m2_reversed: False
+        odrive_version: 4
+    """
+    m0_can_address: int
+    m1_can_address: int
+    m2_can_address: int
+    speed: float
+    name: str = 'mower'
+    m_per_tick: float = 0.01
+    is_m0_reversed: bool = False
+    is_m1_reversed: bool = False
+    is_m2_reversed: bool = False
+    odrive_version: int = 4
+
+
+@dataclass(slots=True, kw_only=True)
 class FieldFriendConfiguration:
     """Configuration for the FieldFriend robot.
 
@@ -430,3 +464,5 @@ class FieldFriendConfiguration:
     bumper: BumperConfiguration | None = None
     battery_control: BatteryControlConfiguration | None = field(default_factory=BatteryControlConfiguration)
     flashlight: FlashlightConfiguration | None = None
+    imu: IMUConfiguration | None = None
+    external_mower: ExternalMowerConfiguration | None = None
