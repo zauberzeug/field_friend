@@ -6,12 +6,12 @@ import rosys
 import rosys.helpers
 from nicegui import ui
 from rosys.geometry import Pose3d, Rotation
-from rosys.hardware import Gnss, GnssMeasurement
+from rosys.hardware import Gnss, GnssMeasurement, Wheels
 
 
 class RobotLocator(rosys.persistence.PersistentModule):
 
-    def __init__(self, wheels: rosys.hardware.Wheels, gnss: Gnss) -> None:
+    def __init__(self, wheels: Wheels, gnss: Gnss) -> None:
         """ Robot Locator based on an extended Kalman filter.
 
         ### State
@@ -159,6 +159,9 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def handle_gnss_measurement(self, gnss_measurement: GnssMeasurement) -> None:
         if self.ignore_gnss:
+            return
+        if not np.isfinite(gnss_measurement.heading_std_dev):
+            # TODO: how to handle this case?
             return
         self.predict(gnss_measurement.time)
         pose = gnss_measurement.pose.to_local()
