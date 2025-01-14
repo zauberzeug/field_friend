@@ -265,7 +265,13 @@ class BaseAxisConfiguration:
     name: str
     max_position: float
     min_position: float
-    version: Literal['axis_d1', 'chain_axis', 'y_axis_stepper', 'y_axis_canopen', 'tornado']
+    version: Literal['axis_d1',
+                     'chain_axis',
+                     'y_axis_stepper',
+                     'y_axis_canopen',
+                     'tornado',
+                     'z_axis_canopen',
+                     'z_axis_stepper']
 
 
 @dataclass(kw_only=True)
@@ -345,6 +351,7 @@ class YCanOpenConfiguration(BaseAxisConfiguration,
                             StepperAndCanOpenConfiguration,
                             AxisCanOpenConfiguration,
                             OnExpanderConfiguration,
+                            YAxisConfiguration,
                             AxisOffsetConfiguration):
     pass
 
@@ -398,7 +405,9 @@ class TornadoConfiguration(BaseAxisConfiguration,
 
 @dataclass(slots=True, kw_only=True)
 class ZStepperConfiguration(BaseAxisConfiguration,
+                            StepperAndCanOpenConfiguration,
                             EndPinsConfiguration,
+                            ExtraPinsConfiguration,
                             OnExpanderConfiguration,
                             AxisOffsetConfiguration):
     alarm_pin: int
@@ -406,6 +415,7 @@ class ZStepperConfiguration(BaseAxisConfiguration,
 
 @dataclass(slots=True, kw_only=True)
 class ZCanOpenConfiguration(BaseAxisConfiguration,
+                            StepperAndCanOpenConfiguration,
                             AxisCanOpenConfiguration,
                             EndPinsConfiguration,
                             OnExpanderConfiguration,
