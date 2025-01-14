@@ -160,6 +160,14 @@ class BumperConfiguration:
     name: str = 'bumper'
     on_expander: bool = True
 
+    @property
+    def pins(self) -> dict[str, int]:
+        return {
+            'front_top': self.pin_front_top,
+            'front_bottom': self.pin_front_bottom,
+            'back': self.pin_back
+        }
+
 
 @dataclass(slots=True, kw_only=True)
 class BatteryControlConfiguration:
@@ -209,6 +217,13 @@ class EstopConfiguration:
     name: str = 'estop'
     pin_1: int = 34
     pin_2: int = 35
+
+    @property
+    def pins(self) -> dict[str, int]:
+        return {
+            '1': self.pin_1,
+            '2': self.pin_2,
+        }
 
 
 @dataclass(slots=True, kw_only=True)
