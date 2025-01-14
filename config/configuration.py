@@ -404,9 +404,9 @@ class FieldFriendConfiguration:
     robot_brain: RobotBrainConfiguration
     tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'mower'] | None
     measurements: MeasurementsConfiguration
-    camera: CameraConfiguration
     wheels: WheelsConfiguration
     has_status_control: bool
+    camera: CameraConfiguration | None
     y_axis: AxisD1Configuration | ChainAxisConfiguration | YStepperConfiguration | YCanOpenConfiguration | None
     z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | None
     can: CanConfiguration = field(default_factory=CanConfiguration)
