@@ -13,7 +13,7 @@ from .configuration import (
 )
 
 u4 = FieldFriendConfiguration(name='uckerbot-u4',
-                              robot_brain=RobotBrainConfiguration(flash_params=['orin']),
+                              robot_brain=RobotBrainConfiguration(name='rb28', flash_params=['orin']),
                               tool='tornado',
                               measurements=MeasurementsConfiguration(tooth_count=17, pitch=0.041),
                               camera=CameraConfiguration(width=1280, height=720,
