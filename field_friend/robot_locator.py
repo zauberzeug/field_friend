@@ -161,7 +161,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         if self.ignore_gnss:
             return
         if not np.isfinite(gnss_measurement.heading_std_dev):
-            # TODO: how to handle this case?
+            # normally we would only handle the position if no heading is available,
+            # but the field friend needs the rtk accuracy to function properly
             return
         self.predict(gnss_measurement.time)
         pose = gnss_measurement.pose.to_local()
