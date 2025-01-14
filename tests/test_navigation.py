@@ -15,7 +15,7 @@ from field_friend.automations.navigation.field_navigation import State as FieldN
 
 
 async def test_straight_line(system: System):
-    assert_point(system.robot_locator.pose.point, rosys.geometry.Point(x=0.0, y=0))
+    assert_point(system.robot_locator.pose.point, rosys.geometry.Point(x=0, y=0))
     assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
@@ -27,7 +27,7 @@ async def test_straight_line(system: System):
 
 async def test_straight_line_with_tornado(system_with_tornado: System):
     system = system_with_tornado
-    assert_point(system.robot_locator.pose.point, rosys.geometry.Point(x=0.0, y=0))
+    assert_point(system.robot_locator.pose.point, rosys.geometry.Point(x=0, y=0))
     assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     system.current_implement = system.implements['Tornado']

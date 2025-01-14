@@ -132,14 +132,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     @property
     def prediction(self) -> rosys.geometry.Pose:
-        # # TODO: cache predict?
-        # self.predict()
         return self.pose
 
     @property
     def velocity(self) -> rosys.geometry.Velocity:
-        # TODO: cache predict?
-        # self.predict()
         return rosys.geometry.Velocity(
             linear=self.x[3, 0],
             angular=self.x[4, 0],
