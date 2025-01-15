@@ -326,15 +326,15 @@ class System(rosys.persistence.PersistentModule):
             else:
                 field = None
                 row = None
-            position = self.gnss.current.location if self.gnss.current is not None else None
+            position = self.gnss.last_measurement.point if self.gnss.last_measurement is not None else None
             data = {
                 'version': self.version,
                 'battery': self.field_friend.bms.state.percentage,
                 'battery_charging': self.field_friend.bms.state.is_charging,
                 'status': status,
-                'position': {'lat': position.lat, 'long': position.long} if position is not None else None,
+                'position': {'lat': position.lat, 'lon': position.lon} if position is not None else None,
                 # TODO: update the gnss quality with kalman filter
-                'gnss_quality': self.gnss.current.gps_qual if self.gnss.current is not None else None,
+                'gnss_quality': self.gnss.last_measurement.gps_quality if self.gnss.last_measurement is not None else None,
                 'implement': self.field_friend.implement_name,
                 'navigation': self.current_navigation.name if self.current_navigation is not None else None,
                 'field': field,
