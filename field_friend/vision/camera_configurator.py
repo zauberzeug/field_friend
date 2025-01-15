@@ -5,18 +5,19 @@ import rosys
 
 import config.config_selection as config_selector
 
+from ..robot_locator import RobotLocator
 from .calibratable_usb_camera import CalibratableUsbCamera
 
 
 class CameraConfigurator:
     def __init__(self,
                  camera_provider: rosys.vision.CameraProvider,
-                 odometer: rosys.driving.Odometer,
+                 robot_locator: RobotLocator,
                  robot_id: str | None = None,
                  ):
         self.log = logging.getLogger('field_friend.camera_configurator')
         self.camera_provider = camera_provider
-        self.odometer = odometer
+        self.robot_locator = robot_locator
         if not robot_id:
             self.config = config_selector.import_config(module='camera')
         else:
@@ -50,7 +51,7 @@ class CameraConfigurator:
                         await camera.set_parameters({name: value})
                         parameters_changed = True
             if not camera.calibration.extrinsics.frame_id:
-                camera.calibration.extrinsics.in_frame(self.odometer.prediction_frame)
+                camera.calibration.extrinsics.in_frame(self.robot_locator.pose_frame)
             if 'crop' in self.config:
                 # Fetch new cropping parameters
                 left = self.config['crop']['left']

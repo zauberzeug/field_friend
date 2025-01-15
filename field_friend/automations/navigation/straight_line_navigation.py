@@ -38,33 +38,33 @@ class StraightLineNavigation(Navigation):
         await self.implement.deactivate()
 
     def update_target(self) -> None:
-        self.origin = self.odometer.prediction.point
-        self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=self.length, y=0))
+        self.origin = self.robot_locator.pose.point
+        self.target = self.robot_locator.pose.transform(rosys.geometry.Point(x=self.length, y=0))
 
     @track
     async def _drive(self, distance: float) -> None:
-        start_position = self.odometer.prediction.point
+        start_position = self.robot_locator.pose.point
         closest_point = rosys.geometry.Line.from_points(self.origin, self.target).foot_point(start_position)
         yaw = closest_point.direction(self.target)
         await self._drive_towards_target(distance, rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw))
 
     def _should_finish(self) -> bool:
         end_pose = rosys.geometry.Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)
-        return end_pose.relative_point(self.odometer.prediction.point).x > 0
+        return end_pose.relative_point(self.robot_locator.pose.point).x > 0
 
     def create_simulation(self):
         assert isinstance(self.detector, rosys.vision.DetectorSimulation)
         crop_distance = 0.2
         for i in range(0, round(self.length / crop_distance)):
-            p = self.odometer.prediction.point.polar(crop_distance*i,
-                                                     self.odometer.prediction.yaw) \
-                .polar(randint(-2, 2)*0.01, self.odometer.prediction.yaw+np.pi/2)
+            p = self.robot_locator.pose.point.polar(crop_distance*i,
+                                                    self.robot_locator.pose.yaw) \
+                .polar(randint(-2, 2)*0.01, self.robot_locator.pose.yaw+np.pi/2)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
                                                                                 position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
             for _ in range(1, 7):
-                p = self.odometer.prediction.point.polar(0.20*i+randint(-5, 5)*0.01,
-                                                         self.odometer.prediction.yaw) \
-                    .polar(randint(-15, 15)*0.01, self.odometer.prediction.yaw + np.pi/2)
+                p = self.robot_locator.pose.point.polar(0.20*i+randint(-5, 5)*0.01,
+                                                        self.robot_locator.pose.yaw) \
+                    .polar(randint(-15, 15)*0.01, self.robot_locator.pose.yaw + np.pi/2)
                 self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                                     position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
 

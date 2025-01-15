@@ -44,6 +44,8 @@ RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install pyudev
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install geopandas
+RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
+    python3 -m pip install fiona
 
 COPY requirements.txt ./
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
