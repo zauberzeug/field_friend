@@ -203,6 +203,19 @@ class FieldNavigation(StraightLineNavigation):
         await self.driver.wheels.stop()
 
     @track
+    async def turn_in_steps(self, target_yaw: float) -> None:
+        angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
+        while abs(angle_difference) > np.deg2rad(1.0):
+            next_angle = rosys.helpers.eliminate_2pi(
+                self.odometer.prediction.yaw + np.sign(angle_difference) * self._turn_step)
+            if abs(angle_difference) > self._turn_step:
+                await self.turn_to_yaw(next_angle)
+            else:
+                await self.turn_to_yaw(target_yaw)
+            await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
+            angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
+
+    @track
     async def _run_follow_row(self, distance: float) -> State:
         assert self.end_point is not None
         assert self.start_point is not None
