@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.analysis import track
 from rosys.helpers import eliminate_2pi
 
 from ..implements.implement import Implement
@@ -48,6 +49,7 @@ class FollowCropsNavigation(StraightLineNavigation):
         distance = self.length - self.odometer.prediction.point.distance(self.start_position)
         self.target = self.odometer.prediction.transform(rosys.geometry.Point(x=distance, y=0))
 
+    @track
     async def _drive(self, distance: float) -> None:
         row = self.plant_provider.get_relevant_crops(point=self.odometer.prediction.point_3d(), max_distance=1.0)
         if len(row) >= 3:

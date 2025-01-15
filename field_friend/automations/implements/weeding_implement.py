@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
+from rosys.analysis import track
 from rosys.geometry import Point3d, Pose
 
 from ...hardware import ChainAxis
@@ -91,6 +92,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.weeds_to_handle = {}
 
     # TODO: can we get rid of the pylint disable?
+    @track
     async def _check_hardware_ready(self) -> bool:  # pylint: disable=too-many-return-statements
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active, aborting', 'negative')
