@@ -49,10 +49,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
             self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
-        rosys.on_startup(self.get_crop_names)
+        self.detector_error = False
         self.last_detection_time = rosys.time()
         self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
         rosys.on_repeat(self._detection_watchdog, 0.5)
+        rosys.on_startup(self.get_crop_names)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
@@ -154,8 +155,13 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def _detection_watchdog(self) -> None:
         if self.is_paused:
             return
-        if rosys.time() - self.last_detection_time > 1.0:
-            rosys.notify('No detection for 1 second', 'negative')
+        if rosys.time() - self.last_detection_time > 1.0 and not self.detector_error:
+            rosys.notify('No new detections', 'negative')
+            self.detector_error = True
+            return
+        if self.detector_error:
+            self.detector_error = False
+            rosys.notify('Detection error resolved', 'positive')
 
     async def get_outbox_mode(self, port: int) -> bool | None:
         # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
