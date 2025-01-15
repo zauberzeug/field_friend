@@ -1,3 +1,5 @@
+import importlib
+
 from .configuration import (
     AxisD1Configuration,
     BatteryControlConfiguration,
@@ -20,18 +22,15 @@ from .configuration import (
     ZCanOpenConfiguration,
     ZStepperConfiguration,
 )
-from .u4 import u4
-
-robots: dict[str, FieldFriendConfiguration] = {
-    'u4': u4
-}
 
 
 def get_config(robot_name: str) -> FieldFriendConfiguration:
-    robot_config = robots.get(robot_name)
-    if not robot_config:
-        raise RuntimeError(f'no configuration found for this robot: {robot_name}')
-    return robot_config
+    try:
+        module_name = f'config.{robot_name.lower()}'
+        config_module = importlib.import_module(module_name)
+        return config_module.conf
+    except ImportError as e:
+        raise RuntimeError(f'No configuration found for robot: {robot_name}') from e
 
 
 __all__ = [
