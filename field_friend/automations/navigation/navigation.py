@@ -37,6 +37,9 @@ class Navigation(rosys.persistence.PersistentModule):
         self.start_position = self.odometer.prediction.point
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
+        self.last_detection_time = rosys.time()
+        self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
+        rosys.on_repeat(0.1, self._detection_watchdog)
 
     async def start(self) -> None:
         try:
@@ -115,6 +118,10 @@ class Navigation(rosys.persistence.PersistentModule):
 
     def clear(self) -> None:
         """Resets the state to initial configuration"""
+
+    def _detection_watchdog(self) -> None:
+        if rosys.time() - self.last_detection_time > 1.0:
+            rosys.notify('No detection for 1 second', 'negative')
 
     def backup(self) -> dict:
         return {
