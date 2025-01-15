@@ -159,7 +159,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             rosys.notify('No new detections', 'negative')
             self.detector_error = True
             return
-        if self.detector_error and rosys.time() - self.last_detection_time <= 1.0:
+        if rosys.time() - self.last_detection_time <= 1.0 and self.detector_error:
             self.detector_error = False
             rosys.notify('Detection error resolved', 'positive')
 
