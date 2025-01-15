@@ -133,7 +133,7 @@ class Puncher:
         await self.field_friend.y_axis.stop()
 
     async def tornado_drill(self, angle: float = 180, turns: float = 2, with_open_drill=False) -> None:
-        self.log.info(f'Drilling with tornado at {angle}°...')
+        self.log.debug(f'Drilling with tornado at {angle}°...')
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise PuncherException('tornado drill is only available for tornado axis')
         try:
@@ -151,7 +151,7 @@ class Puncher:
             await rosys.sleep(2)
 
             if with_open_drill:
-                self.log.info('Drilling again with open drill...')
+                self.log.debug('Drilling again with open drill...')
                 await self.field_friend.z_axis.turn_knifes_to(0)
                 await rosys.sleep(2)
                 await self.field_friend.z_axis.turn_by(turns)

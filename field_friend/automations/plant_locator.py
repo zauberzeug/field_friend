@@ -92,9 +92,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             await rosys.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
             return
-            # raise DetetorError()
 
-        # self.log.info(f'{[point.category_name for point in new_image.detections.points]} detections found')
         for d in new_image.detections.points:
             if isinstance(self.detector, rosys.vision.DetectorSimulation):
                 # NOTE we drop detections at the edge of the vision because in reality they are blocked by the chassis
@@ -125,15 +123,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
             plant.positions.append(world_point_3d)
             plant.confidences.append(d.confidence)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
-                # self.log.info('weed found')
                 await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
-                # self.log.info(f'{d.category_name} found')
                 self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
-            # else:
-            #     self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
 
     def pause(self) -> None:
         if self.is_paused:
