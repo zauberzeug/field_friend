@@ -8,6 +8,8 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.analysis import track
+from rosys.geometry import GeoReference
+from rosys.hardware import Gnss
 
 from ..implements.implement import Implement
 
@@ -99,7 +101,7 @@ class Navigation(rosys.persistence.PersistentModule):
         """Drives the vehicle a short distance forward"""
 
     @track
-    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, timeout: float = 3.0) -> None:
+    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, *, timeout: float = 3.0, max_turn_angle: float = 0.1) -> None:
         """Drives the vehicle a short distance forward while steering onto the line defined by the target pose.
         NOTE: the target pose should be the foot point of the current position on the line.
         """
