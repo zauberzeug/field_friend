@@ -5,16 +5,16 @@ from typing import Any, Self
 
 import rosys
 import shapely
-from rosys.geometry import Point
+from rosys.geometry import GeoPoint, Point
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 
-from .. import localization
-from ..localization import GeoPoint, GeoPointCollection
-
 
 @dataclass(slots=True, kw_only=True)
-class Row(GeoPointCollection):
+class Row:
+    id: str
+    name: str
+    points: list[GeoPoint]
     reverse: bool = False
     crop: str | None = None
 
@@ -27,8 +27,8 @@ class Row(GeoPointCollection):
         )
 
     def line_segment(self) -> rosys.geometry.LineSegment:
-        return rosys.geometry.LineSegment(point1=self.points[0].cartesian(),
-                                          point2=self.points[-1].cartesian())
+        return rosys.geometry.LineSegment(point1=self.points[0].to_local(),
+                                          point2=self.points[-1].to_local())
 
 
 @dataclass(slots=True, kw_only=True)
@@ -37,7 +37,7 @@ class RowSupportPoint(GeoPoint):
 
     @classmethod
     def from_geopoint(cls, geopoint: GeoPoint, row_index: int) -> Self:
-        return cls(lat=geopoint.lat, long=geopoint.long, row_index=row_index)
+        return cls(lat=geopoint.lat, lon=geopoint.lon, row_index=row_index)
 
 
 class Field:
@@ -72,7 +72,7 @@ class Field:
 
     @property
     def outline_cartesian(self) -> list[rosys.geometry.Point]:
-        return [p.cartesian() for p in self.outline]
+        return [p.to_local() for p in self.outline]
 
     @property
     def outline_as_tuples(self) -> list[tuple[float, float]]:
@@ -103,7 +103,8 @@ class Field:
     def _generate_rows(self) -> list[Row]:
         assert self.first_row_start is not None
         assert self.first_row_end is not None
-        ab_line_cartesian = LineString([self.first_row_start.cartesian().tuple, self.first_row_end.cartesian().tuple])
+        ab_line_cartesian = LineString([self.first_row_start.to_local().tuple,
+                                        self.first_row_end.to_local().tuple])
         rows: list[Row] = []
 
         last_support_point = None
@@ -116,7 +117,7 @@ class Field:
 
             support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
             if support_point:
-                support_point_cartesian = support_point.cartesian()
+                support_point_cartesian = support_point.to_local()
                 offset = ab_line_cartesian.distance(shapely.geometry.Point(
                     [support_point_cartesian.x, support_point_cartesian.y]))
                 last_support_point = support_point
@@ -137,8 +138,7 @@ class Field:
                 bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
                 offset = base_offset + bed_offset
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
-            row_points: list[GeoPoint] = [localization.reference.shifted(
-                Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
+            row_points = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
             row = Row(id=f'field_{self.id}_row_{i + 1!s}', name=f'row_{i + 1}',
                       points=row_points, crop=self.bed_crops[str(bed_index)])
             rows.append(row)
@@ -147,21 +147,6 @@ class Field:
     def _generate_outline(self) -> list[GeoPoint]:
         assert len(self.rows) > 0
         return self.get_buffered_area()
-
-    def to_dict(self) -> dict:
-        return {
-            'id': self.id,
-            'name': self.name,
-            'first_row_start':  rosys.persistence.to_dict(self.first_row_start),
-            'first_row_end': rosys.persistence.to_dict(self.first_row_end),
-            'row_spacing': self.row_spacing,
-            'row_count': self.row_count,
-            'outline_buffer_width': self.outline_buffer_width,
-            'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
-            'bed_count': self.bed_count,
-            'bed_spacing': self.bed_spacing,
-            'bed_crops': self.bed_crops,
-        }
 
     def shapely_polygon(self) -> shapely.geometry.Polygon:
         return shapely.geometry.Polygon([p.tuple for p in self.outline])
@@ -189,32 +174,46 @@ class Field:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
-        data['first_row_start'] = GeoPoint(lat=data['first_row_start']['lat'],
-                                           long=data['first_row_start']['long']) if data.get('first_row_start') else GeoPoint(lat=0, long=0)
-        data['first_row_end'] = GeoPoint(lat=data['first_row_end']['lat'],
-                                         long=data['first_row_end']['long']) if data.get('first_row_end') else GeoPoint(lat=1, long=1)
-        data['row_support_points'] = [rosys.persistence.from_dict(
-            RowSupportPoint, sp) for sp in data['row_support_points']] if data.get('row_support_points') else []
-        field_data = cls(**cls.args_from_dict(data))
-        # if id is None, set it to a random uuid
-        if field_data.id is None:
-            field_data.id = str(uuid.uuid4())
-        return field_data
+        for key in ['first_row_start', 'first_row_end']:
+            data[key] = GeoPoint.from_degrees(lat=data[key]['lat'],
+                                              lon=data[key]['lon'] if 'lon' in data[key] else data[key]['long'])
+        data['row_support_points'] = [rosys.persistence.from_dict(RowSupportPoint, sp)
+                                      for sp in data.get('row_support_points', [])]
+        return cls(**cls.args_from_dict(data))
 
     def get_buffered_area(self) -> list[GeoPoint]:
         outline_unbuffered: list[Point] = [
-            self.first_row_end.cartesian(),
-            self.first_row_start.cartesian()
+            self.first_row_end.to_local(),
+            self.first_row_start.to_local(),
         ]
         if len(self.rows) > 1:
             for p in self.rows[-1].points:
-                outline_unbuffered.append(p.cartesian())
+                outline_unbuffered.append(p.to_local())
             outline_shape = Polygon([p.tuple for p in outline_unbuffered])
         else:
             outline_shape = LineString([p.tuple for p in outline_unbuffered])
         bufferd_polygon = outline_shape.buffer(
             self.outline_buffer_width, cap_style='square', join_style='mitre', mitre_limit=math.inf)
         bufferd_polygon_coords = bufferd_polygon.exterior.coords
-        outline: list[GeoPoint] = [localization.reference.shifted(
-            Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
+        outline = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
         return outline
+
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'first_row_start': {
+                'lat': math.degrees(self.first_row_start.lat),
+                'lon': math.degrees(self.first_row_start.lon),
+            },
+            'first_row_end': {
+                'lat': math.degrees(self.first_row_end.lat),
+                'lon': math.degrees(self.first_row_end.lon),
+            },
+            'row_spacing': self.row_spacing,
+            'row_count': self.row_count,
+            'outline_buffer_width': self.outline_buffer_width,
+            'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
+            'bed_count': self.bed_count,
+            'bed_spacing': self.bed_spacing,
+        }

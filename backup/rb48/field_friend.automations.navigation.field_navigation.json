@@ -1,0 +1,11 @@
+{
+    "linear_speed_limit": 0.13,
+    "length": 2.0,
+    "field_id": null,
+    "row_index": 0,
+    "state": "APPROACH_START_ROW",
+    "loop": false,
+    "drive_step": 0.2,
+    "turn_step": 0.4363323129985824,
+    "max_gnss_waiting_time": 15.0
+}

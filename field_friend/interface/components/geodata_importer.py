@@ -5,10 +5,10 @@ import fiona
 import geopandas as gpd
 import rosys
 from nicegui import events, ui
+from rosys.geometry import GeoPoint
 from shapely.ops import transform
 
 from ...automations import FieldProvider
-from ...localization import GeoPoint
 
 # Enable fiona driver
 fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
@@ -40,7 +40,7 @@ class GeodataImporter(ui.dialog):
         x_coordinate, y_coordinate = gdf['geometry'].iloc[0].xy
         extracted_points = list(zip(x_coordinate, y_coordinate, strict=False))
         for point in extracted_points:
-            coordinates.append(GeoPoint(lat=point[1], long=point[0]))
+            coordinates.append(GeoPoint(lat=point[1], lon=point[0]))
         return coordinates
 
     def extract_coordinates_xml(self, event: events.UploadEventArguments) -> list:
@@ -51,7 +51,7 @@ class GeodataImporter(ui.dialog):
             for point in geo_data.findall('.//PNT'):
                 lat = float(point.attrib['C'])
                 lon = float(point.attrib['D'])
-                coordinates.append(GeoPoint(lat=lat, long=lon))
+                coordinates.append(GeoPoint(lat=lat, lon=lon))
         return coordinates
 
     def extract_coordinates_shp(self, event: events.UploadEventArguments) -> list | None:
@@ -64,7 +64,7 @@ class GeodataImporter(ui.dialog):
             feature = json.loads(gdf.to_json())
             shp_coordinates = feature['features'][0]['geometry']['coordinates'][0]
             for point in shp_coordinates:
-                coordinates.append(GeoPoint(lat=point[0], long=point[1]))
+                coordinates.append(GeoPoint(lat=point[0], lon=point[1]))
             return coordinates
         # TODO: what kind of exception are we catching here?
         except:  # noqa: E722 # pylint: disable=bare-except

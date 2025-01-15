@@ -7,11 +7,24 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.analysis import track
+from rosys.geometry import GeoReference
+from rosys.hardware import Gnss
 
 from ..implements.implement import Implement
 
 if TYPE_CHECKING:
     from ...system import System
+
+
+def is_reference_valid(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
+    if GeoReference.current is None:
+        return False
+    if gnss.last_measurement is None:
+        return False
+    if gnss.last_measurement.gps_quality == 0:
+        return False
+    return gnss.last_measurement.point.distance(GeoReference.current.origin) <= max_distance
 
 
 class WorkflowException(Exception):
@@ -26,18 +39,20 @@ class Navigation(rosys.persistence.PersistentModule):
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.navigation')
+        self.system = system
         self.driver = system.driver
-        self.odometer = system.odometer
+        self.robot_locator = system.robot_locator
         self.gnss = system.gnss
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
         self.implement = implement
         self.detector = system.detector
         self.name = 'Unknown'
-        self.start_position = self.odometer.prediction.point
+        self.start_position = self.robot_locator.pose.point
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
 
+    @track
     async def start(self) -> None:
         try:
             if not await self.implement.prepare():
@@ -46,9 +61,9 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
-            if self.gnss.check_distance_to_reference():
+            if not is_reference_valid(self.gnss):
                 raise WorkflowException('reference to far away from robot')
-            self.start_position = self.odometer.prediction.point
+            self.start_position = self.robot_locator.pose.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             self.log.info('Navigation started')
@@ -86,21 +101,24 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive(self, distance: float) -> None:
         """Drives the vehicle a short distance forward"""
 
-    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, timeout: float = 3.0) -> None:
+    @track
+    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, *, timeout: float = 3.0, max_turn_angle: float = 0.1) -> None:
         """Drives the vehicle a short distance forward while steering onto the line defined by the target pose.
         NOTE: the target pose should be the foot point of the current position on the line.
         """
-        start_position = self.odometer.prediction.point
+        start_position = self.robot_locator.pose.point
         hook_offset = rosys.geometry.Point(x=self.driver.parameters.hook_offset, y=0)
         carrot_offset = rosys.geometry.Point(x=self.driver.parameters.carrot_offset, y=0)
         target_point = target.transform(carrot_offset)
-        hook = self.odometer.prediction.transform(hook_offset)
-        turn_angle = rosys.helpers.angle(self.odometer.prediction.yaw, hook.direction(target_point))
+        hook = self.robot_locator.pose.transform(hook_offset)
+        turn_angle = rosys.helpers.angle(self.robot_locator.pose.yaw, hook.direction(target_point))
+        turn_angle = min(turn_angle, max_turn_angle)
+        turn_angle = max(turn_angle, -max_turn_angle)
         curvature = np.tan(turn_angle) / hook_offset.x
         if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
             curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius
         deadline = rosys.time() + timeout
-        while self.odometer.prediction.point.distance(start_position) < distance:
+        while self.robot_locator.pose.point.distance(start_position) < distance:
             if rosys.time() >= deadline:
                 await self.driver.wheels.stop()
                 raise TimeoutError('Driving Timeout')
