@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.analysis import track
 from rosys.geometry import Point
 
 from ..field import Field, Row
@@ -130,6 +131,7 @@ class FieldNavigation(StraightLineNavigation):
             return
         self.target = self.end_point
 
+    @track
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
         if self._state == State.APPROACH_START_ROW:
@@ -141,6 +143,7 @@ class FieldNavigation(StraightLineNavigation):
         elif self._state == State.ROW_COMPLETED:
             self._state = await self._run_row_completed()
 
+    @track
     async def _run_approach_start_row(self) -> State:
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
@@ -164,6 +167,7 @@ class FieldNavigation(StraightLineNavigation):
         self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
+    @track
     async def _run_change_row(self) -> State:
         self.set_start_and_end_points()
         assert self.start_point is not None
@@ -180,8 +184,9 @@ class FieldNavigation(StraightLineNavigation):
         self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
-    # TODO: growing error because of the threshold
+    @track
     async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
+        # TODO: growing error because of the threshold
         if angle_threshold is None:
             angle_threshold = np.deg2rad(1.0)
         while True:
@@ -195,6 +200,7 @@ class FieldNavigation(StraightLineNavigation):
             await rosys.sleep(0.1)
         await self.driver.wheels.stop()
 
+    @track
     async def _run_follow_row(self, distance: float) -> State:
         assert self.end_point is not None
         assert self.start_point is not None
@@ -210,6 +216,7 @@ class FieldNavigation(StraightLineNavigation):
         await super()._drive(distance)
         return State.FOLLOW_ROW
 
+    @track
     async def _run_row_completed(self) -> State:
         await self.driver.wheels.stop()
         assert self.field
