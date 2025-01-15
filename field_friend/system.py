@@ -116,10 +116,10 @@ class System(rosys.persistence.PersistentModule):
         self.plant_locator = PlantLocator(self)
 
         rosys.on_repeat(watch_robot, 1.0)
-        if self.is_real and os.environ.get('DASHBOARD_URL'):
-            rosys.on_repeat(self.send_status_to_robot_dashboard, 60)
+        if self.is_real and os.environ.get('SWARM_URL'):
+            rosys.on_repeat(self.send_status_to_swarm, 60)
         else:
-            rosys.notify('Dashboard URL is not set', type='negative')
+            rosys.notify('Swarm URL is not set', type='negative')
 
         self.path_provider = PathProvider()
         self.field_provider = FieldProvider()
@@ -274,8 +274,8 @@ class System(rosys.persistence.PersistentModule):
         bms_logger = logging.getLogger('field_friend.bms')
         bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
 
-    async def send_status_to_robot_dashboard(self) -> None:
-        dashboard_url = os.environ.get('DASHBOARD_URL')
+    async def send_status_to_swarm(self) -> None:
+        swarm_url = os.environ.get('SWARM_URL')
         try:
             status = 'emergency stop' if len(self.field_friend.estop.pressed_estops) > 0 or self.field_friend.estop.is_soft_estop_active else \
                 'bumper active' if self.field_friend.bumper and self.field_friend.bumper.active_bumpers else \
@@ -313,8 +313,8 @@ class System(rosys.persistence.PersistentModule):
                 'core_lizard_version': core_version,
                 'p0_lizard_version': p0_version,
             }
-            endpoint = f'{dashboard_url}/api/robot/{self.robot_id.lower()}'
-            passphrase = os.environ.get('DASHBOARD_PASSPHRASE')
+            endpoint = f'{swarm_url}/api/robot/{self.robot_id.lower()}'
+            passphrase = os.environ.get('SWARM_PASSPHRASE')
             headers = {'passphrase': passphrase} if passphrase else {}
             response = requests.post(endpoint, json=data, headers=headers, timeout=5)
             if response.status_code != 200:
