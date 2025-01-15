@@ -74,7 +74,7 @@ def status_dev_page(robot: FieldFriend, system: System):
 
         with ui.row().classes('place-items-center'):
             ui.label('Tool:').style('color: #EDF4FB').classes('font-bold')
-            ui.label(robot.implement_name)
+            ui.label(robot.implement_name or 'none installed')
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
