@@ -2,6 +2,7 @@ import logging
 import os
 
 import rosys
+from rosys.analysis import track
 from rosys.driving import Driver
 from rosys.geometry import Point
 
@@ -20,6 +21,7 @@ class Puncher:
         self.log = logging.getLogger('field_friend.puncher')
         self.is_demo = False
 
+    @track
     async def try_home(self) -> bool:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
@@ -40,6 +42,7 @@ class Puncher:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()
 
+    @track
     async def drive_to_punch(self, local_target_x: float) -> None:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
@@ -54,6 +57,7 @@ class Puncher:
         with self.driver.parameters.set(linear_speed_limit=0.125, angular_speed_limit=0.1):
             await self.driver.drive_to(world_target, backward=axis_distance < 0)
 
+    @track
     async def punch(self,
                     y: float, *,
                     depth: float = 0.01,
@@ -109,6 +113,7 @@ class Puncher:
             await self.field_friend.y_axis.stop()
             await self.field_friend.z_axis.stop()
 
+    @track
     async def clear_view(self) -> None:
         if self.field_friend.y_axis is None:
             rosys.notify('no y axis', 'negative')
@@ -125,6 +130,7 @@ class Puncher:
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         await self.field_friend.y_axis.stop()
 
+    @track
     async def chop(self) -> None:
         if not isinstance(self.field_friend.y_axis, ChainAxis):
             raise PuncherException('chop is only available for chain axis')
@@ -134,6 +140,7 @@ class Puncher:
             await self.field_friend.y_axis.move_dw_to_r_ref()
         await self.field_friend.y_axis.stop()
 
+    @track
     async def tornado_drill(self, angle: float = 180, turns: float = 2, with_open_drill=False) -> None:
         self.log.info(f'Drilling with tornado at {angle}°...')
         if not isinstance(self.field_friend.z_axis, Tornado):

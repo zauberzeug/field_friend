@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.analysis import track
 
 from ..implements.implement import Implement
 
@@ -38,6 +39,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
 
+    @track
     async def start(self) -> None:
         try:
             if not await self.implement.prepare():
@@ -86,6 +88,7 @@ class Navigation(rosys.persistence.PersistentModule):
     async def _drive(self, distance: float) -> None:
         """Drives the vehicle a short distance forward"""
 
+    @track
     async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, timeout: float = 3.0) -> None:
         """Drives the vehicle a short distance forward while steering onto the line defined by the target pose.
         NOTE: the target pose should be the foot point of the current position on the line.

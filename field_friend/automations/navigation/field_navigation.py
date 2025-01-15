@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
+from rosys.analysis import track
 from rosys.geometry import Point, Pose
 
 from ..field import Field, Row
@@ -140,6 +141,7 @@ class FieldNavigation(StraightLineNavigation):
             return
         self.target = self.end_point
 
+    @track
     async def _drive(self, distance: float) -> None:
         assert self.field is not None
         # TODO: remove temporary fix for GNSS waiting
@@ -155,6 +157,7 @@ class FieldNavigation(StraightLineNavigation):
         elif self._state == State.ROW_COMPLETED:
             self._state = await self._run_row_completed()
 
+    @track
     async def _run_approach_start_row(self) -> State:
         self.robot_in_working_area = False
         rosys.notify(f'Approaching row {self.current_row.name}')
@@ -185,6 +188,7 @@ class FieldNavigation(StraightLineNavigation):
         self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
+    @track
     async def _run_change_row(self) -> State:
         self.robot_in_working_area = False
         self.set_start_and_end_points()
@@ -210,6 +214,7 @@ class FieldNavigation(StraightLineNavigation):
         self._set_cultivated_crop()
         return State.FOLLOW_ROW
 
+    @track
     async def drive_in_steps(self, target: Pose) -> None:
         while True:
             if target.relative_point(self.odometer.prediction.point).x > 0:
@@ -220,6 +225,7 @@ class FieldNavigation(StraightLineNavigation):
             await self._drive_towards_target(drive_step, target, timeout=timeout)
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
 
+    @track
     async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
         if angle_threshold is None:
             angle_threshold = np.deg2rad(1.0)
@@ -234,6 +240,7 @@ class FieldNavigation(StraightLineNavigation):
             await rosys.sleep(0.1)
         await self.driver.wheels.stop()
 
+    @track
     async def turn_in_steps(self, target_yaw: float) -> None:
         angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
         while abs(angle_difference) > np.deg2rad(1.0):
@@ -246,6 +253,7 @@ class FieldNavigation(StraightLineNavigation):
             await self.gnss.ROBOT_POSE_LOCATED.emitted(self._max_gnss_waiting_time)
             angle_difference = rosys.helpers.angle(self.odometer.prediction.yaw, target_yaw)
 
+    @track
     async def _run_follow_row(self, distance: float) -> State:
         assert self.end_point is not None
         assert self.start_point is not None
@@ -261,6 +269,7 @@ class FieldNavigation(StraightLineNavigation):
         await super()._drive(distance)
         return State.FOLLOW_ROW
 
+    @track
     async def _run_row_completed(self) -> State:
         await self.driver.wheels.stop()
         assert self.field
