@@ -465,7 +465,7 @@ class FieldFriendConfiguration:
     measurements: MeasurementsConfiguration
     wheels: WheelsConfiguration
     has_status_control: bool
-    camera: CameraConfiguration | None
+    camera: CameraConfiguration
     y_axis: AxisD1Configuration | ChainAxisConfiguration | YStepperConfiguration | YCanOpenConfiguration | None
     z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | None
     can: CanConfiguration = field(default_factory=CanConfiguration)

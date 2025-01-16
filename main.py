@@ -23,8 +23,7 @@ def startup() -> None:
         ui.label(msg).classes('text-xl')
         return
     logger.info('Starting Field Friend for robot %s', robot_id)
-    System.version = os.environ.get('VERSION') or robot_id
-    system = System()
+    system = System(robot_id)
 
     interface.main_page(system)  # /
     interface.dev_page(system)  # /dev
