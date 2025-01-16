@@ -26,7 +26,6 @@ class GnssHardware(Gnss):
     async def try_connection(self) -> None:
         if self.device is not None:
             return
-        # self.log.info('Searching for GNSS device...')
         for port in list_ports.comports():
             self.log.info(f'Found port: {port.device} - {port.description}')
             if 'Septentrio' in port.description:
