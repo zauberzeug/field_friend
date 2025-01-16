@@ -42,7 +42,7 @@ class CameraConfigurator:
                 pass
             else:
                 # only set parameters that have changed
-                for name, value in self.config.camera.parameters.items():
+                for name, value in self.config.parameters.items():
                     self.log.info(f'parameter {name} with value {value}')
                     if camera.parameters[name] != value:
                         self.log.info(f'{camera.parameters[name]} != {value}')
@@ -50,25 +50,25 @@ class CameraConfigurator:
                         parameters_changed = True
             if not camera.calibration.extrinsics.frame_id:
                 camera.calibration.extrinsics.in_frame(self.odometer.prediction_frame)
-            if self.config.camera.crop:
-                crop_rectangle = self.config.camera.crop_rectangle
+            if self.config.crop:
+                crop_rectangle = self.config.crop_rectangle
                 if camera.crop != crop_rectangle:
                     camera.crop = crop_rectangle
                     parameters_changed = True
             else:
                 camera.crop = None
-            if camera.rotation_angle != self.config.camera.rotation:
-                camera.rotation_angle += self.config.camera.rotation
+            if camera.rotation_angle != self.config.rotation:
+                camera.rotation_angle += self.config.rotation
                 parameters_changed = True
                 self.log.info(f'camera rotation: {camera.rotation}; {camera.rotation_angle}')
             else:
                 camera.rotation_angle = 0
 
         elif isinstance(camera, rosys.vision.SimulatedCalibratableCamera):
-            if camera.resolution.width != self.config.camera.width or camera.resolution.height != self.config.camera.height:
+            if camera.resolution.width != self.config.width or camera.resolution.height != self.config.height:
                 camera.resolution = rosys.vision.ImageSize(
-                    width=self.config.camera.width,
-                    height=self.config.camera.height,
+                    width=self.config.width,
+                    height=self.config.height,
                 )
                 parameters_changed = True
 

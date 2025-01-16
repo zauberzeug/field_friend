@@ -25,7 +25,7 @@ class Info:
             ui.label('Versions').classes('text-xl font-semibold')
             with ui.grid(columns=2):
                 # ui.label('Fieldfriend:')
-                # ui.label(self.system.version)
+                # ui.label(self.system.robot_id)
                 ui.label('RoSys:')
                 ui.label(rosys_version)
                 ui.label('NiceGUI:')

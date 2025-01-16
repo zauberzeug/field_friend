@@ -32,7 +32,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.detector = system.detector
         self.plant_provider = system.plant_provider
         self.odometer = system.odometer
-        self.robot_name = system.version
+        self.robot_name = system.robot_id
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
