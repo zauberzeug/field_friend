@@ -345,9 +345,6 @@ class System(rosys.persistence.PersistentModule):
         endpoint = f'{swarm_url}/api/robot/{self.robot_id.lower()}'
         passphrase = os.environ.get('SWARM_PASSPHRASE')
         headers = {'passphrase': passphrase} if passphrase else {}
-        try:
-            response = requests.post(endpoint, json=data, headers=headers, timeout=5)
-            if response.status_code != 200:
-                rosys.notify(f'Response code {response.status_code}.', type='negative')
-        except Exception as e:
-            rosys.notify(f'Error sending status: {e!s}', type='negative')
+        response = requests.post(endpoint, json=data, headers=headers, timeout=5)
+        if response.status_code != 200:
+            rosys.notify(f'Response code {response.status_code}.', type='negative')
