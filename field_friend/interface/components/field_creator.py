@@ -9,7 +9,6 @@ from nicegui import ui
 from nicegui.elements.leaflet_layers import Marker
 
 from field_friend.automations.field import Field
-from field_friend.interface.components.monitoring import CameraPosition
 from field_friend.localization import GeoPoint
 
 if TYPE_CHECKING:
@@ -20,10 +19,13 @@ class FieldCreator:
 
     def __init__(self, system: System) -> None:
         self.system = system
-        self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
-                               if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
-        self.back_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
-                              if CameraPosition.BACK in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
+        self.front_cam: rosys.vision.MjpegCamera | None = None
+        self.back_cam: rosys.vision.MjpegCamera | None = None
+        if hasattr(system, 'mjpeg_camera_provider'):
+            self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
+                                   if system.config.camera.camera_positions.front in key), None)
+            self.back_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
+                                  if system.config.camera.camera_positions.back in key), None)
         self.steerer = system.steerer
         self.gnss = system.gnss
         self.plant_locator = system.plant_locator
