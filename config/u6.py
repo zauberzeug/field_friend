@@ -12,7 +12,7 @@ from .configuration import (
 
 config = FieldFriendConfiguration(
     name='uckerbot-u6',
-    robot_brain=RobotBrainConfiguration(name='rb28', flash_params=['orin', 'v05']),
+    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=['orin', 'v05']),
     tool='weed_screw',
     measurements=MeasurementsConfiguration(tooth_count=17, pitch=0.041, work_x=0.085),
     camera=CameraConfiguration(
