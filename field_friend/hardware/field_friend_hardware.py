@@ -3,10 +3,10 @@ import logging
 import numpy as np
 import rosys
 
-import config.config_selection as config_selector
-from config import AxisD1Configuration, FieldFriendConfiguration, get_config
-from config.configuration import (
+from config import (
+    AxisD1Configuration,
     ChainAxisConfiguration,
+    FieldFriendConfiguration,
     TornadoConfiguration,
     YCanOpenConfiguration,
     YStepperConfiguration,
@@ -35,10 +35,8 @@ from .z_axis_stepper_hardware import ZAxisStepperHardware
 
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
-    def __init__(self) -> None:
+    def __init__(self, config: FieldFriendConfiguration) -> None:
         self.log = logging.getLogger('field_friend.field_friend_hardware')
-        config_hardware: dict = config_selector.import_config(module='hardware')
-        config: FieldFriendConfiguration = get_config('u4')
         self.MOTOR_GEAR_RATIO: float = config.measurements.motor_gear_ratio
         self.TOOTH_COUNT: int = config.measurements.tooth_count
         self.PITCH: float = config.measurements.pitch
@@ -113,13 +111,15 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown wheels version: {config.wheels.version}')
 
-        uses_canopen = ('y_axis_canopen', 'axis_d1')
-        if (config.y_axis and config.y_axis.version in uses_canopen) or (config.z_axis and config.z_axis.version in uses_canopen):
-            can_open_master = CanOpenMasterHardware(robot_brain, can=can, name='master')
-        else:
-            can_open_master = None
+        can_open_master = CanOpenMasterHardware(robot_brain, can=can, name='master') \
+            if ((config.y_axis and config.y_axis.version in ('y_axis_canopen', 'axis_d1')) or
+                (config.z_axis and config.z_axis.version in ('z_axis_canopen', 'axis_d1'))) \
+            else None
+
         y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None
-        if isinstance(config.y_axis, AxisD1Configuration) and config.y_axis.version == 'axis_d1':
+        if not config.y_axis:
+            y_axis = None
+        elif isinstance(config.y_axis, AxisD1Configuration) and config.y_axis.version == 'axis_d1':
             y_axis = AxisD1(robot_brain,
                             can=can,
                             can_address=config.y_axis.can_address,
@@ -187,13 +187,13 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           reversed_direction=config.y_axis.reversed_direction,
                                           end_stops_inverted=config.y_axis.end_stops_inverted,
                                           )
-        elif config.y_axis is None:
-            y_axis = None
         else:
             raise NotImplementedError(f'Unknown y_axis version: {config.y_axis.version}')
 
         z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | None
-        if isinstance(config.z_axis, ZStepperConfiguration) and config.z_axis.version == 'z_axis_stepper':
+        if not config.z_axis:
+            z_axis = None
+        elif isinstance(config.z_axis, ZStepperConfiguration) and config.z_axis.version == 'z_axis_stepper':
             z_axis = ZAxisStepperHardware(robot_brain,
                                           expander=expander,
                                           name=config.z_axis.name,
@@ -278,8 +278,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                           reversed_direction=config.z_axis.reversed_direction,
                                           end_stops_inverted=config.z_axis.end_stops_inverted,
                                           )
-        elif config.z_axis is None:
-            z_axis = None
         else:
             raise NotImplementedError(f'Unknown z_axis version: {config.z_axis.version}')
 
@@ -289,30 +287,15 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                               m0_can_address=config.external_mower.m0_can_address,
                               m1_can_address=config.external_mower.m1_can_address,
                               m2_can_address=config.external_mower.m2_can_address,
-                              m_per_tick=self.M_PER_TICK
+                              m_per_tick=self.M_PER_TICK,  # TODO: this is a different value than in external_mower.m_per_tick!!
+                              speed=config.external_mower.speed,
+                              is_m0_reversed=config.external_mower.is_m0_reversed,
+                              is_m1_reversed=config.external_mower.is_m1_reversed,
+                              is_m2_reversed=config.external_mower.is_m2_reversed,
+                              odrive_version=config.external_mower.odrive_version,
                               ) if config.external_mower else None
-        if 'external_mower' in config_hardware:
-            mower = MowerHardware(robot_brain=robot_brain,
-                                  can=can,
-                                  name=config_hardware['external_mower']['name'],
-                                  m0_can_address=config_hardware['external_mower']['m0_can_address'],
-                                  m1_can_address=config_hardware['external_mower']['m1_can_address'],
-                                  m2_can_address=config_hardware['external_mower']['m2_can_address'],
-                                  m_per_tick=self.M_PER_TICK,  # TODO: this is a different value than in external_mower.m_per_tick!!
-                                  speed=config_hardware['external_mower']['speed'],
-                                  is_m0_reversed=config_hardware['external_mower']['is_m0_reversed'],
-                                  is_m1_reversed=config_hardware['external_mower']['is_m1_reversed'],
-                                  is_m2_reversed=config_hardware['external_mower']['is_m2_reversed'],
-                                  odrive_version=config_hardware['external_mower'][
-                                      'odrive_version'] if 'odrive_version' in config_hardware['external_mower'] else 4,
-                                  )
-        else:
-            mower = None
 
-        estop = rosys.hardware.EStopHardware(robot_brain,
-                                             name=config.estop.name,
-                                             pins=config.estop.pins,
-                                             )
+        estop = rosys.hardware.EStopHardware(robot_brain, name=config.estop.name, pins=config.estop.pins)
 
         bms = rosys.hardware.BmsHardware(robot_brain,
                                          expander=expander if config.bms.on_expander else None,
@@ -320,8 +303,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                          rx_pin=config.bms.rx_pin,
                                          tx_pin=config.bms.tx_pin,
                                          baud=config.bms.baud,
-                                         num=config.bms.num,
-                                         )
+                                         num=config.bms.num)
+
         self.battery_control = rosys.hardware.BatteryControlHardware(
             robot_brain,
             expander=expander if config.battery_control.on_expander else None,
@@ -331,7 +314,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         ) if config.battery_control else None
 
         flashlight: FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None
-        if config.flashlight is None:
+        if not config.flashlight:
             flashlight = None
         elif config.flashlight.version == 'flashlight':
             raise NotImplementedError('This flashlight version is no longer supported.')
@@ -371,8 +354,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                expander=expander if config.bumper.on_expander else None,
                                                estop=estop,
                                                name=config.bumper.name,
-                                               pins=config.bumper.pins,
-                                               ) if config.bumper else None
+                                               pins=config.bumper.pins) if config.bumper else None
 
         self.imu = IMUHardware(robot_brain, name=config.imu.name) if config.imu else None
 
