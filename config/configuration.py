@@ -302,7 +302,7 @@ class StepperAndCanOpenConfiguration:
     end_stops_inverted: bool
     max_speed: int
     reference_speed: int
-    steps_per_m: int
+    steps_per_m: float
 
 
 @dataclass(kw_only=True)

@@ -23,7 +23,7 @@ log = logging.getLogger('field_friend.testing')
 
 @pytest.fixture
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
-    s = System(getattr(request, 'param', 'rb34'))
+    s = System(getattr(request, 'param', 'u6'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     localization.reference = ROBOT_GEO_START_POSITION
@@ -40,7 +40,7 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
 
 @pytest.fixture
 async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[System, None]:
-    s = System(getattr(request, 'param', 'rb34'))
+    s = System(getattr(request, 'param', 'u6'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     localization.reference = ROBOT_GEO_START_POSITION
