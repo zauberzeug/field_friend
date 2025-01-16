@@ -324,13 +324,13 @@ class System(rosys.persistence.PersistentModule):
         else:
             field = None
             row = None
-        position = self.gnss.last_measurement.point if self.gnss.last_measurement is not None else None
+        position = self.gnss.last_measurement.point.degree_tuple if self.gnss.last_measurement is not None else None
         data = {
             'version': self.version,
             'battery': self.field_friend.bms.state.percentage,
             'battery_charging': self.field_friend.bms.state.is_charging,
             'status': status,
-            'position': {'lat': np.rad2deg(position.lat), 'lon': np.rad2deg(position.lon)} if position is not None else None,
+            'position': {'lat': position[0], 'lon': position[1]} if position is not None else None,
             # TODO: update the gnss quality with kalman filter
             'gnss_quality': self.gnss.last_measurement.gps_quality if self.gnss.last_measurement is not None else None,
             'implement': self.field_friend.implement_name,
