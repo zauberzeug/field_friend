@@ -28,7 +28,7 @@ class StraightLineNavigation(Navigation):
 
     async def prepare(self) -> bool:
         await super().prepare()
-        self.log.info(f'Activating {self.implement.name}...')
+        rosys.notify(f'Activating {self.implement.name}...')
         self.update_target()
         await self.implement.activate()
         return True

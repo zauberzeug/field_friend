@@ -82,7 +82,7 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
             raise Exception('z_axis fault detected')
-        self.log.info(f'zaxis moved to {position}')
+        self.log.debug(f'zaxis moved to {position}')
 
     async def check_idle_or_alarm(self) -> bool:
         while not self.idle and not self.alarm:

@@ -31,10 +31,10 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
         self.motor_error = False
         self.odrive_version = odrive_version
         lizard_code = remove_indentation(f'''
-            l0 = ODriveMotor({can.name}, {left_back_can_address}{', 6'if self.odrive_version == 6  else ''})
-            r0 = ODriveMotor({can.name}, {right_back_can_address}{', 6'if self.odrive_version == 6  else ''})
-            l1 = ODriveMotor({can.name}, {left_front_can_address}{', 6'if self.odrive_version == 6  else ''})
-            r1 = ODriveMotor({can.name}, {right_front_can_address}{', 6'if self.odrive_version == 6  else ''})
+            l0 = ODriveMotor({can.name}, {left_back_can_address}{', 6'if self.odrive_version == 6 else ''})
+            r0 = ODriveMotor({can.name}, {right_back_can_address}{', 6'if self.odrive_version == 6 else ''})
+            l1 = ODriveMotor({can.name}, {left_front_can_address}{', 6'if self.odrive_version == 6 else ''})
+            r1 = ODriveMotor({can.name}, {right_front_can_address}{', 6'if self.odrive_version == 6 else ''})
             l0.m_per_tick = {m_per_tick}
             r0.m_per_tick = {m_per_tick}
             l1.m_per_tick = {m_per_tick}
@@ -81,18 +81,18 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
         self.VELOCITY_MEASURED.emit([velocity])
         if self.odrive_version == 6:
             self.l0_error = int(words.pop(0))
-            if self.l0_error == 1:
+            if self.l0_error == 1 and not self.motor_error:
                 rosys.notify('Left Back Motor Error', 'warning')
                 self.motor_error = True
             self.r0_error = int(words.pop(0))
-            if self.r0_error == 1:
+            if self.r0_error == 1 and not self.motor_error:
                 rosys.notify('Right Back Motor Error', 'warning')
                 self.motor_error = True
             self.l1_error = int(words.pop(0))
-            if self.l1_error == 1:
+            if self.l1_error == 1 and not self.motor_error:
                 rosys.notify('Left Front Motor Error', 'warning')
                 self.motor_error = True
             self.r1_error = int(words.pop(0))
-            if self.r1_error == 1:
+            if self.r1_error == 1 and not self.motor_error:
                 rosys.notify('Right Front Motor Error', 'warning')
                 self.motor_error = True

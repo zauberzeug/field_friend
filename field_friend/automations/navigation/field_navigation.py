@@ -95,7 +95,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.gnss.is_connected
         row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
             self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
-        self.log.info(f'Nearest row is {row.name}')
+        self.log.debug(f'Nearest row is {row.name}')
         if row not in self.rows_to_work_on:
             rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
             return None
@@ -257,7 +257,7 @@ class FieldNavigation(StraightLineNavigation):
         foot_point = self.current_row.line_segment().line.foot_point(self.robot_locator.pose.point)
         distance_to_row = foot_point.distance(self.robot_locator.pose.point)
         if distance_to_row > self.MAX_DISTANCE_DEVIATION:
-            rosys.notify('Between two rows', 'negative')
+            rosys.notify('Robot is between two rows', 'negative')
             return False
         abs_angle_to_start = abs(self.robot_locator.pose.relative_direction(start_point))
         abs_angle_to_end = abs(self.robot_locator.pose.relative_direction(end_point))

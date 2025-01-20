@@ -56,7 +56,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         rosys.on_startup(self.get_crop_names)
 
     def backup(self) -> dict:
-        self.log.info(f'backup: autoupload: {self.autoupload}')
+        self.log.debug(f'backup: autoupload: {self.autoupload}')
         return {
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
@@ -70,7 +70,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
             if 'autoupload' in data else Autoupload.DISABLED
-        self.log.info(f'self.autoupload: {self.autoupload}')
+        self.log.debug(f'self.autoupload: {self.autoupload}')
         self.upload_images = data.get('upload_images', self.upload_images)
         self.tags = data.get('tags', self.tags)
 
@@ -96,9 +96,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
             await rosys.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
             return
-            # raise DetetorError()
 
-        # self.log.info(f'{[point.category_name for point in new_image.detections.points]} detections found')
         for d in new_image.detections.points:
             if isinstance(self.detector, rosys.vision.DetectorSimulation):
                 # NOTE we drop detections at the edge of the vision because in reality they are blocked by the chassis
@@ -129,27 +127,23 @@ class PlantLocator(rosys.persistence.PersistentModule):
             plant.positions.append(world_point_3d)
             plant.confidences.append(d.confidence)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
-                # self.log.info('weed found')
                 await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
-                # self.log.info(f'{d.category_name} found')
                 self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
-            # else:
-            #     self.log.info(f'confidence of {d.category_name} to low: {d.confidence}')
 
     def pause(self) -> None:
         if self.is_paused:
             return
-        self.log.info('pausing plant detection')
+        self.log.debug('pausing plant detection')
         self.is_paused = True
 
     def resume(self) -> None:
         if not self.is_paused:
             return
         self.last_detection_time = rosys.time()
-        self.log.info('resuming plant detection')
+        self.log.debug('resuming plant detection')
         self.is_paused = False
 
     def _detection_watchdog(self) -> None:

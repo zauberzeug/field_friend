@@ -7,6 +7,7 @@ from nicegui import ui
 
 from .hardware_control import create_hardware_control_ui
 from .io_overview import IoOverview as io_overview
+from .log_view import LogView
 from .settings import create_settings_ui
 from .status_dev import status_dev_page
 
@@ -31,6 +32,7 @@ def create_development_ui(system: System) -> None:
                         rosys.simulation_ui()
                 create_hardware_control_ui(system.field_friend, system.automator, system.puncher)
                 status_dev_page(system.field_friend, system)
+                LogView().classes('w-100 h-60')
 
     with ui.row():
         with ui.card():
