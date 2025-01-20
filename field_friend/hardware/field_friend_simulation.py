@@ -11,6 +11,7 @@ from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
 from .flashlight_v2 import FlashlightSimulationV2
+from .imu import ImuSimulation
 from .safety import SafetySimulation
 from .tornado import TornadoSimulation
 
@@ -104,7 +105,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             bumper = None
 
-        imu = rosys.hardware.ImuSimulation(wheels=wheels, offset_rotation=rosys.geometry.Rotation.from_euler(0, 0, 0))
+        imu = ImuSimulation(wheels=wheels, offset_rotation=rosys.geometry.Rotation.from_euler(0, 0, 0))
         bms = rosys.hardware.BmsSimulation()
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis,
                                   z_axis=z_axis, flashlight=flashlight, mower=mower)
