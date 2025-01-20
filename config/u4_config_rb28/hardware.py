@@ -11,7 +11,8 @@ configuration = {
         'odrive_version': 6,
     },
     'y_axis': {
-        'version': 'y_axis_stepper',
+        # TODO: lizard not working with this and the imu
+        'version': 'none',
         'name': 'y_axis',
         'max_speed': 60_000,
         'reference_speed': 10_000,
@@ -33,7 +34,8 @@ configuration = {
         'quick_stop_deceleration': 4000,
     },
     'z_axis': {
-        'version': 'tornado',
+        # TODO: lizard not working with this and the imu
+        'version': 'none',
         'name': 'tornado',
         'min_position': -0.09,
         'z_can_address': 0x500,
@@ -111,5 +113,9 @@ configuration = {
         'rx_pin': 32,
         'tx_pin': 33,
         'baud': 1_000_000,
-    }
+    },
+    'imu': {
+        'name': 'imu',
+        'offset_rotation': [-1.570796, 0, 0],
+    },
 }
