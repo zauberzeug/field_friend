@@ -105,7 +105,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             bumper = None
 
-        imu = ImuSimulation(wheels=wheels, offset_rotation=rosys.geometry.Rotation.from_euler(0, 0, 0))
+        imu = ImuSimulation(wheels=wheels, roll_noise=0.0, pitch_noise=0.0, yaw_noise=0.0,
+                            offset_rotation=rosys.geometry.Rotation.from_euler(0, 0, 0))
         bms = rosys.hardware.BmsSimulation()
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis,
                                   z_axis=z_axis, flashlight=flashlight, mower=mower)
