@@ -17,9 +17,6 @@ class StatusControlHardware(ModuleHardware):
         lizard_code = remove_indentation(f'''
             rdyp_status = Input({rdyp_pin})
             vdp_status = {expander.name + "."}Input({vdp_pin})
-            # TODO: remove when lizard issue 66 is fixed.
-            vdp_status.level = 0
-            vdp_status.active = false
         ''')
         core_message_fields = [
             'rdyp_status.level',
