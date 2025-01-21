@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
+from rosys.geometry import GeoPoint
+from rosys.hardware.gnss import GpsQuality
 
 from ...automations.field import RowSupportPoint
-from ...localization import GeoPoint
 
 if TYPE_CHECKING:
     from ...system import System
@@ -74,11 +75,11 @@ class SupportPointDialog:
         self.next = self.confirm_support_point
 
     def confirm_support_point(self) -> None:
-        assert self.gnss.current is not None
-        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
+        assert self.gnss.last_measurement is not None
+        if self.gnss.last_measurement.gps_quality != GpsQuality.RTK_FIXED:
             with self.content:
                 ui.label('No RTK fix available.').classes('text-red')
-        self.support_point_coordinates = self.gnss.current.location
+        self.support_point_coordinates = self.gnss.last_measurement.point
         self.headline.text = 'Confirm Values'
         self.content.clear()
         with self.content:

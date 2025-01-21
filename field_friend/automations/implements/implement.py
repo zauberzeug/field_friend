@@ -1,5 +1,7 @@
 import abc
 
+from rosys.analysis import track
+
 
 # TODO: should some of these methods be abstract?
 class Implement(abc.ABC):  # noqa: B024
@@ -14,22 +16,27 @@ class Implement(abc.ABC):  # noqa: B024
         return False if preparation failed."""
         return True
 
+    @track
     async def finish(self) -> None:
         """Finish the implement once at the end"""
         return None
 
+    @track
     async def activate(self):
         """Activate the implement (for example to start weeding in a new row)"""
         self.is_active = True
 
+    @track
     async def deactivate(self):
         """Deactivate the implement (for example to stop weeding at the row's end)"""
         self.is_active = False
 
+    @track
     async def get_stretch(self, max_distance: float) -> float:  # pylint: disable=unused-argument
         """Return the stretch which the implement thinks is safe to drive forward."""
         return 0.02
 
+    @track
     async def start_workflow(self) -> None:
         """Called after robot has stopped via observation to perform it's workflow on a specific point on the ground
 
@@ -38,6 +45,7 @@ class Implement(abc.ABC):  # noqa: B024
         # TODO: docstring says returns True, but type hints say None
         return None
 
+    @track
     async def stop_workflow(self) -> None:
         """Called after workflow has been performed to stop the workflow"""
         return None

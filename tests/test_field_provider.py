@@ -4,11 +4,10 @@ from pathlib import Path
 
 import pytest
 from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
-from rosys.geometry import Point
+from rosys.geometry import GeoPoint
 
 from field_friend import System
 from field_friend.automations import Field, RowSupportPoint
-from field_friend.localization import GeoPoint
 
 
 def test_loading_from_persistence(system: System):
@@ -24,7 +23,7 @@ def test_loading_from_persistence(system: System):
     for row in field.rows:
         assert len(row.points) == 2
     assert field.first_row_start == FIELD_FIRST_ROW_START
-    assert field.first_row_end == GeoPoint(lat=51.98334192260392, long=7.434293309874038)
+    assert field.first_row_end == GeoPoint.from_degrees(lat=51.98334192260392, lon=7.434293309874038)
 
 
 def test_loading_from_persistence_with_errors(system: System):
@@ -43,7 +42,7 @@ def test_loading_from_persistence_with_errors(system: System):
     for row in field.rows:
         assert len(row.points) == 2
     assert field.first_row_start == FIELD_FIRST_ROW_START
-    assert field.first_row_end == GeoPoint(lat=51.98334192260392, long=7.434293309874038)
+    assert field.first_row_end == GeoPoint.from_degrees(lat=51.98334192260392, lon=7.434293309874038)
 
 
 def test_field_outline(system: System, field: Field):
@@ -51,7 +50,7 @@ def test_field_outline(system: System, field: Field):
     outline = field.outline
 
     def rounded_geo_point(point: GeoPoint) -> GeoPoint:
-        return GeoPoint(lat=round(point.lat, 9), long=round(point.long, 9))
+        return GeoPoint.from_degrees(lat=round(point.lat, 9), lon=round(point.lon, 9))
 
     def assert_in_outline(point: GeoPoint):
         assert rounded_geo_point(point) in [rounded_geo_point(p) for p in outline]
@@ -60,11 +59,11 @@ def test_field_outline(system: System, field: Field):
     row_offset = field.row_spacing * (field.row_count - 1)
 
     # Check first row boundary points
-    assert_in_outline(field.first_row_start.shifted(Point(x=-buffer, y=buffer)))
-    assert_in_outline(field.first_row_end.shifted(Point(x=buffer, y=buffer)))
+    assert_in_outline(field.first_row_start.shift_by(x=-buffer, y=buffer))
+    assert_in_outline(field.first_row_end.shift_by(x=buffer, y=buffer))
     # Check last row boundary points
-    assert_in_outline(field.first_row_start.shifted(Point(x=-buffer, y=-buffer - row_offset)))
-    assert_in_outline(field.first_row_end.shifted(Point(x=buffer, y=-buffer - row_offset)))
+    assert_in_outline(field.first_row_start.shift_by(x=-buffer, y=-buffer - row_offset))
+    assert_in_outline(field.first_row_end.shift_by(x=buffer, y=-buffer - row_offset))
 
 
 def test_field_rows(system: System, field: Field):
@@ -73,22 +72,22 @@ def test_field_rows(system: System, field: Field):
         shift = i * field.row_spacing
         assert len(row.points) == 2
         assert row.points[0].lat == pytest.approx(field.first_row_start.lat, abs=1e-9)
-        assert row.points[0].long == pytest.approx(field.first_row_start.shifted(Point(x=0, y=-shift)).long, abs=1e-9)
+        assert row.points[0].lon == pytest.approx(field.first_row_start.shift_by(x=0, y=-shift).lon, abs=1e-9)
         assert row.points[1].lat == pytest.approx(field.first_row_end.lat, abs=1e-9)
-        assert row.points[1].long == pytest.approx(field.first_row_end.shifted(Point(x=0, y=-shift)).long, abs=1e-9)
+        assert row.points[1].lon == pytest.approx(field.first_row_end.shift_by(x=0, y=-shift).lon, abs=1e-9)
 
 
 def test_add_row_support_point(system: System, field: Field):
     field_provider = system.field_provider
     field_id = field.id
-    point = FIELD_FIRST_ROW_START.shifted(Point(x=0, y=-2))
+    point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-2)
     row_index = 2
     # check if distance between first and second row is correct before adding support point
     assert field.rows[0].points[0].distance(field.rows[row_index].points[0]) == pytest.approx(
         row_index * field.row_spacing, abs=1e-8)
     support_point = RowSupportPoint.from_geopoint(point, row_index)
     assert support_point.lat == point.lat
-    assert support_point.long == point.long
+    assert support_point.lon == point.lon
     field_provider.add_row_support_point(field_id, support_point)
     updated_field: Field | None = field_provider.get_field(field_id)
     assert updated_field is not None
@@ -96,22 +95,22 @@ def test_add_row_support_point(system: System, field: Field):
     # was the support point added correctly
     assert updated_field.row_support_points[0].row_index == row_index
     assert updated_field.row_support_points[0].lat == pytest.approx(point.lat, abs=1e-9)
-    assert updated_field.row_support_points[0].long == pytest.approx(point.long, abs=1e-9)
+    assert updated_field.row_support_points[0].lon == pytest.approx(point.lon, abs=1e-9)
     # check if row was moved correctly
     assert updated_field.rows[row_index].points[0].distance(point) == pytest.approx(0, abs=1e-8)
     assert updated_field.rows[row_index].points[0].lat == pytest.approx(point.lat, abs=1e-9)
-    assert updated_field.rows[row_index].points[0].long == pytest.approx(point.long, abs=1e-9)
+    assert updated_field.rows[row_index].points[0].lon == pytest.approx(point.lon, abs=1e-9)
     # check if next row was moved correctly
-    next_row_start_shifted = point.shifted(Point(x=0, y=-updated_field.row_spacing))
+    next_row_start_shifted = point.shift_by(x=0, y=-updated_field.row_spacing)
     assert updated_field.rows[row_index+1].points[0].lat == pytest.approx(next_row_start_shifted.lat, abs=1e-9)
-    assert updated_field.rows[row_index+1].points[0].long == pytest.approx(next_row_start_shifted.long, abs=1e-9)
+    assert updated_field.rows[row_index+1].points[0].lon == pytest.approx(next_row_start_shifted.lon, abs=1e-9)
 
 
 def test_add_multiple_row_support_points(system: System, field: Field):
     field_provider = system.field_provider
     field_id = field.id
-    second_row_shift_point = FIELD_FIRST_ROW_START.shifted(Point(x=0, y=-0.3))
-    third_row_shift_point = FIELD_FIRST_ROW_START.shifted(Point(x=0, y=-1.0))
+    second_row_shift_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-0.3)
+    third_row_shift_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-1.0)
     support_points = [
         RowSupportPoint.from_geopoint(second_row_shift_point, row_index=1),
         RowSupportPoint.from_geopoint(third_row_shift_point, row_index=2),
@@ -124,8 +123,8 @@ def test_add_multiple_row_support_points(system: System, field: Field):
     assert [sp.row_index for sp in updated_field.row_support_points] == [1, 2]
     assert [sp.lat for sp in updated_field.row_support_points] == [
         second_row_shift_point.lat, third_row_shift_point.lat]
-    assert [sp.long for sp in updated_field.row_support_points] == [
-        second_row_shift_point.long, third_row_shift_point.long]
+    assert [sp.lon for sp in updated_field.row_support_points] == [
+        second_row_shift_point.lon, third_row_shift_point.lon]
     # Check the distance between the first and second row
     assert updated_field.rows[0].points[0].distance(updated_field.rows[1].points[0]) == pytest.approx(0.3, abs=1e-8)
     assert updated_field.rows[0].points[1].distance(updated_field.rows[1].points[1]) == pytest.approx(0.3, abs=1e-8)
@@ -143,8 +142,8 @@ def test_add_multiple_row_support_points(system: System, field: Field):
 def test_update_existing_row_support_point(system: System, field: Field):
     field_provider = system.field_provider
     field_id = field.id
-    initial_shift_point = FIELD_FIRST_ROW_START.shifted(Point(x=0, y=-1.5))
-    updated_shift_point = FIELD_FIRST_ROW_START.shifted(Point(x=0, y=-2.0))
+    initial_shift_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-1.5)
+    updated_shift_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-2.0)
     initial_point = RowSupportPoint.from_geopoint(initial_shift_point, 2)
     field_provider.add_row_support_point(field_id, initial_point)
     updated_point = RowSupportPoint.from_geopoint(updated_shift_point, 2)
@@ -154,12 +153,10 @@ def test_update_existing_row_support_point(system: System, field: Field):
     assert len(updated_field.row_support_points) == 1
     assert updated_field.row_support_points[0].row_index == 2  # 3rd row
     assert updated_field.row_support_points[0].distance(updated_shift_point) == pytest.approx(0, abs=1e-8)
-    assert updated_field.rows[2].points[0].cartesian().distance(
-        updated_field.rows[0].points[0].cartesian()) == pytest.approx(2.0, abs=1e-8)
-    assert updated_field.rows[2].points[1].cartesian().distance(
-        updated_field.rows[0].points[1].cartesian()) == pytest.approx(2.0, abs=1e-8)
+    assert updated_field.rows[2].points[0].distance(updated_field.rows[0].points[0]) == pytest.approx(2.0, abs=1e-8)
+    assert updated_field.rows[2].points[1].distance(updated_field.rows[0].points[1]) == pytest.approx(2.0, abs=1e-8)
     expected_distance = 2.45  # 3rd row support point + row spacing
-    actual_distance = updated_field.rows[3].points[0].cartesian().distance(updated_field.rows[0].points[0].cartesian())
+    actual_distance = updated_field.rows[3].points[0].distance(updated_field.rows[0].points[0])
     assert actual_distance == pytest.approx(expected_distance, abs=1e-8)
 
 
@@ -185,8 +182,8 @@ def test_create_multiple_fields(system: System):
     field2 = Field(
         id=str(uuid.uuid4()),
         name='Field 2',
-        first_row_start=FIELD_FIRST_ROW_START.shifted(Point(x=10, y=10)),
-        first_row_end=FIELD_FIRST_ROW_END.shifted(Point(x=10, y=10)),
+        first_row_start=FIELD_FIRST_ROW_START.shift_by(x=10, y=10),
+        first_row_end=FIELD_FIRST_ROW_END.shift_by(x=10, y=10),
         row_count=3,
         row_spacing=0.75
     )
@@ -211,6 +208,7 @@ def test_create_multiple_fields(system: System):
 
 def test_select_field(system: System, field: Field):
     field_provider = system.field_provider
+    assert field_provider.selected_field is not None
     assert field_provider.selected_field.id == field.id
     field_provider.select_field(field.id)
     assert field_provider.selected_field is not None
@@ -251,20 +249,21 @@ def test_create_field_with_multiple_beds(system: System, field: Field):
     assert created_field.row_spacing == row_spacing
     # Test first bed rows
     for i in range(row_count):
-        expected_start = field_with_beds.first_row_start.shifted(Point(x=0, y=-i*row_spacing))
-        expected_end = field_with_beds.first_row_end.shifted(Point(x=0, y=-i*row_spacing))
+        y_offset = -i * row_spacing
+        expected_start = field_with_beds.first_row_start.shift_by(x=0, y=y_offset)
+        expected_end = field_with_beds.first_row_end.shift_by(x=0, y=y_offset)
         assert created_field.rows[i].points[0].lat == pytest.approx(expected_start.lat, abs=1e-8)
-        assert created_field.rows[i].points[0].long == pytest.approx(expected_start.long, abs=1e-8)
+        assert created_field.rows[i].points[0].lon == pytest.approx(expected_start.lon, abs=1e-8)
         assert created_field.rows[i].points[1].lat == pytest.approx(expected_end.lat, abs=1e-8)
-        assert created_field.rows[i].points[1].long == pytest.approx(expected_end.long, abs=1e-8)
+        assert created_field.rows[i].points[1].lon == pytest.approx(expected_end.lon, abs=1e-8)
     assert created_field.rows[2].points[0].lat == pytest.approx(FIELD_FIRST_ROW_START.lat, abs=1e-8)
     # Test second bed rows
     for i in range(row_count):
         row_index = i + row_count
-        y_offset = -((row_index-1)*row_spacing + bed_spacing)
-        expected_start = field_with_beds.first_row_start.shifted(Point(x=0, y=y_offset))
-        expected_end = field_with_beds.first_row_end.shifted(Point(x=0, y=y_offset))
+        y_offset = -((row_index-1) * row_spacing + bed_spacing)
+        expected_start = field_with_beds.first_row_start.shift_by(x=0, y=y_offset)
+        expected_end = field_with_beds.first_row_end.shift_by(x=0, y=y_offset)
         assert created_field.rows[row_index].points[0].lat == pytest.approx(expected_start.lat, abs=1e-8)
-        assert created_field.rows[row_index].points[0].long == pytest.approx(expected_start.long, abs=1e-8)
+        assert created_field.rows[row_index].points[0].lon == pytest.approx(expected_start.lon, abs=1e-8)
         assert created_field.rows[row_index].points[1].lat == pytest.approx(expected_end.lat, abs=1e-8)
-        assert created_field.rows[row_index].points[1].long == pytest.approx(expected_end.long, abs=1e-8)
+        assert created_field.rows[row_index].points[1].lon == pytest.approx(expected_end.lon, abs=1e-8)

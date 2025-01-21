@@ -4,19 +4,19 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import rosys
-from rosys.geometry import Point
+from rosys.geometry import GeoPoint, GeoReference
+from rosys.hardware import GnssSimulation
 from rosys.testing import forward, helpers
 
-from field_friend import localization
 from field_friend.automations import Field, Row
 from field_friend.interface.components.field_creator import FieldCreator
-from field_friend.localization import GeoPoint, GnssSimulation
 from field_friend.system import System
 
-ROBOT_GEO_START_POSITION = GeoPoint(lat=51.98333489813455, long=7.434242465994318)
+GEO_REFERENCE = GeoReference(GeoPoint.from_degrees(lat=51.98333489813455, lon=7.434242465994318))
+ROBOT_GEO_START_POSITION = GEO_REFERENCE.origin
 
-FIELD_FIRST_ROW_START = GeoPoint(lat=51.98333789813455, long=7.434242765994318)
-FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shifted(point=Point(x=10, y=0))
+FIELD_FIRST_ROW_START = GeoPoint.from_degrees(lat=51.98333789813455, lon=7.434242765994318)
+FIELD_FIRST_ROW_END = FIELD_FIRST_ROW_START.shift_by(x=10, y=0)
 
 log = logging.getLogger('field_friend.testing')
 
@@ -26,15 +26,15 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     s = System(getattr(request, 'param', 'u6'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
-    localization.reference = ROBOT_GEO_START_POSITION
+    GeoReference.update_current(GEO_REFERENCE)
     helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
-    await forward(1)
-    assert s.gnss.device is None, 'device should not be created yet'
     await forward(3)
-    assert s.gnss.device is not None, 'device should be created'
-    assert s.gnss.current.location.distance(ROBOT_GEO_START_POSITION) == 0
+    assert s.gnss.is_connected, 'device should be created'
+    assert s.gnss.last_measurement is not None
+    assert GeoReference.current is not None
+    assert s.gnss.last_measurement.point.distance(GeoReference.current.origin) == pytest.approx(0, abs=1e-8)
     yield s
 
 
@@ -43,15 +43,15 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
     s = System(getattr(request, 'param', 'u4'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
-    localization.reference = ROBOT_GEO_START_POSITION
+    GeoReference.update_current(GEO_REFERENCE)
     helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
-    await forward(1)
-    assert s.gnss.device is None, 'device should not be created yet'
     await forward(3)
-    assert s.gnss.device is not None, 'device should be created'
-    assert s.gnss.current.location.distance(ROBOT_GEO_START_POSITION) == 0
+    assert s.gnss.is_connected, 'device should be created'
+    assert s.gnss.last_measurement is not None
+    assert GeoReference.current is not None
+    assert s.gnss.last_measurement.point.distance(GeoReference.current.origin) == pytest.approx(0, abs=1e-8)
     yield s
 
 
@@ -82,26 +82,26 @@ class TestField:
                 self.first_row_end
             ], crop=self.bed_crops['0']),
             Row(id=f'field_{self.id}_row_2', name='row_2', points=[
-                self.first_row_start.shifted(Point(x=0, y=-0.45)),
-                self.first_row_end.shifted(Point(x=0, y=-0.45))
+                self.first_row_start.shift_by(x=0, y=-0.45),
+                self.first_row_end.shift_by(x=0, y=-0.45)
             ], crop=self.bed_crops['0']),
             Row(id=f'field_{self.id}_row_3', name='row_3', points=[
-                self.first_row_start.shifted(Point(x=0, y=-0.9)),
-                self.first_row_end.shifted(Point(x=0, y=-0.9))
+                self.first_row_start.shift_by(x=0, y=-0.9),
+                self.first_row_end.shift_by(x=0, y=-0.9)
             ], crop=self.bed_crops['0']),
             Row(id=f'field_{self.id}_row_4', name='row_4', points=[
-                self.first_row_start.shifted(Point(x=0, y=-1.35)),
-                self.first_row_end.shifted(Point(x=0, y=-1.35))
+                self.first_row_start.shift_by(x=0, y=-1.35),
+                self.first_row_end.shift_by(x=0, y=-1.35)
             ], crop=self.bed_crops['0'])
         ]
+        buffer = self.outline_buffer_width
+        row_offset = self.row_spacing * (self.row_count - 1)
         self.outline = [
-            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=self.outline_buffer_width)),
-            self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=self.outline_buffer_width)),
-            self.first_row_end.shifted(Point(x=self.outline_buffer_width, y=-
-                                       self.outline_buffer_width - (self.row_count - 1) * self.row_spacing)),
-            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=-
-                                         self.outline_buffer_width - (self.row_count - 1) * self.row_spacing)),
-            self.first_row_start.shifted(Point(x=-self.outline_buffer_width, y=self.outline_buffer_width))
+            self.first_row_start.shift_by(x=-buffer, y=buffer),
+            self.first_row_end.shift_by(x=buffer, y=buffer),
+            self.first_row_end.shift_by(x=buffer, y=-buffer - row_offset),
+            self.first_row_start.shift_by(x=-buffer, y=-buffer - row_offset),
+            self.first_row_start.shift_by(x=-buffer, y=buffer)
         ]
 
 
@@ -163,9 +163,7 @@ async def field_with_beds_tornado(system_with_tornado: System) -> AsyncGenerator
         '2': 'onion',
         '3': 'lettuce'
     }
-
-    system = system_with_tornado
-    system.field_provider.create_field(Field(
+    system_with_tornado.field_provider.create_field(Field(
         id=test_field.id,
         name='Test Field With Beds',
         first_row_start=test_field.first_row_start,

@@ -7,9 +7,10 @@ from uuid import uuid4
 import rosys
 from nicegui import ui
 from nicegui.elements.leaflet_layers import Marker
+from rosys.geometry import GeoPoint
+from rosys.hardware import GnssMeasurement
 
 from field_friend.automations.field import Field
-from field_friend.localization import GeoPoint
 
 if TYPE_CHECKING:
     from ...system import System
@@ -43,7 +44,7 @@ class FieldCreator:
         self.default_crop: str | None = None
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
-        self.gnss.ROBOT_GNSS_POSITION_CHANGED.register_ui(self.update_robot_position)
+        self.gnss.NEW_MEASUREMENT.register_ui(self.new_gnss_measurement)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
                 with ui.column().classes('w-3/5') as self.view_column:
@@ -74,11 +75,8 @@ class FieldCreator:
         self.next = self.find_row_ending
 
     def find_row_ending(self) -> None:
-        assert self.gnss.current is not None
-        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
-            with self.content:
-                ui.label('No RTK fix available.').classes('text-red')
-        self.first_row_start = self.gnss.current.location
+        assert self.gnss.last_measurement is not None
+        self.first_row_start = self.gnss.last_measurement.pose.point
         assert self.first_row_start is not None
         # TODO: save the point somewhere to be able to use it in case of restarting the creator
         self.view_column.clear()
@@ -97,11 +95,8 @@ class FieldCreator:
         self.next = self.field_infos
 
     def field_infos(self) -> None:
-        assert self.gnss.current is not None
-        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
-            with self.content:
-                ui.label('No RTK fix available.').classes('text-red')
-        self.first_row_end = self.gnss.current.location
+        assert self.gnss.last_measurement is not None
+        self.first_row_end = self.gnss.last_measurement.pose.point
         assert self.first_row_end is not None
         self.view_column.clear()
         with self.view_column:
@@ -150,11 +145,8 @@ class FieldCreator:
         self.next = self.crop_infos
 
     def crop_infos(self) -> None:
-        assert self.gnss.current is not None
-        if not ('R' in self.gnss.current.mode or self.gnss.current.mode == 'SSSS'):
-            with self.content:
-                ui.label('No RTK fix available.').classes('text-red')
-        self.first_row_end = self.gnss.current.location
+        assert self.gnss.last_measurement is not None
+        self.first_row_end = self.gnss.last_measurement.pose.point
         assert self.first_row_end is not None
 
         self.headline.text = 'Crops'
@@ -235,13 +227,18 @@ class FieldCreator:
         self.row_sight.set_source(self.back_cam.get_latest_image_url())
 
     def ab_line_map(self) -> None:
-        if self.gnss.current is None:
+        if self.gnss.last_measurement is None:
             return
-        self.m = ui.leaflet(self.gnss.current.location.tuple).classes('w-full min-h-[500px]')
+        self.m = ui.leaflet(self.gnss.last_measurement.pose.point.degree_tuple).classes('w-full min-h-[500px]')
         if self.first_row_start is not None and self.first_row_end is not None:
             self.m.generic_layer(name='polyline', args=[
                 (self.first_row_start.tuple, self.first_row_end.tuple), {'color': '#F44336'}])
         self.m.set_zoom(18)
+
+    def new_gnss_measurement(self, measurement: GnssMeasurement) -> None:
+        if measurement is None:
+            return
+        self.update_robot_position(measurement.point)
 
     def update_robot_position(self, position: GeoPoint, dialog=None) -> None:  # pylint: disable=unused-argument
         if hasattr(self, 'm') and self.m and isinstance(self.m, ui.leaflet):
