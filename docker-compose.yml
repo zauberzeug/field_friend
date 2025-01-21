@@ -13,6 +13,8 @@ services:
       - /etc/hostname:/mnt/host_hostname:ro #to get the hostname into the docker
     environment:
       - TZ=Europe/Amsterdam
+      - USER_ID=1000
+      - GROUP_ID=1000
     hostname: docker
     cap_add:
       - SYS_NICE # allow container to set process priorities
