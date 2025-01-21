@@ -10,3 +10,4 @@ docs/reference/
 .nicegui/
 .venv/
 .DS_Store
+test.py

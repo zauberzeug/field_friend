@@ -24,6 +24,8 @@ services:
         max-size: "200m"
         max-file: "100"
     init: true
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
     # healthcheck:
     #   test: curl --fail http://localhost/status || exit 1
     #   interval: 20s
