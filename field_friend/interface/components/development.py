@@ -39,6 +39,12 @@ def create_development_ui(system: System) -> None:
             system.gnss.developer_ui()
         with ui.card():
             system.field_navigation.developer_ui()
+
+    with ui.row():
+        with ui.card():
+            system.plant_locator.developer_ui()
+
+    with ui.row():
         if isinstance(system.field_friend, rosys.hardware.RobotHardware):
             with ui.card().style('min-width: 200px;'):
                 esp_pins_core = system.field_friend.robot_brain.esp_pins_core
