@@ -95,7 +95,7 @@ class LaserScannerHardware(LaserScanner):
         self.log.warning('turning lidar on')
         executable = '/usr/local/bin/rplidar'
         command = [executable, '--channel', '--serial', self.serial_port, '115200']
-        self.process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        self.process = subprocess.Popen(command, stdout=subprocess.PIPE)  # pylint: disable=consider-using-with
         assert self.process is not None
         assert self.process.stdout is not None
         os.set_blocking(self.process.stdout.fileno(), False)
