@@ -14,7 +14,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 @dataclass
-class Scan:
+class LaserScan:
     time: float
     points: list[Point]
 
@@ -137,7 +137,7 @@ def find_cylinder(scan: Scan, min_depth_change: float = 0.02, min_pole_radius: f
 class LaserScanner:
     def __init__(self, *, svg_size: tuple[int, int] = (360, 360), svg_scale: float = 250.0) -> None:
         self.log = logging.getLogger('laser_scanner')
-        self.last_scan: Scan | None = None
+        self.last_scan: LaserScan | None = None
         self.is_active: bool = False
 
         self.svg_size = svg_size
@@ -229,7 +229,7 @@ class LaserScannerHardware(LaserScanner):
         if self.process is not None and not self.is_active:
             await rosys.run.io_bound(self.stop)
 
-    def _process_data(self, data: np.ndarray) -> Scan:
+    def _process_data(self, data: np.ndarray) -> LaserScan:
         now = rosys.time()
         zero_point = Point(x=0, y=0)
         points: list[Point] = []
@@ -239,7 +239,7 @@ class LaserScannerHardware(LaserScanner):
                 continue
             point = zero_point.polar(distance / 1000.0, np.deg2rad(angle))
             points.append(point)
-        return Scan(time=now, points=points)
+        return LaserScan(time=now, points=points)
 
     def start(self) -> None:
         self.log.warning('turning lidar on')
@@ -280,6 +280,6 @@ class LaserScannerSimulation(LaserScanner):
             self.DISTANCE * (1.0 - self.NOISE), self.DISTANCE * (1.0 + self.NOISE)) for _ in range(self.NUM_POINTS)]
         angles: list[float] = [np.deg2rad(i * 360 / self.NUM_POINTS) for i in range(self.NUM_POINTS)]
         points = [zero_point.polar(distance, angle) for distance, angle in zip(distances, angles, strict=True)]
-        scan = Scan(time=rosys.time(), points=points)
+        scan = LaserScan(time=rosys.time(), points=points)
         self.last_scan = scan
         self.NEW_SCAN.emit(scan)
