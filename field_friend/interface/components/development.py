@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-from ...hardware.imu import Imu
 from .hardware_control import create_hardware_control_ui
 from .io_overview import IoOverview as io_overview
 from .settings import create_settings_ui
@@ -38,7 +37,7 @@ def create_development_ui(system: System) -> None:
             system.robot_locator.developer_ui()
         with ui.card():
             system.gnss.developer_ui()
-        if isinstance(system.field_friend.imu, Imu):
+        if isinstance(system.field_friend.imu, rosys.hardware.Imu):
             with ui.card():
                 system.field_friend.imu.developer_ui()
         with ui.card():

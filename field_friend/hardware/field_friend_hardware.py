@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 import rosys
+from rosys.hardware import ImuHardware
 
 import config.config_selection as config_selector
 
@@ -15,7 +16,6 @@ from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
-from .imu import ImuHardware
 from .led_eyes import LedEyesHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware

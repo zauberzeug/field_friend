@@ -6,9 +6,7 @@ import rosys
 import rosys.helpers
 from nicegui import ui
 from rosys.geometry import Pose3d, Rotation
-from rosys.hardware import Gnss, GnssMeasurement, Imu, Wheels
-
-from .hardware.imu import ImuMeasurement
+from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels
 
 
 class RobotLocator(rosys.persistence.PersistentModule):

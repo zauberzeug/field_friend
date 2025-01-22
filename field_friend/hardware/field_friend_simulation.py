@@ -1,5 +1,6 @@
 import numpy as np
 import rosys
+from rosys.hardware import ImuSimulation
 
 # change the config to the config of simulated Robot
 import config.config_selection as config_selector
@@ -11,7 +12,6 @@ from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
 from .flashlight_v2 import FlashlightSimulationV2
-from .imu import ImuSimulation
 from .safety import SafetySimulation
 from .tornado import TornadoSimulation
 
@@ -105,8 +105,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             bumper = None
 
-        imu = ImuSimulation(wheels=wheels, roll_noise=0.0, pitch_noise=0.0, yaw_noise=0.0,
-                            offset_rotation=rosys.geometry.Rotation.from_euler(0, 0, 0))
+        imu = ImuSimulation(wheels=wheels, roll_noise=0.0, pitch_noise=0.0, yaw_noise=0.0)
         bms = rosys.hardware.BmsSimulation()
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis,
                                   z_axis=z_axis, flashlight=flashlight, mower=mower)
