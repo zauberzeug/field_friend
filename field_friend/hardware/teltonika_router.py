@@ -76,10 +76,17 @@ class TeltonikaRouter:
             response = await self.client.post(f'{TELTONIKA_ROUTER_URL}/login',
                                               json={'username': 'admin', 'password': ADMIN_PASSWORD})
             response.raise_for_status()
-        except httpx.RequestError as e:
-            self.log.error(f'Getting authentication token for Teltonika router: failed, {e}')
+        except httpx.RequestError:
+            self.log.exception('Teltonika router request failed.')
             self.auth_token = ''
             self.token_time = 0.0
-        self.log.info('Getting authentication token for Teltonika router: success')
-        self.auth_token = response.json()['data']['token']
+            return
+        try:
+            self.auth_token = response.json()['data']['token']
+        except KeyError:
+            self.log.exception('No token in response.')
+            self.auth_token = ''
+            self.token_time = 0.0
+            return
         self.token_time = rosys.time()
+        self.log.info('Getting authentication token for Teltonika router: success')
