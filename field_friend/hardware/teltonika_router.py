@@ -76,7 +76,7 @@ class TeltonikaRouter:
             response = await self.client.post(f'{TELTONIKA_ROUTER_URL}/login',
                                               json={'username': 'admin', 'password': ADMIN_PASSWORD})
             response.raise_for_status()
-        except httpx.RequestError:
+        except (httpx.RequestError, httpx.ConnectError):
             self.log.exception('Teltonika router request failed.')
             self.auth_token = ''
             self.token_time = 0.0
