@@ -152,39 +152,6 @@ class LaserScanner:
         self.NEW_SCAN = rosys.event.Event()
         '''a new scan is available (argument: ndarray with scan points in world coordinate system)'''
 
-    def developer_ui(self):
-        ui.interactive_image(size=self.svg_size) \
-            .bind_content_from(self, '_map_content') \
-            .classes(f'w-[{self.svg_size[0]}px] h-[{self.svg_size[1]}px] bg-gray-100')
-        ui.timer(0.5, self.draw_last_scan)
-
-    def draw_last_scan(self):
-        if self.last_scan is None:
-            return
-        if self.last_draw_timestamp >= self.last_scan.time:
-            return
-        self.draw(self.last_scan)
-
-        self.last_draw_timestamp = self.last_scan.time
-
-    def draw(self, scan: Scan):
-        svg = self.base_svg
-        for point in scan.points:
-            x = int(self.svg_center[0] + self.svg_scale * point.x)
-            y = int(self.svg_center[1] + self.svg_scale * point.y)
-            svg += f'<circle cx="{x}" cy="{y}" r="1" fill="blue"/>'
-
-        cylinders = find_cylinder(scan)
-        for cylinder in cylinders:
-            x = int(self.svg_center[0] + self.svg_scale * cylinder.point.x)
-            y = int(self.svg_center[1] + self.svg_scale * cylinder.point.y)
-            svg += f'<circle cx="{x}" cy="{y}" r="3" fill="green"/>'
-            svg += f'<circle cx="{x}" cy="{y}" \
-                r="{cylinder.radius * self.svg_scale}" stroke="green" stroke-width="1" fill="none" opacity="0.3"/>'
-
-        svg += '</svg>'
-        self._map_content = svg
-
 
 class LaserScannerHardware(LaserScanner):
     SEPARATOR = '---\n'
@@ -283,3 +250,31 @@ class LaserScannerSimulation(LaserScanner):
         scan = LaserScan(time=rosys.time(), points=points)
         self.last_scan = scan
         self.NEW_SCAN.emit(scan)
+
+
+class LaserScanMap(ui.interactive_image):
+    def __init__(self, scale: float = 250.0, size: tuple[int, int] = (360, 360)) -> None:
+        super().__init__(size=size)
+        self.size = size
+        self.scale = scale
+        self.center = (self.size[0] / 2, self.size[1] / 2)
+        self.base_svg = f'<svg viewBox="0 0 {self.size[0]} {self.size[1]}" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#f0f0f0"/>'
+        self.base_svg += f'<circle cx="{self.center[0]}" cy="{self.center[1]}" \
+            r="{3}" fill="red"/>'
+        self.last_update: float = 0.0
+        rosys.on_startup(lambda: self.draw(''))
+
+    def draw(self, svg_content: str):
+        svg = self.base_svg
+        svg += svg_content
+        svg += '</svg>'
+        self.last_update = rosys.time()
+        self.content = svg
+
+    def generate_scan_svg(self, scan: LaserScan) -> str:
+        svg = ''
+        for point in scan.points:
+            x = int(self.center[0] + self.scale * point.x)
+            y = int(self.center[1] + self.scale * point.y)
+            svg += f'<circle cx="{x}" cy="{y}" r="1" fill="blue"/>'
+        return svg

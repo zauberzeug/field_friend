@@ -8,6 +8,7 @@ from .field_friend_simulation import FieldFriendSimulation
 from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMV2
 from .flashlight_v2 import FlashlightV2
+from .laser_scanner import LaserScan, LaserScanMap, LaserScanner, LaserScannerHardware, LaserScannerSimulation
 from .teltonika_router import TeltonikaRouter
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
@@ -26,6 +27,11 @@ __all__ = [
     'FlashlightPWMSimulation',
     'FlashlightPWMV2',
     'FlashlightV2',
+    'LaserScan',
+    'LaserScanMap',
+    'LaserScanner',
+    'LaserScannerHardware',
+    'LaserScannerSimulation',
     'Mower',
     'MowerHardware',
     'MowerSimulation',
