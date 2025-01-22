@@ -14,3 +14,4 @@ rosys
 .nicegui
 .venv
 .DS_Store
+.ruff_cache/
