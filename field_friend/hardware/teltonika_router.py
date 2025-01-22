@@ -41,6 +41,10 @@ class TeltonikaRouter:
         self.connection_check_running = True
         if rosys.time() - self.token_time > 4 * 60:
             await self._get_token()
+        if self.auth_token == '':
+            self.log.error('No authentication token found.')
+            self.connection_check_running = False
+            return
         self.log.debug('Getting internet connection info...')
         try:
             response = await self.client.get(f'{TELTONIKA_ROUTER_URL}/failover/status',
