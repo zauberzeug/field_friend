@@ -145,7 +145,7 @@ class System(rosys.persistence.PersistentModule):
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
-        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name}, \
+        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name if self.current_navigation is not None else 'No Navigation'}, \
             tags: {", ".join(self.plant_locator.tags)}'''
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
@@ -154,11 +154,11 @@ class System(rosys.persistence.PersistentModule):
         self.field_navigation = FieldNavigation(self, self.monitoring)
 
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, self.monitoring)
-        self.navigation_strategies: dict[str, Navigation] = {n.name: n for n in [self.straight_line_navigation,
-                                                                                 self.follow_crops_navigation,
-                                                                                 self.field_navigation,
-                                                                                 self.crossglide_demo_navigation,
-                                                                                 ]}
+        self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
+                                                          self.follow_crops_navigation,
+                                                          self.field_navigation,
+                                                          self.crossglide_demo_navigation,
+                                                          ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
             case 'tornado':
@@ -176,8 +176,8 @@ class System(rosys.persistence.PersistentModule):
                 implements = [ExternalMower(self)]
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
-        self.implements: dict[str, Implement] = {t.name: t for t in implements}
-        self._current_navigation: Navigation = self.straight_line_navigation
+        self.implements = {t.name: t for t in implements}
+        self._current_navigation = self.straight_line_navigation
         self.automator.default_automation = self._current_navigation.start
         self.info = Info(self)
         self.current_implement = self.monitoring
@@ -236,13 +236,13 @@ class System(rosys.persistence.PersistentModule):
         self.log.info(f'selected implement: {implement.name}')
 
     @property
-    def current_navigation(self) -> Navigation:
+    def current_navigation(self) -> Navigation | None:
         return self._current_navigation
 
     @current_navigation.setter
     def current_navigation(self, navigation: Navigation) -> None:
         old_navigation = self._current_navigation
-        if old_navigation is not None:
+        if old_navigation is not None and self.current_implement is not None:
             implement = self.current_implement
             navigation.implement = implement
         self._current_navigation = navigation
