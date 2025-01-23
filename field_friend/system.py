@@ -65,6 +65,9 @@ class System(rosys.persistence.PersistentModule):
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation
         self.field_friend: FieldFriend
+        self._current_navigation: Navigation | None = None
+        self.implements: dict[str, Implement] = {}
+        self.navigation_strategies: dict[str, Navigation] = {}
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
@@ -175,7 +178,6 @@ class System(rosys.persistence.PersistentModule):
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         self.implements: dict[str, Implement] = {t.name: t for t in implements}
         self._current_navigation: Navigation = self.straight_line_navigation
-        self._current_implement = self._current_navigation
         self.automator.default_automation = self._current_navigation.start
         self.info = Info(self)
         self.current_implement = self.monitoring
@@ -196,8 +198,8 @@ class System(rosys.persistence.PersistentModule):
 
     def backup(self) -> dict:
         return {
-            'navigation': self.current_navigation.name,
-            'implement': self.current_implement.name,
+            'navigation': self.current_navigation.name if self.current_navigation is not None else None,
+            'implement': self.current_implement.name if self.current_implement is not None else None,
             'gnss_reference': GeoReference.current.origin.degree_tuple if GeoReference.current is not None else None,
         }
 
@@ -219,11 +221,16 @@ class System(rosys.persistence.PersistentModule):
             self.update_gnss_reference(reference=reference)
 
     @property
-    def current_implement(self) -> Implement:
+    def current_implement(self) -> Implement | None:
+        if self.current_navigation is None:
+            return None
         return self.current_navigation.implement
 
     @current_implement.setter
     def current_implement(self, implement: Implement) -> None:
+        if self.current_navigation is None:
+            self.log.error('No navigation selected')
+            return
         self.current_navigation.implement = implement
         self.request_backup()
         self.log.info(f'selected implement: {implement.name}')
