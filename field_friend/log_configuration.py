@@ -3,6 +3,7 @@ import logging.config
 from logging.handlers import QueueListener
 from pathlib import Path
 from queue import Queue
+from typing import Any
 
 import coloredlogs
 import icecream
@@ -16,7 +17,7 @@ def configure():
     icecream.install()
     PATH.mkdir(parents=True, exist_ok=True)
 
-    config = {
+    config: dict[str, Any] = {
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
@@ -78,7 +79,7 @@ def configure():
     # Setup queue listeners
     handlers = {h.name: h for h in logging.getLogger('DUMMY').handlers}
 
-    debug_queue = config['handlers']['debug_queue']['queue']  # type: ignore
+    debug_queue = config['handlers']['debug_queue']['queue']
     debug_listener = QueueListener(debug_queue, handlers['debugfile'], handlers['console'])
     debug_listener.start()
     atexit.register(debug_listener.stop)
