@@ -123,14 +123,8 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
     def handle_core_output(self, time: float, words: list[str]) -> None:
         if self.odrive_version == 6:
             self.m0_error = int(words.pop(0))
-            if self.m0_error == 1 and not self.motor_error:
-                rosys.notify('Mower Motor Error', 'warning')
-                self.motor_error = True
             self.m1_error = int(words.pop(0))
-            if self.m1_error == 1 and not self.motor_error:
-                rosys.notify('Mower Motor Error', 'warning')
-                self.motor_error = True
             self.m2_error = int(words.pop(0))
-            if self.m2_error == 1 and not self.motor_error:
+            if (self.m0_error == 1 or self.m1_error == 1 or self.m2_error == 1) and not self.motor_error:
                 rosys.notify('Mower Motor Error', 'warning')
                 self.motor_error = True
