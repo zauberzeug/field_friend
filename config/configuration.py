@@ -445,7 +445,7 @@ class ExternalMowerConfiguration:
         is_m0_reversed: False
         is_m1_reversed: False
         is_m2_reversed: False
-        odrive_version: 4
+        odrive_version: 6
     """
     m0_can_address: int
     m1_can_address: int
@@ -456,7 +456,7 @@ class ExternalMowerConfiguration:
     is_m0_reversed: bool = False
     is_m1_reversed: bool = False
     is_m2_reversed: bool = False
-    odrive_version: int = 4
+    odrive_version: int = 6
 
 
 @dataclass(slots=True, kw_only=True)
@@ -477,7 +477,7 @@ class FieldFriendConfiguration:
     measurements: MeasurementsConfiguration
     wheels: WheelsConfiguration
     has_status_control: bool
-    camera: CameraConfiguration
+    camera: CameraConfiguration | None
     y_axis: AxisD1Configuration | ChainAxisConfiguration | YStepperConfiguration | YCanOpenConfiguration | None
     z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | None
     can: CanConfiguration = field(default_factory=CanConfiguration)
