@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from nicegui import ui
 
+from ...hardware import Tornado, ZAxisCanOpenHardware
 from .status_bulb import StatusBulb as status_bulb
 
 if TYPE_CHECKING:
@@ -68,24 +69,33 @@ class IoOverview:
                 ui.markdown('**Z-Axis**').classes('w-full text-center')
                 ui.separator()
                 if self.system.field_friend.z_axis is not None:
-                    with ui.row():
-                        status_bulb().bind_value_from(self.system.field_friend.z_axis, 'end_top')
-                        ui.label('End Top Switch')
-                    with ui.row():
-                        status_bulb().bind_value_from(self.system.field_friend.z_axis, 'end_bottom')
-                        ui.label('End Bottom Switch')
-                    with ui.row():
-                        status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_motor')
-                        ui.label('Ref Motor')
-                    with ui.row():
-                        status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_gear')
-                        ui.label('Ref Gear')
-                    with ui.row():
-                        status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_knife_stop')
-                        ui.label('Ref Knife Stop')
-                    with ui.row():
-                        status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_knife_ground')
-                        ui.label('Ref Knife Ground')
+                    # TODO: change properties, end_top vs end_t
+                    if isinstance(self.system.field_friend.z_axis, Tornado):
+                        with ui.row():
+                            status_bulb().bind_value_from(self.system.field_friend.z_axis, 'end_top')
+                            ui.label('End Top Switch')
+                        with ui.row():
+                            status_bulb().bind_value_from(self.system.field_friend.z_axis, 'end_bottom')
+                            ui.label('End Bottom Switch')
+                        with ui.row():
+                            status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_motor')
+                            ui.label('Ref Motor')
+                        with ui.row():
+                            status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_gear')
+                            ui.label('Ref Gear')
+                        with ui.row():
+                            status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_knife_stop')
+                            ui.label('Ref Knife Stop')
+                        with ui.row():
+                            status_bulb().bind_value_from(self.system.field_friend.z_axis, 'ref_knife_ground')
+                            ui.label('Ref Knife Ground')
+                    elif isinstance(self.system.field_friend.z_axis, ZAxisCanOpenHardware):
+                        with ui.row():
+                            status_bulb().bind_value_from(self.system.field_friend.z_axis, 'end_t')
+                            ui.label('End Top Switch')
+                        with ui.row():
+                            status_bulb().bind_value_from(self.system.field_friend.z_axis, 'end_b')
+                            ui.label('End Bottom Switch')
                 else:
                     ui.icon('link_off').props('size=lg').style(
                         'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')

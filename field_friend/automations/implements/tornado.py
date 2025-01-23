@@ -28,7 +28,7 @@ class Tornado(WeedingImplement):
         self.log.info('Performing Tornado Workflow..')
         try:
             # TODO: do we need to set self.next_crop_id = '' on every return?
-            punch_position = self.system.odometer.prediction.transform(
+            punch_position = self.system.robot_locator.pose.transform(
                 rosys.geometry.Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
             self.last_punches.append(Point3d.from_point(punch_position))
             self.log.info(f'Drilling crop at {punch_position} with angle {self.tornado_angle}°')
@@ -59,7 +59,7 @@ class Tornado(WeedingImplement):
         if len(self.crops_to_handle) == 0:
             return self.WORKING_DISTANCE
         closest_crop_id, closest_crop_position = next(iter(self.crops_to_handle.items()))
-        closest_crop_world_position = self.system.odometer.prediction.transform3d(closest_crop_position)
+        closest_crop_world_position = self.system.robot_locator.pose.transform3d(closest_crop_position)
 
         # for p in self.last_punches:
         #     self.log.info(f'Last punch: {p} - {p.distance(closest_crop_world_position)} - {self.crop_safety_distance} - {closest_crop_world_position}')
@@ -88,7 +88,7 @@ class Tornado(WeedingImplement):
 
     def _crops_in_drill_range(self, crop_id: str, crop_position: rosys.geometry.Point, angle: float) -> bool:
         inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
-        crop_world_position = self.system.odometer.prediction.transform(crop_position)
+        crop_world_position = self.system.robot_locator.pose.transform(crop_position)
         for crop in self.system.plant_provider.crops:
             if crop.id != crop_id:
                 distance = crop_world_position.distance(crop.position.projection())

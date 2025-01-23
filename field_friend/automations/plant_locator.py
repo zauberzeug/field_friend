@@ -10,8 +10,7 @@ from ..vision.zedxmini_camera import StereoCamera
 from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'weedy_area', ]
-CROP_CATEGORY_NAME = ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
-                      'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]
+CROP_CATEGORY_NAME: dict[str, str] = {}
 MINIMUM_CROP_CONFIDENCE = 0.3
 MINIMUM_WEED_CONFIDENCE = 0.3
 
@@ -32,14 +31,14 @@ class PlantLocator(rosys.persistence.PersistentModule):
         self.camera_provider = system.camera_provider
         self.detector = system.detector
         self.plant_provider = system.plant_provider
-        self.odometer = system.odometer
+        self.robot_locator = system.robot_locator
         self.robot_name = system.version
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
         self.upload_images: bool = False
         self.weed_category_names: list[str] = WEED_CATEGORY_NAME
-        self.crop_category_names: list[str] = CROP_CATEGORY_NAME
+        self.crop_category_names: dict[str, str] = CROP_CATEGORY_NAME
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
@@ -50,6 +49,11 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
             self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
+        self.detector_error = False
+        self.last_detection_time = rosys.time()
+        self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
+        rosys.on_repeat(self._detection_watchdog, 0.5)
+        rosys.on_startup(self.get_crop_names)
 
     def backup(self) -> dict:
         self.log.info(f'backup: autoupload: {self.autoupload}')
@@ -112,7 +116,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 #     self.log.error('could not get a depth value for detection')
                 #     continue
                 # camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
-                #     'zedxmini').in_frame(self.odometer.prediction_frame)
+                #     'zedxmini').in_frame(self.robot_locator.pose_frame)
                 # world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
             else:
                 world_point_3d = camera.calibration.project_from_image(image_point)
@@ -144,8 +148,20 @@ class PlantLocator(rosys.persistence.PersistentModule):
     def resume(self) -> None:
         if not self.is_paused:
             return
+        self.last_detection_time = rosys.time()
         self.log.info('resuming plant detection')
         self.is_paused = False
+
+    def _detection_watchdog(self) -> None:
+        if self.is_paused:
+            return
+        if rosys.time() - self.last_detection_time > 1.0 and not self.detector_error:
+            self.log.debug('No new detections')
+            self.detector_error = True
+            return
+        if rosys.time() - self.last_detection_time <= 1.0 and self.detector_error:
+            self.detector_error = False
+            self.log.debug('Detection error resolved')
 
     async def get_outbox_mode(self, port: int) -> bool | None:
         # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
@@ -216,3 +232,26 @@ class PlantLocator(rosys.persistence.PersistentModule):
             self.upload_images = True
         else:
             self.upload_images = False
+
+    async def get_crop_names(self) -> dict[str, str]:
+        if isinstance(self.detector, rosys.vision.DetectorSimulation):
+            simulated_crop_names: list[str] = ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
+                                               'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]
+
+            CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in simulated_crop_names})
+            self.crop_category_names = CROP_CATEGORY_NAME
+            return CROP_CATEGORY_NAME
+        port = self.detector.port
+        url = f'http://localhost:{port}/about'
+        async with aiohttp.request('GET', url) as response:
+            if response.status != 200:
+                self.log.error(f'Could not get crop names on port {port} - status code: {response.status}')
+                return {}
+            response_text = await response.json()
+        crop_names: list[str] = [category['name'] for category in response_text['model_info']['categories']]
+        weeds = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
+        for weed in weeds:
+            crop_names.remove(weed)
+        CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in crop_names})
+        self.crop_category_names = CROP_CATEGORY_NAME
+        return CROP_CATEGORY_NAME

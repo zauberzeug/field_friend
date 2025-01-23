@@ -3,6 +3,7 @@ from datetime import timedelta
 import psutil
 import rosys
 from nicegui import ui
+from rosys.analysis import track
 
 from ..system import System
 from .components import create_development_ui, create_header
@@ -16,6 +17,7 @@ class DevPage:
         @ui.page('/dev')
         def page() -> None:
             create_header(system)
+            track.ui()
             create_development_ui(system)
 
             with ui.footer():

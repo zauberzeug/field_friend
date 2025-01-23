@@ -32,7 +32,7 @@ class RobotScene:
                 .style('position: absolute; left: 1px; top: 1px; z-index: 500;').tooltip('Lock view to robot')
 
             with ui.scene(200, 200, on_click=self.handle_click, grid=False).classes('w-full') as self.scene:
-                field_friend_object(self.system.odometer, self.system.camera_provider, self.system.field_friend)
+                field_friend_object(self.system.robot_locator, self.system.camera_provider, self.system.field_friend)
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system)
                 visualizer_object(self.system)
@@ -53,8 +53,8 @@ class RobotScene:
     def update(self) -> None:
         if not self.locked_view:
             return
-        position = self.system.odometer.prediction.point
-        relative_camera_position = self.system.odometer.prediction.transform(rosys.geometry.Point(x=0.1, y=0.7))
+        position = self.system.robot_locator.pose.point
+        relative_camera_position = self.system.robot_locator.pose.transform(rosys.geometry.Point(x=0.1, y=0.7))
 
         self.scene.move_camera(x=relative_camera_position.x, y=relative_camera_position.y,
                                look_at_x=position.x, look_at_y=position.y, duration=0.0)
