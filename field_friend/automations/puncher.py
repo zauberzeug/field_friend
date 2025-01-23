@@ -37,7 +37,7 @@ class Puncher:
                 return False
             return True
         except Exception as e:
-            rosys.notify('homing failed', 'negative')
+            rosys.notify('Homing failed', 'negative')
             raise PuncherException('homing failed') from e
         finally:
             await self.field_friend.y_axis.stop()
