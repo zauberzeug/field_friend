@@ -191,7 +191,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
         if self.ignore_imu:
             return
         self.predict(imu_measurement.time)
-        z = [[imu_measurement.yaw_velocity]]
+        z = [[imu_measurement.angular_velocity.yaw]]
         h = [[self.x[4, 0]]]
         H = [
             [0, 0, 0, 0, 1, 0]
