@@ -78,7 +78,7 @@ def configure():
     # Setup queue listeners
     handlers = {h.name: h for h in logging.getLogger('DUMMY').handlers}
 
-    debug_queue = config['handlers']['debug_queue']['queue']
+    debug_queue = config['handlers']['debug_queue']['queue']  # type: ignore
     debug_listener = QueueListener(debug_queue, handlers['debugfile'], handlers['console'])
     debug_listener.start()
     atexit.register(debug_listener.stop)
