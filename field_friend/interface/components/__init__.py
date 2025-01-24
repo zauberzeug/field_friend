@@ -11,9 +11,9 @@ from .status_drawer import create_status_drawer
 __all__ = [
     'CameraCard',
     'LeafletMap',
+    'LogMonitor',
     'Monitoring',
     'Operation',
-    'LogMonitor',
     'RobotScene',
     'create_development_ui',
     'create_header',
