@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from rosys.geometry import Pose, Rectangle
+from rosys.geometry import Pose, Rectangle, Rotation
 
 
 @dataclass(kw_only=True)
@@ -263,13 +263,14 @@ class GnssConfiguration:
 
 
 @dataclass(slots=True, kw_only=True)
-class IMUConfiguration:
+class ImuConfiguration:
     """Configuration for the IMU of the FieldFriend robot.
 
     Defaults:
         name: 'imu'
     """
     name: str = 'imu'
+    offset_rotation: Rotation = field(default_factory=lambda: Rotation.from_euler(0, 0, 0))
 
 
 @dataclass(kw_only=True)
@@ -487,5 +488,5 @@ class FieldFriendConfiguration:
     battery_control: BatteryControlConfiguration | None = field(default_factory=BatteryControlConfiguration)
     flashlight: FlashlightConfiguration | None = None
     gnss: GnssConfiguration | None = None
-    imu: IMUConfiguration | None = None
+    imu: ImuConfiguration | None = None
     external_mower: ExternalMowerConfiguration | None = None

@@ -23,7 +23,6 @@ from .field_friend import FieldFriend
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
-from .imu import IMUHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware
 from .tornado import TornadoHardware
@@ -356,7 +355,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                name=config.bumper.name,
                                                pins=config.bumper.pins) if config.bumper else None
 
-        self.imu = IMUHardware(robot_brain, name=config.imu.name) if config.imu else None
+        imu = rosys.hardware.ImuHardware(robot_brain,
+                                         name=config.imu.name,
+                                         offset_rotation=config.imu.offset_rotation) if config.imu else None
 
         self.status_control = StatusControlHardware(robot_brain,
                                                     expander=expander,
@@ -367,7 +368,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)
 
         modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis, z_axis, mower,
-                   flashlight, bms, estop, self.battery_control, bumper, self.imu, self.status_control, safety]
+                   flashlight, bms, estop, self.battery_control, bumper, imu, self.status_control, safety]
+
         active_modules = [module for module in modules if module is not None]
         super().__init__(implement_name=implement,
                          wheels=wheels,
@@ -379,5 +381,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          safety=safety,
                          flashlight=flashlight,
                          mower=mower,
+                         imu=imu,
                          modules=active_modules,
                          robot_brain=robot_brain)

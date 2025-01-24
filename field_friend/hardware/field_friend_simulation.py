@@ -100,9 +100,10 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         estop = rosys.hardware.EStopSimulation()
         bumper = rosys.hardware.BumperSimulation(estop=estop) if config.bumper else None
         bms = rosys.hardware.BmsSimulation()
+        imu = rosys.hardware.ImuSimulation(wheels=wheels)
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis,
                                   z_axis=z_axis, flashlight=flashlight, mower=mower)
-        modules = [wheels, y_axis, z_axis, flashlight, bumper, bms, estop, safety, mower]
+        modules = [wheels, y_axis, z_axis, flashlight, bumper, imu, bms, estop, safety, mower]
         active_modules = [module for module in modules if module is not None]
         super().__init__(implement_name=tool,
                          wheels=wheels,
@@ -112,6 +113,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                          mower=mower,
                          estop=estop,
                          bumper=bumper,
+                         imu=imu,
                          bms=bms,
                          safety=safety,
                          modules=active_modules)
