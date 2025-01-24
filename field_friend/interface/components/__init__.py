@@ -2,6 +2,7 @@ from .camera_card import CameraCard
 from .development import create_development_ui
 from .header import create_header
 from .leaflet_map import LeafletMap
+from .log_monitor import LogMonitor
 from .monitoring import Monitoring
 from .operation import Operation
 from .robot_scene import RobotScene
@@ -12,6 +13,7 @@ __all__ = [
     'LeafletMap',
     'Monitoring',
     'Operation',
+    'LogMonitor',
     'RobotScene',
     'create_development_ui',
     'create_header',
