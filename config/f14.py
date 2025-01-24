@@ -1,7 +1,10 @@
+from rosys.geometry import Rotation
+
 from .configuration import (
     BumperConfiguration,
     ExternalMowerConfiguration,
     FieldFriendConfiguration,
+    ImuConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
@@ -33,7 +36,8 @@ config = FieldFriendConfiguration(
         speed=10.0,
         odrive_version=6,
     ),
+    # TODO: calibrate imu
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(0, 0, 0)),
     # TODO: circle sight
     # TODO: gnss
-    # TODO: imu
 )

@@ -1,8 +1,11 @@
+from rosys.geometry import Rotation
+
 from .configuration import (
     BumperConfiguration,
     CameraConfiguration,
     FieldFriendConfiguration,
     FlashlightConfiguration,
+    ImuConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
@@ -74,4 +77,6 @@ config = FieldFriendConfiguration(
         min_position=-0.197,
         version='z_axis_canopen',
     ),
+    # TODO: calibrate imu
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(0, 0, 0)),
 )
