@@ -8,11 +8,11 @@ import psutil
 import requests
 import rosys
 from rosys.driving import Odometer
-from rosys.geometry import GeoPoint, GeoReference, Pose
+from rosys.geometry import GeoPoint, GeoReference
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
 from rosys.version import __version__ as rosys_version
 
-import config.config_selection as config_selector
+from config import get_config
 
 from .app_controls import AppControls as app_controls
 from .automations import (
@@ -45,20 +45,15 @@ icecream.install()
 
 class System(rosys.persistence.PersistentModule):
 
-    version = 'unknown'  # This is set in main.py through the environment variable VERSION or ROBOT_ID
-    robot_id = 'unknown'  # This is set in main.py through the environment variable ROBOT_ID
-
-    def __init__(self) -> None:
+    def __init__(self, robot_id: str) -> None:
         super().__init__()
-        assert self.version is not None
-        assert self.version != 'unknown'
-        assert self.robot_id is not None
+        self.robot_id = robot_id
         assert self.robot_id != 'unknown'
-
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED = rosys.event.Event()
+        self.config = get_config(self.robot_id)
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
@@ -67,10 +62,10 @@ class System(rosys.persistence.PersistentModule):
         self.field_friend: FieldFriend
         if self.is_real:
             try:
-                self.field_friend = FieldFriendHardware()
+                self.field_friend = FieldFriendHardware(self.config)
                 self.teltonika_router = TeltonikaRouter()
             except Exception:
-                self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
+                self.log.exception(f'failed to initialize FieldFriendHardware {self.robot_id}')
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = self.setup_gnss()
             # TODO: is IMU optional?
@@ -79,9 +74,8 @@ class System(rosys.persistence.PersistentModule):
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
-            self.camera_configurator = CameraConfigurator(self.camera_provider, self.robot_locator)
         else:
-            self.field_friend = FieldFriendSimulation(robot_id=self.version)
+            self.field_friend = FieldFriendSimulation(self.config)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = self.setup_gnss(self.field_friend.wheels)
             # TODO: is IMU optional?
@@ -90,8 +84,9 @@ class System(rosys.persistence.PersistentModule):
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
-            self.camera_configurator = CameraConfigurator(self.camera_provider, self.robot_locator, self.version)
 
+        self.camera_configurator = CameraConfigurator(
+            self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.plant_provider = PlantProvider()
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
@@ -142,7 +137,7 @@ class System(rosys.persistence.PersistentModule):
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
-        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name}, \
+        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.robot_id}, {self.current_navigation.name}, \
             tags: {", ".join(self.plant_locator.tags)}'''
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
@@ -246,13 +241,11 @@ class System(rosys.persistence.PersistentModule):
     def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider:
         if not self.is_real:
             return rosys.vision.SimulatedCameraProvider()
-        camera_config = config_selector.import_config(module='camera')
-        camera_type = camera_config.get('type', 'CalibratableUsbCamera')
-        if camera_type == 'CalibratableUsbCamera':
+        if self.config.camera.camera_type == 'CalibratableUsbCamera':
             return CalibratableUsbCameraProvider()
-        if camera_type == 'ZedxminiCamera':
+        if self.config.camera.camera_type == 'ZedxminiCamera':
             return ZedxminiCameraProvider()
-        raise NotImplementedError(f'Unknown camera type: {camera_type}')
+        raise NotImplementedError(f'Unknown camera type: {self.config.camera.camera_type}')
 
     async def setup_simulated_usb_camera(self):
         self.camera_provider.remove_all_cameras()
@@ -269,16 +262,9 @@ class System(rosys.persistence.PersistentModule):
 
     def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation:
         if self.is_real:
-            config_hardware: dict = config_selector.import_config(module='hardware')
-            if 'gnss' in config_hardware:
-                antenna_pose = Pose(x=config_hardware['gnss']['x'],
-                                    y=config_hardware['gnss']['y'],
-                                    yaw=np.deg2rad(config_hardware['gnss']['yaw_deg']))
-            else:
-                # the yaw should be 90°, but the offset is configured in the septentrio software
-                antenna_pose = Pose(x=0.041, y=-0.255, yaw=np.deg2rad(0.0))
-                self.log.warning('No GNSS antenna configuration found, using default values')
-            return GnssHardware(antenna_pose=antenna_pose)
+            # handle the case where the gnss is not configured
+            assert self.config.gnss is not None
+            return GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
         return GnssSimulation(wheels=wheels, lat_std_dev=0.0, lon_std_dev=0.0, heading_std_dev=0.0)
 
@@ -330,7 +316,7 @@ class System(rosys.persistence.PersistentModule):
             row = None
         position = self.gnss.last_measurement.point.degree_tuple if self.gnss.last_measurement is not None else None
         data = {
-            'version': self.version,
+            'robot_id': self.robot_id,
             'battery': self.field_friend.bms.state.percentage,
             'battery_charging': self.field_friend.bms.state.is_charging,
             'status': status,

@@ -23,13 +23,11 @@ log = logging.getLogger('field_friend.testing')
 
 @pytest.fixture
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
-    System.version = getattr(request, 'param', 'rb34')
-    System.robot_id = 'u6'
-    s = System()
-    helpers.odometer = s.robot_locator  # type: ignore
+    s = System(getattr(request, 'param', 'u6'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -42,12 +40,11 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
 
 @pytest.fixture
 async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[System, None]:
-    System.version = getattr(request, 'param', 'rb28')
-    System.robot_id = 'u4'
-    s = System()
+    s = System(getattr(request, 'param', 'u4'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)

@@ -12,7 +12,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
                  can: rosys.hardware.CanHardware,
                  max_position: float = -0.1,
                  min_position: float = 0.1,
-                 axis_offset: int = 0,
+                 axis_offset: float = 0.0,
                  can_address: int = 0x60,
                  homing_acceleration: int = 100,
                  homing_velocity: int = 20,
