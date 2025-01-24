@@ -66,10 +66,10 @@ class Tornado(WeedingImplement):
             self.log.debug('Skipping weed because it was already punched')
             return self.WORKING_DISTANCE
         if not self.system.field_friend.can_reach(closest_crop_position.projection()):
-            self.log.debug('Target crop is not reachable')
+            self.log.debug('Target crop is not in the working area')
             return self.WORKING_DISTANCE
         if closest_crop_position.x >= self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
-            self.log.debug('Closest crop is out of working area')
+            self.log.debug('Closest crop is not on the working x-axis')
             return self.WORKING_DISTANCE
         if self._crops_in_drill_range(closest_crop_id, closest_crop_position.projection(), self.tornado_angle):
             self.log.debug('Crops in drill range')
