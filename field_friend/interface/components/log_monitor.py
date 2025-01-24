@@ -36,9 +36,8 @@ class LogMonitor(rosys.persistence.PersistentModule):
         self.lines = deque(logs, self.max_lines)
 
     def ui(self) -> None:
-        with ui.card().classes('w-full h-full'):
-            ui.label('Log Monitor').classes('text-center text-bold')
-            with ui.log(max_lines=self.max_lines).classes('text-xs') as log:
-                log.push('\n'.join(self.lines))
-                self.NEW_LINE.register_ui(log.push)
-                ui.run_javascript(f'getElement({log.id}).scrollTop = getElement({log.id}).scrollHeight')
+        ui.label('Log Monitor').classes('text-center text-bold')
+        with ui.log(max_lines=self.max_lines).classes('text-xs') as log:
+            log.push('\n'.join(self.lines))
+            self.NEW_LINE.register_ui(log.push)
+            ui.run_javascript(f'getElement({log.id}).scrollTop = getElement({log.id}).scrollHeight')

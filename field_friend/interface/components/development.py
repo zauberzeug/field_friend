@@ -48,6 +48,6 @@ def create_development_ui(system: System) -> None:
                 esp_pins_p0 = system.field_friend.robot_brain.esp_pins_p0
                 esp_pins_p0.developer_ui()
 
-    with ui.row().classes('w-1/2'):
+    with ui.card().classes('w-1/2'):
         LogMonitor().ui()
     io_overview(system)
