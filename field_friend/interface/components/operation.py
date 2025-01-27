@@ -54,6 +54,7 @@ class Operation:
             ).classes('w-32') \
                 .tooltip('Select the navigation strategy') \
                 .bind_value_from(self.system, 'current_navigation', lambda i: i.name)
+            assert self.system.current_navigation is not None
             self.navigation_selection.value = self.system.current_navigation.name
 
             self.implement_selection = ui.select(
@@ -63,19 +64,24 @@ class Operation:
                 .classes('w-32') \
                 .tooltip('Select the implement to work with') \
                 .bind_value_from(self.system, 'current_implement', lambda i: i.name)
+            assert self.system.current_implement is not None
             self.implement_selection.value = self.system.current_implement.name
 
     def handle_implement_changed(self, e: events.ValueChangeEventArguments) -> None:
+        assert self.system.current_implement is not None
         if self.system.current_implement.name != e.value:
             self.system.current_implement = self.system.implements[e.value]
         self.implement_settings.clear()
+        assert self.system.current_implement is not None
         with self.implement_settings:
             self.system.current_implement.settings_ui()
 
     def handle_navigation_changed(self, e: events.ValueChangeEventArguments) -> None:
+        assert self.system.current_navigation is not None
         if self.system.current_navigation.name != e.value:
             self.system.current_navigation = self.system.navigation_strategies[e.value]
         self.navigation_settings.clear()
+        assert self.system.current_navigation is not None
         with self.navigation_settings:
             self.system.current_navigation.settings_ui()
 

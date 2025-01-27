@@ -63,6 +63,9 @@ class System(rosys.persistence.PersistentModule):
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation
         self.field_friend: FieldFriend
+        self._current_navigation: Navigation | None = None
+        self.implements: dict[str, Implement] = {}
+        self.navigation_strategies: dict[str, Navigation] = {}
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware()
@@ -71,7 +74,9 @@ class System(rosys.persistence.PersistentModule):
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = self.setup_gnss()
-            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
+            # TODO: is IMU optional?
+            assert isinstance(self.field_friend.imu, rosys.hardware.ImuHardware)
+            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu)
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
@@ -80,7 +85,9 @@ class System(rosys.persistence.PersistentModule):
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = self.setup_gnss(self.field_friend.wheels)
-            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss)
+            # TODO: is IMU optional?
+            assert isinstance(self.field_friend.imu, rosys.hardware.ImuSimulation)
+            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
@@ -132,7 +139,7 @@ class System(rosys.persistence.PersistentModule):
         self.automation_watcher = AutomationWatcher(self)
         self.monitoring = Recorder(self)
         self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
-        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name}, \
+        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name if self.current_navigation is not None else 'No Navigation'}, \
             tags: {", ".join(self.plant_locator.tags)}'''
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
@@ -141,11 +148,11 @@ class System(rosys.persistence.PersistentModule):
         self.field_navigation = FieldNavigation(self, self.monitoring)
 
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, self.monitoring)
-        self.navigation_strategies: dict[str, Navigation] = {n.name: n for n in [self.straight_line_navigation,
-                                                                                 self.follow_crops_navigation,
-                                                                                 self.field_navigation,
-                                                                                 self.crossglide_demo_navigation,
-                                                                                 ]}
+        self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
+                                                          self.follow_crops_navigation,
+                                                          self.field_navigation,
+                                                          self.crossglide_demo_navigation,
+                                                          ]}
         implements: list[Implement] = [self.monitoring]
         match self.field_friend.implement_name:
             case 'tornado':
@@ -163,9 +170,8 @@ class System(rosys.persistence.PersistentModule):
                 implements = [ExternalMower(self)]
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
-        self.implements: dict[str, Implement] = {t.name: t for t in implements}
-        self._current_navigation: Navigation = self.straight_line_navigation
-        self._current_implement = self._current_navigation
+        self.implements = {t.name: t for t in implements}
+        self._current_navigation = self.straight_line_navigation
         self.automator.default_automation = self._current_navigation.start
         self.info = Info(self)
         self.current_implement = self.monitoring
@@ -186,8 +192,8 @@ class System(rosys.persistence.PersistentModule):
 
     def backup(self) -> dict:
         return {
-            'navigation': self.current_navigation.name,
-            'implement': self.current_implement.name,
+            'navigation': self.current_navigation.name if self.current_navigation is not None else None,
+            'implement': self.current_implement.name if self.current_implement is not None else None,
             'gnss_reference': GeoReference.current.origin.degree_tuple if GeoReference.current is not None else None,
         }
 
@@ -209,23 +215,28 @@ class System(rosys.persistence.PersistentModule):
             self.update_gnss_reference(reference=reference)
 
     @property
-    def current_implement(self) -> Implement:
+    def current_implement(self) -> Implement | None:
+        if self.current_navigation is None:
+            return None
         return self.current_navigation.implement
 
     @current_implement.setter
     def current_implement(self, implement: Implement) -> None:
+        if self.current_navigation is None:
+            self.log.error('No navigation selected')
+            return
         self.current_navigation.implement = implement
         self.request_backup()
         self.log.info(f'selected implement: {implement.name}')
 
     @property
-    def current_navigation(self) -> Navigation:
+    def current_navigation(self) -> Navigation | None:
         return self._current_navigation
 
     @current_navigation.setter
     def current_navigation(self, navigation: Navigation) -> None:
         old_navigation = self._current_navigation
-        if old_navigation is not None:
+        if old_navigation is not None and self.current_implement is not None:
             implement = self.current_implement
             navigation.implement = implement
         self._current_navigation = navigation

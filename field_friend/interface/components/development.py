@@ -37,6 +37,9 @@ def create_development_ui(system: System) -> None:
             system.robot_locator.developer_ui()
         with ui.card():
             system.gnss.developer_ui()
+        if isinstance(system.field_friend.imu, rosys.hardware.Imu):
+            with ui.card():
+                system.field_friend.imu.developer_ui()
         with ui.card():
             system.field_navigation.developer_ui()
         if isinstance(system.field_friend, rosys.hardware.RobotHardware):
