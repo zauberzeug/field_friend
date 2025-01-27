@@ -111,7 +111,7 @@ class AutomationWatcher:
 
         if self.robot_locator.pose.distance(self.incidence_pose) > RESET_POSE_DISTANCE:
             if self.resume_delay != DEFAULT_RESUME_DELAY:
-                self.log.info('resetting resume_delay')
+                self.log.debug('resetting resume_delay')
                 self.resume_delay = DEFAULT_RESUME_DELAY
 
     def start_field_watch(self, field_boundaries: list[GeoPoint]) -> None:

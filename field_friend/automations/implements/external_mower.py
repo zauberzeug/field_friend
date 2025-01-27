@@ -41,11 +41,11 @@ class ExternalMower(Implement, rosys.persistence.PersistentModule):
         if not any([self.mower_hardware.m0_error, self.mower_hardware.m1_error, self.mower_hardware.m2_error]):
             return min(self.stretch_distance, max_distance)
         if all([self.mower_hardware.m0_error, self.mower_hardware.m1_error, self.mower_hardware.m2_error]):
-            rosys.notify('All motors are stuck', 'negative')
-            raise WorkflowException('All motors are stuck')
+            rosys.notify('All mower motors are stuck', 'negative')
+            raise WorkflowException('All mower motors are stuck')
         # TODO: implement a better error handling
         await rosys.sleep(0.1)
-        self.log.warning('Stuck motor detected')
+        self.log.warning('Stuck mower motor detected')
         await self.driver.wheels.stop()
         await self.mower_hardware.reset_motors()
         await rosys.sleep(5)

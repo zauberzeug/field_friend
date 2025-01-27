@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import rosys
 from rosys.hardware import ImuHardware
@@ -29,7 +27,6 @@ from .z_axis_stepper_hardware import ZAxisStepperHardware
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self) -> None:
-        self.log = logging.getLogger('field_friend.field_friend_hardware')
         config_hardware: dict = config_selector.import_config(module='hardware')
         config_robotbrain: dict = config_selector.import_config(module='robotbrain')
         config_params: dict = config_selector.import_config(module='params')
