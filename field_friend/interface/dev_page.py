@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import TYPE_CHECKING
 
 import psutil
 import rosys
@@ -15,9 +14,6 @@ from .components.io_overview import IoOverview as io_overview
 from .components.log_monitor import LogMonitor
 from .components.settings import create_settings_ui
 from .components.status_dev import status_dev_page
-
-if TYPE_CHECKING:
-    from ...system import System
 
 
 class DevPage:
