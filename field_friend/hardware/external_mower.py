@@ -82,9 +82,9 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         self.speed = speed
         self.odrive_version = odrive_version
         lizard_code = remove_indentation(f'''
-            m0 = ODriveMotor({can.name}, {m0_can_address}{', 6'if self.odrive_version == 6  else ''})
-            m1 = ODriveMotor({can.name}, {m1_can_address}{', 6'if self.odrive_version == 6  else ''})
-            m2 = ODriveMotor({can.name}, {m2_can_address}{', 6'if self.odrive_version == 6  else ''})
+            m0 = ODriveMotor({can.name}, {m0_can_address}{', 6'if self.odrive_version == 6 else ''})
+            m1 = ODriveMotor({can.name}, {m1_can_address}{', 6'if self.odrive_version == 6 else ''})
+            m2 = ODriveMotor({can.name}, {m2_can_address}{', 6'if self.odrive_version == 6 else ''})
             m0.m_per_tick = {m_per_tick}
             m1.m_per_tick = {m_per_tick}
             m2.m_per_tick = {m_per_tick}
@@ -123,14 +123,8 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
     def handle_core_output(self, time: float, words: list[str]) -> None:
         if self.odrive_version == 6:
             self.m0_error = int(words.pop(0))
-            if self.m0_error == 1:
-                rosys.notify('Left Back Motor Error', 'warning')
-                self.motor_error = True
             self.m1_error = int(words.pop(0))
-            if self.m1_error == 1:
-                rosys.notify('Right Back Motor Error', 'warning')
-                self.motor_error = True
             self.m2_error = int(words.pop(0))
-            if self.m2_error == 1:
-                rosys.notify('Left Front Motor Error', 'warning')
+            if (self.m0_error == 1 or self.m1_error == 1 or self.m2_error == 1) and not self.motor_error:
+                rosys.notify('Mower Motor Error', 'warning')
                 self.motor_error = True

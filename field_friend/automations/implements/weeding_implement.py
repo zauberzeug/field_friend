@@ -87,7 +87,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.log.info(f'Handling plants with {self.name}...')
 
     async def stop_workflow(self) -> None:
-        self.log.info('workflow completed')
+        self.log.debug('workflow completed')
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
@@ -96,7 +96,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def _check_hardware_ready(self) -> bool:  # pylint: disable=too-many-return-statements
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active, aborting', 'negative')
-            self.log.error('E-Stop is active, aborting')
             return False
         camera = self.system.camera_provider.first_connected_camera
         if not camera:
@@ -107,16 +106,13 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             return False
         if self.system.field_friend.y_axis and self.system.field_friend.y_axis.alarm:
             rosys.notify('Y-Axis is in alarm, aborting', 'negative')
-            self.log.error('Y-Axis is in alarm, aborting')
             return False
         if isinstance(self.system.field_friend.y_axis, ChainAxis):
             if not self.system.field_friend.y_axis.ref_t:
                 rosys.notify('ChainAxis is not in top ref', 'negative')
-                self.log.error('ChainAxis is not in top ref')
                 return False
         if not await self.system.puncher.try_home():
             rosys.notify('Puncher homing failed, aborting', 'negative')
-            self.log.error('Puncher homing failed, aborting')
             return False
         return True
 
@@ -155,8 +151,6 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
                     crop_position_2d = crop_position.projection()
                     safe_weed_position_2d = weed_position_2d.polar(offset, crop_position_2d.direction(weed_position_2d))
                     upcoming_weed_positions[weed] = Point3d.from_point(safe_weed_position_2d)
-                    # self.log.info(f'Moved weed {weed} from {weed_position} to {safe_weed_position} ' +
-                    #               f'by {offset} to safe {crop} at {crop_position}')
 
         # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))

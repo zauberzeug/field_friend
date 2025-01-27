@@ -233,7 +233,7 @@ class System(rosys.persistence.PersistentModule):
             return
         self.current_navigation.implement = implement
         self.request_backup()
-        self.log.info(f'selected implement: {implement.name}')
+        self.log.debug(f'selected implement: {implement.name}')
 
     @property
     def current_navigation(self) -> Navigation | None:

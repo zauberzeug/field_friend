@@ -25,13 +25,12 @@ class Tornado(WeedingImplement):
 
     async def start_workflow(self) -> None:
         await super().start_workflow()
-        self.log.info('Performing Tornado Workflow..')
         try:
             # TODO: do we need to set self.next_crop_id = '' on every return?
             punch_position = self.system.robot_locator.pose.transform(
                 rosys.geometry.Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
             self.last_punches.append(Point3d.from_point(punch_position))
-            self.log.info(f'Drilling crop at {punch_position} with angle {self.tornado_angle}°')
+            self.log.debug(f'Drilling crop at {punch_position} with angle {self.tornado_angle}°')
             open_drill = False
             if self.drill_with_open_tornado:
                 open_drill = True
@@ -46,7 +45,7 @@ class Tornado(WeedingImplement):
                 # outer_radius = outer_diameter / 2
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                           if not inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius]
-                self.log.info(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
+                self.log.debug(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
         except PuncherException:
             self.log.error('Error in Tornado Workflow')
         except Exception as e:
@@ -64,21 +63,21 @@ class Tornado(WeedingImplement):
         # for p in self.last_punches:
         #     self.log.info(f'Last punch: {p} - {p.distance(closest_crop_world_position)} - {self.crop_safety_distance} - {closest_crop_world_position}')
         if any(p.distance(closest_crop_world_position) < self.field_friend.DRILL_RADIUS for p in self.last_punches):
-            self.log.info('Skipping weed because it was already punched')
+            self.log.debug('Skipping weed because it was already punched')
             return self.WORKING_DISTANCE
         if not self.system.field_friend.can_reach(closest_crop_position.projection()):
-            self.log.info('Target crop is not reachable')
+            self.log.debug('Target crop is not in the working area')
             return self.WORKING_DISTANCE
         if closest_crop_position.x >= self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
-            self.log.info('Closest crop is out of working area')
+            self.log.debug('Closest crop not yet in range')
             return self.WORKING_DISTANCE
         if self._crops_in_drill_range(closest_crop_id, closest_crop_position.projection(), self.tornado_angle):
-            self.log.info('Crops in drill range')
+            self.log.debug('Crops in drill range')
             return self.WORKING_DISTANCE
 
         stretch = closest_crop_position.x - self.system.field_friend.WORK_X
         if stretch < - self.system.field_friend.DRILL_RADIUS:
-            self.log.info(f'Skipping crop {closest_crop_id} because it is behind the robot')
+            self.log.debug(f'Skipping crop {closest_crop_id} because it is behind the robot')
             return self.WORKING_DISTANCE
         stretch = max(stretch, 0)
         if stretch < max_distance:

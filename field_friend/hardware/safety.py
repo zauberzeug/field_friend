@@ -51,7 +51,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None,
                  mower: MowerHardware | None = None,
                  ) -> None:
-
+        self.estop_active = False
         # implement lizard stop method for available hardware
         lizard_code = f'let stop do {wheels.name}.speed(0, 0);'
         if y_axis is not None:
@@ -93,6 +93,12 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
         lizard_code += 'when core.last_message_age > 20000 then stop(); end\n'
 
+        if bumper is not None:
+            bumper.BUMPER_TRIGGERED.register(self.bumper_safety_notifications)
+        if estop is not None:
+            estop.ESTOP_TRIGGERED.register(self.estop_triggered_safety_notifications)
+            estop.ESTOP_RELEASED.register(self.estop_released_safety_notifications)
+
         super().__init__(wheels=wheels,
                          estop=estop,
                          y_axis=y_axis,
@@ -100,6 +106,25 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                          flashlight=flashlight,
                          robot_brain=robot_brain,
                          lizard_code=lizard_code)
+
+    def bumper_safety_notifications(self, pin: str) -> None:
+        if self.estop_active:
+            return
+        if pin == 'front_top':
+            rosys.notify('Front top bumper triggered', 'warning')
+        elif pin == 'front_bottom':
+            rosys.notify('Front bottom bumper triggered', 'warning')
+        elif pin == 'back':
+            rosys.notify('Back bumper triggered', 'warning')
+
+    def estop_triggered_safety_notifications(self) -> None:
+        rosys.notify('E-Stop triggered', 'warning')
+        self.estop_active = True
+
+    async def estop_released_safety_notifications(self) -> None:
+        rosys.notify('E-Stop released')
+        await rosys.sleep(0.1)
+        self.estop_active = False
 
 
 class SafetySimulation(Safety, rosys.hardware.ModuleSimulation):
