@@ -25,6 +25,7 @@ def startup() -> None:
         return
     logging.info('Starting Field Friend for robot %s', robot_id)
     System.version = os.environ.get('VERSION') or robot_id
+    System.robot_id = robot_id
     system = System()
 
     interface.main_page(system)  # /

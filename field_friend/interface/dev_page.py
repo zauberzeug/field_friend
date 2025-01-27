@@ -60,6 +60,9 @@ class DevPage:
                 self.system.robot_locator.developer_ui()
             with ui.card():
                 self.system.gnss.developer_ui()
+            if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
+                with ui.card():
+                    self.system.field_friend.imu.developer_ui()
             with ui.card():
                 self.system.field_navigation.developer_ui()
             if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):

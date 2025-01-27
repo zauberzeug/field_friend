@@ -1,5 +1,6 @@
 import numpy as np
 import rosys
+from rosys.hardware import ImuSimulation
 
 # change the config to the config of simulated Robot
 import config.config_selection as config_selector
@@ -103,10 +104,12 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             bumper = rosys.hardware.BumperSimulation(estop=estop)
         else:
             bumper = None
+
+        imu = ImuSimulation(wheels=wheels, roll_noise=0.0, pitch_noise=0.0, yaw_noise=0.0)
         bms = rosys.hardware.BmsSimulation()
         safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis,
                                   z_axis=z_axis, flashlight=flashlight, mower=mower)
-        modules = [wheels, y_axis, z_axis, flashlight, bumper, bms, estop, safety, mower]
+        modules = [wheels, y_axis, z_axis, flashlight, bumper, imu, bms, estop, safety, mower]
         active_modules = [module for module in modules if module is not None]
         super().__init__(implement_name=tool,
                          wheels=wheels,
@@ -116,6 +119,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                          mower=mower,
                          estop=estop,
                          bumper=bumper,
+                         imu=imu,
                          bms=bms,
                          safety=safety,
                          modules=active_modules)

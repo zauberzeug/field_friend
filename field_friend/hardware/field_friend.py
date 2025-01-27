@@ -33,6 +33,7 @@ class FieldFriend(rosys.hardware.Robot):
             y_axis: Axis | ChainAxis | None,
             z_axis: Axis | Tornado | None,
             mower: Mower | None,
+            imu: rosys.hardware.Imu | None,
             estop: rosys.hardware.EStop,
             bumper: rosys.hardware.Bumper | None,
             bms: rosys.hardware.Bms,
@@ -45,6 +46,7 @@ class FieldFriend(rosys.hardware.Robot):
         self.y_axis = y_axis
         self.z_axis = z_axis
         self.mower = mower
+        self.imu = imu
         self.estop = estop
         self.bumper = bumper
         self.bms = bms
