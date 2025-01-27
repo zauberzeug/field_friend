@@ -1,16 +1,14 @@
 import logging
 import os
-from typing import Any, cast
+from typing import Any
 
 import icecream
 import numpy as np
 import psutil
-import requests
 import rosys
 from rosys.driving import Odometer
 from rosys.geometry import GeoPoint, GeoReference, Pose
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
-from rosys.version import __version__ as rosys_version
 
 import config.config_selection as config_selector
 
@@ -122,10 +120,6 @@ class System(rosys.persistence.PersistentModule):
         self.plant_locator = PlantLocator(self)
 
         rosys.on_repeat(watch_robot, 1.0)
-        if self.is_real and os.environ.get('SWARM_URL'):
-            rosys.on_repeat(self.send_status_to_swarm, 60)
-        else:
-            rosys.notify('Swarm URL is not set', type='negative')
 
         self.path_provider = PathProvider()
         self.field_provider = FieldProvider()
@@ -314,48 +308,3 @@ class System(rosys.persistence.PersistentModule):
 
         bms_logger = logging.getLogger('field_friend.bms')
         bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
-
-    async def send_status_to_swarm(self) -> None:
-        status = 'emergency stop' if len(self.field_friend.estop.pressed_estops) > 0 or self.field_friend.estop.is_soft_estop_active else \
-            'bumper active' if self.field_friend.bumper and self.field_friend.bumper.active_bumpers else \
-            'working' if self.automator.automation is not None and self.automator.automation.is_running else \
-            'idle'
-        if self.is_real:
-            lizard_firmware = cast(FieldFriendHardware, self.field_friend).robot_brain.lizard_firmware
-            await lizard_firmware.read_core_version()
-            await lizard_firmware.read_p0_version()
-            core_version = lizard_firmware.core_version
-            p0_version = lizard_firmware.p0_version
-        else:
-            core_version = 'simulation'
-            p0_version = 'simulation'
-        if self.current_navigation is not None and self.current_navigation is FieldNavigation:
-            field = self.field_navigation.field if self.field_navigation.field is not None else None
-            row = self.field_navigation.current_row if self.field_navigation.current_row is not None else None
-        else:
-            field = None
-            row = None
-        position = self.gnss.last_measurement.point.degree_tuple if self.gnss.last_measurement is not None else None
-        data = {
-            'version': self.version,
-            'battery': self.field_friend.bms.state.percentage,
-            'battery_charging': self.field_friend.bms.state.is_charging,
-            'status': status,
-            'position': {'lat': position[0], 'lon': position[1]} if position is not None else None,
-            # TODO: update the gnss quality with kalman filter
-            'gnss_quality': self.gnss.last_measurement.gps_quality if self.gnss.last_measurement is not None else None,
-            'implement': self.field_friend.implement_name,
-            'navigation': self.current_navigation.name if self.current_navigation is not None else None,
-            'field': field,
-            'row': row,
-            'rosys_version': rosys_version,
-            'core_lizard_version': core_version,
-            'p0_lizard_version': p0_version,
-        }
-        swarm_url = os.environ.get('SWARM_URL')
-        endpoint = f'{swarm_url}/api/robot/{self.robot_id.lower()}'
-        passphrase = os.environ.get('SWARM_PASSPHRASE')
-        headers = {'passphrase': passphrase} if passphrase else {}
-        response = requests.post(endpoint, json=data, headers=headers, timeout=5)
-        if response.status_code != 200:
-            rosys.notify(f'Response code {response.status_code}.', type='negative')
