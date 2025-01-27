@@ -74,8 +74,6 @@ class System(rosys.persistence.PersistentModule):
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.version}')
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = self.setup_gnss()
-            # TODO: is IMU optional?
-            assert isinstance(self.field_friend.imu, rosys.hardware.ImuHardware)
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu)
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
@@ -85,8 +83,6 @@ class System(rosys.persistence.PersistentModule):
             self.field_friend = FieldFriendSimulation(robot_id=self.version)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = self.setup_gnss(self.field_friend.wheels)
-            # TODO: is IMU optional?
-            assert isinstance(self.field_friend.imu, rosys.hardware.ImuSimulation)
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)

@@ -11,7 +11,7 @@ from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels
 
 class RobotLocator(rosys.persistence.PersistentModule):
 
-    def __init__(self, wheels: Wheels, gnss: Gnss, imu: Imu) -> None:
+    def __init__(self, wheels: Wheels, gnss: Gnss, imu: Imu | None = None) -> None:
         """ Robot Locator based on an extended Kalman filter.
 
         ### State
@@ -104,7 +104,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
         self.wheels.VELOCITY_MEASURED.register(self.handle_velocity_measurement)
         self.gnss.NEW_MEASUREMENT.register(self.handle_gnss_measurement)
-        self.imu.NEW_MEASUREMENT.register(self.handle_imu_measurement)
+        if self.imu:
+            self.imu.NEW_MEASUREMENT.register(self.handle_imu_measurement)
+        else:
+            self.ignore_imu = True
 
     def backup(self) -> dict[str, Any]:
         return {
