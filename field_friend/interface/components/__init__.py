@@ -1,5 +1,4 @@
 from .camera_card import CameraCard
-from .development import create_development_ui
 from .header import create_header
 from .leaflet_map import LeafletMap
 from .log_monitor import LogMonitor
@@ -15,7 +14,6 @@ __all__ = [
     'Monitoring',
     'Operation',
     'RobotScene',
-    'create_development_ui',
     'create_header',
     'create_status_drawer',
 ]
