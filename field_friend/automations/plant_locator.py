@@ -8,9 +8,8 @@ import rosys
 from nicegui import ui
 from rosys.vision import Autoupload
 
-from ...vision.zedxmini_camera import StereoCamera
-from ..plant import Plant
-from .locator import Locator
+from ..vision.zedxmini_camera import StereoCamera
+from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'weedy_area', ]
 CROP_CATEGORY_NAME: dict[str, str] = {}
@@ -19,18 +18,48 @@ MINIMUM_WEED_CONFIDENCE = 0.3
 
 
 if TYPE_CHECKING:
-    from ...system import System
+    from ..system import System
 
 
 class DetectorError(Exception):
     pass
 
 
-class PlantLocator(Locator):
+class EntityLocator(rosys.persistence.PersistentModule):
+    def __init__(self, system: System) -> None:
+        super().__init__()
+        self.log = logging.getLogger('field_friend.entity_locator')
+        self.system = system
+
+        self.is_paused = True
+
+    def pause(self) -> None:
+        if self.is_paused:
+            return
+        self.log.info('pausing locator')
+        self.is_paused = True
+
+    def resume(self) -> None:
+        if not self.is_paused:
+            return
+        self.log.info('resuming locator')
+        self.is_paused = False
+
+    def developer_ui(self) -> None:
+        pass
+
+    def backup(self) -> dict:
+        return {}
+
+    def restore(self, data: dict[str, Any]) -> None:
+        pass
+
+
+class PlantLocator(EntityLocator):
 
     def __init__(self, system: System) -> None:
         super().__init__(system)
-        self.log = logging.getLogger('field_friend.plant_detection')
+        self.log = logging.getLogger('field_friend.plant_locator')
         self.camera_provider = system.camera_provider
         self.detector = system.detector
         self.plant_provider = system.plant_provider

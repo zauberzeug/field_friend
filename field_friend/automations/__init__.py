@@ -7,12 +7,14 @@ from .implements.implement import Implement
 from .kpi_provider import KpiProvider
 from .path_provider import Path, PathProvider
 from .plant import Plant
+from .plant_locator import EntityLocator, PlantLocator
 from .plant_provider import PlantProvider
 from .puncher import Puncher
 
 __all__ = [
     'AutomationWatcher',
     'BatteryWatcher',
+    'EntityLocator',
     'Field',
     'FieldProvider',
     'Implement',
@@ -20,6 +22,7 @@ __all__ = [
     'Path',
     'PathProvider',
     'Plant',
+    'PlantLocator',
     'PlantProvider',
     'Puncher',
     'Row',
