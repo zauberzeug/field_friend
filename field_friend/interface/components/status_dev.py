@@ -130,15 +130,6 @@ def status_dev_page(robot: FieldFriend, system: System):
                 ui.button('Reset tornado motor errors', on_click=robot.z_axis.reset_motors) \
                     .bind_visibility_from(robot.z_axis, 'motor_error')
 
-        if robot.mower is not None:
-            with ui.row().classes('place-items-center'):
-                ui.label('Mower status:').style('color: #EDF4FB').classes('font-bold')
-                ui.label().bind_text_from(robot.mower, 'm0_error', backward=lambda x: 'Error in m0' if x else 'No error')
-                ui.label().bind_text_from(robot.mower, 'm1_error', backward=lambda x: 'Error in m1' if x else 'No error')
-                ui.label().bind_text_from(robot.mower, 'm2_error', backward=lambda x: 'Error in m2' if x else 'No error')
-                ui.button('Reset mower errors', on_click=robot.mower.reset_motors) \
-                    .bind_visibility_from(robot.mower, 'motor_error')
-
     with ui.card().style('background-color: #3E63A6; color: white;'):
         ui.label('Robot Brain').style('color: #6E93D6;').classes('w-full text-center font-bold')
         ui.separator()
