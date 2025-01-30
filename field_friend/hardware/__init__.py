@@ -1,7 +1,6 @@
 from .axis import Axis
 from .chain_axis import ChainAxis
 from .double_wheels import DoubleWheelsHardware
-from .external_mower import Mower, MowerHardware, MowerSimulation
 from .field_friend import FieldFriend
 from .field_friend_hardware import FieldFriendHardware
 from .field_friend_simulation import FieldFriendSimulation
@@ -26,9 +25,6 @@ __all__ = [
     'FlashlightPWMSimulation',
     'FlashlightPWMV2',
     'FlashlightV2',
-    'Mower',
-    'MowerHardware',
-    'MowerSimulation',
     'TeltonikaRouter',
     'Tornado',
     'TornadoHardware',

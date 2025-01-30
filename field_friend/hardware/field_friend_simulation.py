@@ -7,7 +7,6 @@ import config.config_selection as config_selector
 
 from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
-from .external_mower import MowerSimulation
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
@@ -38,9 +37,6 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             self.WORK_X = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS = config_params['chop_radius']
-        elif tool in ['mower']:
-            self.WORK_X: float = 0.0
-            self.DRILL_RADIUS: float = 0.0
         else:
             raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
         wheels = rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
@@ -77,12 +73,6 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown Z-Axis version: {config_hardware["z_axis"]["version"]}')
 
-        mower: MowerSimulation | None
-        if 'external_mower' in config_hardware:
-            mower = MowerSimulation()
-        else:
-            mower = None
-
         flashlight: FlashlightSimulation | FlashlightSimulationV2 | FlashlightPWMSimulationV2 | None
         if config_hardware['flashlight']['version'] == 'flashlight':
             flashlight = FlashlightSimulation()
@@ -107,16 +97,14 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
         imu = ImuSimulation(wheels=wheels, roll_noise=0.0, pitch_noise=0.0, yaw_noise=0.0)
         bms = rosys.hardware.BmsSimulation()
-        safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis,
-                                  z_axis=z_axis, flashlight=flashlight, mower=mower)
-        modules = [wheels, y_axis, z_axis, flashlight, bumper, imu, bms, estop, safety, mower]
+        safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
+        modules = [wheels, y_axis, z_axis, flashlight, bumper, imu, bms, estop, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(implement_name=tool,
                          wheels=wheels,
                          flashlight=flashlight,
                          y_axis=y_axis,
                          z_axis=z_axis,
-                         mower=mower,
                          estop=estop,
                          bumper=bumper,
                          imu=imu,
