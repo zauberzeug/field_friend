@@ -21,11 +21,11 @@ from .automations import (
     FieldProvider,
     KpiProvider,
     PathProvider,
+    PlantLocator,
     PlantProvider,
     Puncher,
 )
 from .automations.implements import ExternalMower, Implement, Recorder, Tornado, WeedingScrew
-from .automations.locators import PlantLocator
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
