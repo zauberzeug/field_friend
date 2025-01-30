@@ -84,5 +84,4 @@ WORKDIR /app
 RUN sudo setcap 'cap_net_bind_service=+ep cap_sys_nice=+ep' /usr/local/bin/python3.11
 RUN sudo usermod -a -G video $USERNAME
 
-# CMD python3 main.py
-CMD python3 test.py
+CMD python3 main.py
