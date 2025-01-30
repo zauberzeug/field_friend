@@ -1,7 +1,6 @@
-import logging
-
 import numpy as np
 import rosys
+from rosys.hardware import ImuHardware
 
 import config.config_selection as config_selector
 
@@ -15,7 +14,6 @@ from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
-from .imu import IMUHardware
 from .led_eyes import LedEyesHardware
 from .safety import SafetyHardware
 from .status_control import StatusControlHardware
@@ -29,7 +27,6 @@ from .z_axis_stepper_hardware import ZAxisStepperHardware
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self) -> None:
-        self.log = logging.getLogger('field_friend.field_friend_hardware')
         config_hardware: dict = config_selector.import_config(module='hardware')
         config_robotbrain: dict = config_selector.import_config(module='robotbrain')
         config_params: dict = config_selector.import_config(module='params')
@@ -396,13 +393,13 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             bumper = None
 
-        self.imu: IMUHardware | None
+        imu: rosys.hardware.Imu | None = None
         if 'imu' in config_hardware:
-            self.imu = IMUHardware(robot_brain,
-                                   name=config_hardware['imu']['name'],
-                                   )
-        else:
-            self.imu = None
+            imu = ImuHardware(robot_brain=robot_brain,
+                              name=config_hardware['imu']['name'],
+                              offset_rotation=rosys.geometry.Rotation.from_euler(
+                                  *config_hardware['imu']['offset_rotation']),
+                              )
 
         eyes: LedEyesHardware | None
         if 'eyes' in config_hardware:
@@ -428,7 +425,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)
 
         modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis,
-                   z_axis, mower, flashlight, bms, estop, self.battery_control, bumper, self.imu, eyes, self.status_control, safety]
+                   z_axis, mower, flashlight, bms, estop, self.battery_control, bumper, imu, eyes, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
         super().__init__(implement_name=implement,
                          wheels=wheels,
@@ -440,6 +437,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          safety=safety,
                          flashlight=flashlight,
                          mower=mower,
+                         imu=imu,
                          modules=active_modules,
                          robot_brain=robot_brain)
 

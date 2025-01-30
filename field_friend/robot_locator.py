@@ -6,12 +6,12 @@ import rosys
 import rosys.helpers
 from nicegui import ui
 from rosys.geometry import Pose3d, Rotation
-from rosys.hardware import Gnss, GnssMeasurement, Wheels
+from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels
 
 
 class RobotLocator(rosys.persistence.PersistentModule):
 
-    def __init__(self, wheels: Wheels, gnss: Gnss) -> None:
+    def __init__(self, wheels: Wheels, gnss: Gnss, imu: Imu | None = None) -> None:
         """ Robot Locator based on an extended Kalman filter.
 
         ### State
@@ -79,6 +79,11 @@ class RobotLocator(rosys.persistence.PersistentModule):
         """
         super().__init__(persistence_key='field_friend.robot_locator')
         self.log = logging.getLogger('field_friend.robot_locator')
+
+        self.wheels = wheels
+        self.gnss = gnss
+        self.imu = imu
+
         self.pose_frame = Pose3d().as_frame('field_friend.robot_locator')
         self.x = np.zeros((6, 1))
         self.Sxx = np.zeros((6, 6))
@@ -86,10 +91,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
         self.ignore_odometry = False
         self.ignore_gnss = False
-
+        self.ignore_imu = False
         self.q_odometry_v = 0.01
         self.q_odometry_omega = 0.01
-
+        self.q_imu_yaw = 0.01
         self.r_x = 0.01
         self.r_y = 0.01
         self.r_theta = 0.01
@@ -97,13 +102,18 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.r_omega = 1.0
         self.r_a = 1.0
 
-        wheels.VELOCITY_MEASURED.register(self.handle_velocity_measurement)
-        gnss.NEW_MEASUREMENT.register(self.handle_gnss_measurement)
+        self.wheels.VELOCITY_MEASURED.register(self.handle_velocity_measurement)
+        self.gnss.NEW_MEASUREMENT.register(self.handle_gnss_measurement)
+        if self.imu:
+            self.imu.NEW_MEASUREMENT.register(self.handle_imu_measurement)
+        else:
+            self.ignore_imu = True
 
     def backup(self) -> dict[str, Any]:
         return {
             'q_odometry_v': self.q_odometry_v,
             'q_odometry_omega': self.q_odometry_omega,
+            'q_imu_yaw': self.q_imu_yaw,
             'r_x': self.r_x,
             'r_y': self.r_y,
             'r_theta': self.r_theta,
@@ -115,6 +125,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
     def restore(self, data: dict[str, Any]) -> None:
         self.q_odometry_v = data.get('q_odometry_v', 0.01)
         self.q_odometry_omega = data.get('q_odometry_omega', 0.01)
+        self.q_imu_yaw = data.get('q_imu_yaw', 0.01)
         self.r_x = data.get('r_x', 0.01)
         self.r_y = data.get('r_y', 0.01)
         self.r_theta = data.get('r_theta', 0.01)
@@ -177,6 +188,18 @@ class RobotLocator(rosys.persistence.PersistentModule):
         r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
         r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
         Q = np.diag([r_xy, r_xy, r_theta])**2
+        self.update(z=np.array(z), h=np.array(h), H=np.array(H), Q=Q)
+
+    def handle_imu_measurement(self, imu_measurement: ImuMeasurement) -> None:
+        if self.ignore_imu:
+            return
+        self.predict(imu_measurement.time)
+        z = [[imu_measurement.angular_velocity.yaw]]
+        h = [[self.x[4, 0]]]
+        H = [
+            [0, 0, 0, 0, 1, 0]
+        ]
+        Q = np.diag([self.q_imu_yaw])**2
         self.update(z=np.array(z), h=np.array(h), H=np.array(H), Q=Q)
 
     def predict(self, time: float | None = None) -> None:
@@ -242,9 +265,12 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     .bind_value(self, 'ignore_odometry')
                 ui.checkbox('Ignore GNSS').props('dense color=red').classes('col-span-2') \
                     .bind_value(self, 'ignore_gnss')
+                ui.checkbox('Ignore IMU').props('dense color=red').classes('col-span-2') \
+                    .bind_value(self, 'ignore_imu')
                 for key, label in {
                     'q_odometry_v': 'Q Odometry v',
                     'q_odometry_omega': 'Q Odometry ω',
+                    'q_imu_yaw': 'Q IMU yaw',
                     'r_x': 'R x',
                     'r_y': 'R y',
                     'r_theta': 'R θ',

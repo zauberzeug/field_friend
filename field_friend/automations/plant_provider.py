@@ -1,4 +1,3 @@
-import logging
 from typing import Any
 
 import rosys
@@ -30,7 +29,6 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
 class PlantProvider(rosys.persistence.PersistentModule):
     def __init__(self, persistence_key: str = 'plant_provider') -> None:
         super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
-        self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 

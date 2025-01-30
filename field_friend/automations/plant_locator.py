@@ -102,7 +102,7 @@ class PlantLocator(EntityLocator):
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
             if 'autoupload' in data else Autoupload.DISABLED
-        self.log.info(f'self.autoupload: {self.autoupload}')
+        self.log.debug(f'self.autoupload: {self.autoupload}')
         self.upload_images = data.get('upload_images', self.upload_images)
         self.tags = data.get('tags', self.tags)
 
@@ -128,9 +128,7 @@ class PlantLocator(EntityLocator):
             await rosys.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
             return
-            # raise DetetorError()
 
-        # self.log.info(f'{[point.category_name for point in new_image.detections.points]} detections found')
         for d in new_image.detections.points:
             if isinstance(self.detector, rosys.vision.DetectorSimulation):
                 # NOTE we drop detections at the edge of the vision because in reality they are blocked by the chassis
@@ -161,10 +159,8 @@ class PlantLocator(EntityLocator):
             plant.positions.append(world_point_3d)
             plant.confidences.append(d.confidence)
             if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
-                # self.log.info('weed found')
                 await self.plant_provider.add_weed(plant)
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
-                # self.log.info(f'{d.category_name} found')
                 self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
@@ -175,12 +171,12 @@ class PlantLocator(EntityLocator):
         if self.is_paused:
             return
         if rosys.time() - self.last_detection_time > 1.0 and not self.detector_error:
-            rosys.notify('No new detections', 'negative')
+            self.log.debug('No new detections')
             self.detector_error = True
             return
         if rosys.time() - self.last_detection_time <= 1.0 and self.detector_error:
             self.detector_error = False
-            rosys.notify('Detection error resolved', 'positive')
+            self.log.debug('Detection error resolved')
 
     async def get_outbox_mode(self, port: int) -> bool | None:
         # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code

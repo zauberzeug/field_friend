@@ -38,11 +38,6 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             {name}_end_t.inverted = {str(end_stops_inverted).lower()}
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
             {name}_end_b.inverted = {str(end_stops_inverted).lower()}
-            # TODO: remove when lizard issue 66 is fixed.
-            {name}_end_t.level = 0
-            {name}_end_t.active = false
-            {name}_end_b.level = 0
-            {name}_end_b.active = false
             {name} =  {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
         ''')
         core_message_fields = [
@@ -82,7 +77,7 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
             raise Exception('z_axis fault detected')
-        self.log.info(f'zaxis moved to {position}')
+        self.log.debug(f'zaxis moved to {position}')
 
     async def check_idle_or_alarm(self) -> bool:
         while not self.idle and not self.alarm:

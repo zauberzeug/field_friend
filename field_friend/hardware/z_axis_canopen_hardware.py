@@ -35,11 +35,6 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             {name}_end_t.inverted = {str(end_stops_inverted).lower()}
             {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
             {name}_end_b.inverted = {str(end_stops_inverted).lower()}
-            # TODO: remove when lizard issue 66 is fixed.
-            {name}_end_t.level = 0
-            {name}_end_t.active = false
-            {name}_end_b.level = 0
-            {name}_end_b.active = false
             {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
         ''')
         core_message_fields = [
@@ -73,7 +68,7 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.error(f'could not move zaxis to {position} because of {error}')
             raise Exception(f'could not move zaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
-        self.log.info(f'moving to steps: {steps}')
+        self.log.debug(f'moving to steps: {steps}')
         await self.enable_motor()
         await rosys.sleep(0.1)
         await self.robot_brain.send(
@@ -89,7 +84,7 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         if self.alarm:
             self.log.error(f'could not move zaxis to {position} because of fault')
             raise Exception(f'could not move zaxis to {position} because of fault')
-        self.log.info(f'zaxis moved to {position}')
+        self.log.debug(f'zaxis moved to {position}')
         await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(false);')
 
     async def enable_motor(self) -> None:

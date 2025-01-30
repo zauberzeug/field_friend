@@ -50,7 +50,7 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
             await self.cooldown()
 
     async def cooldown(self) -> None:
-        rosys.notify('die Lampe wird für 10 Sek abgekühlt', type='info')
+        rosys.notify('Flashlight is cooling down for 10 seconds', type='info')
         await rosys.sleep(10)
         self.hot_duration = 0
 

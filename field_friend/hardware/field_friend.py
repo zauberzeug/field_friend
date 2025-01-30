@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import rosys
 
@@ -35,19 +33,20 @@ class FieldFriend(rosys.hardware.Robot):
             y_axis: Axis | ChainAxis | None,
             z_axis: Axis | Tornado | None,
             mower: Mower | None,
+            imu: rosys.hardware.Imu | None,
             estop: rosys.hardware.EStop,
             bumper: rosys.hardware.Bumper | None,
             bms: rosys.hardware.Bms,
             safety: Safety,
             **kwargs) -> None:
         super().__init__(**kwargs)
-        self.log = logging.getLogger('field_friend.field_friend')
         self.implement_name = implement_name
         self.wheels = wheels
         self.flashlight = flashlight
         self.y_axis = y_axis
         self.z_axis = z_axis
         self.mower = mower
+        self.imu = imu
         self.estop = estop
         self.bumper = bumper
         self.bms = bms
