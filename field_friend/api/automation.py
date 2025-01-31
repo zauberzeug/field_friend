@@ -19,14 +19,14 @@ class Automation:
             self.system.automator.start()
             return {'automation_started': True}
 
-        @app.post('/api/automation/stop')
-        def stop_automation():
-            assert self.system.automator.is_running
-            self.system.automator.stop(because='API call')
-            return {'automation_stopped': True}
-
         @app.post('/api/automation/pause')
         def pause_automation():
             assert self.system.automator.is_running
             self.system.automator.pause(because='API call')
             return {'automation_paused': True}
+
+        @app.post('/api/automation/stop')
+        def stop_automation():
+            assert self.system.automator.is_running
+            self.system.automator.stop(because='API call')
+            return {'automation_stopped': True}
