@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
+import logging
 import os
 
 from dotenv import load_dotenv
 from nicegui import app, ui
 from rosys.analysis import logging_page, videos_page
 
-from field_friend import interface, log_configuration
+from field_friend import api, interface, log_configuration
 from field_friend.system import System
 
-logger = log_configuration.configure()
+log_configuration.configure()
 app.add_static_files('/assets', 'assets')
 
 
@@ -19,10 +20,10 @@ def startup() -> None:
     robot_id = os.environ.get('ROBOT_ID')
     if robot_id is None:
         msg = 'The ROBOT_ID environment variable is not set. Please set it in the .env file.'
-        logger.warning(msg)
+        logging.warning(msg)
         ui.label(msg).classes('text-xl')
         return
-    logger.info('Starting Field Friend for robot %s', robot_id)
+    logging.info('Starting Field Friend for robot %s', robot_id)
     System.version = os.environ.get('VERSION') or robot_id
     System.robot_id = robot_id
     system = System()
@@ -32,12 +33,12 @@ def startup() -> None:
     interface.monitor_page(system)  # /monitor
     interface.bms_page(system)  # /bms
 
-    @app.get('/status')  # /status
-    def status():
-        return {'status': 'ok'}
-
     logging_page(['field_friend', 'rosys'])  # /logging
     videos_page()  # /videos
+
+    # API Endpoints
+    api.Online()  # get /api/online
+    api.Status(system)  # get /api/status
 
 
 app.on_startup(startup)
