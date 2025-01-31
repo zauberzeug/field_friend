@@ -6,11 +6,13 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.analysis import track
-from rosys.geometry import Point
+from rosys.geometry import GeoReference, Point
+from rosys.hardware import Gnss
 
 from ..field import Field, Row
 from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
+from .navigation import WorkflowException
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
@@ -54,6 +56,12 @@ class FieldNavigation(StraightLineNavigation):
     def current_row(self) -> Row:
         assert self.field
         return self.rows_to_work_on[self.row_index]
+
+    @track
+    async def start(self) -> None:
+        if not is_reference_valid(self.gnss):
+            raise WorkflowException('reference to far away from robot')
+        await super().start()
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -316,3 +324,13 @@ class FieldNavigation(StraightLineNavigation):
                         .polar(randint(-15, 15)*0.01, self.robot_locator.pose.yaw + np.pi/2)
                     self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                                         position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
+
+
+def is_reference_valid(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
+    if GeoReference.current is None:
+        return False
+    if gnss.last_measurement is None:
+        return False
+    if gnss.last_measurement.gps_quality == 0:
+        return False
+    return gnss.last_measurement.point.distance(GeoReference.current.origin) <= max_distance
