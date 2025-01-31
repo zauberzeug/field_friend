@@ -12,7 +12,12 @@ class Fields:
 
         @app.get('/api/fields')
         def fields():
-            return self.system.field_provider.fields
+            fields = [{
+                **field.to_dict(),
+                'author_id': self.system.robot_id,
+                'outline': field.outline_as_tuples
+            } for field in self.system.field_provider.fields]
+            return fields
 
         @app.post('/api/fields')
         async def add_field(request: Request):
