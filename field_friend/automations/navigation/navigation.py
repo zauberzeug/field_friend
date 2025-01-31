@@ -8,6 +8,8 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.analysis import track
+from rosys.geometry import GeoReference
+from rosys.hardware import Gnss
 
 from ..implements.implement import Implement
 
@@ -49,6 +51,9 @@ class Navigation(rosys.persistence.PersistentModule):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
+            if not is_reference_valid(self.gnss):
+                rosys.notify('GNSS not available or reference too far away', 'warning')
+                await rosys.sleep(3)
             self.start_position = self.robot_locator.pose.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
@@ -136,3 +141,13 @@ class Navigation(rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
             .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
+
+
+def is_reference_valid(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
+    if GeoReference.current is None:
+        return False
+    if gnss.last_measurement is None:
+        return False
+    if gnss.last_measurement.gps_quality == 0:
+        return False
+    return gnss.last_measurement.point.distance(GeoReference.current.origin) <= max_distance
