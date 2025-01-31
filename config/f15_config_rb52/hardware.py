@@ -99,4 +99,8 @@ configuration = {
         'tx_pin': 33,
         'baud': 1_000_000,
     },
+    'imu': {
+        'name': 'imu',
+        'offset_rotation': [-1.570796, 0, 0],
+    },
 }
