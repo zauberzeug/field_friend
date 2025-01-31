@@ -65,6 +65,6 @@ configuration = {
     },
     'imu': {
         'name': 'imu',
-        'offset_rotation': [0, 0, 0],
+        'offset_rotation': [-1.5985471, -0.0048869, 0.0],
     },
 }
