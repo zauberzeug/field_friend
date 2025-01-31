@@ -67,4 +67,11 @@ configuration = {
         'name': 'imu',
         'offset_rotation': [-1.5985471, -0.0048869, 0.0],
     },
+    'gnss': {
+        # TODO: which antenna is main?
+        'x': 0.23618,  # when back antenna is main, 0.43682 when front antenna is main
+        'y': 0.0,
+        'z': 1.01226,
+        'yaw_deg': 0.0,
+    },
 }
