@@ -1,4 +1,5 @@
-from fastapi import Request
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
 from nicegui import app
 
 from field_friend.system import System
@@ -10,23 +11,71 @@ class Automation:
 
         @app.post('/api/automation/start')
         async def start_automation(request: Request):
-            # TODO add error handling
-            self.system.current_navigation = self.system.field_navigation
-            field_data = await request.json()
-            self.system.field_navigation.field_id = field_data['field_id']
-            self.system.field_provider.only_specific_beds = field_data['only_specific_beds']
-            self.system.field_provider.selected_beds = field_data['selected_beds']
-            self.system.automator.start()
-            return {'automation_started': True}
+            try:
+                request_data = await request.json()
+                if 'field_id' not in request_data or 'beds' not in request_data:
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content={"error": "Missing required fields: field_id and beds"}
+                    )
+                # Set up automation
+                self.system.current_navigation = self.system.field_navigation
+                self.system.field_navigation.field_id = request_data['field_id']
+                self.system.field_provider.select_field(request_data['field_id'])
+                self.system.field_provider.only_specific_beds = True
+                # TODO currently only one bed is supported
+                self.system.field_provider.selected_beds = [int(bed) for bed in request_data['beds']]
+                self.system.automator.start()
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={"status": "automation started"}
+                )
+            except ValueError as e:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={"error": f"Invalid input: {e!s}"}
+                )
+            except Exception as e:
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={"error": f"Server error: {e!s}"}
+                )
 
         @app.post('/api/automation/pause')
         def pause_automation():
-            assert self.system.automator.is_running
+            if not self.system.automator.is_running:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={"error": "Automation is not running"}
+                )
             self.system.automator.pause(because='API call')
-            return {'automation_paused': True}
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"status": "automation paused"}
+            )
 
         @app.post('/api/automation/stop')
         def stop_automation():
-            assert self.system.automator.is_running
+            if not self.system.automator.is_running:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={"error": "Automation is not running"}
+                )
             self.system.automator.stop(because='API call')
-            return {'automation_stopped': True}
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"status": "automation stopped"}
+            )
+
+        @app.post('/api/automation/resume')
+        def resume_automation():
+            if not self.system.automator.is_paused:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={"error": "Automation is not paused"}
+                )
+            self.system.automator.resume()
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"status": "automation resumed"}
+            )
