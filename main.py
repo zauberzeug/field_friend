@@ -40,13 +40,14 @@ def startup() -> None:
     api.Online()  # get /api/online
     api.Status(system)  # get /api/status
     api.Fields(system)  # get,post /api/fields
+    api.Automation(system)  # get,post /api/automation/
 
 
 app.on_startup(startup)
 
 ui.run(
     title='Field Friend',
-    port=int(os.environ.get('PORT', '80')),
+    port=int(os.environ.get('PORT', '8080')),
     storage_secret='feldfreund',
     favicon='assets/favicon.ico',
     binding_refresh_interval=0.3,
