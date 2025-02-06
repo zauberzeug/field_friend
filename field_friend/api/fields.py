@@ -19,7 +19,7 @@ class Fields:
                 field.id: {
                     **field.to_dict(),
                     'author_id': self.system.robot_id,
-                    'outline': field.outline_as_tuples
+                    'outline': [p.degree_tuple for p in field.outline]
                 } for field in self.system.field_provider.fields
             }
             return fields
