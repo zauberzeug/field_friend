@@ -6,9 +6,9 @@ configuration = {
         'fps': 10,
     },
     'crop': {
-        'left': 60,
-        'right': 200,
-        'up': 20,
+        'left': 150,
+        'right': 150,
+        'up': 40,
         'down': 0,
     },
     'circle_sight_positions': {
