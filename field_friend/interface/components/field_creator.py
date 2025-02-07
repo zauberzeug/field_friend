@@ -120,10 +120,11 @@ class FieldCreator:
                 .tooltip('Set the distance between the beds') \
                 .bind_value(self, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
                 .bind_visibility_from(beds_switch, 'value')
-            ui.select(label='Default Crop', options=self.plant_locator.crop_category_names) \
-                .props('dense outlined').classes('w-40') \
-                .tooltip('Enter the default crop for all beds') \
-                .bind_value(self, 'default_crop')
+            if self.plant_locator:
+                ui.select(label='Default Crop', options=self.plant_locator.crop_category_names) \
+                    .props('dense outlined').classes('w-40') \
+                    .tooltip('Enter the default crop for all beds') \
+                    .bind_value(self, 'default_crop')
             ui.separator()
             ui.number('Number of Rows (per Bed)',
                       value=10, step=1, min=1) \
@@ -153,13 +154,14 @@ class FieldCreator:
             for i in range(int(self.bed_count)):
                 with ui.row().classes('w-full'):
                     ui.label(f'Bed {i + 1}:').classes('text-lg')
-                    ui.select(options=self.plant_locator.crop_category_names) \
-                        .props('dense outlined').classes('w-40') \
-                        .tooltip(f'Enter the crop name for bed {i + 1}') \
-                        .bind_value(self, 'bed_crops',
-                                    forward=lambda v, idx=i: {**self.bed_crops,
-                                                              str(idx): v if v is not None else self.default_crop},
-                                    backward=lambda v, idx=i: v.get(str(idx)))
+                    if self.plant_locator:
+                        ui.select(options=self.plant_locator.crop_category_names) \
+                            .props('dense outlined').classes('w-40') \
+                            .tooltip(f'Enter the crop name for bed {i + 1}') \
+                            .bind_value(self, 'bed_crops',
+                                        forward=lambda v, idx=i: {**self.bed_crops,
+                                                                  str(idx): v if v is not None else self.default_crop},
+                                        backward=lambda v, idx=i: v.get(str(idx)))
 
         self.next = self.confirm_geometry
 
