@@ -1,0 +1,40 @@
+rdyp = Output(15)
+en3 = Output(12)
+bluetooth = Bluetooth("fieldfriend-calibration")
+can = Can(32, 33, 1000000)
+l0 = ODriveMotor(can, 0)
+r0 = ODriveMotor(can, 512)
+l1 = ODriveMotor(can, 256)
+r1 = ODriveMotor(can, 768)
+l0.m_per_tick = 0.03953674121405751
+r0.m_per_tick = 0.03953674121405751
+l1.m_per_tick = 0.03953674121405751
+r1.m_per_tick = 0.03953674121405751
+l0.reversed = false
+r0.reversed = true
+l1.reversed = false
+r1.reversed = true
+wheels = ODriveWheels(l0, r0)
+wheels_front = ODriveWheels(l1, r1)
+wheels.width = 0.78
+wheels_front.width = 0.78
+wheels.shadow(wheels_front)
+
+serial = Serial(26, 27, 115200, 1)
+p0 = Expander(serial, 25, 14)
+
+
+
+
+bms = p0.Serial(26, 27, 9600, 2)
+bms.unmute()
+
+estop_1 = Input(34)
+estop_2 = Input(35)
+
+let stop do wheels.speed(0, 0);end
+when estop_1.level == 0 then stop(); end
+when estop_2.level == 0 then stop(); end
+core.output("core.millis wheels.linear_speed:3 wheels.angular_speed:3 l0.motor_error_flag r0.motor_error_flag l1.motor_error_flag r1.motor_error_flag")
+rdyp.on()
+en3.on()

@@ -216,4 +216,5 @@ class Field:
             'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
             'bed_count': self.bed_count,
             'bed_spacing': self.bed_spacing,
+            'bed_crops': self.bed_crops
         }

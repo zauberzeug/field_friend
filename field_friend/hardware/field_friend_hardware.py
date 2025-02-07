@@ -1,4 +1,3 @@
-import numpy as np
 import rosys
 from rosys.hardware import ImuHardware
 
@@ -34,8 +33,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.MOTOR_GEAR_RATIO: float = config_params['motor_gear_ratio']
         self.THOOTH_COUNT: int = config_params['thooth_count']
         self.PITCH: float = config_params['pitch']
-        self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH / np.pi
-        self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
+        self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH
+        self.M_PER_TICK: float = self.WHEEL_DIAMETER / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
         self.ANTENNA_OFFSET: float = config_params['antenna_offset']
         self.WORK_X: float
