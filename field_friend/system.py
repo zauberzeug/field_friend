@@ -7,7 +7,7 @@ import numpy as np
 import psutil
 import rosys
 from rosys.driving import Odometer
-from rosys.geometry import GeoPoint, GeoReference, Pose
+from rosys.geometry import GeoPoint, GeoReference, Pose, Pose3d, Rotation
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
 import config.config_selection as config_selector
@@ -31,7 +31,15 @@ from .automations.navigation import (
     Navigation,
     StraightLineNavigation,
 )
-from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
+from .hardware import (
+    FieldFriend,
+    FieldFriendHardware,
+    FieldFriendSimulation,
+    LaserScanner,
+    LaserScannerHardware,
+    LaserScannerSimulation,
+    TeltonikaRouter,
+)
 from .info import Info
 from .kpi_generator import generate_kpis
 from .robot_locator import RobotLocator
@@ -289,6 +297,25 @@ class System(rosys.persistence.PersistentModule):
         self.log.debug('Updating GNSS reference to %s', reference)
         GeoReference.update_current(reference)
         self.request_backup()
+
+    def setup_laser_scanner(self) -> LaserScanner:
+        config_hardware: dict = config_selector.import_config(module='hardware') if self.is_real \
+            else config_selector.import_config_simulation(module='hardware', robot_id=self.version)
+        if 'laser_scanner' in config_hardware:
+            pose = Pose3d(x=config_hardware['laser_scanner']['x'],
+                          y=config_hardware['laser_scanner']['y'],
+                          z=config_hardware['laser_scanner']['z'],
+                          rotation=Rotation.from_euler(
+                              np.deg2rad(config_hardware['laser_scanner']['roll']),
+                              np.deg2rad(config_hardware['laser_scanner']['pitch']),
+                              np.deg2rad(config_hardware['laser_scanner']['yaw'])))
+        else:
+            pose = Pose3d.zero()
+            self.log.warning('No laser scanner configuration found, using default values')
+        pose = pose.in_frame(self.robot_locator.pose_frame)
+        if self.is_real:
+            return LaserScannerHardware(config_hardware['laser_scanner']['serial_port'], pose=pose)
+        return LaserScannerSimulation(pose=pose)
 
     def get_jetson_cpu_temperature(self):
         with open('/sys/devices/virtual/thermal/thermal_zone0/temp') as f:

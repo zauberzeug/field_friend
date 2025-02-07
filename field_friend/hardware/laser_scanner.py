@@ -5,43 +5,54 @@ import os
 import subprocess
 from dataclasses import dataclass
 
+import nicegui
 import numpy as np
 import rosys
-from nicegui import ui
-from rosys.geometry import Point
+from rosys.geometry import Point, Point3d, Pose3d
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class LaserScan:
     time: float
-    points: list[Point]
+    distances: list[float]
+    angles: list[float]
+
+    @property
+    def points(self) -> list[Point]:
+        return self.angles_and_distances_to_points(self.angles, self.distances)
+
+    def transformed_points(self, scanner_pose: Pose3d) -> list[Point]:
+        return [Point3d.from_point(point).transform_with(scanner_pose).projection() for point in self.angles_and_distances_to_points(self.angles, self.distances)]
+
+    @staticmethod
+    def angles_and_distances_to_points(angles: list[float], distances: list[float]) -> list[Point]:
+        assert len(angles) == len(distances), f'Length mismatch: angles={len(angles)}, distances={len(distances)}'
+        zero_point = Point(x=0, y=0)
+        return [zero_point.polar(distance, angle) for distance, angle in zip(distances, angles, strict=True)]
 
 
 class LaserScanner:
-    def __init__(self, *, svg_size: tuple[int, int] = (360, 360), svg_scale: float = 250.0) -> None:
+    def __init__(self, *, pose: Pose3d | None = None) -> None:
+        self.pose = pose or Pose3d.zero()
+        self.pose = self.pose.as_frame('laser_scanner')
         self.log = logging.getLogger('laser_scanner')
         self.last_scan: LaserScan | None = None
         self.is_active: bool = False
 
-        self.svg_size = svg_size
-        self.svg_center = (self.svg_size[0] / 2, self.svg_size[1] / 2)
-        self.svg_scale = svg_scale
-        self._map_content = ''
-        self.base_svg = f'<svg viewBox="0 0 {self.svg_size[0]} {self.svg_size[1]}" xmlns="http://www.w3.org/2000/svg">'
-        self.base_svg += f'<circle cx="{self.svg_center[0]}" cy="{self.svg_center[1]}" \
-            r="{3}" fill="red"/>'
-        self.last_draw_timestamp: float = 0.0
-
         self.NEW_SCAN = rosys.event.Event()
-        '''a new scan is available (argument: ndarray with scan points in world coordinate system)'''
+        '''a new scan is available (argument: LaserScan)'''
+
+    def emit_laser_scan(self, scan: LaserScan) -> None:
+        self.last_scan = scan
+        self.NEW_SCAN.emit(scan)
 
 
 class LaserScannerHardware(LaserScanner):
     SEPARATOR = '---\n'
     # --channel --serial /dev/ttyUSB0 115200
 
-    def __init__(self, serial_port: str) -> None:
-        super().__init__()
+    def __init__(self, serial_port: str, **kwargs) -> None:
+        super().__init__(**kwargs)
 
         self.serial_port = serial_port
         self.process: subprocess.Popen | None = None
@@ -70,8 +81,7 @@ class LaserScannerHardware(LaserScanner):
                     scan = self._process_data(data_array)
                     if len(scan.points) < 10:
                         return
-                    self.last_scan = scan
-                    self.NEW_SCAN.emit(scan)
+                    self.emit_laser_scan(scan)
                 except ValueError as e:
                     self.log.warning('Could not parse lidar data:')
                     self.log.warning(e)
@@ -80,16 +90,15 @@ class LaserScannerHardware(LaserScanner):
             await rosys.run.io_bound(self.stop)
 
     def _process_data(self, data: np.ndarray) -> LaserScan:
+        """The sensor returns clockwise angles, but we want counterclockwise angles for a right-handed coordinate system"""
         now = rosys.time()
-        zero_point = Point(x=0, y=0)
-        points: list[Point] = []
         data = data[data[:, 1].argsort()]
-        for quality, angle, distance in data:
-            if quality == 0 or distance == 0:
-                continue
-            point = zero_point.polar(distance / 1000.0, np.deg2rad(angle))
-            points.append(point)
-        return LaserScan(time=now, points=points)
+        filtered_data = data[(data[:, 0] != 0) & (data[:, 2] != 0)]
+        distances = filtered_data[:, 2] / 1000.0
+        angles = np.deg2rad(360 - filtered_data[:, 1])
+        angles = np.flip(angles)
+        distances = np.flip(distances)
+        return LaserScan(time=now, distances=distances, angles=angles)
 
     def start(self) -> None:
         self.log.warning('turning lidar on')
@@ -117,47 +126,36 @@ class LaserScannerHardware(LaserScanner):
 
 class LaserScannerSimulation(LaserScanner):
     NOISE: float = 0.02
-    NUM_POINTS: int = 100
+    NUM_POINTS: int = 300
     DISTANCE: float = 5.0
+    INTERVAL: float = 0.5
 
-    def __init__(self) -> None:
-        super().__init__()
-        rosys.on_repeat(self.simulate_scan, 0.1)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        rosys.on_repeat(self.simulate_scan, self.INTERVAL)
 
     async def simulate_scan(self) -> None:
-        zero_point = Point(x=0, y=0)
         distances: list[float] = [np.random.uniform(
             self.DISTANCE * (1.0 - self.NOISE), self.DISTANCE * (1.0 + self.NOISE)) for _ in range(self.NUM_POINTS)]
         angles: list[float] = [np.deg2rad(i * 360 / self.NUM_POINTS) for i in range(self.NUM_POINTS)]
-        points = [zero_point.polar(distance, angle) for distance, angle in zip(distances, angles, strict=True)]
-        scan = LaserScan(time=rosys.time(), points=points)
-        self.last_scan = scan
-        self.NEW_SCAN.emit(scan)
+        scan = LaserScan(time=rosys.time(), distances=distances, angles=angles)
+        self.emit_laser_scan(scan)
 
 
-class LaserScanMap(ui.interactive_image):
-    def __init__(self, scale: float = 250.0, size: tuple[int, int] = (360, 360)) -> None:
-        super().__init__(size=size)
-        self.size = size
-        self.scale = scale
-        self.center = (self.size[0] / 2, self.size[1] / 2)
-        self.base_svg = f'<svg viewBox="0 0 {self.size[0]} {self.size[1]}" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#f0f0f0"/>'
-        self.base_svg += f'<circle cx="{self.center[0]}" cy="{self.center[1]}" \
-            r="{3}" fill="red"/>'
-        self.last_update: float = 0.0
-        rosys.on_startup(lambda: self.draw(''))
+class LaserScanObject(nicegui.elements.scene_objects.PointCloud):
+    def __init__(self, laser_scanner: LaserScanner, *, is_active: bool = True, **kwargs) -> None:
+        super().__init__(points=[], point_size=0.02, **kwargs)
+        self.is_active = is_active
+        self.laser_scanner = laser_scanner
+        rosys.on_repeat(self.update, 0.5)
 
-    def draw(self, svg_content: str):
-        svg = self.base_svg
-        svg += svg_content
-        svg += '</svg>'
-        self.last_update = rosys.time()
-        self.content = svg
-
-    def generate_scan_svg(self, scan: LaserScan) -> str:
-        svg = ''
-        for point in scan.points:
-            x = int(self.center[0] + self.scale * point.x)
-            y = int(self.center[1] + self.scale * point.y)
-            svg += f'<circle cx="{x}" cy="{y}" r="1" fill="blue"/>'
-        return svg
+    def update(self) -> None:
+        if not self.is_active:
+            self.set_points([])
+            return
+        scan = self.laser_scanner.last_scan
+        if scan is None:
+            return
+        laser_scanner_pose = self.laser_scanner.pose.resolve()
+        self.set_points([[point.x, point.y, laser_scanner_pose.z] for point in
+                         scan.transformed_points(laser_scanner_pose)], colors=[[0.0, 0.0, 1.0] for _ in scan.points])
