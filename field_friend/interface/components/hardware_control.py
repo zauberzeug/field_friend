@@ -90,6 +90,26 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                         field_friend.y_axis.move_to(field_friend.y_axis.max_position)))
                     if isinstance(field_friend.y_axis, YAxisCanOpenHardware):
                         ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.y_axis.reset_fault()))
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.y_axis, 'alarm')
+                        ui.label('Alarm')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.y_axis, 'end_l')
+                        ui.label('Left End Switch')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.y_axis, 'end_r')
+                        ui.label('Right End Switch')
+                    y_step = ui.number('Move Step', value=0.01, step=0.001, min=0, max=0.10,
+                                       format='%.3f', suffix='m').classes('w-full')
+                    y_speed = ui.number('Move Speed', value=100, step=0.1, min=0.1,
+                                        max=100, format='%.1f', suffix='%').classes('w-full')
+                    ui.label(f'min: {field_friend.y_axis.min_position:.3f} - max: {field_friend.y_axis.max_position:.3f}m')
+                    ui.label().bind_text_from(field_friend.y_axis, 'position', backward=lambda x: f'{x:.3f}m')
+                    with ui.row():
+                        ui.button(icon='chevron_left', on_click=lambda: field_friend.y_axis.move_to(
+                            field_friend.y_axis.position + y_step.value, (y_speed.value / 100.0) * field_friend.y_axis.max_speed))
+                        ui.button(icon='chevron_right', on_click=lambda: field_friend.y_axis.move_to(
+                            field_friend.y_axis.position - y_step.value, (y_speed.value / 100.0) * field_friend.y_axis.max_speed))
             elif isinstance(field_friend.y_axis, ChainAxis):
                 with ui.column():
                     ui.label('Chain-Axis').classes('font-bold')
@@ -124,6 +144,33 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                         field_friend.z_axis.return_to_reference()))
                     ui.button('down until reference', on_click=lambda: automator.start(
                         field_friend.z_axis.move_down_until_reference()))
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'end_top')
+                        ui.label('End Top Switch')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'end_bottom')
+                        ui.label('End Bottom Switch')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'ref_motor')
+                        ui.label('Ref Motor')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'ref_gear')
+                        ui.label('Ref Gear')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'ref_knife_stop')
+                        ui.label('Ref Knife Stop')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'ref_knife_ground')
+                        ui.label('Ref Knife Ground')
+                    tornado_step = ui.number('Move Step', value=0.01, step=0.001,
+                                             min=0, max=0.10, format='%.3f', suffix='m').classes('w-full')
+                    ui.label(f'min: {field_friend.z_axis.min_position:.3f}')
+                    ui.label().bind_text_from(field_friend.z_axis, 'position_z', backward=lambda x: f'{x:.3f}m')
+                    with ui.row():
+                        ui.button(icon='expand_more', on_click=lambda: field_friend.z_axis.move_to(
+                            field_friend.z_axis.position_z - tornado_step.value))
+                        ui.button(icon='expand_less', on_click=lambda: field_friend.z_axis.move_to(
+                            field_friend.z_axis.position_z + tornado_step.value))
 
         if field_friend.z_axis is not None and field_friend.y_axis is not None:
             with ui.column():
