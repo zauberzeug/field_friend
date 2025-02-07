@@ -85,6 +85,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
         await super().move_to(position)
+        if not self._valid_status():
+            await self.enable_motor()
         while (abs(self.position - position)) > 0.01:
             # sometimes the moving command is not executed, so it is send in each loop (for demo purposes)
             await self.robot_brain.send(f'{self.name}_motor.profile_position({self.compute_steps(position)});')
@@ -116,6 +118,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         return self.is_referenced
 
     async def speed_mode(self, speed: int):
+        if not self._valid_status():
+            await self.enable_motor()
         # due to some timing issues, the speed command is sent twice
         await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')
         await self.robot_brain.send(f'{self.name}_motor.profile_velocity({speed});')
