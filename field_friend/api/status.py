@@ -18,6 +18,7 @@ class Status:
             work_status = 'emergency stop' if len(self.system.field_friend.estop.pressed_estops) > 0 or self.system.field_friend.estop.is_soft_estop_active else \
                 'bumper active' if self.system.field_friend.bumper and self.system.field_friend.bumper.active_bumpers else \
                 'working' if self.system.automator.automation is not None and self.system.automator.automation.is_running else \
+                'paused' if self.system.automator.automation is not None and self.system.automator.automation.is_paused else \
                 'idle'
             if self.system.is_real:
                 lizard_firmware = cast(FieldFriendHardware, self.system.field_friend).robot_brain.lizard_firmware

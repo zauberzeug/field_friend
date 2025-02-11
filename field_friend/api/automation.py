@@ -16,7 +16,7 @@ class Automation:
                 if 'field_id' not in request_data or 'beds' not in request_data:
                     return JSONResponse(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        content={"error": "Missing required fields: field_id and beds"}
+                        content={'error': 'Missing required fields: field_id and beds'}
                     )
                 # Set up automation
                 self.system.current_navigation = self.system.field_navigation
@@ -28,17 +28,17 @@ class Automation:
                 self.system.automator.start()
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content={"status": "automation started"}
+                    content={'status': 'automation started'}
                 )
             except ValueError as e:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"error": f"Invalid input: {e!s}"}
+                    content={'error': f'Invalid input: {e!s}'}
                 )
             except Exception as e:
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content={"error": f"Server error: {e!s}"}
+                    content={'error': f'Server error: {e!s}'}
                 )
 
         @app.post('/api/automation/pause')
@@ -46,25 +46,25 @@ class Automation:
             if not self.system.automator.is_running:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"error": "Automation is not running"}
+                    content={'error': 'Automation is not running'}
                 )
             self.system.automator.pause(because='API call')
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"status": "automation paused"}
+                content={'status': 'automation paused'}
             )
 
         @app.post('/api/automation/stop')
         def stop_automation():
-            if not self.system.automator.is_running:
+            if not self.system.automator.is_running and not self.system.automator.is_paused:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"error": "Automation is not running"}
+                    content={'error': 'Automation is not running'}
                 )
             self.system.automator.stop(because='API call')
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"status": "automation stopped"}
+                content={'status': 'automation stopped'}
             )
 
         @app.post('/api/automation/resume')
@@ -72,10 +72,10 @@ class Automation:
             if not self.system.automator.is_paused:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"error": "Automation is not paused"}
+                    content={'error': 'Automation is not paused'}
                 )
             self.system.automator.resume()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"status": "automation resumed"}
+                content={'status': 'automation resumed'}
             )
