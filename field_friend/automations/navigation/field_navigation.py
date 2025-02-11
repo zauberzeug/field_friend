@@ -51,8 +51,10 @@ class FieldNavigation(StraightLineNavigation):
         self.rows_to_work_on: list[Row] = []
 
     @property
-    def current_row(self) -> Row:
+    def current_row(self) -> Row | None:
         assert self.field
+        if len(self.rows_to_work_on) == 0:
+            return None
         return self.rows_to_work_on[self.row_index]
 
     async def prepare(self) -> bool:
