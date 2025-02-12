@@ -36,6 +36,12 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         self.steps: int = 0
         self.velocity: int = 0
 
+        self.homing_acceleration = homing_acceleration
+        self.homing_velocity = homing_velocity
+        self.profile_acceleration = profile_acceleration
+        self.profile_deceleration = profile_deceleration
+        self.profile_velocity = profile_velocity
+
         # flags of the Statusword for more information refer to the CANopen standard and D1 manual
         self.ready_to_switch_on: bool = False
         self.switched_on: bool = False
@@ -79,6 +85,7 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             steps_per_m=D1_STEPS_P_M,
             reversed_direction=reverse_direction,
             **kwargs)
+        rosys.on_startup(self.set_speed_parameters)
 
     async def stop(self):
         pass
@@ -88,9 +95,17 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         if not self._valid_status():
             await self.enable_motor()
         while (abs(self.position - position)) > 0.01:
+            # TODO: add timeout and error message
             # sometimes the moving command is not executed, so it is send in each loop (for demo purposes)
             await self.robot_brain.send(f'{self.name}_motor.profile_position({self.compute_steps(position)});')
             await rosys.sleep(0.1)
+
+    async def set_speed_parameters(self):
+        await self.robot_brain.send(f'{self.name}_motor.homing_acceleration = {self.homing_acceleration};')
+        await self.robot_brain.send(f'{self.name}_motor.switch_search_speed = {self.homing_velocity};')
+        await self.robot_brain.send(f'{self.name}_motor.zero_search_speed = {self.homing_velocity};')
+        await self.robot_brain.send(f'{self.name}_motor.profile_acceleration = {self.profile_acceleration};')
+        await self.robot_brain.send(f'{self.name}_motor.profile_deceleration = {self.profile_deceleration};')
 
     async def enable_motor(self):
         if self.fault:
