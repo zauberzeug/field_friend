@@ -93,9 +93,8 @@ class LaserScannerHardware(LaserScanner):
         """The sensor returns clockwise angles, but we want counterclockwise angles for a right-handed coordinate system"""
         now = rosys.time()
         data = data[data[:, 1].argsort()]
-        filtered_data = data[(data[:, 0] != 0) & (data[:, 2] != 0)]
-        distances = filtered_data[:, 2] / 1000.0
-        angles = np.deg2rad(360 - filtered_data[:, 1])
+        distances = np.where(data[:, 2] == 0, np.inf, data[:, 2]) / 1000.0
+        angles = np.deg2rad(360 - data[:, 1])
         angles = np.flip(angles)
         distances = np.flip(distances)
         return LaserScan(time=now, distances=distances, angles=angles)
@@ -126,7 +125,7 @@ class LaserScannerHardware(LaserScanner):
 
 class LaserScannerSimulation(LaserScanner):
     NOISE: float = 0.02
-    NUM_POINTS: int = 300
+    NUM_POINTS: int = 50
     DISTANCE: float = 5.0
     INTERVAL: float = 0.5
 
@@ -135,18 +134,19 @@ class LaserScannerSimulation(LaserScanner):
         rosys.on_repeat(self.simulate_scan, self.INTERVAL)
 
     async def simulate_scan(self) -> None:
-        distances: list[float] = [np.random.uniform(
-            self.DISTANCE * (1.0 - self.NOISE), self.DISTANCE * (1.0 + self.NOISE)) for _ in range(self.NUM_POINTS)]
+        distances: list[float] = [np.random.uniform(self.DISTANCE * (1.0 - self.NOISE),
+                                                    self.DISTANCE * (1.0 + self.NOISE)) for _ in range(self.NUM_POINTS)]
         angles: list[float] = [np.deg2rad(i * 360 / self.NUM_POINTS) for i in range(self.NUM_POINTS)]
         scan = LaserScan(time=rosys.time(), distances=distances, angles=angles)
         self.emit_laser_scan(scan)
 
 
 class LaserScanObject(nicegui.elements.scene_objects.PointCloud):
-    def __init__(self, laser_scanner: LaserScanner, *, is_active: bool = True, **kwargs) -> None:
+    def __init__(self, laser_scanner: LaserScanner, *, is_active: bool = True, render_distance: float = 40.0, **kwargs) -> None:
         super().__init__(points=[], point_size=0.02, **kwargs)
         self.is_active = is_active
         self.laser_scanner = laser_scanner
+        self.render_distance = render_distance
         rosys.on_repeat(self.update, 0.5)
 
     def update(self) -> None:
@@ -157,5 +157,7 @@ class LaserScanObject(nicegui.elements.scene_objects.PointCloud):
         if scan is None:
             return
         laser_scanner_pose = self.laser_scanner.pose.resolve()
-        self.set_points([[point.x, point.y, laser_scanner_pose.z] for point in
-                         scan.transformed_points(laser_scanner_pose)], colors=[[0.0, 0.0, 1.0] for _ in scan.points])
+        filtered_points = [point for point in scan.transformed_points(laser_scanner_pose)
+                           if point.distance(laser_scanner_pose) <= self.render_distance]
+        self.set_points([[point.x, point.y, laser_scanner_pose.z] for point in filtered_points],
+                        colors=[[0.0, 0.0, 1.0] for _ in filtered_points])
