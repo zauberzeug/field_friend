@@ -73,30 +73,33 @@ class LaserScannerHardware(LaserScanner):
 
         rosys.on_startup(self.start)
         rosys.on_shutdown(self.tear_down)
-        rosys.on_repeat(self.step, 0.02)
+        rosys.on_repeat(self.step, 0.05)
 
     async def step(self) -> None:
         if self.process is None and self.is_active:
             await rosys.run.io_bound(self.start)
+            await rosys.sleep(2)
 
-        if self.process is not None:
-            assert self.process.stdout is not None
-            new_data = (self.process.stdout.read() or b'').decode()
-            # self.log.warning(f'reading from process: {new_data}')
-            self.buffer += new_data
-            if self.SEPARATOR in new_data:
-                data, self.buffer = self.buffer.split(self.SEPARATOR)[-2:]
-                try:
-                    data_array: np.ndarray = np.array([tuple(map(float, line.split())) for line in data.splitlines()])
-                    if len(data_array) < 10:
-                        return
-                    scan = self._process_data(data_array)
-                    if len(scan.points) < 10:
-                        return
-                    self.emit_laser_scan(scan)
-                except ValueError as e:
-                    self.log.warning('Could not parse lidar data:')
-                    self.log.warning(e)
+        if self.process is None:
+            self.log.warning('lidar not started')
+            await rosys.run.io_bound(self.stop)
+            return
+        assert self.process.stdout is not None
+        new_data = (self.process.stdout.read() or b'').decode()
+        self.buffer += new_data
+        if self.SEPARATOR in new_data:
+            data, self.buffer = self.buffer.split(self.SEPARATOR)[-2:]
+            try:
+                data_array: np.ndarray = np.array([tuple(map(float, line.split())) for line in data.splitlines()])
+                if len(data_array) < 10:
+                    return
+                scan = self._process_data(data_array)
+                if len(scan.points) == 0:
+                    return
+                self.emit_laser_scan(scan)
+            except ValueError as e:
+                self.log.warning('Could not parse lidar data:')
+                self.log.warning(e)
 
         if self.process is not None and not self.is_active:
             await rosys.run.io_bound(self.stop)
