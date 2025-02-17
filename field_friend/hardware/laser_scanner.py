@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import nicegui
 import numpy as np
 import rosys
+from nicegui import ui
 from rosys.geometry import Point, Point3d, Pose3d
 
 
@@ -46,10 +47,21 @@ class LaserScanner:
         self.last_scan = scan
         self.NEW_SCAN.emit(scan)
 
+    def developer_ui(self) -> None:
+        ui.label('Laser scanner')
+        ui.label('').bind_text_from(self, 'last_scan', lambda s: f'{rosys.time() - s.time:.1f}s' if s else '-')
+        ui.label('').bind_text_from(self, 'last_scan', lambda s: f'{len(s.points)} points' if s else '-')
+        ui.label('').bind_text_from(self, 'last_scan',
+                                    lambda s: f'max: {min(d for d in s.distances if d < 100):.2f}m' if s else '-')
+        ui.label('').bind_text_from(self, 'last_scan',
+                                    lambda s: f'min: {min(d for d in s.distances if d < 100):.2f}m' if s else '-')
+        ui.label('').bind_text_from(self, 'last_scan',
+                                    lambda s: f'mean: {np.mean([d for d in s.distances if d < 100]):.2f}m' if s else '-')
+
 
 class LaserScannerHardware(LaserScanner):
     SEPARATOR = '---\n'
-    # --channel --serial /dev/ttyUSB0 115200
+    # ./ultra_simple --channel --serial /dev/ttyUSB0 115200
 
     def __init__(self, serial_port: str, **kwargs) -> None:
         super().__init__(**kwargs)
