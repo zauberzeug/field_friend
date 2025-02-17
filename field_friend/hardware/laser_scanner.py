@@ -93,7 +93,7 @@ class LaserScannerHardware(LaserScanner):
         """The sensor returns clockwise angles, but we want counterclockwise angles for a right-handed coordinate system"""
         now = rosys.time()
         data = data[data[:, 1].argsort()]
-        distances = np.where(data[:, 2] == 0, np.inf, data[:, 2]) / 1000.0
+        distances = np.where(data[:, 2] == 0, 500_000, data[:, 2]) / 1000.0
         angles = np.deg2rad(360 - data[:, 1])
         angles = np.flip(angles)
         distances = np.flip(distances)
@@ -157,7 +157,7 @@ class LaserScanObject(nicegui.elements.scene_objects.PointCloud):
         if scan is None:
             return
         laser_scanner_pose = self.laser_scanner.pose.resolve()
-        filtered_points = [point for point in scan.transformed_points(laser_scanner_pose)
-                           if point.distance(laser_scanner_pose) <= self.render_distance]
+        filtered_points = [transformed_point for transformed_point, distance in zip(scan.transformed_points(laser_scanner_pose), scan.distances, strict=True)
+                           if distance < self.render_distance]
         self.set_points([[point.x, point.y, laser_scanner_pose.z] for point in filtered_points],
                         colors=[[0.0, 0.0, 1.0] for _ in filtered_points])
