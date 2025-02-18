@@ -48,15 +48,15 @@ class LaserScanner:
         self.NEW_SCAN.emit(scan)
 
     def developer_ui(self) -> None:
-        ui.label('Laser scanner')
-        ui.label('').bind_text_from(self, 'last_scan', lambda s: f'{rosys.time() - s.time:.1f}s' if s else '-')
+        ui.label('Laserscanner').classes('text-center text-bold')
+        ui.label('').bind_text_from(self, 'last_scan', lambda s: f'{rosys.time() - s.time:.2f}s' if s else '-')
         ui.label('').bind_text_from(self, 'last_scan', lambda s: f'{len(s.points)} points' if s else '-')
         ui.label('').bind_text_from(self, 'last_scan',
-                                    lambda s: f'max: {min(d for d in s.distances if d < 100):.2f}m' if s else '-')
+                                    lambda s: f'max: {f"{max(d for d in s.distances if d < 100):.2f}" if s and any(d < 100 for d in s.distances) else "-"}m')
         ui.label('').bind_text_from(self, 'last_scan',
-                                    lambda s: f'min: {min(d for d in s.distances if d < 100):.2f}m' if s else '-')
+                                    lambda s: f'min: {f"{min(d for d in s.distances if d < 100):.2f}" if s and any(d < 100 for d in s.distances) else "-"}m')
         ui.label('').bind_text_from(self, 'last_scan',
-                                    lambda s: f'mean: {np.mean([d for d in s.distances if d < 100]):.2f}m' if s else '-')
+                                    lambda s: f'mean: {f"{np.mean([d for d in s.distances if d < 100]):.2f}" if s and any(d < 100 for d in s.distances) else "-"}m')
 
 
 class LaserScannerHardware(LaserScanner):
@@ -73,7 +73,7 @@ class LaserScannerHardware(LaserScanner):
 
         rosys.on_startup(self.start)
         rosys.on_shutdown(self.tear_down)
-        rosys.on_repeat(self.step, 0.05)
+        rosys.on_repeat(self.step, 0.1)
 
     async def step(self) -> None:
         if self.process is None and self.is_active:
