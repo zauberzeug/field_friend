@@ -399,6 +399,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                               name=config_hardware['imu']['name'],
                               offset_rotation=rosys.geometry.Rotation.from_euler(
                                   *config_hardware['imu']['offset_rotation']),
+                              #   TODO: F14 currently has a problem with its IMU calibration
+                              min_gyro_calibration=0,
                               )
 
         eyes: LedEyesHardware | None
