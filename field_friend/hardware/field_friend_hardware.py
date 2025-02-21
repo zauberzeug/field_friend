@@ -398,6 +398,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                               name=config_hardware['imu']['name'],
                               offset_rotation=rosys.geometry.Rotation.from_euler(
                                   *config_hardware['imu']['offset_rotation']),
+                              min_gyro_calibration=0.0
                               )
 
         eyes: LedEyesHardware | None

@@ -1,10 +1,11 @@
 fiona
 geopandas
 geopy
+git+https://github.com/zauberzeug/rosys.git@imu_calibration_configurable
 icecream
 pillow
 prompt-toolkit # for lizard monitor
 pynmea2
-rosys == v0.22.1
+# rosys == v0.23.0
 shapely
 uvicorn == 0.28.1
