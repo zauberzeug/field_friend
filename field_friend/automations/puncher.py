@@ -32,7 +32,7 @@ class Puncher:
                 return False
             if not await self.field_friend.z_axis.try_reference():
                 return False
-            await rosys.sleep(0.2)
+            await rosys.sleep(0.5)
             if not await self.field_friend.y_axis.try_reference():
                 return False
             return True
