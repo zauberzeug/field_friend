@@ -1,0 +1,6 @@
+{
+    "r_x": 0.02,
+    "r_y": 0.02,
+    "r_theta": 0.01,
+    "odometry_angular_weight": 0.1
+}

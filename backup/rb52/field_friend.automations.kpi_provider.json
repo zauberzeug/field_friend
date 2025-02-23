@@ -1,0 +1,90 @@
+{
+    "all_time_kpis": {
+        "distance": 0,
+        "time": 20464.697543144226,
+        "bumps": 0,
+        "low_battery": 0,
+        "can_failure": 0,
+        "automation_stopped": 0,
+        "e_stop_triggered": 0,
+        "soft_e_stop_triggered": 0,
+        "imu_rolling_detected": 0,
+        "gnss_connection_lost": 0
+    },
+    "days": [
+        {
+            "date": "2025-01-30",
+            "incidents": {
+                "bumps": 2
+            }
+        },
+        {
+            "date": "2025-02-04",
+            "incidents": {
+                "time": 336
+            }
+        },
+        {
+            "date": "2025-02-05",
+            "incidents": {
+                "time": 728,
+                "bumps": 2
+            }
+        },
+        {
+            "date": "2025-02-07",
+            "incidents": {
+                "time": 1415,
+                "bumps": 4
+            }
+        },
+        {
+            "date": "2025-02-10",
+            "incidents": {
+                "bumps": 2
+            }
+        },
+        {
+            "date": "2025-02-12",
+            "incidents": {
+                "time": 10941,
+                "bumps": 1,
+                "low_battery": 5
+            }
+        },
+        {
+            "date": "2025-02-13",
+            "incidents": {
+                "bumps": 1,
+                "time": 325
+            }
+        },
+        {
+            "date": "2025-02-14",
+            "incidents": {
+                "time": 608
+            }
+        },
+        {
+            "date": "2025-02-18",
+            "incidents": {
+                "time": 622
+            }
+        },
+        {
+            "date": "2025-02-19",
+            "incidents": {
+                "bumps": 9,
+                "time": 1733
+            }
+        },
+        {
+            "date": "2025-02-21",
+            "incidents": {
+                "time": 3463,
+                "bumps": 6
+            }
+        }
+    ],
+    "months": []
+}
