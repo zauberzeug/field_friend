@@ -28,9 +28,9 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.ignore_imu = False
         self._first_prediction = False
         self.state_size: int = 3
-        self.r_x = 0.01
-        self.r_y = 0.01
-        self.r_theta = 0.01
+        self.r_odom_linear = 0.1
+        self.r_odom_angular = 1.0
+        self.r_imu_angular = 1.0
         self.odometry_angular_weight = 0.5
         self.x = np.zeros((self.state_size, 1))
         self.Sxx = np.zeros((self.state_size, self.state_size))
@@ -44,16 +44,16 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def backup(self) -> dict[str, Any]:
         return {
-            'r_x': self.r_x,
-            'r_y': self.r_y,
-            'r_theta': self.r_theta,
+            'r_odom_linear': self.r_odom_linear,
+            'r_odom_angular': self.r_odom_angular,
+            'r_imu_angular': self.r_imu_angular,
             'odometry_angular_weight': self.odometry_angular_weight,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.r_x = data.get('r_x', 0.01)
-        self.r_y = data.get('r_y', 0.01)
-        self.r_theta = data.get('r_theta', 0.01)
+        self.r_odom_linear = data.get('r_odom_linear', 0.1)
+        self.r_odom_angular = data.get('r_odom_angular', 0.1)
+        self.r_imu_angular = data.get('r_imu_angular', 0.1)
         self.odometry_angular_weight = data.get('odometry_angular_weight', 0.5)
 
     @property
@@ -100,7 +100,13 @@ class RobotLocator(rosys.persistence.PersistentModule):
                 [0, 1, v * np.cos(theta) * dt],
                 [0, 0, 1],
             ])
-            R = (np.diag([self.r_x, self.r_y, self.r_theta]) * dt)**2
+            r_angular = self.odometry_angular_weight * self.r_odom_angular + \
+                (1 - self.odometry_angular_weight) * self.r_imu_angular
+            R = np.array([
+                [(self.r_odom_linear * dt * np.cos(theta))**2, 0, 0],
+                [0, (self.r_odom_linear * dt * np.sin(theta))**2, 0],
+                [0, 0, (r_angular * dt)**2]
+            ])
             self.Sxx = F @ self.Sxx @ F.T + R
             self.update_frame()
             self._first_prediction = True
@@ -170,7 +176,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
         self.x = np.array([[x, y, yaw]], dtype=float).T
-        self.Sxx = np.diag([self.r_x, self.r_y, self.r_theta])**2.0
+        self.Sxx = np.diag([0.0, 0.0, 0.0])**2.0
 
     def developer_ui(self) -> None:
         with ui.column():
@@ -189,13 +195,17 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     .bind_value(self, 'ignore_gnss')
                 ui.checkbox('Ignore IMU').props('dense color=red').classes('col-span-2') \
                     .bind_value(self, 'ignore_imu')
-                for key, label in {
-                    'r_x': 'R x',
-                    'r_y': 'R y',
-                    'r_theta': 'R θ',
-                    'odometry_angular_weight': 'Odometry Angular Weight',
-                }.items():
-                    with ui.column().classes('w-full gap-0'):
-                        ui.number(label, min=0, step=0.01, format='%.6f', on_change=self.request_backup) \
-                            .bind_value(self, key)
+                with ui.column().classes('w-24 gap-0'):
+                    ui.number(label='R v linear', min=0, step=0.01, format='%.3f', suffix='m/s', on_change=self.request_backup) \
+                        .bind_value(self, 'r_odom_linear')
+                with ui.column().classes('w-24 gap-0'):
+                    ui.number(label='R ω odom', min=0, step=0.01, format='%.3f', suffix='°/s', on_change=self.request_backup) \
+                        .bind_value(self, 'r_odom_angular', forward=np.deg2rad, backward=np.rad2deg)
+                with ui.column().classes('w-24 gap-0'):
+                    ui.number(label='R ω imu', min=0, step=0.01, format='%.3f', suffix='°/s', on_change=self.request_backup) \
+                        .bind_value(self, 'r_imu_angular', forward=np.deg2rad, backward=np.rad2deg)
+                with ui.column().classes('w-24 gap-0'):
+                    ui.number(label='ω odom weight', min=0, step=0.01, format='%.3f', on_change=self.request_backup) \
+                        .bind_value(self, 'odometry_angular_weight')
+
             ui.button('Reset', on_click=self.reset)
