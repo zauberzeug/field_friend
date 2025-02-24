@@ -169,11 +169,16 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         S = H @ self.Sxx @ H.T + Q
-        if np.linalg.cond(S) >= 1 / sys.float_info.epsilon:
-            # TODO: too small values (or zeros) lead to a non singular S matrix, that cant be inverted. Here we just add a small epsilon to the diagonal.
-            # We should find a better solution.
+
+        # Use Cholesky decomposition for numerical stability
+        try:
+            L = np.linalg.cholesky(S)
+            K = self.Sxx @ H.T @ np.linalg.solve(L.T, np.linalg.solve(L, np.eye(S.shape[0])))
+        except np.linalg.LinAlgError:
             S += np.eye(S.shape[0]) * 1e-10
-        K = self.Sxx @ H.T @ np.linalg.inv(S)
+            L = np.linalg.cholesky(S)
+            K = self.Sxx @ H.T @ np.linalg.solve(L.T, np.linalg.solve(L, np.eye(S.shape[0])))
+
         self.x = self.x + K @ (z - h)
         self.Sxx = (np.eye(self.Sxx.shape[0]) - K @ H) @ self.Sxx
         self.update_frame()
