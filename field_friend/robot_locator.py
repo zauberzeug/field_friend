@@ -90,9 +90,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             if not self.ignore_imu:
                 imu_omega = self.get_imu_angular_velocity()
                 if imu_omega is not None:
-                    v, omega = self.combine_odom_imu(v, omega, imu_omega,
-                                                     odometry_angular_weight=self.odometry_angular_weight,
-                                                     correct_linear_velocity=True)
+                    v, omega = self.combine_odom_imu(v, omega, imu_omega)
                     r_angular = self.odometry_angular_weight * self.r_odom_angular + \
                         (1 - self.odometry_angular_weight) * self.r_imu_angular
 
@@ -131,16 +129,15 @@ class RobotLocator(rosys.persistence.PersistentModule):
             self.last_imu_measurement = new_imu_measurement
         return imu_angular_velocity
 
-    def combine_odom_imu(self, odometry_v: float, odometry_omega: float, imu_omega: float, *, odometry_angular_weight: float = 0.5, correct_linear_velocity: bool = True) -> tuple[float, float]:
+    def combine_odom_imu(self, odometry_v: float, odometry_omega: float, imu_omega: float) -> tuple[float, float]:
         v = odometry_v
-        omega = odometry_angular_weight * odometry_omega + \
-            (1 - odometry_angular_weight) * imu_omega
-        if correct_linear_velocity:
-            # Adjust linear velocity based on angular velocity difference
-            angular_difference = abs(odometry_omega - imu_omega)
-            correction_factor = 1.0 / (1.0 + angular_difference)
-            v = odometry_angular_weight * v + \
-                (1.0 - odometry_angular_weight) * (v * correction_factor)
+        omega = self.odometry_angular_weight * odometry_omega + \
+            (1 - self.odometry_angular_weight) * imu_omega
+        # Adjust linear velocity based on angular velocity difference
+        angular_difference = abs(odometry_omega - imu_omega)
+        correction_factor = 1.0 / (1.0 + angular_difference)
+        v = self.odometry_angular_weight * v + \
+            (1.0 - self.odometry_angular_weight) * (v * correction_factor)
         return v, omega
 
     def handle_gnss_measurement(self, gnss_measurement: GnssMeasurement) -> None:
@@ -189,7 +186,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
         self.x = np.array([[x, y, yaw]], dtype=float).T
-        self.Sxx = np.diag([0.0, 0.0, 0.0])**2.0
+        self.Sxx = np.diag([0.0, 0.0, 0.0])
 
     def developer_ui(self) -> None:
         with ui.column():
