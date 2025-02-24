@@ -78,7 +78,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
         for velocity in velocities:
             dt = velocity.time - self.t
             self.t = velocity.time
-            if self.last_imu_measurement is None and self.imu is not None:
+            if (not self._first_prediction_done) and (self.imu is not None):
                 self.last_imu_measurement = self.imu.last_measurement
 
             if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
@@ -87,28 +87,33 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
             v = velocity.linear
             omega = velocity.angular
+            r_angular = self.r_odom_angular
             if not self.ignore_imu:
-                imu_angular_velocity = self.get_imu_angular_velocity()
-                if imu_angular_velocity is not None:
-                    v, omega = self.combine_odom_imu(v, omega, imu_angular_velocity,
+                imu_omega = self.get_imu_angular_velocity()
+                if imu_omega is not None:
+                    v, omega = self.combine_odom_imu(v, omega, imu_omega,
                                                      odometry_angular_weight=self.odometry_angular_weight,
                                                      correct_linear_velocity=True)
+                    r_angular = self.odometry_angular_weight * self.r_odom_angular + \
+                        (1 - self.odometry_angular_weight) * self.r_imu_angular
 
-            self.x[2, 0] += omega * dt
             theta = self.x[2, 0]
-            self.x[0, 0] += v * np.cos(theta) * dt
-            self.x[1, 0] += v * np.sin(theta) * dt
+            theta_new = theta + omega * dt
+            theta_avg = (theta + theta_new) / 2  # Average orientation
+
+            self.x[0, 0] += v * np.cos(theta_avg) * dt
+            self.x[1, 0] += v * np.sin(theta_avg) * dt
+            self.x[2, 0] = theta_new
 
             F = np.array([
-                [1, 0, -v * np.sin(theta) * dt],
-                [0, 1, v * np.cos(theta) * dt],
+                [1, 0, -v * np.sin(theta_avg) * dt],
+                [0, 1, v * np.cos(theta_avg) * dt],
                 [0, 0, 1],
             ])
-            r_angular = self.odometry_angular_weight * self.r_odom_angular + \
-                (1 - self.odometry_angular_weight) * self.r_imu_angular
+
             R = np.array([
-                [(self.r_odom_linear * dt * np.cos(theta))**2, 0, 0],
-                [0, (self.r_odom_linear * dt * np.sin(theta))**2, 0],
+                [(self.r_odom_linear * dt * np.cos(theta_avg))**2, 0, 0],
+                [0, (self.r_odom_linear * dt * np.sin(theta_avg))**2, 0],
                 [0, 0, (r_angular * dt)**2]
             ])
             self.Sxx = F @ self.Sxx @ F.T + R
