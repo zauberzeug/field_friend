@@ -30,7 +30,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.ignore_odometry = False
         self.ignore_gnss = False
         self.ignore_imu = False
-        self._first_prediction = False
+        self._first_prediction_done = False
         self.state_size: int = 3
         self.r_odom_linear = self.R_ODOM_LINEAR
         self.r_odom_angular = self.R_ODOM_ANGULAR
@@ -81,7 +81,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             if self.last_imu_measurement is None and self.imu is not None:
                 self.last_imu_measurement = self.imu.last_measurement
 
-            if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction:
+            if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
                 # The robot is not moving, so we don't need to update the state
                 continue
 
@@ -113,7 +113,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             ])
             self.Sxx = F @ self.Sxx @ F.T + R
             self.update_frame()
-            self._first_prediction = True
+            self._first_prediction_done = True
 
     def get_imu_angular_velocity(self) -> float | None:
         imu_angular_velocity = None
@@ -136,11 +136,11 @@ class RobotLocator(rosys.persistence.PersistentModule):
             angular_difference = abs(odometry_omega - imu_omega)
             correction_factor = 1.0 / (1.0 + angular_difference)
             v = odometry_angular_weight * v + \
-                (1 - odometry_angular_weight) * (v * correction_factor)
+                (1.0 - odometry_angular_weight) * (v * correction_factor)
         return v, omega
 
     def handle_gnss_measurement(self, gnss_measurement: GnssMeasurement) -> None:
-        if not self._first_prediction:
+        if not self._first_prediction_done:
             return
         if self.ignore_gnss:
             return
@@ -165,8 +165,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
     def update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         S = H @ self.Sxx @ H.T + Q
         if np.linalg.cond(S) >= 1 / sys.float_info.epsilon:
-            # TODO: this is a hack to make the matrix non-singular, but we should find a better solution
-            # Matrix is singular
+            # TODO: too small values (or zeros) lead to a non singular S matrix, that cant be inverted. Here we just add a small epsilon to the diagonal.
+            # We should find a better solution.
             S += np.eye(S.shape[0]) * 1e-10
         K = self.Sxx @ H.T @ np.linalg.inv(S)
         self.x = self.x + K @ (z - h)
