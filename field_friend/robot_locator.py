@@ -11,6 +11,10 @@ from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels
 
 
 class RobotLocator(rosys.persistence.PersistentModule):
+    R_ODOM_LINEAR = 0.1
+    R_ODOM_ANGULAR = 0.097
+    R_IMU_ANGULAR = 0.01
+    ODOMETRY_ANGULAR_WEIGHT = 0.1
 
     def __init__(self, wheels: Wheels, gnss: Gnss, imu: Imu | None = None) -> None:
         """ Robot Locator based on an extended Kalman filter."""
@@ -28,10 +32,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.ignore_imu = False
         self._first_prediction = False
         self.state_size: int = 3
-        self.r_odom_linear = 0.1
-        self.r_odom_angular = 1.0
-        self.r_imu_angular = 1.0
-        self.odometry_angular_weight = 0.5
+        self.r_odom_linear = self.R_ODOM_LINEAR
+        self.r_odom_angular = self.R_ODOM_ANGULAR
+        self.r_imu_angular = self.R_IMU_ANGULAR
+        self.odometry_angular_weight = self.ODOMETRY_ANGULAR_WEIGHT
         self.x = np.zeros((self.state_size, 1))
         self.Sxx = np.zeros((self.state_size, self.state_size))
         self.t = rosys.time()
@@ -51,10 +55,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.r_odom_linear = data.get('r_odom_linear', 0.1)
-        self.r_odom_angular = data.get('r_odom_angular', 0.1)
-        self.r_imu_angular = data.get('r_imu_angular', 0.1)
-        self.odometry_angular_weight = data.get('odometry_angular_weight', 0.5)
+        self.r_odom_linear = data.get('r_odom_linear', self.R_ODOM_LINEAR)
+        self.r_odom_angular = data.get('r_odom_angular', self.R_ODOM_ANGULAR)
+        self.r_imu_angular = data.get('r_imu_angular', self.R_IMU_ANGULAR)
+        self.odometry_angular_weight = data.get('odometry_angular_weight', self.ODOMETRY_ANGULAR_WEIGHT)
 
     @property
     def pose(self) -> rosys.geometry.Pose:
