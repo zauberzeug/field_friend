@@ -96,7 +96,7 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 2.0
-    system.field_friend.wheels.slip_factor_right = 0.0
+    system.field_friend.wheels.slip_factor_right = 0.04
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
@@ -255,6 +255,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     system.current_navigation = system.follow_crops_navigation
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     system.field_friend.wheels.slip_factor_right = 0.05
+    system.robot_locator.ignore_imu = True
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
@@ -376,8 +377,7 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
-    point = rosys.geometry.Point(x=0.3, y=0.0)
-    await forward(x=point.x, y=point.y, tolerance=0.05)
+    await forward(1)
     system.automator.stop(because='test')
     system.automator.start()
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
