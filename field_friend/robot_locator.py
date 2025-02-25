@@ -118,15 +118,14 @@ class RobotLocator(rosys.persistence.PersistentModule):
             self._first_prediction_done = True
 
     def _get_imu_angular_velocity(self) -> float | None:
-        imu_angular_velocity = None
-        if self._last_imu_measurement is not None and self.imu is not None:
-            new_imu_measurement = self.imu.last_measurement
-            assert new_imu_measurement is not None
-            imu_dtheta = rosys.helpers.angle(self._last_imu_measurement.rotation.yaw,
-                                             new_imu_measurement.rotation.yaw)
-            imu_dt = new_imu_measurement.time - self._last_imu_measurement.time
-            imu_angular_velocity = imu_dtheta / imu_dt if imu_dt > 0 else None
-            self._last_imu_measurement = new_imu_measurement
+        if self._last_imu_measurement is None or self.imu is None or self.imu.last_measurement is None:
+            return None
+        new_imu_measurement = self.imu.last_measurement
+        imu_dtheta = rosys.helpers.angle(self._last_imu_measurement.rotation.yaw,
+                                         new_imu_measurement.rotation.yaw)
+        imu_dt = new_imu_measurement.time - self._last_imu_measurement.time
+        imu_angular_velocity = imu_dtheta / imu_dt if imu_dt > 0 else None
+        self._last_imu_measurement = new_imu_measurement
         return imu_angular_velocity
 
     def _combine_odom_imu(self, odometry_v: float, odometry_omega: float, imu_omega: float) -> tuple[float, float]:
