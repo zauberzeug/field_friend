@@ -30,13 +30,15 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.ignore_gnss = False
         self.ignore_imu = False
         self._first_prediction_done = False
-        self.state_size: int = 3
+
         self.r_odom_linear = self.R_ODOM_LINEAR
         self.r_odom_angular = self.R_ODOM_ANGULAR
         self.r_imu_angular = self.R_IMU_ANGULAR
         self.odometry_angular_weight = self.ODOMETRY_ANGULAR_WEIGHT
-        self.x = np.zeros((self.state_size, 1))
-        self.Sxx = np.zeros((self.state_size, self.state_size))
+
+        state_size = 3
+        self.x = np.zeros((state_size, 1))
+        self.Sxx = np.zeros((state_size, state_size))
         self.t = rosys.time()
         self.reset()
 
