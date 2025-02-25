@@ -94,7 +94,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.ignore_imu = False
         self.q_odometry_v = 0.01
         self.q_odometry_omega = 0.01
-        self.q_imu_yaw = 0.01
+        self.q_imu_yaw = 0.3
         self.r_x = 0.01
         self.r_y = 0.01
         self.r_theta = 0.01

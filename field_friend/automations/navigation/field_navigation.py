@@ -11,6 +11,7 @@ from rosys.geometry import Point
 from ..field import Field, Row
 from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
+from .navigation import WorkflowException, is_reference_valid
 from .straight_line_navigation import StraightLineNavigation
 
 if TYPE_CHECKING:
@@ -56,6 +57,12 @@ class FieldNavigation(StraightLineNavigation):
         if len(self.rows_to_work_on) == 0:
             return None
         return self.rows_to_work_on[self.row_index]
+
+    @track
+    async def start(self) -> None:
+        if not is_reference_valid(self.gnss):
+            raise WorkflowException('reference to far away from robot')
+        await super().start()
 
     async def prepare(self) -> bool:
         await super().prepare()

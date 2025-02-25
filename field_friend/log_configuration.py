@@ -19,7 +19,7 @@ def configure():
 
     config: dict[str, Any] = {
         'version': 1,
-        'disable_existing_loggers': False,
+        'disable_existing_loggers': True,
         'formatters': {
             'default': {
                 '()': coloredlogs.ColoredFormatter,
@@ -49,7 +49,33 @@ def configure():
                 'maxBytes': 1024 * 1000 * 10,
                 'backupCount': 10
             },
+            'communicationfile': {
+                'level': 'DEBUG',
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'default',
+                'filters': ['package_path_filter'],
+                'filename': PATH / 'communication.log',
+                'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
+                'backupCount': 50  # max 500 mb of logs
+            },
+            'batteryfile': {
+                'level': 'DEBUG',
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'default',
+                'filters': ['package_path_filter'],
+                'filename': PATH / 'battery.log',
+                'maxBytes': 1024 * 1000 * 10,  # each file max 10 mb
+                'backupCount': 50  # max 500 mb of logs
+            },
             'debug_queue': {
+                'class': 'logging.handlers.QueueHandler',
+                'queue': Queue(),
+            },
+            'lizard_queue': {
+                'class': 'logging.handlers.QueueHandler',
+                'queue': Queue(),
+            },
+            'battery_queue': {
                 'class': 'logging.handlers.QueueHandler',
                 'queue': Queue(),
             },
@@ -57,19 +83,32 @@ def configure():
         'loggers': {
             '': {  # root logger
                 'handlers': ['debug_queue'],
-                'level': 'INFO',
+                'level': 'WARN',
+                'propagate': False,
             },
             'DUMMY': {
                 # to be able to access these handlers below
-                'handlers': ['debugfile', 'console'],
-            },
-            project: {
-                'level': 'INFO',
-                'propagate': True,
+                'handlers': ['console', 'debug_queue', 'debugfile', 'lizard_queue', 'communicationfile', 'battery_queue', 'batteryfile'],
             },
             'rosys': {
+                'handlers': ['debug_queue'],
                 'level': 'INFO',
-                'propagate': True,
+                'propagate': False,
+            },
+            'rosys.communication': {
+                'handlers': ['lizard_queue'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+            project: {
+                'handlers': ['debug_queue'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+            f'{project}.bms': {
+                'handlers': ['battery_queue'],
+                'level': 'INFO',
+                'propagate': False,
             },
         },
     }
@@ -83,5 +122,15 @@ def configure():
     debug_listener = QueueListener(debug_queue, handlers['debugfile'], handlers['console'])
     debug_listener.start()
     atexit.register(debug_listener.stop)
+
+    lizard_queue = config['handlers']['lizard_queue']['queue']
+    lizard_listener = QueueListener(lizard_queue, handlers['communicationfile'])
+    lizard_listener.start()
+    atexit.register(lizard_listener.stop)
+
+    battery_queue = config['handlers']['battery_queue']['queue']
+    battery_listener = QueueListener(battery_queue, handlers['batteryfile'])
+    battery_listener.start()
+    atexit.register(battery_listener.stop)
 
     return logging.getLogger(project)
