@@ -195,21 +195,21 @@ class RobotLocator(rosys.persistence.PersistentModule):
                 ui.label().bind_text_from(self, 'pose', lambda p: f'θ: {p.yaw_deg:.2f}°')
                 ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {np.rad2deg(m[2, 2]):.2f}°')
             with ui.grid(columns=2).classes('w-full'):
-                ui.checkbox('Ignore GNSS').props('dense color=red').classes('col-span-2') \
-                    .bind_value(self, 'ignore_gnss')
-                ui.checkbox('Ignore IMU').props('dense color=red').classes('col-span-2') \
-                    .bind_value(self, 'ignore_imu')
+                ui.checkbox('Ignore GNSS', value=self.ignore_gnss).props('dense color=red').classes('col-span-2') \
+                    .bind_value_to(self, 'ignore_gnss')
+                ui.checkbox('Ignore IMU', value=self.ignore_imu).props('dense color=red').classes('col-span-2') \
+                    .bind_value_to(self, 'ignore_imu')
                 with ui.column().classes('w-24 gap-0'):
-                    ui.number(label='R v linear', min=0, step=0.01, format='%.3f', suffix='m/s', on_change=self.request_backup) \
-                        .bind_value(self, 'r_odom_linear')
+                    ui.number(label='R v linear', min=0, step=0.01, format='%.3f', suffix='m/s', value=self.r_odom_linear, on_change=self.request_backup) \
+                        .bind_value_to(self, 'r_odom_linear')
                 with ui.column().classes('w-24 gap-0'):
-                    ui.number(label='R ω odom', min=0, step=0.01, format='%.3f', suffix='°/s', on_change=self.request_backup) \
-                        .bind_value(self, 'r_odom_angular', forward=np.deg2rad, backward=np.rad2deg)
+                    ui.number(label='R ω odom', min=0, step=0.01, format='%.3f', suffix='°/s', value=np.rad2deg(self.r_odom_angular), on_change=self.request_backup) \
+                        .bind_value_to(self, 'r_odom_angular', forward=np.deg2rad)
                 with ui.column().classes('w-24 gap-0'):
-                    ui.number(label='R ω imu', min=0, step=0.01, format='%.3f', suffix='°/s', on_change=self.request_backup) \
-                        .bind_value(self, 'r_imu_angular', forward=np.deg2rad, backward=np.rad2deg)
+                    ui.number(label='R ω imu', min=0, step=0.01, format='%.3f', suffix='°/s', value=np.rad2deg(self.r_imu_angular), on_change=self.request_backup) \
+                        .bind_value_to(self, 'r_imu_angular', forward=np.deg2rad)
                 with ui.column().classes('w-24 gap-0'):
-                    ui.number(label='ω odom weight', min=0, step=0.01, format='%.3f', on_change=self.request_backup) \
-                        .bind_value(self, 'odometry_angular_weight')
+                    ui.number(label='ω odom weight', min=0, step=0.01, format='%.3f', value=self.odometry_angular_weight, on_change=self.request_backup) \
+                        .bind_value_to(self, 'odometry_angular_weight')
 
             ui.button('Reset', on_click=self._reset)
