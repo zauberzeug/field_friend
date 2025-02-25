@@ -40,7 +40,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.x = np.zeros((state_size, 1))
         self.Sxx = np.zeros((state_size, state_size))
         self.t = rosys.time()
-        self.reset()
 
         self.last_imu_measurement: ImuMeasurement | None = None
 
