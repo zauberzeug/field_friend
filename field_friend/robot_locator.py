@@ -29,7 +29,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
         state_size = 3
         self.x = np.zeros((state_size, 1))
         self.Sxx = np.zeros((state_size, state_size))
-        self.t = rosys.time()
+        self._pose_timestamp = rosys.time()
 
         # bound attributes
         self.ignore_gnss = False
@@ -65,7 +65,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             x=self.x[0, 0],
             y=self.x[1, 0],
             yaw=self.x[2, 0],
-            time=self.t,
+            time=self._pose_timestamp,
         )
 
     @property
@@ -75,8 +75,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
     async def _handle_velocity_measurement(self, velocities: list[rosys.geometry.Velocity]) -> None:
         """Implements the 'prediction' step of the Kalman filter."""
         for velocity in velocities:
-            dt = velocity.time - self.t
-            self.t = velocity.time
+            dt = velocity.time - self._pose_timestamp
+            self._pose_timestamp = velocity.time
             if (not self._first_prediction_done) and (self.imu is not None):
                 self._last_imu_measurement = self.imu.last_measurement
 
