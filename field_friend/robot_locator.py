@@ -159,15 +159,11 @@ class RobotLocator(rosys.persistence.PersistentModule):
         pose.yaw = self.x[2, 0] + rosys.helpers.angle(self.x[2, 0], pose.yaw)
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self.x[0, 0]], [self.x[1, 0]], [self.x[2, 0]]]
-        H = [
-            [1, 0, 0],
-            [0, 1, 0],
-            [0, 0, 1],
-        ]
+        H = np.eye(3)
         r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
         r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
         Q = np.diag([r_xy, r_xy, r_theta])**2
-        self._update(z=np.array(z), h=np.array(h), H=np.array(H), Q=Q)
+        self._update(z=np.array(z), h=np.array(h), H=H, Q=Q)
 
     def _update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         S = H @ self.Sxx @ H.T + Q
