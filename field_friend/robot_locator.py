@@ -32,7 +32,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.t = rosys.time()
 
         # bound attributes
-        self.ignore_odometry = False
         self.ignore_gnss = False
         self.ignore_imu = False
         self.r_odom_linear = self.R_ODOM_LINEAR
@@ -75,9 +74,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     async def _handle_velocity_measurement(self, velocities: list[rosys.geometry.Velocity]) -> None:
         """Implements the 'prediction' step of the Kalman filter."""
-
-        if self.ignore_odometry:
-            return
         for velocity in velocities:
             dt = velocity.time - self.t
             self.t = velocity.time
@@ -199,8 +195,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
                 ui.label().bind_text_from(self, 'pose', lambda p: f'θ: {p.yaw_deg:.2f}°')
                 ui.label().bind_text_from(self, 'Sxx', lambda m: f'± {np.rad2deg(m[2, 2]):.2f}°')
             with ui.grid(columns=2).classes('w-full'):
-                ui.checkbox('Ignore Odometry').props('dense color=red').classes('col-span-2') \
-                    .bind_value(self, 'ignore_odometry')
                 ui.checkbox('Ignore GNSS').props('dense color=red').classes('col-span-2') \
                     .bind_value(self, 'ignore_gnss')
                 ui.checkbox('Ignore IMU').props('dense color=red').classes('col-span-2') \
