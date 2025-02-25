@@ -165,16 +165,14 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         S = H @ self.Sxx @ H.T + Q
-
         # Use Cholesky decomposition for numerical stability
         try:
             L = np.linalg.cholesky(S)
             K = self.Sxx @ H.T @ np.linalg.solve(L.T, np.linalg.solve(L, np.eye(S.shape[0])))
         except np.linalg.LinAlgError:
-            S += np.eye(S.shape[0]) * 1e-10
+            S += np.eye(S.shape[0]) * 1e-6
             L = np.linalg.cholesky(S)
             K = self.Sxx @ H.T @ np.linalg.solve(L.T, np.linalg.solve(L, np.eye(S.shape[0])))
-
         self.x = self.x + K @ (z - h)
         self.Sxx = (np.eye(self.Sxx.shape[0]) - K @ H) @ self.Sxx
         self.update_frame()
