@@ -377,8 +377,7 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
-    point = rosys.geometry.Point(x=0.3, y=0.0)
-    await forward(x=point.x, y=point.y, tolerance=0.05)
+    await forward(1)
     system.automator.stop(because='test')
     system.automator.start()
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
