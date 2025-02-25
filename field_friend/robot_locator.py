@@ -65,6 +65,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             x=self.x[0, 0],
             y=self.x[1, 0],
             yaw=self.x[2, 0],
+            time=self.t,
         )
 
     @property
