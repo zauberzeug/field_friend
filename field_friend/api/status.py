@@ -14,7 +14,6 @@ class Status:
 
         @app.get('/api/status')
         async def status():
-            self.system.log.info('🔵 getting status')
             work_status = 'emergency stop' if len(self.system.field_friend.estop.pressed_estops) > 0 or self.system.field_friend.estop.is_soft_estop_active else \
                 'bumper active' if self.system.field_friend.bumper and self.system.field_friend.bumper.active_bumpers else \
                 'working' if self.system.automator.automation is not None and self.system.automator.automation.is_running else \

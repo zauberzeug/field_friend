@@ -47,7 +47,7 @@ app.on_startup(startup)
 
 ui.run(
     title='Field Friend',
-    port=int(os.environ.get('PORT', '8080')),
+    port=int(os.environ.get('PORT', '80')),
     storage_secret='feldfreund',
     favicon='assets/favicon.ico',
     binding_refresh_interval=0.3,
