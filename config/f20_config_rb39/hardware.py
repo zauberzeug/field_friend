@@ -50,7 +50,7 @@ configuration = {
         'name': 'status_control',
     },
     'bluetooth': {
-        'name': 'fieldfriend-20',
+        'name': 'fieldfriend-f20',
     },
     'serial': {
         'name': 'serial',

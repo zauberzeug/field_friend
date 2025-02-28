@@ -36,7 +36,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH
         self.M_PER_TICK: float = self.WHEEL_DIAMETER / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
-        self.ANTENNA_OFFSET: float = config_params['antenna_offset']
         self.WORK_X: float
         self.DRILL_RADIUS: float
         implement: str = config_params['tool']
