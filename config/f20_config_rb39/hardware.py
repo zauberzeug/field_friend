@@ -6,8 +6,8 @@ configuration = {
         'left_front_can_address': 0x000,
         'right_back_can_address': 0x300,
         'right_front_can_address': 0x200,
-        'is_left_reversed': False,
-        'is_right_reversed': True,
+        'is_left_reversed': True,
+        'is_right_reversed': False,
         'odrive_version': 6,
     },
     'y_axis': {
