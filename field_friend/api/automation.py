@@ -9,8 +9,8 @@ class Automation:
     def __init__(self, system: System) -> None:
         self.system = system
 
-        @app.post('/api/automation/start')
-        async def start_automation(request: Request):
+        @app.post('/api/automation/field_navigation/start')
+        async def start_field_navigation(request: Request):
             try:
                 request_data = await request.json()
                 if 'field_id' not in request_data or 'beds' not in request_data:
@@ -40,6 +40,19 @@ class Automation:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content={'error': f'Server error: {e!s}'}
                 )
+
+        @app.post('/api/automation/start')
+        async def start_automation():
+            if not self.system.automator.is_running:
+                self.system.automator.start()
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={'status': 'automation started'}
+                )
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={'error': 'Automation is already running'}
+            )
 
         @app.post('/api/automation/pause')
         def pause_automation():
