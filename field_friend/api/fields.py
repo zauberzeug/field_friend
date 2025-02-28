@@ -32,17 +32,16 @@ class Fields:
                 field_data.pop('author_id', None)
                 new_field = Field.from_dict(field_data)
                 if 'id' in field_data and self.system.field_provider.get_field(field_data['id']):
-                    pass
-                    # self.system.field_provider.update_field_parameters(
-                    #     field_id=field_data['id'],
-                    #     name=field_data['name'],
-                    #     row_count=field_data['row_count'],
-                    #     row_spacing=field_data['row_spacing'],
-                    #     outline_buffer_width=field_data['outline_buffer_width'],
-                    #     bed_count=field_data['bed_count'],
-                    #     bed_spacing=field_data['bed_spacing'],
-                    #     bed_crops=field_data['bed_crops']
-                    # )
+                    self.system.field_provider.update_field_parameters(
+                        field_id=field_data['id'],
+                        name=field_data['name'],
+                        row_count=field_data['row_count'],
+                        row_spacing=field_data['row_spacing'],
+                        outline_buffer_width=field_data['outline_buffer_width'],
+                        bed_count=field_data['bed_count'],
+                        bed_spacing=field_data['bed_spacing'],
+                        bed_crops=field_data['bed_crops']
+                    )
                 else:
                     self.system.field_provider.create_field(new_field)
                 return JSONResponse(content={'status': 'ok'}, status_code=status.HTTP_200_OK)
