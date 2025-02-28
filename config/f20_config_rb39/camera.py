@@ -12,9 +12,9 @@ configuration = {
         'down': 0,
     },
     'circle_sight_positions': {
-        'right': '-1',
+        'right': '-4',
         'back': '-2',
-        'front': '-3',
-        'left': '-4',
+        'front': '-1',
+        'left': '-3',
     },
 }
