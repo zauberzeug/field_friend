@@ -628,9 +628,9 @@
 
 <a href="#field_friend.hardware.DoubleWheelsHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">DoubleWheelsHardware</span><span class="p">(</span>
-    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">can</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">CanHardware</span><span class="p">,</span>
+    <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;wheels&quot;</span><span class="p">,</span>
     <span class="n">left_back_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">left_front_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
@@ -689,9 +689,9 @@ Velocities are read and emitted regularly.</p>
 
 <a href="#field_friend.hardware.MowerHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">MowerHardware</span><span class="p">(</span>
-    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">can</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">CanHardware</span><span class="p">,</span>
+    <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
     <span class="n">m0_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">m1_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
     <span class="n">m2_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
@@ -749,11 +749,11 @@ Velocities are read and emitted regularly.</p>
 
 <a href="#field_friend.hardware.TornadoHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">TornadoHardware</span><span class="p">(</span>
-    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;tornado&quot;</span><span class="p">,</span>
-    <span class="n">can</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">CanHardware</span><span class="p">,</span>
-    <span class="n">expander</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">min_position</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">z_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span>
     <span class="n">turn_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1280</span><span class="p">,</span>
@@ -826,11 +826,11 @@ Velocities are read and emitted regularly.</p>
 
 <a href="#field_friend.hardware.YAxisCanOpenHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">YAxisCanOpenHardware</span><span class="p">(</span>
-    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;yaxis&quot;</span><span class="p">,</span>
-    <span class="n">can</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">CanHardware</span><span class="p">,</span>
-    <span class="n">expander</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">96</span><span class="p">,</span>
     <span class="n">max_speed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span>
     <span class="n">reference_speed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
@@ -890,11 +890,11 @@ Velocities are read and emitted regularly.</p>
 
 <a href="#field_friend.hardware.ZAxisCanOpenHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">ZAxisCanOpenHardware</span><span class="p">(</span>
-    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;zaxis&quot;</span><span class="p">,</span>
-    <span class="n">can</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">CanHardware</span><span class="p">,</span>
-    <span class="n">expander</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">96</span><span class="p">,</span>
     <span class="n">max_speed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span>
     <span class="n">reference_speed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
