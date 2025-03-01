@@ -10,4 +10,5 @@ docs/reference/
 .nicegui/
 .venv/
 .DS_Store
+test.py
 .mypy_cache/
