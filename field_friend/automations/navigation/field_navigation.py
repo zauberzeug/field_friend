@@ -52,8 +52,11 @@ class FieldNavigation(StraightLineNavigation):
         self.rows_to_work_on: list[Row] = []
 
     @property
-    def current_row(self) -> Row:
+    def current_row(self) -> Row | None:
         assert self.field
+        if len(self.rows_to_work_on) == 0:
+            self.log.warning('No rows to work on')
+            return None
         return self.rows_to_work_on[self.row_index]
 
     @track
@@ -113,6 +116,9 @@ class FieldNavigation(StraightLineNavigation):
         assert self.field is not None
         self.start_point = None
         self.end_point = None
+        if self.current_row is None:
+            self.log.warning('No current row')
+            return
         start_point = self.current_row.points[0].to_local()
         end_point = self.current_row.points[-1].to_local()
         swap_points: bool
@@ -243,6 +249,10 @@ class FieldNavigation(StraightLineNavigation):
 
     def _set_cultivated_crop(self) -> None:
         if not isinstance(self.implement, WeedingImplement):
+            self.log.warning('Implement is not a weeding implement')
+            return
+        if self.current_row is None:
+            self.log.warning('No current row')
             return
         if self.implement.cultivated_crop == self.current_row.crop:
             return
@@ -260,7 +270,11 @@ class FieldNavigation(StraightLineNavigation):
 
     def _is_start_allowed(self, start_point: Point, end_point: Point, robot_in_working_area: bool) -> bool:
         if not robot_in_working_area:
+            self.log.warning('Robot is not in working area')
             return True
+        if self.current_row is None:
+            self.log.warning('No current row')
+            return False
         foot_point = self.current_row.line_segment().line.foot_point(self.robot_locator.pose.point)
         distance_to_row = foot_point.distance(self.robot_locator.pose.point)
         if distance_to_row > self.MAX_DISTANCE_DEVIATION:
