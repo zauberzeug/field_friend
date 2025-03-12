@@ -89,11 +89,9 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
         estop = rosys.hardware.EStopSimulation()
 
-        bumper: rosys.hardware.BumperSimulation | None
+        bumper: rosys.hardware.BumperSimulation | None = None
         if 'bumper' in config_hardware:
             bumper = rosys.hardware.BumperSimulation(estop=estop)
-        else:
-            bumper = None
 
         imu = ImuSimulation(wheels=wheels, roll_noise=0.0, pitch_noise=0.0, yaw_noise=0.0)
         bms = rosys.hardware.BmsSimulation()
