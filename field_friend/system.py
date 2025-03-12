@@ -23,7 +23,7 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
-from .automations.implements import ExternalMower, Implement, Recorder, Tornado, WeedingScrew
+from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
@@ -169,9 +169,6 @@ class System(rosys.persistence.PersistentModule):
                 self.log.error('Dual mechanism not implemented')
             case 'none':
                 implements.append(WeedingScrew(self))
-            case 'mower':
-                # TODO: mower has neither flashlight nor camera, so monitoring is not possible
-                implements = [ExternalMower(self)]
             case _:
                 raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}

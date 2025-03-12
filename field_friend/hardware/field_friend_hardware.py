@@ -7,7 +7,6 @@ from .axis_d1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
-from .external_mower import MowerHardware
 from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
@@ -36,7 +35,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH
         self.M_PER_TICK: float = self.WHEEL_DIAMETER / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE: float = config_params['wheel_distance']
-        self.ANTENNA_OFFSET: float = config_params['antenna_offset']
         self.WORK_X: float
         self.DRILL_RADIUS: float
         implement: str = config_params['tool']
@@ -50,9 +48,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.WORK_X = config_params['work_x_drill']
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS: float = config_params['chop_radius']
-        elif implement in ['mower']:  # front mower for trees
-            self.WORK_X = 0.0
-            self.DRILL_RADIUS = 0.0
         else:
             raise NotImplementedError(f'Unknown FieldFriend implement: {implement}')
 
@@ -70,7 +65,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         )
         serial = rosys.hardware.SerialHardware(robot_brain)
         expander = rosys.hardware.ExpanderHardware(robot_brain, serial=serial)
-        can = rosys.hardware.CanHardware(
+        self.can = rosys.hardware.CanHardware(
             robot_brain,
             expander=expander if config_hardware['can']['on_expander'] else None,
             name=config_hardware['can']['name'],
@@ -82,7 +77,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         if config_hardware['wheels']['version'] == 'wheels':
             wheels = rosys.hardware.WheelsHardware(
                 robot_brain,
-                can=can,
+                can=self.can,
                 name=config_hardware['wheels']['name'],
                 left_can_address=config_hardware['wheels']['left_can_address'],
                 right_can_address=config_hardware['wheels']['right_can_address'],
@@ -94,7 +89,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         elif config_hardware['wheels']['version'] == 'double_wheels':
             wheels = DoubleWheelsHardware(
                 robot_brain,
-                can=can,
+                can=self.can,
                 name=config_hardware['wheels']['name'],
                 left_back_can_address=config_hardware['wheels']['left_back_can_address'],
                 right_back_can_address=config_hardware['wheels']['right_back_can_address'],
@@ -110,14 +105,14 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
 
         if config_hardware['y_axis']['version'] in ('y_axis_canopen', 'axis_d1') or config_hardware['z_axis']['version'] in ('y_axis_canopen', 'axis_d1'):
-            can_open_master = CanOpenMasterHardware(robot_brain, can=can, name='master')
+            can_open_master = CanOpenMasterHardware(robot_brain, can=self.can, name='master')
         else:
             can_open_master = None
         y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None
         if config_hardware['y_axis']['version'] == 'axis_d1':
             y_axis = AxisD1(
                 robot_brain,
-                can=can,
+                can=self.can,
                 can_address=config_hardware['y_axis']['can_address'],
                 name=config_hardware['y_axis']['name'],
                 homing_acceleration=config_hardware['y_axis']['homing_acceleration'],
@@ -174,7 +169,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         elif config_hardware['y_axis']['version'] == 'y_axis_canopen':
             y_axis = YAxisCanOpenHardware(
                 robot_brain,
-                can=can,
+                can=self.can,
                 can_address=config_hardware['y_axis']['can_address'],
                 expander=expander,
                 name=config_hardware['y_axis']['name'],
@@ -221,7 +216,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         elif config_hardware['z_axis']['version'] == 'axis_d1':
             z_axis = AxisD1(
                 robot_brain,
-                can=can,
+                can=self.can,
                 can_address=config_hardware['z_axis']['can_address'],
                 name=config_hardware['z_axis']['name'],
                 homing_acceleration=config_hardware['z_axis']['homing_acceleration'],
@@ -237,7 +232,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             z_axis = TornadoHardware(
                 robot_brain,
                 expander=expander,
-                can=can,
+                can=self.can,
                 name=config_hardware['z_axis']['name'],
                 min_position=config_hardware['z_axis']['min_position'],
                 z_can_address=config_hardware['z_axis']['z_can_address'],
@@ -264,7 +259,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             z_axis = TornadoHardware(
                 robot_brain,
                 expander=expander,
-                can=can,
+                can=self.can,
                 name=config_hardware['z_axis']['name'],
                 min_position=config_hardware['z_axis']['min_position'],
                 z_can_address=config_hardware['z_axis']['z_can_address'],
@@ -295,7 +290,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         elif config_hardware['z_axis']['version'] == 'z_axis_canopen':
             z_axis = ZAxisCanOpenHardware(
                 robot_brain,
-                can=can,
+                can=self.can,
                 can_address=config_hardware['z_axis']['can_address'],
                 expander=expander,
                 name=config_hardware['z_axis']['name'],
@@ -316,26 +311,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             z_axis = None
         else:
             raise NotImplementedError(f'Unknown z_axis version: {config_hardware["z_axis"]["version"]}')
-
-        mower: MowerHardware | None
-        if 'external_mower' in config_hardware:
-            mower = MowerHardware(
-                robot_brain=robot_brain,
-                can=can,
-                name=config_hardware['external_mower']['name'],
-                m0_can_address=config_hardware['external_mower']['m0_can_address'],
-                m1_can_address=config_hardware['external_mower']['m1_can_address'],
-                m2_can_address=config_hardware['external_mower']['m2_can_address'],
-                m_per_tick=self.M_PER_TICK,
-                speed=config_hardware['external_mower']['speed'],
-                is_m0_reversed=config_hardware['external_mower']['is_m0_reversed'],
-                is_m1_reversed=config_hardware['external_mower']['is_m1_reversed'],
-                is_m2_reversed=config_hardware['external_mower']['is_m2_reversed'],
-                odrive_version=config_hardware['external_mower'][
-                    'odrive_version'] if 'odrive_version' in config_hardware['external_mower'] else 4,
-            )
-        else:
-            mower = None
 
         estop = rosys.hardware.EStopHardware(
             robot_brain,
@@ -447,11 +422,12 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.status_control = None
 
         safety: SafetyHardware = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
-                                                y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)
+                                                y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
-        modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis,
-                   z_axis, mower, flashlight, bms, estop, self.battery_control, bumper, imu, eyes, self.status_control, safety]
+        modules = [bluetooth, self.can, wheels, serial, expander, can_open_master, y_axis,
+                   z_axis, flashlight, bms, estop, self.battery_control, bumper, imu, eyes, self.status_control, safety]
         active_modules = [module for module in modules if module is not None]
+
         super().__init__(
             implement_name=implement,
             wheels=wheels,
@@ -462,7 +438,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             bms=bms,
             safety=safety,
             flashlight=flashlight,
-            mower=mower,
             imu=imu,
             modules=active_modules,
             robot_brain=robot_brain
