@@ -12,8 +12,8 @@ from .tornado import Tornado
 
 class FieldFriend(rosys.hardware.Robot):
     MOTOR_GEAR_RATIO = 12.52
-    WHEEL_DIAMETER = 0.041 * 17 / np.pi
-    M_PER_TICK = WHEEL_DIAMETER * np.pi / MOTOR_GEAR_RATIO
+    WHEEL_DIAMETER = 0.041 * 17
+    M_PER_TICK = WHEEL_DIAMETER / MOTOR_GEAR_RATIO
     WORK_X = 0.118
     WORK_Y = 0.0
     DRILL_RADIUS = 0.025

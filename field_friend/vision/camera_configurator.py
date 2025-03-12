@@ -50,7 +50,7 @@ class CameraConfigurator:
                         self.log.info(f'{camera.parameters[name]} != {value}')
                         await camera.set_parameters({name: value})
                         parameters_changed = True
-            if not camera.calibration.extrinsics.frame_id:
+            if camera.calibration is not None and not camera.calibration.extrinsics.frame_id:
                 camera.calibration.extrinsics.in_frame(self.robot_locator.pose_frame)
             if 'crop' in self.config:
                 # Fetch new cropping parameters

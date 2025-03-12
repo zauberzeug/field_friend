@@ -1,4 +1,3 @@
-import numpy as np
 import rosys
 from rosys.hardware import ImuSimulation
 
@@ -23,8 +22,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
         self.THOOTH_COUNT = config_params['thooth_count']
         self.PITCH = config_params['pitch']
-        self.WHEEL_DIAMETER = self.THOOTH_COUNT * self.PITCH / np.pi
-        self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
+        self.WHEEL_DIAMETER = self.THOOTH_COUNT * self.PITCH
+        self.M_PER_TICK = self.WHEEL_DIAMETER / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE = config_params['wheel_distance']
         tool = config_params['tool']
         if tool in ['tornado', 'weed_screw', 'none']:

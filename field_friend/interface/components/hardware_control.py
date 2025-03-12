@@ -148,7 +148,8 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                             puncher.punch(field_friend.y_axis.max_position, angle=angle.value)))
                     elif isinstance(field_friend.y_axis, Axis) and isinstance(field_friend.z_axis, Axis):
                         ui.button(on_click=lambda: automator.start(
-                            puncher.punch(field_friend.y_axis.max_position, depth=depth.value)))
-                        ui.button(on_click=lambda: automator.start(puncher.punch(0, depth=depth.value)))
+                            puncher.punch(field_friend.y_axis.max_position - field_friend.WORK_Y, depth=depth.value)))
+                        ui.button(on_click=lambda: automator.start(
+                            puncher.punch(0-field_friend.WORK_Y, depth=depth.value)))
                         ui.button(on_click=lambda: automator.start(
                             puncher.punch(field_friend.y_axis.min_position - field_friend.WORK_Y, depth=depth.value)))
