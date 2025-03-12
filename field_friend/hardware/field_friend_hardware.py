@@ -377,7 +377,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown Flashlight version: {config_hardware["flashlight"]["version"]}')
 
-        bumper: rosys.hardware.BumperHardware | None
+        bumper: rosys.hardware.BumperHardware | None = None
         if 'bumper' in config_hardware:
             bumper = rosys.hardware.BumperHardware(
                 robot_brain,
@@ -386,8 +386,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 name=config_hardware['bumper']['name'],
                 pins=config_hardware['bumper']['pins'],
             )
-        else:
-            bumper = None
 
         imu: rosys.hardware.Imu | None = None
         if 'imu' in config_hardware:
