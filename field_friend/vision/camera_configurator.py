@@ -2,7 +2,6 @@
 import logging
 
 import rosys
-from rosys.vision import Calibration
 
 import config.config_selection as config_selector
 
@@ -51,7 +50,6 @@ class CameraConfigurator:
                         self.log.info(f'{camera.parameters[name]} != {value}')
                         await camera.set_parameters({name: value})
                         parameters_changed = True
-            assert isinstance(camera.calibration, Calibration)
             if not camera.calibration.extrinsics.frame_id:
                 camera.calibration.extrinsics.in_frame(self.robot_locator.pose_frame)
             if 'crop' in self.config:
