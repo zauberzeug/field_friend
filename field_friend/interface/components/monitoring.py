@@ -135,6 +135,8 @@ class Monitoring:
                 self.log.warning(f'Unknown camera position: {camera.id}')
                 continue
 
+        if self.monitoring_detector is None:
+            return
         person_count = 0
         animal_count = 0
         for camera in self.mjpg_camera_provider.cameras.values():
