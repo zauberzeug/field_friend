@@ -1,3 +1,5 @@
+import logging
+
 import rosys
 from rosys.hardware import ImuHardware
 
@@ -25,6 +27,7 @@ from .z_axis_stepper_hardware import ZAxisStepperHardware
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self) -> None:
+        self.log = logging.getLogger('field_friend.hardware')
         config_hardware: dict = config_selector.import_config(module='hardware')
         config_robotbrain: dict = config_selector.import_config(module='robotbrain')
         config_params: dict = config_selector.import_config(module='params')
@@ -49,7 +52,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS: float = config_params['chop_radius']
         else:
-            raise NotImplementedError(f'Unknown FieldFriend implement: {implement}')
+            self.log.warning('Unknown implement: %s', implement)
 
         communication = rosys.hardware.SerialCommunication()
         if 'enable_esp_on_startup' in config_robotbrain['robot_brain']:
@@ -108,7 +111,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             can_open_master = CanOpenMasterHardware(robot_brain, can=self.can, name='master')
         else:
             can_open_master = None
-        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None
+        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None = None
         if config_hardware['y_axis']['version'] == 'axis_d1':
             y_axis = AxisD1(
                 robot_brain,
@@ -187,11 +190,11 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 end_stops_inverted=config_hardware['y_axis']['end_stops_inverted'],
             )
         elif config_hardware['y_axis']['version'] == 'none':
-            y_axis = None
+            pass
         else:
-            raise NotImplementedError(f'Unknown y_axis version: {config_hardware["y_axis"]["version"]}')
+            self.log.warning('Unknown y_axis version: %s', config_hardware['y_axis']['version'])
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | None
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | None = None
         if config_hardware['z_axis']['version'] == 'z_axis_stepper':
             z_axis = ZAxisStepperHardware(
                 robot_brain,
@@ -308,9 +311,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
             )
         elif config_hardware['z_axis']['version'] == 'none':
-            z_axis = None
+            pass
         else:
-            raise NotImplementedError(f'Unknown z_axis version: {config_hardware["z_axis"]["version"]}')
+            self.log.warning('Unknown z_axis version: %s', config_hardware['z_axis']['version'])
 
         estop = rosys.hardware.EStopHardware(
             robot_brain,
@@ -327,7 +330,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             baud=config_hardware['bms']['baud'],
             num=config_hardware['bms']['num'],
         )
-        self.battery_control: rosys.hardware.BatteryControlHardware | None
+        self.battery_control: rosys.hardware.BatteryControlHardware | None = None
         if 'battery_control' in config_hardware:
             self.battery_control = rosys.hardware.BatteryControlHardware(
                 robot_brain, expander=expander if config_hardware['battery_control']['on_expander'] else None,
@@ -335,10 +338,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 reset_pin=config_hardware['battery_control']['reset_pin'],
                 status_pin=config_hardware['battery_control']['status_pin'],
             )
-        else:
-            self.battery_control = None
 
-        flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None
+        flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None = None
         if config_hardware['flashlight']['version'] == 'flashlight':
             flashlight = FlashlightHardware(
                 robot_brain,
@@ -373,11 +374,11 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 back_pin=config_hardware['flashlight']['back_pin'],
             )
         elif config_hardware['flashlight']['version'] == 'none':
-            flashlight = None
+            pass
         else:
-            raise NotImplementedError(f'Unknown Flashlight version: {config_hardware["flashlight"]["version"]}')
+            self.log.warning('Unknown Flashlight version: %s', config_hardware['flashlight']['version'])
 
-        bumper: rosys.hardware.BumperHardware | None
+        bumper: rosys.hardware.BumperHardware | None = None
         if 'bumper' in config_hardware:
             bumper = rosys.hardware.BumperHardware(
                 robot_brain,
@@ -386,8 +387,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 name=config_hardware['bumper']['name'],
                 pins=config_hardware['bumper']['pins'],
             )
-        else:
-            bumper = None
 
         imu: rosys.hardware.Imu | None = None
         if 'imu' in config_hardware:
@@ -399,7 +398,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 min_gyro_calibration=config_hardware['imu'].get('min_gyro_calibration', 0.0)
             )
 
-        eyes: LedEyesHardware | None
+        eyes: LedEyesHardware | None = None
         if 'eyes' in config_hardware:
             eyes = LedEyesHardware(
                 robot_brain,
@@ -407,10 +406,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 name=config_hardware['eyes']['name'],
                 eyes_pin=config_hardware['eyes']['eyes_pin'],
             )
-        else:
-            eyes = None
 
-        self.status_control: StatusControlHardware | None
+        self.status_control: StatusControlHardware | None = None
         if 'status_control' in config_hardware:
             self.status_control = StatusControlHardware(
                 robot_brain,
@@ -418,8 +415,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 rdyp_pin=39,
                 vdp_pin=39,
             )
-        else:
-            self.status_control = None
 
         safety: SafetyHardware = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
                                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
