@@ -14,19 +14,18 @@ class EntityLocator(rosys.persistence.PersistentModule):
         super().__init__()
         self.log = logging.getLogger('field_friend.entity_locator')
         self.system = system
-
         self.is_paused = True
 
     def pause(self) -> None:
         if self.is_paused:
             return
-        self.log.info('pausing locator')
+        self.log.debug('pausing locator')
         self.is_paused = True
 
     def resume(self) -> None:
         if not self.is_paused:
             return
-        self.log.info('resuming locator')
+        self.log.debug('resuming locator')
         self.is_paused = False
 
     def developer_ui(self) -> None:
