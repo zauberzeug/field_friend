@@ -101,21 +101,21 @@ class System(rosys.persistence.PersistentModule):
             if self.field_friend.bms:
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
-        self.puncher = Puncher(self.field_friend, self.driver)
-        self.plant_locator = PlantLocator(self)
+        self.puncher: Puncher = Puncher(self.field_friend, self.driver)
+        self.plant_locator: PlantLocator = PlantLocator(self)
 
         rosys.on_repeat(watch_robot, 1.0)
 
-        self.path_provider = PathProvider()
-        self.field_provider = FieldProvider()
+        self.path_provider: PathProvider = PathProvider()
+        self.field_provider: FieldProvider = FieldProvider()
         self.setup_shape()
-        self.automator = rosys.automation.Automator(self.steerer, on_interrupt=self.field_friend.stop)
-        self.automation_watcher = AutomationWatcher(self)
+        self.automator: rosys.automation.Automator = rosys.automation.Automator(
+            self.steerer, on_interrupt=self.field_friend.stop)
+        self.automation_watcher: AutomationWatcher = AutomationWatcher(self)
 
         self.setup_timelapse()
         self.setup_implements()
         self.setup_navigations()
-        self.automator.default_automation = self._current_navigation.start
         self.info = Info(self)
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
@@ -242,7 +242,7 @@ class System(rosys.persistence.PersistentModule):
                                                           self.field_navigation,
                                                           self.crossglide_demo_navigation,
                                                           ] if n is not None}
-        self._current_navigation = self.straight_line_navigation
+        self.current_navigation = self.straight_line_navigation
 
     def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider:
         if not self.is_real:
