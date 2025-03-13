@@ -199,8 +199,8 @@ class PlantLocator(EntityLocator):
     def developer_ui(self) -> None:
         ui.label('Plant Locator').classes('text-center text-bold')
         super().developer_ui()
-        with ui.column().classes('w-96'):
-            with ui.row().classes('w-full'):
+        with ui.column().classes('w-64'):
+            with ui.row():
                 ui.number('Min. crop confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
                     .props('dense outlined') \
                     .classes('w-28') \
@@ -227,7 +227,7 @@ class PlantLocator(EntityLocator):
                         self.tags.remove(tag_to_remove)
                         chips.refresh()
                         self.request_backup()
-                        self.log.info(f'tags: {self.tags}')
+                        self.log.debug(f'tags: {self.tags}')
                     for tag in self.tags:
                         ui.chip(tag, removable=True).props('outline') \
                             .on('remove', lambda t=tag: update_tags(t))
@@ -239,12 +239,12 @@ class PlantLocator(EntityLocator):
                 label_input.value = ''
 
             with ui.row().classes('items-center'):
-                chips()
-            with ui.row().classes('items-center'):
                 label_input = ui.input().on('keydown.enter', add_chip).classes('w-24').props('dense') \
                     .tooltip('Add a tag for the Learning Loop')
                 with label_input.add_slot('append'):
                     ui.button(icon='add', on_click=add_chip).props('round dense flat')
+            with ui.row().classes('items-center'):
+                chips()
 
     def set_upload_images(self):
         if self.teltonika_router.mobile_upload_permission:
