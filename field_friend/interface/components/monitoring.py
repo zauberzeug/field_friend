@@ -183,6 +183,7 @@ class Monitoring:
             self.bottom_view.set_content('')
 
     def to_svg(self, detections: rosys.vision.Detections) -> str:
+        assert self.plant_locator is not None
         svg = ''
         cross_size = 20
         for point in detections.points:
