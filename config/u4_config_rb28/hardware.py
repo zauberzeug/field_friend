@@ -115,5 +115,6 @@ configuration = {
     'imu': {
         'name': 'imu',
         'offset_rotation': [-1.570796, 0, 0],
+        'min_gyro_calibration': 0.0,
     },
 }
