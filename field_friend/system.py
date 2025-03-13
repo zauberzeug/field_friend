@@ -227,7 +227,7 @@ class System(rosys.persistence.PersistentModule):
             case 'none':
                 implements.append(WeedingScrew(self))
             case _:
-                raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
+                self.log.warning('Unknown implement: %s', self.field_friend.implement_name)
         self.implements = {t.name: t for t in implements}
 
     def setup_navigations(self) -> None:
