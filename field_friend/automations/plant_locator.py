@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -7,6 +9,7 @@ from nicegui import ui
 from rosys.vision import Autoupload
 
 from ..vision.zedxmini_camera import StereoCamera
+from .entity_locator import EntityLocator
 from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'weedy_area', ]
@@ -23,11 +26,10 @@ class DetectorError(Exception):
     pass
 
 
-class PlantLocator(rosys.persistence.PersistentModule):
-
-    def __init__(self, system: 'System') -> None:
-        super().__init__()
-        self.log = logging.getLogger('field_friend.plant_detection')
+class PlantLocator(EntityLocator):
+    def __init__(self, system: System) -> None:
+        super().__init__(system)
+        self.log = logging.getLogger('field_friend.plant_locator')
         self.camera_provider = system.camera_provider
         self.detector = system.detector
         self.plant_provider = system.plant_provider
@@ -57,7 +59,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
 
     def backup(self) -> dict:
         self.log.debug(f'backup: autoupload: {self.autoupload}')
-        return {
+        return super().backup() | {
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
             'autoupload': self.autoupload.value,
@@ -66,6 +68,7 @@ class PlantLocator(rosys.persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
+        super().restore(data)
         self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
@@ -133,19 +136,6 @@ class PlantLocator(rosys.persistence.PersistentModule):
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
                 self.log.info(f'{d.category_name} not in categories')
 
-    def pause(self) -> None:
-        if self.is_paused:
-            return
-        self.log.debug('pausing plant detection')
-        self.is_paused = True
-
-    def resume(self) -> None:
-        if not self.is_paused:
-            return
-        self.last_detection_time = rosys.time()
-        self.log.debug('resuming plant detection')
-        self.is_paused = False
-
     def _detection_watchdog(self) -> None:
         if self.is_paused:
             return
@@ -176,48 +166,55 @@ class PlantLocator(rosys.persistence.PersistentModule):
                 return
             self.log.debug(f'Outbox_mode was set to {value} on port {port}')
 
-    def settings_ui(self) -> None:
-        ui.number('Min. crop confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, 'minimum_crop_confidence') \
-            .tooltip(f'Set the minimum crop confidence for the detection (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
-        ui.number('Min. weed confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, 'minimum_weed_confidence') \
-            .tooltip(f'Set the minimum weed confidence for the detection  (default: {MINIMUM_WEED_CONFIDENCE:.2f})')
-        options = list(rosys.vision.Autoupload)
-        ui.select(options, label='Autoupload', on_change=self.request_backup) \
-            .bind_value(self, 'autoupload') \
-            .classes('w-24').tooltip('Set the autoupload for the weeding automation')
+    def developer_ui(self) -> None:
+        ui.label('Plant Locator').classes('text-center text-bold')
+        super().developer_ui()
+        with ui.column().classes('w-64'):
+            with ui.row():
+                ui.number('Min. crop confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+                    .props('dense outlined') \
+                    .classes('w-28') \
+                    .bind_value(self, 'minimum_crop_confidence') \
+                    .tooltip(f'Set the minimum crop confidence for the detection (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
+                ui.number('Min. weed confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
+                    .props('dense outlined') \
+                    .classes('w-28') \
+                    .bind_value(self, 'minimum_weed_confidence') \
+                    .tooltip(f'Set the minimum weed confidence for the detection(default: {MINIMUM_WEED_CONFIDENCE: .2f})')
+                options = list(rosys.vision.Autoupload)
+                ui.select(options, label='Autoupload', on_change=self.request_backup) \
+                    .props('dense outlined') \
+                    .classes('w-28') \
+                    .bind_value(self, 'autoupload') \
+                    .tooltip('Set the autoupload for the weeding automation')
 
-        @ui.refreshable
-        def chips():
-            with ui.row().classes('gap-0'):
-                ui.chip(self.robot_name).props('outline')
+            @ui.refreshable
+            def chips():
+                with ui.row().classes('gap-0'):
+                    ui.chip(self.robot_name).props('outline')
 
-                def update_tags(tag_to_remove: str) -> None:
-                    self.tags.remove(tag_to_remove)
-                    chips.refresh()
-                    self.request_backup()
-                    self.log.info(f'tags: {self.tags}')
-                for tag in self.tags:
-                    ui.chip(tag, removable=True).props('outline') \
-                        .on('remove', lambda t=tag: update_tags(t))
+                    def update_tags(tag_to_remove: str) -> None:
+                        self.tags.remove(tag_to_remove)
+                        chips.refresh()
+                        self.request_backup()
+                        self.log.debug(f'tags: {self.tags}')
+                    for tag in self.tags:
+                        ui.chip(tag, removable=True).props('outline') \
+                            .on('remove', lambda t=tag: update_tags(t))
 
-        def add_chip():
-            self.tags.append(label_input.value)
-            self.request_backup()
-            chips.refresh()
-            label_input.value = ''
+            def add_chip():
+                self.tags.append(label_input.value)
+                self.request_backup()
+                chips.refresh()
+                label_input.value = ''
 
-        with ui.row().classes('items-center'):
-            chips()
-            label_input = ui.input().on('keydown.enter', add_chip).classes('w-24').props('dense') \
-                .tooltip('Add a tag for the Learning Loop')
-            with label_input.add_slot('append'):
-                ui.button(icon='add', on_click=add_chip).props('round dense flat')
+            with ui.row().classes('items-center'):
+                label_input = ui.input().on('keydown.enter', add_chip).classes('w-24').props('dense') \
+                    .tooltip('Add a tag for the Learning Loop')
+                with label_input.add_slot('append'):
+                    ui.button(icon='add', on_click=add_chip).props('round dense flat')
+            with ui.row().classes('items-center'):
+                chips()
 
     def set_upload_images(self):
         if self.teltonika_router.mobile_upload_permission:

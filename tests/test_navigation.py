@@ -96,7 +96,7 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 2.0
-    system.field_friend.wheels.slip_factor_right = 0.0
+    system.field_friend.wheels.slip_factor_right = 0.04
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
@@ -255,6 +255,7 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     system.current_navigation = system.follow_crops_navigation
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     system.field_friend.wheels.slip_factor_right = 0.05
+    system.robot_locator.ignore_imu = True
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
@@ -376,8 +377,7 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
-    point = rosys.geometry.Point(x=0.3, y=0.0)
-    await forward(x=point.x, y=point.y, tolerance=0.05)
+    await forward(1)
     system.automator.stop(because='test')
     system.automator.start()
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
@@ -488,7 +488,7 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.select_field(field_with_beds.id)
-    system.field_provider._only_specific_beds = True
+    system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [1, 3]
     system.current_navigation = system.field_navigation
     system.automator.start()
@@ -505,7 +505,7 @@ async def test_complete_field_without_second_bed(system: System, field_with_beds
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.select_field(field_with_beds.id)
-    system.field_provider._only_specific_beds = True
+    system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [1, 3, 4]
     system.current_navigation = system.field_navigation
     system.automator.start()
@@ -522,7 +522,7 @@ async def test_field_with_first_row_excluded(system: System, field_with_beds: Fi
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
 
     system.field_provider.select_field(field_with_beds.id)
-    system.field_provider._only_specific_beds = True
+    system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [2, 3, 4]  # Exclude bed 1
 
     system.current_navigation = system.field_navigation
