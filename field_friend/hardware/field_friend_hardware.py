@@ -52,7 +52,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.DRILL_RADIUS = config_params['drill_radius']
             self.CHOP_RADIUS: float = config_params['chop_radius']
         else:
-            self.log.warning('Unknown FieldFriend implement: %s', implement)
+            self.log.warning('Unknown implement: %s', implement)
 
         communication = rosys.hardware.SerialCommunication()
         if 'enable_esp_on_startup' in config_robotbrain['robot_brain']:
