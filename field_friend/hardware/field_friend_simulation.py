@@ -1,3 +1,6 @@
+
+import logging
+
 import rosys
 from rosys.hardware import ImuSimulation
 
@@ -17,6 +20,7 @@ from .tornado import TornadoSimulation
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
     def __init__(self, robot_id) -> None:
+        self.log = logging.getLogger('field_friend.simulation')
         config_hardware = config_selector.import_config_simulation(module='hardware', robot_id=robot_id)
         config_params = config_selector.import_config_simulation(module='params', robot_id=robot_id)
         self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
