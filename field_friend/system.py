@@ -31,7 +31,7 @@ from .automations.navigation import (
     Navigation,
     StraightLineNavigation,
 )
-from .hardware import FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
+from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
 from .kpi_generator import generate_kpis
 from .robot_locator import RobotLocator
@@ -89,19 +89,8 @@ class System(rosys.persistence.PersistentModule):
             self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
             self.camera_configurator = CameraConfigurator(self.camera_provider, self.robot_locator, self.version)
 
-        self.odometer = Odometer(self.field_friend.wheels)
+        self.setup_driver()
         self.plant_provider = PlantProvider()
-        self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
-        self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
-        self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.2
-        self.driver.parameters.can_drive_backwards = True
-        self.driver.parameters.minimum_turning_radius = 0.01
-        self.driver.parameters.hook_offset = 0.45
-        self.driver.parameters.carrot_distance = 0.15
-        self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
-        self.driver.parameters.hook_bending_factor = 0.25
-
         self.kpi_provider = KpiProvider()
         if not self.is_real:
             generate_kpis(self.kpi_provider)
@@ -119,55 +108,15 @@ class System(rosys.persistence.PersistentModule):
 
         self.path_provider = PathProvider()
         self.field_provider = FieldProvider()
-        width = 0.64
-        length = 0.78
-        offset = 0.36
-        height = 0.67
-        self.shape = rosys.geometry.Prism(
-            outline=[
-                (-offset, -width/2),
-                (length - offset, -width/2),
-                (length - offset, width/2),
-                (-offset, width/2)
-            ],
-            height=height)
+        self.setup_shape()
         self.automator = rosys.automation.Automator(self.steerer, on_interrupt=self.field_friend.stop)
         self.automation_watcher = AutomationWatcher(self)
-        self.monitoring = Recorder(self)
-        self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
-        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name if self.current_navigation is not None else 'No Navigation'}, \
-            tags: {", ".join(self.plant_locator.tags)}'''
-        rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
-        rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
-        self.straight_line_navigation = StraightLineNavigation(self, self.monitoring)
-        self.follow_crops_navigation = FollowCropsNavigation(self, self.monitoring)
-        self.field_navigation = FieldNavigation(self, self.monitoring)
 
-        self.crossglide_demo_navigation = CrossglideDemoNavigation(self, self.monitoring)
-        self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
-                                                          self.follow_crops_navigation,
-                                                          self.field_navigation,
-                                                          self.crossglide_demo_navigation,
-                                                          ]}
-        implements: list[Implement] = [self.monitoring]
-        match self.field_friend.implement_name:
-            case 'tornado':
-                implements.append(Tornado(self))
-            case 'weed_screw':
-                implements.append(WeedingScrew(self))
-            case 'dual_mechanism':
-                # implements.append(WeedingScrew(self))
-                # implements.append(ChopAndScrew(self))
-                self.log.error('Dual mechanism not implemented')
-            case 'none':
-                implements.append(WeedingScrew(self))
-            case _:
-                raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
-        self.implements = {t.name: t for t in implements}
-        self._current_navigation = self.straight_line_navigation
+        self.setup_timelapse()
+        self.setup_implements()
+        self.setup_navigations()
         self.automator.default_automation = self._current_navigation.start
         self.info = Info(self)
-        self.current_implement = self.monitoring
         if self.field_friend.bumper:
             self.automation_watcher.bumper_watch_active = True
         else:
@@ -237,6 +186,64 @@ class System(rosys.persistence.PersistentModule):
         self.AUTOMATION_CHANGED.emit(navigation.name)
         self.request_backup()
 
+    def setup_driver(self) -> None:
+        self.odometer = Odometer(self.field_friend.wheels)
+        self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
+        self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
+        self.driver.parameters.linear_speed_limit = 0.3
+        self.driver.parameters.angular_speed_limit = 0.2
+        self.driver.parameters.can_drive_backwards = True
+        self.driver.parameters.minimum_turning_radius = 0.01
+        self.driver.parameters.hook_offset = 0.45
+        self.driver.parameters.carrot_distance = 0.15
+        self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
+        self.driver.parameters.hook_bending_factor = 0.25
+
+    def setup_shape(self) -> None:
+        width = 0.64
+        length = 0.78
+        offset = 0.36
+        height = 0.67
+        self.shape = rosys.geometry.Prism(
+            outline=[
+                (-offset, -width/2),
+                (length - offset, -width/2),
+                (length - offset, width/2),
+                (-offset, width/2)
+            ],
+            height=height)
+
+    def setup_implements(self) -> None:
+        implements: list[Implement] = [Recorder(self)]
+        match self.field_friend.implement_name:
+            case 'tornado':
+                implements.append(Tornado(self))
+            case 'weed_screw':
+                implements.append(WeedingScrew(self))
+            case 'dual_mechanism':
+                # implements.append(WeedingScrew(self))
+                # implements.append(ChopAndScrew(self))
+                self.log.error('Dual mechanism not implemented')
+            case 'none':
+                implements.append(WeedingScrew(self))
+            case _:
+                raise NotImplementedError(f'Unknown tool: {self.field_friend.implement_name}')
+        self.implements = {t.name: t for t in implements}
+
+    def setup_navigations(self) -> None:
+        first_implement = next(iter(self.implements.values()))
+        self.straight_line_navigation = StraightLineNavigation(self, first_implement)
+        self.follow_crops_navigation = FollowCropsNavigation(self, first_implement)
+        self.field_navigation = FieldNavigation(self, first_implement)
+        self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement) \
+            if isinstance(self.field_friend.y_axis, AxisD1) else None
+        self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
+                                                          self.follow_crops_navigation,
+                                                          self.field_navigation,
+                                                          self.crossglide_demo_navigation,
+                                                          ] if n is not None}
+        self._current_navigation = self.straight_line_navigation
+
     def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider:
         if not self.is_real:
             return rosys.vision.SimulatedCameraProvider()
@@ -260,6 +267,13 @@ class System(rosys.persistence.PersistentModule):
                                                                             )
         assert isinstance(self.camera_provider, rosys.vision.SimulatedCameraProvider)
         self.camera_provider.add_camera(camera)
+
+    def setup_timelapse(self) -> None:
+        self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
+        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name if self.current_navigation is not None else 'No Navigation'}, \
+            tags: {", ".join(self.plant_locator.tags)}'''
+        rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
+        rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
 
     def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation:
         if self.is_real:
