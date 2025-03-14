@@ -44,7 +44,7 @@ class Axis(rosys.hardware.Module, abc.ABC):
         if speed is None:
             speed = self.max_speed
         if not self.is_referenced:
-            raise RuntimeError('zaxis is not referenced, reference first')
+            raise RuntimeError('axis is not referenced, reference first')
         if speed > self.max_speed:
             raise RuntimeError(f'axis speed is too high, max speed is {self.max_speed}')
         if not self.min_position <= position <= self.max_position:

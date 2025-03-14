@@ -13,11 +13,11 @@ configuration = {
     'y_axis': {
         'version': 'y_axis_stepper',
         'name': 'y_axis',
-        'max_speed': 60_000,
-        'reference_speed': 10_000,
-        'min_position': -0.068,
-        'max_position': 0.068,
-        'axis_offset': 0.075,
+        'max_speed': 30_000,
+        'reference_speed': 5_000,
+        'min_position': -0.0575,
+        'max_position': 0.0575,
+        'axis_offset': 0.0575,
         'steps_per_m': 599251,
         'step_pin': 5,
         'dir_pin': 4,
@@ -115,5 +115,6 @@ configuration = {
     'imu': {
         'name': 'imu',
         'offset_rotation': [-1.570796, 0, 0],
+        'min_gyro_calibration': 0.0,
     },
 }

@@ -13,7 +13,7 @@ from .entity_locator import EntityLocator
 from .plant import Plant
 
 WEED_CATEGORY_NAME = ['coin', 'weed', 'weedy_area', ]
-CROP_CATEGORY_NAME: dict[str, str] = {}
+CROP_CATEGORY_NAME: dict[str, str] = {'coin_with_hole': 'coin_with_hole'}
 MINIMUM_CROP_CONFIDENCE = 0.3
 MINIMUM_WEED_CONFIDENCE = 0.3
 
