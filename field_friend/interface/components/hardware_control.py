@@ -16,6 +16,7 @@ from ...hardware import (
     YAxisCanOpenHardware,
     ZAxisCanOpenHardware,
 )
+from .status_bulb import StatusBulb as status_bulb
 
 
 def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
