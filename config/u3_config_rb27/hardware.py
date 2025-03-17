@@ -91,5 +91,11 @@ configuration = {'wheels': {
         'rx_pin': 32,
         'tx_pin': 33,
         'baud': 1_000_000,
-}
+},
+    'gnss': {
+        'x': 0.06,
+        'y': 0.243,
+        'z': 0.662,
+        'yaw_deg': 0.0,
+},
 }
