@@ -101,6 +101,16 @@ configuration = {
         'rx_pin': 32,
         'tx_pin': 33,
         'baud': 1_000_000,
+    },
+    'imu': {
+        'name': 'imu',
+        'offset_rotation': [-1.6006605, 0.0242387, 0.0],
+        'min_gyro_calibration': 0,
+    },
+    'gnss': {
+        'name': 'gnss',
+        'x': 0.041,
+        'y': -0.255,
+        'yaw_deg': 0.0,
     }
-
 }
