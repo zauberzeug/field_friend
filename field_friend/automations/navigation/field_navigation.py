@@ -103,7 +103,7 @@ class FieldNavigation(StraightLineNavigation):
     def get_nearest_row(self) -> Row | None:
         assert self.field is not None
         assert self.gnss.is_connected
-        row = min(self.field.rows, key=lambda r: r.line_segment().line.foot_point(
+        row = min(self.rows_to_work_on, key=lambda r: r.line_segment().line.foot_point(
             self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
         self.log.debug(f'Nearest row is {row.name}')
         if row not in self.rows_to_work_on:
