@@ -92,9 +92,13 @@ configuration = {'wheels': {
         'tx_pin': 33,
         'baud': 1_000_000,
 },
+    'imu': {
+        'name': 'imu',
+        'offset_rotation': [-1.570796, 0, 0],
+},
     'gnss': {
         'x': 0.06,
-        'y': 0.243,
+        'y': -0.243,
         'z': 0.662,
         'yaw_deg': 0.0,
 },
