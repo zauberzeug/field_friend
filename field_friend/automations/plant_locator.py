@@ -6,13 +6,15 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import rosys
 from nicegui import ui
-from rosys.vision import Autoupload
+from rosys.vision import Autoupload, DetectorHardware, DetectorSimulation
+from rosys.vision.detections import Category
+from rosys.vision.detector import DetectorException, DetectorInfo
 
 from ..vision.zedxmini_camera import StereoCamera
 from .entity_locator import EntityLocator
 from .plant import Plant
 
-WEED_CATEGORY_NAME = ['coin', 'weed', 'weedy_area', ]
+WEED_CATEGORY_NAME = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
 CROP_CATEGORY_NAME: dict[str, str] = {}
 MINIMUM_CROP_CONFIDENCE = 0.3
 MINIMUM_WEED_CONFIDENCE = 0.3
@@ -35,6 +37,7 @@ class PlantLocator(EntityLocator):
         self.plant_provider = system.plant_provider
         self.robot_locator = system.robot_locator
         self.robot_name = system.version
+        self.detector_info: DetectorInfo | None = None
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
@@ -44,7 +47,7 @@ class PlantLocator(EntityLocator):
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
-        if isinstance(self.detector, rosys.vision.DetectorHardware):
+        if isinstance(self.detector, DetectorHardware):
             port = self.detector.port
             rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=port), 1.0)
         if system.is_real:
@@ -55,7 +58,7 @@ class PlantLocator(EntityLocator):
         self.last_detection_time = rosys.time()
         self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
         rosys.on_repeat(self._detection_watchdog, 0.5)
-        rosys.on_startup(self.get_crop_names)
+        rosys.on_startup(self.fetch_detector_info)
 
     def backup(self) -> dict:
         self.log.debug(f'backup: autoupload: {self.autoupload}')
@@ -187,6 +190,8 @@ class PlantLocator(EntityLocator):
                     .classes('w-28') \
                     .bind_value(self, 'autoupload') \
                     .tooltip('Set the autoupload for the weeding automation')
+            ui.label().bind_text_from(self, 'detector_info',
+                                      backward=lambda info: f'Detector version: {info.current_version}/{info.target_version}' if info else 'Detector version: unknown')
 
             @ui.refreshable
             def chips():
@@ -224,25 +229,21 @@ class PlantLocator(EntityLocator):
         else:
             self.upload_images = False
 
-    async def get_crop_names(self) -> dict[str, str]:
-        if isinstance(self.detector, rosys.vision.DetectorSimulation):
-            simulated_crop_names: list[str] = ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
-                                               'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]
-
-            CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in simulated_crop_names})
-            self.crop_category_names = CROP_CATEGORY_NAME
-            return CROP_CATEGORY_NAME
-        port = self.detector.port
-        url = f'http://localhost:{port}/about'
-        async with aiohttp.request('GET', url) as response:
-            if response.status != 200:
-                self.log.error(f'Could not get crop names on port {port} - status code: {response.status}')
-                return {}
-            response_text = await response.json()
-        crop_names: list[str] = [category['name'] for category in response_text['model_info']['categories']]
-        weeds = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
-        for weed in weeds:
-            crop_names.remove(weed)
-        CROP_CATEGORY_NAME.update({name: name.replace('_', ' ').title() for name in crop_names})
-        self.crop_category_names = CROP_CATEGORY_NAME
-        return CROP_CATEGORY_NAME
+    async def fetch_detector_info(self) -> bool:
+        try:
+            detector_info: DetectorInfo = await self.detector.fetch_detector_info()
+        except DetectorException as e:
+            self.log.error(f'Could not fetch detector info: {e}')
+            return False
+        if isinstance(self.detector, DetectorSimulation):
+            detector_info.categories = [Category(uuid=name, name=name) for name in ['coin_with_hole', 'borrietsch', 'estragon', 'feldsalat', 'garlic', 'jasione', 'kohlrabi', 'liebstoeckel', 'maize', 'minze', 'onion',
+                                        'oregano_majoran', 'pastinake', 'petersilie', 'pimpinelle', 'red_beet', 'salatkopf', 'schnittlauch', 'sugar_beet', 'thymian_bohnenkraut', 'zitronenmelisse', ]]
+            detector_info.current_version = 'simulation'
+            detector_info.target_version = 'simulation'
+        filtered_crops: list[str] = [
+            category.name for category in detector_info.categories if category.name not in WEED_CATEGORY_NAME]
+        self.crop_category_names.update({crop_name: crop_name.replace('_', ' ').title()
+                                        for crop_name in filtered_crops})
+        self.detector_info = detector_info
+        self.log.debug('Fetched detector info: %s', detector_info)
+        return True
