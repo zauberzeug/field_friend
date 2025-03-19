@@ -187,9 +187,18 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def settings_ui(self) -> None:
         super().settings_ui()
+
+        async def update_cultivated_crop() -> None:
+            assert self.cultivated_crop_select is not None
+            if self.cultivated_crop_select.options:
+                return
+            await self.system.plant_locator.fetch_detector_info()
+            self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
+
         self.cultivated_crop_select = ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \
-            .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
+            .classes('w-40').tooltip('Set the cultivated crop which should be kept safe') \
+            .on('mouseenter', update_cultivated_crop)
         ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
