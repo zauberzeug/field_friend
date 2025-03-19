@@ -95,10 +95,8 @@ class Puncher:
                 await self.tornado_drill(angle=angle, turns=turns, with_open_drill=with_open_tornado)
 
             elif isinstance(self.field_friend.z_axis, Axis):
-                if self.is_demo:
-                    self.log.warning('punching with demo mode is not yet implemented for z axis')
                 await self.field_friend.y_axis.move_to(y)
-                await self.field_friend.z_axis.move_to(-depth)
+                await self.field_friend.z_axis.move_to(-0.05 if self.is_demo else -depth)
                 if os.environ.get('Z_AXIS_REST_POSITION'):
                     target = float(os.environ.get('Z_AXIS_REST_POSITION', '0'))
                     await self.field_friend.z_axis.move_to(target)

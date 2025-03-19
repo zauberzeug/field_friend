@@ -165,6 +165,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'cultivated_crop': self.cultivated_crop,
             'crop_safety_distance': self.crop_safety_distance,
             'record_video': self.record_video,
+            'is_demo': self.puncher.is_demo,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -174,6 +175,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
         self.record_video = data.get('record_video', self.record_video)
+        self.puncher.is_demo = data.get('is_demo', self.puncher.is_demo)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
@@ -189,6 +191,9 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
+        ui.checkbox('Demo Mode') \
+            .bind_value(self.puncher, 'is_demo') \
+            .tooltip('If active, stop right before the ground')
         ui.checkbox('record video', on_change=self.request_backup) \
             .bind_value(self, 'record_video') \
             .tooltip('Set the weeding automation to record video')

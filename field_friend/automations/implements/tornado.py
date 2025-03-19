@@ -100,7 +100,6 @@ class Tornado(WeedingImplement):
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
             'tornado_angle': self.tornado_angle,
-            'is_demo': self.puncher.is_demo,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -108,7 +107,6 @@ class Tornado(WeedingImplement):
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
-        self.puncher.is_demo = data.get('is_demo', self.puncher.is_demo)
 
     def settings_ui(self):
         super().settings_ui()
@@ -119,9 +117,6 @@ class Tornado(WeedingImplement):
             .tooltip('Set the angle for the tornado drill')
         ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
                                   f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
-        ui.checkbox('Demo Mode') \
-            .bind_value(self.puncher, 'is_demo') \
-            .tooltip('If active, stop right before the ground')
         # TODO test and reactivate these options
         # ui.checkbox('Drill 2x with open tornado') \
         #     .bind_value(self, 'drill_with_open_tornado') \
