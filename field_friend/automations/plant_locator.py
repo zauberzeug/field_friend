@@ -242,8 +242,8 @@ class PlantLocator(EntityLocator):
             detector_info.target_version = 'simulation'
         filtered_crops: list[str] = [
             category.name for category in detector_info.categories if category.name not in WEED_CATEGORY_NAME]
-        CROP_CATEGORY_NAME.update({crop_name: crop_name.replace('_', ' ').title() for crop_name in filtered_crops})
+        self.crop_category_names.update({crop_name: crop_name.replace('_', ' ').title()
+                                        for crop_name in filtered_crops})
         self.detector_info = detector_info
-        self.crop_category_names = CROP_CATEGORY_NAME
         self.log.debug('Fetched detector info: %s', detector_info)
         return True
