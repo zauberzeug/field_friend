@@ -31,6 +31,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system = system
         self.puncher = system.puncher
         self.record_video = False
+        self.cultivated_crop_select: ui.select | None = None
         self.cultivated_crop: str | None = None
         self.crop_safety_distance: float = 0.01
 
@@ -49,6 +50,11 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     async def prepare(self) -> bool:
         await super().prepare()
+        if self.system.plant_locator.detector_info is None and not await self.system.plant_locator.fetch_detector_info():
+            rosys.notify('Dectection model information not available', 'negative')
+            return False
+        assert self.cultivated_crop_select is not None
+        self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
         self.log.info(f'start weeding {self.relevant_weeds} with {self.name} ...')
         self.request_backup()
         if not await self._check_hardware_ready():
@@ -181,7 +187,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def settings_ui(self) -> None:
         super().settings_ui()
-        ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
+        self.cultivated_crop_select = ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \
             .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
         ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \

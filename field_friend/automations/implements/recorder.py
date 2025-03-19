@@ -18,8 +18,15 @@ class Recorder(Implement):
         super().__init__('Recorder')
         self.system = system
 
-    async def activate(self):
+    async def prepare(self) -> bool:
+        await super().prepare()
         self.system.plant_provider.clear()
+        if self.system.plant_locator.detector_info is None and not await self.system.plant_locator.fetch_detector_info():
+            rosys.notify('Dectection model information not available', 'negative')
+            return False
+        return True
+
+    async def activate(self):
         if self.system.field_friend.flashlight:
             await self.system.field_friend.flashlight.turn_on()
         await rosys.sleep(3)  # NOTE: we wait for the camera to adjust
