@@ -53,8 +53,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         if self.system.plant_locator.detector_info is None and not await self.system.plant_locator.fetch_detector_info():
             rosys.notify('Dectection model information not available', 'negative')
             return False
-        assert self.cultivated_crop_select is not None
-        self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
+        if self.cultivated_crop_select is not None:
+            self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
         self.log.info(f'start weeding {self.relevant_weeds} with {self.name} ...')
         self.request_backup()
         if not await self._check_hardware_ready():
