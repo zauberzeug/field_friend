@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import rosys
 from nicegui import ui
-from rosys.vision import Autoupload, DetectorSimulation
+from rosys.vision import Autoupload, DetectorHardware, DetectorSimulation
 from rosys.vision.detections import Category
 from rosys.vision.detector import DetectorException, DetectorInfo
 
@@ -37,7 +37,7 @@ class PlantLocator(EntityLocator):
         self.plant_provider = system.plant_provider
         self.robot_locator = system.robot_locator
         self.robot_name = system.version
-        self.detector_info: rosys.vision.DetectorInfo | None = None
+        self.detector_info: DetectorInfo | None = None
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
@@ -47,7 +47,7 @@ class PlantLocator(EntityLocator):
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
-        if isinstance(self.detector, rosys.vision.DetectorHardware):
+        if isinstance(self.detector, DetectorHardware):
             port = self.detector.port
             rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=port), 1.0)
         if system.is_real:
