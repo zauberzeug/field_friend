@@ -22,6 +22,7 @@ class State(Enum):
     APPROACH_START_ROW = auto()
     CHANGE_ROW = auto()
     FOLLOW_ROW = auto()
+    WAITING_FOR_CONFIRMATION = auto()
     ROW_COMPLETED = auto()
     FIELD_COMPLETED = auto()
     ERROR = auto()
@@ -44,6 +45,8 @@ class FieldNavigation(StraightLineNavigation):
         self.row_index = 0
         self.start_point: Point | None = None
         self.end_point: Point | None = None
+        self.allowed_to_turn: bool = False
+        self.wait_distance: float = 1.3
 
         self.field: Field | None = None
         self.field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
@@ -155,6 +158,8 @@ class FieldNavigation(StraightLineNavigation):
             self._state = await self._run_follow_row(distance)
         elif self._state == State.ROW_COMPLETED:
             self._state = await self._run_row_completed()
+        elif self._state == State.WAITING_FOR_CONFIRMATION:
+            self._state = await self._run_waiting_for_confirmation()
 
     @track
     async def _run_approach_start_row(self) -> State:
@@ -195,6 +200,7 @@ class FieldNavigation(StraightLineNavigation):
         else:
             self.plant_provider.clear()
         self._set_cultivated_crop()
+        self.allowed_to_turn = False
         return State.FOLLOW_ROW
 
     @track
@@ -219,15 +225,27 @@ class FieldNavigation(StraightLineNavigation):
         assert self.start_point is not None
         end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
                                        yaw=self.start_point.direction(self.end_point), time=0)
-        if end_pose.relative_point(self.robot_locator.pose.point).x > 0:
+        distance_from_end = end_pose.relative_point(self.robot_locator.pose.point).x
+        if distance_from_end > 0:
             await self.driver.wheels.stop()
             await self.implement.deactivate()
             return State.ROW_COMPLETED
+        if not self.allowed_to_turn and -self.wait_distance < distance_from_end < 0:
+            await self.driver.wheels.stop()
+            return State.WAITING_FOR_CONFIRMATION
         if not self.implement.is_active:
             await self.implement.activate()
         self.update_target()
         await super()._drive(distance)
         return State.FOLLOW_ROW
+
+    @track
+    async def _run_waiting_for_confirmation(self) -> State:
+        await self.driver.wheels.stop()
+        await rosys.sleep(0.5)
+        if self.allowed_to_turn:
+            return State.FOLLOW_ROW
+        return State.WAITING_FOR_CONFIRMATION
 
     @track
     async def _run_row_completed(self) -> State:
@@ -291,6 +309,7 @@ class FieldNavigation(StraightLineNavigation):
         return super().backup() | {
             'field_id': self.field.id if self.field else None,
             'loop': self._loop,
+            'wait_distance': self.wait_distance,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -298,6 +317,7 @@ class FieldNavigation(StraightLineNavigation):
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self._loop = data.get('loop', False)
+        self.wait_distance = data.get('wait_distance', self.wait_distance)
 
     def settings_ui(self) -> None:
         with ui.row():
@@ -309,6 +329,9 @@ class FieldNavigation(StraightLineNavigation):
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
+        ui.checkbox('Allowed to turn').bind_value(self, 'allowed_to_turn')
+        ui.number('Wait distance', step=0.1, min=0.0, max=10.0, format='%.1f', suffix='m', on_change=self.request_backup) \
+            .bind_value(self, 'wait_distance').classes('w-20')
 
     def _set_field_id(self) -> None:
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
