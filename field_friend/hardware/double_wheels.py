@@ -1,5 +1,3 @@
-
-
 import rosys
 from rosys.helpers import remove_indentation
 
@@ -55,7 +53,10 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
                                        'l1.motor_error_flag', 'r1.motor_error_flag'])
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
-    async def drive(self, linear: float, angular: float) -> None:
+    async def drive(self, linear: float, angular: float, epsilon: float = 1e-6) -> None:
+        if (abs(linear - self.linear_target_speed) < epsilon and
+                abs(angular - self.angular_target_speed) < epsilon):
+            return
         await super().drive(linear, angular)
         if linear == 0.0:
             linear = -0.0
