@@ -163,6 +163,7 @@ class FieldNavigation(StraightLineNavigation):
 
     @track
     async def _run_approach_start_row(self) -> State:
+        self.allowed_to_turn = False
         self.set_start_and_end_points()
         if self.start_point is None or self.end_point is None:
             return State.ERROR
