@@ -9,6 +9,22 @@ class Automation:
     def __init__(self, system: System) -> None:
         self.system = system
 
+        @app.get('/api/automation/field_navigation/status')
+        async def get_field_navigation_status():
+            distance_to_end = self.system.robot_locator.pose.point.distance(
+                self.system.field_navigation.end_point) if self.system.field_navigation.end_point else None
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    'automation_running': self.system.automator.is_running,
+                    'state': f'{self.system.field_navigation._state.name}',  # pylint: disable=protected-access
+                    'current_row': f'{self.system.field_navigation.current_row.name}' if self.system.field_navigation.current_row else None,
+                    'field': f'{self.system.field_navigation.field.name}' if self.system.field_navigation.field else None,
+                    'distance_to_end': distance_to_end,
+                    'allowed_to_turn': self.system.field_navigation.allowed_to_turn
+                }
+            )
+
         @app.post('/api/automation/field_navigation/start')
         async def start_field_navigation(request: Request):
             try:
@@ -40,6 +56,14 @@ class Automation:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content={'error': f'Server error: {e!s}'}
                 )
+
+        @app.post('/api/automation/field_navigation/confirm_turn')
+        async def confirm_turn():
+            self.system.field_navigation.allowed_to_turn = True
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={'status': 'turn confirmed'}
+            )
 
         @app.post('/api/automation/start')
         async def start_automation():
