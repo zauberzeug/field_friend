@@ -46,6 +46,7 @@ class FieldNavigation(StraightLineNavigation):
         self.start_point: Point | None = None
         self.end_point: Point | None = None
         self.force_first_row_start: bool = False
+        self.is_in_swarm: bool = False
         self.allowed_to_turn: bool = False
         self.wait_distance: float = 1.3
 
@@ -235,7 +236,7 @@ class FieldNavigation(StraightLineNavigation):
             await self.driver.wheels.stop()
             await self.implement.deactivate()
             return State.ROW_COMPLETED
-        if not self.allowed_to_turn and -self.wait_distance < distance_from_end < 0:
+        if self.is_in_swarm and not self.allowed_to_turn and -self.wait_distance < distance_from_end < 0:
             await self.driver.wheels.stop()
             return State.WAITING_FOR_CONFIRMATION
         if not self.implement.is_active:
@@ -316,6 +317,7 @@ class FieldNavigation(StraightLineNavigation):
             'loop': self._loop,
             'wait_distance': self.wait_distance,
             'force_first_row_start': self.force_first_row_start,
+            'is_in_swarm': self.is_in_swarm,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -325,6 +327,7 @@ class FieldNavigation(StraightLineNavigation):
         self._loop = data.get('loop', False)
         self.force_first_row_start = data.get('force_first_row_start', self.force_first_row_start)
         self.wait_distance = data.get('wait_distance', self.wait_distance)
+        self.is_in_swarm = data.get('is_in_swarm', self.is_in_swarm)
 
     def settings_ui(self) -> None:
         with ui.row():
@@ -337,6 +340,7 @@ class FieldNavigation(StraightLineNavigation):
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
         ui.checkbox('Force first row start', on_change=self.request_backup).bind_value(self, 'force_first_row_start')
+        ui.checkbox('Is in swarm', on_change=self.request_backup).bind_value(self, 'is_in_swarm')
         ui.checkbox('Allowed to turn').bind_value(self, 'allowed_to_turn')
         ui.number('Wait distance', step=0.1, min=0.0, max=10.0, format='%.1f', suffix='m', on_change=self.request_backup) \
             .bind_value(self, 'wait_distance').classes('w-20')
