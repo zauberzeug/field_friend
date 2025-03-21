@@ -1,14 +1,11 @@
 configuration = {
     'wheels': {
-        'version': 'double_wheels',
+        'version': 'double_uu_wheels',
         'name': 'wheels',
-        'left_back_can_address': 0x100,
-        'left_front_can_address': 0x000,
-        'right_back_can_address': 0x300,
-        'right_front_can_address': 0x200,
-        'is_left_reversed': True,
+        'left_can_address': 12,
+        'right_can_address': 11,
+        'is_left_reversed': False,
         'is_right_reversed': False,
-        'odrive_version': 6,
     },
     'y_axis': {
         'version': 'none'

@@ -8,6 +8,7 @@ import config.config_selection as config_selector
 from .axis_d1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
+from .double_uu_wheels import DoubleUuWheelsHardware
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
@@ -76,7 +77,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             tx_pin=config_hardware['can']['tx_pin'],
             baud=config_hardware['can']['baud'],
         )
-        wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware
+        wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware | DoubleUuWheelsHardware
         if config_hardware['wheels']['version'] == 'wheels':
             wheels = rosys.hardware.WheelsHardware(
                 robot_brain,
@@ -103,6 +104,18 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 is_right_reversed=config_hardware['wheels']['is_right_reversed'],
                 is_left_reversed=config_hardware['wheels']['is_left_reversed'],
                 odrive_version=config_hardware['wheels']['odrive_version']if 'odrive_version' in config_hardware['wheels'] else 4,
+            )
+        elif config_hardware['wheels']['version'] == 'double_uu_wheels':
+            wheels = DoubleUuWheelsHardware(
+                robot_brain,
+                can=self.can,
+                name=config_hardware['wheels']['name'],
+                left_can_address=config_hardware['wheels']['left_can_address'],
+                right_can_address=config_hardware['wheels']['right_can_address'],
+                m_per_tick=self.M_PER_TICK,
+                width=self.WHEEL_DISTANCE,
+                is_right_reversed=config_hardware['wheels']['is_right_reversed'],
+                is_left_reversed=config_hardware['wheels']['is_left_reversed'],
             )
         else:
             raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
@@ -314,12 +327,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             pass
         else:
             self.log.warning('Unknown z_axis version: %s', config_hardware['z_axis']['version'])
-
-        estop = rosys.hardware.EStopHardware(
-            robot_brain,
-            name=config_hardware['estop']['name'],
-            pins=config_hardware['estop']['pins'],
-        )
 
         bms = rosys.hardware.BmsHardware(
             robot_brain,
