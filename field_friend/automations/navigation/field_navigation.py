@@ -45,6 +45,7 @@ class FieldNavigation(StraightLineNavigation):
         self.row_index = 0
         self.start_point: Point | None = None
         self.end_point: Point | None = None
+        self.force_first_row_start: bool = False
         self.allowed_to_turn: bool = False
         self.wait_distance: float = 1.3
 
@@ -106,13 +107,16 @@ class FieldNavigation(StraightLineNavigation):
     def get_nearest_row(self) -> Row | None:
         assert self.field is not None
         assert self.gnss.is_connected
-        row = min(self.rows_to_work_on, key=lambda r: r.line_segment().line.foot_point(
-            self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
-        self.log.debug(f'Nearest row is {row.name}')
-        if row not in self.rows_to_work_on:
-            rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
-            return None
-        self.row_index = self.rows_to_work_on.index(row)
+        if self.force_first_row_start:
+            self.row_index = 0
+        else:
+            row = min(self.rows_to_work_on, key=lambda r: r.line_segment().line.foot_point(
+                self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
+            self.log.debug(f'Nearest row is {row.name}')
+            if row not in self.rows_to_work_on:
+                rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
+                return None
+            self.row_index = self.rows_to_work_on.index(row)
         return self.rows_to_work_on[self.row_index]
 
     def set_start_and_end_points(self):
@@ -311,6 +315,7 @@ class FieldNavigation(StraightLineNavigation):
             'field_id': self.field.id if self.field else None,
             'loop': self._loop,
             'wait_distance': self.wait_distance,
+            'force_first_row_start': self.force_first_row_start,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -318,6 +323,7 @@ class FieldNavigation(StraightLineNavigation):
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self._loop = data.get('loop', False)
+        self.force_first_row_start = data.get('force_first_row_start', self.force_first_row_start)
         self.wait_distance = data.get('wait_distance', self.wait_distance)
 
     def settings_ui(self) -> None:
@@ -330,6 +336,7 @@ class FieldNavigation(StraightLineNavigation):
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
+        ui.checkbox('Force first row start', on_change=self.request_backup).bind_value(self, 'force_first_row_start')
         ui.checkbox('Allowed to turn').bind_value(self, 'allowed_to_turn')
         ui.number('Wait distance', step=0.1, min=0.0, max=10.0, format='%.1f', suffix='m', on_change=self.request_backup) \
             .bind_value(self, 'wait_distance').classes('w-20')
