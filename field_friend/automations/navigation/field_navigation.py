@@ -247,7 +247,7 @@ class FieldNavigation(StraightLineNavigation):
     @track
     async def _run_waiting_for_confirmation(self) -> State:
         await self.driver.wheels.stop()
-        await rosys.sleep(0.5)
+        await rosys.sleep(0.1)
         if self.allowed_to_turn:
             return State.FOLLOW_ROW
         return State.WAITING_FOR_CONFIRMATION
