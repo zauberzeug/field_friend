@@ -152,10 +152,10 @@ class FieldCreator:
         with self.content:
             for i in range(int(self.bed_count)):
                 with ui.row().classes('w-full'):
-                    ui.label(f'Bed {i + 1}:').classes('text-lg')
+                    ui.label(f'Bed {i}:').classes('text-lg')
                     ui.select(options=self.plant_locator.crop_category_names) \
                         .props('dense outlined').classes('w-40') \
-                        .tooltip(f'Enter the crop name for bed {i + 1}') \
+                        .tooltip(f'Enter the crop name for bed {i}') \
                         .bind_value(self, 'bed_crops',
                                     forward=lambda v, idx=i: {**self.bed_crops,
                                                               str(idx): v if v is not None else self.default_crop},
@@ -177,7 +177,7 @@ class FieldCreator:
                     for i in range(int(self.bed_count)):
                         crop = self.bed_crops[str(i)]
                         crop_name = self.plant_locator.crop_category_names[crop] if crop is not None else 'No crop selected'
-                        ui.label(f'Bed {int(i) + 1}: {crop_name}').classes('text-lg')
+                        ui.label(f'Bed {int(i)}: {crop_name}').classes('text-lg')
                 ui.separator()
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
