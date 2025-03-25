@@ -9,6 +9,7 @@ import config.config_selection as config_selector
 
 from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
+from .delta_arm import DeltaArmSimulation
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
@@ -58,7 +59,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown Y-Axis version: {config_hardware["y_axis"]["version"]}')
 
-        z_axis: AxisSimulation | TornadoSimulation | None
+        z_axis: AxisSimulation | TornadoSimulation | DeltaArmSimulation | None
         if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen', 'axis_d1']:
             z_axis = AxisSimulation(
                 min_position=config_hardware['z_axis']['min_position'],
@@ -71,6 +72,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                                        m_per_tick=config_hardware['z_axis']['m_per_tick'],
                                        is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
                                        is_turn_reversed=config_hardware['z_axis']['is_turn_reversed'])
+        elif config_hardware['z_axis']['version'] == 'delta_arm':
+            z_axis = DeltaArmSimulation()
         elif config_hardware['z_axis']['version'] == 'none':
             z_axis = None
         else:

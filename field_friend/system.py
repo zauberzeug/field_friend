@@ -23,7 +23,7 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
-from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
+from .automations.implements import DeltaArm, Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
@@ -32,6 +32,7 @@ from .automations.navigation import (
     StraightLineNavigation,
 )
 from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
+from .hardware import DeltaArm as DeltaArmHardware
 from .info import Info
 from .kpi_generator import generate_kpis
 from .robot_locator import RobotLocator
@@ -94,6 +95,9 @@ class System(rosys.persistence.PersistentModule):
         self.kpi_provider = KpiProvider()
         if not self.is_real:
             generate_kpis(self.kpi_provider)
+
+        if isinstance(self.field_friend.z_axis, DeltaArmHardware):
+            self.field_friend.z_axis.base_frame.in_frame(self.robot_locator.pose_frame)
 
         def watch_robot() -> None:
             if self.field_friend.bumper:
@@ -224,6 +228,8 @@ class System(rosys.persistence.PersistentModule):
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
                 self.log.error('Dual mechanism not implemented')
+            case 'delta_arm':
+                implements.append(DeltaArm(self))
             case 'none':
                 implements.append(WeedingScrew(self))
             case _:

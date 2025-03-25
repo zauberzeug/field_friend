@@ -5,6 +5,7 @@ import rosys
 from .axis import Axis, AxisSimulation
 from .axis_d1 import AxisD1
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
+from .delta_arm import DeltaArmHardware
 from .double_wheels import DoubleWheelsHardware
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
 from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
@@ -44,7 +45,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  estop: rosys.hardware.EStopHardware,
                  bumper: rosys.hardware.BumperHardware | None = None,
                  y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None = None,
-                 z_axis: ZAxisCanOpenHardware | ZAxisStepperHardware | TornadoHardware | ZAxisCanOpenHardware | AxisD1 | None = None,
+                 z_axis: ZAxisCanOpenHardware | ZAxisStepperHardware | TornadoHardware | ZAxisCanOpenHardware | AxisD1 | DeltaArmHardware | None = None,
                  flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None,
                  ) -> None:
         self.estop_active = False
