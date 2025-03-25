@@ -77,5 +77,7 @@ class FieldObject(Group):
                         [spline.control2.x, spline.control2.y, 0],
                         [spline.end.x, spline.end.y, 0],
                     ).material('#6c541e').with_name(f'row_{row.id}_{i}')
-                self.scene.text(row.name.replace('row_', '')).move(x=row_points[0].x, y=row_points[0].y, z=0.01)
-                self.scene.text(row.name.replace('row_', '')).move(x=row_points[-1].x, y=row_points[-1].y, z=0.01)
+                self.scene.text(row.name.replace('row_', '')) \
+                    .move(x=row_points[0].x, y=row_points[0].y, z=0.01).with_name(f'{row.name}_label_start')
+                self.scene.text(row.name.replace('row_', '')) \
+                    .move(x=row_points[-1].x, y=row_points[-1].y, z=0.01).with_name(f'{row.name}_label_end')
