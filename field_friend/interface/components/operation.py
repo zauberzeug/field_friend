@@ -200,7 +200,7 @@ class Operation:
                         beds_checkbox = ui.checkbox('Select specific beds').classes('w-full') \
                             .bind_value(self.system.field_provider, 'only_specific_beds')
                         with ui.row().bind_visibility_from(beds_checkbox, 'value').classes('w-full'):
-                            ui.select(list(range(0, int(self.field_provider.selected_field.bed_count))),
+                            ui.select(list(range(0, int(self.field_provider.selected_field.bed_count) - 1)),
                                       multiple=True, label='selected beds', clearable=True) \
                                 .classes('grow').props('use-chips') \
                                 .bind_value(self.field_provider, 'selected_beds')
