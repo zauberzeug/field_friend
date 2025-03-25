@@ -489,7 +489,7 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.select_field(field_with_beds.id)
     system.field_provider.only_specific_beds = True
-    system.field_provider.selected_beds = [1, 3]
+    system.field_provider.selected_beds = [0, 2]
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -506,7 +506,7 @@ async def test_complete_field_without_second_bed(system: System, field_with_beds
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_provider.select_field(field_with_beds.id)
     system.field_provider.only_specific_beds = True
-    system.field_provider.selected_beds = [1, 3, 4]
+    system.field_provider.selected_beds = [0, 2, 3]
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -549,7 +549,7 @@ async def test_field_with_bed_crops(system: System, field_with_beds: Field):
         await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
         expected_crop = field_with_beds.bed_crops[str(bed_number)]
         assert system.current_implement.cultivated_crop == expected_crop
-        if bed_number != field_with_beds.bed_count:
+        if bed_number != field_with_beds.bed_count - 1:
             await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)
@@ -615,7 +615,7 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
                       if obj.category_name != expected_crop
                       and obj.position.y == current_y]
         assert len(wrong_crop) == 1, f'Tornado should have skipped 1 wrong crop in bed {bed_number}'
-        if bed_number != field_with_beds.bed_count:
+        if bed_number != field_with_beds.bed_count - 1:
             await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)

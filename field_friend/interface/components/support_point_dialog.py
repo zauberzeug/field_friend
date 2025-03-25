@@ -55,21 +55,21 @@ class SupportPointDialog:
             if self.field_provider.selected_field and self.field_provider.selected_field.bed_count == 1:
                 ui.label('2. Enter the row number for the support point:').classes('text-lg')
                 ui.number(
-                    label='Row Number', min=0, max=self.field_provider.selected_field.row_count - 1, step=1, value=1) \
+                    label='Row Number', min=0, max=self.field_provider.selected_field.row_count - 1, step=1, value=0) \
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the row number you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
             elif self.field_provider.selected_field is not None:
                 ui.label('2. Enter the bed and row number for the support point:').classes('text-lg')
                 ui.number(
-                    label='Bed Number', min=0, max=self.field_provider.selected_field.bed_count - 1, step=1, value=1) \
+                    label='Bed Number', min=0, max=self.field_provider.selected_field.bed_count - 1, step=1, value=0) \
                     .props('dense outlined').classes('w-40') \
-                    .tooltip('Choose the bed number the row is on.') \
+                    .tooltip('Choose the bed index the row is on.') \
                     .bind_value(self, 'bed_number')
                 ui.number(
-                    label='Row Number', min=0, max=self.field_provider.selected_field.row_count - 1, step=1, value=1) \
+                    label='Row Number', min=0, max=self.field_provider.selected_field.row_count - 1, step=1, value=0) \
                     .props('dense outlined').classes('w-40') \
-                    .tooltip('Choose the row number you would like to give a fixed support point to.') \
+                    .tooltip('Choose the row index you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
         self.next = self.confirm_support_point
 
