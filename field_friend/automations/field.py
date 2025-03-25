@@ -128,18 +128,18 @@ class Field:
                 offset = last_support_point_offset
                 if beds_crossed > 0:
                     offset += beds_crossed * self.bed_spacing
-                    rows_in_complete_beds = rows_since_support - (row_in_bed + 1)
+                    rows_in_complete_beds = rows_since_support - (row_in_bed)
                     offset += rows_in_complete_beds * self.row_spacing
                     offset += row_in_bed * self.row_spacing
                 else:
                     offset += rows_since_support * self.row_spacing
             else:
                 base_offset = row_in_bed * self.row_spacing
-                bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
+                bed_offset = bed_index * ((self.row_count) * self.row_spacing + self.bed_spacing)
                 offset = base_offset + bed_offset
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            row = Row(id=f'field_{self.id}_row_{i + 1!s}', name=f'row_{i + 1}',
+            row = Row(id=f'field_{self.id}_row_{i!s}', name=f'row_{i}',
                       points=row_points, crop=self.bed_crops[str(bed_index)])
             rows.append(row)
         return rows
