@@ -37,16 +37,16 @@ class FieldObject(Group):
         angle = np.arctan2(end[1] - start[1], end[0] - start[0])
 
         # Create and return the plank object
-        Box(length, height, depth).move(x=center_x, y=center_y,
-                                        z=height / 2 + 0.2).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
-        Box(length, height, depth).move(x=center_x, y=center_y,
-                                        z=height / 2 + 0.5).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
-        Box(length, height, depth).move(x=center_x, y=center_y,
-                                        z=height / 2 + 0.8).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
-        Cylinder(0.1, 0.1, 1.0).move(x=start[0], y=start[1], z=0.5).with_name(
-            'field_').material('#8b4513').rotate(np.pi/2, 0, 0)
-        Cylinder(0.1, 0.1, 1.0).move(x=end[0], y=end[1], z=0.5).with_name(
-            'field_').material('#8b4513').rotate(np.pi/2, 0, 0)
+        Box(length, height, depth).move(x=center_x, y=center_y, z=height / 2 + 0.2) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
+        Box(length, height, depth).move(x=center_x, y=center_y, z=height / 2 + 0.5) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
+        Box(length, height, depth).move(x=center_x, y=center_y, z=height / 2 + 0.8) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
+        Cylinder(0.1, 0.1, 1.0).move(x=start[0], y=start[1], z=0.5) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, 0)
+        Cylinder(0.1, 0.1, 1.0).move(x=end[0], y=end[1], z=0.5) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, 0)
 
     def _update(self) -> None:
         self.update(self.system.field_provider.selected_field)
