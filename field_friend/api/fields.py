@@ -75,8 +75,8 @@ class Fields:
                 if is_inside:
                     row = min(field.rows, key=lambda r: r.line_segment().line.foot_point(
                         self.system.robot_locator.pose.point).distance(self.system.robot_locator.pose.point))  # nearest row
-                    row_index = int(row.id.split('_')[-1])
-                    bed_id = int(row_index // field.row_count)
+                    row_index = int(row.id.split('_')[-1]) - 1  # -1 because row IDs start at 1
+                    bed_id = int(row_index // field.row_count) + 1  # +1 because bed IDs start at 1
                 return JSONResponse(
                     content={'status': 'ok', 'inside': is_inside, 'beds': [bed_id]},
                     status_code=200

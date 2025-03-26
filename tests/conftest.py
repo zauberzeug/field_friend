@@ -98,7 +98,7 @@ class TestField:
             ], crop=self.bed_crops['0'])
         ]
         buffer = self.outline_buffer_width
-        row_offset = self.row_spacing * (self.row_count)
+        row_offset = self.row_spacing * (self.row_count - 1)
         self.outline = [
             self.first_row_start.shift_by(x=-buffer, y=buffer),
             self.first_row_end.shift_by(x=buffer, y=buffer),

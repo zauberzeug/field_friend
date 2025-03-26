@@ -549,7 +549,7 @@ async def test_field_with_bed_crops(system: System, field_with_beds: Field):
         await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
         expected_crop = field_with_beds.bed_crops[str(bed_number)]
         assert system.current_implement.cultivated_crop == expected_crop
-        if bed_number != field_with_beds.bed_count:
+        if bed_number != field_with_beds.bed_count - 1:
             await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)
@@ -615,7 +615,7 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
                       if obj.category_name != expected_crop
                       and obj.position.y == current_y]
         assert len(wrong_crop) == 1, f'Tornado should have skipped 1 wrong crop in bed {bed_number}'
-        if bed_number != field_with_beds.bed_count:
+        if bed_number != field_with_beds.bed_count - 1:
             await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)
