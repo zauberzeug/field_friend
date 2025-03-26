@@ -327,11 +327,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             pass
         else:
             self.log.warning('Unknown z_axis version: %s', config_hardware['z_axis']['version'])
-        estop = rosys.hardware.EStopHardware(
-            robot_brain,
-            name=config_hardware['estop']['name'],
-            pins=config_hardware['estop']['pins'],
-        )
+
         bms = rosys.hardware.BmsHardware(
             robot_brain,
             expander=expander if config_hardware['bms']['on_expander'] else None,
