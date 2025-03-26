@@ -5,7 +5,6 @@ import rosys
 from .axis import Axis, AxisSimulation
 from .axis_d1 import AxisD1
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
-from .double_uu_wheels import DoubleUuWheelsHardware
 from .double_wheels import DoubleWheelsHardware
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
 from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
@@ -41,7 +40,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
 
     # TODO: add support for AxisD1
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware | DoubleUuWheelsHardware,
+                 wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware,
                  estop: rosys.hardware.EStopHardware,
                  bumper: rosys.hardware.BumperHardware | None = None,
                  y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None = None,
@@ -75,8 +74,6 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         if isinstance(bumper, rosys.hardware.BumperHardware):
             for name in bumper.pins:
                 lizard_code += f'when bumper_{name}.level == 1 then stop(); end\n'
-        if isinstance(wheels, DoubleUuWheelsHardware):
-            lizard_code += f'when rdyp_status.level == 0 then {wheels.name}.reset_estop(); end\n'
 
         # implement stop call for "ground check" reference sensors
         if isinstance(y_axis, ChainAxisHardware):
@@ -87,7 +84,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                     {wheels.name}.speed(0, 0); {y_axis.name}.stop(); end\n'
 
         # implement watchdog for rosys modules
-        lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(-0, 0); end\n'
+        lizard_code += f'when core.last_message_age > 1000 then {wheels.name}.speed(0, 0); end\n'
         lizard_code += 'when core.last_message_age > 20000 then stop(); end\n'
 
         if bumper is not None:
