@@ -56,7 +56,7 @@ def test_field_outline(system: System, field: Field):
         assert rounded_geo_point(point) in [rounded_geo_point(p) for p in outline]
 
     buffer = field.outline_buffer_width
-    row_offset = field.row_spacing * (field.row_count - 1)
+    row_offset = field.row_spacing * (field.row_count) - 1
 
     # Check first row boundary points
     assert_in_outline(field.first_row_start.shift_by(x=-buffer, y=buffer))
