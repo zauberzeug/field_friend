@@ -9,6 +9,7 @@ from nicegui import ui
 from rosys.analysis import track
 from rosys.helpers import eliminate_2pi
 
+from ..hardware import DeltaArm
 from ..system import System
 from .components import create_header
 from .components.hardware_control import create_hardware_control_ui
@@ -71,6 +72,11 @@ class DevPage:
                     self.system.field_friend.imu.developer_ui()
             with ui.card():
                 self.system.field_navigation.developer_ui()
+
+        if isinstance(self.system.field_friend.z_axis, DeltaArm):
+            with ui.card():
+                self.system.field_friend.z_axis.developer_ui()
+
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
             with ui.row():
                 with ui.card().style('min-width: 200px;'):
