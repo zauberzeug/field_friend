@@ -27,13 +27,13 @@ class Monitoring:
     def __init__(self, system: System, *,
                  shrink_factor: int = 1) -> None:
         self.log = logging.getLogger('field_friend.monitoring')
-        self.usb_camera_provider = system.camera_provider
+        self.usb_camera_provider = getattr(system, 'camera_provider', None)
         # TODO: in simulation there is no mjpeg camera provider
-        self.mjpg_camera_provider = system.mjpeg_camera_provider
-        self.detector = system.detector
-        self.monitoring_detector = system.monitoring_detector
+        self.mjpg_camera_provider = getattr(system, 'mjpeg_camera_provider', None)
+        self.detector = getattr(system, 'detector', None)
+        self.monitoring_detector = getattr(system, 'monitoring_detector', None)
         self.monitoring_active = False
-        self.plant_locator = system.plant_locator
+        self.plant_locator = getattr(system, 'plant_locator', None)
         self.field_friend = system.field_friend
         self.automator = system.automator
         self.system = system
@@ -65,12 +65,14 @@ class Monitoring:
                     ui.label('Animal count:').classes('text-2xl text-bold').bind_text_from(self,
                                                                                            'animal_count', backward=lambda x: f'Animal count: {x}')
                     ui.space()
-                    ui.switch('Person detection') \
-                        .bind_value(self, 'monitoring_active') \
-                        .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
-                    ui.switch('Plant detection') \
-                        .bind_value(self.plant_locator, 'is_paused', forward=lambda x: not x, backward=lambda x: not x) \
-                        .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                    if self.monitoring_detector is not None:
+                        ui.switch('Person detection') \
+                            .bind_value(self, 'monitoring_active') \
+                            .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                    if self.plant_locator is not None:
+                        ui.switch('Plant detection') \
+                            .bind_value(self.plant_locator, 'is_paused', forward=lambda x: not x, backward=lambda x: not x) \
+                            .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
 
         with ui.row().classes('w-full items-stretch gap-0'):
             column_classes = 'w-1/3 items-center mt-[50px]'
@@ -106,8 +108,13 @@ class Monitoring:
         ui.timer(0.1, self.update_bottom_view)
 
     async def update_monitor_content(self):
+        if self.mjpg_camera_provider is None:
+            return
         for camera in self.mjpg_camera_provider.cameras.values():
-            if camera.id in self.sights or not camera.is_connected:
+            if not camera.is_connected:
+                continue
+            if camera.id in self.sights:
+                self.sights[camera.id].set_source(camera.get_latest_image_url())
                 continue
             if self.camera_positions['front'] in camera.id:
                 self.front_view.clear()
@@ -133,13 +140,14 @@ class Monitoring:
                 self.log.warning(f'Unknown camera position: {camera.id}')
                 continue
 
+        if self.monitoring_detector is None:
+            return
         person_count = 0
         animal_count = 0
         for camera in self.mjpg_camera_provider.cameras.values():
             image = camera.latest_captured_image
             if not image:
                 continue
-            self.sights[camera.id].set_source(camera.get_latest_image_url())
             if self.monitoring_active:
                 await self.monitoring_detector.detect(image, tags=[camera.id], autoupload=rosys.vision.Autoupload.DISABLED)
                 if image.detections:
@@ -152,6 +160,8 @@ class Monitoring:
         self.animal_count = animal_count
 
     async def update_bottom_view(self):
+        if self.usb_camera_provider is None:
+            return
         cameras = list(self.usb_camera_provider.cameras.values())
         camera = next((camera for camera in cameras if camera.is_connected), None)
         if not camera:
@@ -163,6 +173,8 @@ class Monitoring:
             return
         source = camera.get_latest_image_url()
         self.bottom_view.set_source(f'{source}?shrink={self.shrink_factor}')
+        if self.plant_locator is None:
+            return
         if image.detections:
             self.bottom_view.set_content(self.to_svg(image.detections))
             crops = len([p for p in image.detections.points if p.category_name in self.plant_locator.crop_category_names and p.confidence >
@@ -179,6 +191,7 @@ class Monitoring:
             self.bottom_view.set_content('')
 
     def to_svg(self, detections: rosys.vision.Detections) -> str:
+        assert self.plant_locator is not None
         svg = ''
         cross_size = 20
         for point in detections.points:
@@ -248,6 +261,8 @@ class Monitoring:
                                     add='w-1/4').style(remove='border: 5px solid #6E93D6; border-radius: 5px; background-color: #6E93D6; color: white')
 
     def load_camera_positions(self) -> dict:
+        if self.mjpg_camera_provider is None:
+            return {}
         config = config_selector.import_config(module='camera')
         config_positions = config.get('circle_sight_positions', {})
         return {
