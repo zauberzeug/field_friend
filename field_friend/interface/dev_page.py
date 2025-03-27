@@ -80,9 +80,10 @@ class DevPage:
                     esp_pins_p0 = self.system.field_friend.robot_brain.esp_pins_p0
                     esp_pins_p0.developer_ui()
 
-        with ui.row():
-            with ui.card():
-                self.system.plant_locator.developer_ui()
+        if self.system.plant_locator is not None:
+            with ui.row():
+                with ui.card():
+                    self.system.plant_locator.developer_ui()
 
         with ui.card().classes('w-1/2'):
             self.log_monitor.ui()

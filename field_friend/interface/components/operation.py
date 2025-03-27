@@ -41,8 +41,9 @@ class Operation:
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
                         self.implement_settings = ui.row().classes('items-center')
-                    with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row().classes('items-center'):
-                        self.plant_provider.settings_ui()
+                    if self.plant_locator is not None:
+                        with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row().classes('items-center'):
+                            self.plant_provider.settings_ui()
 
         with activities:
             self.navigation_selection = ui.select(
@@ -156,16 +157,17 @@ class Operation:
                         .bind_value(parameters, 'bed_count') \
                         .tooltip('Set the number of beds')
                     ui.separator()
-                    with ui.column().classes('w-full').style('max-height: 500px; overflow-y: auto;'):
-                        for i in range(parameters['bed_count']):
-                            with ui.row().classes('w-full item-center'):
-                                ui.label(f'Bed {i}:').classes('text-lg')
-                                ui.select(self.plant_locator.crop_category_names) \
-                                    .props('dense outlined').classes('w-40') \
-                                    .bind_value(parameters, 'bed_crops',
-                                                forward=lambda v, idx=i: {
-                                                    **parameters.get('bed_crops', {}), str(idx): v},
-                                                backward=lambda v, idx=i: v.get(str(idx)))
+                    if self.plant_locator is not None:
+                        with ui.column().classes('w-full').style('max-height: 500px; overflow-y: auto;'):
+                            for i in range(parameters['bed_count']):
+                                with ui.row().classes('w-full item-center'):
+                                    ui.label(f'Bed {i}:').classes('text-lg')
+                                    ui.select(self.plant_locator.crop_category_names) \
+                                        .props('dense outlined').classes('w-40') \
+                                        .bind_value(parameters, 'bed_crops',
+                                                    forward=lambda v, idx=i: {
+                                                        **parameters.get('bed_crops', {}), str(idx): v},
+                                                    backward=lambda v, idx=i: v.get(str(idx)))
             with ui.row():
                 ui.button('Cancel', on_click=self.edit_field_dialog.close)
                 ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters))

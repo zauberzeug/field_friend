@@ -120,10 +120,11 @@ class FieldCreator:
                 .tooltip('Set the distance between the beds') \
                 .bind_value(self, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
                 .bind_visibility_from(beds_switch, 'value')
-            ui.select(label='Default Crop', options=self.plant_locator.crop_category_names) \
-                .props('dense outlined').classes('w-40') \
-                .tooltip('Enter the default crop for all beds') \
-                .bind_value(self, 'default_crop')
+            if self.plant_locator is not None:
+                ui.select(label='Default Crop', options=self.plant_locator.crop_category_names) \
+                    .props('dense outlined').classes('w-40') \
+                    .tooltip('Enter the default crop for all beds') \
+                    .bind_value(self, 'default_crop')
             ui.separator()
             ui.number('Number of Rows (per Bed)',
                       value=10, step=1, min=1) \
@@ -140,7 +141,10 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the width of the buffer around the field outline') \
                 .bind_value(self, 'outline_buffer_width')
-        self.next = self.crop_infos
+        if self.plant_locator is not None:
+            self.next = self.crop_infos
+        else:
+            self.next = self.confirm_geometry
 
     def crop_infos(self) -> None:
         assert self.gnss.last_measurement is not None
