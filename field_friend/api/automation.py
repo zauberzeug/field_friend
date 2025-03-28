@@ -39,7 +39,6 @@ class Automation:
                 self.system.field_navigation.field_id = request_data['field_id']
                 self.system.field_provider.select_field(request_data['field_id'])
                 self.system.field_provider.only_specific_beds = True
-                # TODO currently only one bed is supported
                 self.system.field_provider.selected_beds = [int(bed) for bed in request_data['beds']]
                 self.system.automator.start()
                 return JSONResponse(
