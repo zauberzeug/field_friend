@@ -259,8 +259,8 @@ def test_create_field_with_multiple_beds(system: System, field: Field):
     assert created_field.rows[2].points[0].lat == pytest.approx(FIELD_FIRST_ROW_START.lat, abs=1e-8)
     # Test second bed rows
     for i in range(row_count):
-        row_index = i + row_count - 1
-        y_offset = -(row_index * row_spacing + bed_spacing)
+        row_index = i + row_count
+        y_offset = -((row_index - 1) * row_spacing + bed_spacing)
         expected_start = field_with_beds.first_row_start.shift_by(x=0, y=y_offset)
         expected_end = field_with_beds.first_row_end.shift_by(x=0, y=y_offset)
         assert created_field.rows[row_index].points[0].lat == pytest.approx(expected_start.lat, abs=1e-8)
