@@ -99,7 +99,7 @@ class SupportPointDialog:
         if field is None:
             ui.notify('No field selected.')
             return
-        row_index = (self.bed_number) * field.row_count + self.row_name
+        row_index = self.bed_number * field.row_count + self.row_name
         row_support_point = RowSupportPoint.from_geopoint(self.support_point_coordinates, row_index)
         self.field_provider.add_row_support_point(field.id, row_support_point)
         ui.notify('Support point added.')
