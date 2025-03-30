@@ -82,8 +82,9 @@ class System(rosys.persistence.PersistentModule):
             rosys.on_startup(self.setup_simulated_usb_camera)
             self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
 
-        self.camera_configurator = CameraConfigurator(
-            self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
+        if self.config.camera is not None:
+            self.camera_configurator = CameraConfigurator(
+                self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
         self.plant_provider = PlantProvider()
@@ -243,6 +244,7 @@ class System(rosys.persistence.PersistentModule):
     def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider:
         if not self.is_real:
             return rosys.vision.SimulatedCameraProvider()
+        assert self.config.camera is not None
         if self.config.camera.camera_type == 'CalibratableUsbCamera':
             return CalibratableUsbCameraProvider()
         if self.config.camera.camera_type == 'ZedxminiCamera':
@@ -264,7 +266,7 @@ class System(rosys.persistence.PersistentModule):
 
     def setup_timelapse(self) -> None:
         self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
-        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.version}, {self.current_navigation.name if self.current_navigation is not None else 'No Navigation'}, \
+        self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.robot_id}, {self.current_navigation.name if self.current_navigation is not None else 'No Navigation'}, \
             tags: {", ".join(self.plant_locator.tags)}'''
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown

@@ -22,11 +22,11 @@ class FieldCreator:
         self.system = system
         self.front_cam: rosys.vision.MjpegCamera | None = None
         self.back_cam: rosys.vision.MjpegCamera | None = None
-        if hasattr(system, 'mjpeg_camera_provider'):
+        if hasattr(system, 'mjpeg_camera_provider') and system.config.circle_sight_positions is not None:
             self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
-                                   if system.config.camera.camera_positions.front in key), None)
+                                   if system.config.circle_sight_positions.front in key), None)
             self.back_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
-                                  if system.config.camera.camera_positions.back in key), None)
+                                  if system.config.circle_sight_positions.back in key), None)
         self.steerer = system.steerer
         self.gnss = system.gnss
         self.plant_locator = system.plant_locator
