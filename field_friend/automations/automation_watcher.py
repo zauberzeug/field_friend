@@ -88,9 +88,7 @@ class AutomationWatcher:
 
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
-        # TODO: what to do if we don't have bumpers?
-        assert self.field_friend.bumper is not None
-        bumper_condition = not self.field_friend.bumper.active_bumpers if self.bumper_watch_active else True
+        bumper_condition = self.field_friend.bumper is None or not self.bumper_watch_active or not self.field_friend.bumper.active_bumpers
         gnss_condition = self.is_gnss_ready() if self.gnss_watch_active else True
 
         # Enable automator only if all relevant conditions are True
@@ -111,7 +109,7 @@ class AutomationWatcher:
 
         if self.robot_locator.pose.distance(self.incidence_pose) > RESET_POSE_DISTANCE:
             if self.resume_delay != DEFAULT_RESUME_DELAY:
-                self.log.info('resetting resume_delay')
+                self.log.debug('resetting resume_delay')
                 self.resume_delay = DEFAULT_RESUME_DELAY
 
     def start_field_watch(self, field_boundaries: list[GeoPoint]) -> None:

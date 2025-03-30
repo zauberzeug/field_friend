@@ -20,7 +20,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELD_SELECTED = rosys.event.Event()
         """A field has been selected."""
 
-        self._only_specific_beds: bool = False
+        self.only_specific_beds: bool = False
         self._selected_beds: list[int] = []
 
     @property
@@ -54,7 +54,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.FIELDS_CHANGED.emit()
         if self.selected_field and self.selected_field not in self.fields:
             self.selected_field = None
-            self._only_specific_beds = False
+            self.only_specific_beds = False
             self.clear_selected_beds()
             self.FIELD_SELECTED.emit()
 
@@ -143,7 +143,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.invalidate()
 
     def clear_selected_beds(self) -> None:
-        self._only_specific_beds = False
+        self.only_specific_beds = False
         self.selected_beds = []
 
     def get_rows_to_work_on(self) -> list[Row]:
@@ -152,7 +152,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
             return []
         if self.selected_field.bed_count == 1:
             return self.selected_field.rows
-        if not self._only_specific_beds:
+        if not self.only_specific_beds:
             return self.selected_field.rows
         if len(self.selected_beds) == 0:
             self.log.warning('No beds selected. Cannot get rows to work on.')
@@ -160,14 +160,14 @@ class FieldProvider(rosys.persistence.PersistentModule):
         row_indices = []
         for bed in self.selected_beds:
             for row_index in range(self.selected_field.row_count):
-                row_indices.append((bed - 1) * self.selected_field.row_count + row_index)
+                row_indices.append(bed * self.selected_field.row_count + row_index)
         rows_to_work_on = [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
         return rows_to_work_on
 
     def is_row_in_selected_beds(self, row_index: int) -> bool:
-        if not self._only_specific_beds:
+        if not self.only_specific_beds:
             return True
         if self.selected_field is None:
             return False
-        bed_index = row_index // self.selected_field.row_count + 1
+        bed_index = row_index // self.selected_field.row_count
         return bed_index in self.selected_beds

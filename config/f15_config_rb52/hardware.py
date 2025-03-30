@@ -22,9 +22,9 @@ configuration = {
         'can_address': 0x60,
         'homing_acceleration': 2000,
         'homing_velocity': 400,
-        'profile_acceleration': 500000,
-        'profile_velocity': 40000,
-        'profile_deceleration': 500000,
+        'profile_acceleration': 100000,
+        'profile_velocity': 25000,
+        'profile_deceleration': 100000,
         'min_position': -0.11,
         'max_position': 0.11,
         'axis_offset': 0.115,
@@ -98,5 +98,15 @@ configuration = {
         'rx_pin': 32,
         'tx_pin': 33,
         'baud': 1_000_000,
+    },
+    'imu': {
+        'name': 'imu',
+        'offset_rotation': [-1.570796, 0, 0],
+    },
+    'gnss': {
+        'x': 0.072,
+        'y': 0.255,
+        'z': 0.662,
+        'yaw_deg': 0.0,
     },
 }

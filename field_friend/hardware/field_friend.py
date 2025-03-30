@@ -1,11 +1,8 @@
-import logging
-
 import numpy as np
 import rosys
 
 from .axis import Axis
 from .chain_axis import ChainAxis
-from .external_mower import Mower
 from .flashlight import Flashlight
 from .flashlight_pwm import FlashlightPWM
 from .flashlight_v2 import FlashlightV2
@@ -15,8 +12,8 @@ from .tornado import Tornado
 
 class FieldFriend(rosys.hardware.Robot):
     MOTOR_GEAR_RATIO = 12.52
-    WHEEL_DIAMETER = 0.041 * 17 / np.pi
-    M_PER_TICK = WHEEL_DIAMETER * np.pi / MOTOR_GEAR_RATIO
+    WHEEL_DIAMETER = 0.041 * 17
+    M_PER_TICK = WHEEL_DIAMETER / MOTOR_GEAR_RATIO
     WORK_X = 0.118
     WORK_Y = 0.0
     DRILL_RADIUS = 0.025
@@ -34,7 +31,6 @@ class FieldFriend(rosys.hardware.Robot):
             flashlight: Flashlight | FlashlightV2 | FlashlightPWM | None,
             y_axis: Axis | ChainAxis | None,
             z_axis: Axis | Tornado | None,
-            mower: Mower | None,
             imu: rosys.hardware.Imu | None,
             estop: rosys.hardware.EStop,
             bumper: rosys.hardware.Bumper | None,
@@ -42,13 +38,11 @@ class FieldFriend(rosys.hardware.Robot):
             safety: Safety,
             **kwargs) -> None:
         super().__init__(**kwargs)
-        self.log = logging.getLogger('field_friend.field_friend')
         self.implement_name = implement_name
         self.wheels = wheels
         self.flashlight = flashlight
         self.y_axis = y_axis
         self.z_axis = z_axis
-        self.mower = mower
         self.imu = imu
         self.estop = estop
         self.bumper = bumper
@@ -65,13 +59,16 @@ class FieldFriend(rosys.hardware.Robot):
         if self.z_axis:
             await self.z_axis.stop()
 
-    def can_reach(self, local_point: rosys.geometry.Point, second_tool: bool = False) -> bool:
+    def can_reach(self, local_point: rosys.geometry.Point, *, add_work_offset: bool = True, second_tool: bool = False) -> bool:
         """Check if the given point is reachable by the tool.
 
         The point is given in local coordinates, i.e. the origin is the center of the tool.
         """
         if not self.implement_name:
             raise NotImplementedError('This robot has no tool to reach with.')
+        if add_work_offset:
+            local_point.x += self.WORK_X
+            local_point.y += self.WORK_Y
         if self.implement_name in ['weed_screw', 'tornado'] and isinstance(self.y_axis, Axis):
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         if self.implement_name in ['dual_mechanism'] and isinstance(self.y_axis, ChainAxis):

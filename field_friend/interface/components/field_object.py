@@ -37,16 +37,16 @@ class FieldObject(Group):
         angle = np.arctan2(end[1] - start[1], end[0] - start[0])
 
         # Create and return the plank object
-        Box(length, height, depth).move(x=center_x, y=center_y,
-                                        z=height / 2 + 0.2).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
-        Box(length, height, depth).move(x=center_x, y=center_y,
-                                        z=height / 2 + 0.5).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
-        Box(length, height, depth).move(x=center_x, y=center_y,
-                                        z=height / 2 + 0.8).with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
-        Cylinder(0.1, 0.1, 1.0).move(x=start[0], y=start[1], z=0.5).with_name(
-            'field_').material('#8b4513').rotate(np.pi/2, 0, 0)
-        Cylinder(0.1, 0.1, 1.0).move(x=end[0], y=end[1], z=0.5).with_name(
-            'field_').material('#8b4513').rotate(np.pi/2, 0, 0)
+        Box(length, height, depth).move(x=center_x, y=center_y, z=height / 2 + 0.2) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
+        Box(length, height, depth).move(x=center_x, y=center_y, z=height / 2 + 0.5) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
+        Box(length, height, depth).move(x=center_x, y=center_y, z=height / 2 + 0.8) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, angle)
+        Cylinder(0.1, 0.1, 1.0).move(x=start[0], y=start[1], z=0.5) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, 0)
+        Cylinder(0.1, 0.1, 1.0).move(x=end[0], y=end[1], z=0.5) \
+            .with_name('field_').material('#8b4513').rotate(np.pi/2, 0, 0)
 
     def _update(self) -> None:
         self.update(self.system.field_provider.selected_field)
@@ -77,3 +77,7 @@ class FieldObject(Group):
                         [spline.control2.x, spline.control2.y, 0],
                         [spline.end.x, spline.end.y, 0],
                     ).material('#6c541e').with_name(f'row_{row.id}_{i}')
+                self.scene.text(row.name.replace('row_', ''), style='font-size: 0.6em;') \
+                    .move(x=row_points[0].x, y=row_points[0].y, z=0.01).with_name(f'{row.name}_label_start')
+                self.scene.text(row.name.replace('row_', ''), style='font-size: 0.6em;') \
+                    .move(x=row_points[-1].x, y=row_points[-1].y, z=0.01).with_name(f'{row.name}_label_end')

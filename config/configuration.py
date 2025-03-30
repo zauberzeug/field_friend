@@ -52,7 +52,7 @@ class CropConfiguration:
 
 
 @dataclass(kw_only=True)
-class CameraPositions:
+class CircleSightPositions:
     """Configuration for the positions of the 4 cameras.
 
     Defaults:
@@ -72,7 +72,6 @@ class CameraConfiguration:
     """Configuration for the camera of the FieldFriend robot.
 
     Attributes:
-        camera_positions: default see CameraPositions
         camera_type: default = 'CalibratableUsbCamera'
         auto_exposure: default = True (not relevant for ZedxminiCamera)
         rotation: default = 0
@@ -81,7 +80,6 @@ class CameraConfiguration:
     """
     width: int
     height: int
-    camera_positions: CameraPositions = field(default_factory=CameraPositions)
     camera_type: Literal['CalibratableUsbCamera', 'ZedxminiCamera'] = 'CalibratableUsbCamera'
     auto_exposure: bool = True  # ZedxminiCamera has no auto exposure, default is True (only True in configs)
     rotation: int = 0
@@ -270,7 +268,7 @@ class ImuConfiguration:
         name: 'imu'
     """
     name: str = 'imu'
-    offset_rotation: Rotation = field(default_factory=lambda: Rotation.from_euler(0, 0, 0))
+    offset_rotation: Rotation = field(default_factory=Rotation.zero)
 
 
 @dataclass(kw_only=True)
@@ -437,30 +435,6 @@ class ZCanOpenConfiguration(BaseAxisConfiguration,
 
 
 @dataclass(slots=True, kw_only=True)
-class ExternalMowerConfiguration:
-    """Configuration for an external mower of a FieldFriend robot.
-
-    Defaults:
-        name: 'mower'
-        m_per_tick: 0.01
-        is_m0_reversed: False
-        is_m1_reversed: False
-        is_m2_reversed: False
-        odrive_version: 6
-    """
-    m0_can_address: int
-    m1_can_address: int
-    m2_can_address: int
-    speed: float
-    name: str = 'mower'
-    m_per_tick: float = 0.01
-    is_m0_reversed: bool = False
-    is_m1_reversed: bool = False
-    is_m2_reversed: bool = False
-    odrive_version: int = 6
-
-
-@dataclass(slots=True, kw_only=True)
 class FieldFriendConfiguration:
     """Configuration for the FieldFriend robot.
 
@@ -479,6 +453,7 @@ class FieldFriendConfiguration:
     wheels: WheelsConfiguration
     has_status_control: bool
     camera: CameraConfiguration | None
+    circle_sight_positions: CircleSightPositions | None
     y_axis: AxisD1Configuration | ChainAxisConfiguration | YStepperConfiguration | YCanOpenConfiguration | None
     z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | None
     can: CanConfiguration = field(default_factory=CanConfiguration)
@@ -489,4 +464,3 @@ class FieldFriendConfiguration:
     flashlight: FlashlightConfiguration | None = None
     gnss: GnssConfiguration | None = None
     imu: ImuConfiguration | None = None
-    external_mower: ExternalMowerConfiguration | None = None

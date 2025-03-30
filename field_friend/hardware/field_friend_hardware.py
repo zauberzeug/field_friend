@@ -18,7 +18,6 @@ from .axis_d1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
-from .external_mower import MowerHardware
 from .field_friend import FieldFriend
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
@@ -58,11 +57,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.DRILL_RADIUS = config.measurements.drill_radius
             assert config.measurements.chop_radius
             self.CHOP_RADIUS: float = config.measurements.chop_radius
-        elif implement in ['mower']:  # front mower for trees
-            self.WORK_X = 0.0
-            self.DRILL_RADIUS = 0.0
         else:
-            raise NotImplementedError(f'Unknown FieldFriend implement: {implement}')
+            self.log.warning('Unknown implement: %s', implement)
 
         communication = rosys.hardware.SerialCommunication()
         if config.robot_brain.enable_esp_on_startup is not None:
@@ -280,20 +276,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown z_axis version: {config.z_axis.version}')
 
-        mower = MowerHardware(robot_brain=robot_brain,
-                              can=can,
-                              name=config.external_mower.name,
-                              m0_can_address=config.external_mower.m0_can_address,
-                              m1_can_address=config.external_mower.m1_can_address,
-                              m2_can_address=config.external_mower.m2_can_address,
-                              m_per_tick=self.M_PER_TICK,  # TODO: this is a different value than in external_mower.m_per_tick!!
-                              speed=config.external_mower.speed,
-                              is_m0_reversed=config.external_mower.is_m0_reversed,
-                              is_m1_reversed=config.external_mower.is_m1_reversed,
-                              is_m2_reversed=config.external_mower.is_m2_reversed,
-                              odrive_version=config.external_mower.odrive_version,
-                              ) if config.external_mower else None
-
         estop = rosys.hardware.EStopHardware(robot_brain, name=config.estop.name, pins=config.estop.pins)
 
         bms = rosys.hardware.BmsHardware(robot_brain,
@@ -365,9 +347,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                     vdp_pin=39) if config.has_status_control else None
 
         safety: SafetyHardware = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
-                                                y_axis=y_axis, z_axis=z_axis, flashlight=flashlight, mower=mower)
+                                                y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
-        modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis, z_axis, mower,
+        modules = [bluetooth, can, wheels, serial, expander, can_open_master, y_axis, z_axis,
                    flashlight, bms, estop, self.battery_control, bumper, imu, self.status_control, safety]
 
         active_modules = [module for module in modules if module is not None]
@@ -380,7 +362,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                          bms=bms,
                          safety=safety,
                          flashlight=flashlight,
-                         mower=mower,
                          imu=imu,
                          modules=active_modules,
                          robot_brain=robot_brain)

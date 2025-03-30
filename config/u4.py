@@ -3,7 +3,7 @@ from rosys.geometry import Rotation
 from .configuration import (
     BumperConfiguration,
     CameraConfiguration,
-    CameraPositions,
+    CircleSightPositions,
     CropConfiguration,
     FieldFriendConfiguration,
     FlashlightConfiguration,
@@ -23,8 +23,13 @@ config = FieldFriendConfiguration(
     camera=CameraConfiguration(
         width=1280,
         height=720,
-        camera_positions=CameraPositions(right='-1', left='-4', front='-3', back='-2'),
         crop=CropConfiguration(left=250, right=250, up=0, down=0),
+    ),
+    circle_sight_positions=CircleSightPositions(
+        right='-1',
+        left='-4',
+        front='-3',
+        back='-2',
     ),
     wheels=WheelsConfiguration(
         is_left_reversed=False,
@@ -79,6 +84,5 @@ config = FieldFriendConfiguration(
         turn_speed_limit=1.3,
         odrive_version=6,
     ),
-    # TODO: calibrate imu
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(0, 0, 0)),
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.570796, 0, 0)),
 )

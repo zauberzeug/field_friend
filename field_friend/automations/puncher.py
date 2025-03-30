@@ -32,11 +32,12 @@ class Puncher:
                 return False
             if not await self.field_friend.z_axis.try_reference():
                 return False
-            await rosys.sleep(0.2)
+            await rosys.sleep(0.5)
             if not await self.field_friend.y_axis.try_reference():
                 return False
             return True
         except Exception as e:
+            rosys.notify('Homing failed', 'negative')
             raise PuncherException('homing failed') from e
         finally:
             await self.field_friend.y_axis.stop()
@@ -66,7 +67,8 @@ class Puncher:
                     with_open_tornado: bool = False,
                     ) -> None:
         y += self.field_friend.WORK_Y
-        self.log.info(f'Punching at {y} with depth {depth}...')
+        y = round(y, 5)
+        self.log.debug(f'Punching at {y} with depth {depth}...')
         rest_position = 'reference'
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
@@ -75,11 +77,8 @@ class Puncher:
         try:
             if not self.field_friend.y_axis.is_referenced or not self.field_friend.z_axis.is_referenced:
                 rosys.notify('axis are not referenced, homing!', type='info')
-                self.log.info('axis are not referenced, homing!')
                 success = await self.try_home()
                 if not success:
-                    rosys.notify('homing failed!', type='negative')
-                    self.log.error('homing failed!')
                     raise PuncherException('homing failed')
                 # await rosys.sleep(0.5)
             if isinstance(self.field_friend.y_axis, ChainAxis):
@@ -96,17 +95,15 @@ class Puncher:
                 await self.tornado_drill(angle=angle, turns=turns, with_open_drill=with_open_tornado)
 
             elif isinstance(self.field_friend.z_axis, Axis):
-                if self.is_demo:
-                    self.log.warning('punching with demo mode is not yet implemented for z axis')
                 await self.field_friend.y_axis.move_to(y)
-                await self.field_friend.z_axis.move_to(-depth)
+                await self.field_friend.z_axis.move_to(-0.05 if self.is_demo else -depth)
                 if os.environ.get('Z_AXIS_REST_POSITION'):
                     target = float(os.environ.get('Z_AXIS_REST_POSITION', '0'))
                     await self.field_friend.z_axis.move_to(target)
                     rest_position = f'custom position {target}'
                 else:
                     await self.field_friend.z_axis.return_to_reference()
-            self.log.info(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
+            self.log.debug(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
         except Exception as e:
             raise PuncherException('punching failed') from e
         finally:
@@ -118,7 +115,7 @@ class Puncher:
         if self.field_friend.y_axis is None:
             rosys.notify('no y axis', 'negative')
             return
-        self.log.info('Clearing view...')
+        self.log.debug('Clearing view...')
         if isinstance(self.field_friend.y_axis, ChainAxis):
             await self.field_friend.y_axis.return_to_reference()
             return
@@ -142,7 +139,7 @@ class Puncher:
 
     @track
     async def tornado_drill(self, angle: float = 180, turns: float = 2, with_open_drill=False) -> None:
-        self.log.info(f'Drilling with tornado at {angle}°...')
+        self.log.debug(f'Drilling with tornado at {angle}°...')
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise PuncherException('tornado drill is only available for tornado axis')
         try:
@@ -150,7 +147,6 @@ class Puncher:
                 rosys.notify('axis are not referenced, homing!', type='info')
                 success = await self.try_home()
                 if not success:
-                    rosys.notify('homing failed!', type='negative')
                     raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
             await self.field_friend.z_axis.move_down_until_reference(min_position=-0.058 if self.is_demo else None)
@@ -161,7 +157,7 @@ class Puncher:
             await rosys.sleep(2)
 
             if with_open_drill:
-                self.log.info('Drilling again with open drill...')
+                self.log.debug('Drilling again with open drill...')
                 await self.field_friend.z_axis.turn_knifes_to(0)
                 await rosys.sleep(2)
                 await self.field_friend.z_axis.turn_by(turns)

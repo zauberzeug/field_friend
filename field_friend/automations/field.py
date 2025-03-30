@@ -139,7 +139,7 @@ class Field:
                 offset = base_offset + bed_offset
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            row = Row(id=f'field_{self.id}_row_{i + 1!s}', name=f'row_{i + 1}',
+            row = Row(id=f'field_{self.id}_row_{i}', name=f'row_{i}',
                       points=row_points, crop=self.bed_crops[str(bed_index)])
             rows.append(row)
         return rows
@@ -216,4 +216,5 @@ class Field:
             'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
             'bed_count': self.bed_count,
             'bed_spacing': self.bed_spacing,
+            'bed_crops': self.bed_crops
         }
