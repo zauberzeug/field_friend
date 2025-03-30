@@ -3,6 +3,7 @@ from rosys.geometry import Rotation
 from .configuration import (
     BumperConfiguration,
     CameraConfiguration,
+    CircleSightPositions,
     FieldFriendConfiguration,
     FlashlightConfiguration,
     ImuConfiguration,
@@ -73,6 +74,6 @@ config = FieldFriendConfiguration(
         min_position=-0.197,
         version='z_axis_canopen',
     ),
-    # TODO: calibrate imu
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(0, 0, 0)),
+    circle_sight_positions=CircleSightPositions(),
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.6006605, 0.0242387, 0.0)),
 )

@@ -32,6 +32,7 @@ class Monitoring:
         self.animal_count = 0
         self.shrink_factor = shrink_factor
         self.sights: dict[str, ui.interactive_image] = {}
+        assert system.config.circle_sight_positions is not None
         self.camera_positions = system.config.circle_sight_positions
         KeyControls(system)
         ui.keyboard(self.handle_key)
