@@ -161,7 +161,7 @@ class Operation:
                         with ui.column().classes('w-full').style('max-height: 500px; overflow-y: auto;'):
                             for i in range(parameters['bed_count']):
                                 with ui.row().classes('w-full item-center'):
-                                    ui.label(f'Bed {i + 1}:').classes('text-lg')
+                                    ui.label(f'Bed {i}:').classes('text-lg')
                                     ui.select(self.plant_locator.crop_category_names) \
                                         .props('dense outlined').classes('w-40') \
                                         .bind_value(parameters, 'bed_crops',
@@ -202,7 +202,7 @@ class Operation:
                         beds_checkbox = ui.checkbox('Select specific beds').classes('w-full') \
                             .bind_value(self.system.field_provider, 'only_specific_beds')
                         with ui.row().bind_visibility_from(beds_checkbox, 'value').classes('w-full'):
-                            ui.select(list(range(1, int(self.field_provider.selected_field.bed_count) + 1)),
+                            ui.select(list(range(0, int(self.field_provider.selected_field.bed_count))),
                                       multiple=True, label='selected beds', clearable=True) \
                                 .classes('grow').props('use-chips') \
                                 .bind_value(self.field_provider, 'selected_beds')
