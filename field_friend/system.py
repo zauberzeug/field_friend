@@ -10,8 +10,6 @@ from rosys.driving import Odometer
 from rosys.geometry import GeoPoint, GeoReference
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
-from config import get_config
-
 from .app_controls import AppControls as app_controls
 from .automations import (
     AutomationWatcher,
@@ -31,6 +29,7 @@ from .automations.navigation import (
     Navigation,
     StraightLineNavigation,
 )
+from .config import get_config
 from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
 from .kpi_generator import generate_kpis

@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import rosys
 
-from config import (
+from ..config import (
     AxisD1Configuration,
     ChainAxisConfiguration,
     FieldFriendConfiguration,
@@ -13,7 +13,6 @@ from config import (
     ZCanOpenConfiguration,
     ZStepperConfiguration,
 )
-
 from .axis_d1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware

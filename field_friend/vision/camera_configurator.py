@@ -3,8 +3,7 @@ import logging
 
 import rosys
 
-from config import CameraConfiguration
-
+from ..config import CameraConfiguration
 from ..robot_locator import RobotLocator
 from .calibratable_usb_camera import CalibratableUsbCamera
 

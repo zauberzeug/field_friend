@@ -2,14 +2,13 @@ import numpy as np
 import rosys
 
 # change the config to the config of simulated Robot
-from config import (
+from ..config import (
     AxisD1Configuration,
     FieldFriendConfiguration,
     TornadoConfiguration,
     ZCanOpenConfiguration,
     ZStepperConfiguration,
 )
-
 from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
 from .field_friend import FieldFriend

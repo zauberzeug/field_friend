@@ -1,6 +1,6 @@
 from rosys.geometry import Rotation
 
-from .configuration import (
+from field_friend.config.configuration import (
     BumperConfiguration,
     CameraConfiguration,
     CircleSightPositions,
