@@ -1,4 +1,4 @@
-from rosys.geometry import Rotation
+from rosys.geometry import Pose
 
 from field_friend.config.configuration import (
     BumperConfiguration,
@@ -6,7 +6,7 @@ from field_friend.config.configuration import (
     CircleSightPositions,
     FieldFriendConfiguration,
     FlashlightConfiguration,
-    ImuConfiguration,
+    GnssConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
@@ -45,6 +45,7 @@ config = FieldFriendConfiguration(
     y_axis=None,
     z_axis=None,
     circle_sight_positions=CircleSightPositions(),
+    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
     # TODO: imu not working with 0.5.2
     imu=None,
 )

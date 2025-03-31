@@ -1,4 +1,4 @@
-from rosys.geometry import Rotation
+from rosys.geometry import Pose, Rotation
 
 from field_friend.config.configuration import (
     BumperConfiguration,
@@ -7,6 +7,7 @@ from field_friend.config.configuration import (
     CropConfiguration,
     FieldFriendConfiguration,
     FlashlightConfiguration,
+    GnssConfiguration,
     ImuConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
@@ -84,5 +85,6 @@ config = FieldFriendConfiguration(
         turn_speed_limit=1.3,
         odrive_version=6,
     ),
+    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.570796, 0, 0)),
 )
