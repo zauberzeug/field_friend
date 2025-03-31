@@ -10,14 +10,12 @@ from field_friend.config.configuration import (
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
-    YCanOpenConfiguration,
-    ZCanOpenConfiguration,
 )
 
 config = FieldFriendConfiguration(
     name='uckerbot-u5',
     robot_brain=RobotBrainConfiguration(name='rb33', flash_params=['orin', 'v05']),
-    tool='weed_screw',
+    tool=None,
     measurements=MeasurementsConfiguration(
         tooth_count=17,
         pitch=0.041,
@@ -44,40 +42,8 @@ config = FieldFriendConfiguration(
         back_pin=4,
     ),
     bumper=BumperConfiguration(pin_front_top=35, pin_front_bottom=18, pin_back=21),
-    y_axis=YCanOpenConfiguration(
-        axis_offset=0.13,
-        reversed_direction=False,
-        end_l_pin=25,
-        end_r_pin=12,
-        end_stops_on_expander=True,
-        motor_on_expander=False,
-        can_address=0x70,
-        end_stops_inverted=True,
-        max_speed=300,
-        reference_speed=30,
-        steps_per_m=1_666_666.667,  # 4000steps/turn motor; 1/10 gear; 0.024m/u
-        name='yaxis',
-        max_position=0.125,
-        min_position=-0.125,
-        version='y_axis_canopen',
-    ),
-    z_axis=ZCanOpenConfiguration(
-        axis_offset=0.0,
-        reversed_direction=False,
-        end_stops_on_expander=True,
-        motor_on_expander=False,
-        end_bottom_pin=23,
-        end_top_pin=22,
-        can_address=0x60,
-        end_stops_inverted=True,
-        max_speed=400,
-        reference_speed=30,
-        steps_per_m=4_000_000,  # 4000steps/turn motor; 1/20 gear; 0.02m/u
-        name='zaxis',
-        max_position=0.0,
-        min_position=-0.197,
-        version='z_axis_canopen',
-    ),
+    y_axis=None,
+    z_axis=None,
     circle_sight_positions=CircleSightPositions(),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(0, 0, 0)),
 )
