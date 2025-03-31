@@ -292,13 +292,13 @@ class AxisCanOpenConfiguration:
 
 @dataclass(kw_only=True)
 class YAxisConfiguration:
-    end_l_pin: int
-    end_r_pin: int
+    end_left_pin: int
+    end_right_pin: int
 
 
 @dataclass(kw_only=True)
-class ExtraPinsConfiguration:
-    dir_pin: int
+class StepperPinsConfiguration:
+    direction_pin: int
     step_pin: int
 
 
@@ -339,7 +339,7 @@ class AxisD1Configuration(BaseAxisConfiguration, AxisCanOpenConfiguration, AxisO
 
 @dataclass(slots=True, kw_only=True)
 class ChainAxisConfiguration(BaseAxisConfiguration,
-                             ExtraPinsConfiguration,
+                             StepperPinsConfiguration,
                              OnExpanderConfiguration,
                              AxisOffsetConfiguration):
     alarm_pin: int
@@ -349,7 +349,7 @@ class ChainAxisConfiguration(BaseAxisConfiguration,
 @dataclass(slots=True, kw_only=True)
 class YStepperConfiguration(BaseAxisConfiguration,
                             YAxisConfiguration,
-                            ExtraPinsConfiguration,
+                            StepperPinsConfiguration,
                             StepperAndCanOpenConfiguration,
                             OnExpanderConfiguration,
                             AxisOffsetConfiguration):
@@ -418,7 +418,7 @@ class TornadoConfiguration(BaseAxisConfiguration,
 class ZStepperConfiguration(BaseAxisConfiguration,
                             StepperAndCanOpenConfiguration,
                             EndPinsConfiguration,
-                            ExtraPinsConfiguration,
+                            StepperPinsConfiguration,
                             OnExpanderConfiguration,
                             AxisOffsetConfiguration):
     alarm_pin: int
