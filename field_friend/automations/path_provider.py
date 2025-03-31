@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import rosys
+from rosys.event import Event
 
 
 @dataclass(slots=True, kw_only=True)
@@ -16,10 +17,10 @@ class PathProvider(rosys.persistence.PersistentModule):
         super().__init__()
         self.paths: list[Path] = []
 
-        self.PATHS_CHANGED = rosys.event.Event()
+        self.PATHS_CHANGED: Event = Event()
         """The dict of paths has changed."""
 
-        self.SHOW_PATH = rosys.event.Event()
+        self.SHOW_PATH: Event[list[rosys.driving.PathSegment]] = Event()
         """Show the path in the map."""
 
         self.needs_backup: bool = False

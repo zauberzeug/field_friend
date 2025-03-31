@@ -3,6 +3,7 @@ from datetime import datetime
 
 import rosys
 from nicegui import ui
+from rosys.event import Event
 
 
 class LogMonitor(rosys.persistence.PersistentModule):
@@ -13,7 +14,7 @@ class LogMonitor(rosys.persistence.PersistentModule):
         self.max_lines = max_lines
         self.lines: deque[str] = deque([], max_lines)
 
-        self.NEW_LINE = rosys.event.Event()
+        self.NEW_LINE: Event[str] = Event()
         """a new line was added to the log (argument: line)"""
 
         rosys.NEW_NOTIFICATION.register(self.handle_notification)
