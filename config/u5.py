@@ -45,5 +45,6 @@ config = FieldFriendConfiguration(
     y_axis=None,
     z_axis=None,
     circle_sight_positions=CircleSightPositions(),
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(0, 0, 0)),
+    # TODO: imu not working with 0.5.2
+    imu=None,
 )
