@@ -8,6 +8,7 @@ import config.config_selection as config_selector
 from .axis_d1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
+from .delta_arm import DeltaArmHardware
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
 from .flashlight import FlashlightHardware
@@ -194,7 +195,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             self.log.warning('Unknown y_axis version: %s', config_hardware['y_axis']['version'])
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | None = None
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | DeltaArmHardware | None = None
         if config_hardware['z_axis']['version'] == 'z_axis_stepper':
             z_axis = ZAxisStepperHardware(
                 robot_brain,
@@ -310,6 +311,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 reversed_direction=config_hardware['z_axis']['reversed_direction'],
                 end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
             )
+        elif config_hardware['z_axis']['version'] == 'delta_arm':
+            z_axis = DeltaArmHardware(robot_brain, self.can)
         elif config_hardware['z_axis']['version'] == 'none':
             pass
         else:

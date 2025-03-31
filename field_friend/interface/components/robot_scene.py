@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import events, ui
+from rosys.geometry import frame_3d_object
 
+from ...hardware import DeltaArm
 from .field_friend_object import FieldFriendObject as field_friend_object
 from .field_object import FieldObject as field_object
 from .plant_object import PlantObjects as plant_objects
@@ -38,6 +40,10 @@ class RobotScene:
                 visualizer_object(self.system)
                 field_object(self.system)
                 self.scene.move_camera(-0.5, -1, 2)
+
+                frame_3d_object(self.system.robot_locator.pose_frame)
+                if isinstance(self.system.field_friend.z_axis, DeltaArm):
+                    self.system.field_friend.z_axis.scene_object()
 
         ui.timer(rosys.config.ui_update_interval, self.update)
 
