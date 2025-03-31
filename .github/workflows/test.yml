@@ -8,7 +8,8 @@ jobs:
       matrix:
         tools:
           - command: ["mypy", "./field_friend", "--non-interactive"]
-          - command: ["ruff", "check", "./field_friend"]
+          # - command: ["ruff", "check", "./field_friend"]
+          - command: ["pre-commit", "run", "--all-files"]
           - command: ["pylint", "./field_friend"]
     runs-on: ubuntu-latest
     timeout-minutes: 5
