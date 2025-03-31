@@ -110,19 +110,19 @@ def status_dev_page(robot: FieldFriend, system: System):
         if system.is_real and isinstance(robot.wheels, DoubleWheelsHardware):
             with ui.row().classes('place-items-center'):
                 ui.label('Motor Status:').style('color: #EDF4FB').classes('font-bold')
-                if robot.wheels.odrive_version == 6:
+                if robot.wheels.config.odrive_version == 6:
                     ui.label().bind_text_from(robot.wheels, 'l0_error', backward=lambda x: 'Error in l0' if x else 'No error')
                     ui.label().bind_text_from(robot.wheels, 'l1_error', backward=lambda x: 'Error in l1' if x else 'No error')
                     ui.label().bind_text_from(robot.wheels, 'r0_error', backward=lambda x: 'Error in r0' if x else 'No error')
                     ui.label().bind_text_from(robot.wheels, 'r1_error', backward=lambda x: 'Error in r1' if x else 'No error')
-                if robot.wheels.odrive_version == 4:
+                if robot.wheels.config.odrive_version == 4:
                     ui.label('cant read status update odrive to version 0.5.6')
                 ui.button('Reset motor errors', on_click=robot.wheels.reset_motors) \
                     .bind_visibility_from(robot.wheels, 'motor_error')
         if system.is_real and isinstance(robot.z_axis, TornadoHardware):
             with ui.row().classes('place-items-center'):
                 ui.label('Tornado motor status:').style('color: #EDF4FB').classes('font-bold')
-                if robot.z_axis.odrive_version == 6:
+                if robot.z_axis.config.odrive_version == 6:
                     ui.label().bind_text_from(robot.z_axis, 'turn_error', backward=lambda x: 'Error in turn motor' if x else 'No error')
                     ui.label().bind_text_from(robot.z_axis, 'z_error', backward=lambda x: 'Error in z motor' if x else 'No error')
                 else:
