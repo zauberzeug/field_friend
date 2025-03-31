@@ -1,3 +1,6 @@
+
+import logging
+
 import numpy as np
 import rosys
 
@@ -42,7 +45,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             assert config.measurements.chop_radius is not None
             self.CHOP_RADIUS = config.measurements.chop_radius
         else:
-            raise NotImplementedError(f'Unknown FieldFriend tool: {tool}')
+            logging.warning('Unknown FieldFriend tool: %s', tool)
         wheels = rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
 
         y_axis: AxisSimulation | ChainAxisSimulation | None
