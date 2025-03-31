@@ -1,6 +1,7 @@
 import rosys
 from rosys.helpers import remove_indentation
 
+from ..config import FlashlightConfiguration
 from .flashlight_v2 import FlashlightSimulationV2, FlashlightV2
 
 
@@ -12,22 +13,17 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
 
     UPDATE_INTERVAL = 5.0
 
-    def __init__(self, robot_brain: rosys.hardware.RobotBrain,
+    def __init__(self, config: FlashlightConfiguration, robot_brain: rosys.hardware.RobotBrain,
                  bms: rosys.hardware.Bms, *,
-                 expander: rosys.hardware.ExpanderHardware | None,
-                 name: str = 'flashlight',
-                 pin: int = 12,
-                 rated_voltage: float = 23.0,
-                 ) -> None:
-        self.name = name
+                 expander: rosys.hardware.ExpanderHardware | None) -> None:
+        self.config = config
         self.expander = expander
         self.bms = bms
-        self.rated_voltage = rated_voltage
         self.last_update: float = 0
         self.duty_cycle: float = 0.1
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name + "." if expander else ""}PwmOutput({pin})
-            {name}.duty = 204
+            {config.name} = {expander.name + "." if expander else ""}PwmOutput({config.pin})
+            {config.name}.duty = 204
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
         rosys.on_repeat(self._set_duty_cycle, 60.0)
@@ -35,13 +31,13 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
     async def turn_on(self) -> None:
         await super().turn_on()
         await self.robot_brain.send(
-            f'{self.name}.on()'
+            f'{self.config.name}.on()'
         )
 
     async def turn_off(self) -> None:
         await super().turn_off()
         await self.robot_brain.send(
-            f'{self.name}.off()'
+            f'{self.config.name}.off()'
         )
 
     async def _set_duty_cycle(self) -> None:

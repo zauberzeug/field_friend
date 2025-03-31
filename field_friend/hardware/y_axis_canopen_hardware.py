@@ -3,63 +3,49 @@
 import rosys
 from rosys.helpers import remove_indentation
 
+from ..config import YCanOpenConfiguration
 from .axis import Axis
 
 
 class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
     """The y axis hardware module is a simple example for a representation of real robot hardware."""
 
-    def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 name: str = 'yaxis',
+    def __init__(self, config: YCanOpenConfiguration, robot_brain: rosys.hardware.RobotBrain, *,
                  can: rosys.hardware.CanHardware,
-                 expander: rosys.hardware.ExpanderHardware | None,
-                 can_address: int = 0x60,
-                 max_speed: int = 2000,
-                 reference_speed: int = 40,
-                 min_position: float = -0.068,
-                 max_position: float = 0.068,
-                 axis_offset: float = 0.075,
-                 steps_per_m: float = 1_481_481.48,  # [steps/turn] / ([gear] * [m/turn])
-                 end_r_pin: int = 19,
-                 end_l_pin: int = 21,
-                 motor_on_expander: bool = False,
-                 end_stops_on_expander: bool = True,
-                 end_stops_inverted: bool = False,
-                 reversed_direction: bool = False,
-                 ) -> None:
-        self.name = name
+                 expander: rosys.hardware.ExpanderHardware | None) -> None:
+        self.config = config
         self.expander = expander
         self.ctrl_enable = False
         lizard_code = remove_indentation(f'''
-            {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}CanOpenMotor({can.name}, {can_address})
-            {name}_end_l = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_l_pin})
-            {name}_end_l.inverted = {str(end_stops_inverted).lower()}
-            {name}_end_r = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_r_pin})
-            {name}_end_r.inverted = {str(end_stops_inverted).lower()}
-            {name} = {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_l" if reversed_direction else name + "_end_r"}, {name + "_end_r" if reversed_direction else name + "_end_l"})
+            {config.name}_motor = {expander.name + "." if config.motor_on_expander and expander else ""}CanOpenMotor({can.name}, {config.can_address})
+            {config.name}_end_l = {expander.name + "." if config.end_stops_on_expander and expander else ""}Input({config.end_left_pin})
+            {config.name}_end_l.inverted = {str(config.end_stops_inverted).lower()}
+            {config.name}_end_r = {expander.name + "." if config.end_stops_on_expander and expander else ""}Input({config.end_right_pin})
+            {config.name}_end_r.inverted = {str(config.end_stops_inverted).lower()}
+            {config.name} = {expander.name + "." if config.motor_on_expander and expander else ""}MotorAxis({config.name}_motor, {config.name + "_end_l" if config.reversed_direction else config.name + "_end_r"}, {config.name + "_end_r" if config.reversed_direction else config.name + "_end_l"})
         ''')
         core_message_fields = [
-            f'{name}_end_l.active',
-            f'{name}_end_r.active',
-            f'{name}_motor.actual_position',
-            f'{name}_motor.status_target_reached',
-            f'{name}_motor.status_fault',
-            f'{name}_motor.ctrl_enable',
+            f'{config.name}_end_l.active',
+            f'{config.name}_end_r.active',
+            f'{config.name}_motor.actual_position',
+            f'{config.name}_motor.status_target_reached',
+            f'{config.name}_motor.status_fault',
+            f'{config.name}_motor.ctrl_enable',
         ]
         super().__init__(
-            max_speed=max_speed,
-            reference_speed=reference_speed,
-            min_position=min_position,
-            max_position=max_position,
-            axis_offset=axis_offset,
-            steps_per_m=steps_per_m,
-            reversed_direction=reversed_direction,
+            max_speed=config.max_speed,
+            reference_speed=config.reference_speed,
+            min_position=config.min_position,
+            max_position=config.max_position,
+            axis_offset=config.axis_offset,
+            steps_per_m=config.steps_per_m,
+            reversed_direction=config.reversed_direction,
             robot_brain=robot_brain,
             lizard_code=lizard_code,
             core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
-        await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(false);')
+        await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(false);')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if speed is None:
@@ -74,7 +60,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         await self.enable_motor()
         await rosys.sleep(1)  # necessary ?!
         await self.robot_brain.send(
-            f'{self.name}.position({steps},{speed}, 0);'
+            f'{self.config.name}.position({steps},{speed}, 0);'
         )
         # Give flags time to turn false first
         await rosys.sleep(0.5)
@@ -84,16 +70,16 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.error(f'could not move yaxis to {position} because of fault')
             raise Exception(f'could not move yaxis to {position} because of fault')
         self.log.debug(f'yaxis moved to {position}')
-        await self.robot_brain.send(f'{self.name}_motor.set_ctrl_halt(true);')
+        await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_halt(true);')
 
     async def enable_motor(self) -> None:
-        await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(true);')
+        await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(true);')
 
     async def disable_motor(self) -> None:
-        await self.robot_brain.send(f'{self.name}_motor.set_ctrl_enable(false);')
+        await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(false);')
 
     async def reset_fault(self) -> None:
-        await self.robot_brain.send(f'{self.name}_motor.reset_fault();')
+        await self.robot_brain.send(f'{self.config.name}_motor.reset_fault();')
         await rosys.sleep(1)
         if self.alarm:
             self.log.error('could not reset yaxis fault')
@@ -106,12 +92,12 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.info('enabling h motors')
             await self.enable_motor()
             await self.robot_brain.send(
-                f'{self.name}_motor.position_offset = 0;'
+                f'{self.config.name}_motor.position_offset = 0;'
             )
             await rosys.sleep(1)
             self.log.info('activating velocity mode')
             await self.robot_brain.send(
-                f'{self.name}_motor.enter_pv_mode();'
+                f'{self.config.name}_motor.enter_pv_mode();'
             )
             await rosys.sleep(1)
 
@@ -120,11 +106,11 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
                 self.log.info('already in end_l moving out of end_l stop')
                 velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
-                    f'{self.name}.speed({velocity}, 0);'
+                    f'{self.config.name}.speed({velocity}, 0);'
                 )
                 while self.end_l:
                     await rosys.sleep(0.2)
-                await self.robot_brain.send(f'{self.name}_motor.set_ctrl_halt(true);')
+                await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_halt(true);')
             await rosys.sleep(0.5)
 
             # move to end r stop if not already there
@@ -132,7 +118,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
                 self.log.info('moving to end_r stop')
                 velocity = -self.reference_speed * (-1 if self.reversed_direction else 1)
                 await self.robot_brain.send(
-                    f'{self.name}.speed({velocity}, 0);'
+                    f'{self.config.name}.speed({velocity}, 0);'
                 )
                 while not self.end_r:
                     await rosys.sleep(0.2)
@@ -142,7 +128,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.info('moving out of end_r stop')
             velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}.speed({velocity}, 0);'
+                f'{self.config.name}.speed({velocity}, 0);'
             )
             while self.end_r:
                 await rosys.sleep(0.2)
@@ -152,7 +138,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly to end_r stop')
             slow_velocity = -25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}.speed({slow_velocity}, 0);'
+                f'{self.config.name}.speed({slow_velocity}, 0);'
             )
             while not self.end_r:
                 await rosys.sleep(0.2)
@@ -162,22 +148,22 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.info('moving slowly out of end_r stop')
             slow_velocity = 25 * (-1 if self.reversed_direction else 1)
             await self.robot_brain.send(
-                f'{self.name}.speed({slow_velocity}, 0);'
+                f'{self.config.name}.speed({slow_velocity}, 0);'
             )
             while self.end_r:
                 await rosys.sleep(0.2)
             await rosys.sleep(0.5)
 
             # check if this is necessary when enterning pp mode with negative speed
-            await self.robot_brain.send(f'{self.name}_motor.enter_pv_mode(0);')
+            await self.robot_brain.send(f'{self.config.name}_motor.enter_pv_mode(0);')
 
             # save position
-            await self.robot_brain.send(f'{self.name}_motor.position_offset = {self.steps};')
+            await self.robot_brain.send(f'{self.config.name}_motor.position_offset = {self.steps};')
             await rosys.sleep(0.2)
             self.log.info('yaxis referenced')
             self.is_referenced = True
             self.log.info(f'actual position: {self.position}, and steps: {self.steps}')
-            await self.robot_brain.send(f'{self.name}_motor.enter_pp_mode(0);')
+            await self.robot_brain.send(f'{self.config.name}_motor.enter_pp_mode(0);')
             return True
         except Exception as error:
             self.log.error(f'could not reference yaxis because of {error}')

@@ -3,65 +3,50 @@
 import rosys
 from rosys.helpers import remove_indentation
 
+from ..config import ZStepperConfiguration
 from .axis import Axis
 
 
 class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
     """The z axis module is a simple example for a representation of real or simulated robot hardware."""
 
-    def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 name: str = 'zaxis',
-                 expander: rosys.hardware.ExpanderHardware | None,
-                 max_speed: int = 60_000,
-                 reference_speed: int = 20_000,
-                 min_position: float = -0.197,
-                 max_position: float = 0.00,
-                 axis_offset: float = 0.0,
-                 steps_per_m: float = 1600 * 1000,
-                 step_pin: int = 5,
-                 dir_pin: int = 4,
-                 alarm_pin: int = 33,
-                 end_t_pin: int = 25,
-                 end_b_pin: int = 22,
-                 motor_on_expander: bool = True,
-                 end_stops_on_expander: bool = True,
-                 end_stops_inverted: bool = False,
-                 reversed_direction: bool = False,
-                 ) -> None:
-        self.name = name
+    def __init__(self, config: ZStepperConfiguration,
+                 robot_brain: rosys.hardware.RobotBrain, *,
+                 expander: rosys.hardware.ExpanderHardware | None) -> None:
+        self.config = config
         self.expander = expander
 
         lizard_code = remove_indentation(f'''
-            {name}_motor = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
-            {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
-            {name}_end_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_t_pin})
-            {name}_end_t.inverted = {str(end_stops_inverted).lower()}
-            {name}_end_b = {expander.name + "." if end_stops_on_expander and expander else ""}Input({end_b_pin})
-            {name}_end_b.inverted = {str(end_stops_inverted).lower()}
-            {name} =  {expander.name + "." if motor_on_expander and expander else ""}MotorAxis({name}_motor, {name + "_end_t" if reversed_direction else name + "_end_b"}, {name + "_end_b" if reversed_direction else name + "_end_t"})
+            {self.config.name}_motor = {expander.name + "." if self.config.motor_on_expander and expander else ""}StepperMotor({self.config.step_pin}, {self.config.direction_pin})
+            {self.config.name}_alarm = {expander.name + "." if self.config.motor_on_expander and expander else ""}Input({self.config.alarm_pin})
+            {self.config.name}_end_t = {expander.name + "." if self.config.end_stops_on_expander and expander else ""}Input({self.config.end_top_pin})
+            {self.config.name}_end_t.inverted = {str(self.config.end_stops_inverted).lower()}
+            {self.config.name}_end_b = {expander.name + "." if self.config.end_stops_on_expander and expander else ""}Input({self.config.end_bottom_pin})
+            {self.config.name}_end_b.inverted = {str(self.config.end_stops_inverted).lower()}
+            {self.config.name} = {expander.name + "." if self.config.motor_on_expander and expander else ""}MotorAxis({self.config.name}_motor, {self.config.name + "_end_t" if self.config.reversed_direction else self.config.name + "_end_b"}, {self.config.name + "_end_b" if self.config.reversed_direction else self.config.name + "_end_t"})
         ''')
         core_message_fields = [
-            f'{name}_end_t.active',
-            f'{name}_end_b.active',
-            f'{name}_motor.idle',
-            f'{name}_motor.position',
-            f'{name}_alarm.level',
+            f'{self.config.name}_end_t.active',
+            f'{self.config.name}_end_b.active',
+            f'{self.config.name}_motor.idle',
+            f'{self.config.name}_motor.position',
+            f'{self.config.name}_alarm.level',
         ]
         super().__init__(
-            max_speed=max_speed,
-            reference_speed=reference_speed,
-            min_position=min_position,
-            max_position=max_position,
-            axis_offset=axis_offset,
-            steps_per_m=steps_per_m,
-            reversed_direction=reversed_direction,
+            max_speed=self.config.max_speed,
+            reference_speed=self.config.reference_speed,
+            min_position=self.config.min_position,
+            max_position=self.config.max_position,
+            axis_offset=self.config.axis_offset,
+            steps_per_m=self.config.steps_per_m,
+            reversed_direction=self.config.reversed_direction,
             robot_brain=robot_brain,
             lizard_code=lizard_code,
             core_message_fields=core_message_fields
         )
 
     async def stop(self) -> None:
-        await self.robot_brain.send(f'{self.name}.stop()')
+        await self.robot_brain.send(f'{self.config.name}.stop()')
 
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if speed is None:
@@ -73,7 +58,7 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             raise Exception(f'could not move zaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
 
-        await self.robot_brain.send(f'{self.name}.position({steps}, {speed}, 160000);')
+        await self.robot_brain.send(f'{self.config.name}.position({steps}, {speed}, 160000);')
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
             raise Exception('z_axis fault detected')
@@ -97,48 +82,48 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             if self.end_b:
                 self.log.info('already in end b stop, moving out of it')
                 velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
-                await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
+                await self.robot_brain.send(f'{self.config.name}.speed({velocity},0);')
                 while self.end_b:
                     await rosys.sleep(0.2)
-                await self.robot_brain.send(f'{self.name}.stop();')
+                await self.robot_brain.send(f'{self.config.name}.stop();')
 
             # move to end t stop if not already there
             if not self.end_t:
                 self.log.info('moving to end t stop')
                 velocity = self.reference_speed * (-1 if self.reversed_direction else 1)
-                await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
+                await self.robot_brain.send(f'{self.config.name}.speed({velocity},0);')
                 while not self.end_t:
                     await rosys.sleep(0.2)
-                await self.robot_brain.send(f'{self.name}.stop();')
+                await self.robot_brain.send(f'{self.config.name}.stop();')
 
             # move out of end t stop
             self.log.info('moving out of end t stop')
             velocity = self.reference_speed * (1 if self.reversed_direction else -1)
-            await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
+            await self.robot_brain.send(f'{self.config.name}.speed({velocity},0);')
             while self.end_t:
                 await rosys.sleep(0.2)
-            await self.robot_brain.send(f'{self.name}.stop();')
+            await self.robot_brain.send(f'{self.config.name}.stop();')
 
             # move slowly to end t stop
             self.log.info('moving slowly to end t stop')
             velocity = round(self.reference_speed/2) * (-1 if self.reversed_direction else 1)
-            await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
+            await self.robot_brain.send(f'{self.config.name}.speed({velocity},0);')
             while not self.end_t:
                 await rosys.sleep(0.2)
-            await self.robot_brain.send(f'{self.name}.stop();')
+            await self.robot_brain.send(f'{self.config.name}.stop();')
 
             # move slowly out of end t stop
             self.log.info('moving slowly out of end t stop')
             velocity = round(self.reference_speed/2) * (1 if self.reversed_direction else -1)
-            await self.robot_brain.send(f'{self.name}.speed({velocity},0);')
+            await self.robot_brain.send(f'{self.config.name}.speed({velocity},0);')
             while self.end_t:
                 await rosys.sleep(0.2)
-            await self.robot_brain.send(f'{self.name}.stop();')
+            await self.robot_brain.send(f'{self.config.name}.stop();')
 
             # save position
             await rosys.sleep(0.5)
             await self.robot_brain.send(
-                f'{self.name}_motor.position = 0;'
+                f'{self.config.name}_motor.position = 0;'
             )
             await rosys.sleep(0.5)
             self.log.info('zaxis referenced')

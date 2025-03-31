@@ -72,10 +72,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
                 axis_offset=config.z_axis.axis_offset,
             )
         elif isinstance(config.z_axis, TornadoConfiguration):
-            z_axis = TornadoSimulation(min_position=config.z_axis.min_position,
-                                       m_per_tick=config.z_axis.m_per_tick,
-                                       is_z_reversed=config.z_axis.is_z_reversed,
-                                       is_turn_reversed=config.z_axis.is_turn_reversed)
+            z_axis = TornadoSimulation(config=config.z_axis)
         else:
             raise NotImplementedError(f'Unknown Z-Axis version: {config.z_axis.version}')
 
