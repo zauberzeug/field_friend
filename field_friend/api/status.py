@@ -37,6 +37,7 @@ class Status:
             position = self.system.gnss.last_measurement.point.degree_tuple if self.system.gnss.last_measurement is not None else None
             data = {
                 'robot_id': self.system.robot_id,
+                'brain_id': self.system.config.robot_brain.name,
                 'battery': self.system.field_friend.bms.state.percentage,
                 'battery_charging': self.system.field_friend.bms.state.is_charging,
                 'status': work_status,
