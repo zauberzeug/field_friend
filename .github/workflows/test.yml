@@ -3,7 +3,13 @@ name: Run Tests
 on: [push]
 
 jobs:
-  checker:
+  code-checks:
+    strategy:
+      matrix:
+        tools:
+          - command: ["mypy", "./field_friend", "--non-interactive"]
+          - command: ["pre-commit", "run", "--all-files"]
+          - command: ["pylint", "./field_friend"]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,16 +20,13 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: install dependencies
-        run: |
-          pip install -r requirements-dev.txt
-      - name: pre-commit, mypy & pylint
-        run: |
-          pre-commit run --all-files
-          mypy ./field_friend --non-interactive
-          # pylint ./field_friend
+        run: pip install -r requirements-dev.txt
+      - name: ${{ matrix.tools.command[0] }}
+        run: ${{ join(matrix.tools.command, ' ') }}
+
   pytest:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 import rosys
+from rosys.event import Event
 
 from .field import Field, Row, RowSupportPoint
 
@@ -13,11 +14,11 @@ class FieldProvider(rosys.persistence.PersistentModule):
         self.fields: list[Field] = []
         self.needs_backup: bool = False
 
-        self.FIELDS_CHANGED = rosys.event.Event()
+        self.FIELDS_CHANGED: Event = Event()
         """The dict of fields has changed."""
 
         self.selected_field: Field | None = None
-        self.FIELD_SELECTED = rosys.event.Event()
+        self.FIELD_SELECTED: Event = Event()
         """A field has been selected."""
 
         self.only_specific_beds: bool = False
