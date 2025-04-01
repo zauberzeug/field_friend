@@ -269,6 +269,7 @@ class ImuConfiguration:
     """
     name: str = 'imu'
     offset_rotation: Rotation = field(default_factory=Rotation.zero)
+    min_gyro_calibration: float = 1.0
 
 
 @dataclass(kw_only=True)

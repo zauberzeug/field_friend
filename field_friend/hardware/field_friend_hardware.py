@@ -176,7 +176,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
         imu = rosys.hardware.ImuHardware(robot_brain,
                                          name=config.imu.name,
-                                         offset_rotation=config.imu.offset_rotation) if config.imu else None
+                                         offset_rotation=config.imu.offset_rotation,
+                                         min_gyro_calibration=config.imu.min_gyro_calibration) if config.imu else None
 
         self.status_control = StatusControlHardware(robot_brain,
                                                     expander=expander,
