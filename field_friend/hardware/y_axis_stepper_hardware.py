@@ -25,8 +25,8 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             {config.name} = {expander.name + "." if config.motor_on_expander and expander else ""}MotorAxis({config.name}_motor, {config.name + "_end_l" if config.reversed_direction else config.name + "_end_r"}, {config.name + "_end_r" if config.reversed_direction else config.name + "_end_l"})
         ''')
         core_message_fields = [
-            f'{config.name}_end_left.active',
-            f'{config.name}_end_right.active',
+            f'{config.name}_end_l.active',
+            f'{config.name}_end_r.active',
             f'{config.name}_motor.idle',
             f'{config.name}_motor.position',
             f'{config.name}_alarm.active'
