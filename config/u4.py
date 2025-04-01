@@ -27,10 +27,10 @@ config = FieldFriendConfiguration(
         crop=CropConfiguration(left=250, right=250, up=0, down=0),
     ),
     circle_sight_positions=CircleSightPositions(
-        right='-1',
-        left='-4',
+        right='-2',
+        left='-4',  # not sure, camera not working
         front='-3',
-        back='-2',
+        back='-1',  # not sure, camera not working
     ),
     wheels=WheelsConfiguration(
         is_left_reversed=False,
