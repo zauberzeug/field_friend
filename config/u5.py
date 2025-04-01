@@ -44,7 +44,7 @@ config = FieldFriendConfiguration(
     bumper=BumperConfiguration(pin_front_top=35, pin_front_bottom=18, pin_back=21),
     y_axis=None,
     z_axis=None,
-    circle_sight_positions=CircleSightPositions(right='-1', back='-2', front='-3', left='-4'),
+    circle_sight_positions=CircleSightPositions(),
     gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
     # TODO: imu not working with 0.5.2
     imu=None,
