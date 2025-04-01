@@ -6,20 +6,11 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import events, ui
 
-import config.config_selection as config_selector
-
 from ...hardware import FlashlightPWM
 from .key_controls import KeyControls
 
 if TYPE_CHECKING:
     from ...system import System
-
-
-class CameraPosition:
-    RIGHT = '-1'
-    BACK = '-2'
-    FRONT = '-3'
-    LEFT = '-4'
 
 
 class Monitoring:
@@ -41,7 +32,8 @@ class Monitoring:
         self.animal_count = 0
         self.shrink_factor = shrink_factor
         self.sights: dict[str, ui.interactive_image] = {}
-        self.camera_positions = self.load_camera_positions()
+        assert system.config.circle_sight_positions is not None
+        self.camera_positions = system.config.circle_sight_positions
         KeyControls(system)
         ui.keyboard(self.handle_key)
         with ui.row().classes('w-full items-stretch gap-0'):
@@ -116,22 +108,22 @@ class Monitoring:
             if camera.id in self.sights:
                 self.sights[camera.id].set_source(camera.get_latest_image_url())
                 continue
-            if self.camera_positions['front'] in camera.id:
+            if self.camera_positions.front in camera.id:
                 self.front_view.clear()
                 with self.front_view:
                     ui.label('Front').classes('text-2xl text-bold')
                     self.sights[camera.id] = ui.interactive_image().classes('w-full')
-            elif self.camera_positions['back'] in camera.id:
+            elif self.camera_positions.back in camera.id:
                 self.back_view.clear()
                 with self.back_view:
                     ui.label('Back').classes('text-2xl text-bold')
                     self.sights[camera.id] = ui.interactive_image().classes('w-full')
-            elif self.camera_positions['left'] in camera.id:
+            elif self.camera_positions.left in camera.id:
                 self.left_view.clear()
                 with self.left_view:
                     ui.label('Left').classes('text-2xl text-bold')
                     self.sights[camera.id] = ui.interactive_image().classes('w-full')
-            elif self.camera_positions['right'] in camera.id:
+            elif self.camera_positions.right in camera.id:
                 self.right_view.clear()
                 with self.right_view:
                     ui.label('Right').classes('text-2xl text-bold')
@@ -259,15 +251,3 @@ class Monitoring:
                                    add='w-1/4').style(remove='border: 5px solid #6E93D6; border-radius: 5px; background-color: #6E93D6; color: white')
             self.right_view.classes(remove='hidden w-1/2',
                                     add='w-1/4').style(remove='border: 5px solid #6E93D6; border-radius: 5px; background-color: #6E93D6; color: white')
-
-    def load_camera_positions(self) -> dict:
-        if self.mjpg_camera_provider is None:
-            return {}
-        config = config_selector.import_config(module='camera')
-        config_positions = config.get('circle_sight_positions', {})
-        return {
-            'left': config_positions.get('left', CameraPosition.LEFT),
-            'right': config_positions.get('right', CameraPosition.RIGHT),
-            'front': config_positions.get('front', CameraPosition.FRONT),
-            'back': config_positions.get('back', CameraPosition.BACK),
-        }

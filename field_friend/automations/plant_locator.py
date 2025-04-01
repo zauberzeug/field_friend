@@ -36,7 +36,7 @@ class PlantLocator(EntityLocator):
         self.detector = system.detector
         self.plant_provider = system.plant_provider
         self.robot_locator = system.robot_locator
-        self.robot_name = system.version
+        self.robot_name = system.robot_id
         self.detector_info: DetectorInfo | None = None
         self.tags: list[str] = []
         self.is_paused = True
@@ -72,8 +72,8 @@ class PlantLocator(EntityLocator):
 
     def restore(self, data: dict[str, Any]) -> None:
         super().restore(data)
-        self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
-        self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
+        self.minimum_weed_confidence = data.get('minimum_weed_confidence', MINIMUM_WEED_CONFIDENCE)
+        self.minimum_crop_confidence = data.get('minimum_crop_confidence', MINIMUM_CROP_CONFIDENCE)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
             if 'autoupload' in data else Autoupload.DISABLED
         self.log.debug(f'self.autoupload: {self.autoupload}')

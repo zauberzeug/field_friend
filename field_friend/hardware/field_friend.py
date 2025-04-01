@@ -26,7 +26,7 @@ class FieldFriend(rosys.hardware.Robot):
 
     def __init__(
             self, *,
-            implement_name: str,
+            implement_name: str | None,
             wheels: rosys.hardware.Wheels,
             flashlight: Flashlight | FlashlightV2 | FlashlightPWM | None,
             y_axis: Axis | ChainAxis | None,
@@ -64,6 +64,8 @@ class FieldFriend(rosys.hardware.Robot):
 
         The point is given in local coordinates, i.e. the origin is the center of the tool.
         """
+        if not self.implement_name:
+            raise NotImplementedError('This robot has no tool to reach with.')
         if add_work_offset:
             local_point.x += self.WORK_X
             local_point.y += self.WORK_Y

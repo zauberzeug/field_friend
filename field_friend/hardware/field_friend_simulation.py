@@ -1,12 +1,17 @@
 
 import logging
 
+import numpy as np
 import rosys
-from rosys.hardware import ImuSimulation
 
 # change the config to the config of simulated Robot
-import config.config_selection as config_selector
-
+from ..config import (
+    AxisD1Configuration,
+    FieldFriendConfiguration,
+    TornadoConfiguration,
+    ZCanOpenConfiguration,
+    ZStepperConfiguration,
+)
 from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
 from .field_friend import FieldFriend
@@ -19,89 +24,79 @@ from .tornado import TornadoSimulation
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
-    def __init__(self, robot_id) -> None:
-        self.log = logging.getLogger('field_friend.simulation')
-        config_hardware = config_selector.import_config_simulation(module='hardware', robot_id=robot_id)
-        config_params = config_selector.import_config_simulation(module='params', robot_id=robot_id)
-        self.MOTOR_GEAR_RATIO = config_params['motor_gear_ratio']
-        self.THOOTH_COUNT = config_params['thooth_count']
-        self.PITCH = config_params['pitch']
-        self.WHEEL_DIAMETER = self.THOOTH_COUNT * self.PITCH
-        self.M_PER_TICK = self.WHEEL_DIAMETER / self.MOTOR_GEAR_RATIO
-        self.WHEEL_DISTANCE = config_params['wheel_distance']
-        implement: str = config_params['tool']
-        if implement in ['tornado', 'weed_screw', 'none']:
-            self.WORK_X = config_params['work_x']
-            if 'work_y' in config_params:
-                self.WORK_Y = config_params['work_y']
-            self.DRILL_RADIUS = config_params['drill_radius']
-        elif implement in ['dual_mechanism']:
-            self.WORK_X_CHOP = config_params['work_x_chop']
-            self.WORK_X = config_params['work_x_drill']
-            self.DRILL_RADIUS = config_params['drill_radius']
-            self.CHOP_RADIUS = config_params['chop_radius']
+    def __init__(self, config: FieldFriendConfiguration) -> None:
+        self.MOTOR_GEAR_RATIO = config.measurements.motor_gear_ratio
+        self.TOOTH_COUNT = config.measurements.tooth_count
+        self.PITCH = config.measurements.pitch
+        self.WHEEL_DIAMETER = self.TOOTH_COUNT * self.PITCH / np.pi
+        self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
+        self.WHEEL_DISTANCE = config.measurements.wheel_distance
+        tool = config.tool
+        if tool in ['tornado', 'weed_screw', None]:
+            self.WORK_X = config.measurements.work_x
+            if config.measurements.work_y:
+                self.WORK_Y = config.measurements.work_y
+            self.DRILL_RADIUS = config.measurements.drill_radius
+        elif tool in ['dual_mechanism']:
+            assert config.measurements.work_x_chop is not None
+            self.WORK_X_CHOP = config.measurements.work_x_chop
+            self.WORK_X = config.measurements.work_x
+            self.DRILL_RADIUS = config.measurements.drill_radius
+            assert config.measurements.chop_radius is not None
+            self.CHOP_RADIUS = config.measurements.chop_radius
         else:
-            self.log.warning('Unknown implement: %s', implement)
+            logging.warning('Unknown FieldFriend tool: %s', tool)
         wheels = rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
 
         y_axis: AxisSimulation | ChainAxisSimulation | None
-        if config_hardware['y_axis']['version'] == 'chain_axis':
-            y_axis = ChainAxisSimulation()
-        elif config_hardware['y_axis']['version'] in ['y_axis_stepper', 'y_axis_canopen', 'axis_d1']:
-            y_axis = AxisSimulation(
-                min_position=config_hardware['y_axis']['min_position'],
-                max_position=config_hardware['y_axis']['max_position'],
-                axis_offset=config_hardware['y_axis']['axis_offset'],
-            )
-        elif config_hardware['y_axis']['version'] == 'none':
+        if not config.y_axis:
             y_axis = None
+        elif config.y_axis.version == 'chain_axis':
+            y_axis = ChainAxisSimulation()
+        elif config.y_axis.version in ['y_axis_stepper', 'y_axis_canopen', 'axis_d1']:
+            y_axis = AxisSimulation(
+                min_position=config.y_axis.min_position,
+                max_position=config.y_axis.max_position,
+                axis_offset=config.y_axis.axis_offset,
+            )
         else:
-            raise NotImplementedError(f'Unknown Y-Axis version: {config_hardware["y_axis"]["version"]}')
+            raise NotImplementedError(f'Unknown Y-Axis version: {config.y_axis.version}')
 
         z_axis: AxisSimulation | TornadoSimulation | None
-        if config_hardware['z_axis']['version'] in ['z_axis_stepper', 'z_axis_canopen', 'axis_d1']:
-            z_axis = AxisSimulation(
-                min_position=config_hardware['z_axis']['min_position'],
-                max_position=config_hardware['z_axis']['max_position'],
-                axis_offset=config_hardware['z_axis']['axis_offset'],
-            )
-
-        elif config_hardware['z_axis']['version'] in ['tornado', 'tornado v1.1']:
-            z_axis = TornadoSimulation(min_position=config_hardware['z_axis']['min_position'],
-                                       m_per_tick=config_hardware['z_axis']['m_per_tick'],
-                                       is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
-                                       is_turn_reversed=config_hardware['z_axis']['is_turn_reversed'])
-        elif config_hardware['z_axis']['version'] == 'none':
+        if not config.z_axis:
             z_axis = None
+        elif isinstance(config.z_axis, ZStepperConfiguration | ZCanOpenConfiguration | AxisD1Configuration):
+            z_axis = AxisSimulation(
+                min_position=config.z_axis.min_position,
+                max_position=config.z_axis.max_position,
+                axis_offset=config.z_axis.axis_offset,
+            )
+        elif isinstance(config.z_axis, TornadoConfiguration):
+            z_axis = TornadoSimulation(config=config.z_axis)
         else:
-            raise NotImplementedError(f'Unknown Z-Axis version: {config_hardware["z_axis"]["version"]}')
+            raise NotImplementedError(f'Unknown Z-Axis version: {config.z_axis.version}')
 
         flashlight: FlashlightSimulation | FlashlightSimulationV2 | FlashlightPWMSimulationV2 | None
-        if config_hardware['flashlight']['version'] == 'flashlight':
-            flashlight = FlashlightSimulation()
-        elif config_hardware['flashlight']['version'] == 'flashlight_v2':
-            flashlight = FlashlightSimulationV2()
-        elif config_hardware['flashlight']['version'] == 'flashlight_pwm':
-            flashlight = FlashlightSimulationV2()
-        elif config_hardware['flashlight']['version'] == 'flashlight_pwm_v2':
-            flashlight = FlashlightPWMSimulationV2()
-        elif config_hardware['flashlight']['version'] == 'none':
+        if not config.flashlight:
             flashlight = None
+        elif config.flashlight.version == 'flashlight':
+            raise NotImplementedError('This flashlight version is no longer supported.')
+        elif config.flashlight.version in ['flashlight_v2', 'flashlight_pwm']:
+            flashlight = FlashlightSimulationV2()
+        elif config.flashlight.version == 'flashlight_pwm_v2':
+            flashlight = FlashlightPWMSimulationV2()
         else:
-            raise NotImplementedError(f'Unknown Flashlight version: {config_hardware["flashlight"]["version"]}')
+            raise NotImplementedError(f'Unknown Flashlight version: {config.flashlight.version}')
 
         estop = rosys.hardware.EStopSimulation()
-
-        bumper: rosys.hardware.BumperSimulation | None = None
-        if 'bumper' in config_hardware:
-            bumper = rosys.hardware.BumperSimulation(estop=estop)
-
-        imu = ImuSimulation(wheels=wheels, roll_noise=0.0, pitch_noise=0.0, yaw_noise=0.0)
+        bumper = rosys.hardware.BumperSimulation(estop=estop) if config.bumper else None
         bms = rosys.hardware.BmsSimulation()
-        safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
+        imu = rosys.hardware.ImuSimulation(wheels=wheels)
+        safety = SafetySimulation(wheels=wheels, estop=estop, y_axis=y_axis,
+                                  z_axis=z_axis, flashlight=flashlight)
         modules = [wheels, y_axis, z_axis, flashlight, bumper, imu, bms, estop, safety]
         active_modules = [module for module in modules if module is not None]
-        super().__init__(implement_name=implement,
+        super().__init__(implement_name=tool,
                          wheels=wheels,
                          flashlight=flashlight,
                          y_axis=y_axis,

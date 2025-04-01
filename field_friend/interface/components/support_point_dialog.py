@@ -11,7 +11,6 @@ from rosys.geometry import GeoPoint
 from rosys.hardware.gnss import GpsQuality
 
 from ...automations.field import RowSupportPoint
-from ...interface.components.monitoring import CameraPosition
 
 if TYPE_CHECKING:
     from ...system import System
@@ -20,8 +19,10 @@ if TYPE_CHECKING:
 class SupportPointDialog:
 
     def __init__(self, system: System) -> None:
-        self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
-                               if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
+        self.front_cam: rosys.vision.MjpegCamera | None = None
+        if hasattr(system, 'mjpeg_camera_provider') and system.config.circle_sight_positions is not None:
+            self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
+                                   if system.config.circle_sight_positions.front in key), None)
         self.steerer = system.steerer
         self.gnss = system.gnss
         self.field_provider = system.field_provider

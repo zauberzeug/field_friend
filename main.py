@@ -9,7 +9,7 @@ from rosys.analysis import logging_page, videos_page
 from field_friend import api, interface, log_configuration
 from field_friend.system import System
 
-log_configuration.configure()
+logger = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
 
 
@@ -23,10 +23,8 @@ def startup() -> None:
         logging.warning(msg)
         ui.label(msg).classes('text-xl')
         return
-    logging.info('Starting Field Friend for robot %s', robot_id)
-    System.version = os.environ.get('VERSION') or robot_id
-    System.robot_id = robot_id
-    system = System()
+    logger.info('Starting Field Friend for robot %s', robot_id)
+    system = System(robot_id)
 
     interface.main_page(system)  # /
     interface.dev_page(system)  # /dev
