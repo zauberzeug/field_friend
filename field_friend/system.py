@@ -7,6 +7,7 @@ import numpy as np
 import psutil
 import rosys
 from rosys.driving import Odometer
+from rosys.event import Event
 from rosys.geometry import GeoPoint, GeoReference, Pose
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
@@ -56,7 +57,7 @@ class System(rosys.persistence.PersistentModule):
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
-        self.AUTOMATION_CHANGED = rosys.event.Event()
+        self.AUTOMATION_CHANGED: Event[str] = Event()
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation

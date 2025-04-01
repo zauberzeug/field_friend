@@ -2,6 +2,7 @@ from typing import Any
 
 import rosys
 from nicegui import ui
+from rosys.event import Event
 from rosys.geometry import Point3d
 
 from .plant import Plant
@@ -39,13 +40,13 @@ class PlantProvider(rosys.persistence.PersistentModule):
         self.minimum_combined_crop_confidence: float = MINIMUM_COMBINED_CROP_CONFIDENCE
         self.minimum_combined_weed_confidence: float = MINIMUM_COMBINED_WEED_CONFIDENCE
 
-        self.PLANTS_CHANGED = rosys.event.Event()
+        self.PLANTS_CHANGED: Event = Event()
         """The collection of plants has changed."""
 
-        self.ADDED_NEW_WEED = rosys.event.Event()
+        self.ADDED_NEW_WEED: Event = Event()
         """A new weed has been added."""
 
-        self.ADDED_NEW_CROP = rosys.event.Event()
+        self.ADDED_NEW_CROP: Event = Event()
         """A new crop has been added."""
 
         rosys.on_repeat(self.prune, 10.0)

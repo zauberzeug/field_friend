@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import rosys
 from nicegui import ui
+from rosys.event import Event
 
 from ...hardware import FieldFriend
 from .manual_steerer_dialog import ManualSteererDialog as manual_steerer_dialog
@@ -17,7 +17,7 @@ class HeaderBar:
         self.system = system
         self.drawer_icon = 'expand_more'
         self.toggled = False
-        self.STATUS_DRAWER_TOGGLED = rosys.event.Event()
+        self.STATUS_DRAWER_TOGGLED: Event = Event()
         '''tells if the status drawer is toggled or not.'''
 
         with ui.header().classes('items-center'):
