@@ -81,9 +81,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             flashlight = None
         elif config.flashlight.version == 'flashlight':
             raise NotImplementedError('This flashlight version is no longer supported.')
-        elif config.flashlight.version == 'flashlight_v2':
-            flashlight = FlashlightSimulationV2()
-        elif config.flashlight.version == 'flashlight_pwm':
+        elif config.flashlight.version in ['flashlight_v2', 'flashlight_pwm']:
             flashlight = FlashlightSimulationV2()
         elif config.flashlight.version == 'flashlight_pwm_v2':
             flashlight = FlashlightPWMSimulationV2()
