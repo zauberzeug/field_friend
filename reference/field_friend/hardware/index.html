@@ -441,15 +441,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#field_friend.hardware.MowerHardware" class="md-nav__link">
-    <span class="md-ellipsis">
-      MowerHardware
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#field_friend.hardware.TornadoHardware" class="md-nav__link">
     <span class="md-ellipsis">
       TornadoHardware
@@ -566,15 +557,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#field_friend.hardware.MowerHardware" class="md-nav__link">
-    <span class="md-ellipsis">
-      MowerHardware
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#field_friend.hardware.TornadoHardware" class="md-nav__link">
     <span class="md-ellipsis">
       TornadoHardware
@@ -628,19 +610,12 @@
 
 <a href="#field_friend.hardware.DoubleWheelsHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">DoubleWheelsHardware</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">WheelsConfiguration</span><span class="p">,</span>
     <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;wheels&quot;</span><span class="p">,</span>
-    <span class="n">left_back_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="n">left_front_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
-    <span class="n">right_back_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
-    <span class="n">right_front_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">768</span><span class="p">,</span>
     <span class="n">m_per_tick</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
-    <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
-    <span class="n">is_left_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">is_right_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">odrive_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -653,65 +628,6 @@
 <p>Drive and stop commands are forwarded to a given Robot Brain.
 Velocities are read and emitted regularly.</p>
 
-
-
-
-
-
-
-
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="field_friend.hardware.MowerHardware" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">MowerHardware</span>
-
-
-<a href="#field_friend.hardware.MowerHardware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">MowerHardware</span><span class="p">(</span>
-    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
-    <span class="n">m0_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="n">m1_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
-    <span class="n">m2_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
-    <span class="n">m_per_tick</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
-    <span class="n">speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">is_m0_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">is_m1_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">is_m2_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">odrive_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span>
-<span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents first">
-            <p class="doc doc-class-bases">
-              Bases: <code><span title="field_friend.hardware.external_mower.Mower">Mower</span></code>, <code><span title="rosys.hardware.ModuleHardware">ModuleHardware</span></code></p>
-
-
-        <p>This module implements extrernal mower hardware.</p>
-<p>on and off commands are forwarded to a given Robot Brain.</p>
 
 
 
@@ -749,37 +665,11 @@ Velocities are read and emitted regularly.</p>
 
 <a href="#field_friend.hardware.TornadoHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">TornadoHardware</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">TornadoConfiguration</span><span class="p">,</span>
     <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;tornado&quot;</span><span class="p">,</span>
     <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
-    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">min_position</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">z_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span>
-    <span class="n">turn_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1280</span><span class="p">,</span>
-    <span class="n">m_per_tick</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
-    <span class="n">end_top_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
-    <span class="n">end_top_pin_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">end_bottom_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-    <span class="n">end_bottom_pin_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">ref_motor_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">33</span><span class="p">,</span>
-    <span class="n">ref_motor_pin_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">ref_gear_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
-    <span class="n">ref_gear_pin_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">ref_knife_stop_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">35</span><span class="p">,</span>
-    <span class="n">ref_knife_stop_pin_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">ref_knife_ground_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span>
-    <span class="n">ref_knife_ground_pin_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">motors_on_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">end_stops_on_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">is_z_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">is_turn_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">speed_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">turn_speed_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">current_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="n">z_reference_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0075</span><span class="p">,</span>
-    <span class="n">turn_reference_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
-    <span class="n">odrive_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -789,6 +679,7 @@ Velocities are read and emitted regularly.</p>
 
 
         <p>The z axis module is a simple example for a representation of real or simulated robot hardware.</p>
+
 
 
 
@@ -826,24 +717,11 @@ Velocities are read and emitted regularly.</p>
 
 <a href="#field_friend.hardware.YAxisCanOpenHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">YAxisCanOpenHardware</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">YCanOpenConfiguration</span><span class="p">,</span>
     <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;yaxis&quot;</span><span class="p">,</span>
     <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
-    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">96</span><span class="p">,</span>
-    <span class="n">max_speed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span>
-    <span class="n">reference_speed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
-    <span class="n">min_position</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.068</span><span class="p">,</span>
-    <span class="n">max_position</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.068</span><span class="p">,</span>
-    <span class="n">axis_offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.075</span><span class="p">,</span>
-    <span class="n">steps_per_m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1481481.48</span><span class="p">,</span>
-    <span class="n">end_r_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">19</span><span class="p">,</span>
-    <span class="n">end_l_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">21</span><span class="p">,</span>
-    <span class="n">motor_on_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">end_stops_on_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">end_stops_inverted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">reversed_direction</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -853,6 +731,7 @@ Velocities are read and emitted regularly.</p>
 
 
         <p>The y axis hardware module is a simple example for a representation of real robot hardware.</p>
+
 
 
 
@@ -890,24 +769,11 @@ Velocities are read and emitted regularly.</p>
 
 <a href="#field_friend.hardware.ZAxisCanOpenHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">ZAxisCanOpenHardware</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">ZCanOpenConfiguration</span><span class="p">,</span>
     <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;zaxis&quot;</span><span class="p">,</span>
     <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
-    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">96</span><span class="p">,</span>
-    <span class="n">max_speed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span>
-    <span class="n">reference_speed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
-    <span class="n">min_position</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.15</span><span class="p">,</span>
-    <span class="n">max_position</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">axis_offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">steps_per_m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1481481.48</span><span class="p">,</span>
-    <span class="n">end_t_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">19</span><span class="p">,</span>
-    <span class="n">end_b_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">21</span><span class="p">,</span>
-    <span class="n">motor_on_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">end_stops_on_expander</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">end_stops_inverted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">reversed_direction</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -917,6 +783,7 @@ Velocities are read and emitted regularly.</p>
 
 
         <p>The z axis hardware module is a simple example for a representation of real robot hardware.</p>
+
 
 
 
