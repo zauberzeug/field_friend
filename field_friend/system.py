@@ -133,7 +133,7 @@ class System(rosys.persistence.PersistentModule):
         return {
             'navigation': self.current_navigation.name if self.current_navigation is not None else None,
             'implement': self.current_implement.name if self.current_implement is not None else None,
-            'gnss_reference': GeoReference.current.origin.degree_tuple if GeoReference.current is not None else None,
+            'gnss_reference': GeoReference.current.degree_tuple if GeoReference.current is not None else None,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -150,7 +150,8 @@ class System(rosys.persistence.PersistentModule):
         elif 'reference_lat' in data and 'reference_long' in data:
             reference_tuple = (np.deg2rad(data['reference_lat']), np.deg2rad(data['reference_long']), 0)
         if reference_tuple is not None:
-            reference = GeoReference(origin=GeoPoint.from_degrees(*reference_tuple))
+            reference = GeoReference(origin=GeoPoint.from_degrees(reference_tuple[0], reference_tuple[1]),
+                                     direction=np.deg2rad(reference_tuple[2] if len(reference_tuple) > 2 else 0))
             self.update_gnss_reference(reference=reference)
 
     @property
