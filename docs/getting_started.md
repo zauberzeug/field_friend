@@ -1,5 +1,7 @@
 # Getting Started
 
+Test
+
 ## Run in Simulation
 
 We suggest you begin with simulating the Field Friend on your local development machine.
