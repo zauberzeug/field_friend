@@ -27,7 +27,7 @@ config = FieldFriendConfiguration(
     camera=CameraConfiguration(
         width=1280,
         height=720,
-        crop=CropConfiguration(left=80, right=30, up=180, down=0),
+        crop=CropConfiguration(left=80, right=30, up=0, down=0),
     ),
     circle_sight_positions=CircleSightPositions(
         right='-1',
