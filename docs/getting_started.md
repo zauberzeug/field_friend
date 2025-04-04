@@ -1,5 +1,11 @@
 # Getting Started
 
+## System Requirements
+
+- **Operating System**: Linux or Unix-based system (for Windows users, consider using Docker or a virtual machine)
+- **Python Version**: Python {{ python_versions }}
+- **Git**: For cloning the repository
+
 ## Run in Simulation
 
 We suggest you begin with simulating the Field Friend on your local development machine.
