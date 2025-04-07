@@ -3,10 +3,10 @@ site_url: https://docs.feldfreund.de/
 nav:
   - index.md
   - getting_started.md
-  - Features:
-      - features/user_interface.md # NOTE: shown when clicking on "Examples" folder
-      - features/user_interface.md
-      - features/field_planner.md
+  # - Features:
+  #     - features/user_interface.md # NOTE: shown when clicking on "Examples" folder
+  #     - features/user_interface.md
+  #     - features/field_planner.md
   - Module Reference: reference/
   - contributing.md
   - troubleshooting.md
