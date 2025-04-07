@@ -14,7 +14,7 @@
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../features/user_interface/">
+        <link rel="next" href="../reference/field_friend/hardware/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -395,24 +395,16 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../features/user_interface/" class="md-nav__link ">
-              
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
     Features
   </span>
   
 
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
@@ -428,11 +420,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/user_interface/" class="md-nav__link">
+      <a href="../features/user_interface.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    User Interface
+    None
   </span>
   
 
@@ -449,11 +441,32 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/field_planner/" class="md-nav__link">
+      <a href="../features/user_interface.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Field Planner
+    None
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/field_planner.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    None
   </span>
   
 
@@ -741,10 +754,12 @@ Contact <a href="mailto:sales@zauberzeug.com">sales@zauberzeug.com</a> if you ar
 <ol>
 <li>Ensure you can login via ssh without providing a password (via <code>ssh-copy-id</code> command)</li>
 <li>Ensure you have <a href="https://github.com/zauberzeug/livesync">LiveSync</a> installed with <br> <code>python3 -m pip install livesync</code></li>
-<li>Ensure the latest version of the docker image is installed on the Field Friend by syncing the code as described below and then running <br> <code>./docker.sh uppull</code></li>
-<li>Optional: ensure the correct docker containers are loaded on startup by running <br> <code>./docker.sh stopall &amp;&amp; ./docker.sh uppull &amp;&amp; ./docker.sh install</code></li>
-<li>Optional: update the <a href="https://lizard.dev">Lizard</a> microcontroller firmware on your Robot Brain by accessing the Field Friend web interface and navigating to the "Developer" options</li>
+<li>Ensure the latest version of the docker image is installed on the Field Friend by syncing the code as described below and then running <br> <code>./docker.sh U</code></li>
+<li>Optional: ensure the correct docker containers are loaded on startup by running <br> <code>./docker.sh stopall &amp;&amp; ./docker.sh U &amp;&amp; ./docker.sh install</code>
+   <!-- TODO --></li>
 </ol>
+<!-- 5. Optional: update the [Lizard](https://lizard.dev) microcontroller firmware on your Robot Brain by accessing the Field Friend web interface and navigating to the "Developer" options -->
+
 <h3 id="deploy-and-change-code">Deploy and Change Code<a class="headerlink" href="#deploy-and-change-code" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Go to your local <code>field_friend</code> folder and start the <a href="https://github.com/zauberzeug/livesync">LiveSync</a> script: <br>
