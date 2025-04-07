@@ -52,7 +52,7 @@ Contact [sales@zauberzeug.com](mailto:sales@zauberzeug.com) if you are intereste
    `./sync.py <ssh-host-name-of-field-friend>`
 2. This will deploy your local code to the Field Friend
 3. As long as [LiveSync](https://github.com/zauberzeug/livesync) is active, all code change are automatically pushed to the machine
-4. Any code changes will automatically trigger a reload on the Field Friend
+4. Any code changes will automatically trigger a hot reload on the Field Friend.
 
 ### Update RoSys and NiceGUI
 
