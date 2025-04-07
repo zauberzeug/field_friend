@@ -758,7 +758,7 @@ The software is meant to run on Linux and Unix systems so if you are using Windo
 </li>
 </ol>
 <p>In both cases, this will open the user interface of a simulated robot in your browser (if not browse to <a href="http://localhost/">http://localhost/</a>).
-If you change some code, the simulation will automatically reload.
+The simulation will automatically hot reload upon code changes.
 The Field Friend code is based on <a href="https://rosys.io">RoSys</a> which itself uses <a href="https://nicegui.io">NiceGUI</a>,
 both having a very gentle learning curve and are designed to boost your rapid development and testing.</p>
 <h2 id="run-on-real-hardware">Run on Real Hardware<a class="headerlink" href="#run-on-real-hardware" title="Permanent link">&para;</a></h2>
@@ -780,7 +780,7 @@ Contact <a href="mailto:sales@zauberzeug.com">sales@zauberzeug.com</a> if you ar
    <code>./sync.py &lt;ssh-host-name-of-field-friend&gt;</code></li>
 <li>This will deploy your local code to the Field Friend</li>
 <li>As long as <a href="https://github.com/zauberzeug/livesync">LiveSync</a> is active, all code change are automatically pushed to the machine</li>
-<li>Any code changes will automatically trigger a reload on the Field Friend</li>
+<li>Any code changes will automatically trigger a hot reload on the Field Friend.</li>
 </ol>
 <h3 id="update-rosys-and-nicegui">Update RoSys and NiceGUI<a class="headerlink" href="#update-rosys-and-nicegui" title="Permanent link">&para;</a></h3>
 <p>To utilize personal versions of RoSys and NiceGUI instead of the default ones provided in the docker image,
