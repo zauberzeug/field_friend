@@ -614,13 +614,19 @@
 <p>We suggest you begin with simulating the Field Friend on your local development machine.
 The software is meant to run on Linux and Unix systems so if you are using Windows, consider running in a Docker container or virtual machine.</p>
 <p>The Field Friend requires either Linux or Mac system with Python 3.11 to run. <br>Windows is currently not supported, but may work by using Docker or a virtual machine.</p>
+<ol>
+<li>
+<p>Clone the repository <br> <code>git clone git@github.com:zauberzeug/field_friend.git &amp;&amp; cd field_friend</code></p>
+</li>
+<li>
+<p>Create a file with your environment variables and replace <code>U4</code> with the name of your robot <br> <code>echo "ROBOT_ID=U4" &gt; .env</code></p>
+</li>
+</ol>
+<p>Now you have two options, either you run the code in Docker, like it does on the robot, or you setup your local python environment to run it.</p>
 <h3 id="docker-setup-recommended">Docker Setup (recommended)<a class="headerlink" href="#docker-setup-recommended" title="Permanent link">&para;</a></h3>
 <ol>
 <li>
 <p>Install <a href="https://docs.docker.com/get-started/get-docker/">Docker</a></p>
-</li>
-<li>
-<p>Clone the repository <br> <code>git clone git@github.com:zauberzeug/field_friend.git &amp;&amp; cd field_friend</code></p>
 </li>
 <li>
 <p>Build and start the container. <br> <code>./docker.sh U</code> <br> Our <code>docker.sh</code> script will automatically use the correct settings for your system.</p>
@@ -629,19 +635,13 @@ The software is meant to run on Linux and Unix systems so if you are using Windo
 <h3 id="local-setup">Local Setup<a class="headerlink" href="#local-setup" title="Permanent link">&para;</a></h3>
 <ol>
 <li>
-<p>Clone the repository <br> <code>git clone git@github.com:zauberzeug/field_friend.git &amp;&amp; cd field_friend</code></p>
-</li>
-<li>
 <p>Optional: Setup a virtual environment with <a href="https://docs.python.org/3/library/venv.html">venv</a> <br> <code>python3 -m venv .venv &amp;&amp; source .venv/bin/activate</code></p>
 </li>
 <li>
 <p>Install the python requirements <br> <code>python3 -m pip install -r requirements-dev.txt</code> <br> If you are having issues with CairoSVG on Mac, check the <a href="../troubleshooting/">troubleshooting guide</a>.</p>
 </li>
-<li>
-<p>Create a file with your environment variables and replace <code>U4</code> with the name of your robot <br> <code>echo "ROBOT_ID=U4" &gt; .env</code></p>
-</li>
 </ol>
-<p>This will open the user interface of a simulated robot in your browser (if not browse to <a href="http://localhost/">http://localhost/</a>).
+<p>In both cases, this will open the user interface of a simulated robot in your browser (if not browse to <a href="http://localhost/">http://localhost/</a>).
 If you change some code, the simulation will automatically reload.
 The Field Friend code is based on <a href="https://rosys.io">RoSys</a> which itself uses <a href="https://nicegui.io">NiceGUI</a>,
 both having a very gentle learning curve and are designed to boost your rapid development and testing.</p>
