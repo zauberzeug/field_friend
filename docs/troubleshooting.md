@@ -31,3 +31,17 @@ You can test it with this command:
 ```python
 python3 -c "import cairocffi; import cairosvg; print('Cairo packages successfully imported!')"
 ```
+
+## Missing Linux dependencies when running locally
+
+In case your Linux system is missing dependencies, look at the first lines of the provided [Dockerfile](https://github.com/zauberzeug/field_friend/blob/main/Dockerfile) to find them.
+
+## Permission denied directly after startup
+
+If you get the `[Errno 13] Permission denied` error message right after you started `main.py`, your system is probably blocking the default port 80.
+Try setting a custom port in your `.env`-file, like this
+
+```
+ROBOT_ID=U4
+PORT=8080
+```
