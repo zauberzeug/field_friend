@@ -25,6 +25,8 @@ Now you have two options, either you run the code in Docker, like it does on the
 
 2. Install the python requirements <br> `python3 -m pip install -r requirements-dev.txt` <br> If you are having issues with CairoSVG on Mac, check the [troubleshooting guide](troubleshooting.md).
 
+3. Now you can run the program <br> `python3 main.py`
+
 In both cases, this will open the user interface of a simulated robot in your browser (if not browse to [http://localhost/](http://localhost/)).
 If you change some code, the simulation will automatically reload.
 The Field Friend code is based on [RoSys](https://rosys.io) which itself uses [NiceGUI](https://nicegui.io),
