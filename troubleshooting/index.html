@@ -518,6 +518,24 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#missing-linux-dependencies-when-running-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing Linux dependencies when running locally
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission-denied-directly-after-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission denied directly after startup
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -570,6 +588,24 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#missing-linux-dependencies-when-running-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing Linux dependencies when running locally
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission-denied-directly-after-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission denied directly after startup
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -607,6 +643,14 @@ This will create a symbolic link to make the library accessible.</p>
 </code></pre></div>
 <p>You can test it with this command:</p>
 <div class="highlight"><pre><span></span><code><span class="n">python3</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import cairocffi; import cairosvg; print(&#39;Cairo packages successfully imported!&#39;)&quot;</span>
+</code></pre></div>
+<h2 id="missing-linux-dependencies-when-running-locally">Missing Linux dependencies when running locally<a class="headerlink" href="#missing-linux-dependencies-when-running-locally" title="Permanent link">&para;</a></h2>
+<p>In case your Linux system is missing dependencies, look at the first lines of the provided <a href="https://github.com/zauberzeug/field_friend/blob/main/Dockerfile">Dockerfile</a> to find them.</p>
+<h2 id="permission-denied-directly-after-startup">Permission denied directly after startup<a class="headerlink" href="#permission-denied-directly-after-startup" title="Permanent link">&para;</a></h2>
+<p>If you get the <code>[Errno 13] Permission denied</code> error message right after you started <code>main.py</code>, your system is probably blocking the default port 80.
+Try setting a custom port in your <code>.env</code>-file, like this</p>
+<div class="highlight"><pre><span></span><code>ROBOT_ID=U4
+PORT=8080
 </code></pre></div>
 
 
