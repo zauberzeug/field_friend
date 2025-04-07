@@ -488,6 +488,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cairosvg-on-mac" class="md-nav__link">
+    <span class="md-ellipsis">
+      CairoSVG on Mac
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -531,6 +540,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cairosvg-on-mac" class="md-nav__link">
+    <span class="md-ellipsis">
+      CairoSVG on Mac
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -561,6 +579,14 @@ The warning also provides a (not so readable) hint where the time is consumed.</
 <p>The example above is one of the more frequent scenarios.
 It means some code inside a user interaction event handler (e.g. <code>handle_event()</code> in <code>justpy.py</code>) is blocking.
 Try to figure out which UI event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.</p>
+<h2 id="cairosvg-on-mac">CairoSVG on Mac<a class="headerlink" href="#cairosvg-on-mac" title="Permanent link">&para;</a></h2>
+<p>If <a href="https://cairosvg.org/">CairoSVG</a> was installed via <a href="https://brew.sh/">Homebrew</a>, python sometimes can't find the correct path to run CairoSVG.
+This will create a symbolic link to make the library accessible.</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/local/lib<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>ln<span class="w"> </span>-sf<span class="w"> </span>/opt/homebrew/lib/libcairo.2.dylib<span class="w"> </span>/usr/local/lib/libcairo.2.dylib
+</code></pre></div>
+<p>You can test it with this command:</p>
+<div class="highlight"><pre><span></span><code><span class="n">python3</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import cairocffi; import cairosvg; print(&#39;Cairo packages successfully imported!&#39;)&quot;</span>
+</code></pre></div>
 
 
 

@@ -1,11 +1,10 @@
-import toml
+import re
 
 
 def define_env(env):
-    """Define variables for mkdocs-macros"""
-    # Read pyproject.toml
-    with open('pyproject.toml') as f:
-        data = toml.load(f)
-
-    # Make variables available to Markdown
-    env.variables['python_versions'] = data['project']['requires-python']
+    # Extract Python version from the Dockerfile's first line
+    with open('Dockerfile') as f:
+        first_line = f.readline().strip()
+    match = re.search(r'FROM python:(\d+\.\d+)', first_line)
+    python_version = match.group(1)
+    env.variables['python_version'] = python_version
