@@ -12,6 +12,7 @@ The Field Friend requires either Linux or Mac system with Python {{ python_versi
 2. Create a file with your environment variables and replace `U4` with the name of your robot <br> `echo "ROBOT_ID=U4" > .env`
 
 Now you have two options, either you run the code in Docker, like it does on the robot, or you setup your local python environment to run it.
+Should you face any problems during the setup, please check the [troubleshooting page](troubleshooting.md) or submit a [GitHub issue](https://github.com/zauberzeug/field_friend/issues).
 
 ### Docker Setup (recommended)
 
