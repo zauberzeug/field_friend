@@ -11,7 +11,9 @@ The Field Friend requires either Linux or Mac system with Python {{ python_versi
 
 1. Install [Docker](https://docs.docker.com/get-started/get-docker/)
 
-2. Build and start the container. <br> `./docker.sh U` <br> Our `docker.sh` script will automatically use the correct settings for your system.
+2. Clone the repository <br> `git clone git@github.com:zauberzeug/field_friend.git && cd field_friend`
+
+3. Build and start the container. <br> `./docker.sh U` <br> Our `docker.sh` script will automatically use the correct settings for your system.
 
 ### Local Setup
 
