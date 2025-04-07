@@ -37,9 +37,10 @@ Contact [sales@zauberzeug.com](mailto:sales@zauberzeug.com) if you are intereste
 
 1. Ensure you can login via ssh without providing a password (via `ssh-copy-id` command)
 2. Ensure you have [LiveSync](https://github.com/zauberzeug/livesync) installed with <br> `python3 -m pip install livesync`
-3. Ensure the latest version of the docker image is installed on the Field Friend by syncing the code as described below and then running <br> `./docker.sh uppull`
-4. Optional: ensure the correct docker containers are loaded on startup by running <br> `./docker.sh stopall && ./docker.sh uppull && ./docker.sh install`
-5. Optional: update the [Lizard](https://lizard.dev) microcontroller firmware on your Robot Brain by accessing the Field Friend web interface and navigating to the "Developer" options
+3. Ensure the latest version of the docker image is installed on the Field Friend by syncing the code as described below and then running <br> `./docker.sh U`
+4. Optional: ensure the correct docker containers are loaded on startup by running <br> `./docker.sh stopall && ./docker.sh U && ./docker.sh install`
+   <!-- TODO -->
+   <!-- 5. Optional: update the [Lizard](https://lizard.dev) microcontroller firmware on your Robot Brain by accessing the Field Friend web interface and navigating to the "Developer" options -->
 
 ### Deploy and Change Code
 
