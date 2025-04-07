@@ -8,23 +8,25 @@
       
       
       
-        <link rel="canonical" href="https://docs.feldfreund.de/troubleshooting/">
+        <link rel="canonical" href="https://docs.feldfreund.de/features/developer_interface/">
       
       
-        <link rel="prev" href="../contributing/">
+        <link rel="prev" href="../field_creator/">
       
       
+        <link rel="next" href="../../reference/field_friend/hardware/">
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.18">
     
     
       
-        <title>Troubleshooting - Field Friend Software Documentation</title>
+        <title>Developer interface - Field Friend Software Documentation</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.66ac8b77.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.66ac8b77.min.css">
       
       
 
@@ -43,11 +45,11 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,11 +67,6 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
-        
-        <a href="#troubleshooting" class="md-skip">
-          Skip to content
-        </a>
-      
     </div>
     <div data-md-component="announce">
       
@@ -82,7 +79,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Field Friend Software Documentation" class="md-header__button md-logo" aria-label="Field Friend Software Documentation" data-md-component="logo">
+    <a href="../.." title="Field Friend Software Documentation" class="md-header__button md-logo" aria-label="Field Friend Software Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -102,7 +99,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Troubleshooting
+              Developer interface
             
           </span>
         </div>
@@ -189,7 +186,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Field Friend Software Documentation" class="md-nav__button md-logo" aria-label="Field Friend Software Documentation" data-md-component="logo">
+    <a href="../.." title="Field Friend Software Documentation" class="md-nav__button md-logo" aria-label="Field Friend Software Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -219,7 +216,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -239,7 +236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting_started/" class="md-nav__link">
+      <a href="../../getting_started/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -256,22 +253,24 @@
       
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../features/user_interface/" class="md-nav__link ">
+            <a href="../user_interface/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -288,7 +287,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Features
@@ -302,7 +301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/user_interface/" class="md-nav__link">
+      <a href="../user_interface/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -323,7 +322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/field_creator/" class="md-nav__link">
+      <a href="../field_creator/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -341,10 +340,17 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../features/developer_interface/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -353,6 +359,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -407,7 +414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/field_friend/hardware/" class="md-nav__link">
+      <a href="../../reference/field_friend/hardware/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -435,7 +442,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -452,30 +459,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Troubleshooting
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -484,44 +471,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#asyncio-warning" class="md-nav__link">
-    <span class="md-ellipsis">
-      Asyncio Warning
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cairosvg-on-mac" class="md-nav__link">
-    <span class="md-ellipsis">
-      CairoSVG on Mac
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -543,34 +492,6 @@
   
   
   
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#asyncio-warning" class="md-nav__link">
-    <span class="md-ellipsis">
-      Asyncio Warning
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cairosvg-on-mac" class="md-nav__link">
-    <span class="md-ellipsis">
-      CairoSVG on Mac
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -588,32 +509,18 @@
   
 
 
-<h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
-<h2 id="asyncio-warning">Asyncio Warning<a class="headerlink" href="#asyncio-warning" title="Permanent link">&para;</a></h2>
-<p>While running RoSys you may see warnings similar to this one:</p>
-<div class="highlight"><pre><span></span><code>2021-10-31 15:08:04.040 [WARNING] asyncio: Executing &lt;Task pending name=&#39;Task-255&#39; coro=&lt;handle_event() running at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:344&gt; wait_for=&lt;_GatheringFuture pending cb=[&lt;TaskWakeupMethWrapper object at 0x7f7001f8e0&gt;()] created at /usr/local/lib/python3.9/asyncio/tasks.py:705&gt; created at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:261&gt; took 0.238 seconds
-</code></pre></div>
-<p>This means some coroutine is clogging the event loop for too long.
-In the above example it is a whopping 238 ms in which no other actor can do anything.
-This is an eternity when machine communication is expected to happen about every 10 ms.
-The warning also provides a (not so readable) hint where the time is consumed.</p>
-<p>The example above is one of the more frequent scenarios.
-It means some code inside a user interaction event handler (e.g. <code>handle_event()</code> in <code>justpy.py</code>) is blocking.
-Try to figure out which UI event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.</p>
-<h2 id="cairosvg-on-mac">CairoSVG on Mac<a class="headerlink" href="#cairosvg-on-mac" title="Permanent link">&para;</a></h2>
-<p>If <a href="https://cairosvg.org/">CairoSVG</a> was installed via <a href="https://brew.sh/">Homebrew</a>, python sometimes can't find the correct path to run CairoSVG.
-This will create a symbolic link to make the library accessible.</p>
-<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/local/lib<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>ln<span class="w"> </span>-sf<span class="w"> </span>/opt/homebrew/lib/libcairo.2.dylib<span class="w"> </span>/usr/local/lib/libcairo.2.dylib
-</code></pre></div>
-<p>You can test it with this command:</p>
-<div class="highlight"><pre><span></span><code><span class="n">python3</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import cairocffi; import cairosvg; print(&#39;Cairo packages successfully imported!&#39;)&quot;</span>
-</code></pre></div>
+  <h1>Developer interface</h1>
 
 
 
 
 
 
+
+
+
+  
+  
 
 
 
@@ -654,10 +561,10 @@ This will create a symbolic link to make the library accessible.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.3220b9d7.min.js"></script>
+      <script src="../../assets/javascripts/bundle.3220b9d7.min.js"></script>
       
     
   </body>
