@@ -168,7 +168,8 @@ class CameraCard:
             pass
 
         if e.type == 'mousemove' and point3d is not None:
-            self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
+            point3d_in_locator_frame = point3d.relative_to(self.robot_locator.pose_frame)
+            self.debug_position.set_text(f'screen {point2d} -> local {point3d_in_locator_frame}')
         if e.type == 'mouseup':
             if self.camera.calibration is None:
                 self.debug_position.set_text(f'last punch: {point2d}')
@@ -229,6 +230,7 @@ class CameraCard:
         svg = ''
         tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0).in_frame(
             self.robot_locator.pose_frame).resolve().point_3d
+        self.log.warning(f'tool_3d: {tool_3d}')
         tool_2d = self.camera.calibration.project_to_image(tool_3d)
         if tool_2d:
             tool_2d = tool_2d / self.shrink_factor
