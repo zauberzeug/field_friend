@@ -6,7 +6,8 @@ nav:
   - Features:
       - features/user_interface.md # NOTE: shown when clicking on "Examples" folder
       - features/user_interface.md
-      - features/field_planner.md
+      - features/field_creator.md
+      - features/developer_interface.md
   - Module Reference: reference/
   - contributing.md
   - troubleshooting.md
@@ -41,6 +42,8 @@ plugins:
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index
+  - macros:
+      module_name: docs/run_macros
   - mkdocstrings:
       default_handler: python
       handlers:

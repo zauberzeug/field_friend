@@ -16,3 +16,32 @@ The warning also provides a (not so readable) hint where the time is consumed.
 The example above is one of the more frequent scenarios.
 It means some code inside a user interaction event handler (e.g. `handle_event()` in `justpy.py`) is blocking.
 Try to figure out which UI event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.
+
+## CairoSVG on Mac
+
+If [CairoSVG](https://cairosvg.org/) was installed via [Homebrew](https://brew.sh/), python sometimes can't find the correct path to run CairoSVG.
+This will create a symbolic link to make the library accessible.
+
+```bash
+sudo mkdir -p /usr/local/lib && sudo ln -sf /opt/homebrew/lib/libcairo.2.dylib /usr/local/lib/libcairo.2.dylib
+```
+
+You can test it with this command:
+
+```python
+python3 -c "import cairocffi; import cairosvg; print('Cairo packages successfully imported!')"
+```
+
+## Missing Linux dependencies when running locally
+
+In case your Linux system is missing dependencies, look at the first lines of the provided [Dockerfile](https://github.com/zauberzeug/field_friend/blob/main/Dockerfile) to find them.
+
+## Permission denied directly after startup
+
+If you get the `[Errno 13] Permission denied` error message right after you started `main.py`, your system is probably blocking the default port 80.
+Try setting a custom port in your `.env`-file, like this
+
+```
+ROBOT_ID=U4
+PORT=8080
+```
