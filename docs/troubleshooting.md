@@ -1,5 +1,9 @@
 # Troubleshooting
 
+This section provides guidance for diagnosing and resolving issues during operation. Begin by checking the robot’s logs for warnings or errors.
+
+Live logs can be viewed using `docker.sh l rosys`, and archived logs are stored on the robot inside the `~/.rosys` directory. If further detail is required, enable debug-level logging on the [RoSys Logging Page](https://rosys.io/reference/rosys/analysis/#rosys.analysis.logging_page.LoggingPage) that is available at [/logging](http://localhost/logging).
+
 ## Asyncio Warning
 
 While running RoSys you may see warnings similar to this one:

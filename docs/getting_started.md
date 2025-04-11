@@ -24,7 +24,7 @@ Should you face any problems during the setup, please check the [troubleshooting
 
 1. Optional: Setup a virtual environment with [venv](https://docs.python.org/3/library/venv.html) <br> `python3 -m venv .venv && source .venv/bin/activate`
 
-2. Install the python requirements <br> `python3 -m pip install -r requirements-dev.txt` <br> If you are having issues with CairoSVG on Mac, check the [troubleshooting guide](troubleshooting.md).
+2. Install the python requirements <br> `python3 -m pip install -r requirements-dev.txt`.
 
 3. Now you can run the program <br> `python3 main.py`
 
