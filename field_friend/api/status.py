@@ -8,6 +8,11 @@ from field_friend.system import System
 
 
 class Status:
+    """API endpoints for retrieving the robot's status information.
+
+    This API provides endpoints to check the robot's operational status, including
+    work status, battery level, position, and software versions.
+    """
 
     def __init__(self, system: System) -> None:
         self.system = system
