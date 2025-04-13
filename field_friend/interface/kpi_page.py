@@ -5,6 +5,7 @@ from .components import create_header
 
 
 class KpiPage(kpi_page):
+    # currently not used
 
     def __init__(self, system: System) -> None:
         super().__init__(system.kpi_provider)

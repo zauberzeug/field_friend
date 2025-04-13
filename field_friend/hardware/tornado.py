@@ -9,6 +9,7 @@ from ..config import TornadoConfiguration
 
 
 class Tornado(rosys.hardware.Module, abc.ABC):
+    """Controls the vertical axis of the Tornado weeding implement."""
 
     def __init__(self, min_position: float, **kwargs) -> None:
         super().__init__(**kwargs)
