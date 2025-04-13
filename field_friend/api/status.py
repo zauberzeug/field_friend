@@ -29,8 +29,8 @@ class Status:
                 core_version = 'simulation'
                 p0_version = 'simulation'
             if self.system.automator.is_running or self.system.automator.is_paused:
-                field = self.system.field_navigation.field.name if self.system.field_navigation.field else None
-                row = self.system.field_navigation.current_row.name if self.system.field_navigation.current_row else None
+                field = self.system.field_navigation.field.name if self.system.field_navigation is not None and self.system.field_navigation.field else None
+                row = self.system.field_navigation.current_row.name if self.system.field_navigation is not None and self.system.field_navigation.current_row else None
             else:
                 field = None
                 row = None
