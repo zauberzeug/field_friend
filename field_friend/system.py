@@ -56,7 +56,7 @@ class System(rosys.persistence.PersistentModule):
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
-        self.gnss: GnssHardware | GnssSimulation
+        self.gnss: GnssHardware | GnssSimulation | None
         self.field_friend: FieldFriend
         self._current_navigation: Navigation | None = None
         self.implements: dict[str, Implement] = {}
