@@ -55,8 +55,8 @@ class System(rosys.persistence.PersistentModule):
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
-        self.gnss: GnssHardware | GnssSimulation | None = None
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
+        self.gnss: GnssHardware | GnssSimulation | None = None
         self.field_friend: FieldFriend
         self._current_navigation: Navigation | None = None
         self.implements: dict[str, Implement] = {}
@@ -281,10 +281,10 @@ class System(rosys.persistence.PersistentModule):
         return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
-        if self.gnss is None:
-            self.log.warning('Not updating GNSS reference: GNSS not configured')
-            return
         if reference is None:
+            if self.gnss is None:
+                self.log.warning('Not updating GNSS reference: GNSS not configured')
+                return
             if self.gnss.last_measurement is None:
                 self.log.warning('Not updating GNSS reference: No GNSS measurement received')
                 return
