@@ -15,7 +15,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
     R_IMU_ANGULAR = 0.01
     ODOMETRY_ANGULAR_WEIGHT = 0.1
 
-    def __init__(self, wheels: Wheels, gnss: Gnss, imu: Imu | None = None) -> None:
+    def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None) -> None:
         """ Robot Locator based on an extended Kalman filter."""
         super().__init__(persistence_key='field_friend.robot_locator')
         self.log = logging.getLogger('field_friend.robot_locator')
@@ -43,7 +43,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self._previous_imu_measurement: ImuMeasurement | None = None
 
         self._wheels.VELOCITY_MEASURED.register(self._handle_velocity_measurement)
-        self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
+        if self._gnss is not None:
+            self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
 
     def backup(self) -> dict[str, Any]:
         return {
