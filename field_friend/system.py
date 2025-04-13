@@ -278,7 +278,7 @@ class System(rosys.persistence.PersistentModule):
             assert self.config.gnss is not None
             return GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
-        return GnssSimulation(wheels=wheels, lat_std_dev=0.001, lon_std_dev=0.001, heading_std_dev=0.01)
+        return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
         if reference is None:
