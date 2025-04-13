@@ -64,8 +64,9 @@ class DevPage:
                 self.odometer_ui()
                 if isinstance(self.system.field_friend.wheels, rosys.hardware.WheelsSimulation):
                     self.wheels_ui()
-            with ui.card():
-                self.system.gnss.developer_ui()
+            if self.system.gnss is not None:
+                with ui.card():
+                    self.system.gnss.developer_ui()
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
                     self.system.field_friend.imu.developer_ui()

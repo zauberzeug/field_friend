@@ -272,7 +272,9 @@ class System(rosys.persistence.PersistentModule):
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
 
-    def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation:
+    def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation | None:
+        if self.config.gnss is None:
+            return None
         if self.is_real:
             # handle the case where the gnss is not configured
             assert self.config.gnss is not None
