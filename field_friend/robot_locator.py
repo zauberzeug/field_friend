@@ -32,8 +32,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self._pose_timestamp = rosys.time()
 
         # bound attributes
-        self._ignore_gnss = False
-        self._ignore_imu = False
+        self._ignore_gnss = True if gnss is None else False
+        self._ignore_imu = True if imu is None else False
         self._r_odom_linear = self.R_ODOM_LINEAR
         self._r_odom_angular = self.R_ODOM_ANGULAR
         self._r_imu_angular = self.R_IMU_ANGULAR
