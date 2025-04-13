@@ -58,7 +58,7 @@ for path in sorted(Path('.').rglob('__init__.py')):
         try:
             events = extract_events(inspect.getfile(cls))
         except Exception:
-            logging.warning(f'skipping {identifier}.{name}')
+            logging.warning(f'skipping {identifier}.{name}: events')
             continue
 
         with mkdocs_gen_files.open(Path('reference', doc_path), 'a') as fd:
