@@ -21,21 +21,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.feldfreund.de/features/developer_interface/</loc>
-         <lastmod>2025-04-13</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://docs.feldfreund.de/features/field_creator/</loc>
-         <lastmod>2025-04-13</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://docs.feldfreund.de/features/user_interface/</loc>
-         <lastmod>2025-04-13</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://docs.feldfreund.de/reference/SUMMARY/</loc>
          <lastmod>2025-04-13</lastmod>
          <changefreq>daily</changefreq>
@@ -52,6 +37,21 @@
     </url>
     <url>
          <loc>https://docs.feldfreund.de/reference/field_friend/interface/</loc>
+         <lastmod>2025-04-13</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://docs.feldfreund.de/tutorials/docker_management/</loc>
+         <lastmod>2025-04-13</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://docs.feldfreund.de/tutorials/field_creation/</loc>
+         <lastmod>2025-04-13</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://docs.feldfreund.de/tutorials/tutorials/</loc>
          <lastmod>2025-04-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
