@@ -3,11 +3,10 @@ site_url: https://docs.feldfreund.de/
 nav:
   - index.md
   - getting_started.md
-  - Features:
-      - features/user_interface.md # NOTE: shown when clicking on "Examples" folder
-      - features/user_interface.md
-      - features/field_creator.md
-      - features/developer_interface.md
+  - Tutorials:
+      - tutorials/tutorials.md
+      - tutorials/docker_management.md
+      - tutorials/field_creation.md
   - Module Reference: reference/
   - contributing.md
   - troubleshooting.md
