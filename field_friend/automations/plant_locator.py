@@ -245,5 +245,5 @@ class PlantLocator(EntityLocator):
         self.crop_category_names.update({crop_name: crop_name.replace('_', ' ').title()
                                         for crop_name in filtered_crops})
         self.detector_info = detector_info
-        self.log.debug('Fetched detector info: %s', detector_info)
+        self.log.debug('Fetched detector info: %s and crops: %s', detector_info, self.crop_category_names)
         return True
