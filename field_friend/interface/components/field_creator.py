@@ -59,6 +59,9 @@ class FieldCreator:
         self.open()
 
     def open(self) -> None:
+        if self.gnss is None or self.gnss.last_measurement is None:
+            rosys.notify('GNSS not available', 'negative')
+            return
         self.next()
         self.dialog.open()
 
