@@ -56,7 +56,7 @@ class System(rosys.persistence.PersistentModule):
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
-        self.gnss: GnssHardware | GnssSimulation
+        self.gnss: GnssHardware | GnssSimulation | None = None
         self.field_friend: FieldFriend
         self._current_navigation: Navigation | None = None
         self.implements: dict[str, Implement] = {}
@@ -232,7 +232,7 @@ class System(rosys.persistence.PersistentModule):
         first_implement = next(iter(self.implements.values()))
         self.straight_line_navigation = StraightLineNavigation(self, first_implement)
         self.follow_crops_navigation = FollowCropsNavigation(self, first_implement)
-        self.field_navigation = FieldNavigation(self, first_implement)
+        self.field_navigation = FieldNavigation(self, first_implement) if self.gnss is not None else None
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement) \
             if isinstance(self.field_friend.y_axis, AxisD1) else None
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
@@ -272,16 +272,19 @@ class System(rosys.persistence.PersistentModule):
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
 
-    def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation:
+    def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation | None:
+        if self.config.gnss is None:
+            return None
         if self.is_real:
-            # handle the case where the gnss is not configured
-            assert self.config.gnss is not None
             return GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
-        return GnssSimulation(wheels=wheels, lat_std_dev=0.0, lon_std_dev=0.0, heading_std_dev=0.0)
+        return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
         if reference is None:
+            if self.gnss is None:
+                self.log.warning('Not updating GNSS reference: GNSS not configured')
+                return
             if self.gnss.last_measurement is None:
                 self.log.warning('Not updating GNSS reference: No GNSS measurement received')
                 return

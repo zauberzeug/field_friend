@@ -75,6 +75,7 @@ class SupportPointDialog:
         self.next = self.confirm_support_point
 
     def confirm_support_point(self) -> None:
+        assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         if self.gnss.last_measurement.gps_quality != GpsQuality.RTK_FIXED:
             with self.content:
