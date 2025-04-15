@@ -49,31 +49,57 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  ) -> None:
         self.estop_active = False
         # implement lizard stop method for available hardware
-        lizard_code = f'let stop do {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.speed(0, 0);'
+        lizard_code = f'let disable do {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.disable();'
         if y_axis is not None:
             if isinstance(y_axis, AxisD1):
-                lizard_code += f'{y_axis.config.name}_motor.stop();'
+                lizard_code += f'{y_axis.config.name}_motor.disable();'
             else:
-                lizard_code += f' {y_axis.config.name}.stop();'
+                lizard_code += f' {y_axis.config.name}.disable();'
         if z_axis is not None:
             if isinstance(z_axis, TornadoHardware):
-                lizard_code += f'{z_axis.config.name}_z.stop();'
-                lizard_code += f'{z_axis.config.name}_motor_turn.speed(0);'
+                lizard_code += f'{z_axis.config.name}_z.disable();'
+                lizard_code += f'{z_axis.config.name}_motor_turn.disable();'
             elif isinstance(z_axis, AxisD1):
-                lizard_code += f'{z_axis.config.name}_motor.stop();'
+                lizard_code += f'{z_axis.config.name}_motor.disable();'
             else:
-                lizard_code += f' {z_axis.config.name}.stop();'
+                lizard_code += f' {z_axis.config.name}.disable();'
         if isinstance(flashlight, FlashlightHardware):
-            lizard_code += f' {flashlight.config.name}.on();'
+            lizard_code += f' {flashlight.config.name}.disable();'
         elif isinstance(flashlight, FlashlightHardwareV2):
-            lizard_code += f' {flashlight.config.name}_front.off(); {flashlight.config.name}_back.off();'
+            lizard_code += f' {flashlight.config.name}_front.disable(); {flashlight.config.name}_back.disable();'
         lizard_code += 'end\n'
+
+        lizard_code += f'let enable do {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.enable();'
+        if y_axis is not None:
+            if isinstance(y_axis, AxisD1):
+                lizard_code += f'{y_axis.config.name}_motor.enable();'
+            else:
+                lizard_code += f' {y_axis.config.name}.enable();'
+        if z_axis is not None:
+            if isinstance(z_axis, TornadoHardware):
+                lizard_code += f'{z_axis.config.name}_z.enable();'
+                lizard_code += f'{z_axis.config.name}_motor_turn.enable();'
+            elif isinstance(z_axis, AxisD1):
+                lizard_code += f'{z_axis.config.name}_motor.enable();'
+            else:
+                lizard_code += f' {z_axis.config.name}.enable();'
+        if isinstance(flashlight, FlashlightHardware):
+            lizard_code += f' {flashlight.config.name}.enable();'
+        elif isinstance(flashlight, FlashlightHardwareV2):
+            lizard_code += f' {flashlight.config.name}_front.enable(); {flashlight.config.name}_back.enable();'
+        lizard_code += 'end\n'
+
         # implement stop call for estops and bumpers
-        for name in estop.pins:
-            lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
+        if estop.pins:
+            enable_conditions = [f'estop_{name}.level == 1' for name in estop.pins]
+            disable_conditions = [f'estop_{name}.level == 0' for name in estop.pins]
+            lizard_code += f'when {" and ".join(enable_conditions)} then enable(); end\n'
+            lizard_code += f'when {" or ".join(disable_conditions)} then disable(); end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
-            for name in bumper.pins:
-                lizard_code += f'when bumper_{name}.level == 1 then stop(); end\n'
+            enable_conditions = [f'bumper_{name}.level == 0' for name in bumper.pins]
+            disable_conditions = [f'bumper_{name}.level == 1' for name in bumper.pins]
+            lizard_code += f'when {" and ".join(enable_conditions)} then enable(); end\n'
+            lizard_code += f'when {" or ".join(disable_conditions)} then disable(); end\n'
 
         # implement stop call for "ground check" reference sensors
         if isinstance(y_axis, ChainAxisHardware):
