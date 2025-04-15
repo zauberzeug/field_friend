@@ -8,7 +8,7 @@ from .axis import Axis
 
 
 class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
-    """The z axis module is a simple example for a representation of real or simulated robot hardware."""
+    """Controls a vertical axis using a stepper motor."""
 
     def __init__(self, config: ZStepperConfiguration,
                  robot_brain: rosys.hardware.RobotBrain, *,

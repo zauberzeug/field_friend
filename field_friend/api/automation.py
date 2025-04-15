@@ -6,6 +6,12 @@ from field_friend.system import System
 
 
 class Automation:
+    """API endpoints for controlling the Field Friend's automation features.
+
+    This API allows controlling the basic automation control (start, stop, status) as well as the field navigation functionality for automated field operations via HTTP endpoints.
+    All endpoints return appropriate HTTP status codes and JSON responses.
+    """
+
     def __init__(self, system: System) -> None:
         self.system = system
 

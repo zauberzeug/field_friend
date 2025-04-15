@@ -4,7 +4,9 @@ mdx-include
 mkdocs==1.5.3
 mkdocs-gen-files
 mkdocs-literate-nav
+mkdocs-macros-plugin
 mkdocs-material
 mkdocs-pymdownx-material-extras
 mkdocs-section-index
 mkdocstrings-python
+toml

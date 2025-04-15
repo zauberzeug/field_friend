@@ -4,6 +4,7 @@ import rosys
 
 
 class Axis(rosys.hardware.Module, abc.ABC):
+    """Abstract base class for linear axis modules."""
 
     def __init__(self, *,
                  max_speed: int,
@@ -56,10 +57,6 @@ class Axis(rosys.hardware.Module, abc.ABC):
         return True
 
     def compute_steps(self, position: float) -> int:
-        """Compute the number of steps to move the axis to the given position.
-
-        The position is given in meters.
-        """
         return int((position + self.axis_offset) * self.steps_per_m) * (-1 if self.reversed_direction else 1)
 
     def compute_position(self, steps: int) -> float:
@@ -77,8 +74,7 @@ class Axis(rosys.hardware.Module, abc.ABC):
 
 
 class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
-    '''The z axis simulation module is a simple example for a representation of simulated robot hardware.
-    '''
+    """The z axis simulation module is a simple example for a representation of simulated robot hardware."""
 
     def __init__(self, *,
                  max_speed: int = 80_000,
