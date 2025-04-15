@@ -1,6 +1,8 @@
 from rosys.geometry import Pose, Rotation
 
 from field_friend.config.configuration import (
+    CameraConfiguration,
+    CropConfiguration,
     FieldFriendConfiguration,
     GnssConfiguration,
     ImuConfiguration,
@@ -11,13 +13,18 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='field-friend-f22',
-    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=['orin', 'v05', 'nand']),
+    robot_brain=RobotBrainConfiguration(name='rb55', flash_params=['orin', 'v05', 'nand']),
     tool=None,
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033, work_x=0, wheel_distance=1.49),
-    camera=None,
+    # TODO: remove camera
+    camera=CameraConfiguration(
+        width=1280,
+        height=720,
+        crop=CropConfiguration(left=250, right=250, up=0, down=0),
+    ),
     wheels=WheelsConfiguration(
-        is_left_reversed=False,
-        is_right_reversed=True,
+        is_left_reversed=True,
+        is_right_reversed=False,
         left_back_can_address=0x000,
         left_front_can_address=0x100,
         right_back_can_address=0x200,
