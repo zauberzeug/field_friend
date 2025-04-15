@@ -245,7 +245,8 @@ class System(rosys.persistence.PersistentModule):
     def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider:
         if not self.is_real:
             return rosys.vision.SimulatedCameraProvider()
-        assert self.config.camera is not None
+        if self.config.camera is None:
+            return rosys.vision.SimulatedCameraProvider()
         if self.config.camera.camera_type == 'CalibratableUsbCamera':
             return CalibratableUsbCameraProvider()
         if self.config.camera.camera_type == 'ZedxminiCamera':
