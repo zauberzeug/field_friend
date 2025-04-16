@@ -57,6 +57,9 @@ class PlantLocator(EntityLocator):
         self.detector_error = False
         self.last_detection_time = rosys.time()
         self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
+        if self.camera_provider is None:
+            self.log.warning('no camera provider configured, cant locate plants')
+            return
         rosys.on_repeat(self._detection_watchdog, 0.5)
         rosys.on_startup(self.fetch_detector_info)
 
@@ -86,7 +89,6 @@ class PlantLocator(EntityLocator):
             return
         t = rosys.time()
         if self.camera_provider is None:
-            self.log.error('no camera provider configured')
             return
         camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
         if not camera:
