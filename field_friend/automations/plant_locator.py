@@ -55,10 +55,11 @@ class PlantLocator(EntityLocator):
             self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
         self.detector_error = False
         self.last_detection_time = rosys.time()
-        self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
         if self.camera_provider is None:
             self.log.warning('no camera provider configured, cant locate plants')
             return
+        assert self.detector is not None
+        self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
         rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         rosys.on_repeat(self._detection_watchdog, 0.5)
         rosys.on_startup(self.fetch_detector_info)
@@ -235,6 +236,7 @@ class PlantLocator(EntityLocator):
             self.upload_images = False
 
     async def fetch_detector_info(self) -> bool:
+        assert self.detector is not None
         try:
             detector_info: DetectorInfo = await self.detector.fetch_detector_info()
         except DetectorException as e:
