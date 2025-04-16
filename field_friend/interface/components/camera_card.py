@@ -116,7 +116,10 @@ class CameraCard:
                 self.debug_position = ui.label()
 
     def update_content(self) -> None:
-        cameras = list(self.camera_provider.cameras.values())
+        if self.camera_provider is None:
+            cameras = []
+        else:
+            cameras = list(self.camera_provider.cameras.values())
         active_camera = next((camera for camera in cameras if camera.is_connected), None)
         if active_camera is None:
             if self.camera:

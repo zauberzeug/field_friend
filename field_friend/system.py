@@ -242,11 +242,12 @@ class System(rosys.persistence.PersistentModule):
                                                           ] if n is not None}
         self.current_navigation = self.straight_line_navigation
 
-    def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider:
+    def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider | None:
         if not self.is_real:
             return rosys.vision.SimulatedCameraProvider()
         if self.config.camera is None:
-            return rosys.vision.SimulatedCameraProvider()
+            self.log.warning('Camera is not configured, no camera provider will be used')
+            return None
         if self.config.camera.camera_type == 'CalibratableUsbCamera':
             return CalibratableUsbCameraProvider()
         if self.config.camera.camera_type == 'ZedxminiCamera':
