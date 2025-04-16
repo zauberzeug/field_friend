@@ -12,7 +12,7 @@ from ...robot_locator import RobotLocator
 
 class FieldFriendObject(robot_object):
 
-    def __init__(self, robot_locator: RobotLocator, camera_provider: CameraProvider, field_friend: FieldFriend) -> None:
+    def __init__(self, robot_locator: RobotLocator, camera_provider: CameraProvider | None, field_friend: FieldFriend) -> None:
         super().__init__(Prism(outline=[], height=0), robot_locator)  # type: ignore
 
         self.robot = field_friend

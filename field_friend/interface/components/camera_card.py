@@ -42,6 +42,7 @@ class CameraCard:
         self.show_weeds_to_handle: bool = False
         self.camera: CalibratableCamera | None = None
         self.image_view: ui.interactive_image | None = None
+        assert self.camera_provider is not None
         self.calibration_dialog = calibration_dialog(self.camera_provider, self.robot_locator)
         self.camera_card = ui.card()
         self.flashlight_toggled: bool = False
@@ -116,6 +117,7 @@ class CameraCard:
                 self.debug_position = ui.label()
 
     def update_content(self) -> None:
+        assert self.camera_provider is not None
         cameras = list(self.camera_provider.cameras.values())
         active_camera = next((camera for camera in cameras if camera.is_connected), None)
         if active_camera is None:
@@ -189,6 +191,7 @@ class CameraCard:
             self.debug_position.set_text('')
 
     async def calibrate(self) -> None:
+        assert self.camera_provider is not None
         assert self.camera is not None
         result = await self.calibration_dialog.edit(self.camera)
         if result:

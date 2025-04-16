@@ -11,6 +11,11 @@ class Automation:
 
         @app.get('/api/automation/field_navigation/status')
         async def get_field_navigation_status():
+            if self.system.field_navigation is None:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={'error': 'Field navigation is not available'}
+                )
             distance_to_end = self.system.robot_locator.pose.point.distance(
                 self.system.field_navigation.end_point) if self.system.field_navigation.end_point else None
             return JSONResponse(
@@ -27,6 +32,11 @@ class Automation:
 
         @app.post('/api/automation/field_navigation/start')
         async def start_field_navigation(request: Request):
+            if self.system.field_navigation is None:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={'error': 'Field navigation is not available'}
+                )
             try:
                 request_data = await request.json()
                 if 'field_id' not in request_data or 'beds' not in request_data:
@@ -58,6 +68,11 @@ class Automation:
 
         @app.post('/api/automation/field_navigation/confirm_turn')
         async def confirm_turn():
+            if self.system.field_navigation is None:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={'error': 'Field navigation is not available'}
+                )
             self.system.field_navigation.allowed_to_turn = True
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
