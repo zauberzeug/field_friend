@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import rosys
 from nicegui import binding, ui
 
