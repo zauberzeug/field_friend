@@ -26,11 +26,10 @@ config = FieldFriendConfiguration(
     ),
     has_status_control=True,
     flashlight=None,
-
     bumper=None,
     y_axis=None,
     z_axis=None,
     circle_sight_positions=None,
-    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.6006605, 0.0242387, 0.0)),
+    gnss=GnssConfiguration(antenna_pose=Pose(x=0.0, y=0.778, yaw=0.0)),
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.5804, 0.00506, 0.0)),
 )
