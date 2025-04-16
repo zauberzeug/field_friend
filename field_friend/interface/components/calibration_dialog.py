@@ -29,7 +29,6 @@ class CalibrationDialog(ui.dialog):
         self.mouse_y: float = 0
         self.moving_dot: Dot | None = None
         self.camera: CalibratableCamera | None = None
-        assert self.camera_provider is not None
         with self, ui.card().tight().style('max-width: 1000px'):
             ui.keyboard(self.handle_key)
             self.calibration_image = ui.interactive_image(on_mouse=self.handle_mouse,
