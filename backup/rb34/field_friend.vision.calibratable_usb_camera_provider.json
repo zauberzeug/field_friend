@@ -4,10 +4,18 @@
             "id": "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0",
             "name": "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0",
             "connect_after_init": true,
-            "streaming": true,
-            "focal_length": 1830,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "auto_exposure": true,
+            "exposure": false,
+            "width": 1280,
+            "height": 720,
+            "fps": 9,
             "calibration": {
                 "intrinsics": {
+                    "model": "pinhole",
                     "matrix": [
                         [
                             707.8628964548316,
@@ -32,31 +40,17 @@
                         2.3421262828219466e-06,
                         -0.1989068783821379
                     ],
-                    "rotation": {
-                        "R": [
-                            [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            [
-                                0.0,
-                                1.0,
-                                0.0
-                            ],
-                            [
-                                0.0,
-                                0.0,
-                                1.0
-                            ]
-                        ]
-                    },
+                    "omnidir_params": null,
                     "size": {
                         "width": 1280,
                         "height": 720
                     }
                 },
                 "extrinsics": {
+                    "_frame_id": "field_friend.robot_locator",
+                    "x": 0.2748761264090155,
+                    "y": 0.0047265743642995964,
+                    "z": 0.2958801067726487,
                     "rotation": {
                         "R": [
                             [
@@ -75,19 +69,10 @@
                                 -0.8320626045454975
                             ]
                         ]
-                    },
-                    "translation": [
-                        0.2748761264090155,
-                        0.0047265743642995964,
-                        0.2958801067726487
-                    ]
+                    }
                 }
             },
-            "auto_exposure": true,
-            "exposure": false,
-            "width": 1280,
-            "height": 720,
-            "fps": 9
+            "focal_length": 1830
         }
     }
 }
