@@ -1,12 +1,9 @@
 import rosys
-from nicegui import binding, ui
+from nicegui import ui
 from rosys.analysis import track
 
 from ..system import System
-from .components import CameraCard as camera_card
-from .components import LeafletMap as leaflet_map
 from .components import Operation as operation
-from .components import RobotScene as robot_scene
 from .components import create_header
 from .components.log_monitor import LogMonitor
 
