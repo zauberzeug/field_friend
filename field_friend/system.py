@@ -80,7 +80,8 @@ class System(rosys.persistence.PersistentModule):
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
-            self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
+            if self.camera_provider is not None:
+                self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
 
         if self.config.camera is not None:
             self.camera_configurator = CameraConfigurator(
@@ -255,6 +256,9 @@ class System(rosys.persistence.PersistentModule):
         raise NotImplementedError(f'Unknown camera type: {self.config.camera.camera_type}')
 
     async def setup_simulated_usb_camera(self):
+        if self.camera_provider is None:
+            self.log.error('No camera provider configured, skipping simulated USB camera setup')
+            return
         self.camera_provider.remove_all_cameras()
         camera = rosys.vision.SimulatedCalibratableCamera.create_calibrated(id='bottom_cam',
                                                                             x=0.4, z=0.4,

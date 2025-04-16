@@ -18,7 +18,7 @@ from ...vision.zedxmini_camera import ZedxminiCamera, ZedxminiCameraProvider
 class CalibrationDialog(ui.dialog):
 
     # TODO: check typing
-    def __init__(self, camera_provider: CalibratableUsbCameraProvider | ZedxminiCameraProvider | SimulatedCameraProvider, robot_locator: RobotLocator) -> None:
+    def __init__(self, camera_provider: CalibratableUsbCameraProvider | ZedxminiCameraProvider | SimulatedCameraProvider | None, robot_locator: RobotLocator) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.calibration')
         self.robot_locator = robot_locator
@@ -29,6 +29,7 @@ class CalibrationDialog(ui.dialog):
         self.mouse_y: float = 0
         self.moving_dot: Dot | None = None
         self.camera: CalibratableCamera | None = None
+        assert self.camera_provider is not None
         with self, ui.card().tight().style('max-width: 1000px'):
             ui.keyboard(self.handle_key)
             self.calibration_image = ui.interactive_image(on_mouse=self.handle_mouse,
@@ -217,5 +218,6 @@ class CalibrationDialog(ui.dialog):
             ui.notify(str(e))
         else:
             ui.notify('Calibration applied')
-            self.camera_provider.request_backup()
+            if self.camera_provider is not None:
+                self.camera_provider.request_backup()
             self.submit(True)

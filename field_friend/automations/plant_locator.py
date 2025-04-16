@@ -85,6 +85,9 @@ class PlantLocator(EntityLocator):
             await rosys.sleep(0.01)
             return
         t = rosys.time()
+        if self.camera_provider is None:
+            self.log.error('no camera provider configured')
+            return
         camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
         if not camera:
             self.log.error('no connected camera found')

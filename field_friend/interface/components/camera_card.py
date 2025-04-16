@@ -192,6 +192,7 @@ class CameraCard:
 
     async def calibrate(self) -> None:
         assert self.camera is not None
+        assert self.camera_provider is not None
         result = await self.calibration_dialog.edit(self.camera)
         if result:
             self.show_mapping_checkbox.value = True

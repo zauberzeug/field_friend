@@ -10,7 +10,7 @@ from .calibratable_usb_camera import CalibratableUsbCamera
 
 class CameraConfigurator:
     def __init__(self,
-                 camera_provider: rosys.vision.CameraProvider,
+                 camera_provider: rosys.vision.CameraProvider | None,
                  robot_locator: RobotLocator,
                  robot_id: str,
                  camera_config: CameraConfiguration,
@@ -27,6 +27,9 @@ class CameraConfigurator:
         self.log.debug('updating camera config')
         camera = None
         start_time = rosys.time()
+        if self.camera_provider is None:
+            self.log.error('no camera provider configured')
+            return
         while not camera:
             if rosys.time() - start_time > 60:
                 raise RuntimeError('No active camera found after 60s')
