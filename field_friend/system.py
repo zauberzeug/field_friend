@@ -54,7 +54,7 @@ class System(rosys.persistence.PersistentModule):
         self.config = get_config(self.robot_id)
 
         self.camera_provider = self.setup_camera_provider()
-        self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
+        self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation | None = None
         self.field_friend: FieldFriend
@@ -84,6 +84,7 @@ class System(rosys.persistence.PersistentModule):
                 self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
 
         if self.config.camera is not None:
+            assert self.camera_provider is not None
             self.camera_configurator = CameraConfigurator(
                 self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)

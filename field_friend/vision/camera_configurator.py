@@ -10,7 +10,7 @@ from .calibratable_usb_camera import CalibratableUsbCamera
 
 class CameraConfigurator:
     def __init__(self,
-                 camera_provider: rosys.vision.CameraProvider | None,
+                 camera_provider: rosys.vision.CameraProvider,
                  robot_locator: RobotLocator,
                  robot_id: str,
                  camera_config: CameraConfiguration,
