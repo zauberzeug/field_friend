@@ -54,7 +54,7 @@ class System(rosys.persistence.PersistentModule):
         self.config = get_config(self.robot_id)
 
         self.camera_provider = self.setup_camera_provider()
-        self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation
+        self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation | None = None
         self.field_friend: FieldFriend
@@ -80,9 +80,11 @@ class System(rosys.persistence.PersistentModule):
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
-            self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
+            if self.camera_provider is not None:
+                self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
 
         if self.config.camera is not None:
+            assert self.camera_provider is not None
             self.camera_configurator = CameraConfigurator(
                 self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
@@ -242,10 +244,12 @@ class System(rosys.persistence.PersistentModule):
                                                           ] if n is not None}
         self.current_navigation = self.straight_line_navigation
 
-    def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider:
+    def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider | None:
         if not self.is_real:
             return rosys.vision.SimulatedCameraProvider()
-        assert self.config.camera is not None
+        if self.config.camera is None:
+            self.log.warning('Camera is not configured, no camera provider will be used')
+            return None
         if self.config.camera.camera_type == 'CalibratableUsbCamera':
             return CalibratableUsbCameraProvider()
         if self.config.camera.camera_type == 'ZedxminiCamera':
@@ -253,6 +257,9 @@ class System(rosys.persistence.PersistentModule):
         raise NotImplementedError(f'Unknown camera type: {self.config.camera.camera_type}')
 
     async def setup_simulated_usb_camera(self):
+        if self.camera_provider is None:
+            self.log.error('No camera provider configured, skipping simulated USB camera setup')
+            return
         self.camera_provider.remove_all_cameras()
         camera = rosys.vision.SimulatedCalibratableCamera.create_calibrated(id='bottom_cam',
                                                                             x=0.4, z=0.4,
