@@ -1,8 +1,6 @@
 from rosys.geometry import Pose, Rotation
 
 from field_friend.config.configuration import (
-    CameraConfiguration,
-    CropConfiguration,
     FieldFriendConfiguration,
     GnssConfiguration,
     ImuConfiguration,
