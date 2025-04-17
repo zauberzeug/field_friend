@@ -1,0 +1,12 @@
+{
+    "with_drilling": false,
+    "with_chopping": false,
+    "chop_if_no_crops": false,
+    "cultivated_crop": null,
+    "crop_safety_distance": 0.02,
+    "record_video": false,
+    "is_demo": true,
+    "drill_with_open_tornado": false,
+    "drill_between_crops": false,
+    "tornado_angle": 30.0
+}

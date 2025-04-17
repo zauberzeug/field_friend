@@ -171,7 +171,8 @@ class CameraCard:
             pass
 
         if e.type == 'mousemove' and point3d is not None:
-            self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
+            point3d_in_locator_frame = point3d.relative_to(self.robot_locator.pose_frame)
+            self.debug_position.set_text(f'screen {point2d} -> local {point3d_in_locator_frame}')
         if e.type == 'mouseup':
             if self.camera.calibration is None:
                 self.debug_position.set_text(f'last punch: {point2d}')

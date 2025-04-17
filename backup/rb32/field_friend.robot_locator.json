@@ -1,0 +1,6 @@
+{
+    "r_odom_linear": 0.1,
+    "r_odom_angular": 0.09700000000000003,
+    "r_imu_angular": 0.01,
+    "odometry_angular_weight": 0.1
+}

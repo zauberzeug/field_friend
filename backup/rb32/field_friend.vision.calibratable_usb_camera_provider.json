@@ -1,17 +1,60 @@
 {
-    "cameras": {
-        "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0": {
-            "id": "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0",
-            "name": "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0",
-            "connect_after_init": true,
-            "streaming": true,
-            "focal_length": null,
-            "calibration": null,
-            "auto_exposure": true,
-            "exposure": false,
-            "width": 1920,
-            "height": 1080,
-            "fps": 6
+  "cameras": {
+    "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0": {
+      "id": "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0",
+      "name": "32e4-9230-platform-3610000.xhci-usb-0:2.1:1.0",
+      "connect_after_init": true,
+      "image_history_length": 256,
+      "base_path_overwrite": null,
+      "crop": null,
+      "rotation": 0,
+      "auto_exposure": true,
+      "exposure": false,
+      "width": 1280,
+      "height": 720,
+      "fps": 9,
+      "calibration": {
+        "intrinsics": {
+          "model": "pinhole",
+          "matrix": [
+            [887.1926795115154, 0.0, 700.120033321571],
+            [0.0, 915.7650065381546, 275.9418536642993],
+            [0.0, 0.0, 1.0]
+          ],
+          "distortion": [
+            -0.39957331241566024, 0.18923540338914277, 0.0030009793077256253,
+            -0.001092774474091437, -0.043886920904201356
+          ],
+          "omnidir_params": {
+            "xi": 0.0,
+            "rotation": {
+              "R": [
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0]
+              ]
+            }
+          },
+          "size": {
+            "width": 1280,
+            "height": 720
+          }
+        },
+        "extrinsics": {
+          "_frame_id": "field_friend.robot_locator",
+          "x": 0.30222610723755844,
+          "y": 0.003916100339620373,
+          "z": 0.2991937862575594,
+          "rotation": {
+            "R": [
+              [0.014568454641252893, 0.7564882304746466, -0.6538450254324062],
+              [0.9998396146892349, -0.004209164722871139, 0.01740769457505528],
+              [0.01041657465045169, -0.6539937615036354, -0.7564282219000542]
+            ]
+          }
         }
+      },
+      "focal_length": 1830
     }
+  }
 }
