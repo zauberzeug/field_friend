@@ -14,6 +14,7 @@ from nicegui.events import MouseEventArguments, ValueChangeEventArguments
 from rosys.geometry import Point, Point3d, Pose3d
 from rosys.vision import CalibratableCamera
 
+from ...automations.implements.tornado import Tornado as TornadoImplement
 from ...automations.implements.weeding_implement import WeedingImplement
 from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Tornado
 from ...vision import CalibratableUsbCamera
@@ -39,7 +40,7 @@ class CameraCard:
         self.system = system
         self.punching_enabled: bool = False
         self.shrink_factor: float = 4.0
-        self.show_weeds_to_handle: bool = False
+        self.show_plants_to_handle: bool = False
         self.camera: CalibratableCamera | None = None
         self.image_view: ui.interactive_image | None = None
         assert self.camera_provider is not None
@@ -98,7 +99,7 @@ class CameraCard:
                         self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
                             .tooltip('Show the mapping between camera and world coordinates')
                     with ui.menu_item():
-                        ui.checkbox('Show weeds to handle').bind_value_to(self, 'show_weeds_to_handle') \
+                        ui.checkbox('Show plants to handle').bind_value_to(self, 'show_plants_to_handle') \
                             .tooltip('Show the mapping between camera and world coordinates')
                     with ui.menu_item():
                         ui.button('calibrate', on_click=self.calibrate) \
@@ -277,14 +278,16 @@ class CameraCard:
             svg += f'<line x1="{int(min_front_2d.x)}" y1="{int(min_front_2d.y)}" x2="{int(min_back_2d.x)}" y2="{int(min_back_2d.y)}" stroke="black" stroke-width="1" />'
             svg += f'<line x1="{int(max_front_2d.x)}" y1="{int(max_front_2d.y)}" x2="{int(max_back_2d.x)}" y2="{int(max_back_2d.y)}" stroke="black" stroke-width="1" />'
 
-        if self.show_weeds_to_handle:
-            for i, plant in enumerate(self.system.current_implement.weeds_to_handle.values()):
-                position_3d = Point3d(x=plant.x, y=plant.y, z=0) \
+        if self.show_plants_to_handle:
+            plants_to_handle = self.system.current_implement.crops_to_handle \
+                if isinstance(self.system.current_implement, TornadoImplement) else self.system.current_implement.weeds_to_handle
+            for i, plant in enumerate(plants_to_handle.values()):
+                plant_3d = Point3d(x=plant.x, y=plant.y, z=0) \
                     .in_frame(self.robot_locator.pose_frame).resolve()
-                screen = self.camera.calibration.project_to_image(position_3d)
-                if screen is not None:
-                    svg += f'<circle cx="{int(screen.x/self.shrink_factor)}" cy="{int(screen.y/self.shrink_factor)}" r="6" stroke="blue" fill="none" stroke-width="2" />'
-                    svg += f'<text x="{int(screen.x/self.shrink_factor)}" y="{int(screen.y/self.shrink_factor)+4}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
+                plant_2d = self.camera.calibration.project_to_image(plant_3d)
+                if plant_2d is not None:
+                    svg += f'<circle cx="{int(plant_2d.x/self.shrink_factor)}" cy="{int(plant_2d.y/self.shrink_factor)}" r="6" stroke="blue" fill="none" stroke-width="2" />'
+                    svg += f'<text x="{int(plant_2d.x/self.shrink_factor)}" y="{int(plant_2d.y/self.shrink_factor)+4}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
         return svg
 
     def build_svg_for_plant_provider(self) -> str:
