@@ -227,7 +227,7 @@ class CameraCard:
             if point.category_name in self.plant_locator.crop_category_names:
                 svg += f'<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}" r="18" stroke-width="2" stroke="green" fill="none" />'
             elif point.category_name in self.plant_locator.weed_category_names:
-                svg += self.draw_cross(point, shrink_factor=self.shrink_factor, color='red')
+                svg += self.draw_cross(point.center, shrink_factor=self.shrink_factor, color='red')
         return svg
 
     def build_svg_for_implement(self) -> str:
@@ -270,7 +270,7 @@ class CameraCard:
         max_front_2d = self.camera.calibration.project_to_image(max_front_3d)
         min_back_2d = self.camera.calibration.project_to_image(min_back_3d)
         max_back_2d = self.camera.calibration.project_to_image(max_back_3d)
-        if all([min_front_2d, max_front_2d, min_back_2d, max_back_2d]):
+        if isinstance(min_front_2d, Point) and isinstance(max_front_2d, Point) and isinstance(min_back_2d, Point) and isinstance(max_back_2d, Point):
             min_front_2d = min_front_2d / self.shrink_factor
             max_front_2d = max_front_2d / self.shrink_factor
             min_back_2d = min_back_2d / self.shrink_factor
