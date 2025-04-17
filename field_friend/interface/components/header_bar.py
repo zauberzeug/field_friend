@@ -38,7 +38,7 @@ class HeaderBar:
             with ui.row():
                 # ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
                 ui.link('Circle Sight', '/monitor').classes('text-white text-lg !no-underline')
-                # ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
+                ui.link('Low Bandwidth', '/lb').classes('text-white text-lg !no-underline')
 
             ui.button('Manual Steering', on_click=lambda system=system: manual_steerer_dialog(system)).tooltip(
                 'Open the manual steering window to move the robot with a joystick.')
