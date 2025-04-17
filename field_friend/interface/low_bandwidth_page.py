@@ -40,5 +40,6 @@ class LowBandwidthPage:
                         ui.label('').bind_text_from(self.system.current_navigation,
                                                     'row_index', lambda row_index: f'Row Index: {row_index}')
             with ui.column():
-                track.ui()
+                with ui.row().style('min-height: 37px'):
+                    track.ui()
                 self.log_monitor.ui()
