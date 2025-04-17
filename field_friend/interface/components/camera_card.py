@@ -230,13 +230,16 @@ class CameraCard:
                 or self.camera.calibration is None or self.field_friend.y_axis is None:
             return ''
         svg = ''
+
+        # tool position
         tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position, z=0).in_frame(
             self.robot_locator.pose_frame).resolve().point_3d
         tool_2d = self.camera.calibration.project_to_image(tool_3d)
         if tool_2d:
             tool_2d = tool_2d / self.shrink_factor
-            svg = f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" fill="black"/>'
+            svg = f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" stroke="black" stroke-width="1" fill="transparent"/>'
 
+        # tool axis
         min_tool_3d = rosys.geometry.Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position, z=0).in_frame(
             self.robot_locator.pose_frame).resolve().point_3d
         min_tool_2d = self.camera.calibration.project_to_image(min_tool_3d)
@@ -246,7 +249,29 @@ class CameraCard:
         if min_tool_2d and max_tool_2d:
             min_tool_2d = min_tool_2d / self.shrink_factor
             max_tool_2d = max_tool_2d / self.shrink_factor
-            svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="2" />'
+            svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="1" />'
+
+        # work area
+        min_front_3d = rosys.geometry.Pose3d(x=0.40, y=self.field_friend.y_axis.min_position, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve().point_3d
+        max_front_3d = rosys.geometry.Pose3d(x=0.40, y=self.field_friend.y_axis.max_position, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve().point_3d
+        min_back_3d = rosys.geometry.Pose3d(x=-0.25, y=self.field_friend.y_axis.min_position, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve().point_3d
+        max_back_3d = rosys.geometry.Pose3d(x=-0.25, y=self.field_friend.y_axis.max_position, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve().point_3d
+        min_front_2d = self.camera.calibration.project_to_image(min_front_3d)
+        max_front_2d = self.camera.calibration.project_to_image(max_front_3d)
+        min_back_2d = self.camera.calibration.project_to_image(min_back_3d)
+        max_back_2d = self.camera.calibration.project_to_image(max_back_3d)
+        if all([min_front_2d, max_front_2d, min_back_2d, max_back_2d]):
+            min_front_2d = min_front_2d / self.shrink_factor
+            max_front_2d = max_front_2d / self.shrink_factor
+            min_back_2d = min_back_2d / self.shrink_factor
+            max_back_2d = max_back_2d / self.shrink_factor
+            svg += f'<line x1="{int(min_front_2d.x)}" y1="{int(min_front_2d.y)}" x2="{int(min_back_2d.x)}" y2="{int(min_back_2d.y)}" stroke="black" stroke-width="1" />'
+            svg += f'<line x1="{int(max_front_2d.x)}" y1="{int(max_front_2d.y)}" x2="{int(max_back_2d.x)}" y2="{int(max_back_2d.y)}" stroke="black" stroke-width="1" />'
+
         if self.show_weeds_to_handle:
             for i, plant in enumerate(self.system.current_implement.weeds_to_handle.values()):
                 position_3d = self.robot_locator.pose.point_3d() + rosys.geometry.Point3d(x=plant.x, y=plant.y, z=0)
