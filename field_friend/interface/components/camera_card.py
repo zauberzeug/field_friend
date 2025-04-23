@@ -217,9 +217,9 @@ class CameraCard:
 
     def draw_cross(self, point: Point, *, shrink_factor: float = 1.0, color: str = 'red', size: int = 5, width: int = 1) -> str:
         svg = f'''<line x1="{int(point.x / shrink_factor) - size}" y1="{int(point.y / shrink_factor)}" x2="{int(point.x / shrink_factor) + size}" y2="{int(point.y / shrink_factor)}"
-                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>
-                    <line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - size}" x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + size}"
-                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
+                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / shrink_factor)}, {int(point.y / shrink_factor)})"/>
+                    <line x1="{int(point.x / shrink_factor)}" y1="{int(point.y / shrink_factor) - size}" x2="{int(point.x / shrink_factor)}" y2="{int(point.y / shrink_factor) + size}"
+                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / shrink_factor)}, {int(point.y / shrink_factor)})"/>'''
         return svg
 
     def detections_to_svg(self, detections: rosys.vision.Detections) -> str:
