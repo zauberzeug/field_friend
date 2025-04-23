@@ -7,7 +7,6 @@ import rosys
 from nicegui import ui
 from rosys.geometry import Point3d
 
-from ..puncher import PuncherException
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
@@ -46,8 +45,6 @@ class Tornado(WeedingImplement):
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                           if not inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius]
                 self.log.debug(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
-        except PuncherException:
-            self.log.error('Error in Tornado Workflow')
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
