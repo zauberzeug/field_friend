@@ -1,6 +1,7 @@
 # pylint: disable=broad-exception-raised
 # TODO: we need a useful exception here
 import rosys
+from rosys.analysis import track
 from rosys.helpers import remove_indentation
 
 from ..config import ZCanOpenConfiguration
@@ -45,6 +46,7 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
     async def stop(self) -> None:
         await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(false);')
 
+    @track
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if speed is None:
             speed = self.max_speed
@@ -79,13 +81,18 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
     async def disable_motor(self) -> None:
         await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(false);')
 
+    @track
     async def reset_fault(self) -> None:
-        await self.robot_brain.send(f'{self.config.name}_motor.reset_fault();')
-        await rosys.sleep(1)
-        if self.alarm:
-            self.log.error('could not reset zaxis fault')
-            raise Exception('could not reset zaxis fault')
+        self.log.debug('resetting yaxis fault')
+        await self.robot_brain.send(f'{self.config.name}_motor.reset_fault()')
+        await rosys.sleep(1.0)
 
+    @track
+    async def recover(self) -> None:
+        await rosys.run.retry(self.reset_fault, max_attempts=10, max_timeout=10.0, raise_on_failure=True)
+        await self.try_reference()
+
+    @track
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
