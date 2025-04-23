@@ -51,10 +51,17 @@ class Tornado(WeedingImplement):
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
+    def _has_plants_to_handle(self) -> bool:
+        super()._has_plants_to_handle()
+        if len(self.crops_to_handle) == 0:
+            return False
+        self.weeds_to_handle = {}
+        return True
+
     # TODO: can we get rid of the pylint disable?
     async def get_stretch(self, max_distance: float) -> float:  # pylint: disable=too-many-return-statements
         await super().get_stretch(max_distance)
-        super()._has_plants_to_handle()
+        self._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
             return self.WORKING_DISTANCE
         closest_crop_id, closest_crop_position = next(iter(self.crops_to_handle.items()))

@@ -12,6 +12,7 @@ jobs:
           - command: ["pylint", "./field_friend"]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    name: code check - ${{ matrix.tools.command[0] }}
     steps:
       - uses: actions/checkout@v4
       - name: set up Python
