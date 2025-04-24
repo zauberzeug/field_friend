@@ -9,7 +9,7 @@ __all__ = [
     'bms_page',
     'dev_page',
     'kpi_page',
+    'low_bandwidth_page',
     'main_page',
     'monitor_page',
-    'low_bandwidth_page',
 ]
