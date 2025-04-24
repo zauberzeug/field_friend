@@ -89,7 +89,7 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
 
     @track
     async def recover(self) -> None:
-        await rosys.run.retry(self.reset_fault, max_attempts=10, max_timeout=10.0, raise_on_failure=True)
+        await rosys.run.retry(self.reset_fault, max_attempts=10, max_timeout=10.0)
         await self.try_reference()
 
     @track

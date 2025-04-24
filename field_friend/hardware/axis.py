@@ -140,7 +140,7 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
 
     async def recover(self) -> None:
         self.log.debug('recovering axis')
-        await rosys.run.retry(self.reset_fault, max_timeout=2.0, raise_on_failure=True)
+        await rosys.run.retry(self.reset_fault, max_timeout=2.0)
         await self.try_reference()
 
     async def step(self, dt: float) -> None:
