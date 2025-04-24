@@ -33,7 +33,6 @@ def startup() -> None:
     interface.low_bandwidth_page(system)  # /lb
     logging_page(['field_friend', 'rosys'])  # /logging
     videos_page()  # /videos
-    interface.gnss_test_page(system)  # /gnss_test
 
     # API Endpoints
     api.Online()  # get /api/online
