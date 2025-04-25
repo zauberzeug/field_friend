@@ -217,11 +217,11 @@ class System(rosys.persistence.PersistentModule):
         implements: list[Implement] = []
         match self.field_friend.implement_name:
             case 'tornado':
+                implements.append(Recorder(self))
                 implements.append(Tornado(self))
-                implements.append(Recorder(self))
             case 'weed_screw':
-                implements.append(WeedingScrew(self))
                 implements.append(Recorder(self))
+                implements.append(WeedingScrew(self))
             case 'dual_mechanism':
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
