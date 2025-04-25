@@ -1,3 +1,4 @@
+from .dummy import Dummy
 from .implement import Implement
 from .recorder import Recorder
 from .tornado import Tornado
@@ -11,4 +12,5 @@ __all__ = [
     'Tornado',
     'WeedingImplement',
     'WeedingScrew',
+    'Dummy',
 ]

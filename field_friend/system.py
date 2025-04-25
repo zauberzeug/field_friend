@@ -22,7 +22,7 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
-from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
+from .automations.implements import Dummy, Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
@@ -214,18 +214,22 @@ class System(rosys.persistence.PersistentModule):
             height=height)
 
     def setup_implements(self) -> None:
-        implements: list[Implement] = [Recorder(self)]
+        implements: list[Implement] = []
         match self.field_friend.implement_name:
             case 'tornado':
                 implements.append(Tornado(self))
+                implements.append(Recorder(self))
             case 'weed_screw':
                 implements.append(WeedingScrew(self))
+                implements.append(Recorder(self))
             case 'dual_mechanism':
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
                 self.log.error('Dual mechanism not implemented')
-            case 'none':
-                implements.append(WeedingScrew(self))
+            case 'recorder':
+                implements.append(Recorder(self))
+            case None:
+                implements.append(Dummy(self))
             case _:
                 self.log.warning('Unknown implement: %s', self.field_friend.implement_name)
         self.implements = {t.name: t for t in implements}
