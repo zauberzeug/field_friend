@@ -92,14 +92,14 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         # implement stop call for estops and bumpers
         if estop.pins:
             lizard_code += 'bool estop_active = false\n'
-            enable_conditions = [f'estop_{name}.level == 1' for name in estop.pins]
-            disable_conditions = [f'estop_{name}.level == 0' for name in estop.pins]
+            enable_conditions = [f'estop_{name}.active == false' for name in estop.pins]
+            disable_conditions = [f'estop_{name}.active == true' for name in estop.pins]
             lizard_code += f'when {" and ".join(enable_conditions)} then estop_active = false; end\n'
             lizard_code += f'when {" or ".join(disable_conditions)} then estop_active = true; end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
             lizard_code += 'bool bumper_active = false\n'
-            enable_conditions = [f'bumper_{name}.level == 0' for name in bumper.pins]
-            disable_conditions = [f'bumper_{name}.level == 1' for name in bumper.pins]
+            enable_conditions = [f'bumper_{name}.active == false' for name in bumper.pins]
+            disable_conditions = [f'bumper_{name}.active == true' for name in bumper.pins]
             lizard_code += f'when {" and ".join(enable_conditions)} then bumper_active = false; end\n'
             lizard_code += f'when {" or ".join(disable_conditions)} then bumper_active = true; end\n'
         if estop.pins:
