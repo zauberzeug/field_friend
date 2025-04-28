@@ -91,15 +91,20 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
 
         # implement stop call for estops and bumpers
         if estop.pins:
+            lizard_code += 'bool estop_active = false\n'
             enable_conditions = [f'estop_{name}.level == 1' for name in estop.pins]
             disable_conditions = [f'estop_{name}.level == 0' for name in estop.pins]
-            lizard_code += f'when {" and ".join(enable_conditions)} then enable(); end\n'
-            lizard_code += f'when {" or ".join(disable_conditions)} then disable(); end\n'
+            lizard_code += f'when {" and ".join(enable_conditions)} then estop_active = false; end\n'
+            lizard_code += f'when {" or ".join(disable_conditions)} then estop_active = true; end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
+            lizard_code += 'bool bumper_active = false\n'
             enable_conditions = [f'bumper_{name}.level == 0' for name in bumper.pins]
             disable_conditions = [f'bumper_{name}.level == 1' for name in bumper.pins]
-            lizard_code += f'when {" and ".join(enable_conditions)} then enable(); end\n'
-            lizard_code += f'when {" or ".join(disable_conditions)} then disable(); end\n'
+            lizard_code += f'when {" and ".join(enable_conditions)} then bumper_active = false; end\n'
+            lizard_code += f'when {" or ".join(disable_conditions)} then bumper_active = true; end\n'
+        if estop.pins:
+            lizard_code += f'when estop_active == false {"and bumper_active == false" if isinstance(bumper, rosys.hardware.BumperHardware) else ""} then enable(); end\n'
+            lizard_code += f'when estop_active {"or bumper_active" if isinstance(bumper, rosys.hardware.BumperHardware) else ""} then disable(); end\n'
 
         # implement stop call for "ground check" reference sensors
         if isinstance(y_axis, ChainAxisHardware):
@@ -109,9 +114,9 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                 lizard_code += f'when {z_axis.config.name}_ref_knife_ground.active == false then \
                     {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.speed(0, 0); {y_axis.config.name}.stop(); end\n'
 
-        # implement watchdog for rosys modules
+        # # implement watchdog for rosys modules
         lizard_code += f'when core.last_message_age > 1000 then {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.speed(0, 0); end\n'
-        lizard_code += 'when core.last_message_age > 20000 then stop(); end\n'
+        lizard_code += 'when core.last_message_age > 20000 then disable(); end\n'
 
         if bumper is not None:
             bumper.BUMPER_TRIGGERED.register(self.bumper_safety_notifications)
