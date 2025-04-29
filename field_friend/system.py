@@ -232,7 +232,7 @@ class System(rosys.persistence.PersistentModule):
             case None:
                 implements.append(Implement())
             case _:
-                self.log.warning('Unknown implement: %s', self.field_friend.implement_name)
+                raise NotImplementedError(f'Unknown implement: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}
 
     def setup_navigations(self) -> None:
