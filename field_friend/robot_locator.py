@@ -30,6 +30,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self._x = np.zeros((state_size, 1))
         self._Sxx = np.zeros((state_size, state_size))
         self._pose_timestamp = rosys.time()
+        # NOTE: sometimes the position does not update on startup and reset, so we force a velocity update to get the position
+        self._force_velocity_update = False
+        # NOTE: the prediction step needs to be run once before the first GNSS update
+        self._first_prediction_done = False
 
         # bound attributes
         self._ignore_gnss = gnss is None
@@ -39,12 +43,12 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self._r_imu_angular = self.R_IMU_ANGULAR
         self._odometry_angular_weight = self.ODOMETRY_ANGULAR_WEIGHT
 
-        self._first_prediction_done = False
         self._previous_imu_measurement: ImuMeasurement | None = None
 
         self._wheels.VELOCITY_MEASURED.register(self._handle_velocity_measurement)
         if self._gnss is not None:
             self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
+        rosys.on_startup(self._reset)
 
     def backup(self) -> dict[str, Any]:
         return {
@@ -81,7 +85,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             if (not self._first_prediction_done) and (self._imu is not None):
                 self._previous_imu_measurement = self._imu.last_measurement
 
-            if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
+            if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done and not self._force_velocity_update:
                 # The robot is not moving, so we don't need to update the state
                 continue
 
@@ -180,9 +184,13 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.pose_frame.y = self._x[1, 0]
         self.pose_frame.rotation = Rotation.from_euler(0, 0, self._x[2, 0])
 
-    def _reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
+    async def _reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
         self._x = np.array([[x, y, yaw]], dtype=float).T
         self._Sxx = np.diag([0.0, 0.0, 0.0])
+        self._force_velocity_update = True
+        await rosys.sleep(3.0)
+        self._force_velocity_update = False
+        rosys.notify('Positioning initialized', 'positive')
 
     def developer_ui(self) -> None:
         with ui.column():
