@@ -15,6 +15,8 @@ ADMIN_PASSWORD = os.environ.get('TELTONIKA_PASSWORD')
 
 
 class TeltonikaRouter:
+    """Implements the api of the built in RUT955 router."""
+
     def __init__(self) -> None:
         super().__init__()
         self.current_connection: str = 'disconnected'

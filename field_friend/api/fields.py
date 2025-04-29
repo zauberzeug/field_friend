@@ -9,6 +9,12 @@ from field_friend.system import System
 
 
 class Fields:
+    """API endpoints for managing field data.
+
+    This API allows creating, retrieving, and updating field definitions, as well as
+    checking if the robot is inside a specific field. Fields contain information about
+    row and bed configurations, spacing, and geographical outlines.
+    """
 
     def __init__(self, system: System) -> None:
         self.system = system

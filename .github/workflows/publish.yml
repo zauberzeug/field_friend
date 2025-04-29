@@ -1,17 +1,24 @@
-name: Upload Python Package
+name: Publish release
 
 on:
   workflow_dispatch:
   push:
     tags:
       - v**
+    # TODO: remove this before merging
+    branches:
+      - docu_update
 
 jobs:
   docs:
+    name: Build and publish docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        # TODO: remove this before merging
+        with:
+          ref: docu_update
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -32,16 +39,17 @@ jobs:
         with:
           branch: gh-pages
           folder: site
-      - name: set version
-        run: |
-          VERSION=${{ env.VERSION }}
-      - name: Create GitHub release entry
-        uses: softprops/action-gh-release@v2
-        id: create_release
-        with:
-          draft: false
-          prerelease: false
-          name: ${{ env.VERSION }}
-          tag_name: ${{ env.VERSION }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      # TODO: restructure in another PR
+      # - name: set version
+      #   run: |
+      #     VERSION=${{ env.VERSION }}
+      # - name: Create GitHub release entry
+      #   uses: softprops/action-gh-release@v2
+      #   id: create_release
+      #   with:
+      #     draft: false
+      #     prerelease: false
+      #     name: ${{ env.VERSION }}
+      #     tag_name: ${{ env.VERSION }}
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}

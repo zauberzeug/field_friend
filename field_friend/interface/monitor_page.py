@@ -6,6 +6,7 @@ from .components import create_header
 
 
 class MonitorPage:
+    """The page to monitor the robot's cameras."""
 
     def __init__(self, system: System, dev: bool = False) -> None:
         self.system = system
