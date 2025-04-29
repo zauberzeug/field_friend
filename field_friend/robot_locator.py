@@ -187,10 +187,15 @@ class RobotLocator(rosys.persistence.PersistentModule):
         if self._gnss is not None and not self._ignore_gnss:
             try:
                 await self._gnss.NEW_MEASUREMENT.emitted(gnss_timeout)
+                assert self._gnss.last_measurement is not None
                 local_pose = self._gnss.last_measurement.pose.to_local()
                 reset_pose = Pose(x=local_pose.x, y=local_pose.y, yaw=local_pose.yaw)
             except TimeoutError:
                 self.log.error('GNSS timeout while resetting position. Activate _ignore_gnss to use zero position.')
+                return
+            except AssertionError:
+                self.log.error(
+                    'GNSS measurement is not available while resetting position. Activate _ignore_gnss to use zero position.')
                 return
         self._x = np.array([[reset_pose.x, reset_pose.y, reset_pose.yaw]], dtype=float).T
         self._Sxx = np.diag([0.0, 0.0, 0.0])
@@ -225,4 +230,5 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     ui.number(label='ω odom weight', min=0, step=0.01, format='%.3f', value=self._odometry_angular_weight, on_change=self.request_backup) \
                         .bind_value_to(self, '_odometry_angular_weight')
 
-            ui.button('Reset', on_click=self._reset)
+            ui.button('Reset', on_click=self._reset) \
+                .tooltip('Reset the position to the GNSS measurement or zero position if GNSS is not available or ignored.')
