@@ -1,10 +1,7 @@
-import abc
-
 from rosys.analysis import track
 
 
-# TODO: should some of these methods be abstract?
-class Implement(abc.ABC):  # noqa: B024
+class Implement:
 
     def __init__(self, name: str = 'None') -> None:
         self.name = name
