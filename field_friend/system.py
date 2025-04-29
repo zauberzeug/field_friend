@@ -22,7 +22,7 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
-from .automations.implements import Dummy, Implement, Recorder, Tornado, WeedingScrew
+from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
@@ -229,7 +229,7 @@ class System(rosys.persistence.PersistentModule):
             case 'recorder':
                 implements.append(Recorder(self))
             case None:
-                implements.append(Dummy(self))
+                implements.append(Implement())
             case _:
                 self.log.warning('Unknown implement: %s', self.field_friend.implement_name)
         self.implements = {t.name: t for t in implements}
