@@ -226,6 +226,7 @@ class System(rosys.persistence.PersistentModule):
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
                 self.log.error('Dual mechanism not implemented')
+                implements.append(Recorder(self))
             case 'recorder':
                 implements.append(Recorder(self))
             case None:
