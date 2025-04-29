@@ -5,7 +5,7 @@ import numpy as np
 import rosys
 import rosys.helpers
 from nicegui import ui
-from rosys.geometry import Pose3d, Rotation
+from rosys.geometry import Pose, Pose3d, Rotation, Velocity
 from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels
 
 
@@ -30,8 +30,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self._x = np.zeros((state_size, 1))
         self._Sxx = np.zeros((state_size, state_size))
         self._pose_timestamp = rosys.time()
-        # NOTE: sometimes the position does not update on startup and reset, so we force a velocity update to get the position
-        self._force_velocity_update = False
         # NOTE: the prediction step needs to be run once before the first GNSS update
         self._first_prediction_done = False
 
@@ -65,8 +63,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self._odometry_angular_weight = data.get('odometry_angular_weight', self.ODOMETRY_ANGULAR_WEIGHT)
 
     @property
-    def pose(self) -> rosys.geometry.Pose:
-        return rosys.geometry.Pose(
+    def pose(self) -> Pose:
+        return Pose(
             x=self._x[0, 0],
             y=self._x[1, 0],
             yaw=self._x[2, 0],
@@ -74,10 +72,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
         )
 
     @property
-    def prediction(self) -> rosys.geometry.Pose:
+    def prediction(self) -> Pose:
         return self.pose
 
-    async def _handle_velocity_measurement(self, velocities: list[rosys.geometry.Velocity]) -> None:
+    async def _handle_velocity_measurement(self, velocities: list[Velocity]) -> None:
         """Implements the 'prediction' step of the Kalman filter."""
         for velocity in velocities:
             dt = velocity.time - self._pose_timestamp
@@ -85,14 +83,14 @@ class RobotLocator(rosys.persistence.PersistentModule):
             if (not self._first_prediction_done) and (self._imu is not None):
                 self._previous_imu_measurement = self._imu.last_measurement
 
-            if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done and not self._force_velocity_update:
+            if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
                 # The robot is not moving, so we don't need to update the state
                 continue
 
             v = velocity.linear
             omega = velocity.angular
             r_angular = self._r_odom_angular
-            if not self._ignore_imu:
+            if not self._ignore_imu and self._imu is not None:
                 imu_omega = self._get_imu_angular_velocity()
                 if imu_omega is not None:
                     v, omega = self._combine_odom_imu(v, omega, imu_omega)
@@ -184,12 +182,19 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.pose_frame.y = self._x[1, 0]
         self.pose_frame.rotation = Rotation.from_euler(0, 0, self._x[2, 0])
 
-    async def _reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
-        self._x = np.array([[x, y, yaw]], dtype=float).T
+    async def _reset(self, *, gnss_timeout: float = 2.0) -> None:
+        reset_pose = Pose(x=0.0, y=0.0, yaw=0.0)
+        if self._gnss is not None and not self._ignore_gnss:
+            try:
+                await self._gnss.NEW_MEASUREMENT.emitted(gnss_timeout)
+                local_pose = self._gnss.last_measurement.pose.to_local()
+                reset_pose = Pose(x=local_pose.x, y=local_pose.y, yaw=local_pose.yaw)
+            except TimeoutError:
+                self.log.error('GNSS timeout while resetting position. Activate _ignore_gnss to use zero position.')
+                return
+        self._x = np.array([[reset_pose.x, reset_pose.y, reset_pose.yaw]], dtype=float).T
         self._Sxx = np.diag([0.0, 0.0, 0.0])
-        self._force_velocity_update = True
-        await rosys.sleep(3.0)
-        self._force_velocity_update = False
+        self._update_frame()
         rosys.notify('Positioning initialized', 'positive')
 
     def developer_ui(self) -> None:
