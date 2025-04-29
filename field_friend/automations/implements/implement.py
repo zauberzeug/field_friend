@@ -6,7 +6,7 @@ from rosys.analysis import track
 # TODO: should some of these methods be abstract?
 class Implement(abc.ABC):  # noqa: B024
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str = 'None') -> None:
         self.name = name
         self.is_active = False
 
