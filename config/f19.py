@@ -28,6 +28,8 @@ config = FieldFriendConfiguration(
         front='-4',
         back='-3',
     ),
+    y_axis=None,
+    z_axis=None,
     wheels=WheelsConfiguration(
         is_left_reversed=True,
         is_right_reversed=False,
