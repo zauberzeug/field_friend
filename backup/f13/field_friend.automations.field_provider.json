@@ -1,0 +1,26 @@
+{
+    "fields": {
+        "467e6af4-0056-4b1d-b895-786822b45472": {
+            "id": "467e6af4-0056-4b1d-b895-786822b45472",
+            "name": "Field",
+            "first_row_start": {
+                "lat": 54.77192570826327,
+                "lon": 9.102505414754287
+            },
+            "first_row_end": {
+                "lat": 54.771850118846984,
+                "lon": 9.102487466483087
+            },
+            "row_spacing": 0.5,
+            "row_count": 10,
+            "outline_buffer_width": 2.0,
+            "row_support_points": [],
+            "bed_count": 1,
+            "bed_spacing": 0.5,
+            "bed_crops": {
+                "0": "coin_with_hole"
+            }
+        }
+    },
+    "selected_field": "467e6af4-0056-4b1d-b895-786822b45472"
+}
