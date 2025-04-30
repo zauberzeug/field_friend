@@ -1,4 +1,5 @@
 fiona
+dotenv
 geopandas
 geopy
 icecream
