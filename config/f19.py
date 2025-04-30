@@ -1,4 +1,4 @@
-from rosys.geometry import Pose, Rotation
+from rosys.geometry import Pose
 
 from field_friend.config.configuration import (
     BumperConfiguration,
@@ -7,7 +7,6 @@ from field_friend.config.configuration import (
     FieldFriendConfiguration,
     FlashlightConfiguration,
     GnssConfiguration,
-    ImuConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
