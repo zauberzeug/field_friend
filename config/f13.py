@@ -75,7 +75,7 @@ config = FieldFriendConfiguration(
         version='y_axis_canopen',
     ),
     z_axis=TornadoConfiguration(
-        end_stops_on_expander=True,
+        end_stops_on_expander=False,
         motor_on_expander=False,
         end_bottom_pin=4,
         end_bottom_pin_expander=True,
