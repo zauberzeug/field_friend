@@ -15,7 +15,7 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='field-friend-f19',
-    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=['orin', 'v05', 'nand']),
+    robot_brain=RobotBrainConfiguration(name='rb48', flash_params=['orin', 'v05', 'nand'], enable_esp_on_startup=False),
     tool='recorder',
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033, work_x=0.12),
     camera=CameraConfiguration(
