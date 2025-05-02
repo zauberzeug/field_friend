@@ -26,7 +26,7 @@ config = FieldFriendConfiguration(
     ),
     wheels=WheelsConfiguration(
         is_left_reversed=False,
-        is_right_reversed=False,
+        is_right_reversed=True,
         left_back_can_address=0x000,
         left_front_can_address=0x100,
         right_back_can_address=0x200,
