@@ -151,15 +151,19 @@ class RobotLocator(rosys.persistence.PersistentModule):
             # normally we would only handle the position if no heading is available,
             # but the field friend needs the rtk accuracy to function properly
             return
-        pose = gnss_measurement.pose.to_local()
-        pose.yaw = self._x[2, 0] + rosys.helpers.angle(self._x[2, 0], pose.yaw)
+        pose, r_xy, r_theta = self._get_local_pose_and_uncertainty(gnss_measurement)
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self._x[0, 0]], [self._x[1, 0]], [self._x[2, 0]]]
         H = np.eye(3)
-        r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
-        r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
         Q = np.diag([r_xy, r_xy, r_theta])**2
         self._update(z=np.array(z), h=np.array(h), H=H, Q=Q)
+
+    def _get_local_pose_and_uncertainty(self, gnss_measurement: GnssMeasurement) -> tuple[Pose, float, float]:
+        pose = gnss_measurement.pose.to_local()
+        pose.yaw = self._x[2, 0] + rosys.helpers.angle(self._x[2, 0], pose.yaw)
+        r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
+        r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
+        return pose, r_xy, r_theta
 
     def _update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         S = H @ self._Sxx @ H.T + Q
@@ -182,12 +186,13 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     async def _reset(self, *, gnss_timeout: float = 2.0) -> None:
         reset_pose = Pose(x=0.0, y=0.0, yaw=0.0)
+        r_xy = 0.0
+        r_theta = 0.0
         if self._gnss is not None and not self._ignore_gnss:
             try:
                 await self._gnss.NEW_MEASUREMENT.emitted(gnss_timeout)
                 assert self._gnss.last_measurement is not None
-                local_pose = self._gnss.last_measurement.pose.to_local()
-                reset_pose = Pose(x=local_pose.x, y=local_pose.y, yaw=local_pose.yaw)
+                reset_pose, r_xy, r_theta = self._get_local_pose_and_uncertainty(self._gnss.last_measurement)
             except TimeoutError:
                 self.log.error('GNSS timeout while resetting position. Activate _ignore_gnss to use zero position.')
                 return
@@ -196,7 +201,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     'GNSS measurement is not available while resetting position. Activate _ignore_gnss to use zero position.')
                 return
         self._x = np.array([[reset_pose.x, reset_pose.y, reset_pose.yaw]], dtype=float).T
-        self._Sxx = np.diag([0.0, 0.0, 0.0])
+        self._Sxx = np.diag([r_xy, r_xy, r_theta])**2
         self._update_frame()
         rosys.notify('Positioning initialized', 'positive')
 
