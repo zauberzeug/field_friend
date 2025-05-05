@@ -133,18 +133,18 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             bool {config.name}_is_referencing = false
             bool {config.name}_ref_motor_enabled = false
             bool {config.name}_ref_gear_enabled = false
-            when {config.name}_ref_motor_enabled and {config.name}_is_referencing and {config.name}_ref_motor.active == true then
+            when {config.name}_ref_motor_enabled and {config.name}_is_referencing and {config.name}_ref_motor.active then
                 {config.name}_motor_turn.speed(0)
             end
-            when {config.name}_ref_gear_enabled and {config.name}_is_referencing and {config.name}_ref_gear.active == true then
+            when {config.name}_ref_gear_enabled and {config.name}_is_referencing and {config.name}_ref_gear.active then
                 {config.name}_motor_turn.speed(0)
             end
             bool {config.name}_knife_ground_enabled = false
             bool {config.name}_knife_stop_enabled = false
-            when {config.name}_knife_ground_enabled and {config.name}_ref_knife_ground.active == true then
+            when {config.name}_knife_ground_enabled and {config.name}_ref_knife_ground.active then
                 {config.name}_motor_z.off()
             end
-            when {config.name}_knife_stop_enabled and {config.name}_ref_knife_stop.active == true then
+            when {config.name}_knife_stop_enabled and {config.name}_ref_knife_stop.active then
                 {config.name}_motor_z.off()
                 {config.name}_knife_stop_enabled = false
             end
