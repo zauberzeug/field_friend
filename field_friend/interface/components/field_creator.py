@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import rosys
-from nicegui import ui
+from nicegui import app, ui
 from nicegui.elements.leaflet_layers import Marker
 from rosys.geometry import GeoPoint
 from rosys.hardware import GnssMeasurement
@@ -20,6 +20,12 @@ class FieldCreator:
 
     def __init__(self, system: System) -> None:
         self.system = system
+        self.saved_point_a = app.storage.general.get('field_creator_a_point', None)
+        self.saved_point_b = app.storage.general.get('field_creator_b_point', None)
+        self.use_saved_point_a = False
+        self.use_saved_point_b = False
+        self.point_a_visible = True
+        self.point_b_visible = True
         self.front_cam: rosys.vision.MjpegCamera | None = None
         self.back_cam: rosys.vision.MjpegCamera | None = None
         if hasattr(system, 'mjpeg_camera_provider') and system.config.circle_sight_positions is not None:
@@ -40,17 +46,19 @@ class FieldCreator:
         self.bed_count: int = 1
         self.bed_spacing: float = 0.5
         self.bed_crops: dict[str, str | None] = {'0': None}
-        self.next: Callable = self.find_first_row
         self.default_crop: str | None = None
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
         assert self.gnss is not None
-        self.gnss.NEW_MEASUREMENT.register_ui(self.new_gnss_measurement)
+        self.next: Callable = self.check_saved_points
+        if self.saved_point_a is None and self.saved_point_b is None:
+            self.next = self.find_first_row
+        self.gnss.NEW_MEASUREMENT.register_ui(self._new_gnss_measurement)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
                 with ui.column().classes('w-3/5') as self.view_column:
                     self.row_sight = ui.interactive_image().classes('w-full')
-                    self.camera_updater = ui.timer(0.1, self.update_front_cam)
+                    self.camera_updater = ui.timer(0.1, self._update_front_cam)
                 with ui.column().classes('items-center  w-2/5 p-8'):
                     self.headline = ui.label().classes('text-lg font-bold')
                     self.content = ui.column().classes('items-center')
@@ -65,9 +73,65 @@ class FieldCreator:
         self.next()
         self.dialog.open()
 
+    def check_saved_points(self) -> None:
+        self.headline.text = 'Recover Saved Points'
+
+        def use_saved_point(point_type: str, use: bool) -> None:
+            if point_type == 'a':
+                if use:
+                    self.first_row_start = GeoPoint(lat=self.saved_point_a[0], lon=self.saved_point_a[1])
+                    self.use_saved_point_a = True
+                    self.point_a_visible = False
+                else:
+                    self.point_a_visible = False
+            elif point_type == 'b':
+                if use:
+                    self.first_row_end = GeoPoint(lat=self.saved_point_b[0], lon=self.saved_point_b[1])
+                    self.use_saved_point_b = True
+                    self.point_b_visible = False
+                else:
+                    self.point_b_visible = False
+
+        with self.content:
+            with ui.column().classes('w-full items-center'):
+                ui.label('There are saved points from a previous creation.').classes('text-lg')
+                ui.label('Point A').classes('text-lg font-bold')
+                if self.saved_point_a is not None:
+                    ui.label(f'Coordinates: {self.saved_point_a}').classes('text-lg')
+                    ui.label('Would you like to use this point?').classes('text-lg')
+                    with ui.row():
+                        ui.button('Yes', on_click=lambda: use_saved_point('a', True)).classes(
+                            'm-2').bind_visibility_from(self, 'point_a_visible')
+                        ui.button('No', on_click=lambda: use_saved_point('a', False)).classes(
+                            'm-2').bind_visibility_from(self, 'point_a_visible')
+                else:
+                    ui.label('No saved starting point').classes('text-lg')
+                ui.separator()
+                ui.label('Point B').classes('text-lg font-bold')
+                if self.saved_point_b is not None:
+                    ui.label(f'Coordinates: {self.saved_point_b}').classes('text-lg')
+                    ui.label('Would you like to use this point?').classes('text-lg')
+                    with ui.row():
+                        ui.button('Yes', on_click=lambda: use_saved_point('b', True)).classes(
+                            'm-2').bind_visibility_from(self, 'point_b_visible')
+                        ui.button('No', on_click=lambda: use_saved_point('b', False)).classes(
+                            'm-2').bind_visibility_from(self, 'point_b_visible')
+                else:
+                    ui.label('No saved ending point').classes('text-lg')
+        self.next = self._forward_to_next
+
+    def _forward_to_next(self) -> None:
+        if self.use_saved_point_a and self.use_saved_point_b:
+            self.field_infos()
+        elif self.use_saved_point_a:
+            self.find_row_ending()
+        else:
+            self.find_first_row()
+
     def find_first_row(self) -> None:
         self.headline.text = 'Drive to First Row'
         self.row_sight.content = '<line x1="50%" y1="0" x2="50%" y2="100%" stroke="#6E93D6" stroke-width="6"/>'
+        self.content.clear()
         with self.content:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
             ui.label('1. Drive the robot to the leftmost row of your field.').classes(
@@ -76,19 +140,25 @@ class FieldCreator:
                 'text-lg')
             ui.label('• The blue line should be in the center of the row.') \
                 .classes('text-lg ps-8')
-        self.next = self.find_row_ending
+        self.next = self._save_start_point
 
-    def find_row_ending(self) -> None:
+    def _save_start_point(self) -> None:
         assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.first_row_start = self.gnss.last_measurement.pose.point
         assert self.first_row_start is not None
-        # TODO: save the point somewhere to be able to use it in case of restarting the creator
+        app.storage.general['field_creator_a_point'] = self.first_row_start.tuple
+        if self.use_saved_point_b:
+            self.field_infos()
+        else:
+            self.find_row_ending()
+
+    def find_row_ending(self) -> None:
         self.view_column.clear()
         with self.view_column:
             self.row_sight = ui.interactive_image().classes('w-full')
             self.row_sight.content = '<line x1="50%" y1="0" x2="50%" y2="100%" stroke="#6E93D6" stroke-width="6"/>'
-            self.camera_updater = ui.timer(0.1, self.update_back_cam)
+            self.camera_updater = ui.timer(0.1, self._update_back_cam)
         self.headline.text = 'Find Row Ending'
         self.content.clear()
         with self.content:
@@ -97,16 +167,20 @@ class FieldCreator:
                 .classes('text-lg')
             ui.label('2. Place the robot about 1 meter after the last crop.') \
                 .classes('text-lg')
-        self.next = self.field_infos
+        self.next = self._save_end_point
 
-    def field_infos(self) -> None:
+    def _save_end_point(self) -> None:
         assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.first_row_end = self.gnss.last_measurement.pose.point
         assert self.first_row_end is not None
+        app.storage.general['field_creator_b_point'] = self.first_row_end.tuple
+        self.field_infos()
+
+    def field_infos(self) -> None:
         self.view_column.clear()
         with self.view_column:
-            self.ab_line_map()
+            self._ab_line_map()
         self.headline.text = 'Field Parameters'
         self.row_sight.content = ''
         self.content.clear()
@@ -228,18 +302,20 @@ class FieldCreator:
                                                    bed_crops=self.bed_crops))
         self.first_row_start = None
         self.first_row_end = None
+        app.storage.general['field_creator_a_point'] = None
+        app.storage.general['field_creator_b_point'] = None
 
-    def update_front_cam(self) -> None:
+    def _update_front_cam(self) -> None:
         if self.front_cam is None:
             return
         self.row_sight.set_source(self.front_cam.get_latest_image_url())
 
-    def update_back_cam(self) -> None:
+    def _update_back_cam(self) -> None:
         if self.back_cam is None:
             return
         self.row_sight.set_source(self.back_cam.get_latest_image_url())
 
-    def ab_line_map(self) -> None:
+    def _ab_line_map(self) -> None:
         assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.m = ui.leaflet(self.gnss.last_measurement.pose.point.degree_tuple).classes('w-full min-h-[500px]')
@@ -248,12 +324,12 @@ class FieldCreator:
                 (self.first_row_start.tuple, self.first_row_end.tuple), {'color': '#F44336'}])
         self.m.set_zoom(18)
 
-    def new_gnss_measurement(self, measurement: GnssMeasurement) -> None:
+    def _new_gnss_measurement(self, measurement: GnssMeasurement) -> None:
         if measurement is None:
             return
-        self.update_robot_position(measurement.point)
+        self._update_robot_position(measurement.point)
 
-    def update_robot_position(self, position: GeoPoint, dialog=None) -> None:  # pylint: disable=unused-argument
+    def _update_robot_position(self, position: GeoPoint, dialog=None) -> None:  # pylint: disable=unused-argument
         if hasattr(self, 'm') and self.m and isinstance(self.m, ui.leaflet):
             self.robot_marker = self.robot_marker or self.m.marker(latlng=position.tuple)
             icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [24,24], iconAnchor:[12,12]})'
