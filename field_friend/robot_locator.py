@@ -145,8 +145,6 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def _handle_gnss_measurement(self, gnss_measurement: GnssMeasurement) -> None:
         """Triggers the 'update' step of the Kalman filter."""
-        if not self._first_prediction_done:
-            return
         if self._ignore_gnss:
             return
         if not np.isfinite(gnss_measurement.heading_std_dev):
