@@ -117,17 +117,17 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {config.name}_motor_z.reversed = {'true' if config.is_z_reversed else 'false'}
             {config.name}_motor_turn.reversed = {'true' if config.is_turn_reversed else 'false'}
             {config.name}_end_top = {expander.name + "." if (config.end_stops_on_expander or config.end_top_pin_expander) and expander else ""}Input({config.end_top_pin})
-            {config.name}_end_top.inverted = true
+            {config.name}_end_top.inverted = {'true' if config.end_top_inverted else 'false'}
             {config.name}_end_bottom = {expander.name + "." if (config.end_stops_on_expander or config.end_bottom_pin_expander) and expander else ""}Input({config.end_bottom_pin})
-            {config.name}_end_bottom.inverted = true
+            {config.name}_end_bottom.inverted = {'true' if config.end_bottom_inverted else 'false'}
             {config.name}_ref_motor = {expander.name + "." if (config.end_stops_on_expander or config.ref_motor_pin_expander) and expander else ""}Input({config.ref_motor_pin})
-            {config.name}_ref_motor.inverted = true
+            {config.name}_ref_motor.inverted = {'true' if config.ref_motor_inverted else 'false'}
             {config.name}_ref_gear = {expander.name + "." if (config.end_stops_on_expander or config.ref_gear_pin_expander) and expander else ""}Input({config.ref_gear_pin})
-            {config.name}_ref_gear.inverted = false
+            {config.name}_ref_gear.inverted = {'true' if config.ref_gear_inverted else 'false'}
             {config.name}_ref_knife_stop = {expander.name + "." if (config.end_stops_on_expander or config.ref_knife_stop_pin_expander) and expander else ""}Input({config.ref_knife_stop_pin})
-            {config.name}_ref_knife_stop.inverted = false
+            {config.name}_ref_knife_stop.inverted = {'true' if config.ref_knife_stop_inverted else 'false'}
             {config.name}_ref_knife_ground = {expander.name + "." if (config.end_stops_on_expander or config.ref_knife_ground_pin_expander) and expander else ""}Input({config.ref_knife_ground_pin})
-            {config.name}_ref_knife_ground.inverted = true
+            {config.name}_ref_knife_ground.inverted = {'true' if config.ref_knife_ground_inverted else 'false'}
             {config.name}_z = {expander.name + "." if config.motor_on_expander and expander else ""}MotorAxis({config.name}_motor_z, {config.name + "_end_bottom" if config.is_z_reversed else config.name + "_end_top"}, {config.name + "_end_top" if config.is_z_reversed else config.name + "_end_bottom"})
 
             bool {config.name}_is_referencing = false
