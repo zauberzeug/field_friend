@@ -155,7 +155,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self._x[0, 0]], [self._x[1, 0]], [self._x[2, 0]]]
         H = np.eye(3)
-        Q = np.diag([r_xy, r_xy, r_theta])**2
+        variance = np.array([r_xy, r_xy, r_theta], dtype=np.float64)**2
+        Q = np.diag(variance)
         self._update(z=np.array(z), h=np.array(h), H=H, Q=Q)
 
     def _get_local_pose_and_uncertainty(self, gnss_measurement: GnssMeasurement) -> tuple[Pose, float, float]:
@@ -201,7 +202,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     'GNSS measurement is not available while resetting position. Activate _ignore_gnss to use zero position.')
                 return
         self._x = np.array([[reset_pose.x, reset_pose.y, reset_pose.yaw]], dtype=float).T
-        self._Sxx = np.diag([r_xy, r_xy, r_theta])**2
+        variance = np.array([r_xy, r_xy, r_theta], dtype=np.float64)**2
+        self._Sxx = np.diag(variance)
         self._update_frame()
         rosys.notify('Positioning initialized', 'positive')
 
