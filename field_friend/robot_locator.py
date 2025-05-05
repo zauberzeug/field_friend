@@ -212,7 +212,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
                 ui.label().bind_text_from(self, '_Sxx', lambda m: f'± {np.rad2deg(m[2, 2]):.2f}°')
             with ui.grid(columns=2).classes('w-full'):
                 ui.checkbox('Ignore GNSS', value=self._ignore_gnss).props('dense color=red').classes('col-span-2') \
-                    .bind_value_to(self, '_ignore_gnss')
+                    .bind_value_to(self, '_ignore_gnss').tooltip('Ignore GNSS measurements. When deactivated, reset the filter for better positioning.')
                 ui.checkbox('Ignore IMU', value=self._ignore_imu).props('dense color=red').classes('col-span-2') \
                     .bind_value_to(self, '_ignore_imu')
                 with ui.column().classes('w-24 gap-0'):
