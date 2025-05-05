@@ -1,0 +1,11 @@
+{
+    "with_drilling": false,
+    "with_chopping": false,
+    "chop_if_no_crops": false,
+    "weed_screw_depth": 0.13,
+    "crop_safety_distance": 0.01,
+    "drill_with_open_tornado": false,
+    "drill_between_crops": false,
+    "with_punch_check": false,
+    "tornado_angle": 1.0
+}

@@ -1,0 +1,8 @@
+{
+    "linear_speed_limit": 0.13,
+    "length": 2.0,
+    "crop_attraction": 0.3,
+    "field_id": null,
+    "row_index": 0,
+    "state": "APPROACHING_ROW_START"
+}
