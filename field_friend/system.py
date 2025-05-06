@@ -214,20 +214,25 @@ class System(rosys.persistence.PersistentModule):
             height=height)
 
     def setup_implements(self) -> None:
-        implements: list[Implement] = [Recorder(self)]
+        implements: list[Implement] = []
         match self.field_friend.implement_name:
             case 'tornado':
+                implements.append(Recorder(self))
                 implements.append(Tornado(self))
             case 'weed_screw':
+                implements.append(Recorder(self))
                 implements.append(WeedingScrew(self))
             case 'dual_mechanism':
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
                 self.log.error('Dual mechanism not implemented')
-            case 'none':
-                implements.append(WeedingScrew(self))
+                implements.append(Recorder(self))
+            case 'recorder':
+                implements.append(Recorder(self))
+            case None:
+                implements.append(Implement())
             case _:
-                self.log.warning('Unknown implement: %s', self.field_friend.implement_name)
+                raise NotImplementedError(f'Unknown implement: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}
 
     def setup_navigations(self) -> None:
