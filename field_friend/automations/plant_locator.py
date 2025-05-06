@@ -98,6 +98,9 @@ class PlantLocator(EntityLocator):
         if camera.calibration is None:
             self.log.error(f'no calibration found for camera {camera.name}')
             raise DetectorError()
+        if not self.crop_category_names:
+            self.log.warning('No crop categories defined')
+            await self.fetch_detector_info()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:
             await rosys.sleep(0.01)
