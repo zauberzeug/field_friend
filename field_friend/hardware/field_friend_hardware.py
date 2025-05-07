@@ -77,6 +77,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                               tx_pin=config.can.tx_pin,
                                               baud=config.can.baud)
 
+        estop = rosys.hardware.EStopHardware(robot_brain, name=config.estop.name, pins=config.estop.pins)
+
         wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware
         if config.wheels.version == 'wheels':
             wheels = rosys.hardware.WheelsHardware(robot_brain,
@@ -89,7 +91,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                    is_right_reversed=config.wheels.is_right_reversed,
                                                    is_left_reversed=config.wheels.is_left_reversed)
         elif config.wheels.version == 'double_wheels':
-            wheels = DoubleWheelsHardware(config.wheels, robot_brain, can=self.can,
+            wheels = DoubleWheelsHardware(config.wheels, robot_brain, estop, can=self.can,
                                           m_per_tick=self.M_PER_TICK, width=self.WHEEL_DISTANCE)
         else:
             raise NotImplementedError(f'Unknown wheels version: {config.wheels.version}')
@@ -126,8 +128,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             z_axis = ZAxisCanOpenHardware(config.z_axis, robot_brain, can=self.can, expander=expander)
         else:
             raise NotImplementedError(f'Unknown z_axis version: {config.z_axis.version}')
-
-        estop = rosys.hardware.EStopHardware(robot_brain, name=config.estop.name, pins=config.estop.pins)
 
         bms = rosys.hardware.BmsHardware(robot_brain,
                                          expander=expander if config.bms.on_expander else None,

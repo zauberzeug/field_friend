@@ -11,7 +11,7 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
     Velocities are read and emitted regularly.
     """
 
-    def __init__(self, config: WheelsConfiguration, robot_brain: rosys.hardware.RobotBrain, *,
+    def __init__(self, config: WheelsConfiguration, robot_brain: rosys.hardware.RobotBrain, estop: rosys.hardware.EStopHardware, *,
                  can: rosys.hardware.CanHardware,
                  m_per_tick: float = 0.01,
                  width: float = 0.5) -> None:
@@ -45,6 +45,8 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             core_message_fields.extend(['l0.motor_error_flag', 'r0.motor_error_flag',
                                        'l1.motor_error_flag', 'r1.motor_error_flag'])
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+        self.estop = estop
+        rosys.on_repeat(self.reset_motors, 0.1)
 
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
@@ -55,6 +57,8 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
         await self.robot_brain.send(f'{self.config.name}.speed({linear}, {angular})')
 
     async def reset_motors(self) -> None:
+        if self.estop.active:
+            return
         if not self.motor_error:
             return
         if self.l0_error == 1:
