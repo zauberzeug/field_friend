@@ -72,12 +72,14 @@ class FieldFriendObject(robot_object):
                     width: float = 0.75,
                     stl_scale: float = 0.01,
                     color: str = '#ffffff', opacity: float = 1.0) -> FieldFriendObject:
+        # NOTE: the stl is based on a width of 0.75m, thats why the sides are offset by 0.375m
         y_left = -0.375 + width/2.0
         y_right = 0.375 - width/2.0
         self.children.clear()
         with self:
             Stl(left_stl).move(y=y_left).scale(stl_scale).material(color, opacity)
             Stl(right_stl).move(y=y_right).scale(stl_scale).material(color, opacity)
+            # NOTE: the dimensions of the cross bars are picked by hand. They depend on the coordinate frame of the stl file
             Box(0.02, width + 0.125, 0.10).move(x=-0.36, y=0.0, z=0.925).material(color, opacity)
             Box(0.02, width + 0.125, 0.10).move(x=0.445, y=0.0, z=0.925).material(color, opacity)
         return self
