@@ -78,7 +78,8 @@ class CameraCard:
                     .props('flat color=grey').style('position: absolute; left: 1px; top: 1px; z-index: 500;') \
                     .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
 
-            with ui.button(icon='menu').props('flat color=primary').style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
+            with ui.button(icon='menu').props('flat color=primary') \
+                    .style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
                 with ui.menu():
                     with ui.menu_item():
                         with ui.row():
@@ -107,12 +108,8 @@ class CameraCard:
                             .props('icon=straighten outline').tooltip('Calibrate camera')
 
             events = ['mousemove', 'mouseout', 'mouseup']
-            self.image_view = ui.interactive_image(
-                '',
-                cross=True,
-                on_mouse=self.on_mouse_move,
-                events=events
-            ).classes('w-full')
+            self.image_view = ui.interactive_image('', cross=True, on_mouse=self.on_mouse_move, events=events) \
+                .classes('w-full')
             with ui.row():
                 self.debug_position = ui.label()
 
