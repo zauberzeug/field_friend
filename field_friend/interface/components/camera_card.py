@@ -319,8 +319,19 @@ class CameraCard:
         return svg
 
     def build_svg_for_mapping(self) -> str:
+        top_point = Point(x=self.camera.calibration.intrinsics.size.width / 2, y=0)
+        bottom_point = Point(x=self.camera.calibration.intrinsics.size.width / 2,
+                             y=self.camera.calibration.intrinsics.size.height)
+        back_point = self.camera.calibration.project_from_image(top_point) \
+            .relative_to(self.robot_locator.pose_frame)
+        front_point = self.camera.calibration.project_from_image(bottom_point) \
+            .relative_to(self.robot_locator.pose_frame)
+        assert back_point is not None
+        assert front_point is not None
+        y_range = self.system.config.measurements.wheel_distance / 2
         world_points = [Point3d(x=x, y=y, z=0).in_frame(self.robot_locator.pose_frame).resolve()
-                        for x in np.linspace(-0.3, 0.3, 15) for y in np.linspace(-0.25, 0.25, 20)]
+                        for x in np.linspace(back_point.x, front_point.x, 20)
+                        for y in np.linspace(-y_range, y_range, 20)]
         image_points = self.camera.calibration.project_to_image(world_points)
         colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
