@@ -34,8 +34,8 @@ class FieldCreator:
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
         self.gnss.NEW_MEASUREMENT.register_ui(self._new_gnss_measurement)
-        self.saved_point_a = app.storage.general.get('field_creator_a_point', None)
-        self.saved_point_b = app.storage.general.get('field_creator_b_point', None)
+        self.saved_point_a: tuple[float, float] | None = app.storage.general.get('field_creator_a_point', None)
+        self.saved_point_b: tuple[float, float] | None = app.storage.general.get('field_creator_b_point', None)
         self.first_row_start: GeoPoint | None = None
         self.first_row_end: GeoPoint | None = None
         # default field values
