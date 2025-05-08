@@ -171,8 +171,7 @@ class CameraCard:
             pass
 
         if e.type == 'mousemove' and point3d is not None:
-            point3d_in_locator_frame = point3d.relative_to(self.robot_locator.pose_frame)
-            self.debug_position.set_text(f'screen {point2d} -> local {point3d_in_locator_frame}')
+            self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
         if e.type == 'mouseup':
             if self.camera.calibration is None:
                 self.debug_position.set_text(f'last punch: {point2d}')
@@ -217,9 +216,9 @@ class CameraCard:
 
     def draw_cross(self, point: Point, *, shrink_factor: float = 1.0, color: str = 'red', size: int = 5, width: int = 1) -> str:
         svg = f'''<line x1="{int(point.x / shrink_factor) - size}" y1="{int(point.y / shrink_factor)}" x2="{int(point.x / shrink_factor) + size}" y2="{int(point.y / shrink_factor)}"
-                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / shrink_factor)}, {int(point.y / shrink_factor)})"/>
-                    <line x1="{int(point.x / shrink_factor)}" y1="{int(point.y / shrink_factor) - size}" x2="{int(point.x / shrink_factor)}" y2="{int(point.y / shrink_factor) + size}"
-                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / shrink_factor)}, {int(point.y / shrink_factor)})"/>'''
+                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>
+                    <line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - size}" x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + size}"
+                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
         return svg
 
     def detections_to_svg(self, detections: rosys.vision.Detections) -> str:
@@ -244,6 +243,7 @@ class CameraCard:
         if tool_2d:
             tool_2d = tool_2d / self.shrink_factor
             svg += f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" stroke="black" stroke-width="1" fill="transparent"/>'
+            # svg += self.draw_cross(tool_2d, color='black', size=10)
 
         # tool axis
         min_tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position + self.field_friend.WORK_Y, z=0) \
@@ -258,35 +258,25 @@ class CameraCard:
             svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="1" />'
 
         # work area
-        # TODO: calculate once, because it's static
-        # TODO: handle different calibration. ie bigger x ranges
-        starts: tuple[Point, Point] | None = None
-        ends: tuple[Point, Point] | None = None
-        for x in np.linspace(-0.20, 0.25, 5):
-            min_3d = Point3d(
-                x=x,
-                y=self.field_friend.y_axis.min_position,
-                z=0.0
-            ).in_frame(self.robot_locator.pose_frame).resolve()
-            min_2d = self.camera.calibration.project_to_image(min_3d)
-
-            max_3d = Point3d(
-                x=x,
-                y=self.field_friend.y_axis.max_position,
-                z=0.0
-            ).in_frame(self.robot_locator.pose_frame).resolve()
-            max_2d = self.camera.calibration.project_to_image(max_3d)
-            if not min_2d or not max_2d:
-                continue
-            min_2d = min_2d / self.shrink_factor
-            max_2d = max_2d / self.shrink_factor
-            if starts is None:
-                starts = (min_2d, max_2d)
-                continue
-            ends = (min_2d, max_2d)
-            svg += f'<line x1="{int(starts[0].x)}" y1="{int(starts[0].y)}" x2="{int(ends[0].x)}" y2="{int(ends[0].y)}" stroke="black" stroke-width="1" />'
-            svg += f'<line x1="{int(starts[1].x)}" y1="{int(starts[1].y)}" x2="{int(ends[1].x)}" y2="{int(ends[1].y)}" stroke="black" stroke-width="1" />'
-            starts = (min_2d, max_2d)
+        min_front_3d = Point3d(x=0.40, y=self.field_friend.y_axis.min_position, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve()
+        max_front_3d = Point3d(x=0.40, y=self.field_friend.y_axis.max_position, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve()
+        min_back_3d = Point3d(x=-0.25, y=self.field_friend.y_axis.min_position, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve()
+        max_back_3d = Point3d(x=-0.25, y=self.field_friend.y_axis.max_position, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve()
+        min_front_2d = self.camera.calibration.project_to_image(min_front_3d)
+        max_front_2d = self.camera.calibration.project_to_image(max_front_3d)
+        min_back_2d = self.camera.calibration.project_to_image(min_back_3d)
+        max_back_2d = self.camera.calibration.project_to_image(max_back_3d)
+        if isinstance(min_front_2d, Point) and isinstance(max_front_2d, Point) and isinstance(min_back_2d, Point) and isinstance(max_back_2d, Point):
+            min_front_2d = min_front_2d / self.shrink_factor
+            max_front_2d = max_front_2d / self.shrink_factor
+            min_back_2d = min_back_2d / self.shrink_factor
+            max_back_2d = max_back_2d / self.shrink_factor
+            svg += f'<line x1="{int(min_front_2d.x)}" y1="{int(min_front_2d.y)}" x2="{int(min_back_2d.x)}" y2="{int(min_back_2d.y)}" stroke="black" stroke-width="1" />'
+            svg += f'<line x1="{int(max_front_2d.x)}" y1="{int(max_front_2d.y)}" x2="{int(max_back_2d.x)}" y2="{int(max_back_2d.y)}" stroke="black" stroke-width="1" />'
 
         if self.show_plants_to_handle:
             plants_to_handle = self.system.current_implement.crops_to_handle \
