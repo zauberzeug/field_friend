@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import rosys
 from nicegui import binding, ui
 
@@ -33,7 +34,8 @@ class MainPage:
             with ui.row().classes('h-full ml-2 m-2').style('width: calc(100% - 1rem)'):
                 operation(self.system)
                 with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
-                    camera_card(self.system)
+                    if self.system.camera_provider is not None:
+                        camera_card(self.system)
                     robot_scene(self.system)
                     with ui.row().style('margin: 1rem; width: calc(100% - 2rem);'):
                         with ui.column():

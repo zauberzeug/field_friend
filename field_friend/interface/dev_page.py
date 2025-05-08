@@ -64,13 +64,15 @@ class DevPage:
                 self.odometer_ui()
                 if isinstance(self.system.field_friend.wheels, rosys.hardware.WheelsSimulation):
                     self.wheels_ui()
-            with ui.card():
-                self.system.gnss.developer_ui()
+            if self.system.gnss is not None:
+                with ui.card():
+                    self.system.gnss.developer_ui()
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
                     self.system.field_friend.imu.developer_ui()
-            with ui.card():
-                self.system.field_navigation.developer_ui()
+            if self.system.field_navigation is not None:
+                with ui.card():
+                    self.system.field_navigation.developer_ui()
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
             with ui.row():
                 with ui.card().style('min-width: 200px;'):
@@ -80,9 +82,10 @@ class DevPage:
                     esp_pins_p0 = self.system.field_friend.robot_brain.esp_pins_p0
                     esp_pins_p0.developer_ui()
 
-        with ui.row():
-            with ui.card():
-                self.system.plant_locator.developer_ui()
+        if self.system.plant_locator is not None:
+            with ui.row():
+                with ui.card():
+                    self.system.plant_locator.developer_ui()
 
         with ui.card().classes('w-1/2'):
             self.log_monitor.ui()

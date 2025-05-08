@@ -11,7 +11,6 @@ from rosys.geometry import GeoPoint
 from rosys.hardware.gnss import GpsQuality
 
 from ...automations.field import RowSupportPoint
-from ...interface.components.monitoring import CameraPosition
 
 if TYPE_CHECKING:
     from ...system import System
@@ -20,13 +19,15 @@ if TYPE_CHECKING:
 class SupportPointDialog:
 
     def __init__(self, system: System) -> None:
-        self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
-                               if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
+        self.front_cam: rosys.vision.MjpegCamera | None = None
+        if hasattr(system, 'mjpeg_camera_provider') and system.config.circle_sight_positions is not None:
+            self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
+                                   if system.config.circle_sight_positions.front in key), None)
         self.steerer = system.steerer
         self.gnss = system.gnss
         self.field_provider = system.field_provider
-        self.row_name: int = 1
-        self.bed_number: int = 1
+        self.row_name: int = 0
+        self.bed_number: int = 0
         self.support_point_coordinates: GeoPoint | None = None
         self.next: Callable = self.find_support_point
 
@@ -55,25 +56,26 @@ class SupportPointDialog:
             if self.field_provider.selected_field and self.field_provider.selected_field.bed_count == 1:
                 ui.label('2. Enter the row number for the support point:').classes('text-lg')
                 ui.number(
-                    label='Row Number', min=1, max=self.field_provider.selected_field.row_count, step=1, value=1) \
+                    label='Row Number', min=0, max=self.field_provider.selected_field.row_count - 1, step=1, value=0) \
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the row number you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
             elif self.field_provider.selected_field is not None:
                 ui.label('2. Enter the bed and row number for the support point:').classes('text-lg')
                 ui.number(
-                    label='Bed Number', min=1, max=self.field_provider.selected_field.bed_count, step=1, value=1) \
+                    label='Bed Number', min=0, max=self.field_provider.selected_field.bed_count - 1, step=1, value=0) \
                     .props('dense outlined').classes('w-40') \
-                    .tooltip('Choose the bed number the row is on.') \
+                    .tooltip('Choose the bed index the row is on.') \
                     .bind_value(self, 'bed_number')
                 ui.number(
-                    label='Row Number', min=1, max=self.field_provider.selected_field.row_count, step=1, value=1) \
+                    label='Row Number', min=0, max=self.field_provider.selected_field.row_count - 1, step=1, value=0) \
                     .props('dense outlined').classes('w-40') \
-                    .tooltip('Choose the row number you would like to give a fixed support point to.') \
+                    .tooltip('Choose the row index you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
         self.next = self.confirm_support_point
 
     def confirm_support_point(self) -> None:
+        assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         if self.gnss.last_measurement.gps_quality != GpsQuality.RTK_FIXED:
             with self.content:
@@ -99,7 +101,7 @@ class SupportPointDialog:
         if field is None:
             ui.notify('No field selected.')
             return
-        row_index = (self.bed_number - 1) * field.row_count + self.row_name - 1
+        row_index = self.bed_number * field.row_count + self.row_name
         row_support_point = RowSupportPoint.from_geopoint(self.support_point_coordinates, row_index)
         self.field_provider.add_row_support_point(field.id, row_support_point)
         ui.notify('Support point added.')

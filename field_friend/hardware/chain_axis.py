@@ -6,6 +6,8 @@ import numpy as np
 import rosys
 from rosys.helpers import ramp, remove_indentation
 
+from ..config import ChainAxisConfiguration
+
 
 class ChainAxis(rosys.hardware.Module, abc.ABC):
     # GEAR = 40
@@ -127,96 +129,85 @@ class ChainAxis(rosys.hardware.Module, abc.ABC):
 
 class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
 
-    def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 name: str = 'chain_axis',
-                 expander: rosys.hardware.ExpanderHardware | None,
-                 min_position: float = -0.10,
-                 max_position: float = 0.10,
-                 step_pin: int = 5,
-                 dir_pin: int = 4,
-                 alarm_pin: int = 13,
-                 ref_t_pin: int = 21,
-                 motor_on_expander: bool = False,
-                 end_stops_on_expander: bool = True,
-                 ) -> None:
-        self.name = name
+    def __init__(self, config: ChainAxisConfiguration, robot_brain: rosys.hardware.RobotBrain, *, expander: rosys.hardware.ExpanderHardware | None) -> None:
+        self.config = config
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name + "." if motor_on_expander and expander else ""}StepperMotor({step_pin}, {dir_pin})
-            {name}_alarm = {expander.name + "." if motor_on_expander and expander else ""}Input({alarm_pin})
-            {name}_ref_t = {expander.name + "." if end_stops_on_expander and expander else ""}Input({ref_t_pin})
+            {config.name} = {expander.name + "." if config.motor_on_expander and expander else ""}StepperMotor({config.step_pin}, {config.direction_pin})
+            {config.name}_alarm = {expander.name + "." if config.motor_on_expander and expander else ""}Input({config.alarm_pin})
+            {config.name}_ref_t = {expander.name + "." if config.end_stops_on_expander and expander else ""}Input({config.ref_t_pin})
 
-            bool {name}_ref_r_is_referencing = false
-            bool {name}_ref_l_is_referencing = false
-            bool {name}_ref_t_stop_enabled = false
-            bool {name}_ref_r_return = false
-            bool {name}_ref_l_return = false
-            bool {name}_resetting = false
+            bool {config.name}_ref_r_is_referencing = false
+            bool {config.name}_ref_l_is_referencing = false
+            bool {config.name}_ref_t_stop_enabled = false
+            bool {config.name}_ref_r_return = false
+            bool {config.name}_ref_l_return = false
+            bool {config.name}_resetting = false
 
-            when {name}_ref_r_is_referencing and {name}_ref_t_stop_enabled and {name}_ref_t.level == 1 then
-                {name}.stop()
+            when {config.name}_ref_r_is_referencing and {config.name}_ref_t_stop_enabled and {config.name}_ref_t.level == 1 then
+                {config.name}.stop()
             end
 
-            when {name}_ref_r_is_referencing and !{name}_ref_t_stop_enabled and {name}_ref_t.level == 0 then
-                {name}.stop()
+            when {config.name}_ref_r_is_referencing and !{config.name}_ref_t_stop_enabled and {config.name}_ref_t.level == 0 then
+                {config.name}.stop()
             end
 
-            when {name}_ref_l_is_referencing and {name}_ref_t_stop_enabled and {name}_ref_t.level == 1 then
-                {name}.stop()
+            when {config.name}_ref_l_is_referencing and {config.name}_ref_t_stop_enabled and {config.name}_ref_t.level == 1 then
+                {config.name}.stop()
             end
 
-            when {name}_ref_l_is_referencing and !{name}_ref_t_stop_enabled and {name}_ref_t.level == 0 then
-                {name}.stop()
+            when {config.name}_ref_l_is_referencing and !{config.name}_ref_t_stop_enabled and {config.name}_ref_t.level == 0 then
+                {config.name}.stop()
             end
 
-            when {name}_ref_r_return and {name}_ref_t.level == 1 then
-                {name}_ref_t_stop_enabled = true
+            when {config.name}_ref_r_return and {config.name}_ref_t.level == 1 then
+                {config.name}_ref_t_stop_enabled = true
             end
 
-            when {name}_ref_r_return and {name}_ref_t_stop_enabled and {name}_ref_t.level == 0 then
-                {name}.stop()
-                {name}_ref_r_return = false
-                {name}_ref_t_stop_enabled = false
+            when {config.name}_ref_r_return and {config.name}_ref_t_stop_enabled and {config.name}_ref_t.level == 0 then
+                {config.name}.stop()
+                {config.name}_ref_r_return = false
+                {config.name}_ref_t_stop_enabled = false
             end
 
-            when {name}_ref_l_return and {name}_ref_t.level == 1 then
-                {name}_ref_t_stop_enabled = true
+            when {config.name}_ref_l_return and {config.name}_ref_t.level == 1 then
+                {config.name}_ref_t_stop_enabled = true
             end
 
-            when {name}_ref_l_return and {name}_ref_t_stop_enabled and {name}_ref_t.level == 0 then
-                {name}.stop()
-                {name}_ref_l_return = false
-                {name}_ref_t_stop_enabled = false
+            when {config.name}_ref_l_return and {config.name}_ref_t_stop_enabled and {config.name}_ref_t.level == 0 then
+                {config.name}.stop()
+                {config.name}_ref_l_return = false
+                {config.name}_ref_t_stop_enabled = false
             end
 
-            when {name}_resetting and {name}_ref_t.level == 0 then
-                {name}.stop()
-                {name}_resetting = false
+            when {config.name}_resetting and {config.name}_ref_t.level == 0 then
+                {config.name}.stop()
+                {config.name}_resetting = false
             end
         ''')
         core_message_fields = [
-            f'{name}.idle',
-            f'{name}.position',
-            f'{name}_alarm.level',
-            f'{name}_ref_t.level',
+            f'{config.name}.idle',
+            f'{config.name}.position',
+            f'{config.name}_alarm.level',
+            f'{config.name}_ref_t.level',
         ]
-        super().__init__(min_position=min_position, max_position=max_position, robot_brain=robot_brain,
+        super().__init__(min_position=config.min_position, max_position=config.max_position, robot_brain=robot_brain,
                          lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
-        await self.robot_brain.send(f'{self.name}.stop()')
+        await self.robot_brain.send(f'{self.config.name}.stop()')
 
     async def move_to(self, position: float, speed: int | None = ChainAxis.DEFAULT_SPEED) -> None:
         try:
             await super().move_to(position, speed)
         except RuntimeError as e:
             raise Exception(e) from e
-        self.log.info(f'>>>{self.name} is moving to {position}mm with speed {speed}...')
+        self.log.info(f'>>>{self.config.name} is moving to {position}mm with speed {speed}...')
         steps = self.compute_steps(position)
         self.log.info(f'>>>steps: {steps}')
         self.log.info('>>>Sending move chain axis command to lizard...')
         await self.robot_brain.send(
-            f'{self.name}.position({steps}, {speed}, 40000);'
+            f'{self.config.name}.position({steps}, {speed}, 40000);'
         )
         await rosys.sleep(0.3)
         if not await self.check_idle_or_alarm():
@@ -230,12 +221,12 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
             raise RuntimeError('yaxis is not at top reference, reset first')
 
         try:
-            self.log.info(f'{self.name} is referencing...')
+            self.log.info(f'{self.config.name} is referencing...')
             await self.reference_right()
             await self.reference_left()
 
             self.is_referenced = True
-            self.log.info(f'{self.name} is referenced')
+            self.log.info(f'{self.config.name} is referenced')
             return True
         except Exception as e:
             self.log.error(f'error while referencing: {e}')
@@ -243,43 +234,43 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         finally:
             await self.stop()
             await self.robot_brain.send(
-                f'{self.name}_ref_l_is_referencing = false;'
-                f'{self.name}_ref_r_is_referencing = false;'
-                f'{self.name}_ref_t_stop_enabled = false;'
+                f'{self.config.name}_ref_l_is_referencing = false;'
+                f'{self.config.name}_ref_r_is_referencing = false;'
+                f'{self.config.name}_ref_t_stop_enabled = false;'
             )
 
     async def reference_right(self) -> bool:
         self.log.info('moving to ref_r...')
         await self.robot_brain.send(
-            f'{self.name}_ref_l_is_referencing = false;'
-            f'{self.name}_ref_r_is_referencing = true;'
-            f'{self.name}_ref_t_stop_enabled = true;'
+            f'{self.config.name}_ref_l_is_referencing = false;'
+            f'{self.config.name}_ref_r_is_referencing = true;'
+            f'{self.config.name}_ref_t_stop_enabled = true;'
         )
         await rosys.sleep(0.2)
         # move to ref_r
         await self.robot_brain.send(
-            f'{self.name}.speed({self.DEFAULT_SPEED / 4});'
+            f'{self.config.name}.speed({self.DEFAULT_SPEED / 4});'
         )
         while self.ref_t:
             await rosys.sleep(0.1)
         self.log.info('moving slowly out of  ref_r...')
         # move slowly out of ref_r
         await self.robot_brain.send(
-            f'{self.name}_ref_t_stop_enabled = false;'
-            f'{self.name}.speed(-{self.DEFAULT_SPEED / 10});'
+            f'{self.config.name}_ref_t_stop_enabled = false;'
+            f'{self.config.name}.speed(-{self.DEFAULT_SPEED / 10});'
         )
         while not self.ref_t:
             await rosys.sleep(0.1)
         # set tmp 0 position
         await self.robot_brain.send(
-            f'{self.name}.position = 0;'
+            f'{self.config.name}.position = 0;'
         )
         await rosys.sleep(0.5)
         self.log.info('moving out of ref_r by offset...')
         # move out of ref_r by offset
         await self.robot_brain.send(
-            f'{self.name}_ref_r_is_referencing = false;'
-            f'{self.name}.position(-{self.REF_OFFSET}, {self.DEFAULT_SPEED / 10}, 40000);'
+            f'{self.config.name}_ref_r_is_referencing = false;'
+            f'{self.config.name}.position(-{self.REF_OFFSET}, {self.DEFAULT_SPEED / 10}, 40000);'
         )
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
@@ -288,7 +279,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
 
         # set 0 position
         await self.robot_brain.send(
-            f'{self.name}.position = 0;'
+            f'{self.config.name}.position = 0;'
         )
 
         await rosys.sleep(0.5)
@@ -296,30 +287,30 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
     async def reference_left(self, first_time: bool = True) -> bool:
         self.log.info('moving to ref_l...')
         await self.robot_brain.send(
-            f'{self.name}_ref_r_is_referencing = false;'
-            f'{self.name}_ref_l_is_referencing = true;'
-            f'{self.name}_ref_t_stop_enabled = true;'
+            f'{self.config.name}_ref_r_is_referencing = false;'
+            f'{self.config.name}_ref_l_is_referencing = true;'
+            f'{self.config.name}_ref_t_stop_enabled = true;'
         )
         await rosys.sleep(0.2)
         # move to ref_l
         await self.robot_brain.send(
-            f'{self.name}_ref_t_stop_enabled = true;'
-            f'{self.name}.speed(-{self.DEFAULT_SPEED / 4});'
+            f'{self.config.name}_ref_t_stop_enabled = true;'
+            f'{self.config.name}.speed(-{self.DEFAULT_SPEED / 4});'
         )
         while self.ref_t:
             await rosys.sleep(0.1)
 
         # move slowly out of ref_l
         await self.robot_brain.send(
-            f'{self.name}_ref_t_stop_enabled = false;'
-            f'{self.name}.speed({self.DEFAULT_SPEED / 10});'
+            f'{self.config.name}_ref_t_stop_enabled = false;'
+            f'{self.config.name}.speed({self.DEFAULT_SPEED / 10});'
         )
         while not self.ref_t:
             await rosys.sleep(0.1)
         # move out of ref_l by offset
         await self.robot_brain.send(
-            f'{self.name}_ref_l_is_referencing = false;'
-            f'{self.name}.position({self.steps + self.REF_OFFSET}, {self.DEFAULT_SPEED / 10}, 40000);'
+            f'{self.config.name}_ref_l_is_referencing = false;'
+            f'{self.config.name}.position({self.steps + self.REF_OFFSET}, {self.DEFAULT_SPEED / 10}, 40000);'
         )
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
@@ -333,11 +324,11 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         else:
             self.log.info('setting steps_to_end position')
             await self.robot_brain.send(
-                f'{self.name}.position = {self.steps_to_end};'
+                f'{self.config.name}.position = {self.steps_to_end};'
             )
         await rosys.sleep(0.5)
         await self.robot_brain.send(
-            f'{self.name}_ref_t_stop_enabled = false;'
+            f'{self.config.name}_ref_t_stop_enabled = false;'
         )
         await rosys.sleep(0.5)
 
@@ -346,11 +337,11 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         rosys.notify('chain axis will be reset in 10s, lift the front up!', type='warning')
         await rosys.sleep(10)
         await self.robot_brain.send(
-            f'{self.name}_resetting = true;'
-            f'{self.name}_ref_l_is_referencing = false;'
-            f'{self.name}_ref_r_is_referencing = false;'
-            f'{self.name}_ref_t_stop_enabled = false;'
-            f'{self.name}.speed({self.DEFAULT_SPEED / 10});'
+            f'{self.config.name}_resetting = true;'
+            f'{self.config.name}_ref_l_is_referencing = false;'
+            f'{self.config.name}_ref_r_is_referencing = false;'
+            f'{self.config.name}_ref_t_stop_enabled = false;'
+            f'{self.config.name}.speed({self.DEFAULT_SPEED / 10});'
         )
         if not await self.check_idle_or_alarm():
             raise Exception('chain_axis fault detected')
@@ -371,7 +362,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         except RuntimeError as e:
             raise Exception(e) from e
         await self.robot_brain.send(
-            f'{self.name}.position({(-self.steps_to_end + 4*self.REF_OFFSET)*self.TOP_DOWN_FACTOR}, {self.DEFAULT_SPEED}, 40000);'
+            f'{self.config.name}.position({(-self.steps_to_end + 4*self.REF_OFFSET)*self.TOP_DOWN_FACTOR}, {self.DEFAULT_SPEED}, 40000);'
         )
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
@@ -384,7 +375,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         except RuntimeError as e:
             raise Exception(e) from e
         await self.robot_brain.send(
-            f'{self.name}.position({(self.steps_to_end*2 + -4*self.REF_OFFSET)*self.TOP_DOWN_FACTOR}, {self.DEFAULT_SPEED}, 40000);'
+            f'{self.config.name}.position({(self.steps_to_end*2 + -4*self.REF_OFFSET)*self.TOP_DOWN_FACTOR}, {self.DEFAULT_SPEED}, 40000);'
         )
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
@@ -399,7 +390,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         if self.steps <= self.steps_to_end + self.REF_OFFSET:
             return
         await self.robot_brain.send(
-            f'{self.name}.position({self.steps_to_end}, {self.DEFAULT_SPEED/2}, 40000);'
+            f'{self.config.name}.position({self.steps_to_end}, {self.DEFAULT_SPEED/2}, 40000);'
         )
         await rosys.sleep(0.3)
         if not await self.check_idle_or_alarm():
@@ -413,7 +404,7 @@ class ChainAxisHardware(ChainAxis, rosys.hardware.ModuleHardware):
         if self.steps >= -self.REF_OFFSET:
             return
         await self.robot_brain.send(
-            f'{self.name}.position(0, {self.DEFAULT_SPEED/2}, 40000);'
+            f'{self.config.name}.position(0, {self.DEFAULT_SPEED/2}, 40000);'
         )
         await rosys.sleep(0.3)
         if not await self.check_idle_or_alarm():

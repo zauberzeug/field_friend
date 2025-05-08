@@ -26,7 +26,7 @@ class FieldFriend(rosys.hardware.Robot):
 
     def __init__(
             self, *,
-            implement_name: str,
+            implement_name: str | None,
             wheels: rosys.hardware.Wheels,
             flashlight: Flashlight | FlashlightV2 | FlashlightPWM | None,
             y_axis: Axis | ChainAxis | None,
@@ -59,11 +59,16 @@ class FieldFriend(rosys.hardware.Robot):
         if self.z_axis:
             await self.z_axis.stop()
 
-    def can_reach(self, local_point: rosys.geometry.Point, second_tool: bool = False) -> bool:
+    def can_reach(self, local_point: rosys.geometry.Point, *, add_work_offset: bool = True, second_tool: bool = False) -> bool:
         """Check if the given point is reachable by the tool.
 
         The point is given in local coordinates, i.e. the origin is the center of the tool.
         """
+        if not self.implement_name:
+            raise NotImplementedError('This robot has no tool to reach with.')
+        if add_work_offset:
+            local_point.x += self.WORK_X
+            local_point.y += self.WORK_Y
         if self.implement_name in ['weed_screw', 'tornado'] and isinstance(self.y_axis, Axis):
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         if self.implement_name in ['dual_mechanism'] and isinstance(self.y_axis, ChainAxis):

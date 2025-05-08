@@ -23,13 +23,11 @@ log = logging.getLogger('field_friend.testing')
 
 @pytest.fixture
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
-    System.version = getattr(request, 'param', 'rb34')
-    System.robot_id = 'u6'
-    s = System()
-    helpers.odometer = s.robot_locator  # type: ignore
+    s = System(getattr(request, 'param', 'u6'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -42,12 +40,11 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
 
 @pytest.fixture
 async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[System, None]:
-    System.version = getattr(request, 'param', 'rb28')
-    System.robot_id = 'u4'
-    s = System()
+    s = System(getattr(request, 'param', 'u4'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.odometer
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -80,19 +77,19 @@ class TestField:
         }
         self.row_support_points = []
         self.rows = [
-            Row(id=f'field_{self.id}_row_1', name='row_1', points=[
+            Row(id=f'field_{self.id}_row_0', name='row_0', points=[
                 self.first_row_start,
                 self.first_row_end
             ], crop=self.bed_crops['0']),
-            Row(id=f'field_{self.id}_row_2', name='row_2', points=[
+            Row(id=f'field_{self.id}_row_1', name='row_1', points=[
                 self.first_row_start.shift_by(x=0, y=-0.45),
                 self.first_row_end.shift_by(x=0, y=-0.45)
             ], crop=self.bed_crops['0']),
-            Row(id=f'field_{self.id}_row_3', name='row_3', points=[
+            Row(id=f'field_{self.id}_row_2', name='row_2', points=[
                 self.first_row_start.shift_by(x=0, y=-0.9),
                 self.first_row_end.shift_by(x=0, y=-0.9)
             ], crop=self.bed_crops['0']),
-            Row(id=f'field_{self.id}_row_4', name='row_4', points=[
+            Row(id=f'field_{self.id}_row_3', name='row_3', points=[
                 self.first_row_start.shift_by(x=0, y=-1.35),
                 self.first_row_end.shift_by(x=0, y=-1.35)
             ], crop=self.bed_crops['0'])

@@ -11,7 +11,6 @@ from rosys.geometry import GeoPoint
 from rosys.hardware import GnssMeasurement
 
 from field_friend.automations.field import Field
-from field_friend.interface.components.monitoring import CameraPosition
 
 if TYPE_CHECKING:
     from ...system import System
@@ -21,10 +20,13 @@ class FieldCreator:
 
     def __init__(self, system: System) -> None:
         self.system = system
-        self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
-                               if CameraPosition.FRONT in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
-        self.back_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
-                              if CameraPosition.BACK in key), None) if hasattr(system, 'mjpeg_camera_provider') else None
+        self.front_cam: rosys.vision.MjpegCamera | None = None
+        self.back_cam: rosys.vision.MjpegCamera | None = None
+        if hasattr(system, 'mjpeg_camera_provider') and system.config.circle_sight_positions is not None:
+            self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
+                                   if system.config.circle_sight_positions.front in key), None)
+            self.back_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
+                                  if system.config.circle_sight_positions.back in key), None)
         self.steerer = system.steerer
         self.gnss = system.gnss
         self.plant_locator = system.plant_locator
@@ -42,6 +44,7 @@ class FieldCreator:
         self.default_crop: str | None = None
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
+        assert self.gnss is not None
         self.gnss.NEW_MEASUREMENT.register_ui(self.new_gnss_measurement)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
@@ -56,6 +59,9 @@ class FieldCreator:
         self.open()
 
     def open(self) -> None:
+        if self.gnss is None or self.gnss.last_measurement is None:
+            rosys.notify('GNSS not available', 'negative')
+            return
         self.next()
         self.dialog.open()
 
@@ -73,6 +79,7 @@ class FieldCreator:
         self.next = self.find_row_ending
 
     def find_row_ending(self) -> None:
+        assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.first_row_start = self.gnss.last_measurement.pose.point
         assert self.first_row_start is not None
@@ -93,6 +100,7 @@ class FieldCreator:
         self.next = self.field_infos
 
     def field_infos(self) -> None:
+        assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.first_row_end = self.gnss.last_measurement.pose.point
         assert self.first_row_end is not None
@@ -120,10 +128,11 @@ class FieldCreator:
                 .tooltip('Set the distance between the beds') \
                 .bind_value(self, 'bed_spacing', forward=lambda v: v / 100.0, backward=lambda v: v * 100.0) \
                 .bind_visibility_from(beds_switch, 'value')
-            ui.select(label='Default Crop', options=self.plant_locator.crop_category_names) \
-                .props('dense outlined').classes('w-40') \
-                .tooltip('Enter the default crop for all beds') \
-                .bind_value(self, 'default_crop')
+            if self.plant_locator is not None:
+                ui.select(label='Default Crop', options=self.plant_locator.crop_category_names) \
+                    .props('dense outlined').classes('w-40') \
+                    .tooltip('Enter the default crop for all beds') \
+                    .bind_value(self, 'default_crop')
             ui.separator()
             ui.number('Number of Rows (per Bed)',
                       value=10, step=1, min=1) \
@@ -140,9 +149,13 @@ class FieldCreator:
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the width of the buffer around the field outline') \
                 .bind_value(self, 'outline_buffer_width')
-        self.next = self.crop_infos
+        if self.plant_locator is not None:
+            self.next = self.crop_infos
+        else:
+            self.next = self.confirm_geometry
 
     def crop_infos(self) -> None:
+        assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.first_row_end = self.gnss.last_measurement.pose.point
         assert self.first_row_end is not None
@@ -152,10 +165,10 @@ class FieldCreator:
         with self.content:
             for i in range(int(self.bed_count)):
                 with ui.row().classes('w-full'):
-                    ui.label(f'Bed {i + 1}:').classes('text-lg')
+                    ui.label(f'Bed {i}:').classes('text-lg')
                     ui.select(options=self.plant_locator.crop_category_names) \
                         .props('dense outlined').classes('w-40') \
-                        .tooltip(f'Enter the crop name for bed {i + 1}') \
+                        .tooltip(f'Enter the crop name for bed {i}') \
                         .bind_value(self, 'bed_crops',
                                     forward=lambda v, idx=i: {**self.bed_crops,
                                                               str(idx): v if v is not None else self.default_crop},
@@ -164,6 +177,7 @@ class FieldCreator:
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
+        assert self.gnss is not None
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
         with self.content.style('max-height: 100%; overflow-y: auto'):
@@ -177,7 +191,7 @@ class FieldCreator:
                     for i in range(int(self.bed_count)):
                         crop = self.bed_crops[str(i)]
                         crop_name = self.plant_locator.crop_category_names[crop] if crop is not None else 'No crop selected'
-                        ui.label(f'Bed {int(i) + 1}: {crop_name}').classes('text-lg')
+                        ui.label(f'Bed {int(i)}: {crop_name}').classes('text-lg')
                 ui.separator()
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
                 ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
@@ -187,6 +201,7 @@ class FieldCreator:
         self.next = self._apply
 
     def _apply(self) -> None:
+        assert self.gnss is not None
         self.dialog.close()
         if self.first_row_start is None or self.first_row_end is None:
             ui.notify('No valid field parameters.')
@@ -225,8 +240,8 @@ class FieldCreator:
         self.row_sight.set_source(self.back_cam.get_latest_image_url())
 
     def ab_line_map(self) -> None:
-        if self.gnss.last_measurement is None:
-            return
+        assert self.gnss is not None
+        assert self.gnss.last_measurement is not None
         self.m = ui.leaflet(self.gnss.last_measurement.pose.point.degree_tuple).classes('w-full min-h-[500px]')
         if self.first_row_start is not None and self.first_row_end is not None:
             self.m.generic_layer(name='polyline', args=[

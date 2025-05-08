@@ -31,6 +31,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.system = system
         self.puncher = system.puncher
         self.record_video = False
+        self.cultivated_crop_select: ui.select | None = None
         self.cultivated_crop: str | None = None
         self.crop_safety_distance: float = 0.01
 
@@ -49,6 +50,12 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     async def prepare(self) -> bool:
         await super().prepare()
+        if self.system.plant_locator.detector_info is None and not await self.system.plant_locator.fetch_detector_info():
+            rosys.notify('Dectection model information not available', 'negative')
+            return False
+        if self.cultivated_crop_select is not None:
+            self.log.warning('setting cultivated crop options')
+            self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
         self.log.info(f'start weeding {self.relevant_weeds} with {self.name} ...')
         self.request_backup()
         if not await self._check_hardware_ready():
@@ -68,6 +75,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await self.puncher.clear_view()
         await rosys.sleep(3)
         self.system.plant_locator.resume()
+        assert self.system.camera_provider is not None
         if self.record_video:
             self.system.timelapse_recorder.camera = self.system.camera_provider.first_connected_camera
         await super().activate()
@@ -84,7 +92,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         await rosys.sleep(2)  # wait for robot to stand still
         if not self._has_plants_to_handle():
             return
-        self.log.info(f'Handling plants with {self.name}...')
+        self.log.debug(f'Handling plants with {self.name}...')
 
     async def stop_workflow(self) -> None:
         self.log.debug('workflow completed')
@@ -96,6 +104,9 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def _check_hardware_ready(self) -> bool:  # pylint: disable=too-many-return-statements
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active, aborting', 'negative')
+            return False
+        if self.system.camera_provider is None:
+            rosys.notify('no camera provider configured')
             return False
         camera = self.system.camera_provider.first_connected_camera
         if not camera:
@@ -165,6 +176,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'cultivated_crop': self.cultivated_crop,
             'crop_safety_distance': self.crop_safety_distance,
             'record_video': self.record_video,
+            'is_demo': self.puncher.is_demo,
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -174,6 +186,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.cultivated_crop = data.get('cultivated_crop', self.cultivated_crop)
         self.crop_safety_distance = data.get('crop_safety_distance', self.crop_safety_distance)
         self.record_video = data.get('record_video', self.record_video)
+        self.puncher.is_demo = data.get('is_demo', self.puncher.is_demo)
 
     def clear(self) -> None:
         self.crops_to_handle = {}
@@ -181,14 +194,27 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
 
     def settings_ui(self) -> None:
         super().settings_ui()
-        ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
+
+        async def update_cultivated_crop() -> None:
+            assert self.cultivated_crop_select is not None
+            if self.cultivated_crop_select.options:
+                self.log.debug('crop options already set')
+                return
+            await self.system.plant_locator.fetch_detector_info()
+            self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
+
+        self.cultivated_crop_select = ui.select(self.system.plant_locator.crop_category_names, label='cultivated crop', on_change=self.request_backup) \
             .bind_value(self, 'cultivated_crop').props('clearable') \
-            .classes('w-40').tooltip('Set the cultivated crop which should be kept safe')
+            .classes('w-40').tooltip('Set the cultivated crop which should be kept safe') \
+            .on('mouseenter', update_cultivated_crop)
         ui.number('Crop safety distance', step=0.001, min=0.001, max=0.05, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
+        ui.checkbox('Demo Mode') \
+            .bind_value(self.puncher, 'is_demo') \
+            .tooltip('If active, stop right before the ground')
         ui.checkbox('record video', on_change=self.request_backup) \
             .bind_value(self, 'record_video') \
             .tooltip('Set the weeding automation to record video')

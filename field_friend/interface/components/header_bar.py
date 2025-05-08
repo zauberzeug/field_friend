@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import rosys
 from nicegui import ui
+from rosys.event import Event
 
 from ...hardware import FieldFriend
 from .manual_steerer_dialog import ManualSteererDialog as manual_steerer_dialog
@@ -17,7 +17,7 @@ class HeaderBar:
         self.system = system
         self.drawer_icon = 'expand_more'
         self.toggled = False
-        self.STATUS_DRAWER_TOGGLED = rosys.event.Event()
+        self.STATUS_DRAWER_TOGGLED: Event = Event()
         '''tells if the status drawer is toggled or not.'''
 
         with ui.header().classes('items-center'):
@@ -38,7 +38,7 @@ class HeaderBar:
             with ui.row():
                 # ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
                 ui.link('Circle Sight', '/monitor').classes('text-white text-lg !no-underline')
-                # ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
+                ui.link('Low Bandwidth', '/lb').classes('text-white text-lg !no-underline')
 
             ui.button('Manual Steering', on_click=lambda system=system: manual_steerer_dialog(system)).tooltip(
                 'Open the manual steering window to move the robot with a joystick.')
