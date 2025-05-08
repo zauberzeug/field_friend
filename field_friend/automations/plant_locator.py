@@ -98,6 +98,9 @@ class PlantLocator(EntityLocator):
         if camera.calibration is None:
             self.log.error(f'no calibration found for camera {camera.name}')
             raise DetectorError()
+        if not self.crop_category_names:
+            self.log.warning('No crop categories defined')
+            await self.fetch_detector_info()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:
             await rosys.sleep(0.01)
@@ -196,6 +199,7 @@ class PlantLocator(EntityLocator):
                     .classes('w-28') \
                     .bind_value(self, 'autoupload') \
                     .tooltip('Set the autoupload for the weeding automation')
+                ui.button('Fetch detector info', on_click=self.fetch_detector_info)
             ui.label().bind_text_from(self, 'detector_info',
                                       backward=lambda info: f'Detector version: {info.current_version}/{info.target_version}' if info else 'Detector version: unknown')
 
