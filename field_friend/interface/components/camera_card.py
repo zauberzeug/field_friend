@@ -324,7 +324,7 @@ class CameraCard:
                 # svg += f'<text x="{int(crop_2d.x/self.shrink_factor)}" y="{int(crop_2d.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{crop.id[:4]}</text>'
         return svg
 
-    def build_svg_for_mapping(self) -> str:
+    def build_svg_for_mapping(self, *, track_width: float = 0.10) -> str:
         assert self.camera is not None
         assert self.camera.calibration is not None
         top_point = Point(x=self.camera.calibration.intrinsics.size.width / 2, y=0)
@@ -336,7 +336,7 @@ class CameraCard:
         front_point = self.camera.calibration.project_from_image(bottom_point)
         assert front_point is not None
         front_point = front_point.relative_to(self.robot_locator.pose_frame)
-        y_range = self.system.config.measurements.wheel_distance / 2
+        y_range = self.system.config.measurements.wheel_distance / 2 - track_width / 2
         world_points = [Point3d(x=x, y=y, z=0).in_frame(self.robot_locator.pose_frame).resolve()
                         for x in np.linspace(back_point.x, front_point.x, 20)
                         for y in np.linspace(-y_range, y_range, 20)]
