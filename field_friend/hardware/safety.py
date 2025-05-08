@@ -80,7 +80,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f'when {y_axis.config.name}_ref_t.level == 1 then {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.speed(0, 0); end\n'
         if isinstance(z_axis, TornadoHardware):
             if isinstance(y_axis, YAxisStepperHardware | YAxisCanOpenHardware):
-                lizard_code += f'when {z_axis.config.name}_ref_knife_ground.active == false then \
+                lizard_code += f'when {z_axis.config.name}_ref_knife_ground.active then \
                     {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.speed(0, 0); {y_axis.config.name}.stop(); end\n'
 
         # implement watchdog for rosys modules
