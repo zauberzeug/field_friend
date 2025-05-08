@@ -22,10 +22,6 @@ class FieldCreator:
         self.system = system
         self.saved_point_a = app.storage.general.get('field_creator_a_point', None)
         self.saved_point_b = app.storage.general.get('field_creator_b_point', None)
-        self.use_saved_point_a = False
-        self.use_saved_point_b = False
-        self.point_a_visible = True
-        self.point_b_visible = True
         self.front_cam: rosys.vision.MjpegCamera | None = None
         self.back_cam: rosys.vision.MjpegCamera | None = None
         if hasattr(system, 'mjpeg_camera_provider') and system.config.circle_sight_positions is not None:
@@ -50,9 +46,7 @@ class FieldCreator:
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
         assert self.gnss is not None
-        self.next: Callable = self.check_saved_points
-        if self.saved_point_a is None and self.saved_point_b is None:
-            self.next = self.find_first_row
+        self.next = self.find_first_row
         self.gnss.NEW_MEASUREMENT.register_ui(self._new_gnss_measurement)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
@@ -73,61 +67,6 @@ class FieldCreator:
         self.next()
         self.dialog.open()
 
-    def check_saved_points(self) -> None:
-        self.headline.text = 'Recover Saved Points'
-
-        def use_saved_point(point_type: str, use: bool) -> None:
-            if point_type == 'a':
-                if use:
-                    self.first_row_start = GeoPoint(lat=self.saved_point_a[0], lon=self.saved_point_a[1])
-                    self.use_saved_point_a = True
-                    self.point_a_visible = False
-                else:
-                    self.point_a_visible = False
-            elif point_type == 'b':
-                if use:
-                    self.first_row_end = GeoPoint(lat=self.saved_point_b[0], lon=self.saved_point_b[1])
-                    self.use_saved_point_b = True
-                    self.point_b_visible = False
-                else:
-                    self.point_b_visible = False
-
-        with self.content:
-            with ui.column().classes('w-full items-center'):
-                ui.label('There are saved points from a previous creation.').classes('text-lg')
-                ui.label('Point A').classes('text-lg font-bold')
-                if self.saved_point_a is not None:
-                    ui.label(f'Coordinates: {self.saved_point_a}').classes('text-lg')
-                    ui.label('Would you like to use this point?').classes('text-lg')
-                    with ui.row():
-                        ui.button('Yes', on_click=lambda: use_saved_point('a', True)).classes(
-                            'm-2').bind_visibility_from(self, 'point_a_visible')
-                        ui.button('No', on_click=lambda: use_saved_point('a', False)).classes(
-                            'm-2').bind_visibility_from(self, 'point_a_visible')
-                else:
-                    ui.label('No saved starting point').classes('text-lg')
-                ui.separator()
-                ui.label('Point B').classes('text-lg font-bold')
-                if self.saved_point_b is not None:
-                    ui.label(f'Coordinates: {self.saved_point_b}').classes('text-lg')
-                    ui.label('Would you like to use this point?').classes('text-lg')
-                    with ui.row():
-                        ui.button('Yes', on_click=lambda: use_saved_point('b', True)).classes(
-                            'm-2').bind_visibility_from(self, 'point_b_visible')
-                        ui.button('No', on_click=lambda: use_saved_point('b', False)).classes(
-                            'm-2').bind_visibility_from(self, 'point_b_visible')
-                else:
-                    ui.label('No saved ending point').classes('text-lg')
-        self.next = self._forward_to_next
-
-    def _forward_to_next(self) -> None:
-        if self.use_saved_point_a and self.use_saved_point_b:
-            self.field_infos()
-        elif self.use_saved_point_a:
-            self.find_row_ending()
-        else:
-            self.find_first_row()
-
     def find_first_row(self) -> None:
         self.headline.text = 'Drive to First Row'
         self.row_sight.content = '<line x1="50%" y1="0" x2="50%" y2="100%" stroke="#6E93D6" stroke-width="6"/>'
@@ -140,18 +79,24 @@ class FieldCreator:
                 'text-lg')
             ui.label('• The blue line should be in the center of the row.') \
                 .classes('text-lg ps-8')
+            if self.saved_point_a is not None:
+                ui.separator()
+                ui.label(f'Cached point available: {self.saved_point_a}').classes('text-lg')
+                with ui.row():
+                    ui.button('Apply cached point', on_click=lambda: self._save_start_point(True)).classes('m-2')
+                ui.separator()
         self.next = self._save_start_point
 
-    def _save_start_point(self) -> None:
-        assert self.gnss is not None
-        assert self.gnss.last_measurement is not None
-        self.first_row_start = self.gnss.last_measurement.pose.point
-        assert self.first_row_start is not None
-        app.storage.general['field_creator_a_point'] = self.first_row_start.tuple
-        if self.use_saved_point_b:
-            self.field_infos()
+    def _save_start_point(self, use_saved_point: bool = False) -> None:
+        if use_saved_point:
+            self.first_row_start = GeoPoint.from_degrees(self.saved_point_a[0], self.saved_point_a[1])
         else:
-            self.find_row_ending()
+            assert self.gnss is not None
+            assert self.gnss.last_measurement is not None
+            self.first_row_start = self.gnss.last_measurement.pose.point
+            assert self.first_row_start is not None
+            app.storage.general['field_creator_a_point'] = self.first_row_start.degree_tuple
+        self.find_row_ending()
 
     def find_row_ending(self) -> None:
         self.view_column.clear()
@@ -167,14 +112,23 @@ class FieldCreator:
                 .classes('text-lg')
             ui.label('2. Place the robot about 1 meter after the last crop.') \
                 .classes('text-lg')
+            if self.saved_point_b is not None:
+                ui.separator()
+                ui.label(f'Cached point available: {self.saved_point_b}').classes('text-lg')
+                with ui.row():
+                    ui.button('Apply cached point', on_click=lambda: self._save_end_point(True)).classes('m-2')
+                ui.separator()
         self.next = self._save_end_point
 
-    def _save_end_point(self) -> None:
-        assert self.gnss is not None
-        assert self.gnss.last_measurement is not None
-        self.first_row_end = self.gnss.last_measurement.pose.point
-        assert self.first_row_end is not None
-        app.storage.general['field_creator_b_point'] = self.first_row_end.tuple
+    def _save_end_point(self, use_saved_point: bool = False) -> None:
+        if use_saved_point:
+            self.first_row_end = GeoPoint.from_degrees(self.saved_point_b[0], self.saved_point_b[1])
+        else:
+            assert self.gnss is not None
+            assert self.gnss.last_measurement is not None
+            self.first_row_end = self.gnss.last_measurement.pose.point
+            assert self.first_row_end is not None
+            app.storage.general['field_creator_b_point'] = self.first_row_end.degree_tuple
         self.field_infos()
 
     def field_infos(self) -> None:
@@ -247,7 +201,6 @@ class FieldCreator:
                                     forward=lambda v, idx=i: {**self.bed_crops,
                                                               str(idx): v if v is not None else self.default_crop},
                                     backward=lambda v, idx=i: v.get(str(idx)))
-
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
