@@ -225,6 +225,9 @@ class CameraCard:
         return svg
 
     def build_svg_for_tool_position(self) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        assert isinstance(self.field_friend.y_axis, Axis)
         tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position + self.field_friend.WORK_Y, z=0) \
             .in_frame(self.robot_locator.pose_frame).resolve().point_3d
         tool_2d = self.camera.calibration.project_to_image(tool_3d)
@@ -234,6 +237,9 @@ class CameraCard:
         return ''
 
     def build_svg_for_tool_axis(self) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        assert isinstance(self.field_friend.y_axis, Axis)
         min_tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position + self.field_friend.WORK_Y, z=0) \
             .in_frame(self.robot_locator.pose_frame).resolve().point_3d
         min_tool_2d = self.camera.calibration.project_to_image(min_tool_3d)
@@ -247,6 +253,9 @@ class CameraCard:
         return ''
 
     def build_svg_for_plants_to_handle(self) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        assert isinstance(self.system.current_implement, WeedingImplement)
         plants_to_handle = self.system.current_implement.crops_to_handle \
             if isinstance(self.system.current_implement, TornadoImplement) else self.system.current_implement.weeds_to_handle
         svg = ''
@@ -267,12 +276,12 @@ class CameraCard:
         top_point = Point(x=self.camera.calibration.intrinsics.size.width / 2, y=0)
         bottom_point = Point(x=self.camera.calibration.intrinsics.size.width / 2,
                              y=self.camera.calibration.intrinsics.size.height)
-        back_point = self.camera.calibration.project_from_image(top_point) \
-            .relative_to(self.robot_locator.pose_frame)
-        front_point = self.camera.calibration.project_from_image(bottom_point) \
-            .relative_to(self.robot_locator.pose_frame)
+        back_point = self.camera.calibration.project_from_image(top_point)
         assert back_point is not None
+        back_point = back_point.relative_to(self.robot_locator.pose_frame)
+        front_point = self.camera.calibration.project_from_image(bottom_point)
         assert front_point is not None
+        front_point = front_point.relative_to(self.robot_locator.pose_frame)
         svg = ''
         starts: tuple[Point, Point] | None = None
         ends: tuple[Point, Point] | None = None
@@ -316,15 +325,17 @@ class CameraCard:
         return svg
 
     def build_svg_for_mapping(self) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
         top_point = Point(x=self.camera.calibration.intrinsics.size.width / 2, y=0)
         bottom_point = Point(x=self.camera.calibration.intrinsics.size.width / 2,
                              y=self.camera.calibration.intrinsics.size.height)
-        back_point = self.camera.calibration.project_from_image(top_point) \
-            .relative_to(self.robot_locator.pose_frame)
-        front_point = self.camera.calibration.project_from_image(bottom_point) \
-            .relative_to(self.robot_locator.pose_frame)
+        back_point = self.camera.calibration.project_from_image(top_point)
         assert back_point is not None
+        back_point = back_point.relative_to(self.robot_locator.pose_frame)
+        front_point = self.camera.calibration.project_from_image(bottom_point)
         assert front_point is not None
+        front_point = front_point.relative_to(self.robot_locator.pose_frame)
         y_range = self.system.config.measurements.wheel_distance / 2
         world_points = [Point3d(x=x, y=y, z=0).in_frame(self.robot_locator.pose_frame).resolve()
                         for x in np.linspace(back_point.x, front_point.x, 20)
@@ -333,4 +344,4 @@ class CameraCard:
         colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
         return ''.join(f'<circle cx="{int(p.x / self.shrink_factor)}" cy="{int(p.y / self.shrink_factor)}" r="1" stroke="{color}" stroke-width="1" fill="none"/>'
-                       for p, color in zip(image_points, colors_hex, strict=False))
+                       for p, color in zip(image_points, colors_hex, strict=False) if p is not None)
