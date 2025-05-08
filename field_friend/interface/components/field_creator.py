@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -20,8 +19,6 @@ class FieldCreator:
 
     def __init__(self, system: System) -> None:
         self.system = system
-        self.saved_point_a = app.storage.general.get('field_creator_a_point', None)
-        self.saved_point_b = app.storage.general.get('field_creator_b_point', None)
         self.front_cam: rosys.vision.MjpegCamera | None = None
         self.back_cam: rosys.vision.MjpegCamera | None = None
         if hasattr(system, 'mjpeg_camera_provider') and system.config.circle_sight_positions is not None:
@@ -31,10 +28,17 @@ class FieldCreator:
                                   if system.config.circle_sight_positions.back in key), None)
         self.steerer = system.steerer
         self.gnss = system.gnss
+        assert self.gnss is not None
         self.plant_locator = system.plant_locator
         self.field_provider = system.field_provider
+        self.m: ui.leaflet
+        self.robot_marker: Marker | None = None
+        self.gnss.NEW_MEASUREMENT.register_ui(self._new_gnss_measurement)
+        self.saved_point_a = app.storage.general.get('field_creator_a_point', None)
+        self.saved_point_b = app.storage.general.get('field_creator_b_point', None)
         self.first_row_start: GeoPoint | None = None
         self.first_row_end: GeoPoint | None = None
+        # default field values
         self.field_name: str = 'Field'
         self.row_spacing: float = 0.5
         self.row_count: int = 10
@@ -43,11 +47,8 @@ class FieldCreator:
         self.bed_spacing: float = 0.5
         self.bed_crops: dict[str, str | None] = {'0': None}
         self.default_crop: str | None = None
-        self.m: ui.leaflet
-        self.robot_marker: Marker | None = None
-        assert self.gnss is not None
+        # dialog logic
         self.next = self.find_first_row
-        self.gnss.NEW_MEASUREMENT.register_ui(self._new_gnss_measurement)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
                 with ui.column().classes('w-3/5') as self.view_column:
