@@ -80,7 +80,7 @@ class FieldNavigation(StraightLineNavigation):
         if not self.rows_to_work_on or len(self.rows_to_work_on) == 0:
             rosys.notify('No rows available', 'negative')
             return False
-        if not self.gnss.is_connected:
+        if self.gnss is None or not self.gnss.is_connected:
             rosys.notify('GNSS is not available', 'negative')
             return False
         for idx, row in enumerate(self.rows_to_work_on):
@@ -107,6 +107,7 @@ class FieldNavigation(StraightLineNavigation):
 
     def get_nearest_row(self) -> Row | None:
         assert self.field is not None
+        assert self.gnss is not None
         assert self.gnss.is_connected
         if self.force_first_row_start:
             self.row_index = 0

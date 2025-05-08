@@ -44,6 +44,7 @@ class FieldCreator:
         self.default_crop: str | None = None
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
+        assert self.gnss is not None
         self.gnss.NEW_MEASUREMENT.register_ui(self.new_gnss_measurement)
         with ui.dialog() as self.dialog, ui.card().style('width: 900px; max-width: none'):
             with ui.row().classes('w-full no-wrap no-gap'):
@@ -58,6 +59,9 @@ class FieldCreator:
         self.open()
 
     def open(self) -> None:
+        if self.gnss is None or self.gnss.last_measurement is None:
+            rosys.notify('GNSS not available', 'negative')
+            return
         self.next()
         self.dialog.open()
 
@@ -75,6 +79,7 @@ class FieldCreator:
         self.next = self.find_row_ending
 
     def find_row_ending(self) -> None:
+        assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.first_row_start = self.gnss.last_measurement.pose.point
         assert self.first_row_start is not None
@@ -95,6 +100,7 @@ class FieldCreator:
         self.next = self.field_infos
 
     def field_infos(self) -> None:
+        assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.first_row_end = self.gnss.last_measurement.pose.point
         assert self.first_row_end is not None
@@ -149,6 +155,7 @@ class FieldCreator:
             self.next = self.confirm_geometry
 
     def crop_infos(self) -> None:
+        assert self.gnss is not None
         assert self.gnss.last_measurement is not None
         self.first_row_end = self.gnss.last_measurement.pose.point
         assert self.first_row_end is not None
@@ -170,6 +177,7 @@ class FieldCreator:
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
+        assert self.gnss is not None
         self.headline.text = 'Confirm Geometry'
         self.content.clear()
         with self.content.style('max-height: 100%; overflow-y: auto'):
@@ -193,6 +201,7 @@ class FieldCreator:
         self.next = self._apply
 
     def _apply(self) -> None:
+        assert self.gnss is not None
         self.dialog.close()
         if self.first_row_start is None or self.first_row_end is None:
             ui.notify('No valid field parameters.')
@@ -231,8 +240,8 @@ class FieldCreator:
         self.row_sight.set_source(self.back_cam.get_latest_image_url())
 
     def ab_line_map(self) -> None:
-        if self.gnss.last_measurement is None:
-            return
+        assert self.gnss is not None
+        assert self.gnss.last_measurement is not None
         self.m = ui.leaflet(self.gnss.last_measurement.pose.point.degree_tuple).classes('w-full min-h-[500px]')
         if self.first_row_start is not None and self.first_row_end is not None:
             self.m.generic_layer(name='polyline', args=[

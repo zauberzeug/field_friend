@@ -449,7 +449,7 @@ class FieldFriendConfiguration:
     """
     name: str
     robot_brain: RobotBrainConfiguration
-    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'mower'] | None
+    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'mower', 'recorder'] | None
     measurements: MeasurementsConfiguration
     wheels: WheelsConfiguration
     has_status_control: bool

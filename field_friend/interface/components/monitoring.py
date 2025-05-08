@@ -32,8 +32,11 @@ class Monitoring:
         self.animal_count = 0
         self.shrink_factor = shrink_factor
         self.sights: dict[str, ui.interactive_image] = {}
-        assert system.config.circle_sight_positions is not None
-        self.camera_positions = system.config.circle_sight_positions
+        if system.config.circle_sight_positions is None:
+            self.log.warning('No circle sight positions configured, camera views will not be available')
+            self.camera_positions = None
+        else:
+            self.camera_positions = system.config.circle_sight_positions
         KeyControls(system)
         ui.keyboard(self.handle_key)
         with ui.row().classes('w-full items-stretch gap-0'):
@@ -107,6 +110,9 @@ class Monitoring:
                 continue
             if camera.id in self.sights:
                 self.sights[camera.id].set_source(camera.get_latest_image_url())
+                continue
+            if self.camera_positions is None:
+                self.log.warning(f'Camera {camera.id} detected but no camera positions configured')
                 continue
             if self.camera_positions.front in camera.id:
                 self.front_view.clear()

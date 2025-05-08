@@ -81,6 +81,7 @@ class AutomationWatcher:
         self.incidence_pose = deepcopy(self.robot_locator.pose)
 
     def is_gnss_ready(self) -> bool:
+        assert self.gnss is not None
         return self.gnss.is_connected \
             and self.gnss.last_measurement is not None \
             and rosys.time() - self.gnss.last_measurement.time < 2.0 \

@@ -143,7 +143,9 @@ class Navigation(rosys.persistence.PersistentModule):
             .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
 
 
-def is_reference_valid(gnss: Gnss, *, max_distance: float = 5000.0) -> bool:
+def is_reference_valid(gnss: Gnss | None, *, max_distance: float = 5000.0) -> bool:
+    if gnss is None:
+        return True
     if GeoReference.current is None:
         return False
     if gnss.last_measurement is None:

@@ -27,6 +27,9 @@ class CameraConfigurator:
         self.log.debug('updating camera config')
         camera = None
         start_time = rosys.time()
+        if self.camera_provider is None:
+            self.log.error('no camera provider configured')
+            return
         while not camera:
             if rosys.time() - start_time > 60:
                 raise RuntimeError('No active camera found after 60s')
