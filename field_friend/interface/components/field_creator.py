@@ -83,12 +83,9 @@ class FieldCreator:
         self.content.clear()
         with self.content:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
-            ui.label('1. Drive the robot to the leftmost row of your field.').classes(
-                'text-lg')
-            ui.label('2. Place the robot about 1 meter in front of the first crop.').classes(
-                'text-lg')
-            ui.label('• The blue line should be in the center of the row.') \
-                .classes('text-lg ps-8')
+            ui.label('1. Drive the robot to the leftmost row of your field.').classes('text-lg')
+            ui.label('2. Place the robot about 1 meter in front of the first crop.').classes('text-lg')
+            ui.label('• The blue line should be in the center of the row.').classes('text-lg ps-8')
             if self.saved_row_start is not None:
                 ui.separator()
                 ui.label(f'Cached point available: {self.saved_row_start}').classes('text-lg')
@@ -224,7 +221,7 @@ class FieldCreator:
                 with ui.expansion('Crops').classes('w-full'):
                     for i in range(int(self.bed_count)):
                         crop = self.bed_crops[str(i)]
-                        crop_name = self.plant_locator.crop_category_names[crop] if crop is not None else 'No crop selected'
+                        crop_name = 'No crop selected' if crop is None else self.plant_locator.crop_category_names[crop]
                         ui.label(f'Bed {int(i)}: {crop_name}').classes('text-lg')
                 ui.separator()
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
