@@ -195,11 +195,6 @@ class FieldCreator:
             self.next = self.confirm_geometry
 
     def crop_infos(self) -> None:
-        assert self.gnss is not None
-        assert self.gnss.last_measurement is not None
-        self.first_row_end = self.gnss.last_measurement.pose.point
-        assert self.first_row_end is not None
-
         self.headline.text = 'Crops'
         self.content.clear()
         with self.content:
