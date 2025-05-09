@@ -3,6 +3,7 @@
 import abc
 
 import rosys
+from rosys.analysis import track
 from rosys.helpers import remove_indentation
 
 from ..config import TornadoConfiguration
@@ -177,6 +178,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
     async def stop_turn(self) -> None:
         await self.robot_brain.send(f'{self.config.name}_motor_turn.speed(0)')
 
+    @track
     async def move_to(self, position: float) -> None:
         try:
             await super().move_to(position)
@@ -189,6 +191,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.1)
         self.log.info(f'z axis moved to {position}')
 
+    @track
     async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         try:
             await super().move_down_until_reference()
@@ -233,16 +236,18 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                 f'{self.config.name}_knife_ground_enabled = false;'
             )
 
+    @track
     async def turn_by(self, turns: float) -> None:
         try:
             await super().turn_by(turns)
         except RuntimeError as e:
             raise Exception(e) from e
         target = self.position_turn/360 + turns
-        await self.robot_brain.send(f'{self.config.name}_motor_turn.position({target});')
         while not target - 0.01 < self.position_turn/360 < target + 0.01:
-            await rosys.sleep(0.1)
+            await self.robot_brain.send(f'{self.config.name}_motor_turn.position({target});')
+            await rosys.sleep(0.5)
 
+    @track
     async def turn_knifes_to(self, angle: float) -> None:
         try:
             await super().turn_knifes_to(angle)
@@ -254,11 +259,12 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         if target_angle < 0:
             target_angle = 360 - self.last_angle + angle
         target = (self.position_turn - target_angle)/360
-        await self.robot_brain.send(f'{self.config.name}_motor_turn.position({target});')
         while not target - 0.01 < self.position_turn/360 < target + 0.01:
-            await rosys.sleep(0.1)
+            await self.robot_brain.send(f'{self.config.name}_motor_turn.position({target});')
+            await rosys.sleep(0.5)
         self.last_angle = angle
 
+    @track
     async def try_reference_z(self) -> bool:
         if not await super().try_reference_z():
             return False
@@ -321,6 +327,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.log.error(f'error while referencing tornado z position: {e}')
             return False
 
+    @track
     async def try_reference_turn(self) -> bool:
         if not await super().try_reference_turn():
             return False

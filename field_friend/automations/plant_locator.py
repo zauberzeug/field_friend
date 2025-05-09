@@ -176,7 +176,6 @@ class PlantLocator(EntityLocator):
             if response.status != 200:
                 self.log.error(f'Could not set outbox mode to {value} on port {port} - status code: {response.status}')
                 return
-            self.log.debug(f'Outbox_mode was set to {value} on port {port}')
 
     def developer_ui(self) -> None:
         ui.label('Plant Locator').classes('text-center text-bold')

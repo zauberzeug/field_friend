@@ -1,0 +1,88 @@
+from rosys.geometry import Pose
+
+from field_friend.config.configuration import (  # ImuConfiguration,
+    BumperConfiguration,
+    CameraConfiguration,
+    CircleSightPositions,
+    FieldFriendConfiguration,
+    FlashlightConfiguration,
+    GnssConfiguration,
+    MeasurementsConfiguration,
+    RobotBrainConfiguration,
+    TornadoConfiguration,
+    WheelsConfiguration,
+    YCanOpenConfiguration,
+)
+
+config = FieldFriendConfiguration(
+    name='fieldfriend-f12',
+    robot_brain=RobotBrainConfiguration(name='rb32', flash_params=['orin', 'v05']),
+    tool='tornado',
+    measurements=MeasurementsConfiguration(
+        tooth_count=15,
+        pitch=0.033,
+        work_x=0.04
+    ),
+    camera=CameraConfiguration(
+        width=1280,
+        height=720,
+    ),
+    circle_sight_positions=CircleSightPositions(
+        right='-1',
+        back='-2',
+        front='-3',
+        left='-4',
+    ),
+    wheels=WheelsConfiguration(
+        is_left_reversed=True,
+        is_right_reversed=False,
+        left_back_can_address=0x000,
+        left_front_can_address=0x100,
+        right_back_can_address=0x200,
+        right_front_can_address=0x300,
+    ),
+    has_status_control=True,
+    flashlight=FlashlightConfiguration(
+        version='flashlight_pwm_v2',
+        front_pin=5,
+        back_pin=4,
+        on_expander=False,
+    ),
+    bumper=BumperConfiguration(pin_front_top=22, pin_front_bottom=12, pin_back=25),
+    y_axis=YCanOpenConfiguration(
+        axis_offset=0.08,
+        reversed_direction=False,
+        end_left_pin=21,
+        end_right_pin=19,
+        end_stops_on_expander=True,
+        motor_on_expander=False,
+        can_address=0x60,
+        end_stops_inverted=True,
+        max_speed=450,
+        reference_speed=40,
+        steps_per_m=1_481_481.48,
+        name='yaxis',
+        max_position=0.065,
+        min_position=-0.075,
+        version='y_axis_canopen',
+    ),
+    z_axis=TornadoConfiguration(
+        end_stops_on_expander=True,
+        motor_on_expander=False,
+        end_bottom_pin=5,
+        end_top_pin=32,
+        name='tornado',
+        max_position=0.0,
+        min_position=-0.085,
+        version='tornado',
+        ref_gear_pin=18,
+        ref_knife_ground_pin=33,
+        ref_knife_stop_pin=4,
+        ref_motor_pin=35,
+        turn_speed_limit=1.5,
+    ),
+    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
+    # TODO: add IMU, when the next stable version is released
+    # ImuConfiguration(offset_rotation=Rotation.from_euler(0.0, 0, 0))
+    imu=None,
+)

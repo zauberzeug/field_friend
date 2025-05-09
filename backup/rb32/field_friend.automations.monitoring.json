@@ -1,0 +1,54 @@
+{
+    "use_field_planning": false,
+    "start_row_id": null,
+    "end_row_id": null,
+    "minimum_turning_radius": 1.8,
+    "turn_offset": 1.0,
+    "drive_backwards_to_start": true,
+    "drive_to_start": true,
+    "only_monitoring": false,
+    "drill_with_open_tornado": false,
+    "drill_between_crops": false,
+    "with_drilling": false,
+    "with_chopping": false,
+    "chop_if_no_crops": false,
+    "tornado_angle": 30.0,
+    "weed_screw_depth": 0.13,
+    "crop_safety_distance": 0.01,
+    "linear_speed_on_row": 0.04,
+    "angular_speed_on_row": 0.3,
+    "linear_speed_between_rows": 0.3,
+    "angular_speed_between_rows": 0.8,
+    "sorted_weeding_rows": [],
+    "field": {
+        "id": "01bb0ba8-0389-4963-970c-216f5098d8fd",
+        "name": "field_2",
+        "outline_wgs84": [
+            [
+                54.77082252006726,
+                9.101363228185734
+            ],
+            [
+                54.77110790655067,
+                9.101427959200656
+            ],
+            [
+                54.77110929959936,
+                9.102260021678177
+            ],
+            [
+                54.77081061546391,
+                9.102177664809387
+            ]
+        ],
+        "reference_lat": 54.77082252006726,
+        "reference_lon": 9.101363228185734,
+        "visualized": false,
+        "obstacles": [],
+        "rows": []
+    },
+    "weeding_plan": [],
+    "turn_paths": [],
+    "current_row": null,
+    "current_segment": null
+}
