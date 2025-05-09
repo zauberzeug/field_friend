@@ -34,8 +34,9 @@ class FieldCreator:
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
         self.gnss.NEW_MEASUREMENT.register_ui(self._new_gnss_measurement)
-        self.saved_point_a: tuple[float, float] | None = app.storage.general.get('field_creator_a_point', None)
-        self.saved_point_b: tuple[float, float] | None = app.storage.general.get('field_creator_b_point', None)
+        self.saved_row_start: GeoPoint | None = None
+        self.saved_row_end: GeoPoint | None = None
+        self.restore_saved_points()
         self.first_row_start: GeoPoint | None = None
         self.first_row_end: GeoPoint | None = None
         # default field values
@@ -61,6 +62,14 @@ class FieldCreator:
                     ui.button('Next', on_click=lambda: self.next())  # pylint: disable=unnecessary-lambda
         self.open()
 
+    def restore_saved_points(self) -> None:
+        saved_tuple = app.storage.general.get('field_creator_a_point', None)
+        if saved_tuple is not None:
+            self.saved_row_start = GeoPoint.from_degrees(saved_tuple[0], saved_tuple[1])
+        saved_tuple = app.storage.general.get('field_creator_b_point', None)
+        if saved_tuple is not None:
+            self.saved_row_end = GeoPoint.from_degrees(saved_tuple[0], saved_tuple[1])
+
     def open(self) -> None:
         if self.gnss is None or self.gnss.last_measurement is None:
             rosys.notify('GNSS not available', 'negative')
@@ -80,9 +89,9 @@ class FieldCreator:
                 'text-lg')
             ui.label('• The blue line should be in the center of the row.') \
                 .classes('text-lg ps-8')
-            if self.saved_point_a is not None:
+            if self.saved_row_start is not None:
                 ui.separator()
-                ui.label(f'Cached point available: {self.saved_point_a}').classes('text-lg')
+                ui.label(f'Cached point available: {self.saved_row_start}').classes('text-lg')
                 with ui.row():
                     ui.button('Apply cached point', on_click=lambda: self._save_start_point(True)).classes('m-2')
                 ui.separator()
@@ -90,7 +99,8 @@ class FieldCreator:
 
     def _save_start_point(self, use_saved_point: bool = False) -> None:
         if use_saved_point:
-            self.first_row_start = GeoPoint.from_degrees(self.saved_point_a[0], self.saved_point_a[1])
+            assert self.saved_row_start is not None
+            self.first_row_start = self.saved_row_start
         else:
             assert self.gnss is not None
             assert self.gnss.last_measurement is not None
@@ -113,9 +123,9 @@ class FieldCreator:
                 .classes('text-lg')
             ui.label('2. Place the robot about 1 meter after the last crop.') \
                 .classes('text-lg')
-            if self.saved_point_b is not None:
+            if self.saved_row_end is not None:
                 ui.separator()
-                ui.label(f'Cached point available: {self.saved_point_b}').classes('text-lg')
+                ui.label(f'Cached point available: {self.saved_row_end}').classes('text-lg')
                 with ui.row():
                     ui.button('Apply cached point', on_click=lambda: self._save_end_point(True)).classes('m-2')
                 ui.separator()
@@ -123,7 +133,8 @@ class FieldCreator:
 
     def _save_end_point(self, use_saved_point: bool = False) -> None:
         if use_saved_point:
-            self.first_row_end = GeoPoint.from_degrees(self.saved_point_b[0], self.saved_point_b[1])
+            assert self.saved_row_end is not None
+            self.first_row_end = self.saved_row_end
         else:
             assert self.gnss is not None
             assert self.gnss.last_measurement is not None
