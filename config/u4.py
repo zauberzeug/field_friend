@@ -20,7 +20,12 @@ config = FieldFriendConfiguration(
     name='uckerbot-u4',
     robot_brain=RobotBrainConfiguration(name='rb28', flash_params=['orin']),
     tool='tornado',
-    measurements=MeasurementsConfiguration(tooth_count=17, pitch=0.041),
+    measurements=MeasurementsConfiguration(
+        tooth_count=17,
+        pitch=0.041,
+        work_x=0.03,
+        work_y=0.005,
+    ),
     camera=CameraConfiguration(
         width=1280,
         height=720,
