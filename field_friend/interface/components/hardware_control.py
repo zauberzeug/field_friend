@@ -87,6 +87,9 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                     if isinstance(field_friend.y_axis, YAxisCanOpenHardware):
                         ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.y_axis.reset_fault()))
                     with ui.row():
+                        status_bulb().bind_value_from(field_friend.y_axis, 'is_referenced')
+                        ui.label('Referenced')
+                    with ui.row():
                         status_bulb().bind_value_from(field_friend.y_axis, 'alarm')
                         ui.label('Alarm')
                     with ui.row():
@@ -140,6 +143,9 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                         field_friend.z_axis.return_to_reference()))
                     ui.button('down until reference', on_click=lambda: automator.start(
                         field_friend.z_axis.move_down_until_reference()))
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'is_referenced')
+                        ui.label('Referenced')
                     with ui.row():
                         status_bulb().bind_value_from(field_friend.z_axis, 'end_top')
                         ui.label('End Top Switch')
