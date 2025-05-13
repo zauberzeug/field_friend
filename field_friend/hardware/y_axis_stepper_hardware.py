@@ -70,6 +70,13 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             return False
         return True
 
+    async def reset_fault(self) -> None:
+        self.log.warning('not implemented for stepper motor')
+
+    async def recover(self) -> None:
+        await self.stop()
+        await self.try_reference()
+
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
