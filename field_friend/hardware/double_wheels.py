@@ -69,25 +69,21 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             await self.robot_brain.send('l1.reset_motor()')
         if self.r1_error == 1:
             await self.robot_brain.send('r1.reset_motor()')
-        self.motor_error = False
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         velocity = rosys.geometry.Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time)
         self.VELOCITY_MEASURED.emit([velocity])
         if self.config.odrive_version == 6:
+            self.motor_error = any([self.l0_error, self.r0_error, self.l1_error, self.r1_error])
             self.l0_error = int(words.pop(0))
             if self.l0_error == 1 and not self.motor_error:
                 rosys.notify('Left Back Motor Error', 'warning')
-                self.motor_error = True
             self.r0_error = int(words.pop(0))
             if self.r0_error == 1 and not self.motor_error:
                 rosys.notify('Right Back Motor Error', 'warning')
-                self.motor_error = True
             self.l1_error = int(words.pop(0))
             if self.l1_error == 1 and not self.motor_error:
                 rosys.notify('Left Front Motor Error', 'warning')
-                self.motor_error = True
             self.r1_error = int(words.pop(0))
             if self.r1_error == 1 and not self.motor_error:
                 rosys.notify('Right Front Motor Error', 'warning')
-                self.motor_error = True
