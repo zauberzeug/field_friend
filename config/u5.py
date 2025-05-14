@@ -14,7 +14,7 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='uckerbot-u5',
-    robot_brain=RobotBrainConfiguration(name='rb33', flash_params=['orin', 'v05']),
+    robot_brain=RobotBrainConfiguration(name='rb33', flash_params=['orin', 'v05'], enable_esp_on_startup=True),
     tool='recorder',
     measurements=MeasurementsConfiguration(
         tooth_count=17,
