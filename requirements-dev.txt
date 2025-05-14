@@ -5,3 +5,4 @@ pre-commit
 pylint
 pytest
 pytest-asyncio
+odrive==0.6.9.post0
