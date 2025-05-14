@@ -46,7 +46,7 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
                                        'l1.motor_error_flag', 'r1.motor_error_flag'])
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
         self.estop = estop
-        rosys.on_repeat(self.reset_motors, 0.1)
+        # rosys.on_repeat(self.reset_motors, 0.1)
 
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
