@@ -13,7 +13,7 @@ class RobotBrainConfiguration:
     """
     name: str
     flash_params: list[str]
-    enable_esp_on_startup: bool | None = None
+    enable_esp_on_startup: bool = False
 
 
 @dataclass(kw_only=True)
