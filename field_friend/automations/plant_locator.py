@@ -134,7 +134,7 @@ class PlantLocator(EntityLocator):
             else:
                 world_point_3d = camera.calibration.project_from_image(image_point)
             if world_point_3d is None:
-                self.log.error('could not generate world point of detection, calibration error')
+                self.log.error('Failed to generate world point from %s', image_point)
                 continue
             plant = Plant(type=d.category_name,
                           detection_time=rosys.time(),
