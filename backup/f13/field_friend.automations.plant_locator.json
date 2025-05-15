@@ -2,7 +2,7 @@
     "minimum_weed_confidence": 0.3,
     "minimum_crop_confidence": 0.3,
     "autoupload": "disabled",
-    "upload_images": true,
+    "upload_images": false,
     "tags": [
         "zuckerr\u00fcbe",
         "f13"

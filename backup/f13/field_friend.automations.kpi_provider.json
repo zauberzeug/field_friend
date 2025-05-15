@@ -1,7 +1,7 @@
 {
     "all_time_kpis": {
         "distance": 0,
-        "time": 80795.48024392128,
+        "time": 80727.85045909882,
         "bumps": 0,
         "low_battery": 0,
         "can_failure": 0,
@@ -122,13 +122,6 @@
             "date": "2025-04-11",
             "incidents": {
                 "time": 1199
-            }
-        },
-        {
-            "date": "2025-04-30",
-            "incidents": {
-                "time": 66,
-                "bumps": 14
             }
         }
     ],

@@ -5,7 +5,6 @@
             "name": "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0",
             "connect_after_init": true,
             "image_history_length": 256,
-            "base_path_overwrite": null,
             "crop": {
                 "x": 60.0,
                 "y": 20.0,
@@ -52,7 +51,7 @@
                     }
                 },
                 "extrinsics": {
-                    "_frame_id": "field_friend.robot_locator",
+                    "_frame_id": "rosys.odometer.prediction",
                     "x": 0.2891589404346338,
                     "y": 0.0036781887580965575,
                     "z": 0.29221418864252113,
