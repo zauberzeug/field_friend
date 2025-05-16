@@ -49,7 +49,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  ) -> None:
         self.estop_active = False
         # implement lizard stop method for available hardware
-        lizard_code = f'let disable do {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.disable();'
+        lizard_code = 'bool disabled = false\n'
+        lizard_code += f'let disable do disabled = true; {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.disable();'
         if y_axis is not None:
             if isinstance(y_axis, AxisD1):
                 lizard_code += f'{y_axis.config.name}_motor.disable();'
@@ -69,7 +70,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f' {flashlight.config.name}_front.disable(); {flashlight.config.name}_back.disable();'
         lizard_code += 'end\n'
 
-        lizard_code += f'let enable do {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.enable();'
+        lizard_code += f'let enable do disabled = false; {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.enable();'
         if y_axis is not None:
             if isinstance(y_axis, AxisD1):
                 lizard_code += f'{y_axis.config.name}_motor.enable();'
@@ -103,7 +104,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             lizard_code += f'when {" and ".join(enable_conditions)} then bumper_active = false; end\n'
             lizard_code += f'when {" or ".join(disable_conditions)} then bumper_active = true; end\n'
         if estop.pins:
-            lizard_code += f'when estop_active == false {"and bumper_active == false" if isinstance(bumper, rosys.hardware.BumperHardware) else ""} then enable(); end\n'
+            lizard_code += f'when estop_active == false and disabled == true {"and bumper_active == false" if isinstance(bumper, rosys.hardware.BumperHardware) else ""} then enable(); end\n'
             lizard_code += f'when estop_active {"or bumper_active" if isinstance(bumper, rosys.hardware.BumperHardware) else ""} then disable(); end\n'
 
         # implement stop call for "ground check" reference sensors
