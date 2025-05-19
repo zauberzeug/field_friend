@@ -58,6 +58,7 @@ class WeedingImplement(Implement):
         if not await self._check_hardware_ready():
             rosys.notify('hardware is not ready')
             return False
+        self.last_punches.clear()
         return True
 
     async def finish(self) -> None:
