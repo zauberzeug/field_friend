@@ -9,7 +9,7 @@ from rosys.geometry import Pose, Pose3d, Rotation, Velocity
 from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels
 
 
-class RobotLocator(rosys.persistence.PersistentModule):
+class RobotLocator(rosys.persistence.Persistable):
     R_ODOM_LINEAR = 0.1
     R_ODOM_ANGULAR = 0.097
     R_IMU_ANGULAR = 0.01
@@ -17,7 +17,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None) -> None:
         """ Robot Locator based on an extended Kalman filter."""
-        super().__init__(persistence_key='field_friend.robot_locator')
+        super().__init__()
         self.log = logging.getLogger('field_friend.robot_locator')
 
         self._wheels = wheels
@@ -49,7 +49,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
         rosys.on_startup(self._reset)
 
-    def backup(self) -> dict[str, Any]:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'r_odom_linear': self._r_odom_linear,
             'r_odom_angular': self._r_odom_angular,
@@ -57,7 +57,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             'odometry_angular_weight': self._odometry_angular_weight,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         self._r_odom_linear = data.get('r_odom_linear', self.R_ODOM_LINEAR)
         self._r_odom_angular = data.get('r_odom_angular', self.R_ODOM_ANGULAR)
         self._r_imu_angular = data.get('r_imu_angular', self.R_IMU_ANGULAR)

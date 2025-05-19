@@ -310,8 +310,8 @@ class FieldNavigation(StraightLineNavigation):
             return False
         return True
 
-    def backup(self) -> dict:
-        return super().backup() | {
+    def backup_to_dict(self) -> dict[str, Any]:
+        return super().backup_to_dict() | {
             'field_id': self.field.id if self.field else None,
             'loop': self._loop,
             'wait_distance': self.wait_distance,
@@ -319,8 +319,8 @@ class FieldNavigation(StraightLineNavigation):
             'is_in_swarm': self.is_in_swarm,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self._loop = data.get('loop', False)

@@ -1,6 +1,7 @@
 -r requirements.txt
 autopep8
 mypy
+odrive==0.6.9.post0
 pre-commit
 pylint
 pytest
