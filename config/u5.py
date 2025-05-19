@@ -1,4 +1,4 @@
-from rosys.geometry import Pose
+from rosys.geometry import Pose, Rotation
 
 from field_friend.config.configuration import (
     BumperConfiguration,
@@ -7,6 +7,7 @@ from field_friend.config.configuration import (
     FieldFriendConfiguration,
     FlashlightConfiguration,
     GnssConfiguration,
+    ImuConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
@@ -57,8 +58,8 @@ config = FieldFriendConfiguration(
         reference_speed=30,
         steps_per_m=1_666_666.667,  # 4000steps/turn motor; 1/10 gear; 0.024m/u
         name='yaxis',
-        max_position=0.125,
-        min_position=-0.125,
+        max_position=0.12,
+        min_position=-0.12,
         version='y_axis_canopen',
     ),
     z_axis=ZCanOpenConfiguration(
@@ -80,6 +81,5 @@ config = FieldFriendConfiguration(
     ),
     circle_sight_positions=CircleSightPositions(),
     gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
-    # TODO: imu not working with 0.5.2
-    imu=None,
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.6, 0.0261799, -0.0261799)),
 )
