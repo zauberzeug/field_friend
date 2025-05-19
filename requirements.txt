@@ -1,12 +1,10 @@
 fiona
 geopandas
 geopy
-# latest main https://github.com/zauberzeug/rosys/commit/a94041b44928bc2a8a1286170758993639e8a67a
-git+https://github.com/zauberzeug/rosys.git@a94041b44928bc2a8a1286170758993639e8a67a
 icecream
 pillow
 prompt-toolkit # for lizard monitor
 pynmea2
-# rosys == v0.23.0
+rosys == v0.24.0
 shapely
 uvicorn == 0.28.1
