@@ -20,9 +20,9 @@ from .components.status_dev import status_dev_page
 
 class DevPage:
 
-    def __init__(self, system: System) -> None:
+    def __init__(self, system: System, log_monitor: LogMonitor) -> None:
         self.system = system
-        self.log_monitor = LogMonitor()
+        self.log_monitor = log_monitor
 
         @ui.page('/dev')
         def page() -> None:
