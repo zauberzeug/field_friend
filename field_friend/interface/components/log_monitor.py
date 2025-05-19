@@ -6,7 +6,7 @@ from nicegui import ui
 from rosys.event import Event
 
 
-class LogMonitor(rosys.persistence.PersistentModule):
+class LogMonitor(rosys.persistence.Persistable):
     MAX_LINES = 100
 
     def __init__(self, max_lines: int = MAX_LINES) -> None:
@@ -25,13 +25,13 @@ class LogMonitor(rosys.persistence.PersistentModule):
         self.NEW_LINE.emit(line)
         self.request_backup()
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         return {
             'logs': list(self.lines),
             'max_lines': self.max_lines,
         }
 
-    def restore(self, data: dict) -> None:
+    def restore_from_dict(self, data: dict) -> None:
         logs = data.get('logs', [])
         self.max_lines = data.get('max_lines', self.MAX_LINES)
         self.lines = deque(logs, self.max_lines)

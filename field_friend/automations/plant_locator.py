@@ -64,9 +64,9 @@ class PlantLocator(EntityLocator):
         rosys.on_repeat(self._detection_watchdog, 0.5)
         rosys.on_startup(self.fetch_detector_info)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         self.log.debug(f'backup: autoupload: {self.autoupload}')
-        return super().backup() | {
+        return super().backup_to_dict() | {
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
             'autoupload': self.autoupload.value,
@@ -74,8 +74,8 @@ class PlantLocator(EntityLocator):
             'tags': self.tags,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         self.minimum_weed_confidence = data.get('minimum_weed_confidence', MINIMUM_WEED_CONFIDENCE)
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', MINIMUM_CROP_CONFIDENCE)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \

@@ -27,9 +27,9 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
     return False
 
 
-class PlantProvider(rosys.persistence.PersistentModule):
-    def __init__(self, persistence_key: str = 'plant_provider') -> None:
-        super().__init__(persistence_key=f'field_friend.automations.{persistence_key}')
+class PlantProvider(rosys.persistence.Persistable):
+    def __init__(self) -> None:
+        super().__init__()
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 
@@ -51,7 +51,7 @@ class PlantProvider(rosys.persistence.PersistentModule):
 
         rosys.on_repeat(self.prune, 10.0)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         data = {
             'match_distance': self.match_distance,
             'crop_spacing': self.crop_spacing,
@@ -62,7 +62,7 @@ class PlantProvider(rosys.persistence.PersistentModule):
         }
         return data
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         self.match_distance = data.get('match_distance', self.match_distance)
         self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
         self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)

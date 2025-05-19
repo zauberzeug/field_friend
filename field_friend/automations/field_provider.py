@@ -7,7 +7,7 @@ from rosys.event import Event
 from .field import Field, Row, RowSupportPoint
 
 
-class FieldProvider(rosys.persistence.PersistentModule):
+class FieldProvider(rosys.persistence.Persistable):
     def __init__(self) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.field_provider')
@@ -32,13 +32,13 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def selected_beds(self, value: list[int]) -> None:
         self._selected_beds = sorted(value)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         return {
             'fields': {f.id: f.to_dict() for f in self.fields},
             'selected_field': self.selected_field.id if self.selected_field else None
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         fields_data: dict[str, dict] = data.get('fields', {})
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)

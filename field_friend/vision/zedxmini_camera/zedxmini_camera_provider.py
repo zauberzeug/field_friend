@@ -7,7 +7,7 @@ from .zedxmini_camera import ZedxminiCamera
 SCAN_INTERVAL = 10
 
 
-class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.persistence.PersistentModule):
+class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.persistence.Persistable):
 
     def __init__(self) -> None:
         super().__init__()
@@ -17,12 +17,12 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
         rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
         rosys.on_startup(self.update_device_list)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         for camera in self._cameras.values():
             self.log.info(f'backing up camera: {camera.name}')
-        return super().backup()
+        return super().backup_to_dict()
 
-    def restore(self, data: dict[str, dict]) -> None:
+    def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
             self.add_camera(ZedxminiCamera.from_dict(camera_data))
 

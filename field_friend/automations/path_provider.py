@@ -12,7 +12,7 @@ class Path:
     visualized: bool = False
 
 
-class PathProvider(rosys.persistence.PersistentModule):
+class PathProvider(rosys.persistence.Persistable):
     def __init__(self) -> None:
         super().__init__()
         self.paths: list[Path] = []
@@ -25,10 +25,10 @@ class PathProvider(rosys.persistence.PersistentModule):
 
         self.needs_backup: bool = False
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         return {'paths': rosys.persistence.to_dict(self.paths)}
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         rosys.persistence.replace_list(self.paths, Path, data.get('paths', []))
 
     def invalidate(self) -> None:

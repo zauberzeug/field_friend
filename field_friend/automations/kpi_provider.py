@@ -25,14 +25,14 @@ class KpiProvider(KpiLogger):
         self.all_time_kpis: KPIs = KPIs()
         self.needs_backup: bool = False
 
-    def backup(self) -> dict:
-        logger_backup = super().backup()
+    def backup_to_dict(self) -> dict:
+        logger_backup = super().backup_to_dict()
         return {'all_time_kpis': rosys.persistence.to_dict(self.all_time_kpis),
                 'days': logger_backup['days'],
                 'months': logger_backup['months']}
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         rosys.persistence.replace_dataclass(self.all_time_kpis, data.get('all_time_kpis', KPIs()))
 
     def invalidate(self) -> None:

@@ -100,11 +100,11 @@ class FollowCropsNavigation(StraightLineNavigation):
             .bind_value(self, 'crop_attraction') \
             .tooltip(f'Influence of the crop row direction on the driving direction (default: {self.CROP_ATTRACTION:.1f})')
 
-    def backup(self) -> dict:
-        return super().backup() | {
+    def backup_to_dict(self) -> dict:
+        return super().backup_to_dict() | {
             'crop_attraction': self.crop_attraction,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         self.crop_attraction = data.get('crop_attraction', self.crop_attraction)
