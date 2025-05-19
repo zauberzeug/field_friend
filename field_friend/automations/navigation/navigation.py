@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
+import rosys.geometry
 from nicegui import ui
 from rosys.analysis import track
-from rosys.geometry import GeoReference
+from rosys.geometry import GeoReference, Point, Pose
 from rosys.hardware import Gnss
+from rosys.helpers import ramp
 
 from ..implements.implement import Implement
 
@@ -60,21 +62,42 @@ class Navigation(rosys.persistence.PersistentModule):
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
             self.log.info('Navigation started')
+
+            async def get_nearest_target() -> Point:
+                while True:
+                    move_target = await self.implement.get_move_target()
+                    if move_target:
+                        self.log.error(f'Move target: {move_target}')
+                        return move_target
+                    await rosys.sleep(0.1)
+
             while not self._should_finish():
-                distance = await self.implement.get_stretch(self.MAX_STRETCH_DISTANCE)
-                if distance > self.MAX_STRETCH_DISTANCE:  # we do not want to drive to long without observing
-                    await self._drive(self.DEFAULT_DRIVE_DISTANCE)
-                    continue
-                await self._drive(distance)
-                await self.implement.start_workflow()
-                await self.implement.stop_workflow()
+                await rosys.automation.parallelize(
+                    self._drive(),
+                    get_nearest_target(),
+                    return_when_first_completed=True,
+                )
+                move_target = await self.implement.get_move_target()
+                if move_target:
+                    distance = abs(self.robot_locator.pose.x - move_target.x)
+                    move_target = self.robot_locator.pose.point.polar(distance, self.robot_locator.pose.yaw)
+                    move_target = Pose(x=move_target.x, y=move_target.y, yaw=self.robot_locator.pose.yaw)
+                    self.log.error(f'Moving from {self.robot_locator.pose.point} to {move_target} ')
+                    await self._drive_to_target(move_target)
+                    await self.driver.wheels.stop()
+                    self.log.warning('Stopped at %s to weed, %s', self.robot_locator.pose.point, move_target)
+                    await self.implement.start_workflow()
+                    await self.implement.stop_workflow()
+                await rosys.sleep(0.1)
         except WorkflowException as e:
             rosys.notify(f'Navigation failed: {e}', 'negative')
         finally:
             await self.implement.finish()
             await self.finish()
+            await self.implement.deactivate()
             await self.driver.wheels.stop()
 
+    @track
     async def prepare(self) -> bool:
         """Prepares the navigation for the start of the automation
 
@@ -85,39 +108,61 @@ class Navigation(rosys.persistence.PersistentModule):
         self.log.info('clearing plant provider')
         return True
 
+    @track
     async def finish(self) -> None:
         """Executed after the navigation is done"""
         self.log.info('Navigation finished')
 
     @abc.abstractmethod
-    async def _drive(self, distance: float) -> None:
-        """Drives the vehicle a short distance forward"""
+    async def _drive(self) -> None:
+        """Drive the robot to the next waypoint of the navigation"""
+        pass
 
     @track
-    async def _drive_towards_target(self, distance: float, target: rosys.geometry.Pose, *, timeout: float = 3.0, max_turn_angle: float = 0.1) -> None:
-        """Drives the vehicle a short distance forward while steering onto the line defined by the target pose.
-        NOTE: the target pose should be the foot point of the current position on the line.
-        """
-        start_position = self.robot_locator.pose.point
-        hook_offset = rosys.geometry.Point(x=self.driver.parameters.hook_offset, y=0)
-        carrot_offset = rosys.geometry.Point(x=self.driver.parameters.carrot_offset, y=0)
-        target_point = target.transform(carrot_offset)
-        hook = self.robot_locator.pose.transform(hook_offset)
-        turn_angle = rosys.helpers.angle(self.robot_locator.pose.yaw, hook.direction(target_point))
-        turn_angle = min(turn_angle, max_turn_angle)
-        turn_angle = max(turn_angle, -max_turn_angle)
-        curvature = np.tan(turn_angle) / hook_offset.x
-        if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
-            curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius
-        deadline = rosys.time() + timeout
-        while self.robot_locator.pose.point.distance(start_position) < distance:
-            if rosys.time() >= deadline:
-                await self.driver.wheels.stop()
-                raise TimeoutError('Driving Timeout')
-            await rosys.sleep(0.01)
+    async def _drive_to_target(self, target: Pose, *, max_turn_angle: float = 0.1, throttle_at_end: bool = True) -> None:
+        total_distance = self.robot_locator.pose.distance(target)
+        self.log.debug('Driving to target: %s for %sm', target, total_distance)
+        max_stop_distance: float | None = None
+        while True:
+            relative_point = self.robot_locator.pose.relative_point(target)
+            if relative_point.x < 0:
+                self.log.debug('Reached target: %s', self.robot_locator.pose)
+                break
+            distance = self.robot_locator.pose.distance(target)
+
+            hook_offset = Point(x=self.driver.parameters.hook_offset, y=0)
+            carrot_offset = Point(x=self.driver.parameters.carrot_offset, y=0)
+            target_point = target.transform(carrot_offset)
+            hook = self.robot_locator.pose.transform(hook_offset)
+            turn_angle = rosys.helpers.angle(self.robot_locator.pose.yaw, hook.direction(target_point))
+            turn_angle = min(turn_angle, max_turn_angle)
+            turn_angle = max(turn_angle, -max_turn_angle)
+            curvature = np.tan(turn_angle) / hook_offset.x
+            if curvature != 0 and abs(1 / curvature) < self.driver.parameters.minimum_turning_radius:
+                curvature = (-1 if curvature < 0 else 1) / self.driver.parameters.minimum_turning_radius
+
+            linear: float = self.linear_speed_limit
+            now = rosys.time()
+            if throttle_at_end:
+                break_distance = self.robot_locator.current_velocity.linear**2 / (2 * 0.2)
+                break_point = target.transform(Point(x=-break_distance, y=0))
+                relative_break_point = self.robot_locator.pose.relative_point(break_point)
+                if (relative_break_point.x < 0 or max_stop_distance is not None) and throttle_at_end:
+                    if max_stop_distance is None:
+                        max_stop_distance = distance
+                        self.log.debug('Setting max stop distance to %s', max_stop_distance)
+                    ramp_factor = ramp(distance, 0.0, max_stop_distance, 0.02, 0.7, clip=True)
+                    linear *= ramp_factor
+                    self.log.debug(f'Decelerating: current={self.robot_locator.pose}, time_diff={now - self.robot_locator.pose.time},  break_distance={break_distance:.3f}m, target_distance={distance:.3f}m, break_point={break_point}, ramp_factor={ramp_factor:.3f}, linear={linear:.3f}, velocity={self.robot_locator.current_velocity.linear:.3f}m/s')
+                else:
+                    self.log.debug(f'Driving: current={self.robot_locator.pose}, time_diff={now - self.robot_locator.pose.time}, break_distance={break_distance:.3f}m, break_point={break_point}, linear={linear:.3f}, velocity={self.robot_locator.current_velocity.linear:.3f}m/s')
+            angular = linear * curvature
+
+            await rosys.sleep(0.1)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
-                await self.driver.wheels.drive(*self.driver._throttle(1.0, curvature))  # pylint: disable=protected-access
+                await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
         await self.driver.wheels.stop()
+        self.log.debug('Driving done at %s', self.robot_locator.pose)
 
     @abc.abstractmethod
     def _should_finish(self) -> bool:

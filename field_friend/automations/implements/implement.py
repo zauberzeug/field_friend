@@ -1,4 +1,5 @@
 from rosys.analysis import track
+from rosys.geometry import Point
 
 
 class Implement:
@@ -32,6 +33,11 @@ class Implement:
     async def get_stretch(self, max_distance: float) -> float:  # pylint: disable=unused-argument
         """Return the stretch which the implement thinks is safe to drive forward."""
         return 0.02
+
+    @track
+    async def get_move_target(self) -> Point | None:  # pylint: disable=unused-argument
+        """Return the target position to drive to."""
+        return None
 
     @track
     async def start_workflow(self) -> None:
