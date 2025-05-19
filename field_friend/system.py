@@ -26,7 +26,6 @@ from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
-    FollowCropsNavigation,
     Navigation,
     StraightLineNavigation,
 )
@@ -238,12 +237,11 @@ class System(rosys.persistence.PersistentModule):
     def setup_navigations(self) -> None:
         first_implement = next(iter(self.implements.values()))
         self.straight_line_navigation = StraightLineNavigation(self, first_implement)
-        self.follow_crops_navigation = FollowCropsNavigation(self, first_implement)
+        # self.follow_crops_navigation = FollowCropsNavigation(self, first_implement)
         self.field_navigation = FieldNavigation(self, first_implement) if self.gnss is not None else None
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement) \
             if isinstance(self.field_friend.y_axis, AxisD1) else None
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
-                                                          self.follow_crops_navigation,
                                                           self.field_navigation,
                                                           self.crossglide_demo_navigation,
                                                           ] if n is not None}
