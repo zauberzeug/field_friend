@@ -192,7 +192,7 @@ class System(rosys.persistence.PersistentModule):
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
         self.driver.parameters.linear_speed_limit = 0.3
         self.driver.parameters.angular_speed_limit = 0.2
-        self.driver.parameters.can_drive_backwards = True
+        self.driver.parameters.can_drive_backwards = False
         self.driver.parameters.minimum_turning_radius = 0.01
         self.driver.parameters.hook_offset = 0.45
         self.driver.parameters.carrot_distance = 0.15
