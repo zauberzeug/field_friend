@@ -93,8 +93,6 @@ class FieldNavigation(StraightLineNavigation):
         self._state = State.APPROACH_START_ROW
         self.plant_provider.clear()
         self.automation_watcher.start_field_watch(self.field.outline)
-        self.log.info(f'Activating {self.implement.name}...')
-        await self.implement.activate()
         return True
 
     def _should_finish(self) -> bool:
@@ -358,6 +356,7 @@ class FieldNavigation(StraightLineNavigation):
         if self.start_point is not None and self.end_point is not None:
             length = self.start_point.distance(self.end_point)
             crop_count = length / crop_distance
+            crop = self.current_row.crop or 'maize'
             for i in range(int(crop_count)):
                 p = self.start_point.interpolate(self.end_point, (crop_distance * (i+1)) / length)
                 if i == 10:
@@ -365,7 +364,7 @@ class FieldNavigation(StraightLineNavigation):
                 else:
                     p.y += randint(-5, 5) * 0.01
                 p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
-                plant = rosys.vision.SimulatedObject(category_name='maize', position=p3d)
+                plant = rosys.vision.SimulatedObject(category_name=crop, position=p3d)
                 self.detector.simulated_objects.append(plant)
 
                 for _ in range(1, 7):

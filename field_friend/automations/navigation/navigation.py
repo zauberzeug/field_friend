@@ -13,6 +13,7 @@ from rosys.geometry import GeoReference, Point, Pose
 from rosys.hardware import Gnss
 from rosys.helpers import ramp
 
+from ...hardware import DoubleWheelsHardware, WheelsSimulationWithAcceleration
 from ..implements.implement import Implement
 
 if TYPE_CHECKING:
@@ -24,8 +25,6 @@ class WorkflowException(Exception):
 
 
 class Navigation(rosys.persistence.PersistentModule):
-    MAX_STRETCH_DISTANCE: float = 0.05
-    DEFAULT_DRIVE_DISTANCE: float = 0.02
     LINEAR_SPEED_LIMIT: float = 0.13
 
     def __init__(self, system: System, implement: Implement) -> None:
@@ -43,6 +42,7 @@ class Navigation(rosys.persistence.PersistentModule):
         self.start_position = self.robot_locator.pose.point
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
+        self.throttle_at_end = isinstance(self.driver.wheels, DoubleWheelsHardware) or isinstance(self.driver.wheels, WheelsSimulationWithAcceleration)
 
     @track
     async def start(self) -> None:
@@ -83,7 +83,7 @@ class Navigation(rosys.persistence.PersistentModule):
                     move_target = self.robot_locator.pose.point.polar(distance, self.robot_locator.pose.yaw)
                     move_target = Pose(x=move_target.x, y=move_target.y, yaw=self.robot_locator.pose.yaw)
                     self.log.error(f'Moving from {self.robot_locator.pose.point} to {move_target} ')
-                    await self._drive_to_target(move_target)
+                    await self._drive_to_target(move_target, throttle_at_end=self.throttle_at_end)
                     await self.driver.wheels.stop()
                     self.log.warning('Stopped at %s to weed, %s', self.robot_locator.pose.point, move_target)
                     await self.implement.start_workflow()
@@ -119,7 +119,7 @@ class Navigation(rosys.persistence.PersistentModule):
         pass
 
     @track
-    async def _drive_to_target(self, target: Pose, *, max_turn_angle: float = 0.1, throttle_at_end: bool = True) -> None:
+    async def _drive_to_target(self, target: Pose, *, max_turn_angle: float = 0.1, throttle_at_end: bool = True, predicted_deceleration: float = 0.2) -> None:
         total_distance = self.robot_locator.pose.distance(target)
         self.log.debug('Driving to target: %s for %sm', target, total_distance)
         max_stop_distance: float | None = None
@@ -144,7 +144,7 @@ class Navigation(rosys.persistence.PersistentModule):
             linear: float = self.linear_speed_limit
             now = rosys.time()
             if throttle_at_end:
-                break_distance = self.robot_locator.current_velocity.linear**2 / (2 * 0.2)
+                break_distance = self.robot_locator.current_velocity.linear**2 / (2 * predicted_deceleration)
                 break_point = target.transform(Point(x=-break_distance, y=0))
                 relative_break_point = self.robot_locator.pose.relative_point(break_point)
                 if (relative_break_point.x < 0 or max_stop_distance is not None) and throttle_at_end:
@@ -158,7 +158,11 @@ class Navigation(rosys.persistence.PersistentModule):
                     self.log.debug(f'Driving: current={self.robot_locator.pose}, time_diff={now - self.robot_locator.pose.time}, break_distance={break_distance:.3f}m, break_point={break_point}, linear={linear:.3f}, velocity={self.robot_locator.current_velocity.linear:.3f}m/s')
             angular = linear * curvature
 
-            await rosys.sleep(0.1)
+            # TODO: too short waiting time makes the robot stutter
+            if self.system.is_real:
+                await rosys.sleep(0.1)
+            else:
+                await rosys.sleep(0.01)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, angular_speed_limit=self.angular_speed_limit):
                 await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
         await self.driver.wheels.stop()
