@@ -26,7 +26,7 @@ log = logging.getLogger('field_friend.testing')
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     # TODO: solve in RoSys
     Persistable.instances.clear()
-    s = System(getattr(request, 'param', 'u6'))
+    s = System(getattr(request, 'param', 'u6'), restore_persistence=False)
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
@@ -45,7 +45,7 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
 async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[System, None]:
     # TODO: solve in RoSys
     Persistable.instances.clear()
-    s = System(getattr(request, 'param', 'u4'))
+    s = System(getattr(request, 'param', 'u4'), restore_persistence=False)
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
