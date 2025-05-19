@@ -1,5 +1,6 @@
 from collections import deque
 from datetime import datetime
+from typing import Any
 
 import rosys
 from nicegui import ui
@@ -25,13 +26,13 @@ class LogMonitor(rosys.persistence.Persistable):
         self.NEW_LINE.emit(line)
         self.request_backup()
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'logs': list(self.lines),
             'max_lines': self.max_lines,
         }
 
-    def restore_from_dict(self, data: dict) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         logs = data.get('logs', [])
         self.max_lines = data.get('max_lines', self.MAX_LINES)
         self.lines = deque(logs, self.max_lines)

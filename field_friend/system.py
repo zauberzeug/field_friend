@@ -132,7 +132,7 @@ class System(rosys.persistence.Persistable):
     def restart(self) -> None:
         os.utime('main.py')
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'navigation': self.current_navigation.name if self.current_navigation is not None else None,
             'implement': self.current_implement.name if self.current_implement is not None else None,

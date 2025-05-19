@@ -93,7 +93,7 @@ class WeedingScrew(WeedingImplement):
             .bind_value(self, 'max_crop_distance') \
             .tooltip('Set the maximum distance a weed can be away from a crop to be considered for weeding')
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
             'weed_screw_depth': self.weed_screw_depth,
             'max_crop_distance': self.max_crop_distance,

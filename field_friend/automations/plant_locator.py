@@ -64,7 +64,7 @@ class PlantLocator(EntityLocator):
         rosys.on_repeat(self._detection_watchdog, 0.5)
         rosys.on_startup(self.fetch_detector_info)
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         self.log.debug(f'backup: autoupload: {self.autoupload}')
         return super().backup_to_dict() | {
             'minimum_weed_confidence': self.minimum_weed_confidence,

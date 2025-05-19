@@ -76,7 +76,7 @@ class StraightLineNavigation(Navigation):
             .bind_value(self, 'length') \
             .tooltip('Length to drive in meters')
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
             'length': self.length,
         }

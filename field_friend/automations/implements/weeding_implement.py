@@ -165,7 +165,7 @@ class WeedingImplement(Implement):
         self.weeds_to_handle = sorted_weeds
         return False
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
             'with_drilling': self.with_drilling,
             'with_chopping': self.with_chopping,

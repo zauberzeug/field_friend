@@ -124,7 +124,7 @@ class Navigation(rosys.persistence.Persistable):
     def clear(self) -> None:
         """Resets the state to initial configuration"""
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'linear_speed_limit': self.linear_speed_limit,
         }

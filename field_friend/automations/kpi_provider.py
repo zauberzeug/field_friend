@@ -25,7 +25,7 @@ class KpiProvider(KpiLogger):
         self.all_time_kpis: KPIs = KPIs()
         self.needs_backup: bool = False
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         logger_backup = super().backup_to_dict()
         return {'all_time_kpis': rosys.persistence.to_dict(self.all_time_kpis),
                 'days': logger_backup['days'],

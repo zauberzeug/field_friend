@@ -99,7 +99,7 @@ class Tornado(WeedingImplement):
                     return True
         return False
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,

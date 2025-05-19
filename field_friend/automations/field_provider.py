@@ -32,7 +32,7 @@ class FieldProvider(rosys.persistence.Persistable):
     def selected_beds(self, value: list[int]) -> None:
         self._selected_beds = sorted(value)
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'fields': {f.id: f.to_dict() for f in self.fields},
             'selected_field': self.selected_field.id if self.selected_field else None

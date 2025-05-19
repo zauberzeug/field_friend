@@ -1,5 +1,6 @@
 import logging
 import shutil
+from typing import Any
 
 import rosys
 from rosys.vision.usb_camera.usb_camera_scanner import scan_for_connected_devices
@@ -18,7 +19,7 @@ class CalibratableUsbCameraProvider(rosys.vision.CameraProvider[CalibratableUsbC
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         for camera in self._cameras.values():
             self.log.info(f'backing up camera: {camera.name}')
         return super().backup_to_dict()

@@ -74,7 +74,7 @@ class CrossglideDemoNavigation(Navigation):
         pass
         # TODO: implement create_simulation
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
         }
 

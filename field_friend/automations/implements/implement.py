@@ -1,3 +1,5 @@
+from typing import Any
+
 import rosys
 from rosys.analysis import track
 
@@ -49,10 +51,10 @@ class Implement(rosys.persistence.Persistable):
         """Called after workflow has been performed to stop the workflow"""
         return None
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {}
 
-    def restore_from_dict(self, data: dict) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         pass
 
     def settings_ui(self) -> None:

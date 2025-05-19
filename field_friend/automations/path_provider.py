@@ -25,7 +25,7 @@ class PathProvider(rosys.persistence.Persistable):
 
         self.needs_backup: bool = False
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {'paths': rosys.persistence.to_dict(self.paths)}
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:

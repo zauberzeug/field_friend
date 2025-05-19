@@ -312,7 +312,7 @@ class FieldNavigation(StraightLineNavigation):
             return False
         return True
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
             'field_id': self.field.id if self.field else None,
             'loop': self._loop,

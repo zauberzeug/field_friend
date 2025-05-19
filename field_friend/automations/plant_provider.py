@@ -51,7 +51,7 @@ class PlantProvider(rosys.persistence.Persistable):
 
         rosys.on_repeat(self.prune, 10.0)
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         data = {
             'match_distance': self.match_distance,
             'crop_spacing': self.crop_spacing,

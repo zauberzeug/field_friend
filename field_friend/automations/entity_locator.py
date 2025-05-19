@@ -31,7 +31,7 @@ class EntityLocator(rosys.persistence.Persistable):
     def developer_ui(self) -> None:
         pass
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {}
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:

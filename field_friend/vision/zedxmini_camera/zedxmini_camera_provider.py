@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import rosys
 
@@ -17,7 +18,7 @@ class ZedxminiCameraProvider(rosys.vision.CameraProvider[ZedxminiCamera], rosys.
         rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
         rosys.on_startup(self.update_device_list)
 
-    def backup_to_dict(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         for camera in self._cameras.values():
             self.log.info(f'backing up camera: {camera.name}')
         return super().backup_to_dict()
