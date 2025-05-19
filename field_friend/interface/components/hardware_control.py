@@ -102,8 +102,8 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                                        format='%.3f', suffix='m').classes('w-full')
                     y_speed = ui.number('Move Speed', value=100, step=0.1, min=0.1,
                                         max=100, format='%.1f', suffix='%').classes('w-full')
-                    ui.label(f'min: {field_friend.y_axis.min_position:.3f} - max: {field_friend.y_axis.max_position:.3f}m')
-                    ui.label().bind_text_from(field_friend.y_axis, 'position', backward=lambda x: f'{x:.3f}m')
+                    ui.label(f'min: {field_friend.y_axis.min_position:.4f} - max: {field_friend.y_axis.max_position:.4f}m')
+                    ui.label().bind_text_from(field_friend.y_axis, 'position', backward=lambda x: f'{x:.4f}m')
                     with ui.row():
                         ui.button(icon='chevron_left', on_click=lambda: field_friend.y_axis.move_to(
                             field_friend.y_axis.position + y_step.value, (y_speed.value / 100.0) * field_friend.y_axis.max_speed))
@@ -166,8 +166,8 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                         ui.label('Ref Knife Ground')
                     tornado_step = ui.number('Move Step', value=0.01, step=0.001,
                                              min=0, max=0.10, format='%.3f', suffix='m').classes('w-full')
-                    ui.label(f'min: {field_friend.z_axis.min_position:.3f}')
-                    ui.label().bind_text_from(field_friend.z_axis, 'position_z', backward=lambda x: f'{x:.3f}m')
+                    ui.label(f'min: {field_friend.z_axis.min_position:.4f}')
+                    ui.label().bind_text_from(field_friend.z_axis, 'position_z', backward=lambda x: f'{x:.4f}m')
                     with ui.row():
                         ui.button(icon='expand_more', on_click=lambda: field_friend.z_axis.move_to(
                             field_friend.z_axis.position_z - tornado_step.value))
