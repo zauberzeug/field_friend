@@ -6,6 +6,7 @@ import pytest
 import rosys
 from rosys.geometry import GeoPoint, GeoReference
 from rosys.hardware import GnssSimulation
+from rosys.persistence import Persistable
 from rosys.testing import forward, helpers
 
 from field_friend.automations import Field, Row
@@ -23,6 +24,8 @@ log = logging.getLogger('field_friend.testing')
 
 @pytest.fixture
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
+    # TODO: solve in RoSys
+    Persistable.instances.clear()
     s = System(getattr(request, 'param', 'u6'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
@@ -40,6 +43,8 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
 
 @pytest.fixture
 async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[System, None]:
+    # TODO: solve in RoSys
+    Persistable.instances.clear()
     s = System(getattr(request, 'param', 'u4'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
