@@ -92,7 +92,7 @@ def configure():
             },
             'rosys': {
                 'handlers': ['debug_queue'],
-                'level': 'INFO',
+                'level': 'ERROR',
                 'propagate': False,
             },
             'nicegui': {
