@@ -45,15 +45,17 @@ class Navigation(rosys.persistence.PersistentModule):
     @track
     async def start(self) -> None:
         try:
-            if not await self.implement.prepare():
-                self.log.error('Tool-Preparation failed')
-                return
-            if not await self.prepare():
-                self.log.error('Preparation failed')
-                return
             if not is_reference_valid(self.gnss):
                 rosys.notify('GNSS not available or reference too far away', 'warning')
                 await rosys.sleep(3)
+            if not await self.prepare():
+                self.log.error('Preparation failed')
+                return
+            if not await self.implement.prepare():
+                self.log.error('Tool-Preparation failed')
+                return
+            rosys.notify(f'Activating {self.implement.name}...')
+            await self.implement.activate()
             self.start_position = self.robot_locator.pose.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
