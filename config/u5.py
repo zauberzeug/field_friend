@@ -18,7 +18,7 @@ from field_friend.config.configuration import (
 config = FieldFriendConfiguration(
     name='uckerbot-u5',
     robot_brain=RobotBrainConfiguration(name='rb33', flash_params=['orin', 'v05']),
-    tool='recorder',
+    tool='weed_screw',
     measurements=MeasurementsConfiguration(
         tooth_count=17,
         pitch=0.041,
