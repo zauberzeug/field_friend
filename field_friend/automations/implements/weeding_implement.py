@@ -120,7 +120,9 @@ class WeedingImplement(Implement):
             if not self.system.field_friend.y_axis.ref_t:
                 rosys.notify('ChainAxis is not in top ref', 'negative')
                 return False
-        if not self.system.field_friend.y_axis.is_referenced and not self.system.field_friend.z_axis.is_referenced and not await self.system.puncher.try_home():
+        if self.system.field_friend.y_axis is not None and not self.system.field_friend.y_axis.is_referenced and \
+           self.system.field_friend.z_axis is not None and not self.system.field_friend.z_axis.is_referenced and \
+           not await self.system.puncher.try_home():
             rosys.notify('Puncher homing failed, aborting', 'negative')
             return False
         return True

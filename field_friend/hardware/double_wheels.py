@@ -148,5 +148,5 @@ class WheelsSimulationWithAcceleration(rosys.hardware.WheelsSimulation):
         self.pose += rosys.geometry.PoseStep(linear=dt * (left_speed + right_speed) / 2,
                             angular=dt * (right_speed - left_speed) / self.width,
                             time=rosys.time())
-        self.velocity = rosys.geometry.Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=self.pose.time)
-        self.VELOCITY_MEASURED.emit([self.velocity])
+        velocity = rosys.geometry.Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=self.pose.time)
+        self.VELOCITY_MEASURED.emit([velocity])

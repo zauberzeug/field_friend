@@ -365,6 +365,7 @@ class FieldNavigation(StraightLineNavigation):
         if self.start_point is not None and self.end_point is not None:
             length = self.start_point.distance(self.end_point)
             crop_count = length / crop_distance
+            assert self.current_row is not None
             crop = self.current_row.crop or 'maize'
             for i in range(int(crop_count)):
                 p = self.start_point.interpolate(self.end_point, (crop_distance * (i+1)) / length)

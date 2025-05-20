@@ -42,7 +42,7 @@ class Navigation(rosys.persistence.Persistable):
         self.start_position = self.robot_locator.pose.point
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
         self.angular_speed_limit = 0.1
-        self.throttle_at_end = isinstance(self.driver.wheels, DoubleWheelsHardware) or isinstance(self.driver.wheels, WheelsSimulationWithAcceleration)
+        self.throttle_at_end = isinstance(self.driver.wheels, DoubleWheelsHardware | WheelsSimulationWithAcceleration)
 
     @property
     @abc.abstractmethod
@@ -84,11 +84,11 @@ class Navigation(rosys.persistence.Persistable):
                 )
                 move_target = await self.implement.get_move_target()
                 if move_target:
-                    move_target = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
-                    self.log.debug('Moving from %s to %s', self.robot_locator.pose, move_target)
-                    await self._drive_to_target(move_target, throttle_at_end=self.throttle_at_end)
+                    move_pose = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
+                    self.log.debug('Moving from %s to %s', self.robot_locator.pose, move_pose)
+                    await self._drive_to_target(move_pose, throttle_at_end=self.throttle_at_end)
                     await self.driver.wheels.stop()
-                    self.log.debug('Stopped at %s to weed, %s', self.robot_locator.pose, move_target)
+                    self.log.debug('Stopped at %s to weed, %s', self.robot_locator.pose, move_pose)
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
                 await rosys.sleep(0.1)
@@ -119,7 +119,6 @@ class Navigation(rosys.persistence.Persistable):
     @abc.abstractmethod
     async def _drive(self) -> None:
         """Drive the robot to the next waypoint of the navigation"""
-        pass
 
     @track
     async def _drive_to_target(self, target: Pose, *, max_turn_angle: float = 0.1, throttle_at_end: bool = True, predicted_deceleration: float = 0.2) -> None:
@@ -135,7 +134,7 @@ class Navigation(rosys.persistence.Persistable):
         self.log.debug('Driving to target: %s for %sm', target, total_distance)
         max_stop_distance: float | None = None
         while True:
-            relative_point = self.robot_locator.pose.relative_point(target)
+            relative_point = self.robot_locator.pose.relative_point(target.point)
             if relative_point.x < 0:
                 self.log.debug('Reached target: %s', self.robot_locator.pose)
                 break

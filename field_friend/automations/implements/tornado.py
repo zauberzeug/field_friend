@@ -58,7 +58,7 @@ class Tornado(WeedingImplement):
         return True
 
     @track
-    async def get_move_target(self) -> Point | None:  # pylint: disable=unused-argument
+    async def get_move_target(self) -> Point | None: # pylint: disable=too-many-return-statements
         """Return the target position to drive to."""
         self._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
@@ -79,7 +79,7 @@ class Tornado(WeedingImplement):
             self.log.debug('Crops in drill range')
             return None
 
-        stretch = closest_crop_position.x - self.system.field_friend.WORK_X
+        stretch = closest_crop_position.x - self.system.field_friend.WORK_X  # TODO: rework this
         if stretch < - self.system.field_friend.DRILL_RADIUS:
             self.log.debug(f'Skipping crop {closest_crop_id} because it is behind the robot')
             return None
