@@ -44,6 +44,12 @@ class Navigation(rosys.persistence.Persistable):
         self.angular_speed_limit = 0.1
         self.throttle_at_end = isinstance(self.driver.wheels, DoubleWheelsHardware) or isinstance(self.driver.wheels, WheelsSimulationWithAcceleration)
 
+    @property
+    @abc.abstractmethod
+    def target_heading(self) -> float:
+        """The heading of the target point"""
+        raise NotImplementedError
+
     @track
     async def start(self) -> None:
         try:
@@ -80,9 +86,8 @@ class Navigation(rosys.persistence.Persistable):
                 move_target = await self.implement.get_move_target()
                 if move_target:
                     distance = abs(self.robot_locator.pose.x - move_target.x)
-                    move_target = self.robot_locator.pose.point.polar(distance, self.robot_locator.pose.yaw)
-                    move_target = Pose(x=move_target.x, y=move_target.y, yaw=self.robot_locator.pose.yaw)
-                    self.log.debug(f'Moving from {self.robot_locator.pose.point} to {move_target} ')
+                    move_target = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
+                    self.log.debug(f'Moving from {self.robot_locator.pose} to {move_target} with distance {distance:.3f}m')
                     await self._drive_to_target(move_target, throttle_at_end=self.throttle_at_end)
                     await self.driver.wheels.stop()
                     self.log.debug('Stopped at %s to weed, %s', self.robot_locator.pose.point, move_target)

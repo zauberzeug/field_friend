@@ -57,6 +57,13 @@ class FieldNavigation(StraightLineNavigation):
         self.rows_to_work_on: list[Row] = []
 
     @property
+    def target_heading(self) -> float:
+        assert self.field is not None
+        assert self.start_point is not None
+        assert self.end_point is not None
+        return self.start_point.direction(self.end_point)
+
+    @property
     def current_row(self) -> Row | None:
         assert self.field
         if len(self.rows_to_work_on) == 0:

@@ -27,6 +27,10 @@ class StraightLineNavigation(Navigation):
         self.origin: Point
         self.target: Point
 
+    @property
+    def target_heading(self) -> float:
+        return self.origin.direction(self.target)
+
     async def prepare(self) -> bool:
         await super().prepare()
         self.update_target()
