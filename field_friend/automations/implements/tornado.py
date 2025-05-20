@@ -61,6 +61,7 @@ class Tornado(WeedingImplement):
         """Return the target position to drive to."""
         self._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
+            self.log.debug('No crops to handle')
             return None
         closest_crop_id, closest_crop_position = next(iter(self.crops_to_handle.items()))
         closest_crop_world_position = self.system.robot_locator.pose.transform3d(closest_crop_position)
@@ -81,6 +82,8 @@ class Tornado(WeedingImplement):
         if stretch < - self.system.field_friend.DRILL_RADIUS:
             self.log.debug(f'Skipping crop {closest_crop_id} because it is behind the robot')
             return None
+        self.log.debug(f'Targeting crop {closest_crop_id} which is {stretch} away at world: '
+                           f'{closest_crop_world_position}, local: {closest_crop_position}')
         self.next_punch_y_position = closest_crop_position.y
         return closest_crop_world_position.projection()
 
