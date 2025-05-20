@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class WeedingScrew(WeedingImplement):
 
     def __init__(self, system: System) -> None:
-        super().__init__('Weed Screw', system, 'weeding_screw')
+        super().__init__('Weed Screw', system)
         self.relevant_weeds = system.plant_locator.weed_category_names
         self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
         self.weed_screw_depth: float = 0.13
@@ -93,13 +93,13 @@ class WeedingScrew(WeedingImplement):
             .bind_value(self, 'max_crop_distance') \
             .tooltip('Set the maximum distance a weed can be away from a crop to be considered for weeding')
 
-    def backup(self) -> dict:
-        return super().backup() | {
+    def backup_to_dict(self) -> dict[str, Any]:
+        return super().backup_to_dict() | {
             'weed_screw_depth': self.weed_screw_depth,
             'max_crop_distance': self.max_crop_distance,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
         self.max_crop_distance = data.get('max_crop_distance', self.max_crop_distance)

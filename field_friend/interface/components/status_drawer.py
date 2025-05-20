@@ -25,7 +25,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
                     with ui.column().classes('gap-0'):
                         rosys.persistence.export_button() \
                             .props('flat align=left').classes('w-full')
-                        rosys.persistence.import_button(after_import=system.restart) \
+                        rosys.persistence.import_button(on_completion=system.restart) \
                             .props('flat align=left').classes('w-full')
                     ui.separator()
                     ui.menu_item('Restart RoSys', on_click=system.restart)

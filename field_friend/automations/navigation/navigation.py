@@ -21,7 +21,7 @@ class WorkflowException(Exception):
     pass
 
 
-class Navigation(rosys.persistence.PersistentModule):
+class Navigation(rosys.persistence.Persistable):
     MAX_STRETCH_DISTANCE: float = 0.05
     DEFAULT_DRIVE_DISTANCE: float = 0.02
     LINEAR_SPEED_LIMIT: float = 0.13
@@ -124,12 +124,12 @@ class Navigation(rosys.persistence.PersistentModule):
     def clear(self) -> None:
         """Resets the state to initial configuration"""
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'linear_speed_limit': self.linear_speed_limit,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         self.linear_speed_limit = data.get('linear_speed_limit', self.linear_speed_limit)
 
     def create_simulation(self) -> None:
