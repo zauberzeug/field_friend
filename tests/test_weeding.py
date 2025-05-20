@@ -130,11 +130,11 @@ async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_th
 @pytest.mark.parametrize('system', ['u4'], indirect=True)
 async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
-                                                                   position=rosys.geometry.Point3d(x=0.1, y=0.0, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.13, y=0.0, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=0.23, y=0.0, z=0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.1, y=0.05, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=0.2, y=0.05, z=0)))
     system.current_implement = system.implements['Tornado']
     system.current_navigation = system.straight_line_navigation
     system.automator.start()

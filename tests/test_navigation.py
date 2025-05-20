@@ -66,7 +66,7 @@ async def test_driving_to_exact_positions(system: System):
             self.current_stretch = 0.0
             self.workflow_started = False
             self.target_positions = [
-                rosys.geometry.Point(x=i * 0.02 + random.uniform(0, 0.005), y=0) for i in range(1, 40)
+                rosys.geometry.Point(x=0.1 + i * 0.02 + random.uniform(0, 0.005), y=0) for i in range(1, 40)
             ]
             self.current_target_position = None
             self.new_target_position()
@@ -88,6 +88,7 @@ async def test_driving_to_exact_positions(system: System):
             self.workflow_started = False
             self.new_target_position()
 
+    system.field_friend.WORK_X = 0.0
     system.current_implement = stopper = Stopper(system)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 1.0
@@ -99,7 +100,6 @@ async def test_driving_to_exact_positions(system: System):
         await forward(until=lambda: stopper.workflow_started and system.automator.is_running, dt=0.01)
         assert system.robot_locator.pose.point.x == pytest.approx(stopper.current_target_position.x, abs=0.001)
         assert system.robot_locator.pose.point.y == pytest.approx(stopper.current_target_position.y, abs=0.001)
-        stopper.workflow_started = False
         await forward(0.1)  # give robot time to update position
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.x == pytest.approx(system.current_navigation.length, abs=0.001)

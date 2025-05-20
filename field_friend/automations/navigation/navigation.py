@@ -85,6 +85,8 @@ class Navigation(rosys.persistence.Persistable):
                 move_target = await self.implement.get_move_target()
                 if move_target:
                     move_pose = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
+                    # TODO: using WORK_Y doesnt seem to work, we should check that
+                    move_pose = move_pose.transform_pose(Pose(x=-self.system.field_friend.WORK_X, y=0, yaw=0))
                     self.log.debug('Moving from %s to %s', self.robot_locator.pose, move_pose)
                     await self._drive_to_target(move_pose, throttle_at_end=self.throttle_at_end)
                     await self.driver.wheels.stop()
