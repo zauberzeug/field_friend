@@ -73,7 +73,6 @@ class Navigation(rosys.persistence.Persistable):
                 while True:
                     move_target = await self.implement.get_move_target()
                     if move_target:
-                        self.log.error(f'Move target: {move_target}')
                         return move_target
                     await rosys.sleep(0.1)
 
@@ -85,12 +84,11 @@ class Navigation(rosys.persistence.Persistable):
                 )
                 move_target = await self.implement.get_move_target()
                 if move_target:
-                    distance = abs(self.robot_locator.pose.x - move_target.x)
                     move_target = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
-                    self.log.debug(f'Moving from {self.robot_locator.pose} to {move_target} with distance {distance:.3f}m')
+                    self.log.debug('Moving from %s to %s', self.robot_locator.pose, move_target)
                     await self._drive_to_target(move_target, throttle_at_end=self.throttle_at_end)
                     await self.driver.wheels.stop()
-                    self.log.debug('Stopped at %s to weed, %s', self.robot_locator.pose.point, move_target)
+                    self.log.debug('Stopped at %s to weed, %s', self.robot_locator.pose, move_target)
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
                 await rosys.sleep(0.1)
@@ -125,6 +123,14 @@ class Navigation(rosys.persistence.Persistable):
 
     @track
     async def _drive_to_target(self, target: Pose, *, max_turn_angle: float = 0.1, throttle_at_end: bool = True, predicted_deceleration: float = 0.2) -> None:
+        """
+        Drive the robot to the target pose.
+
+        :param target: The target pose to drive to.
+        :param max_turn_angle: The maximum turn angle in radians.
+        :param throttle_at_end: Whether to throttle down to stop precisely at the target position.
+        :param predicted_deceleration: The predicted deceleration of the robot. The braking distance is calculated with this value.
+        """
         total_distance = self.robot_locator.pose.distance(target)
         self.log.debug('Driving to target: %s for %sm', target, total_distance)
         max_stop_distance: float | None = None
@@ -149,18 +155,18 @@ class Navigation(rosys.persistence.Persistable):
             linear: float = self.linear_speed_limit
             now = rosys.time()
             if throttle_at_end:
-                break_distance = self.robot_locator.current_velocity.linear**2 / (2 * predicted_deceleration)
-                break_point = target.transform(Point(x=-break_distance, y=0))
-                relative_break_point = self.robot_locator.pose.relative_point(break_point)
-                if (relative_break_point.x < 0 or max_stop_distance is not None) and throttle_at_end:
+                brake_distance = self.robot_locator.current_velocity.linear**2 / (2 * predicted_deceleration)
+                brake_point = target.transform(Point(x=-brake_distance, y=0))
+                relative_brake_point = self.robot_locator.pose.relative_point(brake_point)
+                if (relative_brake_point.x < 0 or max_stop_distance is not None) and throttle_at_end:
                     if max_stop_distance is None:
                         max_stop_distance = distance
                         self.log.debug('Setting max stop distance to %s', max_stop_distance)
                     ramp_factor = ramp(distance, 0.0, max_stop_distance, 0.02, 0.7, clip=True)
                     linear *= ramp_factor
-                    self.log.debug(f'Decelerating: current={self.robot_locator.pose}, time_diff={now - self.robot_locator.pose.time},  break_distance={break_distance:.3f}m, target_distance={distance:.3f}m, break_point={break_point}, ramp_factor={ramp_factor:.3f}, linear={linear:.3f}, velocity={self.robot_locator.current_velocity.linear:.3f}m/s')
+                    self.log.debug('Decelerating: current=%s, time_diff=%s, brake_distance=%s, target_distance=%s, brake_point=%s, ramp_factor=%s, linear=%s, velocity=%s', self.robot_locator.pose, now - self.robot_locator.pose.time, brake_distance, distance, brake_point, ramp_factor, linear, self.robot_locator.current_velocity.linear)
                 else:
-                    self.log.debug(f'Driving: current={self.robot_locator.pose}, time_diff={now - self.robot_locator.pose.time}, break_distance={break_distance:.3f}m, break_point={break_point}, linear={linear:.3f}, velocity={self.robot_locator.current_velocity.linear:.3f}m/s')
+                    self.log.debug('Driving: current=%s, time_diff=%s, brake_distance=%s, brake_point=%s, linear=%s, velocity=%s', self.robot_locator.pose, now - self.robot_locator.pose.time, brake_distance, brake_point, linear, self.robot_locator.current_velocity.linear)
             angular = linear * curvature
 
             # TODO: too short waiting time makes the robot stutter
