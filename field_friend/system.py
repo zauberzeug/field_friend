@@ -191,7 +191,7 @@ class System(rosys.persistence.Persistable):
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
         self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.2
+        self.driver.parameters.angular_speed_limit = 0.3
         self.driver.parameters.can_drive_backwards = False
         self.driver.parameters.minimum_turning_radius = 0.01
         self.driver.parameters.hook_offset = 0.45
