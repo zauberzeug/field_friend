@@ -4,6 +4,7 @@ from field_friend.config.configuration import (
     BumperConfiguration,
     CameraConfiguration,
     CircleSightPositions,
+    CropConfiguration,
     FieldFriendConfiguration,
     FlashlightConfiguration,
     GnssConfiguration,
@@ -28,6 +29,8 @@ config = FieldFriendConfiguration(
         width=1280,
         height=720,
         fps=10,
+        rotation=90,
+        crop=CropConfiguration(left=250, right=250, up=0, down=0),
     ),
     wheels=WheelsConfiguration(
         is_left_reversed=False,
