@@ -18,7 +18,7 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='uckerbot-u5',
-    robot_brain=RobotBrainConfiguration(name='rb33', flash_params=['orin', 'v05']),
+    robot_brain=RobotBrainConfiguration(name='rb33', flash_params=['orin', 'v05'], enable_esp_on_startup=True),
     tool='weed_screw',
     measurements=MeasurementsConfiguration(
         tooth_count=17,
@@ -29,7 +29,6 @@ config = FieldFriendConfiguration(
         width=1280,
         height=720,
         fps=10,
-        rotation=90,
         crop=CropConfiguration(left=250, right=250, up=0, down=0),
     ),
     wheels=WheelsConfiguration(
