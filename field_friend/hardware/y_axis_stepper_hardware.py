@@ -139,7 +139,6 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             await self.robot_brain.send(f'{self.config.name}_motor.position = 0;')
             await rosys.sleep(0.5)
             self.is_referenced = True
-            await self.move_to(self.min_position + 0.005, self.reference_speed)
             return True
         except Exception as error:
             self.log.error(f'could not reference yaxis because of {error}')
