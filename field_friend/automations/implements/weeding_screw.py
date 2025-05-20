@@ -56,7 +56,6 @@ class WeedingScrew(WeedingImplement):
             return None
         self.log.debug(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
         for next_weed_id, next_weed_position in weeds_in_range.items():
-            # next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
             weed_world_position = self.system.robot_locator.pose.transform3d(next_weed_position)
             crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
             if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
@@ -65,13 +64,11 @@ class WeedingScrew(WeedingImplement):
             if any(p.distance(weed_world_position) < self.system.field_friend.DRILL_RADIUS for p in self.last_punches):
                 self.log.debug('Skipping weed because it was already punched')
                 continue
-            stretch = next_weed_position.x - self.system.field_friend.WORK_X
+            stretch = next_weed_position.x - self.system.field_friend.WORK_X # TODO: rework this
             if stretch < - self.system.field_friend.DRILL_RADIUS:
                 self.log.debug(f'Skipping weed {next_weed_id} because it is behind the robot')
                 continue
-            stretch = max(stretch, 0)
-            self.log.debug(f'Targeting weed {next_weed_id} which is {stretch} away at world: '
-                           f'{weed_world_position}, local: {next_weed_position}')
+            self.log.debug('Targeting weed %s at world: %s, local: %s', next_weed_id, weed_world_position, next_weed_position)
             self.next_punch_y_position = next_weed_position.y
             return weed_world_position.projection()
         return None

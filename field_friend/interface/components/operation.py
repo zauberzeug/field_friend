@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import rosys
 from nicegui import app, events, ui
 
 from .field_creator import FieldCreator
@@ -40,20 +39,6 @@ class Operation:
                         self.field_setting()  # type: ignore
                     with ui.expansion('Navigation').classes('w-full').bind_value(app.storage.user, 'show_navigation_settings'):
                         self.navigation_settings = ui.row().classes('items-center')
-                        def test_throttle(self) -> None:
-                            async def throttle() -> None:
-                                start_point = self.system.robot_locator.pose.point
-                                heading = self.system.robot_locator.pose.yaw
-                                step_size = 1.0
-                                steps = int(1.0 / step_size)
-                                rosys.notify(f'Driving {steps} steps of {step_size}m')
-                                for i in range(steps):
-                                    rosys.notify(f'Driving {i+1} of {steps}')
-                                    await self.system.driver.drive_to(start_point.polar((i + 1) * step_size, heading), throttle_at_end=True)
-                                    await rosys.sleep(2.0)
-                            self.system.automator.default_automation = throttle
-                            self.system.automator.start(throttle())
-                        ui.button('Test Throttle', on_click=lambda: test_throttle(self))
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
                         self.implement_settings = ui.row().classes('items-center')
                     if self.plant_locator is not None:

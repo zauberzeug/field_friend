@@ -47,7 +47,7 @@ class Navigation(rosys.persistence.Persistable):
     @property
     @abc.abstractmethod
     def target_heading(self) -> float:
-        """The heading of the target point"""
+        """The heading to the target point"""
         raise NotImplementedError
 
     @track
