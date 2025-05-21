@@ -25,7 +25,16 @@ while True:
         milestone_number = matching[0]['number']
         break
 
-issues = requests.get(f'{BASE_URL}/issues?milestone={milestone_number}&state=all', timeout=5).json()
+issues = []
+page = 0
+while True:
+    page += 1
+    response = requests.get(f'{BASE_URL}/issues?milestone={milestone_number}&state=all&page={page}&per_page=100', timeout=5)
+    page_issues = response.json()
+    if not page_issues:
+        break
+    issues.extend(page_issues)
+
 sections: dict[str, list[str]] = {
     'New features and enhancements': [],
     'Bugfixes': [],
