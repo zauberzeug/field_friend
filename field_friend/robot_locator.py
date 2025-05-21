@@ -96,8 +96,8 @@ class RobotLocator(rosys.persistence.Persistable):
             dt = velocity.time - self._pose_timestamp
             self._pose_timestamp = velocity.time
             if (not self._first_prediction_done) and (self._imu is not None):
-                if self._imu.last_measurement is None:
-                    return
+                # if self._imu.last_measurement is None:
+                #     return
                 self._previous_imu_measurement = self._imu.last_measurement
 
             if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
