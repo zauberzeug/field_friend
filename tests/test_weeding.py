@@ -127,6 +127,24 @@ async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_th
     assert len(detector.simulated_objects) == 4, 'last weed should be removed'
 
 
+@pytest.mark.parametrize('blocking', (False, True))
+async def test_implement_blocking(system: System, detector: rosys.vision.DetectorSimulation, blocking: bool):
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.5, y=0.0, z=0.0)))
+    assert len(detector.simulated_objects) == 1
+    system.current_implement = system.implements['Weed Screw']
+    system.current_navigation = system.straight_line_navigation
+    if blocking:
+        with system.current_implement.blocked():
+            system.automator.start()
+            await forward(20)
+        assert len(detector.simulated_objects) == 1
+    else:
+        system.automator.start()
+        await forward(20)
+        assert len(detector.simulated_objects) == 0
+
+
 @pytest.mark.parametrize('system', ['u4'], indirect=True)
 async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',

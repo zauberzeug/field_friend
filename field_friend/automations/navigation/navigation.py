@@ -72,7 +72,7 @@ class Navigation(rosys.persistence.Persistable):
             async def get_nearest_target() -> Point:
                 while True:
                     move_target = await self.implement.get_move_target()
-                    if move_target:
+                    if move_target and not self.implement.is_blocked:
                         return move_target
                     await rosys.sleep(0.1)
 
