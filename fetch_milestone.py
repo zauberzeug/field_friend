@@ -71,5 +71,5 @@ for title, notes in sections.items():
     print()
 
 print()
-print('Tested with Lizard version [vX.X.X](https://github.com/zauberzeug/lizard/releases/tag/vX.X.X)')
+print('Tested with Lizard version [X.X.X](https://github.com/zauberzeug/lizard/releases/tag/vX.X.X)')
 print()
