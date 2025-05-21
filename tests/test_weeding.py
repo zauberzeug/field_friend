@@ -145,6 +145,21 @@ async def test_implement_blocking(system: System, detector: rosys.vision.Detecto
         assert len(detector.simulated_objects) == 0
 
 
+@pytest.mark.parametrize('work_x', (0.0, 0.3))
+async def test_work_offset_navigation(system: System, detector: rosys.vision.DetectorSimulation, work_x: float):
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.5, y=0.0, z=0.0)))
+    system.current_implement = system.implements['Weed Screw']
+    system.current_navigation = system.straight_line_navigation
+
+    system.field_friend.WORK_X = work_x
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: not system.automator.is_running)
+    assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
+    assert len(detector.simulated_objects) == 0
+
+
 @pytest.mark.parametrize('system', ['u4'], indirect=True)
 async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
