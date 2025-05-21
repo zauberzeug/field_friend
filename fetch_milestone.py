@@ -60,3 +60,7 @@ for title, notes in sections.items():
     for note in notes:
         print(f'- {note}')
     print()
+
+print()
+print('Tested with Lizard version [vX.X.X](https://github.com/zauberzeug/lizard/releases/tag/vX.X.X)')
+print()
