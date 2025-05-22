@@ -64,19 +64,9 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(
             f'{self.config.name}.position({steps},{speed}, 0);'
         )
-        if self.idle:
-            await rosys.sleep(0.2)
-            await self.enable_motor()
-            await rosys.sleep(0.2)
         # Give flags time to turn false first
         await rosys.sleep(0.5)
         while not self.idle and not self.alarm:
-            await self.robot_brain.send(
-                f'{self.config.name}.position({steps},{speed}, 0);'
-            )
-            if not self.ctrl_enable:
-                await self.enable_motor()
-                await rosys.sleep(0.2)
             await rosys.sleep(0.2)
         if self.alarm:
             self.log.error(f'could not move yaxis to {position} because of fault')
