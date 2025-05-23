@@ -27,7 +27,7 @@ class Position:
                     'y': self.system.robot_locator._Sxx[1, 0],
                     'yaw': np.deg2rad(self.system.robot_locator._Sxx[2, 0]),
                 },
-                'gnss': {
+                'geo': {
                     'lat': lat,
                     'lon': lon,
                     'heading': heading,
