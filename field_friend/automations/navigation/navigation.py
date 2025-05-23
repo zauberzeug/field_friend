@@ -136,6 +136,7 @@ class Navigation(rosys.persistence.Persistable):
         total_distance = self.robot_locator.pose.distance(target)
         self.log.debug('Driving to target: %s for %sm', target, total_distance)
         max_stop_distance: float | None = None
+        max_braking_distance = self.linear_speed_limit**2 / (2 * predicted_deceleration)
         while True:
             relative_point = self.robot_locator.pose.relative_point(target.point)
             if relative_point.x < 0:
@@ -157,7 +158,7 @@ class Navigation(rosys.persistence.Persistable):
             linear: float = self.linear_speed_limit
             now = rosys.time()
             if throttle_at_end:
-                brake_distance = self.robot_locator.current_velocity.linear**2 / (2 * predicted_deceleration)
+                brake_distance = self.robot_locator.current_velocity.linear**2 / (2 * predicted_deceleration) if self.robot_locator.current_velocity.linear > 0 else max_braking_distance
                 brake_point = target.transform(Point(x=-brake_distance, y=0))
                 relative_brake_point = self.robot_locator.pose.relative_point(brake_point)
                 if (relative_brake_point.x < 0 or max_stop_distance is not None) and throttle_at_end:
