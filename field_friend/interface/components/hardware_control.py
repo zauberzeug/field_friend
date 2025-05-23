@@ -118,8 +118,6 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
                     ui.button('Return to reference', on_click=lambda: automator.start(
                         field_friend.z_axis.return_to_reference()))
-                    ui.button('Move to min', on_click=lambda: automator.start(
-                        field_friend.z_axis.move_to(field_friend.z_axis.min_position)))
                     if isinstance(field_friend.z_axis, ZAxisCanOpenHardware):
                         ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.z_axis.reset_fault()))
             elif isinstance(field_friend.z_axis, Tornado):
