@@ -125,7 +125,8 @@ class Navigation(rosys.persistence.Persistable):
     @track
     async def _drive_to_target(self, target: Pose, *, max_turn_angle: float = 0.1, throttle_at_end: bool = True, predicted_deceleration: float = 0.2) -> None:
         """
-        Drive the robot to the target pose.
+        Drive the robot to the target position with a limited turn angle to avoid too harsh turns.
+        Consider using using rosys.driving.Driver.drive_spline if you need precise trajectory following.
 
         :param target: The target pose to drive to.
         :param max_turn_angle: The maximum turn angle in radians.
