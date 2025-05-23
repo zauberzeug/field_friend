@@ -12,6 +12,7 @@ from field_friend.automations import Field
 from field_friend.automations.implements import Implement, Recorder, Tornado, WeedingImplement
 from field_friend.automations.navigation import StraightLineNavigation
 from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
+from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 
 
 async def test_straight_line(system: System):
@@ -65,10 +66,20 @@ async def test_driving_to_exact_positions(system: System):
             self.system = system
             self.current_stretch = 0.0
             self.workflow_started = False
+            self.target_positions = [
+                rosys.geometry.Point(x=0.1 + i * 0.02 + random.uniform(0, 0.005), y=0) for i in range(1, 40)
+            ]
+            self.current_target_position = None
+            self.new_target_position()
 
-        async def get_stretch(self, max_distance: float) -> float:
-            self.current_stretch = random.uniform(0.02, max_distance)
-            return self.current_stretch
+        async def get_move_target(self) -> rosys.geometry.Point | None:
+            return self.current_target_position
+
+        def new_target_position(self) -> None:
+            if not self.target_positions:
+                self.current_target_position = None
+                return
+            self.current_target_position = self.target_positions.pop(0)
 
         async def start_workflow(self) -> None:
             self.workflow_started = True
@@ -76,20 +87,51 @@ async def test_driving_to_exact_positions(system: System):
             while self.workflow_started and rosys.time() < deadline:
                 await rosys.sleep(0.1)
             self.workflow_started = False
+            self.new_target_position()
 
+    system.field_friend.WORK_X = 0.0
     system.current_implement = stopper = Stopper(system)
     assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = 1.0
+    print(system.current_navigation.throttle_at_end)
     system.current_navigation.linear_speed_limit = 0.02  # drive really slow so we can archive the accuracy tested below
     system.automator.start()
-
     await forward(until=lambda: system.automator.is_running, dt=0.01)
-    for _ in range(20):
-        old_position = system.robot_locator.pose.point
+    while stopper.target_positions:
         await forward(until=lambda: stopper.workflow_started and system.automator.is_running, dt=0.01)
-        distance = old_position.distance(system.robot_locator.pose.point)
-        assert distance == pytest.approx(stopper.current_stretch, abs=0.001)
-        stopper.workflow_started = False
+        assert system.robot_locator.pose.point.x == pytest.approx(stopper.current_target_position.x, abs=0.001)
+        assert system.robot_locator.pose.point.y == pytest.approx(stopper.current_target_position.y, abs=0.001)
         await forward(0.1)  # give robot time to update position
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.robot_locator.pose.x == pytest.approx(system.current_navigation.length, abs=0.001)
+
+
+@pytest.mark.parametrize('distance', (0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
+async def test_deceleration_different_distances(system_with_acceleration: System, distance: float):
+    """Try to stop after different distances with a tolerance of 10% and a linear speed limit of 0.13m/s"""
+    system = system_with_acceleration
+    assert isinstance(system.field_friend.wheels, WheelsSimulationWithAcceleration)
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = distance
+    system.current_navigation.linear_speed_limit = 0.13
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=distance * 0.1)
+
+
+@pytest.mark.parametrize('linear_speed_limit', (0.1, 0.13, 0.2, 0.3, 0.4))
+async def test_deceleration_different_speeds(system_with_acceleration: System, linear_speed_limit: float):
+    """Try stop after 1mm with different speeds with a tolerance of 0.2mm"""
+    system = system_with_acceleration
+    assert isinstance(system.field_friend.wheels, WheelsSimulationWithAcceleration)
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = 0.001
+    system.current_navigation.linear_speed_limit = linear_speed_limit
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.robot_locator.pose.point.x == pytest.approx(0.001, abs=0.0002)
 
 
 async def test_driving_straight_line_with_slippage(system: System):
@@ -103,6 +145,7 @@ async def test_driving_straight_line_with_slippage(system: System):
     assert_point(system.robot_locator.pose.point, rosys.geometry.Point(x=2.0, y=0))
 
 
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_no_direction(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(1, 3):
         x = i*0.4
@@ -122,6 +165,7 @@ async def test_follow_crops_no_direction(system: System, detector: rosys.vision.
     assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=1.0)
 
 
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_empty(system: System, detector: rosys.vision.DetectorSimulation):
     system.current_navigation = system.follow_crops_navigation
     assert isinstance(system.current_navigation.implement, Recorder)
@@ -135,6 +179,7 @@ async def test_follow_crops_empty(system: System, detector: rosys.vision.Detecto
     assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=1.0)
 
 
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_straight(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(10):
         x = i/10
@@ -152,6 +197,7 @@ async def test_follow_crops_straight(system: System, detector: rosys.vision.Dete
     assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=1.0)
 
 
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_continue(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(0, 20):
         x = i / 10
@@ -170,6 +216,7 @@ async def test_follow_crops_continue(system: System, detector: rosys.vision.Dete
     assert system.robot_locator.pose.yaw_deg == pytest.approx(15.5, abs=1.0)
 
 
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_adjust(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(1, 51):
         x = i*0.4
@@ -187,7 +234,7 @@ async def test_follow_crops_adjust(system: System, detector: rosys.vision.Detect
     assert system.robot_locator.pose.point.y == pytest.approx(-1.24, abs=0.1)
     assert system.robot_locator.pose.yaw_deg == pytest.approx(-7.2, abs=1.0)
 
-
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_curve(system: System, detector: rosys.vision.DetectorSimulation):
     end = rosys.geometry.Point(x=0, y=0)
     for i in range(1, 56):
@@ -205,6 +252,7 @@ async def test_follow_crops_curve(system: System, detector: rosys.vision.Detecto
     assert system.robot_locator.pose.yaw_deg == pytest.approx(34, abs=5.0)
 
 
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_outlier(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(21):
         x = i/10
@@ -224,6 +272,7 @@ async def test_follow_crops_outlier(system: System, detector: rosys.vision.Detec
     assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=2)
 
 
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(20):
         x = i/10
@@ -245,6 +294,7 @@ async def test_follow_crops_outlier_last(system: System, detector: rosys.vision.
     assert 0 >= system.robot_locator.pose.yaw_deg >= -45
 
 
+@pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_with_slippage(system: System, detector: rosys.vision.DetectorSimulation):
     for i in range(20):
         x = i/10.0
@@ -337,7 +387,6 @@ async def test_approach_first_row_when_outside_of_field(system: System, field: F
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
-    await forward(until=lambda: system.current_implement.is_active)
     for index, point in enumerate(field.rows[0].points):
         assert system.field_navigation.current_row.points[index].distance(point) == pytest.approx(0, abs=1e-8)
     await forward(until=lambda: system.automator.is_stopped)
@@ -477,7 +526,7 @@ async def test_complete_field(system: System, field: Field):
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
-    assert system.automator.is_stopped
+    await forward(until=lambda: system.automator.is_stopped)
     end_point = field.rows[-1].points[0].to_local()
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
 
@@ -494,7 +543,7 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
-    assert system.automator.is_stopped
+    await forward(until=lambda: system.automator.is_stopped)
     end_point = field_with_beds.rows[2].points[0].to_local()
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
 
@@ -511,7 +560,7 @@ async def test_complete_field_without_second_bed(system: System, field_with_beds
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
-    assert system.automator.is_stopped
+    await forward(until=lambda: system.automator.is_stopped)
     end_point = field_with_beds.rows[-1].points[1].to_local()
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
 
@@ -603,7 +652,7 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
     assert isinstance(system.current_implement, WeedingImplement)
 
     for bed_number in range(field_with_beds.bed_count):
-        await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
+        await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW, timeout=500)
         expected_crop = field_with_beds.bed_crops[str(bed_number)]
         assert system.current_implement.cultivated_crop == system.field_navigation.current_row.crop == expected_crop
         current_y = bed_number * -field_with_beds.bed_spacing

@@ -85,7 +85,7 @@ class AutomationWatcher:
         return self.gnss.is_connected \
             and self.gnss.last_measurement is not None \
             and rosys.time() - self.gnss.last_measurement.time < 2.0 \
-            and self.gnss.last_measurement.gps_quality in (GpsQuality.RTK_FIXED, GpsQuality.RTK_FLOAT)
+            and self.gnss.last_measurement.gps_quality == GpsQuality.RTK_FIXED
 
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
