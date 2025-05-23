@@ -98,17 +98,7 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                     with ui.row():
                         status_bulb().bind_value_from(field_friend.y_axis, 'end_r')
                         ui.label('Right End Switch')
-                    y_step = ui.number('Move Step', value=0.01, step=0.001, min=0, max=0.10,
-                                       format='%.3f', suffix='m').classes('w-full')
-                    y_speed = ui.number('Move Speed', value=100, step=0.1, min=0.1,
-                                        max=100, format='%.1f', suffix='%').classes('w-full')
-                    ui.label(f'min: {field_friend.y_axis.min_position:.4f} - max: {field_friend.y_axis.max_position:.4f}m')
-                    ui.label().bind_text_from(field_friend.y_axis, 'position', backward=lambda x: f'{x:.4f}m')
-                    with ui.row():
-                        ui.button(icon='chevron_left', on_click=lambda: field_friend.y_axis.move_to(
-                            field_friend.y_axis.position + y_step.value, (y_speed.value / 100.0) * field_friend.y_axis.max_speed))
-                        ui.button(icon='chevron_right', on_click=lambda: field_friend.y_axis.move_to(
-                            field_friend.y_axis.position - y_step.value, (y_speed.value / 100.0) * field_friend.y_axis.max_speed))
+
             elif isinstance(field_friend.y_axis, ChainAxis):
                 with ui.column():
                     ui.label('Chain-Axis').classes('font-bold')
