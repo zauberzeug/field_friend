@@ -163,7 +163,7 @@ class Navigation(rosys.persistence.Persistable):
                 relative_brake_point = self.robot_locator.pose.relative_point(brake_point)
                 if (relative_brake_point.x < 0 or max_stop_distance is not None) and throttle_at_end:
                     if max_stop_distance is None:
-                        max_stop_distance = distance
+                        max_stop_distance = brake_distance
                         self.log.debug('Setting max stop distance to %s', max_stop_distance)
                     ramp_factor = ramp(distance, 0.0, max_stop_distance, 0.02, 0.7, clip=True)
                     linear *= ramp_factor
