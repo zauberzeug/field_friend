@@ -165,15 +165,6 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                     with ui.row():
                         status_bulb().bind_value_from(field_friend.z_axis, 'ref_knife_ground')
                         ui.label('Ref Knife Ground')
-                    tornado_step = ui.number('Move Step', value=0.01, step=0.001,
-                                             min=0, max=0.10, format='%.3f', suffix='m').classes('w-full')
-                    ui.label(f'min: {field_friend.z_axis.min_position:.4f}')
-                    ui.label().bind_text_from(field_friend.z_axis, 'position_z', backward=lambda x: f'{x:.4f}m')
-                    with ui.row():
-                        ui.button(icon='expand_more', on_click=lambda: field_friend.z_axis.move_to(
-                            field_friend.z_axis.position_z - tornado_step.value))
-                        ui.button(icon='expand_less', on_click=lambda: field_friend.z_axis.move_to(
-                            field_friend.z_axis.position_z + tornado_step.value))
 
         if field_friend.z_axis is not None and field_friend.y_axis is not None:
             with ui.column():
