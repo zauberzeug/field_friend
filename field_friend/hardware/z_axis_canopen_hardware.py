@@ -62,20 +62,18 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.error(f'could not move zaxis to {position} because of {error}')
             raise Exception(f'could not move zaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
-        self.log.debug(f'moving to steps: {steps}')
+        assert self.robot_brain.is_ready, 'robot brain is not ready'
         assert self.initialized, 'motor is not initialized'
         assert self.operational, 'motor is not operational'
-        if not self.ctrl_enable:
+        while not self.ctrl_enable:
             await self.enable_motor()
-            self.log.info(f'🟢enabled motor: {self.ctrl_enable}')
-            await rosys.sleep(0.3)  # wait for motor to be enabled
+            await rosys.sleep(0.1)
         assert self.ctrl_enable, 'motor is not enabled'
-        await self.robot_brain.send(
-            f'{self.config.name}.position({steps}, {speed}, 0);'
-        )
-        # Give flags time to turn false first
-        await rosys.sleep(0.2)
+        while self.idle:
+            await self.robot_brain.send(f'{self.config.name}.position({steps}, {speed}, 0);')
+            await rosys.sleep(0.1)
         while not self.idle and not self.alarm:
+            await self.robot_brain.send(f'{self.config.name}.position({steps}, {speed}, 0);')
             await rosys.sleep(0.2)
         if self.alarm:
             self.log.error(f'could not move zaxis to {position} because of fault')
@@ -104,6 +102,7 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         if not await super().try_reference():
             return False
         try:
+            assert self.robot_brain.is_ready, 'robot brain is not ready'
             assert self.initialized, 'motor is not initialized'
             assert self.operational, 'motor is not operational'
             self.log.debug('enabling z motor')

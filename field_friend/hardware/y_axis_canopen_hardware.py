@@ -35,7 +35,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             f'{config.name}_motor.status_fault',
             f'{config.name}_motor.ctrl_enable',
             f'{config.name}_motor.initialized',
-            f'{config.name}_motor.operational',
+            f'{config.name}_motor.is_operational',
         ]
         super().__init__(
             max_speed=config.max_speed,
@@ -63,18 +63,18 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             raise Exception(f'could not move yaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
         self.log.debug(f'moving to steps: {steps}')
+        assert self.robot_brain.is_ready, 'robot brain is not ready'
         assert self.initialized, 'motor is not initialized'
         assert self.operational, 'motor is not operational'
-        if not self.ctrl_enable:
+        while not self.ctrl_enable:
             await self.enable_motor()
-            await rosys.sleep(1)
+            await rosys.sleep(0.1)
         assert self.ctrl_enable, 'motor is not enabled'
-        await self.robot_brain.send(
-            f'{self.config.name}.position({steps},{speed}, 0);'
-        )
-        # Give flags time to turn false first
-        await rosys.sleep(0.5)
+        while self.idle:
+            await self.robot_brain.send(f'{self.config.name}.position({steps},{speed}, 0);')
+            await rosys.sleep(0.1)
         while not self.idle and not self.alarm:
+            await self.robot_brain.send(f'{self.config.name}.position({steps},{speed}, 0);')
             await rosys.sleep(0.2)
         if self.alarm:
             self.log.error(f'could not move yaxis to {position} because of fault')
@@ -104,7 +104,8 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         if not await super().try_reference():
             return False
         try:
-            self.log.info('enabling h motors')
+            self.log.info('enabling yaxis motors')
+            assert self.robot_brain.is_ready, 'robot brain is not ready'
             assert self.initialized, 'motor is not initialized'
             assert self.operational, 'motor is not operational'
             await self.enable_motor()
