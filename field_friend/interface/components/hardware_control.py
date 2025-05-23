@@ -120,6 +120,19 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                         field_friend.z_axis.return_to_reference()))
                     if isinstance(field_friend.z_axis, ZAxisCanOpenHardware):
                         ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.z_axis.reset_fault()))
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'is_referenced')
+                        ui.label('Referenced')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'alarm')
+                        ui.label('Alarm')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'end_t')
+                        ui.label('Top End Switch')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'end_b')
+                        ui.label('Bottom End Switch')
+
             elif isinstance(field_friend.z_axis, Tornado):
                 with ui.column():
                     ui.label('Z-Axis').classes('font-bold')
