@@ -82,6 +82,6 @@ config = FieldFriendConfiguration(
         version='z_axis_canopen',
     ),
     circle_sight_positions=CircleSightPositions(),
-    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
+    gnss=GnssConfiguration(antenna_pose=Pose(x=0.05165, y=-0.255, yaw=0.0)),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.6, 0.0261799, -0.0261799)),
 )
