@@ -1,4 +1,5 @@
 # pylint: disable=broad-exception-raised
+# pylint: disable=duplicate-code
 # TODO: we need a useful exception here
 import rosys
 from rosys.analysis import track
@@ -16,6 +17,9 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
                  expander: rosys.hardware.ExpanderHardware | None) -> None:
         self.config = config
         self.expander = expander
+        self.ctrl_enable = False
+        self.initialized = False
+        self.operational = False
         lizard_code = remove_indentation(f'''
             {config.name}_motor = {expander.name + "." if config.motor_on_expander and expander else ""}CanOpenMotor({can.name}, {config.can_address})
             {config.name}_end_t = {expander.name + "." if config.end_stops_on_expander and expander else ""}Input({config.end_top_pin})
@@ -30,6 +34,9 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             f'{config.name}_motor.actual_position',
             f'{config.name}_motor.status_target_reached',
             f'{config.name}_motor.status_fault',
+            f'{config.name}_motor.ctrl_enable',
+            f'{config.name}_motor.initialized',
+            f'{config.name}_motor.is_operational',
         ]
         super().__init__(
             max_speed=config.max_speed,
@@ -56,24 +63,23 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             self.log.error(f'could not move zaxis to {position} because of {error}')
             raise Exception(f'could not move zaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
-        self.log.debug(f'moving to steps: {steps}')
-        await self.enable_motor()
-        await rosys.sleep(0.1)
-        await self.robot_brain.send(
-            f'{self.config.name}.position({steps}, {speed}, 0);'
-        )
-        # Give flags time to turn false first
-        await rosys.sleep(0.2)
+        assert self.robot_brain.is_ready, 'robot brain is not ready'
+        assert self.initialized, 'motor is not initialized'
+        assert self.operational, 'motor is not operational'
+        while not self.ctrl_enable:
+            await self.enable_motor()
+            await rosys.sleep(0.1)
+        assert self.ctrl_enable, 'motor is not enabled'
+        while self.idle:
+            await self.robot_brain.send(f'{self.config.name}.position({steps}, {speed}, 0);')
+            await rosys.sleep(0.1)
         while not self.idle and not self.alarm:
-            await self.robot_brain.send(
-                f'{self.config.name}.position({steps}, {speed}, 0);'
-            )
+            await self.robot_brain.send(f'{self.config.name}.position({steps}, {speed}, 0);')
             await rosys.sleep(0.2)
         if self.alarm:
             self.log.error(f'could not move zaxis to {position} because of fault')
             raise Exception(f'could not move zaxis to {position} because of fault')
         self.log.debug(f'zaxis moved to {position}')
-        await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(false);')
 
     async def enable_motor(self) -> None:
         await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(true);')
@@ -97,13 +103,19 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         if not await super().try_reference():
             return False
         try:
-            self.log.info('enabling h motors')
+            assert self.robot_brain.is_ready, 'robot brain is not ready'
+            assert self.initialized, 'motor is not initialized'
+            assert self.operational, 'motor is not operational'
+            self.log.debug('enabling z motor')
             await self.enable_motor()
+            await rosys.sleep(1)
+            assert self.ctrl_enable, 'motor is not enabled'
             await self.robot_brain.send(
                 f'{self.config.name}_motor.position_offset = 0;'
             )
             await rosys.sleep(1)
-            self.log.info('activating velocity mode')
+            self.log.debug(f'enabled motor: {self.ctrl_enable}')
+            self.log.debug('activating velocity mode')
             await self.robot_brain.send(
                 f'{self.config.name}_motor.enter_pv_mode();'
             )
@@ -185,3 +197,6 @@ class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         self.alarm = words.pop(0) == 'true'
         if self.alarm:
             self.is_referenced = False
+        self.ctrl_enable = words.pop(0) == 'true'
+        self.initialized = words.pop(0) == 'true'
+        self.operational = words.pop(0) == 'true'
