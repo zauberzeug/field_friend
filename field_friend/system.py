@@ -42,7 +42,7 @@ icecream.install()
 
 class System(rosys.persistence.Persistable):
 
-    def __init__(self, robot_id: str, *, restore_persistence: bool = True) -> None:
+    def __init__(self, robot_id: str, *, restore_persistence: bool = True, use_acceleration: bool = True) -> None:
         super().__init__()
         self.robot_id = robot_id
         assert self.robot_id != 'unknown'
@@ -74,7 +74,7 @@ class System(rosys.persistence.Persistable):
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
         else:
-            self.field_friend = FieldFriendSimulation(self.config)
+            self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = self.setup_gnss(self.field_friend.wheels)
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu).persistent(restore=self.restore_persistence)
