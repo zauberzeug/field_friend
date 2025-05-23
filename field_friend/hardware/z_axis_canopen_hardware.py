@@ -1,4 +1,5 @@
 # pylint: disable=broad-exception-raised
+# pylint: disable=duplicate-code
 # TODO: we need a useful exception here
 import rosys
 from rosys.analysis import track
