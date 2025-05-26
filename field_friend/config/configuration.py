@@ -14,6 +14,7 @@ class RobotBrainConfiguration:
     name: str
     flash_params: list[str]
     enable_esp_on_startup: bool | None = None
+    use_espresso: bool = False
 
 
 @dataclass(kw_only=True)
@@ -407,6 +408,12 @@ class TornadoConfiguration(BaseAxisConfiguration,
     ref_knife_ground_pin_expander: bool = False
     ref_knife_stop_pin_expander: bool = False
     ref_motor_pin_expander: bool = False
+    end_top_inverted: bool = True
+    end_bottom_inverted: bool = True
+    ref_motor_inverted: bool = True
+    ref_gear_inverted: bool = False
+    ref_knife_ground_inverted: bool = False
+    ref_knife_stop_inverted: bool = False
     speed_limit: float = 1.5
     turn_can_address: int = 0x400
     z_can_address: int = 0x500
@@ -449,7 +456,7 @@ class FieldFriendConfiguration:
     """
     name: str
     robot_brain: RobotBrainConfiguration
-    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'mower'] | None
+    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'mower', 'recorder'] | None
     measurements: MeasurementsConfiguration
     wheels: WheelsConfiguration
     has_status_control: bool

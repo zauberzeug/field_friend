@@ -1,4 +1,4 @@
-from .axis import Axis
+from .axis import Axis, AxisSimulation
 from .axis_d1 import AxisD1
 from .chain_axis import ChainAxis
 from .double_wheels import DoubleWheelsHardware
@@ -16,6 +16,7 @@ from .z_axis_canopen_hardware import ZAxisCanOpenHardware
 __all__ = [
     'Axis',
     'AxisD1',
+    'AxisSimulation',
     'ChainAxis',
     'DoubleWheelsHardware',
     'FieldFriend',

@@ -32,7 +32,8 @@ class RobotScene:
                 .style('position: absolute; left: 1px; top: 1px; z-index: 500;').tooltip('Lock view to robot')
 
             with ui.scene(200, 200, on_click=self.handle_click, grid=False).classes('w-full') as self.scene:
-                field_friend_object(self.system.robot_locator, self.system.camera_provider, self.system.field_friend)
+                field_friend_object(self.system.robot_locator, self.system.camera_provider,
+                                    self.system.field_friend, width=self.system.config.measurements.wheel_distance)
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system)
                 visualizer_object(self.system)

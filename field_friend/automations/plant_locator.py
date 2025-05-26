@@ -46,7 +46,6 @@ class PlantLocator(EntityLocator):
         self.crop_category_names: dict[str, str] = CROP_CATEGORY_NAME
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
-        rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         if isinstance(self.detector, DetectorHardware):
             port = self.detector.port
             rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=port), 1.0)
@@ -56,13 +55,18 @@ class PlantLocator(EntityLocator):
             self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
         self.detector_error = False
         self.last_detection_time = rosys.time()
+        if self.camera_provider is None:
+            self.log.warning('no camera provider configured, cant locate plants')
+            return
+        assert self.detector is not None
         self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
+        rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         rosys.on_repeat(self._detection_watchdog, 0.5)
         rosys.on_startup(self.fetch_detector_info)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         self.log.debug(f'backup: autoupload: {self.autoupload}')
-        return super().backup() | {
+        return super().backup_to_dict() | {
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
             'autoupload': self.autoupload.value,
@@ -70,8 +74,8 @@ class PlantLocator(EntityLocator):
             'tags': self.tags,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         self.minimum_weed_confidence = data.get('minimum_weed_confidence', MINIMUM_WEED_CONFIDENCE)
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', MINIMUM_CROP_CONFIDENCE)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
@@ -85,6 +89,7 @@ class PlantLocator(EntityLocator):
             await rosys.sleep(0.01)
             return
         t = rosys.time()
+        assert self.camera_provider is not None
         camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
         if not camera:
             self.log.error('no connected camera found')
@@ -93,10 +98,14 @@ class PlantLocator(EntityLocator):
         if camera.calibration is None:
             self.log.error(f'no calibration found for camera {camera.name}')
             raise DetectorError()
+        if not self.crop_category_names:
+            self.log.warning('No crop categories defined')
+            await self.fetch_detector_info()
         new_image = camera.latest_captured_image
         if new_image is None or new_image.detections:
             await rosys.sleep(0.01)
             return
+        assert self.detector is not None
         await self.detector.detect(new_image, autoupload=self.autoupload, tags=[*self.tags, self.robot_name, 'autoupload'])
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
             await rosys.sleep(0.01 - (rosys.time() - t))
@@ -167,7 +176,6 @@ class PlantLocator(EntityLocator):
             if response.status != 200:
                 self.log.error(f'Could not set outbox mode to {value} on port {port} - status code: {response.status}')
                 return
-            self.log.debug(f'Outbox_mode was set to {value} on port {port}')
 
     def developer_ui(self) -> None:
         ui.label('Plant Locator').classes('text-center text-bold')
@@ -190,6 +198,7 @@ class PlantLocator(EntityLocator):
                     .classes('w-28') \
                     .bind_value(self, 'autoupload') \
                     .tooltip('Set the autoupload for the weeding automation')
+                ui.button('Fetch detector info', on_click=self.fetch_detector_info)
             ui.label().bind_text_from(self, 'detector_info',
                                       backward=lambda info: f'Detector version: {info.current_version}/{info.target_version}' if info else 'Detector version: unknown')
 
@@ -230,6 +239,7 @@ class PlantLocator(EntityLocator):
             self.upload_images = False
 
     async def fetch_detector_info(self) -> bool:
+        assert self.detector is not None
         try:
             detector_info: DetectorInfo = await self.detector.fetch_detector_info()
         except DetectorException as e:

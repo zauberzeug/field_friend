@@ -7,7 +7,6 @@ import rosys
 from nicegui import ui
 from rosys.geometry import Point3d
 
-from ..puncher import PuncherException
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
@@ -46,15 +45,20 @@ class Tornado(WeedingImplement):
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                           if not inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius]
                 self.log.debug(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
-        except PuncherException:
-            self.log.error('Error in Tornado Workflow')
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
+
+    def _has_plants_to_handle(self) -> bool:
+        super()._has_plants_to_handle()
+        if len(self.crops_to_handle) == 0:
+            return False
+        self.weeds_to_handle = {}
+        return True
 
     # TODO: can we get rid of the pylint disable?
     async def get_stretch(self, max_distance: float) -> float:  # pylint: disable=too-many-return-statements
         await super().get_stretch(max_distance)
-        super()._has_plants_to_handle()
+        self._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
             return self.WORKING_DISTANCE
         closest_crop_id, closest_crop_position = next(iter(self.crops_to_handle.items()))
@@ -95,22 +99,22 @@ class Tornado(WeedingImplement):
                     return True
         return False
 
-    def backup(self) -> dict:
-        return super().backup() | {
+    def backup_to_dict(self) -> dict[str, Any]:
+        return super().backup_to_dict() | {
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
             'tornado_angle': self.tornado_angle,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
 
     def settings_ui(self):
         super().settings_ui()
-        ui.number('Tornado angle', format='%.0f', step=1, min=0, max=180) \
+        ui.number('Tornado angle', format='%.0f', step=1, min=0, max=180, on_change=self.request_backup) \
             .props('dense outlined suffix=°') \
             .classes('w-24') \
             .bind_value(self, 'tornado_angle') \

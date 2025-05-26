@@ -5,11 +5,11 @@ import numpy as np
 import rosys
 import rosys.helpers
 from nicegui import ui
-from rosys.geometry import Pose3d, Rotation
+from rosys.geometry import Pose, Pose3d, Rotation, Velocity
 from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels
 
 
-class RobotLocator(rosys.persistence.PersistentModule):
+class RobotLocator(rosys.persistence.Persistable):
     R_ODOM_LINEAR = 0.1
     R_ODOM_ANGULAR = 0.097
     R_IMU_ANGULAR = 0.01
@@ -17,7 +17,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None) -> None:
         """ Robot Locator based on an extended Kalman filter."""
-        super().__init__(persistence_key='field_friend.robot_locator')
+        super().__init__()
         self.log = logging.getLogger('field_friend.robot_locator')
 
         self._wheels = wheels
@@ -30,6 +30,8 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self._x = np.zeros((state_size, 1))
         self._Sxx = np.zeros((state_size, state_size))
         self._pose_timestamp = rosys.time()
+        # NOTE: the prediction step needs to be run once before the first GNSS update
+        self._first_prediction_done = False
 
         # bound attributes
         self._ignore_gnss = gnss is None
@@ -39,14 +41,14 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self._r_imu_angular = self.R_IMU_ANGULAR
         self._odometry_angular_weight = self.ODOMETRY_ANGULAR_WEIGHT
 
-        self._first_prediction_done = False
         self._previous_imu_measurement: ImuMeasurement | None = None
 
         self._wheels.VELOCITY_MEASURED.register(self._handle_velocity_measurement)
         if self._gnss is not None:
             self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
+        rosys.on_startup(self._reset)
 
-    def backup(self) -> dict[str, Any]:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'r_odom_linear': self._r_odom_linear,
             'r_odom_angular': self._r_odom_angular,
@@ -54,15 +56,15 @@ class RobotLocator(rosys.persistence.PersistentModule):
             'odometry_angular_weight': self._odometry_angular_weight,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         self._r_odom_linear = data.get('r_odom_linear', self.R_ODOM_LINEAR)
         self._r_odom_angular = data.get('r_odom_angular', self.R_ODOM_ANGULAR)
         self._r_imu_angular = data.get('r_imu_angular', self.R_IMU_ANGULAR)
         self._odometry_angular_weight = data.get('odometry_angular_weight', self.ODOMETRY_ANGULAR_WEIGHT)
 
     @property
-    def pose(self) -> rosys.geometry.Pose:
-        return rosys.geometry.Pose(
+    def pose(self) -> Pose:
+        return Pose(
             x=self._x[0, 0],
             y=self._x[1, 0],
             yaw=self._x[2, 0],
@@ -70,10 +72,10 @@ class RobotLocator(rosys.persistence.PersistentModule):
         )
 
     @property
-    def prediction(self) -> rosys.geometry.Pose:
+    def prediction(self) -> Pose:
         return self.pose
 
-    async def _handle_velocity_measurement(self, velocities: list[rosys.geometry.Velocity]) -> None:
+    async def _handle_velocity_measurement(self, velocities: list[Velocity]) -> None:
         """Implements the 'prediction' step of the Kalman filter."""
         for velocity in velocities:
             dt = velocity.time - self._pose_timestamp
@@ -88,7 +90,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
             v = velocity.linear
             omega = velocity.angular
             r_angular = self._r_odom_angular
-            if not self._ignore_imu:
+            if not self._ignore_imu and self._imu is not None:
                 imu_omega = self._get_imu_angular_velocity()
                 if imu_omega is not None:
                     v, omega = self._combine_odom_imu(v, omega, imu_omega)
@@ -143,23 +145,26 @@ class RobotLocator(rosys.persistence.PersistentModule):
 
     def _handle_gnss_measurement(self, gnss_measurement: GnssMeasurement) -> None:
         """Triggers the 'update' step of the Kalman filter."""
-        if not self._first_prediction_done:
-            return
         if self._ignore_gnss:
             return
         if not np.isfinite(gnss_measurement.heading_std_dev):
             # normally we would only handle the position if no heading is available,
             # but the field friend needs the rtk accuracy to function properly
             return
-        pose = gnss_measurement.pose.to_local()
-        pose.yaw = self._x[2, 0] + rosys.helpers.angle(self._x[2, 0], pose.yaw)
+        pose, r_xy, r_theta = self._get_local_pose_and_uncertainty(gnss_measurement)
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self._x[0, 0]], [self._x[1, 0]], [self._x[2, 0]]]
         H = np.eye(3)
+        variance = np.array([r_xy, r_xy, r_theta], dtype=np.float64)**2
+        Q = np.diag(variance)
+        self._update(z=np.array(z), h=np.array(h), H=H, Q=Q)
+
+    def _get_local_pose_and_uncertainty(self, gnss_measurement: GnssMeasurement) -> tuple[Pose, float, float]:
+        pose = gnss_measurement.pose.to_local()
+        pose.yaw = self._x[2, 0] + rosys.helpers.angle(self._x[2, 0], pose.yaw)
         r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
         r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
-        Q = np.diag([r_xy, r_xy, r_theta])**2
-        self._update(z=np.array(z), h=np.array(h), H=H, Q=Q)
+        return pose, r_xy, r_theta
 
     def _update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         S = H @ self._Sxx @ H.T + Q
@@ -180,9 +185,27 @@ class RobotLocator(rosys.persistence.PersistentModule):
         self.pose_frame.y = self._x[1, 0]
         self.pose_frame.rotation = Rotation.from_euler(0, 0, self._x[2, 0])
 
-    def _reset(self, *, x: float = 0.0, y: float = 0.0, yaw: float = 0.0) -> None:
-        self._x = np.array([[x, y, yaw]], dtype=float).T
-        self._Sxx = np.diag([0.0, 0.0, 0.0])
+    async def _reset(self, *, gnss_timeout: float = 2.0) -> None:
+        reset_pose = Pose(x=0.0, y=0.0, yaw=0.0)
+        r_xy = 0.0
+        r_theta = 0.0
+        if self._gnss is not None and not self._ignore_gnss:
+            try:
+                await self._gnss.NEW_MEASUREMENT.emitted(gnss_timeout)
+                assert self._gnss.last_measurement is not None
+                reset_pose, r_xy, r_theta = self._get_local_pose_and_uncertainty(self._gnss.last_measurement)
+            except TimeoutError:
+                self.log.error('GNSS timeout while resetting position. Activate _ignore_gnss to use zero position.')
+                return
+            except AssertionError:
+                self.log.error(
+                    'GNSS measurement is not available while resetting position. Activate _ignore_gnss to use zero position.')
+                return
+        self._x = np.array([[reset_pose.x, reset_pose.y, reset_pose.yaw]], dtype=float).T
+        variance = np.array([r_xy, r_xy, r_theta], dtype=np.float64)**2
+        self._Sxx = np.diag(variance)
+        self._update_frame()
+        rosys.notify('Positioning initialized', 'positive')
 
     def developer_ui(self) -> None:
         with ui.column():
@@ -196,7 +219,7 @@ class RobotLocator(rosys.persistence.PersistentModule):
                 ui.label().bind_text_from(self, '_Sxx', lambda m: f'± {np.rad2deg(m[2, 2]):.2f}°')
             with ui.grid(columns=2).classes('w-full'):
                 ui.checkbox('Ignore GNSS', value=self._ignore_gnss).props('dense color=red').classes('col-span-2') \
-                    .bind_value_to(self, '_ignore_gnss')
+                    .bind_value_to(self, '_ignore_gnss').tooltip('Ignore GNSS measurements. When deactivated, reset the filter for better positioning.')
                 ui.checkbox('Ignore IMU', value=self._ignore_imu).props('dense color=red').classes('col-span-2') \
                     .bind_value_to(self, '_ignore_imu')
                 with ui.column().classes('w-24 gap-0'):
@@ -212,4 +235,5 @@ class RobotLocator(rosys.persistence.PersistentModule):
                     ui.number(label='ω odom weight', min=0, step=0.01, format='%.3f', value=self._odometry_angular_weight, on_change=self.request_backup) \
                         .bind_value_to(self, '_odometry_angular_weight')
 
-            ui.button('Reset', on_click=self._reset)
+            ui.button('Reset', on_click=self._reset) \
+                .tooltip('Reset the position to the GNSS measurement or zero position if GNSS is not available or ignored.')

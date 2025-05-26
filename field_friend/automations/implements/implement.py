@@ -1,12 +1,13 @@
-import abc
+from typing import Any
 
+import rosys
 from rosys.analysis import track
 
 
-# TODO: should some of these methods be abstract?
-class Implement(abc.ABC):  # noqa: B024
+class Implement(rosys.persistence.Persistable):
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str = 'None') -> None:
+        super().__init__()
         self.name = name
         self.is_active = False
 
@@ -49,6 +50,12 @@ class Implement(abc.ABC):  # noqa: B024
     async def stop_workflow(self) -> None:
         """Called after workflow has been performed to stop the workflow"""
         return None
+
+    def backup_to_dict(self) -> dict[str, Any]:
+        return {}
+
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        pass
 
     def settings_ui(self) -> None:
         """Create UI for settings and configuration."""

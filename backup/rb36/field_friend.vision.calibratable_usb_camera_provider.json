@@ -1,13 +1,26 @@
 {
     "cameras": {
-        "32e4-9230-platform-3610000.xhci-usb-0:2.4:1.0": {
-            "id": "32e4-9230-platform-3610000.xhci-usb-0:2.4:1.0",
-            "name": "32e4-9230-platform-3610000.xhci-usb-0:2.4:1.0",
+        "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0": {
+            "id": "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0",
+            "name": "32e4-9230-platform-3610000.xhci-usb-0:2.3:1.0",
             "connect_after_init": true,
-            "streaming": false,
-            "focal_length": 1830,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": {
+                "x": 60.0,
+                "y": 20.0,
+                "width": 1020.0,
+                "height": 700.0
+            },
+            "rotation": 0,
+            "auto_exposure": true,
+            "exposure": false,
+            "width": 1280,
+            "height": 720,
+            "fps": 9,
             "calibration": {
                 "intrinsics": {
+                    "model": "pinhole",
                     "matrix": [
                         [
                             704.3472414299275,
@@ -32,31 +45,17 @@
                         -7.288107826439712e-05,
                         -0.07725206082664601
                     ],
-                    "rotation": {
-                        "R": [
-                            [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            [
-                                0.0,
-                                1.0,
-                                0.0
-                            ],
-                            [
-                                0.0,
-                                0.0,
-                                1.0
-                            ]
-                        ]
-                    },
+                    "omnidir_params": null,
                     "size": {
                         "width": 1020,
                         "height": 700
                     }
                 },
                 "extrinsics": {
+                    "_frame_id": "field_friend.robot_locator",
+                    "x": 0.2891589404346338,
+                    "y": 0.0036781887580965575,
+                    "z": 0.29221418864252113,
                     "rotation": {
                         "R": [
                             [
@@ -75,19 +74,10 @@
                                 -0.8037684012645899
                             ]
                         ]
-                    },
-                    "translation": [
-                        0.2891589404346338,
-                        0.0036781887580965575,
-                        0.29221418864252113
-                    ]
+                    }
                 }
             },
-            "auto_exposure": true,
-            "exposure": false,
-            "width": 1280,
-            "height": 720,
-            "fps": 9
+            "focal_length": 1830
         }
     }
 }
