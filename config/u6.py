@@ -32,6 +32,7 @@ config = FieldFriendConfiguration(
         left_front_can_address=0x100,
         right_back_can_address=0x200,
         right_front_can_address=0x300,
+        odrive_version=6
     ),
     has_status_control=True,
     flashlight=FlashlightConfiguration(
