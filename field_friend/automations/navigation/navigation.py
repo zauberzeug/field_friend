@@ -118,15 +118,13 @@ class Navigation(rosys.persistence.Persistable):
         await self.driver.wheels.stop()
 
     @track
-    async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
+    async def turn_to_yaw(self, target_yaw: float, *, angle_threshold: float = np.deg2rad(1.0)) -> None:
         """Turns the robot on the spot to a target heading.
 
         :param target_yaw: The target heading in radians
         :param angle_threshold: The accepted threshold around the target heading in radians, default is 1 degree
         """
         # TODO: growing error because of the threshold
-        if angle_threshold is None:
-            angle_threshold = np.deg2rad(1.0)
         while True:
             angle = rosys.helpers.eliminate_2pi(target_yaw - self.robot_locator.pose.yaw)
             if abs(angle) < angle_threshold:
