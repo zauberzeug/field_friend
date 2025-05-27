@@ -117,6 +117,22 @@ class Navigation(rosys.persistence.Persistable):
                 await self.driver.wheels.drive(*self.driver._throttle(1.0, curvature))  # pylint: disable=protected-access
         await self.driver.wheels.stop()
 
+    @track
+    async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
+        # TODO: growing error because of the threshold
+        if angle_threshold is None:
+            angle_threshold = np.deg2rad(1.0)
+        while True:
+            angle = rosys.helpers.eliminate_2pi(target_yaw - self.robot_locator.pose.yaw)
+            if abs(angle) < angle_threshold:
+                break
+            linear = 0.5
+            sign = 1 if angle > 0 else -1
+            angular = linear / self.driver.parameters.minimum_turning_radius * sign
+            await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
+            await rosys.sleep(0.1)
+        await self.driver.wheels.stop()
+
     @abc.abstractmethod
     def _should_finish(self) -> bool:
         """Returns True if the navigation should stop and be finished"""
