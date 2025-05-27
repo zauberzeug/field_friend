@@ -126,10 +126,9 @@ class Navigation(rosys.persistence.Persistable):
             angle = rosys.helpers.eliminate_2pi(target_yaw - self.robot_locator.pose.yaw)
             if abs(angle) < angle_threshold:
                 break
-            linear = 0.5
             sign = 1 if angle > 0 else -1
-            angular = linear / self.driver.parameters.minimum_turning_radius * sign
-            await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
+            angular = 0.5 / self.driver.parameters.minimum_turning_radius * sign
+            await self.driver.wheels.drive(*self.driver._throttle(0.0, angular))  # pylint: disable=protected-access
             await rosys.sleep(0.1)
         await self.driver.wheels.stop()
 
