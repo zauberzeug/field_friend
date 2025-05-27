@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
+from rosys.helpers import angle
 from rosys.testing import assert_point, forward
 
 from field_friend import System
@@ -90,6 +91,17 @@ async def test_driving_to_exact_positions(system: System):
         assert distance == pytest.approx(stopper.current_stretch, abs=0.001)
         stopper.workflow_started = False
         await forward(0.1)  # give robot time to update position
+
+@pytest.mark.parametrize('heading_degrees', (-180, -90, 0, 90, 180, 360))
+async def test_driving_turn_to_yaw(system: System, heading_degrees: float):
+    heading = np.deg2rad(heading_degrees)
+    system.automator.start(system.current_navigation.turn_to_yaw(heading))
+    # NOTE: do not wait until automator.is_running because it will immediately stop for 0 and 360 degrees
+    await forward(0.1)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.robot_locator.pose.x == pytest.approx(0, abs=0.001)
+    assert system.robot_locator.pose.y == pytest.approx(0, abs=0.001)
+    assert angle(system.robot_locator.pose.yaw, heading) == pytest.approx(0, abs=1.0)
 
 
 async def test_driving_straight_line_with_slippage(system: System):
