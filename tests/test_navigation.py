@@ -96,6 +96,7 @@ async def test_driving_to_exact_positions(system: System):
 async def test_driving_turn_to_yaw(system: System, heading_degrees: float):
     heading = np.deg2rad(heading_degrees)
     system.automator.start(system.current_navigation.turn_to_yaw(heading))
+    # NOTE: do not wait until automator.is_running because it will immediately stop for 0 and 360 degrees
     await forward(0.1)
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.x == pytest.approx(0, abs=0.001)
