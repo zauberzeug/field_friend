@@ -17,7 +17,7 @@ from field_friend.config.configuration import (  # ImuConfiguration,
 
 config = FieldFriendConfiguration(
     name='fieldfriend-f13',
-    robot_brain=RobotBrainConfiguration(name='rb36', flash_params=['orin', 'v05', 'nand']),
+    robot_brain=RobotBrainConfiguration(name='rb36', flash_params=['orin', 'v05', 'nand'], enable_esp_on_startup=True),
     tool='tornado',
     measurements=MeasurementsConfiguration(
         tooth_count=15,
