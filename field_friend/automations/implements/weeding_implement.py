@@ -20,6 +20,8 @@ class ImplementException(Exception):
 
 class WeedingImplement(Implement):
     WORKING_DISTANCE = 0.15
+    FLASHLIGHT_WAIT_TIME = 3.0
+    LOCATOR_WAIT_TIME = 5.0
 
     def __init__(self,  name: str, system: 'System') -> None:
         super().__init__(name)
@@ -71,8 +73,9 @@ class WeedingImplement(Implement):
         if self.system.field_friend.flashlight:
             await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
-        await rosys.sleep(3)
+        await rosys.sleep(self.FLASHLIGHT_WAIT_TIME)
         self.system.plant_locator.resume()
+        await rosys.sleep(self.LOCATOR_WAIT_TIME)
         assert self.system.camera_provider is not None
         if self.record_video:
             self.system.timelapse_recorder.camera = self.system.camera_provider.first_connected_camera
