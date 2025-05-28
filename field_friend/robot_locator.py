@@ -16,7 +16,7 @@ class RobotLocator(rosys.persistence.Persistable):
     ODOMETRY_ANGULAR_WEIGHT = 0.1
 
     def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None) -> None:
-        """ Robot Locator based on an extended Kalman filter."""
+        """Robot Locator based on an extended Kalman filter."""
         super().__init__()
         self.log = logging.getLogger('field_friend.robot_locator')
 
