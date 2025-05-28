@@ -125,7 +125,7 @@ class Navigation(rosys.persistence.Persistable):
                                    target: Pose, *,
                                    target_heading: float | None = None,
                                    max_turn_angle: float = np.deg2rad(1.0),
-                                   minimum_distance: float = 0.01) -> None:
+                                   minimum_distance: float = 0.005) -> None:
         """Drives the robot towards a target point, but keeps the robot on a set heading with a limited turn angle.
 
         :param target: The target point to drive towards

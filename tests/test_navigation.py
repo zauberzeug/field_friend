@@ -94,7 +94,6 @@ async def test_driving_to_exact_positions(system: System):
     system.current_implement = stopper = Stopper(system)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 1.0
-    print(system.current_navigation.throttle_at_end)
     system.current_navigation.linear_speed_limit = 0.02  # drive really slow so we can archive the accuracy tested below
     system.automator.start()
     await forward(until=lambda: system.automator.is_running, dt=0.01)
@@ -107,18 +106,18 @@ async def test_driving_to_exact_positions(system: System):
     assert system.robot_locator.pose.x == pytest.approx(system.current_navigation.length, abs=0.001)
 
 
-@pytest.mark.parametrize('distance', (0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
+@pytest.mark.parametrize('distance', (0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
 async def test_deceleration_different_distances(system_with_acceleration: System, distance: float):
     """Try to stop after different distances with a tolerance of 10% and a linear speed limit of 0.13m/s"""
     system = system_with_acceleration
     assert isinstance(system.field_friend.wheels, WheelsSimulationWithAcceleration)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = distance
-    system.current_navigation.linear_speed_limit = 0.13
+    system.current_navigation.linear_speed_limit = 0.3
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=distance * 0.1)
+    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.0005)
 
 
 @pytest.mark.parametrize('linear_speed_limit', (0.1, 0.13, 0.2, 0.3, 0.4))
@@ -127,12 +126,12 @@ async def test_deceleration_different_speeds(system_with_acceleration: System, l
     system = system_with_acceleration
     assert isinstance(system.field_friend.wheels, WheelsSimulationWithAcceleration)
     assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.length = 0.001
+    system.current_navigation.length = 0.005
     system.current_navigation.linear_speed_limit = linear_speed_limit
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(0.001, abs=0.0002)
+    assert system.robot_locator.pose.point.x == pytest.approx(0.005, abs=0.0005)
 
 @pytest.mark.parametrize('heading_degrees', (-180, -90, 0, 90, 180, 360))
 async def test_driving_turn_to_yaw(system: System, heading_degrees: float):
@@ -415,6 +414,7 @@ async def test_complete_row(system: System, field: Field):
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
+    system.current_navigation.linear_speed_limit = 0.3
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.field_navigation.automation_watcher.field_watch_active)
@@ -535,9 +535,10 @@ async def test_complete_field(system: System, field: Field):
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.field_navigation.field_id = field.id
     system.current_navigation = system.field_navigation
+    system.current_navigation.linear_speed_limit = 0.3
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=300)
     await forward(until=lambda: system.automator.is_stopped)
     end_point = field.rows[-1].points[0].to_local()
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
@@ -552,9 +553,10 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [0, 2]
     system.current_navigation = system.field_navigation
+    system.current_navigation.linear_speed_limit = 0.3
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=300)
     await forward(until=lambda: system.automator.is_stopped)
     end_point = field_with_beds.rows[2].points[0].to_local()
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
@@ -569,9 +571,10 @@ async def test_complete_field_without_second_bed(system: System, field_with_beds
     system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [0, 2, 3]
     system.current_navigation = system.field_navigation
+    system.current_navigation.linear_speed_limit = 0.3
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=300)
     await forward(until=lambda: system.automator.is_stopped)
     end_point = field_with_beds.rows[-1].points[1].to_local()
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)

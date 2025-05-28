@@ -30,7 +30,7 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
-    helpers.odometer = s.odometer
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -49,7 +49,7 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
-    helpers.odometer = s.odometer
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -68,7 +68,7 @@ async def system_with_acceleration(rosys_integration) -> AsyncGenerator[System, 
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
-    helpers.odometer = s.odometer
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)

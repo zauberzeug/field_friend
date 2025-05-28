@@ -14,7 +14,8 @@ async def test_working_with_weeding_screw(system: System, detector: rosys.vision
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
     system.automator.start()
-    await forward(20)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert len(detector.simulated_objects) == 1
     assert detector.simulated_objects[0].category_name == 'maize'
 
@@ -27,7 +28,8 @@ async def test_keep_crops_safe(system: System, detector: rosys.vision.DetectorSi
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
     system.automator.start()
-    await forward(20)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert len(detector.simulated_objects) == 1
     assert detector.simulated_objects[0].category_name == 'maize'
 
@@ -41,7 +43,8 @@ async def test_weeding_screw_only_targets_big_weed(system: System, detector: ros
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
     system.automator.start()
-    await forward(20)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert len(detector.simulated_objects) == 1
     assert detector.simulated_objects[0].category_name == 'weed'
 
@@ -54,7 +57,8 @@ async def test_weeding_screw_does_not_skip_close_weed(system: System, detector: 
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
     system.automator.start()
-    await forward(40)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert len(detector.simulated_objects) == 0
 
 
@@ -71,7 +75,8 @@ async def test_weeding_screw_focus_on_weed_close_to_crop(system: System, detecto
     system.current_implement.cultivated_crop = 'maize'
     system.current_implement.max_crop_distance = 0.05
     system.automator.start()
-    await forward(40)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert len(detector.simulated_objects) == 2
     assert detector.simulated_objects[1].category_name == 'weed'
     assert detector.simulated_objects[1].position.x == 0.1
@@ -94,7 +99,8 @@ async def test_weeding_screw_advances_when_there_are_no_plants(system: System, d
     # TODO: test fails if not forwarded by 1 second
     await forward(1)
     system.automator.start()
-    await forward(60)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
     if cultivated_crop is None:
         assert len(detector.simulated_objects) == 1
@@ -122,7 +128,8 @@ async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_th
     system.current_implement.cultivated_crop = 'maize'
     system.current_implement.max_crop_distance = 0.050
     system.automator.start()
-    await forward(50)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
     assert len(detector.simulated_objects) == 4, 'last weed should be removed'
 
@@ -137,11 +144,13 @@ async def test_implement_blocking(system: System, detector: rosys.vision.Detecto
     if blocking:
         with system.current_implement.blocked():
             system.automator.start()
-            await forward(20)
+            await forward(until=lambda: system.automator.is_running)
+            await forward(until=lambda: system.automator.is_stopped)
         assert len(detector.simulated_objects) == 1
     else:
         system.automator.start()
-        await forward(20)
+        await forward(until=lambda: system.automator.is_running)
+        await forward(until=lambda: system.automator.is_stopped)
         assert len(detector.simulated_objects) == 0
 
 
@@ -155,7 +164,7 @@ async def test_work_offset_navigation(system: System, detector: rosys.vision.Det
     system.field_friend.WORK_X = work_x
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: not system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
     assert len(detector.simulated_objects) == 0
 
@@ -171,7 +180,8 @@ async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys
     system.current_implement = system.implements['Tornado']
     system.current_navigation = system.straight_line_navigation
     system.automator.start()
-    await forward(20)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert len(detector.simulated_objects) == 1
     assert detector.simulated_objects[0].category_name == 'sugar_beet'
 
@@ -192,7 +202,8 @@ async def test_tornado_removes_weeds_between_crops(system: System, detector: ros
     tornado.drill_between_crops = True
     system.current_implement = tornado
     system.automator.start(system.straight_line_navigation.start())
-    await forward(30)
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
     assert len(detector.simulated_objects) == 2
     assert detector.simulated_objects[0].category_name == 'sugar_beet'
     assert detector.simulated_objects[1].category_name == 'sugar_beet'
