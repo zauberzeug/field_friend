@@ -14,6 +14,7 @@ class RobotLocator(rosys.persistence.Persistable):
     R_ODOM_ANGULAR = 0.097
     R_IMU_ANGULAR = 0.01
     ODOMETRY_ANGULAR_WEIGHT = 0.1
+    NUM_VELOCITY_POSES = 1
 
     def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None) -> None:
         """ Robot Locator based on an extended Kalman filter."""
@@ -35,8 +36,10 @@ class RobotLocator(rosys.persistence.Persistable):
         self._first_prediction_done = False
 
         # bound attributes
-        self._ignore_gnss = gnss is None
-        self._ignore_imu = imu is None
+        # self._ignore_gnss = gnss is None
+        # self._ignore_imu = imu is None
+        self._ignore_gnss = True
+        self._ignore_imu = True
         self._r_odom_linear = self.R_ODOM_LINEAR
         self._r_odom_angular = self.R_ODOM_ANGULAR
         self._r_imu_angular = self.R_IMU_ANGULAR
@@ -77,18 +80,33 @@ class RobotLocator(rosys.persistence.Persistable):
         return self.pose
 
     @property
+    def is_moving(self) -> bool:
+        current_velocity = self.current_velocity
+        return abs(current_velocity.linear) > 0.005 or abs(current_velocity.angular) > 0.01
+
+    @property
     def current_velocity(self) -> Velocity:
         if len(self.history) < 2:
             return Velocity(linear=0.0, angular=0.0, time=rosys.time())
-        pose = self.history[-1]
-        pose_before = self.history[-2]
-        dt = abs(pose.time - pose_before.time)
-        if dt == 0:
-            return Velocity(linear=0.0, angular=0.0, time=pose.time)
-        relative_pose = pose_before.relative_pose(pose)
-        linear = relative_pose.x / dt
-        angular = relative_pose.yaw / dt
-        return Velocity(linear=linear, angular=angular, time=pose.time)
+        latest_pose: Pose = self.history[-1]
+        n: int = min(self.NUM_VELOCITY_POSES, len(self.history) - 1)
+        total_linear: float = 0.0
+        total_angular: float = 0.0
+        count: int = 0
+        for i in range(1, n + 1):
+            prev: Pose = self.history[-1-i]
+            dt: float = latest_pose.time - prev.time
+            if dt <= 0:
+                continue
+            relative_pose = prev.relative_pose(latest_pose)
+            total_linear += relative_pose.x / dt
+            total_angular += relative_pose.yaw / dt
+            count += 1
+        if count == 0:
+            return Velocity(linear=0.0, angular=0.0, time=latest_pose.time)
+        avg_linear: float = total_linear / count
+        avg_angular: float = total_angular / count
+        return Velocity(linear=avg_linear, angular=avg_angular, time=latest_pose.time)
 
     async def _handle_velocity_measurement(self, velocities: list[Velocity]) -> None:
         """Implements the 'prediction' step of the Kalman filter."""
@@ -102,6 +120,7 @@ class RobotLocator(rosys.persistence.Persistable):
 
             if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
                 # The robot is not moving, so we don't need to update the state
+                self.history = []
                 continue
 
             v = velocity.linear
