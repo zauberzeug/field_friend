@@ -1,7 +1,7 @@
 {
-    "current_weeding_kpis": {
+    "all_time_kpis": {
         "distance": 0,
-        "time": 0,
+        "time": 80795.48024392128,
         "bumps": 0,
         "low_battery": 0,
         "can_failure": 0,
@@ -9,45 +9,126 @@
         "e_stop_triggered": 0,
         "soft_e_stop_triggered": 0,
         "imu_rolling_detected": 0,
-        "gnss_connection_lost": 0,
-        "rows_weeded": 0,
-        "crops_detected": 0,
-        "weeds_detected": 0,
-        "weeds_removed": 0,
-        "punches": 0,
-        "chops": 0,
-        "weeding_completed": false
-    },
-    "current_mowing_kpis": {
-        "distance": 0,
-        "time": 0,
-        "bumps": 0,
-        "low_battery": 0,
-        "can_failure": 0,
-        "automation_stopped": 0,
-        "e_stop_triggered": 0,
-        "soft_e_stop_triggered": 0,
-        "imu_rolling_detected": 0,
-        "gnss_connection_lost": 0,
-        "mowing_completed": false
+        "gnss_connection_lost": 0
     },
     "days": [
         {
-            "date": "2024-05-29",
+            "date": "2024-10-16",
             "incidents": {
-                "bumps": 33
+                "time": 2348,
+                "bumps": 1,
+                "low_battery": 5
             }
         },
         {
-            "date": "2024-05-31",
+            "date": "2024-10-21",
+            "incidents": {
+                "time": 30706
+            }
+        },
+        {
+            "date": "2024-10-22",
+            "incidents": {
+                "time": 40999,
+                "bumps": 10
+            }
+        },
+        {
+            "date": "2024-10-23",
+            "incidents": {
+                "time": 188,
+                "bumps": 1
+            }
+        },
+        {
+            "date": "2024-10-25",
+            "incidents": {
+                "bumps": 5,
+                "time": 1554
+            }
+        },
+        {
+            "date": "2024-10-30",
+            "incidents": {
+                "time": 959,
+                "bumps": 1
+            }
+        },
+        {
+            "date": "2024-11-06",
+            "incidents": {
+                "bumps": 1,
+                "time": 77
+            }
+        },
+        {
+            "date": "2024-11-07",
+            "incidents": {
+                "bumps": 3
+            }
+        },
+        {
+            "date": "2024-11-08",
+            "incidents": {
+                "bumps": 3
+            }
+        },
+        {
+            "date": "2024-11-11",
+            "incidents": {
+                "time": 131
+            }
+        },
+        {
+            "date": "2024-11-12",
+            "incidents": {
+                "bumps": 6
+            }
+        },
+        {
+            "date": "2024-11-14",
+            "incidents": {
+                "time": 147
+            }
+        },
+        {
+            "date": "2024-11-15",
             "incidents": {
                 "bumps": 1
             }
         },
         {
-            "date": "2024-06-03",
+            "date": "2024-11-18",
             "incidents": {
-                "bumps": 2
+                "time": 1143,
+                "bumps": 1
+            }
+        },
+        {
+            "date": "2024-11-19",
+            "incidents": {
+                "bumps": 28,
+                "time": 361
+            }
+        },
+        {
+            "date": "2025-02-17",
+            "incidents": {
+                "bumps": 2,
+                "time": 42
+            }
+        },
+        {
+            "date": "2025-04-11",
+            "incidents": {
+                "time": 1199
+            }
+        },
+        {
+            "date": "2025-04-30",
+            "incidents": {
+                "time": 66,
+                "bumps": 14
             }
         }
     ],

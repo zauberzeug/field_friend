@@ -60,7 +60,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.log.warning('Unknown implement: %s', implement)
 
         communication = rosys.hardware.SerialCommunication()
-        robot_brain = rosys.hardware.RobotBrain(communication, enable_esp_on_startup=config.robot_brain.enable_esp_on_startup)
+        robot_brain = rosys.hardware.RobotBrain(communication,
+                                                enable_esp_on_startup=config.robot_brain.enable_esp_on_startup,
+                                                use_espresso=config.robot_brain.use_espresso)
         robot_brain.lizard_firmware.flash_params += config.robot_brain.flash_params
 
         bluetooth = rosys.hardware.BluetoothHardware(robot_brain, name=config.name)

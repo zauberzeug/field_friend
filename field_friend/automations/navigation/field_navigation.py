@@ -210,21 +210,6 @@ class FieldNavigation(StraightLineNavigation):
         self.allowed_to_turn = False
         return State.FOLLOW_ROW
 
-    @track
-    async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
-        # TODO: growing error because of the threshold
-        if angle_threshold is None:
-            angle_threshold = np.deg2rad(1.0)
-        while True:
-            angle = rosys.helpers.eliminate_2pi(target_yaw - self.robot_locator.pose.yaw)
-            if abs(angle) < angle_threshold:
-                break
-            linear = 0.5
-            sign = 1 if angle > 0 else -1
-            angular = linear / self.driver.parameters.minimum_turning_radius * sign
-            await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
-            await rosys.sleep(0.1)
-        await self.driver.wheels.stop()
 
     @track
     async def _run_follow_row(self, distance: float) -> State:
@@ -312,8 +297,8 @@ class FieldNavigation(StraightLineNavigation):
             return False
         return True
 
-    def backup(self) -> dict:
-        return super().backup() | {
+    def backup_to_dict(self) -> dict[str, Any]:
+        return super().backup_to_dict() | {
             'field_id': self.field.id if self.field else None,
             'loop': self._loop,
             'wait_distance': self.wait_distance,
@@ -321,8 +306,8 @@ class FieldNavigation(StraightLineNavigation):
             'is_in_swarm': self.is_in_swarm,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self._loop = data.get('loop', False)

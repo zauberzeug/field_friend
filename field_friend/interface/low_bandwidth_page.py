@@ -10,9 +10,9 @@ from .components.log_monitor import LogMonitor
 
 class LowBandwidthPage:
 
-    def __init__(self, system: System) -> None:
+    def __init__(self, system: System, log_monitor: LogMonitor) -> None:
         self.system = system
-        self.log_monitor = LogMonitor()
+        self.log_monitor = log_monitor
 
         @ui.page('/lb')
         def page() -> None:

@@ -11,7 +11,7 @@ from field_friend.automations import Field, RowSupportPoint
 
 
 def test_loading_from_persistence(system: System):
-    system.field_provider.restore(json.loads(Path('tests/old_field_provider_persistence.json').read_text()))
+    system.field_provider.restore_from_dict(json.loads(Path('tests/old_field_provider_persistence.json').read_text()))
     assert len(system.field_provider.fields) == 1
     field = system.field_provider.fields[0]
     assert field.row_count == 10
@@ -27,7 +27,7 @@ def test_loading_from_persistence(system: System):
 
 
 def test_loading_from_persistence_with_errors(system: System):
-    system.field_provider.restore(json.loads(Path('tests/old_field_provider_persistence_with_errors.json').read_text()))
+    system.field_provider.restore_from_dict(json.loads(Path('tests/old_field_provider_persistence_with_errors.json').read_text()))
     assert len(system.field_provider.fields) == 1
     field = system.field_provider.fields[0]
     # should set outline_buffer_width to default value because it is missing in the persistence data

@@ -1,19 +1,10 @@
 {
-    "weed_category_names": [
-        "big_weed",
-        "thistle",
-        "orache",
-        "coin",
-        "weed"
-    ],
-    "crop_category_names": [
-        "coin_with_hole",
-        "crop",
-        "sugar_beet",
-        "onion",
-        "garlic"
-    ],
-    "minimum_weed_confidence": 0.8,
-    "minimum_crop_confidence": 0.75,
-    "autoupload": "disabled"
+    "minimum_weed_confidence": 0.3,
+    "minimum_crop_confidence": 0.3,
+    "autoupload": "disabled",
+    "upload_images": true,
+    "tags": [
+        "zuckerr\u00fcbe",
+        "f13"
+    ]
 }
