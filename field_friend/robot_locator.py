@@ -14,7 +14,6 @@ class RobotLocator(rosys.persistence.Persistable):
     R_ODOM_ANGULAR = 0.097
     R_IMU_ANGULAR = 0.01
     ODOMETRY_ANGULAR_WEIGHT = 0.1
-    NUM_VELOCITY_POSES = 1
 
     def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None) -> None:
         """ Robot Locator based on an extended Kalman filter."""
@@ -31,7 +30,6 @@ class RobotLocator(rosys.persistence.Persistable):
         self._x = np.zeros((state_size, 1))
         self._Sxx = np.zeros((state_size, state_size))
         self._pose_timestamp = rosys.time()
-        self.history: list[Pose] = []
         # NOTE: the prediction step needs to be run once before the first GNSS update
         self._first_prediction_done = False
 
@@ -79,48 +77,16 @@ class RobotLocator(rosys.persistence.Persistable):
     def prediction(self) -> Pose:
         return self.pose
 
-    @property
-    def is_moving(self) -> bool:
-        current_velocity = self.current_velocity
-        return abs(current_velocity.linear) > 0.005 or abs(current_velocity.angular) > 0.01
-
-    @property
-    def current_velocity(self) -> Velocity:
-        if len(self.history) < 2:
-            return Velocity(linear=0.0, angular=0.0, time=rosys.time())
-        latest_pose: Pose = self.history[-1]
-        n: int = min(self.NUM_VELOCITY_POSES, len(self.history) - 1)
-        total_linear: float = 0.0
-        total_angular: float = 0.0
-        count: int = 0
-        for i in range(1, n + 1):
-            prev: Pose = self.history[-1-i]
-            dt: float = latest_pose.time - prev.time
-            if dt <= 0:
-                continue
-            relative_pose = prev.relative_pose(latest_pose)
-            total_linear += relative_pose.x / dt
-            total_angular += relative_pose.yaw / dt
-            count += 1
-        if count == 0:
-            return Velocity(linear=0.0, angular=0.0, time=latest_pose.time)
-        avg_linear: float = total_linear / count
-        avg_angular: float = total_angular / count
-        return Velocity(linear=avg_linear, angular=avg_angular, time=latest_pose.time)
-
     async def _handle_velocity_measurement(self, velocities: list[Velocity]) -> None:
         """Implements the 'prediction' step of the Kalman filter."""
         for velocity in velocities:
             dt = velocity.time - self._pose_timestamp
             self._pose_timestamp = velocity.time
             if (not self._first_prediction_done) and (self._imu is not None):
-                # if self._imu.last_measurement is None:
-                #     return
                 self._previous_imu_measurement = self._imu.last_measurement
 
             if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
-                # The robot is not moving, so we don't need to update the state
-                self.history = []
+                # NOTE: The robot is not moving, so we don't need to update the state
                 continue
 
             v = velocity.linear
@@ -154,7 +120,6 @@ class RobotLocator(rosys.persistence.Persistable):
             ])
             self._Sxx = F @ self._Sxx @ F.T + R
             self._update_frame()
-            self.history.append(self.pose)
             self._first_prediction_done = True
 
     def _get_imu_angular_velocity(self) -> float | None:
@@ -254,13 +219,7 @@ class RobotLocator(rosys.persistence.Persistable):
                 ui.label().bind_text_from(self, '_Sxx', lambda m: f'± {m[1, 1]:.3f}m')
                 ui.label().bind_text_from(self, 'pose', lambda p: f'θ: {p.yaw_deg:.2f}°')
                 ui.label().bind_text_from(self, '_Sxx', lambda m: f'± {np.rad2deg(m[2, 2]):.2f}°')
-                linear_label = ui.label()
-                angular_label = ui.label()
 
-            def update_labels() -> None:
-                linear_label.text = f'v: {self.current_velocity.linear:.3f}m/s'
-                angular_label.text = f'ω: {self.current_velocity.angular:.3f}°/s'
-            rosys.on_repeat(update_labels, rosys.config.ui_update_interval)
             with ui.grid(columns=2).classes('w-full'):
                 ui.checkbox('Ignore GNSS', value=self._ignore_gnss).props('dense color=red').classes('col-span-2') \
                     .bind_value_to(self, '_ignore_gnss').tooltip('Ignore GNSS measurements. When deactivated, reset the filter for better positioning.')
