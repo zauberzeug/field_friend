@@ -6,7 +6,7 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.analysis import track
-from rosys.geometry import Point, Pose
+from rosys.geometry import Point
 
 from ..field import Field, Row
 from ..implements.implement import Implement
@@ -207,7 +207,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.start_point is not None
         target_yaw = self.robot_locator.pose.direction(self.start_point)
         await self.turn_to_yaw(target_yaw)
-        await self._drive_to_target(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw))
+        await self.drive_towards_target(rosys.geometry.Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw), target_heading=target_yaw)
         assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
         await self.turn_to_yaw(row_yaw)
@@ -237,7 +237,7 @@ class FieldNavigation(StraightLineNavigation):
         if not self.implement.is_active:
             await self.implement.activate()
         self.update_target()
-        await self._drive_to_target(end_pose)
+        await self.drive_towards_target(end_pose)
         return State.FOLLOW_ROW
 
     @track
@@ -339,6 +339,7 @@ class FieldNavigation(StraightLineNavigation):
         ui.checkbox('Allowed to turn').bind_value(self, 'allowed_to_turn')
         ui.number('Wait distance', step=0.1, min=0.0, max=10.0, format='%.1f', suffix='m', on_change=self.request_backup) \
             .bind_value(self, 'wait_distance').classes('w-20')
+        ui.button('Drive to field', on_click=lambda: self.driver.drive_to(self.field_provider.selected_field.first_row_start.to_local()))
 
     def _set_field_id(self) -> None:
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None

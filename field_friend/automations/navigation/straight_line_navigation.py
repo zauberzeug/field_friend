@@ -45,7 +45,7 @@ class StraightLineNavigation(Navigation):
 
     @track
     async def _drive(self) -> None:
-        await self._drive_to_target(Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target)))
+        await self.drive_towards_target(Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target)))
 
     def _should_finish(self) -> bool:
         end_pose = Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)

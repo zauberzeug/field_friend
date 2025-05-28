@@ -64,7 +64,7 @@ class FollowCropsNavigation(StraightLineNavigation):
             fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
             closest_point = fitted_line.foot_point(self.robot_locator.pose.point)
             target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
-            await self._drive_to_target(target)
+            await self.drive_towards_target(target)
         else:
             self.update_target()
             await super()._drive()

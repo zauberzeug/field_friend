@@ -194,7 +194,7 @@ class System(rosys.persistence.Persistable):
         self.driver.parameters.angular_speed_limit = 0.3
         self.driver.parameters.can_drive_backwards = False
         self.driver.parameters.minimum_turning_radius = 0.01
-        self.driver.parameters.hook_offset = 0.15
+        self.driver.parameters.hook_offset = 0.20
         self.driver.parameters.carrot_distance = 0.15
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.driver.parameters.hook_bending_factor = 0.25
