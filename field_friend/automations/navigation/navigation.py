@@ -141,6 +141,7 @@ class Navigation(rosys.persistence.Persistable):
             angle_diff = rosys.helpers.eliminate_2pi(self.robot_locator.pose.direction(target) - target_heading)
             target_heading = target_heading + np.clip(angle_diff, -max_turn_angle, max_turn_angle)
 
+        assert target_heading is not None
         line_end = self.robot_locator.pose.point.polar(self.robot_locator.pose.distance(target), target_heading)
         line_segment = rosys.geometry.LineSegment(point1=self.robot_locator.pose.point,
                                                   point2=line_end)

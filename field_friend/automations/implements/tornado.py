@@ -56,7 +56,7 @@ class Tornado(WeedingImplement):
         return True
 
     @track
-    async def get_move_target(self) -> Point | None: # pylint: disable=too-many-return-statements
+    async def get_move_target(self) -> Point | None:
         """Return the target position to drive to."""
         self._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:

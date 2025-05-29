@@ -339,7 +339,6 @@ class FieldNavigation(StraightLineNavigation):
         ui.checkbox('Allowed to turn').bind_value(self, 'allowed_to_turn')
         ui.number('Wait distance', step=0.1, min=0.0, max=10.0, format='%.1f', suffix='m', on_change=self.request_backup) \
             .bind_value(self, 'wait_distance').classes('w-20')
-        ui.button('Drive to field', on_click=lambda: self.driver.drive_to(self.field_provider.selected_field.first_row_start.to_local()))
 
     def _set_field_id(self) -> None:
         self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
