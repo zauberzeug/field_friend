@@ -239,7 +239,6 @@ class System(rosys.persistence.Persistable):
     def setup_navigations(self) -> None:
         first_implement = next(iter(self.implements.values()))
         self.straight_line_navigation = StraightLineNavigation(self, first_implement).persistent(restore=self.restore_persistence)
-        # self.follow_crops_navigation = FollowCropsNavigation(self, first_implement).persistent(restore=self.restore_persistence)
         self.field_navigation = FieldNavigation(self, first_implement).persistent(restore=self.restore_persistence) if self.gnss is not None else None
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent(restore=self.restore_persistence) \
             if isinstance(self.field_friend.y_axis, AxisD1) else None

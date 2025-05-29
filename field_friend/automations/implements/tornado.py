@@ -74,11 +74,11 @@ class Tornado(WeedingImplement):
             self.log.debug('Crops in drill range')
             return None
 
-        stretch = closest_crop_position.x - self.system.field_friend.WORK_X  # TODO: rework this
-        if stretch < - self.system.field_friend.DRILL_RADIUS:
+        relative_x = closest_crop_position.x - self.system.field_friend.WORK_X
+        if relative_x < - self.system.field_friend.DRILL_RADIUS:
             self.log.debug(f'Skipping crop {closest_crop_id} because it is behind the robot')
             return None
-        self.log.debug(f'Targeting crop {closest_crop_id} which is {stretch} away at world: '
+        self.log.debug(f'Targeting crop {closest_crop_id} which is {relative_x} away at world: '
                            f'{closest_crop_world_position}, local: {closest_crop_position}')
         self.next_punch_y_position = closest_crop_position.y
         return closest_crop_world_position.projection()

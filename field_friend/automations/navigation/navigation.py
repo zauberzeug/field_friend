@@ -88,7 +88,6 @@ class Navigation(rosys.persistence.Persistable):
                     # TODO: using WORK_Y doesnt seem to work, we should check that
                     move_pose = move_pose.transform_pose(Pose(x=-self.system.field_friend.WORK_X, y=0, yaw=0))
                     await self.drive_towards_target(move_pose)
-                    await self.driver.wheels.stop()
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
                 await rosys.sleep(0.1)
