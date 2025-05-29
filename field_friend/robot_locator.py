@@ -34,10 +34,8 @@ class RobotLocator(rosys.persistence.Persistable):
         self._first_prediction_done = False
 
         # bound attributes
-        # self._ignore_gnss = gnss is None
-        # self._ignore_imu = imu is None
-        self._ignore_gnss = True
-        self._ignore_imu = True
+        self._ignore_gnss = gnss is None
+        self._ignore_imu = imu is None
         self._r_odom_linear = self.R_ODOM_LINEAR
         self._r_odom_angular = self.R_ODOM_ANGULAR
         self._r_imu_angular = self.R_IMU_ANGULAR
