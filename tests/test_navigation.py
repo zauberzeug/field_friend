@@ -59,6 +59,24 @@ async def test_straight_line_with_high_angles(system: System):
     assert system.robot_locator.pose.point.y == pytest.approx(-0.174, abs=0.1)
     assert system.robot_locator.pose.yaw_deg == pytest.approx(predicted_yaw, abs=5)
 
+@pytest.mark.parametrize('target, end_pose, max_turn_angle', [
+    (rosys.geometry.Point(x=1.0, y=0.0), rosys.geometry.Pose(x=1.0, y=0.0, yaw=0.0), 1.0),
+    (rosys.geometry.Point(x=1.0, y=0.005), rosys.geometry.Pose(x=1.0, y=0.005, yaw=np.deg2rad(0.29)), 1.0),
+    (rosys.geometry.Point(x=1.0, y=0.01), rosys.geometry.Pose(x=1.0, y=0.01, yaw=np.deg2rad(0.58)), 1.0),
+    (rosys.geometry.Point(x=1.0, y=0.1), rosys.geometry.Pose(x=1.0, y=0.018, yaw=np.deg2rad(1.0)), 1.0),
+    (rosys.geometry.Point(x=1.0, y=1.0), rosys.geometry.Pose(x=1.0, y=1.0, yaw=np.deg2rad(45.0)), 45.0),
+])
+async def test_driving_towards_target(system: System, target: rosys.geometry.Point, end_pose: rosys.geometry.Pose, max_turn_angle: float):
+    max_turn_angle = np.deg2rad(max_turn_angle)
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.linear_speed_limit = 0.1
+    system.automator.start(system.current_navigation.drive_towards_target(target, target_heading=0.0, max_turn_angle=max_turn_angle))
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped, timeout=300)
+    assert system.robot_locator.pose.point.x == pytest.approx(end_pose.x, abs=0.005)
+    assert system.robot_locator.pose.point.y == pytest.approx(end_pose.y, abs=0.005)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(end_pose.yaw_deg, abs=0.5)
+
 
 async def test_driving_to_exact_positions(system: System):
     class Stopper(Implement):
