@@ -122,7 +122,7 @@ class Navigation(rosys.persistence.Persistable):
 
     @track
     async def drive_towards_target(self,
-                                   target: Pose, *,
+                                   target: Point | Pose, *,
                                    target_heading: float | None = None,
                                    max_turn_angle: float = np.deg2rad(1.0),
                                    minimum_distance: float = 0.005) -> None:
@@ -133,6 +133,8 @@ class Navigation(rosys.persistence.Persistable):
         :param max_turn_angle: The maximum turn angle in radians
         :param minimum_distance: The minimum distance to the target point in meters
         """
+        if isinstance(target, Pose):
+            target = target.point
         if target_heading is None:
             target_heading = self.target_heading
         if max_turn_angle != 0:
@@ -142,7 +144,7 @@ class Navigation(rosys.persistence.Persistable):
         line_end = self.robot_locator.pose.point.polar(self.robot_locator.pose.distance(target), target_heading)
         line_segment = rosys.geometry.LineSegment(point1=self.robot_locator.pose.point,
                                                   point2=line_end)
-        adjusted_target = line_segment.line.foot_point(target.point)
+        adjusted_target = line_segment.line.foot_point(target)
         if self.robot_locator.pose.distance(adjusted_target) < minimum_distance:
             self.log.warning('Target too close, skipping')
             return
