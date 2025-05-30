@@ -16,7 +16,7 @@ class RobotLocator(rosys.persistence.Persistable):
     ODOMETRY_ANGULAR_WEIGHT = 0.1
 
     def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None) -> None:
-        """ Robot Locator based on an extended Kalman filter."""
+        """Robot Locator based on an extended Kalman filter."""
         super().__init__()
         self.log = logging.getLogger('field_friend.robot_locator')
 
@@ -84,7 +84,7 @@ class RobotLocator(rosys.persistence.Persistable):
                 self._previous_imu_measurement = self._imu.last_measurement
 
             if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
-                # The robot is not moving, so we don't need to update the state
+                # NOTE: The robot is not moving, so we don't need to update the state
                 continue
 
             v = velocity.linear
@@ -217,6 +217,7 @@ class RobotLocator(rosys.persistence.Persistable):
                 ui.label().bind_text_from(self, '_Sxx', lambda m: f'± {m[1, 1]:.3f}m')
                 ui.label().bind_text_from(self, 'pose', lambda p: f'θ: {p.yaw_deg:.2f}°')
                 ui.label().bind_text_from(self, '_Sxx', lambda m: f'± {np.rad2deg(m[2, 2]):.2f}°')
+
             with ui.grid(columns=2).classes('w-full'):
                 ui.checkbox('Ignore GNSS', value=self._ignore_gnss).props('dense color=red').classes('col-span-2') \
                     .bind_value_to(self, '_ignore_gnss').tooltip('Ignore GNSS measurements. When deactivated, reset the filter for better positioning.')

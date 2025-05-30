@@ -1,7 +1,7 @@
 from .axis import Axis, AxisSimulation
 from .axis_d1 import AxisD1
 from .chain_axis import ChainAxis
-from .double_wheels import DoubleWheelsHardware
+from .double_wheels import DoubleWheelsHardware, WheelsSimulationWithAcceleration
 from .field_friend import FieldFriend
 from .field_friend_hardware import FieldFriendHardware
 from .field_friend_simulation import FieldFriendSimulation
@@ -32,6 +32,7 @@ __all__ = [
     'Tornado',
     'TornadoHardware',
     'TornadoSimulation',
+    'WheelsSimulationWithAcceleration',
     'YAxisCanOpenHardware',
     'ZAxisCanOpenHardware',
 ]

@@ -50,7 +50,7 @@ class FollowCropsNavigation(StraightLineNavigation):
         self.target = self.robot_locator.pose.transform(rosys.geometry.Point(x=distance, y=0))
 
     @track
-    async def _drive(self, distance: float) -> None:
+    async def _drive(self) -> None:
         row = self.plant_provider.get_relevant_crops(point=self.robot_locator.pose.point_3d(), max_distance=1.0)
         if len(row) >= 3:
             points_array = np.array([(p.position.x, p.position.y) for p in row])
@@ -64,10 +64,10 @@ class FollowCropsNavigation(StraightLineNavigation):
             fitted_line = rosys.geometry.Line(a=m, b=-1, c=c)
             closest_point = fitted_line.foot_point(self.robot_locator.pose.point)
             target = rosys.geometry.Pose(x=closest_point.x, y=closest_point.y, yaw=yaw)
-            await self._drive_towards_target(distance, target)
+            await self.drive_towards_target(target)
         else:
             self.update_target()
-            await super()._drive(distance)
+            await super()._drive()
 
     def combine_angles(self, angle1: float, influence: float, angle2: float) -> float:
         weight1 = influence

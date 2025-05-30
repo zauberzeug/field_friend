@@ -14,6 +14,7 @@ from ..config import (
 )
 from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
+from .double_wheels import WheelsSimulationWithAcceleration
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
@@ -24,7 +25,7 @@ from .tornado import TornadoSimulation
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
-    def __init__(self, config: FieldFriendConfiguration) -> None:
+    def __init__(self, config: FieldFriendConfiguration, *, use_acceleration: bool = False) -> None:
         self.MOTOR_GEAR_RATIO = config.measurements.motor_gear_ratio
         self.TOOTH_COUNT = config.measurements.tooth_count
         self.PITCH = config.measurements.pitch
@@ -46,7 +47,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             self.CHOP_RADIUS = config.measurements.chop_radius
         else:
             logging.warning('Unknown FieldFriend tool: %s', tool)
-        wheels = rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
+        wheels = WheelsSimulationWithAcceleration(self.WHEEL_DISTANCE) if use_acceleration else rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
 
         y_axis: AxisSimulation | ChainAxisSimulation | None
         if not config.y_axis:

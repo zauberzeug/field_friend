@@ -1,4 +1,3 @@
-
 import logging
 from collections.abc import AsyncGenerator, Generator
 
@@ -10,6 +9,7 @@ from rosys.persistence import Persistable
 from rosys.testing import forward, helpers
 
 from field_friend.automations import Field, Row
+from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.system import System
 
@@ -30,7 +30,7 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
-    helpers.odometer = s.odometer
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -49,7 +49,26 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
-    helpers.odometer = s.odometer
+    helpers.odometer = s.robot_locator
+    helpers.driver = s.driver
+    helpers.automator = s.automator
+    await forward(3)
+    assert s.gnss.is_connected, 'device should be created'
+    assert s.gnss.last_measurement is not None
+    assert GeoReference.current is not None
+    assert s.gnss.last_measurement.point.distance(GeoReference.current.origin) == pytest.approx(0, abs=1e-8)
+    yield s
+
+@pytest.fixture
+async def system_with_acceleration(rosys_integration) -> AsyncGenerator[System, None]:
+    # TODO: solve in RoSys
+    Persistable.instances.clear()
+    s = System('u4', restore_persistence=False, use_acceleration=True)
+    assert isinstance(s.field_friend.wheels, WheelsSimulationWithAcceleration)
+    assert isinstance(s.detector, rosys.vision.DetectorSimulation)
+    s.detector.detection_delay = 0.1
+    GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)

@@ -16,6 +16,7 @@ from ...hardware import (
     YAxisCanOpenHardware,
     ZAxisCanOpenHardware,
 )
+from .status_bulb import StatusBulb as status_bulb
 
 
 def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
@@ -85,6 +86,19 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                         field_friend.y_axis.move_to(field_friend.y_axis.max_position)))
                     if isinstance(field_friend.y_axis, YAxisCanOpenHardware):
                         ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.y_axis.reset_fault()))
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.y_axis, 'is_referenced')
+                        ui.label('Referenced')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.y_axis, 'alarm')
+                        ui.label('Alarm')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.y_axis, 'end_l')
+                        ui.label('Left End Switch')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.y_axis, 'end_r')
+                        ui.label('Right End Switch')
+
             elif isinstance(field_friend.y_axis, ChainAxis):
                 with ui.column():
                     ui.label('Chain-Axis').classes('font-bold')
@@ -104,10 +118,21 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                     ui.button('Reference', on_click=lambda: automator.start(field_friend.z_axis.try_reference()))
                     ui.button('Return to reference', on_click=lambda: automator.start(
                         field_friend.z_axis.return_to_reference()))
-                    ui.button('Move to min', on_click=lambda: automator.start(
-                        field_friend.z_axis.move_to(field_friend.z_axis.min_position)))
                     if isinstance(field_friend.z_axis, ZAxisCanOpenHardware):
                         ui.button('Reset Fault', on_click=lambda: automator.start(field_friend.z_axis.reset_fault()))
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'is_referenced')
+                        ui.label('Referenced')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'alarm')
+                        ui.label('Alarm')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'end_t')
+                        ui.label('Top End Switch')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'end_b')
+                        ui.label('Bottom End Switch')
+
             elif isinstance(field_friend.z_axis, Tornado):
                 with ui.column():
                     ui.label('Z-Axis').classes('font-bold')
@@ -119,6 +144,27 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                         field_friend.z_axis.return_to_reference()))
                     ui.button('down until reference', on_click=lambda: automator.start(
                         field_friend.z_axis.move_down_until_reference()))
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'is_referenced')
+                        ui.label('Referenced')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'end_top')
+                        ui.label('End Top Switch')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'end_bottom')
+                        ui.label('End Bottom Switch')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'ref_motor')
+                        ui.label('Ref Motor')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'ref_gear')
+                        ui.label('Ref Gear')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'ref_knife_stop')
+                        ui.label('Ref Knife Stop')
+                    with ui.row():
+                        status_bulb().bind_value_from(field_friend.z_axis, 'ref_knife_ground')
+                        ui.label('Ref Knife Ground')
 
         if field_friend.z_axis is not None and field_friend.y_axis is not None:
             with ui.column():

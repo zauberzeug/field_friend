@@ -20,8 +20,6 @@ class CalibratableUsbCameraProvider(rosys.vision.CameraProvider[CalibratableUsbC
         rosys.on_repeat(self.update_device_list, SCAN_INTERVAL)
 
     def backup_to_dict(self) -> dict[str, Any]:
-        for camera in self._cameras.values():
-            self.log.info(f'backing up camera: {camera.name}')
         return super().backup_to_dict()
 
     # TODO: same as in zedxmini_camera_provider.py, refactor!
