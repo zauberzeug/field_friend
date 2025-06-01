@@ -140,12 +140,17 @@ class System(rosys.persistence.Persistable):
         }
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
-        implement = self.implements.get(data.get('implement', None), None)
-        if implement is not None:
-            self.current_implement = implement
-        navigation = self.navigation_strategies.get(data.get('navigation', None), None)
-        if navigation is not None:
-            self.current_navigation = navigation
+        persistent_implement = data.get('implement', None)
+        if persistent_implement is not None:
+            implement = self.implements.get(persistent_implement, None)
+            if implement is not None:
+                self.current_implement = implement
+
+        persistent_navigation = data.get('navigation', None)
+        if persistent_navigation is not None:
+            navigation = self.navigation_strategies.get(persistent_navigation, None)
+            if navigation is not None:
+                self.current_navigation = navigation
 
         reference_tuple = None
         if 'gnss_reference' in data:
