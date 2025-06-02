@@ -25,7 +25,7 @@ config = FieldFriendConfiguration(
         crop=CropConfiguration(left=150, right=150, up=40, down=0),
     ),
     wheels=WheelsConfiguration(
-        is_left_reversed=False,
+        is_left_reversed=True,
         is_right_reversed=True,
         left_back_can_address=0x000,
         left_front_can_address=0x100,
