@@ -1,3 +1,5 @@
 {
-    "crop_attraction": 0.8
+    "linear_speed_limit": 0.13,
+    "length": 10.0,
+    "crop_attraction": 0.3
 }

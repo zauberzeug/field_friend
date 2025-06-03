@@ -1,11 +1,1 @@
-{
-    "minimum_weed_confidence": 0.3,
-    "minimum_crop_confidence": 0.3,
-    "autoupload": "disabled",
-    "upload_images": false,
-    "tags": [
-        "uckerbot",
-        "tornado",
-        "minze"
-    ]
-}
+{"minimum_weed_confidence": 0.3, "minimum_crop_confidence": 0.3, "autoupload": "filtered", "upload_images": true, "tags": []}
