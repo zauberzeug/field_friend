@@ -9,8 +9,6 @@ import mkdocs_gen_files
 
 nav = mkdocs_gen_files.Nav()
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 def extract_events(filepath: str) -> dict[str, str]:
     with open(filepath) as f:
@@ -26,9 +24,6 @@ def extract_events(filepath: str) -> dict[str, str]:
 
 for path in sorted(Path('.').rglob('__init__.py')):
     identifier = str(path.parent).replace('/', '.')
-
-    if 'field_friend' not in identifier:
-        continue
     if identifier in ['field_friend',]:
         continue
 
@@ -42,25 +37,19 @@ for path in sorted(Path('.').rglob('__init__.py')):
     found_something = False
     for name in getattr(module, '__all__', dir(module)):
         if name.startswith('_'):
-            logging.debug(f'skipping {identifier}.{name}: private')
-            continue
+            continue  # skip private fields
         cls = getattr(module, name)
         if isinstance(cls, ModuleType):
-            logging.debug(f'skipping {identifier}.{name}: sub-module')
-            continue
+            continue  # skip sub-modules
         if dataclasses.is_dataclass(cls):
-            logging.debug(f'skipping {identifier}.{name}: dataclass')
-            continue
+            continue  # skip dataclasses
         if not cls.__doc__:
-            logging.debug(f'skipping {identifier}.{name}: no docstring')
-            continue
-
+            continue  # skip classes without docstring
         try:
             events = extract_events(inspect.getfile(cls))
         except Exception:
-            logging.warning(f'skipping {identifier}.{name}: events')
+            logging.warning(f'skipping {identifier}.{name}')
             continue
-
         with mkdocs_gen_files.open(Path('reference', doc_path), 'a') as fd:
             print(f'::: {identifier}.{name}', file=fd)
             if events:

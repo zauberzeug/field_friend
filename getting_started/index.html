@@ -14,7 +14,7 @@
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../tutorials/tutorials/">
+        <link rel="next" href="../features/user_interface/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -293,30 +293,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Run in Simulation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#docker-setup-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      Docker Setup (recommended)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#local-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      Local Setup
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -397,11 +373,11 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../tutorials/tutorials/" class="md-nav__link ">
+            <a href="../features/user_interface/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
-    Tutorials
+    Features
   </span>
   
 
@@ -417,7 +393,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
-            Tutorials
+            Features
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -428,11 +404,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/docker_management/" class="md-nav__link">
+      <a href="../features/user_interface/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    docker.sh
+    User Interface
   </span>
   
 
@@ -449,11 +425,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../tutorials/field_creation/" class="md-nav__link">
+      <a href="../features/field_planner/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    field creation
+    Field Planner
   </span>
   
 
@@ -512,53 +488,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/field_friend/api/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    api
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../reference/field_friend/hardware/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     hardware
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reference/field_friend/interface/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    interface
   </span>
   
 
@@ -648,30 +582,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Run in Simulation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#docker-setup-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      Docker Setup (recommended)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#local-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      Local Setup
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -747,40 +657,14 @@
 <h2 id="run-in-simulation">Run in Simulation<a class="headerlink" href="#run-in-simulation" title="Permanent link">&para;</a></h2>
 <p>We suggest you begin with simulating the Field Friend on your local development machine.
 The software is meant to run on Linux and Unix systems so if you are using Windows, consider running in a Docker container or virtual machine.</p>
-<p>The Field Friend requires either Linux or Mac system with Python 3.11 to run. <br>Windows is currently not supported, but may work by using Docker or a virtual machine.</p>
-<ol>
-<li>
-<p>Clone the repository <br> <code>git clone git@github.com:zauberzeug/field_friend.git &amp;&amp; cd field_friend</code></p>
-</li>
-<li>
-<p>Create a file with your environment variables and replace <code>U4</code> with the name of your robot <br> <code>echo "ROBOT_ID=U4" &gt; .env</code></p>
-</li>
-</ol>
-<p>Now you have two options, either you run the code in Docker, like it does on the robot, or you setup your local python environment to run it.
-Should you face any problems during the setup, please check the <a href="../troubleshooting/">troubleshooting page</a> or submit a <a href="https://github.com/zauberzeug/field_friend/issues">GitHub issue</a>.</p>
-<h3 id="docker-setup-recommended">Docker Setup (recommended)<a class="headerlink" href="#docker-setup-recommended" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<p>Install <a href="https://docs.docker.com/get-started/get-docker/">Docker</a></p>
-</li>
-<li>
-<p>Build and start the container. <br> <code>./docker.sh U</code> <br> Our <code>docker.sh</code> script will automatically use the correct settings for your system.</p>
-</li>
-</ol>
-<h3 id="local-setup">Local Setup<a class="headerlink" href="#local-setup" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<p>Optional: Setup a virtual environment with <a href="https://docs.python.org/3/library/venv.html">venv</a> <br> <code>python3 -m venv .venv &amp;&amp; source .venv/bin/activate</code></p>
-</li>
-<li>
-<p>Install the python requirements <br> <code>python3 -m pip install -r requirements-dev.txt</code></p>
-</li>
-<li>
-<p>Now you can run the program <br> <code>python3 main.py</code></p>
-</li>
-</ol>
-<p>In both cases, this will open the user interface of a simulated robot in your browser (if not browse to <a href="http://localhost/">http://localhost/</a>).
-The simulation will automatically hot reload upon code changes.
+<p>Just execute the following commands:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:zauberzeug/field_friend.git
+<span class="nb">cd</span><span class="w"> </span>field_friend
+python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+./main.py
+</code></pre></div>
+<p>This will open the user interface of a simulated robot in your browser.
+If you change some code, the simulation will automatically reload.
 The Field Friend code is based on <a href="https://rosys.io">RoSys</a> which itself uses <a href="https://nicegui.io">NiceGUI</a>,
 both having a very gentle learning curve and are designed to boost your rapid development and testing.</p>
 <h2 id="run-on-real-hardware">Run on Real Hardware<a class="headerlink" href="#run-on-real-hardware" title="Permanent link">&para;</a></h2>
@@ -788,21 +672,19 @@ both having a very gentle learning curve and are designed to boost your rapid de
 Contact <a href="mailto:sales@zauberzeug.com">sales@zauberzeug.com</a> if you are interested in purchasing this robot.</p>
 <h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
 <ol>
-<li>Ensure you can login via ssh without providing a password (via <code>ssh-copy-id</code> command)</li>
-<li>Ensure you have <a href="https://github.com/zauberzeug/livesync">LiveSync</a> installed with <br> <code>python3 -m pip install livesync</code></li>
-<li>Ensure the latest version of the docker image is installed on the Field Friend by syncing the code as described below and then running <br> <code>./docker.sh U</code></li>
-<li>Optional: ensure the correct docker containers are loaded on startup by running <br> <code>./docker.sh stopall &amp;&amp; ./docker.sh U &amp;&amp; ./docker.sh install</code>
-   <!-- TODO --></li>
+<li>ensure you can login via ssh without providing a password (via <code>ssh-copy-id</code> command)</li>
+<li>ensure you have <a href="https://github.com/zauberzeug/livesync">LiveSync</a> installed with <br> <code>python3 -m pip install livesync</code></li>
+<li>ensure the latest version of the docker image is installed on the Field Friend by syncing the code as described below and then running <br> <code>./docker.sh uppull</code></li>
+<li>Optional: ensure the correct docker containers are loaded on startup by running <br> <code>./docker.sh stopall &amp;&amp; ./docker.sh uppull &amp;&amp; ./docker.sh install</code></li>
+<li>Optional: update the <a href="https://lizard.dev">Lizard</a> microcontroller firmware on your Robot Brain by accessing the Field Friend web interface and navigating to the "Developer" options</li>
 </ol>
-<!-- 5. Optional: update the [Lizard](https://lizard.dev) microcontroller firmware on your Robot Brain by accessing the Field Friend web interface and navigating to the "Developer" options -->
-
 <h3 id="deploy-and-change-code">Deploy and Change Code<a class="headerlink" href="#deploy-and-change-code" title="Permanent link">&para;</a></h3>
 <ol>
-<li>Go to your local <code>field_friend</code> folder and start the <a href="https://github.com/zauberzeug/livesync">LiveSync</a> script: <br>
+<li>go to your local <code>field_friend</code> folder and start the <a href="https://github.com/zauberzeug/livesync">LiveSync</a> script: <br>
    <code>./sync.py &lt;ssh-host-name-of-field-friend&gt;</code></li>
-<li>This will deploy your local code to the Field Friend</li>
-<li>As long as <a href="https://github.com/zauberzeug/livesync">LiveSync</a> is active, all code change are automatically pushed to the machine</li>
-<li>Any code changes will automatically trigger a hot reload on the Field Friend.</li>
+<li>this will deploy your local code to the Field Friend</li>
+<li>as long as <a href="https://github.com/zauberzeug/livesync">LiveSync</a> is active, all code change are automatically pushed to the machine</li>
+<li>any code changes will automatically trigger a reload on the Field Friend</li>
 </ol>
 <h3 id="update-rosys-and-nicegui">Update RoSys and NiceGUI<a class="headerlink" href="#update-rosys-and-nicegui" title="Permanent link">&para;</a></h3>
 <p>To utilize personal versions of RoSys and NiceGUI instead of the default ones provided in the docker image,
