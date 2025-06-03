@@ -39,6 +39,7 @@ def startup() -> None:
     # API Endpoints
     api.Online()  # get /api/online
     api.Status(system)  # get /api/status
+    api.Position(system)  # get /api/position
     api.Fields(system)  # get,post /api/fields
     api.Automation(system)  # get,post /api/automation/
 
