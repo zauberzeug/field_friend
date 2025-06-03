@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
+from rosys.analysis import track
+from rosys.geometry import Point
 
 from ...hardware import Tornado
 from .weeding_implement import ImplementException, WeedingImplement
@@ -18,7 +20,7 @@ class WeedingScrew(WeedingImplement):
     def __init__(self, system: System) -> None:
         super().__init__('Weed Screw', system)
         self.relevant_weeds = system.plant_locator.weed_category_names
-        self.log.info(f'Using relevant weeds: {self.relevant_weeds}')
+        self.log.debug('Using relevant weeds: %s', self.relevant_weeds)
         self.weed_screw_depth: float = 0.13
         self.max_crop_distance: float = 0.08
 
@@ -43,17 +45,17 @@ class WeedingScrew(WeedingImplement):
         except Exception as e:
             raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
 
-    async def get_stretch(self, max_distance: float) -> float:
-        await super().get_stretch(max_distance)
+    @track
+    async def get_move_target(self) -> Point | None:  # pylint: disable=unused-argument
+        """Return the target position to drive to."""
         super()._has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
                           if self.system.field_friend.can_reach(position.projection())}
         if not weeds_in_range:
             self.log.debug('No weeds in range')
-            return self.WORKING_DISTANCE
+            return None
         self.log.debug(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
         for next_weed_id, next_weed_position in weeds_in_range.items():
-            # next_weed_position.x += 0.01  # NOTE somehow this helps to mitigate an offset we experienced in the tests
             weed_world_position = self.system.robot_locator.pose.transform3d(next_weed_position)
             crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
             if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
@@ -62,18 +64,14 @@ class WeedingScrew(WeedingImplement):
             if any(p.distance(weed_world_position) < self.system.field_friend.DRILL_RADIUS for p in self.last_punches):
                 self.log.debug('Skipping weed because it was already punched')
                 continue
-            stretch = next_weed_position.x - self.system.field_friend.WORK_X
-            if stretch < - self.system.field_friend.DRILL_RADIUS:
+            relative_x = next_weed_position.x - self.system.field_friend.WORK_X
+            if relative_x < - self.system.field_friend.DRILL_RADIUS:
                 self.log.debug(f'Skipping weed {next_weed_id} because it is behind the robot')
                 continue
-            stretch = max(stretch, 0)
-            self.log.debug(f'Targeting weed {next_weed_id} which is {stretch} away at world: '
-                           f'{weed_world_position}, local: {next_weed_position}')
-            if stretch < max_distance:
-                self.next_punch_y_position = next_weed_position.y
-                return stretch
-            break
-        return self.WORKING_DISTANCE
+            self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s', next_weed_id, relative_x, weed_world_position, next_weed_position)
+            self.next_punch_y_position = next_weed_position.y
+            return weed_world_position.projection()
+        return None
 
     def settings_ui(self):
         super().settings_ui()

@@ -26,7 +26,6 @@ from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
-    FollowCropsNavigation,
     Navigation,
     StraightLineNavigation,
 )
@@ -43,7 +42,7 @@ icecream.install()
 
 class System(rosys.persistence.Persistable):
 
-    def __init__(self, robot_id: str, *, restore_persistence: bool = True) -> None:
+    def __init__(self, robot_id: str, *, restore_persistence: bool = True, use_acceleration: bool = True) -> None:
         super().__init__()
         self.robot_id = robot_id
         assert self.robot_id != 'unknown'
@@ -75,7 +74,7 @@ class System(rosys.persistence.Persistable):
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
         else:
-            self.field_friend = FieldFriendSimulation(self.config)
+            self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = self.setup_gnss(self.field_friend.wheels)
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu).persistent(restore=self.restore_persistence)
@@ -197,13 +196,14 @@ class System(rosys.persistence.Persistable):
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
         self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.2
-        self.driver.parameters.can_drive_backwards = True
+        self.driver.parameters.angular_speed_limit = 0.3
+        self.driver.parameters.can_drive_backwards = False
         self.driver.parameters.minimum_turning_radius = 0.01
-        self.driver.parameters.hook_offset = 0.45
+        self.driver.parameters.hook_offset = 0.20
         self.driver.parameters.carrot_distance = 0.15
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.driver.parameters.hook_bending_factor = 0.25
+        self.driver.parameters.minimum_drive_distance = 0.005
 
     def setup_shape(self) -> None:
         width = 0.64
@@ -245,12 +245,10 @@ class System(rosys.persistence.Persistable):
     def setup_navigations(self) -> None:
         first_implement = next(iter(self.implements.values()))
         self.straight_line_navigation = StraightLineNavigation(self, first_implement).persistent(restore=self.restore_persistence)
-        self.follow_crops_navigation = FollowCropsNavigation(self, first_implement).persistent(restore=self.restore_persistence)
         self.field_navigation = FieldNavigation(self, first_implement).persistent(restore=self.restore_persistence) if self.gnss is not None else None
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent(restore=self.restore_persistence) \
             if isinstance(self.field_friend.y_axis, AxisD1) else None
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
-                                                          self.follow_crops_navigation,
                                                           self.field_navigation,
                                                           self.crossglide_demo_navigation,
                                                           ] if n is not None}
@@ -295,7 +293,9 @@ class System(rosys.persistence.Persistable):
         if self.config.gnss is None:
             return None
         if self.is_real:
-            return GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
+            gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
+            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.1
+            return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
         return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
 

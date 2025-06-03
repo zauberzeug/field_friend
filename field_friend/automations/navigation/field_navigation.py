@@ -57,6 +57,13 @@ class FieldNavigation(StraightLineNavigation):
         self.rows_to_work_on: list[Row] = []
 
     @property
+    def target_heading(self) -> float:
+        assert self.field is not None
+        assert self.start_point is not None
+        assert self.end_point is not None
+        return self.start_point.direction(self.end_point)
+
+    @property
     def current_row(self) -> Row | None:
         assert self.field
         if len(self.rows_to_work_on) == 0:
@@ -92,9 +99,8 @@ class FieldNavigation(StraightLineNavigation):
             return False
         self._state = State.APPROACH_START_ROW
         self.plant_provider.clear()
+        self.automation_watcher.gnss_watch_active = True
         self.automation_watcher.start_field_watch(self.field.outline)
-        self.log.info(f'Activating {self.implement.name}...')
-        await self.implement.activate()
         return True
 
     def _should_finish(self) -> bool:
@@ -102,6 +108,7 @@ class FieldNavigation(StraightLineNavigation):
 
     async def finish(self) -> None:
         await super().finish()
+        self.automation_watcher.gnss_watch_active = False
         self.automation_watcher.stop_field_watch()
         await self.implement.deactivate()
 
@@ -154,18 +161,20 @@ class FieldNavigation(StraightLineNavigation):
         self.target = self.end_point
 
     @track
-    async def _drive(self, distance: float) -> None:
+    async def _drive(self) -> None:
         assert self.field is not None
-        if self._state == State.APPROACH_START_ROW:
-            self._state = await self._run_approach_start_row()
-        elif self._state == State.CHANGE_ROW:
-            self._state = await self._run_change_row()
-        elif self._state == State.FOLLOW_ROW:
-            self._state = await self._run_follow_row(distance)
-        elif self._state == State.ROW_COMPLETED:
-            self._state = await self._run_row_completed()
-        elif self._state == State.WAITING_FOR_CONFIRMATION:
-            self._state = await self._run_waiting_for_confirmation()
+        if self._state == State.FOLLOW_ROW:
+            self._state = await self._run_follow_row()
+            return
+        with self.implement.blocked():
+            if self._state == State.APPROACH_START_ROW:
+                self._state = await self._run_approach_start_row()
+            elif self._state == State.CHANGE_ROW:
+                self._state = await self._run_change_row()
+            elif self._state == State.ROW_COMPLETED:
+                self._state = await self._run_row_completed()
+            elif self._state == State.WAITING_FOR_CONFIRMATION:
+                self._state = await self._run_waiting_for_confirmation()
 
     @track
     async def _run_approach_start_row(self) -> State:
@@ -198,7 +207,7 @@ class FieldNavigation(StraightLineNavigation):
         assert self.start_point is not None
         target_yaw = self.robot_locator.pose.direction(self.start_point)
         await self.turn_to_yaw(target_yaw)
-        await self.driver.drive_to(self.start_point, backward=False)
+        await self.drive_towards_target(rosys.geometry.Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw), target_heading=target_yaw)
         assert self.end_point is not None
         row_yaw = self.start_point.direction(self.end_point)
         await self.turn_to_yaw(row_yaw)
@@ -212,7 +221,7 @@ class FieldNavigation(StraightLineNavigation):
 
 
     @track
-    async def _run_follow_row(self, distance: float) -> State:
+    async def _run_follow_row(self) -> State:
         assert self.end_point is not None
         assert self.start_point is not None
         end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
@@ -228,7 +237,7 @@ class FieldNavigation(StraightLineNavigation):
         if not self.implement.is_active:
             await self.implement.activate()
         self.update_target()
-        await super()._drive(distance)
+        await self.drive_towards_target(end_pose)
         return State.FOLLOW_ROW
 
     @track
@@ -343,6 +352,8 @@ class FieldNavigation(StraightLineNavigation):
         if self.start_point is not None and self.end_point is not None:
             length = self.start_point.distance(self.end_point)
             crop_count = length / crop_distance
+            assert self.current_row is not None
+            crop = self.current_row.crop or 'maize'
             for i in range(int(crop_count)):
                 p = self.start_point.interpolate(self.end_point, (crop_distance * (i+1)) / length)
                 if i == 10:
@@ -350,7 +361,7 @@ class FieldNavigation(StraightLineNavigation):
                 else:
                     p.y += randint(-5, 5) * 0.01
                 p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
-                plant = rosys.vision.SimulatedObject(category_name='maize', position=p3d)
+                plant = rosys.vision.SimulatedObject(category_name=crop, position=p3d)
                 self.detector.simulated_objects.append(plant)
 
                 for _ in range(1, 7):
