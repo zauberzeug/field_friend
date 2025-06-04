@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import gc
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -114,6 +115,7 @@ class Navigation(rosys.persistence.Persistable):
     async def finish(self) -> None:
         """Executed after the navigation is done"""
         self.log.info('Navigation finished')
+        gc.collect()
 
     @abc.abstractmethod
     async def _drive(self) -> None:
