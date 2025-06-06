@@ -1,3 +1,4 @@
+import gc
 import logging
 import os
 from typing import Any
@@ -127,6 +128,8 @@ class System(rosys.persistence.Persistable):
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             app_controls(self.field_friend.robot_brain, self.automator, self.field_friend)
             rosys.on_repeat(self.log_status, 60 * 5)
+        rosys.on_repeat(self._garbage_collection, 60*5)
+        rosys.config.garbage_collection_mbyte_limit = 0
 
     def restart(self) -> None:
         os.utime('main.py')
@@ -327,3 +330,8 @@ class System(rosys.persistence.Persistable):
 
         bms_logger = logging.getLogger('field_friend.bms')
         bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
+
+    def _garbage_collection(self):
+        if self.automator.is_running:
+            return
+        gc.collect()
