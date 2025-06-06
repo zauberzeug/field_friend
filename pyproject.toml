@@ -7,11 +7,11 @@ name = "field_friend"
 version = "0.9.0-dev"
 description = "Zauberzeug Field Friend with RoSys"
 authors = [{ name="Zauberzeug", email="info@zauberzeug.com" }]
-requires-python = ">=3.11, <3.12"
+requires-python = ">=3.12, <3.13"
 readme = "README.md"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 install_types = true
 check_untyped_defs = true
 
@@ -50,7 +50,7 @@ disable = [
 [tool.ruff]
 line-length = 120
 indent-width = 4
-target-version = "py311"
+target-version = "py312"
 exclude = ["odrive/*"]
 
 [tool.ruff.lint]
