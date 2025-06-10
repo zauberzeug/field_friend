@@ -4,33 +4,73 @@
             "id": "b8:a4:4f:a9:43:1f-1",
             "name": "b8:a4:4f:a9:43:1f-1",
             "connect_after_init": false,
-            "streaming": true,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
             "username": "root",
-            "password": "zauberzg!"
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
         },
         "b8:a4:4f:a9:43:1f-2": {
             "id": "b8:a4:4f:a9:43:1f-2",
             "name": "b8:a4:4f:a9:43:1f-2",
             "connect_after_init": false,
-            "streaming": true,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
             "username": "root",
-            "password": "zauberzg!"
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
         },
         "b8:a4:4f:a9:43:1f-3": {
             "id": "b8:a4:4f:a9:43:1f-3",
             "name": "b8:a4:4f:a9:43:1f-3",
             "connect_after_init": false,
-            "streaming": true,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
             "username": "root",
-            "password": "zauberzg!"
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
         },
         "b8:a4:4f:a9:43:1f-4": {
             "id": "b8:a4:4f:a9:43:1f-4",
             "name": "b8:a4:4f:a9:43:1f-4",
             "connect_after_init": false,
-            "streaming": true,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
             "username": "root",
-            "password": "zauberzg!"
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
         }
     }
 }
