@@ -1,3 +1,4 @@
+import gc
 from enum import Enum, auto
 from random import randint
 from typing import TYPE_CHECKING, Any
@@ -219,7 +220,6 @@ class FieldNavigation(StraightLineNavigation):
         self.allowed_to_turn = False
         return State.FOLLOW_ROW
 
-
     @track
     async def _run_follow_row(self) -> State:
         assert self.end_point is not None
@@ -235,6 +235,7 @@ class FieldNavigation(StraightLineNavigation):
             await self.driver.wheels.stop()
             return State.WAITING_FOR_CONFIRMATION
         if not self.implement.is_active:
+            gc.collect()
             await self.implement.activate()
         self.update_target()
         await self.drive_towards_target(end_pose)
