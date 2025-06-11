@@ -15,18 +15,18 @@ if TYPE_CHECKING:
 
 
 class Tornado(WeedingImplement):
-    TORNADO_ANGLE = 30.0
-    DRILL_WITH_OPEN_TORNADO = False
     DRILL_BETWEEN_CROPS = False
+    DRILL_WITH_OPEN_TORNADO = False
     SKIP_IF_NO_WEEDS = False
+    TORNADO_ANGLE = 30.0
 
     def __init__(self, system: System) -> None:
         super().__init__('Tornado', system)
         self.field_friend = system.field_friend
-        self.tornado_angle: float = self.TORNADO_ANGLE
-        self.drill_with_open_tornado: bool = self.DRILL_WITH_OPEN_TORNADO
         self.drill_between_crops: bool = self.DRILL_BETWEEN_CROPS
+        self.drill_with_open_tornado: bool = self.DRILL_WITH_OPEN_TORNADO
         self.skip_if_no_weeds: bool = self.SKIP_IF_NO_WEEDS
+        self.tornado_angle: float = self.TORNADO_ANGLE
 
     async def start_workflow(self) -> None:
         await super().start_workflow()
@@ -106,16 +106,16 @@ class Tornado(WeedingImplement):
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
-            'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
+            'drill_with_open_tornado': self.drill_with_open_tornado,
             'skip_if_no_weeds': self.skip_if_no_weeds,
             'tornado_angle': self.tornado_angle,
         }
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
-        self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.DRILL_WITH_OPEN_TORNADO)
         self.drill_between_crops = data.get('drill_between_crops', self.DRILL_BETWEEN_CROPS)
+        self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.DRILL_WITH_OPEN_TORNADO)
         self.skip_if_no_weeds = data.get('skip_if_no_weeds', self.SKIP_IF_NO_WEEDS)
         self.tornado_angle = data.get('tornado_angle', self.TORNADO_ANGLE)
 
