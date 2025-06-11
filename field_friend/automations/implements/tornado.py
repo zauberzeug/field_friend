@@ -124,18 +124,32 @@ class Tornado(WeedingImplement):
 
     def settings_ui(self):
         super().settings_ui()
-        ui.number('Tornado angle', format='%.0f', step=1, min=0, max=180, on_change=self.request_backup) \
-            .props('dense outlined suffix=°') \
-            .classes('w-24') \
-            .bind_value(self, 'tornado_angle') \
-            .tooltip(f'Set the angle for the tornado drill (default: {self.TORNADO_ANGLE}°)')
+        with ui.card().props('flat bordered').classes('w-full'):
+            ui.label('Tornado Angle')
+            with ui.grid(columns=2).classes('w-full gap-0'):
+                ui.label('Knife angle:')
+                angle_label = ui.label()
+                ui.label('Inner diameter:')
+                inner_label = ui.label()
+                ui.label('Outer diameter:')
+                outer_label = ui.label()
+
+            def get_angle_label() -> None:
+                angle = self.tornado_angle
+                inner_diameter, outer_diameter = self.field_friend.tornado_diameters(angle)
+                angle_label.set_text(f'{angle}°')
+                inner_label.set_text(f'{inner_diameter*100:.1f} cm')
+                outer_label.set_text(f'{outer_diameter*100:.1f} cm')
+
+            ui.slider(min=0, max=180, step=1, on_change=get_angle_label) \
+                .bind_value(self, 'tornado_angle', forward=lambda v: 180-v, backward=lambda v: abs(v-180)) \
+                .tooltip(f'Set the angle for the tornado drill. Moving to the left will decrease the diameter and moving to the right will increase it. (default: {self.TORNADO_ANGLE}°)')
+
         ui.number('Drill depth', format='%.2f', step=0.01, on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'drill_depth') \
-            .tooltip(f'Set the depth for the tornado drill. 0 is at ground level and positive values are below ground level (default: {self.DRILL_DEPTH}m)')
-        ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
-                                  f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
+            .tooltip(f'Set the depth for the tornado drill. 0 is at ground level and positive values are below ground level (default: {self.DRILL_DEPTH:.2f}m)')
         ui.checkbox('Skip if no weeds') \
             .bind_value(self, 'skip_if_no_weeds') \
             .tooltip(f'Set the weeding automation to skip if no weeds are found (default: {self.SKIP_IF_NO_WEEDS})')
