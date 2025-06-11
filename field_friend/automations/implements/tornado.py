@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class Tornado(WeedingImplement):
     DRILL_BETWEEN_CROPS = False
+    DRILL_DEPTH = 0.0
     DRILL_WITH_OPEN_TORNADO = False
     SKIP_IF_NO_WEEDS = False
     TORNADO_ANGLE = 30.0
@@ -24,6 +25,7 @@ class Tornado(WeedingImplement):
         super().__init__('Tornado', system)
         self.field_friend = system.field_friend
         self.drill_between_crops: bool = self.DRILL_BETWEEN_CROPS
+        self.drill_depth: float = self.DRILL_DEPTH
         self.drill_with_open_tornado: bool = self.DRILL_WITH_OPEN_TORNADO
         self.skip_if_no_weeds: bool = self.SKIP_IF_NO_WEEDS
         self.tornado_angle: float = self.TORNADO_ANGLE
@@ -39,7 +41,7 @@ class Tornado(WeedingImplement):
             open_drill = False
             if self.drill_with_open_tornado:
                 open_drill = True
-            await self.system.puncher.punch(y=self.next_punch_y_position, angle=self.tornado_angle, with_open_tornado=open_drill)
+            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth, angle=self.tornado_angle, with_open_tornado=open_drill)
             # TODO remove weeds from plant_provider
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
                 # remove the simulated weeds
@@ -106,6 +108,7 @@ class Tornado(WeedingImplement):
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
             'drill_between_crops': self.drill_between_crops,
+            'drill_depth': self.drill_depth,
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'skip_if_no_weeds': self.skip_if_no_weeds,
             'tornado_angle': self.tornado_angle,
@@ -114,6 +117,7 @@ class Tornado(WeedingImplement):
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
         self.drill_between_crops = data.get('drill_between_crops', self.DRILL_BETWEEN_CROPS)
+        self.drill_depth = data.get('drill_depth', self.DRILL_DEPTH)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.DRILL_WITH_OPEN_TORNADO)
         self.skip_if_no_weeds = data.get('skip_if_no_weeds', self.SKIP_IF_NO_WEEDS)
         self.tornado_angle = data.get('tornado_angle', self.TORNADO_ANGLE)
@@ -125,6 +129,11 @@ class Tornado(WeedingImplement):
             .classes('w-24') \
             .bind_value(self, 'tornado_angle') \
             .tooltip(f'Set the angle for the tornado drill (default: {self.TORNADO_ANGLE}°)')
+        ui.number('Drill depth', format='%.2f', step=0.01, on_change=self.request_backup) \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'drill_depth') \
+            .tooltip(f'Set the depth for the tornado drill. 0 is at ground level and positive values are below ground level (default: {self.DRILL_DEPTH}m)')
         ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
                                   f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
         ui.checkbox('Skip if no weeds') \
