@@ -24,6 +24,7 @@ def startup() -> None:
         logging.warning(msg)
         ui.label(msg).classes('text-xl')
         return
+    robot_id = robot_id.lower()
     logger.info('Starting Field Friend for robot %s', robot_id)
     system = System(robot_id).persistent()
 
