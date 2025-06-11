@@ -6,7 +6,7 @@ import rosys
 import rosys.helpers
 from nicegui import ui
 from rosys.geometry import Pose, Pose3d, Rotation, Velocity
-from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels
+from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels, WheelsSimulation
 
 
 class RobotLocator(rosys.persistence.Persistable):
@@ -189,6 +189,8 @@ class RobotLocator(rosys.persistence.Persistable):
         reset_pose = Pose(x=0.0, y=0.0, yaw=0.0)
         r_xy = 0.0
         r_theta = 0.0
+        if isinstance(self._wheels, WheelsSimulation):
+            self._wheels.pose = Pose(time=rosys.time())
         if self._gnss is not None and not self._ignore_gnss:
             try:
                 await self._gnss.NEW_MEASUREMENT.emitted(gnss_timeout)
