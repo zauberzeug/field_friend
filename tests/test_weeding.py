@@ -186,6 +186,19 @@ async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys
     assert detector.simulated_objects[0].category_name == 'sugar_beet'
 
 
+@pytest.mark.parametrize('system', ['u4'], indirect=True)
+async def test_tornado_skips_crop_if_no_weeds(system: System, detector: rosys.vision.DetectorSimulation):
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
+                                                                   position=rosys.geometry.Point3d(x=0.5, y=0.0, z=0)))
+    system.current_implement = system.implements['Tornado']
+    system.current_navigation = system.straight_line_navigation
+    system.current_implement.skip_if_no_weeds = True
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert len(system.current_implement.last_punches) == 0
+
+
 @pytest.mark.skip(reason='Tornado does not yet remove weeds between crops')
 @pytest.mark.parametrize('system', ['u4'], indirect=True)
 async def test_tornado_removes_weeds_between_crops(system: System, detector: rosys.vision.DetectorSimulation):

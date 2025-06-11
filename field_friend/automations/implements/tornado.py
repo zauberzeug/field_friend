@@ -18,6 +18,7 @@ class Tornado(WeedingImplement):
     TORNADO_ANGLE = 30.0
     DRILL_WITH_OPEN_TORNADO = False
     DRILL_BETWEEN_CROPS = False
+    SKIP_IF_NO_WEEDS = False
 
     def __init__(self, system: System) -> None:
         super().__init__('Tornado', system)
@@ -25,6 +26,7 @@ class Tornado(WeedingImplement):
         self.tornado_angle: float = self.TORNADO_ANGLE
         self.drill_with_open_tornado: bool = self.DRILL_WITH_OPEN_TORNADO
         self.drill_between_crops: bool = self.DRILL_BETWEEN_CROPS
+        self.skip_if_no_weeds: bool = self.SKIP_IF_NO_WEEDS
 
     async def start_workflow(self) -> None:
         await super().start_workflow()
@@ -69,13 +71,18 @@ class Tornado(WeedingImplement):
         closest_crop_id, closest_crop_position = next(iter(self.crops_to_handle.items()))
         closest_crop_world_position = self.system.robot_locator.pose.transform3d(closest_crop_position)
         if any(p.distance(closest_crop_world_position) < self.field_friend.DRILL_RADIUS for p in self.last_punches):
-            self.log.debug('Skipping weed because it was already punched')
+            self.log.debug('Skipping crop because it was already punched')
             return None
         if not self.system.field_friend.can_reach(closest_crop_position.projection()):
             self.log.debug('Target crop is not in the working area')
             return None
         if self._crops_in_drill_range(closest_crop_id, closest_crop_position.projection(), self.tornado_angle):
-            self.log.debug('Crops in drill range')
+            self.log.debug('Crops in punch range')
+            return None
+        tornado_outer_diameter = self.field_friend.tornado_diameters(self.tornado_angle)[1]
+        if self.skip_if_no_weeds and not any(closest_crop_position.distance(weed_position) < tornado_outer_diameter
+                                             for weed_position in self.weeds_to_handle.values()):
+            self.log.debug('Skipping crop because there are no weeds next to it.')
             return None
 
         relative_x = closest_crop_position.x - self.system.field_friend.WORK_X
@@ -101,6 +108,7 @@ class Tornado(WeedingImplement):
         return super().backup_to_dict() | {
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
+            'skip_if_no_weeds': self.skip_if_no_weeds,
             'tornado_angle': self.tornado_angle,
         }
 
@@ -108,6 +116,7 @@ class Tornado(WeedingImplement):
         super().restore_from_dict(data)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.DRILL_WITH_OPEN_TORNADO)
         self.drill_between_crops = data.get('drill_between_crops', self.DRILL_BETWEEN_CROPS)
+        self.skip_if_no_weeds = data.get('skip_if_no_weeds', self.SKIP_IF_NO_WEEDS)
         self.tornado_angle = data.get('tornado_angle', self.TORNADO_ANGLE)
 
     def settings_ui(self):
@@ -119,6 +128,9 @@ class Tornado(WeedingImplement):
             .tooltip(f'Set the angle for the tornado drill (default: {self.TORNADO_ANGLE}°)')
         ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
                                   f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
+        ui.checkbox('Skip if no weeds') \
+            .bind_value(self, 'skip_if_no_weeds') \
+            .tooltip(f'Set the weeding automation to skip if no weeds are found (default: {self.SKIP_IF_NO_WEEDS})')
         # TODO test and reactivate these options
         # ui.checkbox('Drill 2x with open tornado') \
         #     .bind_value(self, 'drill_with_open_tornado') \
