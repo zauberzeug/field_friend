@@ -205,7 +205,7 @@ class PlantLocator(EntityLocator):
             @ui.refreshable
             def chips():
                 with ui.row().classes('gap-0'):
-                    ui.chip(self.robot_name).props('outline')
+                    ui.chip(self.robot_id).props('outline')
 
                     def update_tags(tag_to_remove: str) -> None:
                         self.tags.remove(tag_to_remove)
