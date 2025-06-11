@@ -15,12 +15,16 @@ if TYPE_CHECKING:
 
 
 class Tornado(WeedingImplement):
+    TORNADO_ANGLE = 30.0
+    DRILL_WITH_OPEN_TORNADO = False
+    DRILL_BETWEEN_CROPS = False
+
     def __init__(self, system: System) -> None:
         super().__init__('Tornado', system)
-        self.tornado_angle: float = 30.0
-        self.drill_with_open_tornado: bool = False
-        self.drill_between_crops: bool = False
         self.field_friend = system.field_friend
+        self.tornado_angle: float = self.TORNADO_ANGLE
+        self.drill_with_open_tornado: bool = self.DRILL_WITH_OPEN_TORNADO
+        self.drill_between_crops: bool = self.DRILL_BETWEEN_CROPS
 
     async def start_workflow(self) -> None:
         await super().start_workflow()
@@ -102,9 +106,9 @@ class Tornado(WeedingImplement):
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
-        self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
-        self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
-        self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
+        self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.DRILL_WITH_OPEN_TORNADO)
+        self.drill_between_crops = data.get('drill_between_crops', self.DRILL_BETWEEN_CROPS)
+        self.tornado_angle = data.get('tornado_angle', self.TORNADO_ANGLE)
 
     def settings_ui(self):
         super().settings_ui()
@@ -112,7 +116,7 @@ class Tornado(WeedingImplement):
             .props('dense outlined suffix=°') \
             .classes('w-24') \
             .bind_value(self, 'tornado_angle') \
-            .tooltip('Set the angle for the tornado drill')
+            .tooltip(f'Set the angle for the tornado drill (default: {self.TORNADO_ANGLE}°)')
         ui.label().bind_text_from(self, 'tornado_angle', lambda v: f'Tornado diameters: {self.field_friend.tornado_diameters(v)[0]*100:.1f} cm '
                                   f'- {self.field_friend.tornado_diameters(v)[1]*100:.1f} cm')
         # TODO test and reactivate these options
