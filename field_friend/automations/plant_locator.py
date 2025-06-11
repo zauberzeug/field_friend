@@ -36,7 +36,7 @@ class PlantLocator(EntityLocator):
         self.detector = system.detector
         self.plant_provider = system.plant_provider
         self.robot_locator = system.robot_locator
-        self.robot_name = system.robot_id
+        self.robot_id = system.robot_id
         self.detector_info: DetectorInfo | None = None
         self.tags: list[str] = []
         self.is_paused = True
@@ -106,7 +106,7 @@ class PlantLocator(EntityLocator):
             await rosys.sleep(0.01)
             return
         assert self.detector is not None
-        await self.detector.detect(new_image, autoupload=self.autoupload, tags=[*self.tags, self.robot_name, 'autoupload'])
+        await self.detector.detect(new_image, autoupload=self.autoupload, tags=[*self.tags, self.robot_id, 'autoupload'], source=self.robot_id)
         if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
             await rosys.sleep(0.01 - (rosys.time() - t))
         if not new_image.detections:
