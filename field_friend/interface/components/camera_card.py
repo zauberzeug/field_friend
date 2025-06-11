@@ -10,14 +10,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 import rosys
 from nicegui import ui
-from nicegui.events import MouseEventArguments, ValueChangeEventArguments
+from nicegui.events import MouseEventArguments
 from rosys.geometry import Point, Point3d, Pose3d
 from rosys.vision import CalibratableCamera
 
 from ...automations.implements.tornado import Tornado as TornadoImplement
 from ...automations.implements.weeding_implement import WeedingImplement
 from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Tornado
-from ...vision import CalibratableUsbCamera
 from ...vision.zedxmini_camera import StereoCamera
 from .calibration_dialog import CalibrationDialog as calibration_dialog
 
@@ -41,6 +40,7 @@ class CameraCard:
         self.punching_enabled: bool = False
         self.shrink_factor: float = 4.0
         self.show_plants_to_handle: bool = False
+        self.show_mapping: bool = False
         self.camera: CalibratableCamera | None = None
         self.image_view: ui.interactive_image | None = None
         assert self.camera_provider is not None
@@ -74,10 +74,12 @@ class CameraCard:
                     else:
                         await self.field_friend.flashlight.turn_off()
                         rosys.notify('Flashlight turned off')
-                flashlight_button = ui.button(icon='flashlight_off', on_click=toggle_flashlight).props('flat color=grey').style(
-                    'position: absolute; left: 1px; top: 1px; z-index: 500;').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                flashlight_button = ui.button(icon='flashlight_off', on_click=toggle_flashlight) \
+                    .props('flat color=grey').style('position: absolute; left: 1px; top: 1px; z-index: 500;') \
+                    .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
 
-            with ui.button(icon='menu').props('flat color=primary').style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
+            with ui.button(icon='menu').props('flat color=primary') \
+                    .style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
                 with ui.menu():
                     with ui.menu_item():
                         with ui.row():
@@ -96,7 +98,7 @@ class CameraCard:
                                                                    backward=lambda x: not x, forward=lambda x: not x) \
                             .tooltip('Pause plant locator').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                     with ui.menu_item():
-                        self.show_mapping_checkbox = ui.checkbox('Mapping', on_change=self.show_mapping) \
+                        ui.checkbox('Mapping').bind_value(self, 'show_mapping') \
                             .tooltip('Show the mapping between camera and world coordinates')
                     with ui.menu_item():
                         ui.checkbox('Show plants to handle').bind_value_to(self, 'show_plants_to_handle') \
@@ -104,18 +106,65 @@ class CameraCard:
                     with ui.menu_item():
                         ui.button('calibrate', on_click=self.calibrate) \
                             .props('icon=straighten outline').tooltip('Calibrate camera')
-                    # TODO: ist das hier ein todo?: Add a button to save the last captured image
-                    # ui.button('Save Image', on_click=self.save_last_image).classes('m-2')
 
             events = ['mousemove', 'mouseout', 'mouseup']
-            self.image_view = ui.interactive_image(
-                '',
-                cross=True,
-                on_mouse=self.on_mouse_move,
-                events=events
-            ).classes('w-full')
+            self.image_view = ui.interactive_image('', cross=True, on_mouse=self.on_mouse_move, events=events) \
+                .classes('w-full')
             with ui.row():
                 self.debug_position = ui.label()
+
+    def on_mouse_move(self, e: MouseEventArguments):
+        if self.camera is None:
+            return
+        if not isinstance(self.camera, CalibratableCamera):
+            self.log.debug('Camera type not calibratable: %s', self.camera)
+            return
+        point2d = Point(x=e.image_x * self.shrink_factor, y=e.image_y * self.shrink_factor)
+        if self.camera.calibration is None:
+            self.debug_position.set_text(f'{point2d} no calibration')
+            return
+        point3d: Point3d | None = None
+        if isinstance(self.camera, StereoCamera):
+            # TODO: too many calls
+            # camera_point_3d: Point3d | None = self.camera.get_point(
+            #     int(point2d.x), int(point2d.y))
+            # if camera_point_3d is None:
+            #     return
+            # camera_point_3d = camera_point_3d.in_frame(self.robot_locator.pose_frame)
+            # world_point_3d = camera_point_3d.resolve()
+            # self.log.info(f'camera_point_3d: {camera_point_3d} -> world_point_3d: {world_point_3d.tuple}')
+            pass
+        else:
+            point3d = self.camera.calibration.project_from_image(point2d)
+
+        if e.type == 'mousemove' and point3d is not None:
+            point3d_in_locator_frame = point3d.relative_to(self.robot_locator.pose_frame)
+            self.debug_position.set_text(f'{point2d} -> {point3d_in_locator_frame}')
+        if e.type == 'mouseup':
+            if self.camera.calibration is None:
+                self.debug_position.set_text(f'last punch: {point2d}')
+                return
+            if point3d is not None:
+                self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
+                if self.puncher is not None and self.punching_enabled:
+                    self.log.info(f'punching {point3d}')
+                    # TODO: how to call puncher here?
+                    if isinstance(self.field_friend.z_axis, Axis):
+                        self.log.info(f'should start punching at {point3d.x:.2f}, but puncher was reworked')
+                        # self.automator.start(self.puncher.drive_to_punch(point3d.x, point3d.y, self.depth.value))
+                    elif isinstance(self.field_friend.z_axis, Tornado):
+                        self.log.info(f'should start punching at {point3d.x:.2f}, but puncher was reworked')
+                        # self.automator.start(self.puncher.drive_to_punch(point3d.x, point3d.y, angle=self.angle.value))
+        if e.type == 'mouseout':
+            self.debug_position.set_text('')
+
+    async def calibrate(self) -> None:
+        assert self.camera_provider is not None
+        assert self.camera is not None
+        result = await self.calibration_dialog.edit(self.camera)
+        if result:
+            self.show_mapping = True
+            self.camera_provider.request_backup()
 
     def update_content(self) -> None:
         assert self.camera_provider is not None
@@ -144,80 +193,25 @@ class CameraCard:
         svg = ''
         if image and image.detections:
             svg += self.detections_to_svg(image.detections)
+
+        if self.show_mapping:
+            svg += self.build_svg_for_mapping()
         svg += self.build_svg_for_plant_provider()
-        svg += self.build_svg_for_implement()
+
+        if isinstance(self.system.current_implement, WeedingImplement) and self.field_friend.y_axis is not None:
+            svg += self.build_svg_for_work_area()
+            svg += self.build_svg_for_tool_position()
+            svg += self.build_svg_for_tool_axis()
+            if self.show_plants_to_handle:
+                svg += self.build_svg_for_plants_to_handle()
         self.image_view.set_content(svg)
 
-    def on_mouse_move(self, e: MouseEventArguments):
-        if self.camera is None:
-            return
-
-        point2d = Point(x=e.image_x, y=e.image_y)
-        if self.camera.calibration is None:
-            self.debug_position.set_text(f'{point2d} no calibration')
-            return
-        point3d: Point3d | None = None
-        if isinstance(self.camera, CalibratableUsbCamera):
-            point3d = self.camera.calibration.project_from_image(point2d)
-        elif isinstance(self.camera, StereoCamera):
-            # TODO: too many calls
-            # camera_point_3d: Point3d | None = self.camera.get_point(
-            #     int(point2d.x), int(point2d.y))
-            # if camera_point_3d is None:
-            #     return
-            # camera_point_3d = camera_point_3d.in_frame(self.robot_locator.pose_frame)
-            # world_point_3d = camera_point_3d.resolve()
-            # self.log.info(f'camera_point_3d: {camera_point_3d} -> world_point_3d: {world_point_3d.tuple}')
-            pass
-
-        if e.type == 'mousemove' and point3d is not None:
-            self.debug_position.set_text(f'screen {point2d} -> local {point3d}')
-        if e.type == 'mouseup':
-            if self.camera.calibration is None:
-                self.debug_position.set_text(f'last punch: {point2d}')
-                return
-            if point3d is not None:
-                self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
-                if self.puncher is not None and self.punching_enabled:
-                    self.log.info(f'punching {point3d}')
-                    # TODO: how to call puncher here?
-                    if isinstance(self.field_friend.z_axis, Axis):
-                        self.log.info(f'should start punching at {point3d.x:.2f}, but puncher was reworked')
-                        # self.automator.start(self.puncher.drive_to_punch(point3d.x, point3d.y, self.depth.value))
-                    elif isinstance(self.field_friend.z_axis, Tornado):
-                        self.log.info(f'should start punching at {point3d.x:.2f}, but puncher was reworked')
-                        # self.automator.start(self.puncher.drive_to_punch(point3d.x, point3d.y, angle=self.angle.value))
-        if e.type == 'mouseout':
-            self.debug_position.set_text('')
-
-    async def calibrate(self) -> None:
-        assert self.camera_provider is not None
-        assert self.camera is not None
-        result = await self.calibration_dialog.edit(self.camera)
-        if result:
-            self.show_mapping_checkbox.value = True
-            self.camera_provider.request_backup()
-
-    def show_mapping(self, event: ValueChangeEventArguments) -> None:
-        if self.camera is None or self.image_view is None:
-            return
-        if not event.value:
-            self.image_view.content = ''
-            return
-        if self.camera.calibration is None:
-            rosys.notify('No calibration, calibrate camera first', 'negative')
-            return
-        world_points = np.array([[x, y, 0] for x in np.linspace(-0.3, 0.3, 15) for y in np.linspace(-0.25, 0.25, 20)])
-        image_points = self.camera.calibration.project_to_image(world_points)
-        colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
-        colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
-        self.image_view.content = ''.join(f'<circle cx="{p[0]}" cy="{p[1]}" r="2" fill="{color}"/>'
-                                          for p, color in zip(image_points, colors_hex, strict=False))
-
-    def draw_cross(self, point: Point, *, shrink_factor: float = 1.0, color: str = 'red', size: int = 5, width: int = 1) -> str:
-        svg = f'''<line x1="{int(point.x / shrink_factor) - size}" y1="{int(point.y / shrink_factor)}" x2="{int(point.x / shrink_factor) + size}" y2="{int(point.y / shrink_factor)}"
+    def draw_cross(self, point: Point, *, color: str = 'red', size: int = 5, width: int = 1) -> str:
+        svg = f'''<line x1="{int(point.x / self.shrink_factor) - size}" y1="{int(point.y / self.shrink_factor)}"
+                    x2="{int(point.x / self.shrink_factor) + size}" y2="{int(point.y / self.shrink_factor)}"
                     stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>
-                    <line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - size}" x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + size}"
+                    <line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - size}"
+                    x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + size}"
                     stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
         return svg
 
@@ -227,25 +221,25 @@ class CameraCard:
             if point.category_name in self.plant_locator.crop_category_names:
                 svg += f'<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}" r="18" stroke-width="2" stroke="green" fill="none" />'
             elif point.category_name in self.plant_locator.weed_category_names:
-                svg += self.draw_cross(point.center, shrink_factor=self.shrink_factor, color='red')
+                svg += self.draw_cross(point.center, color='red')
         return svg
 
-    def build_svg_for_implement(self) -> str:
-        if not isinstance(self.system.current_implement, WeedingImplement) or self.camera is None \
-                or self.camera.calibration is None or self.field_friend.y_axis is None:
-            return ''
-        svg = ''
-
-        # tool position
+    def build_svg_for_tool_position(self) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        assert isinstance(self.field_friend.y_axis, Axis)
         tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position + self.field_friend.WORK_Y, z=0) \
             .in_frame(self.robot_locator.pose_frame).resolve().point_3d
         tool_2d = self.camera.calibration.project_to_image(tool_3d)
         if tool_2d:
             tool_2d = tool_2d / self.shrink_factor
-            svg += f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" stroke="black" stroke-width="1" fill="transparent"/>'
-            # svg += self.draw_cross(tool_2d, color='black', size=10)
+            return f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" stroke="black" stroke-width="1" fill="transparent"/>'
+        return ''
 
-        # tool axis
+    def build_svg_for_tool_axis(self) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        assert isinstance(self.field_friend.y_axis, Axis)
         min_tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position + self.field_friend.WORK_Y, z=0) \
             .in_frame(self.robot_locator.pose_frame).resolve().point_3d
         min_tool_2d = self.camera.calibration.project_to_image(min_tool_3d)
@@ -255,39 +249,60 @@ class CameraCard:
         if min_tool_2d and max_tool_2d:
             min_tool_2d = min_tool_2d / self.shrink_factor
             max_tool_2d = max_tool_2d / self.shrink_factor
-            svg += f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="1" />'
+            return f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="1" />'
+        return ''
 
-        # work area
-        min_front_3d = Point3d(x=0.40, y=self.field_friend.y_axis.min_position, z=0) \
-            .in_frame(self.robot_locator.pose_frame).resolve()
-        max_front_3d = Point3d(x=0.40, y=self.field_friend.y_axis.max_position, z=0) \
-            .in_frame(self.robot_locator.pose_frame).resolve()
-        min_back_3d = Point3d(x=-0.25, y=self.field_friend.y_axis.min_position, z=0) \
-            .in_frame(self.robot_locator.pose_frame).resolve()
-        max_back_3d = Point3d(x=-0.25, y=self.field_friend.y_axis.max_position, z=0) \
-            .in_frame(self.robot_locator.pose_frame).resolve()
-        min_front_2d = self.camera.calibration.project_to_image(min_front_3d)
-        max_front_2d = self.camera.calibration.project_to_image(max_front_3d)
-        min_back_2d = self.camera.calibration.project_to_image(min_back_3d)
-        max_back_2d = self.camera.calibration.project_to_image(max_back_3d)
-        if isinstance(min_front_2d, Point) and isinstance(max_front_2d, Point) and isinstance(min_back_2d, Point) and isinstance(max_back_2d, Point):
-            min_front_2d = min_front_2d / self.shrink_factor
-            max_front_2d = max_front_2d / self.shrink_factor
-            min_back_2d = min_back_2d / self.shrink_factor
-            max_back_2d = max_back_2d / self.shrink_factor
-            svg += f'<line x1="{int(min_front_2d.x)}" y1="{int(min_front_2d.y)}" x2="{int(min_back_2d.x)}" y2="{int(min_back_2d.y)}" stroke="black" stroke-width="1" />'
-            svg += f'<line x1="{int(max_front_2d.x)}" y1="{int(max_front_2d.y)}" x2="{int(max_back_2d.x)}" y2="{int(max_back_2d.y)}" stroke="black" stroke-width="1" />'
+    def build_svg_for_plants_to_handle(self) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        assert isinstance(self.system.current_implement, WeedingImplement)
+        plants_to_handle = self.system.current_implement.crops_to_handle \
+            if isinstance(self.system.current_implement, TornadoImplement) else self.system.current_implement.weeds_to_handle
+        svg = ''
+        for i, plant in enumerate(plants_to_handle.values()):
+            plant_3d = Point3d(x=plant.x, y=plant.y, z=0) \
+                .in_frame(self.robot_locator.pose_frame).resolve()
+            plant_2d = self.camera.calibration.project_to_image(plant_3d)
+            if plant_2d is not None:
+                svg += f'<circle cx="{int(plant_2d.x/self.shrink_factor)}" cy="{int(plant_2d.y/self.shrink_factor)}" r="6" stroke="blue" fill="none" stroke-width="2" />'
+                svg += f'<text x="{int(plant_2d.x/self.shrink_factor)}" y="{int(plant_2d.y/self.shrink_factor)+4}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
+        return svg
 
-        if self.show_plants_to_handle:
-            plants_to_handle = self.system.current_implement.crops_to_handle \
-                if isinstance(self.system.current_implement, TornadoImplement) else self.system.current_implement.weeds_to_handle
-            for i, plant in enumerate(plants_to_handle.values()):
-                plant_3d = Point3d(x=plant.x, y=plant.y, z=0) \
-                    .in_frame(self.robot_locator.pose_frame).resolve()
-                plant_2d = self.camera.calibration.project_to_image(plant_3d)
-                if plant_2d is not None:
-                    svg += f'<circle cx="{int(plant_2d.x/self.shrink_factor)}" cy="{int(plant_2d.y/self.shrink_factor)}" r="6" stroke="blue" fill="none" stroke-width="2" />'
-                    svg += f'<text x="{int(plant_2d.x/self.shrink_factor)}" y="{int(plant_2d.y/self.shrink_factor)+4}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
+    def build_svg_for_work_area(self) -> str:
+        # TODO: use nicegui image_layers when they are available
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        assert self.field_friend.y_axis is not None
+        top_point = Point(x=self.camera.calibration.intrinsics.size.width / 2, y=0)
+        bottom_point = Point(x=self.camera.calibration.intrinsics.size.width / 2,
+                             y=self.camera.calibration.intrinsics.size.height)
+        back_point = self.camera.calibration.project_from_image(top_point)
+        assert back_point is not None
+        back_point = back_point.relative_to(self.robot_locator.pose_frame)
+        front_point = self.camera.calibration.project_from_image(bottom_point)
+        assert front_point is not None
+        front_point = front_point.relative_to(self.robot_locator.pose_frame)
+        svg = ''
+        starts: tuple[Point, Point] | None = None
+        ends: tuple[Point, Point] | None = None
+        for x in np.linspace(back_point.x, front_point.x, 5):
+            min_3d = Point3d(x=x, y=self.field_friend.y_axis.min_position, z=0.0) \
+                .in_frame(self.robot_locator.pose_frame).resolve()
+            min_2d = self.camera.calibration.project_to_image(min_3d)
+            max_3d = Point3d(x=x, y=self.field_friend.y_axis.max_position, z=0.0) \
+                .in_frame(self.robot_locator.pose_frame).resolve()
+            max_2d = self.camera.calibration.project_to_image(max_3d)
+            if not min_2d or not max_2d:
+                continue
+            min_2d = min_2d / self.shrink_factor
+            max_2d = max_2d / self.shrink_factor
+            if starts is None:
+                starts = (min_2d, max_2d)
+                continue
+            ends = (min_2d, max_2d)
+            svg += f'<line x1="{int(starts[0].x)}" y1="{int(starts[0].y)}" x2="{int(ends[0].x)}" y2="{int(ends[0].y)}" stroke="black" stroke-width="1" />'
+            svg += f'<line x1="{int(starts[1].x)}" y1="{int(starts[1].y)}" x2="{int(ends[1].x)}" y2="{int(ends[1].y)}" stroke="black" stroke-width="1" />'
+            starts = (min_2d, max_2d)
         return svg
 
     def build_svg_for_plant_provider(self) -> str:
@@ -309,21 +324,24 @@ class CameraCard:
                 # svg += f'<text x="{int(crop_2d.x/self.shrink_factor)}" y="{int(crop_2d.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{crop.id[:4]}</text>'
         return svg
 
-    # async def save_last_image(self) -> None:
-    #     """Saves the last captured image to the .rosys folder."""
-    #     if self.camera and self.camera.latest_captured_image:
-    #         image = self.camera.latest_captured_image
-    #         self.log.info(f'Image captured at {image.size}')
-    #         img = Image.open(io.BytesIO(image.data))
-    #         # Resolves to the user's home directory  # modify the file name as needed
-    #         backup_path = Path('~/.rosys').expanduser()
-    #         save_path = backup_path / 'left_image.jpg'  # Modify the file name as needed
-    #         try:
-    #             # Use the save method of the image
-    #             img.save(save_path)
-    #             self.log.info(f'Image saved to {save_path}')
-    #         except Exception as e:
-    #             self.log.error(f'Error saving image: {e}')
-
-    #     else:
-    #         self.log.warning('No image available to save.')
+    def build_svg_for_mapping(self, *, track_width: float = 0.10) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        top_point = Point(x=self.camera.calibration.intrinsics.size.width / 2, y=0)
+        bottom_point = Point(x=self.camera.calibration.intrinsics.size.width / 2,
+                             y=self.camera.calibration.intrinsics.size.height)
+        back_point = self.camera.calibration.project_from_image(top_point)
+        assert back_point is not None
+        back_point = back_point.relative_to(self.robot_locator.pose_frame)
+        front_point = self.camera.calibration.project_from_image(bottom_point)
+        assert front_point is not None
+        front_point = front_point.relative_to(self.robot_locator.pose_frame)
+        y_range = self.system.config.measurements.wheel_distance / 2 - track_width / 2
+        world_points = [Point3d(x=x, y=y, z=0).in_frame(self.robot_locator.pose_frame).resolve()
+                        for x in np.linspace(back_point.x, front_point.x, 20)
+                        for y in np.linspace(-y_range, y_range, 20)]
+        image_points = self.camera.calibration.project_to_image(world_points)
+        colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
+        colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
+        return ''.join(f'<circle cx="{int(p.x / self.shrink_factor)}" cy="{int(p.y / self.shrink_factor)}" r="1" stroke="{color}" stroke-width="1" fill="none"/>'
+                       for p, color in zip(image_points, colors_hex, strict=False) if p is not None)

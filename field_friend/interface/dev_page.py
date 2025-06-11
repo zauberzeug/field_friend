@@ -20,9 +20,9 @@ from .components.status_dev import status_dev_page
 
 class DevPage:
 
-    def __init__(self, system: System) -> None:
+    def __init__(self, system: System, log_monitor: LogMonitor) -> None:
         self.system = system
-        self.log_monitor = LogMonitor()
+        self.log_monitor = log_monitor
 
         @ui.page('/dev')
         def page() -> None:
@@ -70,7 +70,7 @@ class DevPage:
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
                     self.system.field_friend.imu.developer_ui()
-            if self.system.field_navigation is not None:
+            if hasattr(self.system, 'field_navigation') and self.system.field_navigation is not None:
                 with ui.card():
                     self.system.field_navigation.developer_ui()
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):

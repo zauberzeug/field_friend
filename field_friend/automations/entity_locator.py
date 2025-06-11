@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ..system import System
 
 
-class EntityLocator(rosys.persistence.PersistentModule):
+class EntityLocator(rosys.persistence.Persistable):
     def __init__(self, system: System) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.entity_locator')
@@ -31,8 +31,8 @@ class EntityLocator(rosys.persistence.PersistentModule):
     def developer_ui(self) -> None:
         pass
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {}
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         pass

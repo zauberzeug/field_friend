@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Any
 
 import rosys
 from nicegui import ui
-from rosys.geometry import Point3d
+from rosys.analysis import track
+from rosys.geometry import Point, Point3d
 
-from ..puncher import PuncherException
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
 
 class Tornado(WeedingImplement):
-
     def __init__(self, system: System) -> None:
         super().__init__('Tornado', system)
         self.tornado_angle: float = 30.0
@@ -46,8 +45,6 @@ class Tornado(WeedingImplement):
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                           if not inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius]
                 self.log.debug(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
-        except PuncherException:
-            self.log.error('Error in Tornado Workflow')
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
@@ -58,39 +55,33 @@ class Tornado(WeedingImplement):
         self.weeds_to_handle = {}
         return True
 
-    # TODO: can we get rid of the pylint disable?
-    async def get_stretch(self, max_distance: float) -> float:  # pylint: disable=too-many-return-statements
-        await super().get_stretch(max_distance)
+    @track
+    async def get_move_target(self) -> Point | None:
+        """Return the target position to drive to."""
         self._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
-            return self.WORKING_DISTANCE
+            self.log.debug('No crops to handle')
+            return None
         closest_crop_id, closest_crop_position = next(iter(self.crops_to_handle.items()))
         closest_crop_world_position = self.system.robot_locator.pose.transform3d(closest_crop_position)
-
-        # for p in self.last_punches:
-        #     self.log.info(f'Last punch: {p} - {p.distance(closest_crop_world_position)} - {self.crop_safety_distance} - {closest_crop_world_position}')
         if any(p.distance(closest_crop_world_position) < self.field_friend.DRILL_RADIUS for p in self.last_punches):
             self.log.debug('Skipping weed because it was already punched')
-            return self.WORKING_DISTANCE
+            return None
         if not self.system.field_friend.can_reach(closest_crop_position.projection()):
             self.log.debug('Target crop is not in the working area')
-            return self.WORKING_DISTANCE
-        if closest_crop_position.x >= self.system.field_friend.WORK_X + self.WORKING_DISTANCE:
-            self.log.debug('Closest crop not yet in range')
-            return self.WORKING_DISTANCE
+            return None
         if self._crops_in_drill_range(closest_crop_id, closest_crop_position.projection(), self.tornado_angle):
             self.log.debug('Crops in drill range')
-            return self.WORKING_DISTANCE
+            return None
 
-        stretch = closest_crop_position.x - self.system.field_friend.WORK_X
-        if stretch < - self.system.field_friend.DRILL_RADIUS:
+        relative_x = closest_crop_position.x - self.system.field_friend.WORK_X
+        if relative_x < - self.system.field_friend.DRILL_RADIUS:
             self.log.debug(f'Skipping crop {closest_crop_id} because it is behind the robot')
-            return self.WORKING_DISTANCE
-        stretch = max(stretch, 0)
-        if stretch < max_distance:
-            self.next_punch_y_position = closest_crop_position.y
-            return stretch
-        return self.WORKING_DISTANCE
+            return None
+        self.log.debug(f'Targeting crop {closest_crop_id} which is {relative_x} away at world: '
+                           f'{closest_crop_world_position}, local: {closest_crop_position}')
+        self.next_punch_y_position = closest_crop_position.y
+        return closest_crop_world_position.projection()
 
     def _crops_in_drill_range(self, crop_id: str, crop_position: rosys.geometry.Point, angle: float) -> bool:
         inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
@@ -102,22 +93,22 @@ class Tornado(WeedingImplement):
                     return True
         return False
 
-    def backup(self) -> dict:
-        return super().backup() | {
+    def backup_to_dict(self) -> dict[str, Any]:
+        return super().backup_to_dict() | {
             'drill_with_open_tornado': self.drill_with_open_tornado,
             'drill_between_crops': self.drill_between_crops,
             'tornado_angle': self.tornado_angle,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         self.drill_with_open_tornado = data.get('drill_with_open_tornado', self.drill_with_open_tornado)
         self.drill_between_crops = data.get('drill_between_crops', self.drill_between_crops)
         self.tornado_angle = data.get('tornado_angle', self.tornado_angle)
 
     def settings_ui(self):
         super().settings_ui()
-        ui.number('Tornado angle', format='%.0f', step=1, min=0, max=180) \
+        ui.number('Tornado angle', format='%.0f', step=1, min=0, max=180, on_change=self.request_backup) \
             .props('dense outlined suffix=°') \
             .classes('w-24') \
             .bind_value(self, 'tornado_angle') \

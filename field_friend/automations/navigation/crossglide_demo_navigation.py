@@ -29,6 +29,10 @@ class CrossglideDemoNavigation(Navigation):
         self.origin: rosys.geometry.Point
         self.target: rosys.geometry.Point
 
+    @property
+    def target_heading(self) -> float:
+        return self.system.robot_locator.pose.yaw
+
     async def prepare(self) -> bool:
         await super().prepare()
         self.log.info(f'Activating {self.implement.name}...')
@@ -64,7 +68,7 @@ class CrossglideDemoNavigation(Navigation):
         await super().finish()
         await self.implement.deactivate()
 
-    async def _drive(self, distance: float) -> None:
+    async def _drive(self) -> None:
         pass
 
     def _should_finish(self) -> bool:
@@ -74,9 +78,9 @@ class CrossglideDemoNavigation(Navigation):
         pass
         # TODO: implement create_simulation
 
-    def backup(self) -> dict:
-        return super().backup() | {
+    def backup_to_dict(self) -> dict[str, Any]:
+        return super().backup_to_dict() | {
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         return None

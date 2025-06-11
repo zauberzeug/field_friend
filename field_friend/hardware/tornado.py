@@ -3,6 +3,7 @@
 import abc
 
 import rosys
+from rosys.analysis import track
 from rosys.helpers import remove_indentation
 
 from ..config import TornadoConfiguration
@@ -117,34 +118,34 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             {config.name}_motor_z.reversed = {'true' if config.is_z_reversed else 'false'}
             {config.name}_motor_turn.reversed = {'true' if config.is_turn_reversed else 'false'}
             {config.name}_end_top = {expander.name + "." if (config.end_stops_on_expander or config.end_top_pin_expander) and expander else ""}Input({config.end_top_pin})
-            {config.name}_end_top.inverted = true
+            {config.name}_end_top.inverted = {'true' if config.end_top_inverted else 'false'}
             {config.name}_end_bottom = {expander.name + "." if (config.end_stops_on_expander or config.end_bottom_pin_expander) and expander else ""}Input({config.end_bottom_pin})
-            {config.name}_end_bottom.inverted = true
+            {config.name}_end_bottom.inverted = {'true' if config.end_bottom_inverted else 'false'}
             {config.name}_ref_motor = {expander.name + "." if (config.end_stops_on_expander or config.ref_motor_pin_expander) and expander else ""}Input({config.ref_motor_pin})
-            {config.name}_ref_motor.inverted = true
+            {config.name}_ref_motor.inverted = {'true' if config.ref_motor_inverted else 'false'}
             {config.name}_ref_gear = {expander.name + "." if (config.end_stops_on_expander or config.ref_gear_pin_expander) and expander else ""}Input({config.ref_gear_pin})
-            {config.name}_ref_gear.inverted = false
+            {config.name}_ref_gear.inverted = {'true' if config.ref_gear_inverted else 'false'}
             {config.name}_ref_knife_stop = {expander.name + "." if (config.end_stops_on_expander or config.ref_knife_stop_pin_expander) and expander else ""}Input({config.ref_knife_stop_pin})
-            {config.name}_ref_knife_stop.inverted = false
+            {config.name}_ref_knife_stop.inverted = {'true' if config.ref_knife_stop_inverted else 'false'}
             {config.name}_ref_knife_ground = {expander.name + "." if (config.end_stops_on_expander or config.ref_knife_ground_pin_expander) and expander else ""}Input({config.ref_knife_ground_pin})
-            {config.name}_ref_knife_ground.inverted = true
+            {config.name}_ref_knife_ground.inverted = {'true' if config.ref_knife_ground_inverted else 'false'}
             {config.name}_z = {expander.name + "." if config.motor_on_expander and expander else ""}MotorAxis({config.name}_motor_z, {config.name + "_end_bottom" if config.is_z_reversed else config.name + "_end_top"}, {config.name + "_end_top" if config.is_z_reversed else config.name + "_end_bottom"})
 
             bool {config.name}_is_referencing = false
             bool {config.name}_ref_motor_enabled = false
             bool {config.name}_ref_gear_enabled = false
-            when {config.name}_ref_motor_enabled and {config.name}_is_referencing and {config.name}_ref_motor.level == 0 then
+            when {config.name}_ref_motor_enabled and {config.name}_is_referencing and {config.name}_ref_motor.active then
                 {config.name}_motor_turn.speed(0)
             end
-            when {config.name}_ref_gear_enabled and {config.name}_is_referencing and {config.name}_ref_gear.level == 1 then
+            when {config.name}_ref_gear_enabled and {config.name}_is_referencing and {config.name}_ref_gear.active then
                 {config.name}_motor_turn.speed(0)
             end
             bool {config.name}_knife_ground_enabled = false
             bool {config.name}_knife_stop_enabled = false
-            when {config.name}_knife_ground_enabled and {config.name}_ref_knife_ground.level == 1 then
+            when {config.name}_knife_ground_enabled and {config.name}_ref_knife_ground.active then
                 {config.name}_motor_z.off()
             end
-            when {config.name}_knife_stop_enabled and {config.name}_ref_knife_stop.level == 1 then
+            when {config.name}_knife_stop_enabled and {config.name}_ref_knife_stop.active then
                 {config.name}_motor_z.off()
                 {config.name}_knife_stop_enabled = false
             end
@@ -177,6 +178,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
     async def stop_turn(self) -> None:
         await self.robot_brain.send(f'{self.config.name}_motor_turn.speed(0)')
 
+    @track
     async def move_to(self, position: float) -> None:
         try:
             await super().move_to(position)
@@ -189,6 +191,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.1)
         self.log.info(f'z axis moved to {position}')
 
+    @track
     async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         try:
             await super().move_down_until_reference()
@@ -233,16 +236,18 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
                 f'{self.config.name}_knife_ground_enabled = false;'
             )
 
+    @track
     async def turn_by(self, turns: float) -> None:
         try:
             await super().turn_by(turns)
         except RuntimeError as e:
             raise Exception(e) from e
         target = self.position_turn/360 + turns
-        await self.robot_brain.send(f'{self.config.name}_motor_turn.position({target});')
         while not target - 0.01 < self.position_turn/360 < target + 0.01:
-            await rosys.sleep(0.1)
+            await self.robot_brain.send(f'{self.config.name}_motor_turn.position({target});')
+            await rosys.sleep(0.5)
 
+    @track
     async def turn_knifes_to(self, angle: float) -> None:
         try:
             await super().turn_knifes_to(angle)
@@ -254,11 +259,12 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         if target_angle < 0:
             target_angle = 360 - self.last_angle + angle
         target = (self.position_turn - target_angle)/360
-        await self.robot_brain.send(f'{self.config.name}_motor_turn.position({target});')
         while not target - 0.01 < self.position_turn/360 < target + 0.01:
-            await rosys.sleep(0.1)
+            await self.robot_brain.send(f'{self.config.name}_motor_turn.position({target});')
+            await rosys.sleep(0.5)
         self.last_angle = angle
 
+    @track
     async def try_reference_z(self) -> bool:
         if not await super().try_reference_z():
             return False
@@ -321,6 +327,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.log.error(f'error while referencing tornado z position: {e}')
             return False
 
+    @track
     async def try_reference_turn(self) -> bool:
         if not await super().try_reference_turn():
             return False

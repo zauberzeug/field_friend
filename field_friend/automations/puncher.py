@@ -91,7 +91,9 @@ class Puncher:
                     raise PuncherException('y position out of range')
 
             if isinstance(self.field_friend.z_axis, Tornado):
-                await self.field_friend.y_axis.move_to(y)
+                assert isinstance(self.field_friend.y_axis, Axis)
+                await rosys.run.retry(lambda y=y: self.field_friend.y_axis.move_to(y),  # type: ignore
+                                      on_failed=self.field_friend.y_axis.recover)
                 await self.tornado_drill(angle=angle, turns=turns, with_open_drill=with_open_tornado)
 
             elif isinstance(self.field_friend.z_axis, Axis):
@@ -123,7 +125,7 @@ class Puncher:
             if isinstance(self.field_friend.z_axis, Axis):
                 if self.field_friend.z_axis.position != 0:
                     await self.field_friend.z_axis.return_to_reference()
-            y = self.field_friend.y_axis.min_position if self.field_friend.y_axis.position <= 0 else self.field_friend.y_axis.max_position
+            y = (self.field_friend.y_axis.min_position + 0.002) if self.field_friend.y_axis.position <= 0 else (self.field_friend.y_axis.max_position - 0.002)
             await self.field_friend.y_axis.move_to(y, speed=self.field_friend.y_axis.max_speed)
         await self.field_friend.y_axis.stop()
 

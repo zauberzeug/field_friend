@@ -95,6 +95,11 @@ def configure():
                 'level': 'INFO',
                 'propagate': False,
             },
+            'nicegui': {
+                'handlers': ['debug_queue'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
             'rosys.communication': {
                 'handlers': ['lizard_queue'],
                 'level': 'INFO',

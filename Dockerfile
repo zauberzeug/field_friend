@@ -1,4 +1,4 @@
-FROM python:3.11.2-bullseye
+FROM python:3.12-bookworm
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -34,9 +34,9 @@ RUN python3 -m pip install --upgrade pip
 
 WORKDIR /app
 # NOTE installing some older version of rosys beforehand will improves overall build times because most of the dependencies are already installed
-# this obviously only works if we do not change the old version of rosys (here 0.9.5)
+# this obviously only works if we do not change the old version of rosys (here 0.25.0)
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
-    python3 -m pip install rosys==0.9.5
+    python3 -m pip install rosys==0.25.0
 # we also preinstall some other dependencies of Field Friend which take quite some time to compile and do not change often
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install pillow
@@ -72,7 +72,7 @@ COPY  --chown=${USERNAME}:${USER_GID} assets/favicon.ico ./
 
 WORKDIR /app
 
-RUN sudo setcap 'cap_net_bind_service=+ep cap_sys_nice=+ep' /usr/local/bin/python3.11
+RUN sudo setcap 'cap_net_bind_service=+ep cap_sys_nice=+ep' /usr/local/bin/python3.12
 RUN sudo usermod -a -G video $USERNAME
 
 CMD python3 main.py

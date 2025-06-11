@@ -1,3 +1,4 @@
+import gc
 import logging
 import os
 from typing import Any
@@ -26,7 +27,6 @@ from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
     CrossglideDemoNavigation,
     FieldNavigation,
-    FollowCropsNavigation,
     Navigation,
     StraightLineNavigation,
 )
@@ -41,12 +41,13 @@ from .vision.zedxmini_camera import ZedxminiCameraProvider
 icecream.install()
 
 
-class System(rosys.persistence.PersistentModule):
+class System(rosys.persistence.Persistable):
 
-    def __init__(self, robot_id: str) -> None:
+    def __init__(self, robot_id: str, *, restore_persistence: bool = True, use_acceleration: bool = True) -> None:
         super().__init__()
         self.robot_id = robot_id
         assert self.robot_id != 'unknown'
+        self.restore_persistence = restore_persistence
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
@@ -69,15 +70,15 @@ class System(rosys.persistence.PersistentModule):
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.robot_id}')
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = self.setup_gnss()
-            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu)
+            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu).persistent(restore=self.restore_persistence)
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
         else:
-            self.field_friend = FieldFriendSimulation(self.config)
+            self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = self.setup_gnss(self.field_friend.wheels)
-            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu)
+            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu).persistent(restore=self.restore_persistence)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             if self.camera_provider is not None:
@@ -89,8 +90,8 @@ class System(rosys.persistence.PersistentModule):
                 self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
-        self.plant_provider = PlantProvider()
-        self.kpi_provider = KpiProvider()
+        self.plant_provider = PlantProvider().persistent(restore=self.restore_persistence)
+        self.kpi_provider = KpiProvider().persistent(restore=self.restore_persistence)
         if not self.is_real:
             generate_kpis(self.kpi_provider)
 
@@ -101,12 +102,12 @@ class System(rosys.persistence.PersistentModule):
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 
         self.puncher: Puncher = Puncher(self.field_friend, self.driver)
-        self.plant_locator: PlantLocator = PlantLocator(self)
+        self.plant_locator: PlantLocator = PlantLocator(self).persistent(restore=self.restore_persistence)
 
         rosys.on_repeat(watch_robot, 1.0)
 
-        self.path_provider: PathProvider = PathProvider()
-        self.field_provider: FieldProvider = FieldProvider()
+        self.path_provider: PathProvider = PathProvider().persistent(restore=self.restore_persistence)
+        self.field_provider: FieldProvider = FieldProvider().persistent(restore=self.restore_persistence)
         self.setup_shape()
         self.automator: rosys.automation.Automator = rosys.automation.Automator(
             self.steerer, on_interrupt=self.field_friend.stop)
@@ -127,24 +128,31 @@ class System(rosys.persistence.PersistentModule):
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             app_controls(self.field_friend.robot_brain, self.automator, self.field_friend)
             rosys.on_repeat(self.log_status, 60 * 5)
+        rosys.on_repeat(self._garbage_collection, 60*5)
+        rosys.config.garbage_collection_mbyte_limit = 0
 
     def restart(self) -> None:
         os.utime('main.py')
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'navigation': self.current_navigation.name if self.current_navigation is not None else None,
             'implement': self.current_implement.name if self.current_implement is not None else None,
             'gnss_reference': GeoReference.current.degree_tuple if GeoReference.current is not None else None,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        implement = self.implements.get(data.get('implement', None), None)
-        if implement is not None:
-            self.current_implement = implement
-        navigation = self.navigation_strategies.get(data.get('navigation', None), None)
-        if navigation is not None:
-            self.current_navigation = navigation
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        persistent_implement = data.get('implement', None)
+        if persistent_implement is not None:
+            implement = self.implements.get(persistent_implement, None)
+            if implement is not None:
+                self.current_implement = implement
+
+        persistent_navigation = data.get('navigation', None)
+        if persistent_navigation is not None:
+            navigation = self.navigation_strategies.get(persistent_navigation, None)
+            if navigation is not None:
+                self.current_navigation = navigation
 
         reference_tuple = None
         if 'gnss_reference' in data:
@@ -191,13 +199,14 @@ class System(rosys.persistence.PersistentModule):
         self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
         self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
         self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.2
-        self.driver.parameters.can_drive_backwards = True
+        self.driver.parameters.angular_speed_limit = 0.3
+        self.driver.parameters.can_drive_backwards = False
         self.driver.parameters.minimum_turning_radius = 0.01
-        self.driver.parameters.hook_offset = 0.45
+        self.driver.parameters.hook_offset = 0.20
         self.driver.parameters.carrot_distance = 0.15
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.driver.parameters.hook_bending_factor = 0.25
+        self.driver.parameters.minimum_drive_distance = 0.005
 
     def setup_shape(self) -> None:
         width = 0.64
@@ -214,31 +223,35 @@ class System(rosys.persistence.PersistentModule):
             height=height)
 
     def setup_implements(self) -> None:
-        implements: list[Implement] = [Recorder(self)]
+        persistence_key = 'field_friend.automations.implements.weeding'
+        implements: list[Implement] = []
         match self.field_friend.implement_name:
             case 'tornado':
-                implements.append(Tornado(self))
+                implements.append(Recorder(self))
+                implements.append(Tornado(self).persistent(key=persistence_key, restore=self.restore_persistence))
             case 'weed_screw':
-                implements.append(WeedingScrew(self))
+                implements.append(Recorder(self))
+                implements.append(WeedingScrew(self).persistent(key=persistence_key, restore=self.restore_persistence))
             case 'dual_mechanism':
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
                 self.log.error('Dual mechanism not implemented')
-            case 'none':
-                implements.append(WeedingScrew(self))
+                implements.append(Recorder(self))
+            case 'recorder':
+                implements.append(Recorder(self))
+            case None:
+                implements.append(Implement())
             case _:
-                self.log.warning('Unknown implement: %s', self.field_friend.implement_name)
+                raise NotImplementedError(f'Unknown implement: {self.field_friend.implement_name}')
         self.implements = {t.name: t for t in implements}
 
     def setup_navigations(self) -> None:
         first_implement = next(iter(self.implements.values()))
-        self.straight_line_navigation = StraightLineNavigation(self, first_implement)
-        self.follow_crops_navigation = FollowCropsNavigation(self, first_implement)
-        self.field_navigation = FieldNavigation(self, first_implement) if self.gnss is not None else None
-        self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement) \
+        self.straight_line_navigation = StraightLineNavigation(self, first_implement).persistent(restore=self.restore_persistence)
+        self.field_navigation = FieldNavigation(self, first_implement).persistent(restore=self.restore_persistence) if self.gnss is not None else None
+        self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent(restore=self.restore_persistence) \
             if isinstance(self.field_friend.y_axis, AxisD1) else None
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
-                                                          self.follow_crops_navigation,
                                                           self.field_navigation,
                                                           self.crossglide_demo_navigation,
                                                           ] if n is not None}
@@ -251,9 +264,9 @@ class System(rosys.persistence.PersistentModule):
             self.log.warning('Camera is not configured, no camera provider will be used')
             return None
         if self.config.camera.camera_type == 'CalibratableUsbCamera':
-            return CalibratableUsbCameraProvider()
+            return CalibratableUsbCameraProvider().persistent(restore=self.restore_persistence)
         if self.config.camera.camera_type == 'ZedxminiCamera':
-            return ZedxminiCameraProvider()
+            return ZedxminiCameraProvider().persistent(restore=self.restore_persistence)
         raise NotImplementedError(f'Unknown camera type: {self.config.camera.camera_type}')
 
     async def setup_simulated_usb_camera(self):
@@ -283,7 +296,9 @@ class System(rosys.persistence.PersistentModule):
         if self.config.gnss is None:
             return None
         if self.is_real:
-            return GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
+            gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
+            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.1
+            return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
         return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
 
@@ -315,3 +330,8 @@ class System(rosys.persistence.PersistentModule):
 
         bms_logger = logging.getLogger('field_friend.bms')
         bms_logger.info(f'Battery: {self.field_friend.bms.state.short_string}')
+
+    def _garbage_collection(self):
+        if self.automator.is_running:
+            return
+        gc.collect()

@@ -1,0 +1,9 @@
+{
+    "minimum_weed_confidence": 0.4,
+    "minimum_crop_confidence": 0.3,
+    "autoupload": "filtered",
+    "upload_images": false,
+    "tags": [
+        "ff12"
+    ]
+}

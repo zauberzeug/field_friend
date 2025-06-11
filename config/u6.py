@@ -17,7 +17,7 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='uckerbot-u6',
-    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=['orin', 'v05']),
+    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=['orin', 'v05'], enable_esp_on_startup=True, use_espresso=True),
     tool='weed_screw',
     measurements=MeasurementsConfiguration(tooth_count=17, pitch=0.041, work_x=0.085),
     camera=CameraConfiguration(
@@ -26,12 +26,13 @@ config = FieldFriendConfiguration(
         fps=10,
     ),
     wheels=WheelsConfiguration(
-        is_left_reversed=False,
-        is_right_reversed=True,
+        is_left_reversed=True,
+        is_right_reversed=False,
         left_back_can_address=0x000,
         left_front_can_address=0x100,
         right_back_can_address=0x200,
         right_front_can_address=0x300,
+        odrive_version=6
     ),
     has_status_control=True,
     flashlight=FlashlightConfiguration(

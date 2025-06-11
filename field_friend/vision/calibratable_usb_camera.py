@@ -27,7 +27,6 @@ class CalibratableUsbCamera(rosys.vision.CalibratableCamera, rosys.vision.UsbCam
                 rosys.geometry.Rotation(R=data['calibration']['extrinsics']['rotation']['R']) *
                 rosys.geometry.Rotation(R=data['calibration']['intrinsics']['rotation']['R'])
             ).R
-        print(f'data: {data}')
         return cls(**(data | {
             'calibration': persistence.from_dict(rosys.vision.Calibration, data['calibration']) if data.get('calibration') else None,
         }))

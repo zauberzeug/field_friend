@@ -1,6 +1,8 @@
 # pylint: disable=broad-exception-raised
+# pylint: disable=duplicate-code
 # TODO: we need a useful exception here
 import rosys
+from rosys.analysis import track
 from rosys.helpers import remove_indentation
 
 from ..config import YCanOpenConfiguration
@@ -16,6 +18,8 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         self.config = config
         self.expander = expander
         self.ctrl_enable = False
+        self.initialized = False
+        self.operational = False
         lizard_code = remove_indentation(f'''
             {config.name}_motor = {expander.name + "." if config.motor_on_expander and expander else ""}CanOpenMotor({can.name}, {config.can_address})
             {config.name}_end_l = {expander.name + "." if config.end_stops_on_expander and expander else ""}Input({config.end_left_pin})
@@ -31,6 +35,8 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             f'{config.name}_motor.status_target_reached',
             f'{config.name}_motor.status_fault',
             f'{config.name}_motor.ctrl_enable',
+            f'{config.name}_motor.initialized',
+            f'{config.name}_motor.is_operational',
         ]
         super().__init__(
             max_speed=config.max_speed,
@@ -47,6 +53,7 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
     async def stop(self) -> None:
         await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(false);')
 
+    @track
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if speed is None:
             speed = self.max_speed
@@ -57,14 +64,18 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             raise Exception(f'could not move yaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
         self.log.debug(f'moving to steps: {steps}')
-        await self.enable_motor()
-        await rosys.sleep(1)  # necessary ?!
-        await self.robot_brain.send(
-            f'{self.config.name}.position({steps},{speed}, 0);'
-        )
-        # Give flags time to turn false first
-        await rosys.sleep(0.5)
+        assert self.robot_brain.is_ready, 'robot brain is not ready'
+        assert self.initialized, 'motor is not initialized'
+        assert self.operational, 'motor is not operational'
+        while not self.ctrl_enable:
+            await self.enable_motor()
+            await rosys.sleep(0.1)
+        assert self.ctrl_enable, 'motor is not enabled'
+        while self.idle:
+            await self.robot_brain.send(f'{self.config.name}.position({steps},{speed}, 0);')
+            await rosys.sleep(0.1)
         while not self.idle and not self.alarm:
+            await self.robot_brain.send(f'{self.config.name}.position({steps},{speed}, 0);')
             await rosys.sleep(0.2)
         if self.alarm:
             self.log.error(f'could not move yaxis to {position} because of fault')
@@ -78,19 +89,29 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
     async def disable_motor(self) -> None:
         await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(false);')
 
+    @track
     async def reset_fault(self) -> None:
-        await self.robot_brain.send(f'{self.config.name}_motor.reset_fault();')
-        await rosys.sleep(1)
-        if self.alarm:
-            self.log.error('could not reset yaxis fault')
-            raise Exception('could not reset yaxis fault')
+        self.log.debug('resetting yaxis fault')
+        await self.robot_brain.send(f'{self.config.name}_motor.reset_fault()')
+        await rosys.sleep(1.0)
 
+    @track
+    async def recover(self) -> None:
+        await rosys.run.retry(self.reset_fault, max_attempts=10, max_timeout=10.0)
+        await self.try_reference()
+
+    @track
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
         try:
-            self.log.info('enabling h motors')
+            self.log.info('enabling yaxis motors')
+            assert self.robot_brain.is_ready, 'robot brain is not ready'
+            assert self.initialized, 'motor is not initialized'
+            assert self.operational, 'motor is not operational'
             await self.enable_motor()
+            await rosys.sleep(1)
+            assert self.ctrl_enable, 'motor is not enabled'
             await self.robot_brain.send(
                 f'{self.config.name}_motor.position_offset = 0;'
             )
@@ -182,3 +203,5 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
         if self.alarm:
             self.is_referenced = False
         self.ctrl_enable = words.pop(0) == 'true'
+        self.initialized = words.pop(0) == 'true'
+        self.operational = words.pop(0) == 'true'

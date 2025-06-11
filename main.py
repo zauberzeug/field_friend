@@ -7,6 +7,7 @@ from nicegui import app, ui
 from rosys.analysis import logging_page, videos_page
 
 from field_friend import api, interface, log_configuration
+from field_friend.interface.components.log_monitor import LogMonitor
 from field_friend.system import System
 
 logger = log_configuration.configure()
@@ -23,20 +24,23 @@ def startup() -> None:
         logging.warning(msg)
         ui.label(msg).classes('text-xl')
         return
+    robot_id = robot_id.lower()
     logger.info('Starting Field Friend for robot %s', robot_id)
-    system = System(robot_id)
+    system = System(robot_id).persistent()
 
+    log_monitor = LogMonitor().persistent(key='field_friend.log_monitor')
     interface.main_page(system)  # /
-    interface.dev_page(system)  # /dev
+    interface.dev_page(system, log_monitor)  # /dev
     interface.monitor_page(system)  # /monitor
     interface.bms_page(system)  # /bms
-    interface.low_bandwidth_page(system)  # /lb
+    interface.low_bandwidth_page(system, log_monitor)  # /lb
     logging_page(['field_friend', 'rosys'])  # /logging
     videos_page()  # /videos
 
     # API Endpoints
     api.Online()  # get /api/online
     api.Status(system)  # get /api/status
+    api.Position(system)  # get /api/position
     api.Fields(system)  # get,post /api/fields
     api.Automation(system)  # get,post /api/automation/
 
