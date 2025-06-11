@@ -58,7 +58,6 @@ class Tornado(WeedingImplement):
         super()._has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
             return False
-        self.weeds_to_handle = {}
         return True
 
     @track
