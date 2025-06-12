@@ -38,21 +38,16 @@ class Tornado(WeedingImplement):
                 rosys.geometry.Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
             self.last_punches.append(Point3d.from_point(punch_position))
             self.log.debug(f'Drilling crop at {punch_position} with angle {self.tornado_angle}°')
-            open_drill = False
-            if self.drill_with_open_tornado:
-                open_drill = True
-            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth, angle=self.tornado_angle, with_open_tornado=open_drill)
+            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth, angle=self.tornado_angle, with_open_tornado=self.drill_with_open_tornado)
             # TODO remove weeds from plant_provider
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
-                # remove the simulated weeds
-                inner_radius = 0.025  # TODO compute inner radius according to tornado angle
-                outer_radius = inner_radius + 0.05  # TODO compute outer radius according to inner radius and knife width
-                # inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(self.tornado_angle)
-                # inner_radius = inner_diameter / 2
-                # outer_radius = outer_diameter / 2
+                inner_diameter, outer_diameter = self.field_friend.tornado_diameters(self.tornado_angle)
+                if self.drill_with_open_tornado:
+                    outer_diameter = self.field_friend.tornado_diameters(0)[1]
+                inner_radius = inner_diameter / 2
+                outer_radius = outer_diameter / 2
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                           if not inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius]
-                self.log.debug(f'simulated_objects2: {len(self.system.detector.simulated_objects)}')
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
@@ -80,7 +75,9 @@ class Tornado(WeedingImplement):
         if self._crops_in_drill_range(closest_crop_id, closest_crop_position.projection(), self.tornado_angle):
             self.log.debug('Crops in punch range')
             return None
-        tornado_outer_diameter = self.field_friend.tornado_diameters(self.tornado_angle)[1]
+
+        angle = 0 if self.drill_with_open_tornado else self.tornado_angle
+        tornado_outer_diameter = self.field_friend.tornado_diameters(angle)[1]
         if self.skip_if_no_weeds and not any(closest_crop_position.distance(weed_position) < tornado_outer_diameter
                                              for weed_position in self.weeds_to_handle.values()):
             self.log.debug('Skipping crop because there are no weeds next to it.')
@@ -150,13 +147,12 @@ class Tornado(WeedingImplement):
             .classes('w-24') \
             .bind_value(self, 'drill_depth') \
             .tooltip(f'Set the depth for the tornado drill. 0 is at ground level and positive values are below ground level (default: {self.DRILL_DEPTH:.2f}m)')
+        ui.checkbox('Second drill with open tornado') \
+            .bind_value(self, 'drill_with_open_tornado') \
+            .tooltip(f'Set the weeding automation to drill a second time with open tornado (default: {self.DRILL_WITH_OPEN_TORNADO})')
         ui.checkbox('Skip if no weeds') \
             .bind_value(self, 'skip_if_no_weeds') \
             .tooltip(f'Set the weeding automation to skip if no weeds are found (default: {self.SKIP_IF_NO_WEEDS})')
-        # TODO test and reactivate these options
-        # ui.checkbox('Drill 2x with open tornado') \
-        #     .bind_value(self, 'drill_with_open_tornado') \
-        #     .tooltip('Set the weeding automation to drill a second time with open tornado')
         # ui.checkbox('Drill between crops') \
         #     .bind_value(self, 'drill_between_crops') \
         #     .tooltip('Set the weeding automation to drill between crops')

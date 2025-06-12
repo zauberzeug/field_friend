@@ -170,7 +170,7 @@ class Puncher:
             await self.field_friend.z_axis.turn_by(turns)
             await rosys.sleep(0.2)
 
-            if with_open_drill:
+            if with_open_drill and angle > 0:
                 self.log.debug('Drilling again with open drill...')
                 await self.field_friend.z_axis.turn_knifes_to(0)
                 await rosys.sleep(0.2)
