@@ -19,7 +19,7 @@ class Tornado(WeedingImplement):
     DRILL_DEPTH = 0.0
     DRILL_WITH_OPEN_TORNADO = False
     SKIP_IF_NO_WEEDS = False
-    TORNADO_ANGLE = 30.0
+    TORNADO_ANGLE = 180.0
 
     def __init__(self, system: System) -> None:
         super().__init__('Tornado', system)
