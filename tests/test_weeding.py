@@ -171,19 +171,29 @@ async def test_work_offset_navigation(system: System, detector: rosys.vision.Det
 
 @pytest.mark.parametrize('system', ['u4'], indirect=True)
 async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys.vision.DetectorSimulation):
+    INNER_DIAMETER, OUTER_DIAMETER = system.field_friend.tornado_diameters(system.implements['Tornado'].tornado_angle)
+    INNER_RADIUS = INNER_DIAMETER / 2
+    OUTER_RADIUS = OUTER_DIAMETER / 2
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.23, y=0.0, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=0.2, y=INNER_RADIUS - 0.01, z=0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.2, y=0.05, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=0.2, y=OUTER_RADIUS + 0.01, z=0)))
+    targets = [
+        rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(x=0.2, y=INNER_RADIUS + 0.01, z=0)),
+        rosys.vision.SimulatedObject(category_name='weed',  position=rosys.geometry.Point3d(x=0.2, y=OUTER_RADIUS - 0.01, z=0))
+    ]
+    detector.simulated_objects.extend(targets)
     system.current_implement = system.implements['Tornado']
     system.current_navigation = system.straight_line_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert len(detector.simulated_objects) == 1
+    assert len(detector.simulated_objects) == 3
     assert detector.simulated_objects[0].category_name == 'sugar_beet'
+    for target in targets:
+        assert target not in detector.simulated_objects, f'target {target.position} should be removed'
 
 
 @pytest.mark.parametrize('system', ['u4'], indirect=True)
