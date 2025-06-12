@@ -134,6 +134,8 @@ class Tornado(WeedingImplement):
             def get_angle_label() -> None:
                 angle = self.tornado_angle
                 inner_diameter, outer_diameter = self.field_friend.tornado_diameters(angle)
+                if self.drill_with_open_tornado:
+                    outer_diameter = self.field_friend.tornado_diameters(0)[1]
                 angle_label.set_text(f'{angle}°')
                 inner_label.set_text(f'{inner_diameter*100:.1f} cm')
                 outer_label.set_text(f'{outer_diameter*100:.1f} cm')
@@ -141,18 +143,18 @@ class Tornado(WeedingImplement):
             ui.slider(min=0, max=180, step=1, on_change=get_angle_label) \
                 .bind_value(self, 'tornado_angle', forward=lambda v: 180-v, backward=lambda v: abs(v-180)) \
                 .tooltip(f'Set the angle for the tornado drill. Moving to the left will decrease the diameter and moving to the right will increase it. (default: {self.TORNADO_ANGLE}°)')
+            ui.checkbox('Second drill with the biggest diameter', on_change=get_angle_label) \
+                .bind_value(self, 'drill_with_open_tornado') \
+                .tooltip(f'Drill a second time with 0° angle (default: {self.DRILL_WITH_OPEN_TORNADO})')
 
         ui.number('Drill depth', format='%.2f', step=0.01, on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'drill_depth') \
             .tooltip(f'Set the depth for the tornado drill. 0 is at ground level and positive values are below ground level (default: {self.DRILL_DEPTH:.2f}m)')
-        ui.checkbox('Second drill with open tornado') \
-            .bind_value(self, 'drill_with_open_tornado') \
-            .tooltip(f'Set the weeding automation to drill a second time with open tornado (default: {self.DRILL_WITH_OPEN_TORNADO})')
         ui.checkbox('Skip if no weeds') \
             .bind_value(self, 'skip_if_no_weeds') \
-            .tooltip(f'Set the weeding automation to skip if no weeds are found (default: {self.SKIP_IF_NO_WEEDS})')
+            .tooltip(f'Skip crops with no weeds in their vicinity (default: {self.SKIP_IF_NO_WEEDS})')
         # ui.checkbox('Drill between crops') \
         #     .bind_value(self, 'drill_between_crops') \
         #     .tooltip('Set the weeding automation to drill between crops')
