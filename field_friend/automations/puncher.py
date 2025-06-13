@@ -48,10 +48,10 @@ class Puncher:
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
             return
-        self.log.info(f'Driving to punch at {local_target_x:.2f}...')
+        self.log.info('Driving to punch at %.2f...', local_target_x)
         work_x = self.field_friend.WORK_X
         if local_target_x < work_x:
-            self.log.info(f'Target: {local_target_x} is behind')
+            self.log.info('Target: %.2f is behind', local_target_x)
         axis_distance = local_target_x - work_x
         local_target = Point(x=axis_distance, y=0)
         world_target = self.driver.prediction.transform(local_target)
@@ -68,7 +68,7 @@ class Puncher:
                     ) -> None:
         y += self.field_friend.WORK_Y
         y = round(y, 5)
-        self.log.debug(f'Punching at {y} with depth {depth}...')
+        self.log.debug('Punching at %.5f with depth %.2f...', y, depth)
         rest_position = 'reference'
         if self.field_friend.y_axis is None or self.field_friend.z_axis is None:
             rosys.notify('no y or z axis', 'negative')
@@ -105,7 +105,7 @@ class Puncher:
                     rest_position = f'custom position {target}'
                 else:
                     await self.field_friend.z_axis.return_to_reference()
-            self.log.debug(f'punched at {y:.2f} with depth {depth}, now back to rest position "{rest_position}"')
+            self.log.debug('punched at %.2f with depth %.2f, now back to rest position "%s"', y, depth, rest_position)
         except Exception as e:
             raise PuncherException('punching failed') from e
         finally:
@@ -149,7 +149,7 @@ class Puncher:
         :param turns: number of turns around the crop
         :param with_open_drill: will drill again with open drill after the first drill
         """
-        self.log.debug(f'Drilling with tornado at {angle}°...')
+        self.log.debug('Drilling with tornado at %.1f°...', angle)
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise PuncherException('tornado drill is only available for tornado axis')
         try:

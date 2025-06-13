@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -37,7 +36,7 @@ class Tornado(WeedingImplement):
             punch_position = self.system.robot_locator.pose.transform(
                 rosys.geometry.Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
             self.last_punches.append(Point3d.from_point(punch_position))
-            self.log.debug(f'Drilling crop at {punch_position} with angle {self.tornado_angle}°')
+            self.log.debug('Drilling crop at %s with angle %.1f°', punch_position, self.tornado_angle)
             await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth, angle=self.tornado_angle, with_open_tornado=self.drill_with_open_tornado)
             # TODO remove weeds from plant_provider
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
@@ -85,10 +84,10 @@ class Tornado(WeedingImplement):
 
         relative_x = closest_crop_position.x - self.system.field_friend.WORK_X
         if relative_x < - self.system.field_friend.DRILL_RADIUS:
-            self.log.debug(f'Skipping crop {closest_crop_id} because it is behind the robot')
+            self.log.debug('Skipping crop %s because it is behind the robot', closest_crop_id)
             return None
-        self.log.debug(f'Targeting crop {closest_crop_id} which is {relative_x} away at world: '
-                           f'{closest_crop_world_position}, local: {closest_crop_position}')
+        self.log.debug('Targeting crop %s which is %.2f away at world: %s, local: %s',
+                      closest_crop_id, relative_x, closest_crop_world_position, closest_crop_position)
         self.next_punch_y_position = closest_crop_position.y
         return closest_crop_world_position.projection()
 
