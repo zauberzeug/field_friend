@@ -76,9 +76,9 @@ class SupportPointDialog:
 
     def confirm_support_point(self) -> None:
         def refresh_position() -> None:
+            assert self.gnss is not None
+            assert self.gnss.last_measurement is not None
             self.support_point_coordinates = self.gnss.last_measurement.point
-        assert self.gnss is not None
-        assert self.gnss.last_measurement is not None
         self.content.clear()
         self.headline.text = 'Confirm Values'
         refresh_position()
@@ -86,7 +86,7 @@ class SupportPointDialog:
             with ui.row().classes('items-center'):
                 with ui.column():
                     ui.label('').classes('text-lg').bind_text_from(self, 'support_point_coordinates', lambda p: f'{p}')
-                    if self.field_provider.selected_field.bed_count > 1:
+                    if self.field_provider.selected_field and self.field_provider.selected_field.bed_count > 1:
                         ui.label(f'Bed Number: {round(self.bed_number)}').classes('text-lg')
                     ui.label(f'Row Number: {round(self.row_name)}').classes('text-lg')
             with ui.row().classes('items-center'):
