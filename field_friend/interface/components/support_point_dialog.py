@@ -37,8 +37,12 @@ class SupportPointDialog:
                 with ui.column().classes('items-center  w-2/5 p-8'):
                     self.headline = ui.label().classes('text-lg font-bold')
                     self.content = ui.column().classes('items-center')
+                    ui.label('No GNSS RTK fix available.').classes('text-red') \
+                        .bind_visibility_from(self.gnss, 'last_measurement', lambda m: m.gps_quality != GpsQuality.RTK_FIXED)
                     # NOTE: the next function is replaced, hence we need the lambda
-                    ui.button('Next', on_click=lambda: self.next())  # pylint: disable=unnecessary-lambda
+                    # pylint: disable=unnecessary-lambda
+                    ui.button('Next', on_click=lambda: self.next()) \
+                        .bind_enabled_from(self.gnss, 'last_measurement', lambda m: m.gps_quality == GpsQuality.RTK_FIXED)
         ui.timer(0.1, self.update_front_cam)
         self.open()
 
@@ -51,44 +55,43 @@ class SupportPointDialog:
         self.row_sight.content = '<line x1="50%" y1="0" x2="50%" y2="100%" stroke="#6E93D6" stroke-width="6"/>'
         with self.content:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
-            ui.label('1. Drive the robot on the row you want to give a fixed support point.').classes(
-                'text-lg')
+            ui.label('1. Drive the robot on the row you want to give a fixed support point.').classes('text-lg')
             if self.field_provider.selected_field and self.field_provider.selected_field.bed_count == 1:
                 ui.label('2. Enter the row number for the support point:').classes('text-lg')
-                ui.number(
-                    label='Row Number', min=0, max=self.field_provider.selected_field.row_count - 1, step=1, value=0) \
+                ui.select(list(range(self.field_provider.selected_field.row_count)), label='Row') \
                     .props('dense outlined').classes('w-40') \
-                    .tooltip('Choose the row number you would like to give a fixed support point to.') \
+                    .tooltip('Choose the row index you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
             elif self.field_provider.selected_field is not None:
                 ui.label('2. Enter the bed and row number for the support point:').classes('text-lg')
-                ui.number(
-                    label='Bed Number', min=0, max=self.field_provider.selected_field.bed_count - 1, step=1, value=0) \
+                ui.select(list(range(self.field_provider.selected_field.bed_count)), label='Bed') \
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the bed index the row is on.') \
                     .bind_value(self, 'bed_number')
-                ui.number(
-                    label='Row Number', min=0, max=self.field_provider.selected_field.row_count - 1, step=1, value=0) \
+                ui.select(list(range(self.field_provider.selected_field.row_count)), label='Bed Row') \
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the row index you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
         self.next = self.confirm_support_point
 
     def confirm_support_point(self) -> None:
+        def refresh_position() -> None:
+            self.support_point_coordinates = self.gnss.last_measurement.point
         assert self.gnss is not None
         assert self.gnss.last_measurement is not None
-        if self.gnss.last_measurement.gps_quality != GpsQuality.RTK_FIXED:
-            with self.content:
-                ui.label('No RTK fix available.').classes('text-red')
-        self.support_point_coordinates = self.gnss.last_measurement.point
-        self.headline.text = 'Confirm Values'
         self.content.clear()
+        self.headline.text = 'Confirm Values'
+        refresh_position()
         with self.content:
             with ui.row().classes('items-center'):
-                ui.label(f'Support Point Coordinates: {self.support_point_coordinates}').classes('text-lg')
-                ui.label(f'Row Number: {round(self.row_name)}').classes('text-lg')
-                ui.label(f'Bed Number: {round(self.bed_number)}').classes('text-lg')
+                with ui.column():
+                    ui.label('').classes('text-lg').bind_text_from(self, 'support_point_coordinates', lambda p: f'{p}')
+                    if self.field_provider.selected_field.bed_count > 1:
+                        ui.label(f'Bed Number: {round(self.bed_number)}').classes('text-lg')
+                    ui.label(f'Row Number: {round(self.row_name)}').classes('text-lg')
             with ui.row().classes('items-center'):
+                ui.button('Refresh Position', on_click=refresh_position) \
+                    .bind_enabled_from(self.gnss, 'last_measurement', lambda m: m.gps_quality == GpsQuality.RTK_FIXED)
                 ui.button('Cancel', on_click=self.dialog.close).props('color=red')
         self.next = self._apply
 
