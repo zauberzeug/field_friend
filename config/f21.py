@@ -10,13 +10,14 @@ from field_friend.config.configuration import (
     ImuConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
+    SprayerConfiguration,
     WheelsConfiguration,
 )
 
 config = FieldFriendConfiguration(
     name='field-friend-f21',
     robot_brain=RobotBrainConfiguration(name='rb54', flash_params=['orin', 'v05', 'nand']),
-    tool=None,
+    tool='sprayer',
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033),
     camera=CameraConfiguration(
         width=1280,
@@ -43,7 +44,7 @@ config = FieldFriendConfiguration(
     ),
     bumper=BumperConfiguration(pin_front_top=21, pin_front_bottom=35, pin_back=18),
     y_axis=None,
-    z_axis=None,
+    z_axis=SprayerConfiguration(),
     circle_sight_positions=CircleSightPositions(
         right='-4',
         left='-3',

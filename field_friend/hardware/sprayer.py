@@ -1,5 +1,4 @@
 import abc
-import logging
 
 import rosys
 from nicegui import ui
@@ -9,10 +8,9 @@ from ..config import SprayerConfiguration
 
 
 class Sprayer(rosys.hardware.Module, abc.ABC):
-    def __init__(self, *, name: str = 'sprayer', **kwargs) -> None:
+    def __init__(self, *, spray_radius: float, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.name = name
-        self.log = logging.getLogger(f'field_friend.hardware.{name}')
+        self.spray_radius = spray_radius
 
     @abc.abstractmethod
     async def activate_pump(self) -> None:
@@ -28,6 +26,10 @@ class Sprayer(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def close_valve(self) -> None:
+        pass
+
+    async def stop(self) -> None:
+        # TODO: remove when tool rework is done
         pass
 
     def developer_ui(self) -> None:
@@ -53,7 +55,7 @@ class SprayerHardware(Sprayer, rosys.hardware.ModuleHardware):
             {self.name}_valve = {expander.name + "." if expander else ""}Output({config.valve_pin})
             {self.name}_pump = {expander.name + "." if expander else ""}Output({config.pump_pin})
         ''')
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, spray_radius=config.spray_radius, **kwargs)
 
     async def activate_pump(self) -> None:
         await self.robot_brain.send(f'{self.name}_pump.on()')
@@ -69,8 +71,8 @@ class SprayerHardware(Sprayer, rosys.hardware.ModuleHardware):
 
 
 class SprayerSimulation(Sprayer, rosys.hardware.ModuleSimulation):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, *, spray_radius: float = 0.15, **kwargs) -> None:
+        super().__init__(spray_radius=spray_radius, **kwargs)
 
     async def activate_pump(self) -> None:
         self.log.debug('Activating pump')
