@@ -4,7 +4,6 @@ from field_friend.config.configuration import (
     BumperConfiguration,
     CameraConfiguration,
     CircleSightPositions,
-    CropConfiguration,
     FieldFriendConfiguration,
     FlashlightConfiguration,
     GnssConfiguration,
@@ -19,7 +18,12 @@ config = FieldFriendConfiguration(
     robot_brain=RobotBrainConfiguration(name='rb54', flash_params=['orin', 'v05', 'nand']),
     tool=None,
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033),
-    camera=None,
+    camera=CameraConfiguration(
+        width=1280,
+        height=720,
+        fps=10,
+        rotation=180,
+    ),
     wheels=WheelsConfiguration(
         is_left_reversed=True,
         is_right_reversed=True,
