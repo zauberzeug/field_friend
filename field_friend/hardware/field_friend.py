@@ -76,7 +76,7 @@ class FieldFriend(rosys.hardware.Robot):
                 return self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
         if self.implement_name in ['sprayer']:
-            return -self.z_axis.spray_radius <= local_point.y <= self.z_axis.spray_radius
+            return abs(local_point.y) <= self.z_axis.spray_radius
         raise NotImplementedError(f'Tool {self.implement_name} is not implemented for reachability check')
 
     def tornado_diameters(self, angle: float) -> tuple:
