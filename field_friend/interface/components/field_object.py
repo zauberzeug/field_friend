@@ -54,7 +54,7 @@ class FieldObject(Group):
     def update(self, active_field: Field | None) -> None:
         # TODO: now we have empty keys in our objects dict. Is this intended?
         for obj in list(self.scene.objects.values()):
-            if obj.name and obj.name.startswith(('field_', 'row_')):
+            if obj.name and obj.name.startswith(('field_', 'row_', 'bed_')):
                 obj.delete()
 
         if active_field is None:
