@@ -445,6 +445,7 @@ class ZCanOpenConfiguration(BaseAxisConfiguration,
 @dataclass(slots=True, kw_only=True)
 class SprayerConfiguration:
     name: str = 'sprayer'
+    version: str = 'sprayer'
     valve_pin: int = 4
     valve_pin_expander: bool = False
     pump_pin: int = 5

@@ -65,7 +65,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown Y-Axis version: {config.y_axis.version}')
 
-        z_axis: AxisSimulation | TornadoSimulation | None
+        z_axis: AxisSimulation | TornadoSimulation | SprayerSimulation | None
         if not config.z_axis:
             z_axis = None
         elif isinstance(config.z_axis, ZStepperConfiguration | ZCanOpenConfiguration | AxisD1Configuration):

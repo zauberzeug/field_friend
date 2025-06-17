@@ -29,8 +29,15 @@ class Sprayer(rosys.hardware.Module, abc.ABC):
         pass
 
     async def stop(self) -> None:
-        # TODO: remove when tool rework is done
-        pass
+        await self.close_valve()
+        await self.deactivate_pump()
+
+    @property
+    def is_referenced(self) -> bool:
+        return True
+
+    async def try_reference(self) -> bool:
+        return True
 
     def developer_ui(self) -> None:
         ui.label('Sprayer')

@@ -7,6 +7,7 @@ from nicegui import ui
 from rosys.analysis import track
 from rosys.geometry import Point
 
+from ...hardware.sprayer import Sprayer
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
@@ -19,7 +20,8 @@ class WeedingSprayer(WeedingImplement):
 
     def __init__(self, system: System) -> None:
         super().__init__('Sprayer', system)
-        self.sprayer_hardware = system.field_friend.z_axis
+        assert isinstance(system.field_friend.z_axis, Sprayer)
+        self.sprayer_hardware: Sprayer = system.field_friend.z_axis
         self.relevant_weeds = ['coix', 'sauerampfer', 'weed']
         self.log.debug('Using relevant weeds: %s', self.relevant_weeds)
 
@@ -27,19 +29,21 @@ class WeedingSprayer(WeedingImplement):
         self.spray_time: float = self.SPRAY_TIME
 
     async def prepare(self) -> bool:
+        assert isinstance(self.system.field_friend.z_axis, Sprayer)
         await self.system.field_friend.z_axis.activate_pump()
         await rosys.sleep(self.pressure_reach_time)
         return True
 
     async def start_workflow(self) -> None:
+        assert isinstance(self.sprayer_hardware, Sprayer)
         await super().start_workflow()
         try:
             punch_position = self.system.robot_locator.pose.transform3d(
                 rosys.geometry.Point3d(x=self.system.field_friend.WORK_X, y=0.0, z=0))
             self.last_punches.append(punch_position)
-            await self.system.field_friend.z_axis.open_valve()
+            await self.sprayer_hardware.open_valve()
             await rosys.sleep(self.spray_time)
-            await self.system.field_friend.z_axis.close_valve()
+            await self.sprayer_hardware.close_valve()
             punched_weeds = [weed.id for weed in self.system.plant_provider.get_relevant_weeds(self.system.robot_locator.pose.point_3d())
                              if weed.position.distance(punch_position) <= self.sprayer_hardware.spray_radius]
             punched_crops = [crop.id for crop in self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
@@ -59,6 +63,7 @@ class WeedingSprayer(WeedingImplement):
     @track
     async def get_move_target(self) -> Point | None:  # pylint: disable=unused-argument
         """Return the target position to drive to."""
+        assert isinstance(self.system.field_friend.z_axis, Sprayer)
         super()._has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
                           if self.system.field_friend.can_reach(position.projection())}
