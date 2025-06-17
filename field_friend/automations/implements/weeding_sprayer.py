@@ -68,10 +68,10 @@ class WeedingSprayer(WeedingImplement):
         self.log.debug(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
         for next_weed_id, next_weed_position in weeds_in_range.items():
             weed_world_position = self.system.robot_locator.pose.transform3d(next_weed_position)
-            crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
-            if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
-                self.log.debug('Skipping weed because it is to far from the cultivated crops')
-                continue
+            # crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
+            # if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
+            #     self.log.debug('Skipping weed because it is to far from the cultivated crops')
+            #     continue
             if any(p.distance(weed_world_position) < self.sprayer_hardware.spray_radius for p in self.last_punches):
                 self.log.debug('Skipping weed because it was already punched')
                 continue

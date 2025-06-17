@@ -33,7 +33,7 @@ class Sprayer(rosys.hardware.Module, abc.ABC):
         pass
 
     def developer_ui(self) -> None:
-        ui.label(self.name.title())
+        ui.label('Sprayer')
         with ui.row():
             ui.label('Pump')
             ui.button('On', on_click=self.activate_pump)
@@ -49,6 +49,7 @@ class SprayerHardware(Sprayer, rosys.hardware.ModuleHardware):
                  expander: rosys.hardware.ExpanderHardware | None,
                  **kwargs) -> None:
         self.config = config
+        self.name = config.name
         self.robot_brain = robot_brain
         self.expander = expander
         lizard_code = remove_indentation(f'''
