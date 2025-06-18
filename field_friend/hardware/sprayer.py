@@ -60,8 +60,8 @@ class SprayerHardware(Sprayer, rosys.hardware.ModuleHardware):
         self.robot_brain = robot_brain
         self.expander = expander
         lizard_code = remove_indentation(f'''
-            {self.name}_valve = {expander.name + "." if expander else ""}Output({config.valve_pin})
-            {self.name}_pump = {expander.name + "." if expander else ""}Output({config.pump_pin})
+            {self.name}_valve = {expander.name + "." if config.valve_pin_expander else ""}Output({config.valve_pin})
+            {self.name}_pump = {expander.name + "." if config.pump_pin_expander else ""}Output({config.pump_pin})
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, spray_radius=config.spray_radius, **kwargs)
 
