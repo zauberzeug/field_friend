@@ -62,6 +62,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                 lizard_code += f'{z_axis.config.name}_motor_turn.speed(0);'
             elif isinstance(z_axis, AxisD1):
                 lizard_code += f'{z_axis.config.name}_motor.stop();'
+            elif isinstance(z_axis, SprayerHardware):
+                lizard_code += f'{z_axis.config.name}_pump.off(); {z_axis.config.name}_valve.off();'
             else:
                 lizard_code += f' {z_axis.config.name}.stop();'
         if isinstance(flashlight, FlashlightHardware):
