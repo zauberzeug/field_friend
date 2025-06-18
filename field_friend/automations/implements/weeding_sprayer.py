@@ -22,7 +22,7 @@ class WeedingSprayer(WeedingImplement):
         super().__init__('Sprayer', system)
         assert isinstance(system.field_friend.z_axis, Sprayer)
         self.sprayer_hardware: Sprayer = system.field_friend.z_axis
-        self.relevant_weeds = ['coix', 'sauerampfer', 'weed']
+        self.relevant_weeds = ['coin', 'sauerampfer', 'weed']
         self.log.debug('Using relevant weeds: %s', self.relevant_weeds)
 
         self.pressure_reach_time: float = self.PRESSURE_REACH_TIME
