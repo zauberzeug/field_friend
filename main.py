@@ -13,6 +13,9 @@ from field_friend.system import System
 logger = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
 
+if os.environ.get('ROBOT_ID'):
+    logging.warning(f'The ROBOT_ID environment variable is set to {os.environ.get("ROBOT_ID")} '
+                    'and takes precedence over anything in the .env file.')
 
 load_dotenv('.env')
 
