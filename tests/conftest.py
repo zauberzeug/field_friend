@@ -59,6 +59,7 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
     assert s.gnss.last_measurement.point.distance(GeoReference.current.origin) == pytest.approx(0, abs=1e-8)
     yield s
 
+
 @pytest.fixture
 async def system_with_acceleration(rosys_integration) -> AsyncGenerator[System, None]:
     # TODO: solve in RoSys
@@ -132,7 +133,7 @@ class TestField:
 @pytest.fixture
 async def field(system: System) -> AsyncGenerator[TestField, None]:
     test_field = TestField()
-    system.field_provider.create_field(Field(
+    system.field_provider.add_field(Field(
         id=test_field.id,
         name='Test Field',
         first_row_start=test_field.first_row_start,
@@ -160,7 +161,7 @@ async def field_with_beds(system: System) -> AsyncGenerator[TestField, None]:
         '3': 'lettuce'
     }
 
-    system.field_provider.create_field(Field(
+    system.field_provider.add_field(Field(
         id=test_field.id,
         name='Test Field With Beds',
         first_row_start=test_field.first_row_start,
@@ -187,7 +188,7 @@ async def field_with_beds_tornado(system_with_tornado: System) -> AsyncGenerator
         '2': 'onion',
         '3': 'lettuce'
     }
-    system_with_tornado.field_provider.create_field(Field(
+    system_with_tornado.field_provider.add_field(Field(
         id=test_field.id,
         name='Test Field With Beds',
         first_row_start=test_field.first_row_start,

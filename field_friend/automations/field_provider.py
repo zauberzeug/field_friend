@@ -62,7 +62,7 @@ class FieldProvider(rosys.persistence.Persistable):
     def get_field(self, id_: str | None) -> Field | None:
         return next((f for f in self.fields if f.id == id_), None)
 
-    def create_field(self, new_field: Field) -> Field:
+    def add_field(self, new_field: Field) -> Field:
         self.fields.append(new_field)
         self.select_field(new_field.id)
         self.invalidate()

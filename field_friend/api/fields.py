@@ -43,7 +43,7 @@ class Fields:
                         bed_crops=field_data['bed_crops']
                     )
                 else:
-                    self.system.field_provider.create_field(new_field)
+                    self.system.field_provider.add_field(new_field)
                 return JSONResponse(content={'status': 'ok'}, status_code=status.HTTP_200_OK)
             except Exception as e:
                 return JSONResponse(content={'status': 'error', 'message': str(e)}, status_code=status.HTTP_400_BAD_REQUEST)

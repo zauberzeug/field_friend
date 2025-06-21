@@ -238,25 +238,25 @@ class FieldCreator:
             ui.notify('No valid field parameters.')
             return
         if self.bed_count > 1:
-            self.field_provider.create_field(Field(id=str(uuid4()),
-                                                   name=self.field_name,
-                                                   first_row_start=self.first_row_start,
-                                                   first_row_end=self.first_row_end,
-                                                   row_spacing=self.row_spacing,
-                                                   row_count=int(self.row_count),
-                                                   outline_buffer_width=self.outline_buffer_width,
-                                                   bed_count=int(self.bed_count),
-                                                   bed_spacing=self.bed_spacing,
-                                                   bed_crops=self.bed_crops))
+            self.field_provider.add_field(Field(id=str(uuid4()),
+                                                name=self.field_name,
+                                                first_row_start=self.first_row_start,
+                                                first_row_end=self.first_row_end,
+                                                row_spacing=self.row_spacing,
+                                                row_count=int(self.row_count),
+                                                outline_buffer_width=self.outline_buffer_width,
+                                                bed_count=int(self.bed_count),
+                                                bed_spacing=self.bed_spacing,
+                                                bed_crops=self.bed_crops))
         else:
-            self.field_provider.create_field(Field(id=str(uuid4()),
-                                                   name=self.field_name,
-                                                   first_row_start=self.first_row_start,
-                                                   first_row_end=self.first_row_end,
-                                                   row_spacing=self.row_spacing,
-                                                   row_count=int(self.row_count),
-                                                   outline_buffer_width=self.outline_buffer_width,
-                                                   bed_crops=self.bed_crops))
+            self.field_provider.add_field(Field(id=str(uuid4()),
+                                                name=self.field_name,
+                                                first_row_start=self.first_row_start,
+                                                first_row_end=self.first_row_end,
+                                                row_spacing=self.row_spacing,
+                                                row_count=int(self.row_count),
+                                                outline_buffer_width=self.outline_buffer_width,
+                                                bed_crops=self.bed_crops))
         self.first_row_start = None
         self.first_row_end = None
         app.storage.general['field_creator_a_point'] = None

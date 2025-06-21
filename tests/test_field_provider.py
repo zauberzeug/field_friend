@@ -175,7 +175,7 @@ def test_create_multiple_fields(system: System):
         row_count=5,
         row_spacing=0.5
     )
-    created_field1 = field_provider.create_field(field1)
+    created_field1 = field_provider.add_field(field1)
     assert len(field_provider.fields) == 1
     assert field_provider.get_field(created_field1.id) == created_field1
 
@@ -188,7 +188,7 @@ def test_create_multiple_fields(system: System):
         row_count=3,
         row_spacing=0.75
     )
-    created_field2 = field_provider.create_field(field2)
+    created_field2 = field_provider.add_field(field2)
     assert len(field_provider.fields) == 2
     assert field_provider.get_field(created_field2.id) == created_field2
 
@@ -241,7 +241,7 @@ def test_create_field_with_multiple_beds(system: System, field: Field):
         bed_count=bed_count,
         bed_spacing=bed_spacing
     )
-    created_field = field_provider.create_field(field_with_beds)
+    created_field = field_provider.add_field(field_with_beds)
     assert len(field_provider.fields) == 2
     assert field_provider.get_field(created_field.id) == created_field
     assert created_field.bed_count == bed_count
