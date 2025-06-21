@@ -11,7 +11,7 @@ from rosys.testing import assert_point, forward
 from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Implement, Recorder, Tornado, WeedingImplement
-from field_friend.automations.navigation import StraightLineNavigation
+from field_friend.automations.navigation import Navigation, StraightLineNavigation
 from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 
@@ -123,6 +123,7 @@ async def test_driving_to_exact_positions(system: System):
         assert system.robot_locator.pose.point.x == pytest.approx(stopper.current_target_position.x, abs=0.001)
         assert system.robot_locator.pose.point.y == pytest.approx(stopper.current_target_position.y, abs=0.001)
         await forward(0.1)  # give robot time to update position
+    system.current_navigation.linear_speed_limit = Navigation.LINEAR_SPEED_LIMIT
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.x == pytest.approx(system.current_navigation.length, abs=0.001)
 
