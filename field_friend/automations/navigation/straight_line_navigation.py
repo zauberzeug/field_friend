@@ -49,21 +49,19 @@ class StraightLineNavigation(Navigation):
 
     def _should_finish(self) -> bool:
         end_pose = Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)
-        return end_pose.relative_point(self.robot_locator.pose.point).x > 0
+        return end_pose.relative_point(self.robot_locator.pose.point).x > -0.0001
 
     def create_simulation(self):
         assert isinstance(self.detector, rosys.vision.DetectorSimulation)
         crop_distance = 0.2
         start_point = self.robot_locator.pose.transform(Point(x=0.1, y=0))
         for i in range(0, round(self.length / crop_distance)):
-            p = start_point.polar(crop_distance*i,
-                                                    self.robot_locator.pose.yaw) \
+            p = start_point.polar(crop_distance*i, self.robot_locator.pose.yaw) \
                 .polar(randint(-2, 2)*0.01, self.robot_locator.pose.yaw+np.pi/2)
             self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
                                                                                 position=Point3d(x=p.x, y=p.y, z=0)))
             for _ in range(1, 7):
-                p = start_point.polar(0.20*i+randint(-5, 5)*0.01,
-                                                        self.robot_locator.pose.yaw) \
+                p = start_point.polar(0.20*i+randint(-5, 5)*0.01, self.robot_locator.pose.yaw) \
                     .polar(randint(-15, 15)*0.01, self.robot_locator.pose.yaw + np.pi/2)
                 self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                                     position=Point3d(x=p.x, y=p.y, z=0)))

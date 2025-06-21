@@ -11,7 +11,7 @@ from rosys.testing import assert_point, forward
 from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Implement, Recorder, Tornado, WeedingImplement
-from field_friend.automations.navigation import StraightLineNavigation
+from field_friend.automations.navigation import Navigation, StraightLineNavigation
 from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 
@@ -51,13 +51,15 @@ async def test_straight_line_with_high_angles(system: System):
     await forward(until=lambda: abs(rosys.helpers.angle(system.robot_locator.pose.yaw, target_yaw)) < np.deg2rad(0.1))
     await system.driver.wheels.stop()
     assert isinstance(system.current_navigation, StraightLineNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
     system.current_navigation.length = 1.0
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped)
+    await forward(until=lambda: system.automator.is_stopped, timeout=24)
     assert system.robot_locator.pose.point.x == pytest.approx(-0.985, abs=0.1)
     assert system.robot_locator.pose.point.y == pytest.approx(-0.174, abs=0.1)
     assert system.robot_locator.pose.yaw_deg == pytest.approx(predicted_yaw, abs=5)
+
 
 @pytest.mark.parametrize('target, end_pose, max_turn_angle', [
     (rosys.geometry.Point(x=1.0, y=0.0), rosys.geometry.Pose(x=1.0, y=0.0, yaw=0.0), 1.0),
@@ -70,7 +72,8 @@ async def test_driving_towards_target(system: System, target: rosys.geometry.Poi
     max_turn_angle = np.deg2rad(max_turn_angle)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.linear_speed_limit = 0.1
-    system.automator.start(system.current_navigation.drive_towards_target(target, target_heading=0.0, max_turn_angle=max_turn_angle))
+    system.automator.start(system.current_navigation.drive_towards_target(
+        target, target_heading=0.0, max_turn_angle=max_turn_angle))
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped, timeout=300)
     assert system.robot_locator.pose.point.x == pytest.approx(end_pose.x, abs=0.005)
@@ -120,6 +123,7 @@ async def test_driving_to_exact_positions(system: System):
         assert system.robot_locator.pose.point.x == pytest.approx(stopper.current_target_position.x, abs=0.001)
         assert system.robot_locator.pose.point.y == pytest.approx(stopper.current_target_position.y, abs=0.001)
         await forward(0.1)  # give robot time to update position
+    system.current_navigation.linear_speed_limit = Navigation.LINEAR_SPEED_LIMIT
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.x == pytest.approx(system.current_navigation.length, abs=0.001)
 
@@ -150,6 +154,7 @@ async def test_deceleration_different_speeds(system_with_acceleration: System, l
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.point.x == pytest.approx(0.005, abs=0.0005)
+
 
 @pytest.mark.parametrize('heading_degrees', (-180, -90, 0, 90, 180, 360))
 async def test_driving_turn_to_yaw(system: System, heading_degrees: float):
@@ -262,6 +267,7 @@ async def test_follow_crops_adjust(system: System, detector: rosys.vision.Detect
     assert system.robot_locator.pose.point.x == pytest.approx(9.93, abs=0.1)
     assert system.robot_locator.pose.point.y == pytest.approx(-1.24, abs=0.1)
     assert system.robot_locator.pose.yaw_deg == pytest.approx(-7.2, abs=1.0)
+
 
 @pytest.mark.skip(reason='Follow crops navigation will be reworked')
 async def test_follow_crops_curve(system: System, detector: rosys.vision.DetectorSimulation):
