@@ -120,8 +120,8 @@ class FieldNavigation(StraightLineNavigation):
         if self.force_first_row_start:
             self.row_index = 0
         else:
-            row = min(self.rows_to_work_on, key=lambda r: r.line_segment().line.foot_point(
-                self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
+            row = min(self.rows_to_work_on,
+                      key=lambda r: r.line_segment().line.foot_point(self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
             self.log.debug(f'Nearest row is {row.name}')
             if row not in self.rows_to_work_on:
                 rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
