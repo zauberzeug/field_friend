@@ -192,10 +192,10 @@ class Field:
             outline_shape = Polygon([p.tuple for p in outline_unbuffered])
         else:
             outline_shape = LineString([p.tuple for p in outline_unbuffered])
-        bufferd_polygon = outline_shape.buffer(
+        buffered_polygon = outline_shape.buffer(
             self.outline_buffer_width, cap_style='square', join_style='mitre', mitre_limit=math.inf)
-        bufferd_polygon_coords = bufferd_polygon.exterior.coords
-        outline = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
+        buffered_polygon_coords = buffered_polygon.exterior.coords
+        outline = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in buffered_polygon_coords]
         return outline
 
     def to_dict(self) -> dict:
