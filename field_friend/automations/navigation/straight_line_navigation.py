@@ -49,7 +49,7 @@ class StraightLineNavigation(Navigation):
 
     def _should_finish(self) -> bool:
         end_pose = Pose(x=self.target.x, y=self.target.y, yaw=self.origin.direction(self.target), time=0)
-        return end_pose.relative_point(self.robot_locator.pose.point).x > 0
+        return end_pose.relative_point(self.robot_locator.pose.point).x > -0.0001
 
     def create_simulation(self):
         assert isinstance(self.detector, rosys.vision.DetectorSimulation)
