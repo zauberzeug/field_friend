@@ -10,6 +10,28 @@ from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 
 
+def _extract_coords_from_geometry(geom) -> list[tuple[float, float]]:
+    if geom.geom_type == 'LineString':
+        return list(geom.coords)
+    elif geom.geom_type in ('MultiLineString', 'GeometryCollection'):
+        # NOTE: MultiLineString requires concatenating segments while avoiding duplicate points
+        coords = []
+        for line in geom.geoms:
+            line_coords = list(line.coords)
+            if coords and line_coords:
+                if coords[-1] == line_coords[0]:
+                    line_coords = line_coords[1:]
+            coords.extend(line_coords)
+        return coords
+    elif geom.geom_type == 'Point':
+        return [(float(geom.x), float(geom.y))]
+    else:
+        try:
+            return list(geom.coords)
+        except (AttributeError, NotImplementedError):
+            return []
+
+
 @dataclass(slots=True, kw_only=True)
 class Row:
     id: str
@@ -34,10 +56,11 @@ class Row:
 @dataclass(slots=True, kw_only=True)
 class RowSupportPoint(GeoPoint):
     row_index: int
+    waypoint_index: int
 
     @classmethod
-    def from_geopoint(cls, geopoint: GeoPoint, row_index: int) -> Self:
-        return cls(lat=geopoint.lat, lon=geopoint.lon, row_index=row_index)
+    def from_geopoint(cls, geopoint: GeoPoint, row_index: int, waypoint_index: int) -> Self:
+        return cls(lat=geopoint.lat, lon=geopoint.lon, row_index=row_index, waypoint_index=waypoint_index)
 
 
 class Field:
@@ -103,45 +126,103 @@ class Field:
     def _generate_rows(self) -> list[Row]:
         assert self.first_row_start is not None
         assert self.first_row_end is not None
-        ab_line_cartesian = LineString([self.first_row_start.to_local().tuple,
-                                        self.first_row_end.to_local().tuple])
+
         rows: list[Row] = []
-
-        last_support_point = None
-        last_support_point_offset = 0
-
         total_rows = self.row_count * self.bed_count
+
+        waypoints_by_row = {}
+        for sp in self.row_support_points:
+            if sp.row_index not in waypoints_by_row:
+                waypoints_by_row[sp.row_index] = []
+            waypoints_by_row[sp.row_index].append(sp)
+
+        for row_waypoints in waypoints_by_row.values():
+            row_waypoints.sort(key=lambda wp: wp.waypoint_index)
+
+        ab_line_cartesian = LineString([self.first_row_start.to_local().tuple,
+                                       self.first_row_end.to_local().tuple])
+
+        current_reference_shape = ab_line_cartesian
+        last_shape_change_row = -1
+
         for i in range(total_rows):
             bed_index = i // self.row_count
             row_in_bed = i % self.row_count
 
-            support_point = next((sp for sp in self.row_support_points if sp.row_index == i), None)
-            if support_point:
-                support_point_cartesian = support_point.to_local()
-                offset = ab_line_cartesian.distance(shapely.geometry.Point(
-                    [support_point_cartesian.x, support_point_cartesian.y]))
-                last_support_point = support_point
-                last_support_point_offset = offset
-            elif last_support_point:
-                rows_since_support = i - last_support_point.row_index
-                beds_crossed = bed_index - (last_support_point.row_index // self.row_count)
-                offset = last_support_point_offset
-                if beds_crossed > 0:
-                    offset += beds_crossed * self.bed_spacing
-                    rows_in_complete_beds = rows_since_support - (row_in_bed + 1)
-                    offset += rows_in_complete_beds * self.row_spacing
-                    offset += row_in_bed * self.row_spacing
+            base_offset = row_in_bed * self.row_spacing
+            bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
+            total_offset = base_offset + bed_offset
+
+            row_waypoints = waypoints_by_row.get(i, [])
+
+            if row_waypoints:
+                if i == 0:
+                    # NOTE: Row 0 treats all waypoints as curve points regardless of waypoint_index
+                    row_start = self.first_row_start
+                    row_end = self.first_row_end
+
+                    row_points = [row_start]
+                    row_points.extend(row_waypoints)
+                    row_points.append(row_end)
+
+                    current_reference_shape = LineString([p.to_local().tuple for p in row_points])
+                    last_shape_change_row = i
                 else:
-                    offset += rows_since_support * self.row_spacing
+                    spacing_waypoint = next((wp for wp in row_waypoints if wp.waypoint_index == 0), None)
+                    curve_waypoints = [wp for wp in row_waypoints if wp.waypoint_index > 0]
+
+                    if spacing_waypoint:
+                        spacing_distance = ab_line_cartesian.distance(shapely.geometry.Point(
+                            [spacing_waypoint.to_local().x, spacing_waypoint.to_local().y]))
+                        total_offset = spacing_distance
+
+                    if curve_waypoints:
+                        if spacing_waypoint:
+                            offset_line = offset_curve(ab_line_cartesian, -total_offset)
+                            offset_coords = _extract_coords_from_geometry(offset_line)
+                            row_start = GeoPoint.from_point(Point(x=offset_coords[0][0], y=offset_coords[0][1]))
+                            row_end = GeoPoint.from_point(Point(x=offset_coords[-1][0], y=offset_coords[-1][1]))
+                        else:
+                            if last_shape_change_row >= 0:
+                                rows_since_change = i - last_shape_change_row
+                                relative_offset = rows_since_change * self.row_spacing
+                                offset_line = offset_curve(current_reference_shape, -relative_offset)
+                            else:
+                                offset_line = offset_curve(ab_line_cartesian, -total_offset)
+
+                            offset_coords = _extract_coords_from_geometry(offset_line)
+                            row_start = GeoPoint.from_point(Point(x=offset_coords[0][0], y=offset_coords[0][1]))
+                            row_end = GeoPoint.from_point(Point(x=offset_coords[-1][0], y=offset_coords[-1][1]))
+
+                        row_points = [row_start]
+                        row_points.extend(curve_waypoints)
+                        row_points.append(row_end)
+
+                        current_reference_shape = LineString([p.to_local().tuple for p in row_points])
+                        last_shape_change_row = i
+
+                    else:
+                        offset_line = offset_curve(ab_line_cartesian, -total_offset)
+                        offset_coords = _extract_coords_from_geometry(offset_line)
+                        row_points = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in offset_coords]
+
+                        current_reference_shape = offset_line
+                        last_shape_change_row = i
             else:
-                base_offset = row_in_bed * self.row_spacing
-                bed_offset = bed_index * ((self.row_count - 1) * self.row_spacing + self.bed_spacing)
-                offset = base_offset + bed_offset
-            offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
-            row_points = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
+                if last_shape_change_row >= 0:
+                    rows_since_change = i - last_shape_change_row
+                    relative_offset = rows_since_change * self.row_spacing
+                    offset_line = offset_curve(current_reference_shape, -relative_offset)
+                else:
+                    offset_line = offset_curve(ab_line_cartesian, -total_offset)
+
+                offset_coords = _extract_coords_from_geometry(offset_line)
+                row_points = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in offset_coords]
+
             row = Row(id=f'field_{self.id}_row_{i}', name=f'row_{i}',
                       points=row_points, crop=self.bed_crops[str(bed_index)])
             rows.append(row)
+
         return rows
 
     def _generate_outline(self) -> list[GeoPoint]:

@@ -86,7 +86,7 @@ def test_add_row_support_point(system: System, field: Field):
     # check if distance between first and second row is correct before adding support point
     assert field.rows[0].points[0].distance(field.rows[row_index].points[0]) == pytest.approx(
         row_index * field.row_spacing, abs=1e-8)
-    support_point = RowSupportPoint.from_geopoint(point, row_index)
+    support_point = RowSupportPoint.from_geopoint(point, row_index, waypoint_index=0)
     assert support_point.lat == point.lat
     assert support_point.lon == point.lon
     field_provider.add_row_support_point(field_id, support_point)
@@ -113,8 +113,8 @@ def test_add_multiple_row_support_points(system: System, field: Field):
     second_row_shift_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-0.3)
     third_row_shift_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-1.0)
     support_points = [
-        RowSupportPoint.from_geopoint(second_row_shift_point, row_index=1),
-        RowSupportPoint.from_geopoint(third_row_shift_point, row_index=2),
+        RowSupportPoint.from_geopoint(second_row_shift_point, row_index=1, waypoint_index=0),
+        RowSupportPoint.from_geopoint(third_row_shift_point, row_index=2, waypoint_index=0),
     ]
     for point in support_points:
         field_provider.add_row_support_point(field_id, point)
@@ -145,9 +145,9 @@ def test_update_existing_row_support_point(system: System, field: Field):
     field_id = field.id
     initial_shift_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-1.5)
     updated_shift_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-2.0)
-    initial_point = RowSupportPoint.from_geopoint(initial_shift_point, 2)
+    initial_point = RowSupportPoint.from_geopoint(initial_shift_point, 2, waypoint_index=0)
     field_provider.add_row_support_point(field_id, initial_point)
-    updated_point = RowSupportPoint.from_geopoint(updated_shift_point, 2)
+    updated_point = RowSupportPoint.from_geopoint(updated_shift_point, 2, waypoint_index=0)
     field_provider.add_row_support_point(field_id, updated_point)
     updated_field: Field | None = field_provider.get_field(field_id)
     assert updated_field is not None
@@ -268,3 +268,83 @@ def test_create_field_with_multiple_beds(system: System, field: Field):
         assert created_field.rows[row_index].points[0].lon == pytest.approx(expected_start.lon, abs=1e-8)
         assert created_field.rows[row_index].points[1].lat == pytest.approx(expected_end.lat, abs=1e-8)
         assert created_field.rows[row_index].points[1].lon == pytest.approx(expected_end.lon, abs=1e-8)
+
+
+def test_c_shaped_ab_line_with_multiple_support_points(system: System):
+    field_provider = system.field_provider
+    field_provider.clear_fields()
+    field = Field(
+        id=str(uuid.uuid4()),
+        name='C-shaped Field',
+        first_row_start=FIELD_FIRST_ROW_START,
+        first_row_end=FIELD_FIRST_ROW_END,
+        row_count=5,
+        row_spacing=0.5
+    )
+    field_provider.add_field(field)
+    waypoint1 = FIELD_FIRST_ROW_START.shift_by(x=2, y=-1)
+    waypoint2 = FIELD_FIRST_ROW_END.shift_by(x=-2, y=-1)
+    support_point1 = RowSupportPoint.from_geopoint(waypoint1, row_index=0, waypoint_index=0)
+    support_point2 = RowSupportPoint.from_geopoint(waypoint2, row_index=0, waypoint_index=1)
+
+    field_provider.add_row_support_point(field.id, support_point1)
+    field_provider.add_row_support_point(field.id, support_point2)
+    assert field.row_support_points == [support_point1, support_point2]
+
+    assert len(field.rows[0].points) == 4, 'should have start + 2 waypoints + end'
+    expected_points = [
+        FIELD_FIRST_ROW_START,
+        waypoint1,
+        waypoint2,
+        FIELD_FIRST_ROW_END
+    ]
+    for i, expected_point in enumerate(expected_points):
+        actual_point = field.rows[0].points[i]
+        assert actual_point.lat == pytest.approx(expected_point.lat, abs=1e-8)
+        assert actual_point.lon == pytest.approx(expected_point.lon, abs=1e-8)
+    for i in range(1, field.row_count):
+        row = field.rows[i]
+        # NOTE: shapely tries to match the shape as good as possible and sometimes creates more points to do so
+        assert len(row.points) > 4, 'should have at least same count as first row'
+
+
+def test_waypoints_on_any_row_with_shape_propagation(system: System):
+    field_provider = system.field_provider
+    field_provider.clear_fields()
+
+    field = Field(
+        id=str(uuid.uuid4()),
+        name='Multi-waypoint Field',
+        first_row_start=FIELD_FIRST_ROW_START,
+        first_row_end=FIELD_FIRST_ROW_END,
+        row_count=6,
+        row_spacing=0.5
+    )
+    field_provider.add_field(field)
+
+    for i in range(field.row_count):
+        assert len(field.rows[i].points) == 2, f'row {i} should initially be straight'
+
+    row_3_waypoint = FIELD_FIRST_ROW_START.shift_by(x=1, y=-2)
+    support_point_row_3 = RowSupportPoint.from_geopoint(row_3_waypoint, row_index=3, waypoint_index=1)
+    field_provider.add_row_support_point(field.id, support_point_row_3)
+
+    assert len(field.rows[3].points) == 3, 'row 3 should have 3 points after adding waypoint'
+
+    for i in range(4, field.row_count):
+        assert len(field.rows[i].points) >= 3, f'row {i} should follow the bent shape'
+
+    for i in range(3):
+        assert len(field.rows[i].points) == 2, f'row {i} should remain straight'
+
+    row_5_spacing_point = FIELD_FIRST_ROW_START.shift_by(x=0, y=-2.5)
+    support_point_row_5 = RowSupportPoint.from_geopoint(row_5_spacing_point, row_index=5, waypoint_index=0)
+    field_provider.add_row_support_point(field.id, support_point_row_5)
+
+    assert len(field.rows[5].points) == 2, 'row 5 should be straight again after spacing adjustment'
+
+    assert field.rows[5].points[0].lat == pytest.approx(row_5_spacing_point.lat, abs=1e-8)
+    assert field.rows[5].points[0].lon == pytest.approx(row_5_spacing_point.lon, abs=1e-8)
+
+    for i in range(5, field.row_count):
+        assert len(field.rows[i].points) == 2, f'row {i} should be straight after row 5 spacing adjustment'
