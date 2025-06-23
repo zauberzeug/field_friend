@@ -224,8 +224,8 @@ class FieldNavigation(StraightLineNavigation):
     async def _run_follow_row(self) -> State:
         assert self.end_point is not None
         assert self.start_point is not None
-        end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
-                                       yaw=self.start_point.direction(self.end_point), time=0)
+        end_yaw = self.start_point.direction(self.end_point)
+        end_pose = Pose(x=self.end_point.x, y=self.end_point.y, yaw=end_yaw)
         distance_from_end = end_pose.relative_point(self.robot_locator.pose.point).x
         if distance_from_end > 0:
             await self.driver.wheels.stop()
