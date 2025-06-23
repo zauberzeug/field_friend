@@ -7,7 +7,7 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.analysis import track
-from rosys.geometry import Point, Point3d, Pose
+from rosys.geometry import Point, Point3d, Pose, Spline
 
 from ..field import Field, Row
 from ..implements.implement import Implement
@@ -32,6 +32,7 @@ class State(Enum):
 class FieldNavigation(StraightLineNavigation):
     MAX_DISTANCE_DEVIATION = 0.05
     MAX_ANGLE_DEVIATION = np.deg2rad(10.0)
+    THREE_POINT_TURN_RADIUS = 1.5
 
     def __init__(self, system: 'System', implement: Implement) -> None:
         super().__init__(system, implement)
@@ -46,6 +47,8 @@ class FieldNavigation(StraightLineNavigation):
         self.row_index = 0
         self.start_point: Point | None = None
         self.end_point: Point | None = None
+        self.three_point_turn: bool = True
+        self.three_point_turn_radius: float = self.THREE_POINT_TURN_RADIUS
         self.force_first_row_start: bool = False
         self.is_in_swarm: bool = False
         self.allowed_to_turn: bool = False
@@ -205,13 +208,10 @@ class FieldNavigation(StraightLineNavigation):
     @track
     async def _run_change_row(self) -> State:
         self.set_start_and_end_points()
-        assert self.start_point is not None
-        target_yaw = self.robot_locator.pose.direction(self.start_point)
-        await self.turn_to_yaw(target_yaw)
-        await self.drive_towards_target(rosys.geometry.Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw), target_heading=target_yaw)
-        assert self.end_point is not None
-        row_yaw = self.start_point.direction(self.end_point)
-        await self.turn_to_yaw(row_yaw)
+        if self.three_point_turn:
+            await self._run_three_point_turn()
+        else:
+            await self._simple_turn()
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
         else:
@@ -219,6 +219,35 @@ class FieldNavigation(StraightLineNavigation):
         self._set_cultivated_crop()
         self.allowed_to_turn = False
         return State.FOLLOW_ROW
+
+    async def _simple_turn(self) -> None:
+        assert self.start_point is not None
+        target_yaw = self.robot_locator.pose.direction(self.start_point)
+        await self.turn_to_yaw(target_yaw)
+        await self.drive_towards_target(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw), target_heading=target_yaw)
+        assert self.end_point is not None
+        row_yaw = self.start_point.direction(self.end_point)
+        await self.turn_to_yaw(row_yaw)
+
+    @track
+    async def _run_three_point_turn(self, radius: float = 1.5) -> None:
+        # TODO: tests fail with radius=1.5, but 1.499 and 1501 work perfectly fine
+        assert self.start_point is not None
+        assert self.end_point is not None
+        t0_pose = self.robot_locator.pose
+        direction_to_start = t0_pose.relative_direction(self.start_point)
+        distance_to_start = t0_pose.distance(self.start_point)
+        y_offset = max(radius, distance_to_start)
+        t1_pose = t0_pose.transform_pose(
+            Pose(x=radius, y=y_offset * np.sign(direction_to_start), yaw=direction_to_start))
+        await self.driver.drive_spline(Spline.from_poses(t0_pose, t1_pose))
+        row_yaw = self.start_point.direction(self.end_point)
+        start_pose = Pose(x=self.start_point.x, y=self.start_point.y, yaw=row_yaw)
+        t2_pose = start_pose.transform_pose(
+            Pose(x=-radius, y=radius * np.sign(direction_to_start), yaw=-direction_to_start))
+        with self.driver.parameters.set(can_drive_backwards=True):
+            await self.driver.drive_to(target=t2_pose.point, backward=True)
+        await self.driver.drive_spline(Spline.from_poses(t2_pose, start_pose))
 
     @track
     async def _run_follow_row(self) -> State:
@@ -311,6 +340,8 @@ class FieldNavigation(StraightLineNavigation):
         return super().backup_to_dict() | {
             'field_id': self.field.id if self.field else None,
             'loop': self._loop,
+            'three_point_turn': self.three_point_turn,
+            'three_point_turn_radius': self.three_point_turn_radius,
             'wait_distance': self.wait_distance,
             'force_first_row_start': self.force_first_row_start,
             'is_in_swarm': self.is_in_swarm,
@@ -321,6 +352,8 @@ class FieldNavigation(StraightLineNavigation):
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self._loop = data.get('loop', False)
+        self.three_point_turn = data.get('three_point_turn', True)
+        self.three_point_turn_radius = data.get('three_point_turn_radius', self.three_point_turn_radius)
         self.force_first_row_start = data.get('force_first_row_start', self.force_first_row_start)
         self.wait_distance = data.get('wait_distance', self.wait_distance)
         self.is_in_swarm = data.get('is_in_swarm', self.is_in_swarm)
@@ -328,6 +361,11 @@ class FieldNavigation(StraightLineNavigation):
     def settings_ui(self) -> None:
         with ui.row():
             super().settings_ui()
+            ui.number('Turn radius', step=0.1, min=0.0, max=10.0, format='%.1f', suffix='m', on_change=self.request_backup) \
+                .props('dense outlined') \
+                .classes('w-24') \
+                .bind_value(self, 'three_point_turn_radius') \
+                .bind_visibility_from(self, 'three_point_turn', lambda three_point_turn: three_point_turn)
 
     def developer_ui(self) -> None:
         # super().developer_ui()
@@ -335,6 +373,7 @@ class FieldNavigation(StraightLineNavigation):
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
+        ui.checkbox('Three point turn', on_change=self.request_backup).bind_value(self, 'three_point_turn')
         ui.checkbox('Force first row start', on_change=self.request_backup).bind_value(self, 'force_first_row_start')
         ui.checkbox('Is in swarm', on_change=self.request_backup).bind_value(self, 'is_in_swarm')
         ui.checkbox('Allowed to turn').bind_value(self, 'allowed_to_turn')
