@@ -298,7 +298,7 @@ class FieldNavigation(StraightLineNavigation):
 
     def _set_cultivated_crop(self) -> None:
         if not isinstance(self.implement, WeedingImplement):
-            self.log.warning('Implement is not a weeding implement')
+            self.log.debug('Implement is not a weeding implement. Cannot set cultivated crop')
             return
         if self.current_row is None:
             self.log.warning('No current row')
@@ -319,7 +319,7 @@ class FieldNavigation(StraightLineNavigation):
 
     def _is_start_allowed(self, start_point: Point, end_point: Point, robot_in_working_area: bool) -> bool:
         if not robot_in_working_area:
-            self.log.warning('Robot is not in working area')
+            self.log.debug('Robot is not in working area, will approach start row')
             return True
         if self.current_row is None:
             self.log.warning('No current row')

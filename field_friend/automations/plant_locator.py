@@ -146,7 +146,7 @@ class PlantLocator(EntityLocator):
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
-                self.log.info(f'{d.category_name} not in categories')
+                self.log.error('Detected category "%s" is unknown', d.category_name)
 
     def _detection_watchdog(self) -> None:
         if self.is_paused:
