@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+import rosys
 from nicegui import app, events, ui
 
 from .field_creator import FieldCreator
@@ -85,31 +86,33 @@ class Operation:
             self.system.current_navigation.settings_ui()
 
     def edit_selected_field(self, parameters: dict):
-        if self.field_provider.selected_field:
-            name = self.field_provider.selected_field.source.name
-            self.field_provider.update_field_parameters(
-                field_id=self.field_provider.selected_field.source.id,
-                name=parameters['name'],
-                row_count=int(parameters['row_count']),
-                row_spacing=float(parameters['row_spacing']),
-                outline_buffer_width=float(parameters['outline_buffer_width']),
-                bed_count=int(parameters['bed_count']),
-                bed_spacing=float(parameters['bed_spacing']),
-                bed_crops=parameters['bed_crops']
-            )
-            ui.notify(f'Parameters of Field "{name}" has been changed')
-        else:
-            ui.notify('No field selected', color='warning')
+        if self.field_provider.selected_field is None:
+            return
+        field_id = self.field_provider.selected_field.source.id
+        name = self.field_provider.selected_field.source.name
+        self.field_provider.update_field_parameters(
+            field_id=field_id,
+            name=parameters['name'] if parameters['name'] != '' else name,
+            row_count=parameters['row_count'],
+            row_spacing=parameters['row_spacing'],
+            outline_buffer_width=parameters['outline_buffer_width'],
+            bed_count=parameters['bed_count'],
+            bed_spacing=parameters['bed_spacing'],
+            bed_crops=parameters['bed_crops'])
+        self.field_provider.invalidate()
+        self.field_provider.request_backup()
+        ui.notify(f'Parameters of Field "{parameters["name"] if parameters["name"] != "" else name}" has been changed')
         if self.edit_field_dialog:
             self.edit_field_dialog.close()
 
     def _delete_selected_field(self):
-        if self.field_provider.selected_field:
-            name = self.field_provider.selected_field.source.name
-            self.field_provider.delete_selected_field()
-            ui.notify(f'Field "{name}" has been deleted')
-        else:
-            ui.notify('No field selected', color='warning')
+        if self.field_provider.selected_field is None:
+            return
+        name = self.field_provider.selected_field.source.name
+        self.field_provider.delete_selected_field()
+        self.field_provider.invalidate()
+        self.field_provider.request_backup()
+        rosys.notify(f'Deleted field {name}', type='info')
         if self.delete_field_dialog:
             self.delete_field_dialog.close()
 

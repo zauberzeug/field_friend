@@ -1,10 +1,11 @@
+
 import rosys
 import shapely.geometry
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from nicegui import app
 
-from field_friend.automations import Field
+from field_friend.automations.field import ComputedField, FieldDescription
 from field_friend.system import System
 
 
@@ -15,13 +16,18 @@ class Fields:
 
         @app.get('/api/fields')
         def fields():
-            fields = {
-                field.id: {
-                    **field.to_dict(),
-                    'author_id': self.system.robot_id,
-                    'outline': [p.degree_tuple for p in field.outline]
-                } for field in self.system.field_provider.fields
-            }
+            fields = {}
+            for field_description in self.system.field_provider.field_descriptions:
+                try:
+                    computed_field = ComputedField(field_description)
+                    fields[field_description.id] = {
+                        **field_description.to_dict(),
+                        'author_id': self.system.robot_id,
+                        'outline': [p.degree_tuple for p in computed_field.outline]
+                    }
+                except Exception:
+                    # NOTE: Skip fields that cannot be computed (e.g., invalid field data)
+                    continue
             return fields
 
         @app.post('/api/fields')
@@ -30,7 +36,7 @@ class Fields:
                 field_data = await request.json()
                 field_data.pop('outline', None)
                 field_data.pop('author_id', None)
-                new_field = Field.from_dict(field_data)
+
                 if 'id' in field_data and self.system.field_provider.get_field(field_data['id']):
                     self.system.field_provider.update_field_parameters(
                         field_id=field_data['id'],
@@ -43,7 +49,8 @@ class Fields:
                         bed_crops=field_data['bed_crops']
                     )
                 else:
-                    self.system.field_provider.add_field(new_field)
+                    new_field = FieldDescription.from_dict(field_data)
+                    self.system.field_provider.add_field_description(new_field)
                 return JSONResponse(content={'status': 'ok'}, status_code=status.HTTP_200_OK)
             except Exception as e:
                 return JSONResponse(content={'status': 'error', 'message': str(e)}, status_code=status.HTTP_400_BAD_REQUEST)
@@ -57,7 +64,7 @@ class Fields:
                         content={'status': 'error', 'message': 'Invalid request. Requires field_id'},
                         status_code=400
                     )
-                field: Field | None = self.system.field_provider.get_field(field_id)
+                field: ComputedField | None = self.system.field_provider.get_field(field_id)
                 if not field:
                     return JSONResponse(
                         content={'status': 'error', 'message': 'Field not found'},
@@ -74,9 +81,9 @@ class Fields:
                 bed_id = None
                 if is_inside:
                     row = min(field.rows, key=lambda r: r.line_segment().line.foot_point(
-                        self.system.robot_locator.pose.point).distance(self.system.robot_locator.pose.point))  # nearest row
+                        self.system.robot_locator.pose.point).distance(self.system.robot_locator.pose.point))
                     row_index = int(row.id.split('_')[-1])
-                    bed_id = int(row_index // field.row_count)
+                    bed_id = int(row_index // field.source.row_count)
                 return JSONResponse(
                     content={'status': 'ok', 'inside': is_inside, 'beds': [bed_id]},
                     status_code=200

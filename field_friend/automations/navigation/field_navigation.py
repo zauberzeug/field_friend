@@ -9,7 +9,7 @@ from nicegui import ui
 from rosys.analysis import track
 from rosys.geometry import Point
 
-from ..field import Field, Row
+from ..field import ComputedField, Row
 from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
 from .navigation import WorkflowException, is_reference_valid
@@ -51,8 +51,8 @@ class FieldNavigation(StraightLineNavigation):
         self.allowed_to_turn: bool = False
         self.wait_distance: float = 1.3
 
-        self.field: Field | None = None
-        self.field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
+        self.field: ComputedField | None = None
+        self.field_id = self.field_provider.selected_field.source.id if self.field_provider.selected_field else None
         self.field_provider.FIELD_SELECTED.register(self._set_field_id)
         self._loop: bool = False
         self.rows_to_work_on: list[Row] = []
@@ -93,7 +93,7 @@ class FieldNavigation(StraightLineNavigation):
             return False
         for idx, row in enumerate(self.rows_to_work_on):
             if not len(row.points) >= 2:
-                rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
+                rosys.notify(f'Row {idx} on field {self.field.source.name} has not enough points', 'negative')
                 return False
         nearest_row = self.get_nearest_row()
         if nearest_row is None:
@@ -306,7 +306,7 @@ class FieldNavigation(StraightLineNavigation):
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
-            'field_id': self.field.id if self.field else None,
+            'field_id': self.field.source.id if self.field else None,
             'loop': self._loop,
             'wait_distance': self.wait_distance,
             'force_first_row_start': self.force_first_row_start,
@@ -315,7 +315,7 @@ class FieldNavigation(StraightLineNavigation):
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
-        field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
+        field_id = data.get('field_id', self.field_provider.fields[0].source.id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self._loop = data.get('loop', False)
         self.force_first_row_start = data.get('force_first_row_start', self.force_first_row_start)
@@ -339,7 +339,7 @@ class FieldNavigation(StraightLineNavigation):
             .bind_value(self, 'wait_distance').classes('w-20')
 
     def _set_field_id(self) -> None:
-        self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
+        self.field_id = self.field_provider.selected_field.source.id if self.field_provider.selected_field else None
 
     def create_simulation(self, crop_distance: float = 0.3) -> None:
         assert isinstance(self.detector, rosys.vision.DetectorSimulation)

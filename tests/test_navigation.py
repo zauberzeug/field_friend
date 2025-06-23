@@ -9,7 +9,7 @@ from rosys.helpers import angle
 from rosys.testing import assert_point, forward
 
 from field_friend import System
-from field_friend.automations import Field
+from field_friend.automations import ComputedField
 from field_friend.automations.implements import Implement, Recorder, Tornado, WeedingImplement
 from field_friend.automations.navigation import Navigation, StraightLineNavigation
 from field_friend.automations.navigation.field_navigation import State as FieldNavigationState
@@ -349,12 +349,12 @@ async def test_follow_crops_with_slippage(system: System, detector: rosys.vision
     assert system.robot_locator.pose.yaw_deg == pytest.approx(10.3, abs=0.5)
 
 
-async def test_approach_first_row(system: System, field: Field):
+async def test_approach_first_row(system: System, field: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_navigation.field_id = field.id
+    system.field_navigation.field_id = field.source.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -372,7 +372,7 @@ async def test_approach_first_row(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-async def test_approach_first_row_from_other_side(system: System, field: Field):
+async def test_approach_first_row_from_other_side(system: System, field: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
@@ -387,7 +387,7 @@ async def test_approach_first_row_from_other_side(system: System, field: Field):
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
     assert_point(system.robot_locator.pose.point, safe_start_point, tolerance=0.05)
-    system.field_navigation.field_id = field.id
+    system.field_navigation.field_id = field.source.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -404,7 +404,7 @@ async def test_approach_first_row_from_other_side(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-async def test_approach_first_row_when_outside_of_field(system: System, field: Field):
+async def test_approach_first_row_when_outside_of_field(system: System, field: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
@@ -417,7 +417,7 @@ async def test_approach_first_row_when_outside_of_field(system: System, field: F
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
     assert_point(system.robot_locator.pose.point, point_outside, tolerance=0.05)
-    system.field_navigation.field_id = field.id
+    system.field_navigation.field_id = field.source.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -431,12 +431,12 @@ async def test_approach_first_row_when_outside_of_field(system: System, field: F
     assert not system.automator.is_running, 'should have been stopped because robot is outside of field boundaries'
 
 
-async def test_complete_row(system: System, field: Field):
+async def test_complete_row(system: System, field: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_navigation.field_id = field.id
+    system.field_navigation.field_id = field.source.id
     system.current_navigation = system.field_navigation
     system.current_navigation.linear_speed_limit = 0.3
     system.automator.start()
@@ -453,12 +453,12 @@ async def test_complete_row(system: System, field: Field):
     assert system.field_navigation.automation_watcher.field_watch_active
 
 
-async def test_resuming_field_navigation_after_automation_stop(system: System, field: Field):
+async def test_resuming_field_navigation_after_automation_stop(system: System, field: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_provider.select_field(field.id)
+    system.field_provider.select_field(field.source.id)
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
@@ -482,7 +482,7 @@ async def test_resuming_field_navigation_after_automation_stop(system: System, f
 
 
 @pytest.mark.parametrize('offset', (0, -0.06))
-async def test_field_navigation_robot_between_rows(system: System, field: Field, offset: float):
+async def test_field_navigation_robot_between_rows(system: System, field: ComputedField, offset: float):
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -504,7 +504,7 @@ async def test_field_navigation_robot_between_rows(system: System, field: Field,
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.point.distance(offset_point) < 0.01
 
-    system.field_navigation.field_id = field.id
+    system.field_navigation.field_id = field.source.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -519,7 +519,7 @@ async def test_field_navigation_robot_between_rows(system: System, field: Field,
 
 
 @pytest.mark.parametrize('heading_degrees', (0, 40))
-async def test_field_navigation_robot_heading_deviation(system: System, field: Field, heading_degrees: float):
+async def test_field_navigation_robot_heading_deviation(system: System, field: ComputedField, heading_degrees: float):
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
@@ -538,7 +538,7 @@ async def test_field_navigation_robot_heading_deviation(system: System, field: F
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.point.distance(offset_point) < 0.01
 
-    system.field_navigation.field_id = field.id
+    system.field_navigation.field_id = field.source.id
     system.current_navigation = system.field_navigation
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -552,12 +552,12 @@ async def test_field_navigation_robot_heading_deviation(system: System, field: F
         assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
 
 
-async def test_complete_field(system: System, field: Field):
+async def test_complete_field(system: System, field: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_navigation.field_id = field.id
+    system.field_navigation.field_id = field.source.id
     system.current_navigation = system.field_navigation
     system.current_navigation.linear_speed_limit = 0.3
     system.automator.start()
@@ -568,12 +568,12 @@ async def test_complete_field(system: System, field: Field):
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
 
 
-async def test_complete_field_with_selected_beds(system: System, field_with_beds: Field):
+async def test_complete_field_with_selected_beds(system: System, field_with_beds: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_provider.select_field(field_with_beds.id)
+    system.field_provider.select_field(field_with_beds.source.id)
     system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [0, 2]
     system.current_navigation = system.field_navigation
@@ -586,12 +586,12 @@ async def test_complete_field_with_selected_beds(system: System, field_with_beds
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
 
 
-async def test_complete_field_without_second_bed(system: System, field_with_beds: Field):
+async def test_complete_field_without_second_bed(system: System, field_with_beds: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
-    system.field_provider.select_field(field_with_beds.id)
+    system.field_provider.select_field(field_with_beds.source.id)
     system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [0, 2, 3]
     system.current_navigation = system.field_navigation
@@ -604,12 +604,12 @@ async def test_complete_field_without_second_bed(system: System, field_with_beds
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
 
 
-async def test_field_with_first_row_excluded(system: System, field_with_beds: Field):
+async def test_field_with_first_row_excluded(system: System, field_with_beds: ComputedField):
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
 
-    system.field_provider.select_field(field_with_beds.id)
+    system.field_provider.select_field(field_with_beds.source.id)
     system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [2, 3, 4]  # Exclude bed 1
 
@@ -621,23 +621,23 @@ async def test_field_with_first_row_excluded(system: System, field_with_beds: Fi
     assert system.robot_locator.pose.yaw_deg == pytest.approx(0, abs=0.1)
 
 
-async def test_field_with_bed_crops(system: System, field_with_beds: Field):
+async def test_field_with_bed_crops(system: System, field_with_beds: ComputedField):
     # pylint: disable=protected-access
     assert system.gnss.last_measurement
     assert ROBOT_GEO_START_POSITION is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
 
-    system.field_provider.select_field(field_with_beds.id)
+    system.field_provider.select_field(field_with_beds.source.id)
     system.current_navigation = system.field_navigation
     system.current_implement = system.implements['Weed Screw']
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert isinstance(system.current_implement, WeedingImplement)
-    for bed_number in range(field_with_beds.bed_count):
+    for bed_number in range(field_with_beds.source.bed_count):
         await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
-        expected_crop = field_with_beds.bed_crops[str(bed_number)]
+        expected_crop = field_with_beds.source.bed_crops[str(bed_number)]
         assert system.current_implement.cultivated_crop == expected_crop
-        if bed_number != field_with_beds.bed_count - 1:
+        if bed_number != field_with_beds.source.bed_count - 1:
             await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)
@@ -646,7 +646,7 @@ async def test_field_with_bed_crops(system: System, field_with_beds: Field):
     assert system.automator.is_stopped
 
 
-async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, field_with_beds_tornado: Field, detector: rosys.vision.DetectorSimulation):
+async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, field_with_beds_tornado: ComputedField, detector: rosys.vision.DetectorSimulation):
     # TODO: crop is None
     system = system_with_tornado
     field_with_beds = field_with_beds_tornado
@@ -683,18 +683,18 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
     detector.simulated_objects.append(rosys.vision.SimulatedObject(
         category_name='lettuce', position=rosys.geometry.Point3d(x=0.4, y=-1.35, z=0)))
 
-    system.field_provider.select_field(field_with_beds.id)
+    system.field_provider.select_field(field_with_beds.source.id)
     system.current_navigation = system.field_navigation
     system.current_implement = system.implements['Tornado']
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert isinstance(system.current_implement, WeedingImplement)
 
-    for bed_number in range(field_with_beds.bed_count):
+    for bed_number in range(field_with_beds.source.bed_count):
         await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW, timeout=500)
-        expected_crop = field_with_beds.bed_crops[str(bed_number)]
+        expected_crop = field_with_beds.source.bed_crops[str(bed_number)]
         assert system.current_implement.cultivated_crop == system.field_navigation.current_row.crop == expected_crop
-        current_y = bed_number * -field_with_beds.bed_spacing
+        current_y = bed_number * -field_with_beds.source.bed_spacing
         worked_crops = [obj for obj in detector.simulated_objects
                         if obj.category_name == expected_crop
                         and obj.position.y == current_y]
@@ -703,7 +703,7 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
                       if obj.category_name != expected_crop
                       and obj.position.y == current_y]
         assert len(wrong_crop) == 1, f'Tornado should have skipped 1 wrong crop in bed {bed_number}'
-        if bed_number != field_with_beds.bed_count - 1:
+        if bed_number != field_with_beds.source.bed_count - 1:
             await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
     await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FIELD_COMPLETED, timeout=1500)
     await forward(until=lambda: system.automator.is_stopped)
