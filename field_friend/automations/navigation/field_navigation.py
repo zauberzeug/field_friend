@@ -7,7 +7,7 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.analysis import track
-from rosys.geometry import Point
+from rosys.geometry import Point, Point3d, Pose
 
 from ..field import Field, Row
 from ..implements.implement import Implement
@@ -361,7 +361,7 @@ class FieldNavigation(StraightLineNavigation):
                     p.y += 0.20
                 else:
                     p.y += randint(-5, 5) * 0.01
-                p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
+                p3d = Point3d(x=p.x, y=p.y, z=0)
                 plant = rosys.vision.SimulatedObject(category_name=crop, position=p3d)
                 self.detector.simulated_objects.append(plant)
 
@@ -369,4 +369,4 @@ class FieldNavigation(StraightLineNavigation):
                     p = self.start_point.polar(crop_distance * (i+1) + randint(-5, 5) * 0.01, self.start_point.direction(self.end_point)) \
                         .polar(randint(-15, 15)*0.01, self.robot_locator.pose.yaw + np.pi/2)
                     self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                                        position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
+                                                                                        position=Point3d(x=p.x, y=p.y, z=0)))
