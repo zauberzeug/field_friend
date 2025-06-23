@@ -14,7 +14,7 @@ from ..vision.zedxmini_camera import StereoCamera
 from .entity_locator import EntityLocator
 from .plant import Plant
 
-WEED_CATEGORY_NAME = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
+WEED_CATEGORY_NAME = ['weed', 'weedy_area', 'coin', 'big_weed']
 CROP_CATEGORY_NAME: dict[str, str] = {}
 MINIMUM_CROP_CONFIDENCE = 0.3
 MINIMUM_WEED_CONFIDENCE = 0.3
