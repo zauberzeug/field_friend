@@ -10,7 +10,7 @@ from nicegui import ui
 from rosys.geometry import GeoPoint
 from rosys.hardware.gnss import GpsQuality
 
-from ...automations.field import RowSupportPoint
+from ...automations.field_description import RowSupportPoint
 
 if TYPE_CHECKING:
     from ...system import System

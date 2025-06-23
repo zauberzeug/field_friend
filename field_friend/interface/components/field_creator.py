@@ -9,7 +9,7 @@ from nicegui.elements.leaflet_layers import Marker
 from rosys.geometry import GeoPoint
 from rosys.hardware import GnssMeasurement
 
-from field_friend.automations.field import FieldDescription
+from field_friend.automations.field_description import FieldDescription
 
 if TYPE_CHECKING:
     from ...system import System

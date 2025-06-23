@@ -9,7 +9,7 @@ from nicegui import ui
 from rosys.analysis import track
 from rosys.geometry import Point
 
-from ..field import ComputedField, Row
+from ..computed_field import ComputedField, Row
 from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
 from .navigation import WorkflowException, is_reference_valid

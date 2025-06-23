@@ -8,7 +8,8 @@ from rosys.hardware import GnssSimulation
 from rosys.persistence import Persistable
 from rosys.testing import forward, helpers
 
-from field_friend.automations import ComputedField, FieldDescription
+from field_friend.automations.computed_field import ComputedField
+from field_friend.automations.field_description import FieldDescription
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.system import System

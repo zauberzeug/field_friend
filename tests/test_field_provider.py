@@ -7,7 +7,8 @@ from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 from rosys.geometry import GeoPoint
 
 from field_friend import System
-from field_friend.automations import ComputedField, FieldDescription, RowSupportPoint
+from field_friend.automations.computed_field import ComputedField
+from field_friend.automations.field_description import FieldDescription, RowSupportPoint
 
 
 def test_loading_from_persistence(system: System):

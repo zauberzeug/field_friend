@@ -1,11 +1,11 @@
-
 import rosys
 import shapely.geometry
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from nicegui import app
 
-from field_friend.automations.field import ComputedField, FieldDescription
+from field_friend.automations.computed_field import ComputedField
+from field_friend.automations.field_description import FieldDescription
 from field_friend.system import System
 
 

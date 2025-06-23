@@ -1,7 +1,8 @@
 from .automation_watcher import AutomationWatcher
 from .battery_watcher import BatteryWatcher
+from .computed_field import ComputedField, Row
 from .entity_locator import EntityLocator
-from .field import ComputedField, FieldDescription, Row, RowSupportPoint
+from .field_description import FieldDescription, RowSupportPoint
 from .field_provider import FieldProvider
 from .implements.implement import Implement
 from .kpi_provider import KpiProvider

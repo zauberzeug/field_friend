@@ -7,7 +7,8 @@ import numpy as np
 from nicegui.elements.scene_objects import Box, Curve, Cylinder, Group
 from rosys.geometry import Point, Spline
 
-from ...automations import ComputedField, FieldProvider
+from ...automations import FieldProvider
+from ...automations.computed_field import ComputedField
 
 if TYPE_CHECKING:
     from ...system import System

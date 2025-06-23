@@ -9,7 +9,7 @@ from rosys.helpers import angle
 from rosys.testing import assert_point, forward
 
 from field_friend import System
-from field_friend.automations import ComputedField
+from field_friend.automations.computed_field import ComputedField
 from field_friend.automations.implements import Implement, Recorder, Tornado, WeedingImplement
 from field_friend.automations.navigation import Navigation, StraightLineNavigation
 from field_friend.automations.navigation.field_navigation import State as FieldNavigationState

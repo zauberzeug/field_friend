@@ -4,7 +4,8 @@ from typing import Any
 import rosys
 from rosys.event import Event
 
-from .field import ComputedField, FieldDescription, Row, RowSupportPoint
+from .computed_field import ComputedField, Row
+from .field_description import FieldDescription, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.Persistable):

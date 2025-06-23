@@ -3,7 +3,7 @@ from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 from rosys.geometry import GeoPose
 
 from field_friend import System
-from field_friend.automations.field import ComputedField
+from field_friend.automations.computed_field import ComputedField
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.interface.components.support_point_dialog import SupportPointDialog
 
