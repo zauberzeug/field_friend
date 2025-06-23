@@ -68,7 +68,7 @@ class StraightLineNavigation(Navigation):
 
     def settings_ui(self) -> None:
         super().settings_ui()
-        ui.number('Length', step=0.5, min=0.05, format='%.1f', on_change=self.request_backup) \
+        ui.number('Length', step=0.5, min=0.05, format='%.1f', suffix='m', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'length') \
