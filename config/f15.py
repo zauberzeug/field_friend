@@ -1,6 +1,7 @@
 from rosys.geometry import Pose, Rotation
 
 from field_friend.config.configuration import (
+    AxisD1Configuration,
     BumperConfiguration,
     CameraConfiguration,
     CircleSightPositions,
@@ -12,7 +13,6 @@ from field_friend.config.configuration import (
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
-    AxisD1Configuration,
 )
 
 config = FieldFriendConfiguration(
