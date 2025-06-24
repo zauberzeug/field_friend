@@ -47,7 +47,6 @@ class FieldNavigation(StraightLineNavigation):
         self.row_index = 0
         self.start_point: Point | None = None
         self.end_point: Point | None = None
-        self.three_point_turn: bool = True
         self.three_point_turn_radius: float = self.THREE_POINT_TURN_RADIUS
         self.force_first_row_start: bool = False
         self.is_in_swarm: bool = False
@@ -208,10 +207,7 @@ class FieldNavigation(StraightLineNavigation):
     @track
     async def _run_change_row(self) -> State:
         self.set_start_and_end_points()
-        if self.three_point_turn:
-            await self._run_three_point_turn(self.three_point_turn_radius)
-        else:
-            await self._simple_turn()
+        await self._run_three_point_turn(self.three_point_turn_radius)
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
         else:
@@ -219,15 +215,6 @@ class FieldNavigation(StraightLineNavigation):
         self._set_cultivated_crop()
         self.allowed_to_turn = False
         return State.FOLLOW_ROW
-
-    async def _simple_turn(self) -> None:
-        assert self.start_point is not None
-        target_yaw = self.robot_locator.pose.direction(self.start_point)
-        await self.turn_to_yaw(target_yaw)
-        await self.drive_towards_target(Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw), target_heading=target_yaw)
-        assert self.end_point is not None
-        row_yaw = self.start_point.direction(self.end_point)
-        await self.turn_to_yaw(row_yaw)
 
     @track
     async def _run_three_point_turn(self, radius: float = 1.5) -> None:
@@ -340,7 +327,6 @@ class FieldNavigation(StraightLineNavigation):
         return super().backup_to_dict() | {
             'field_id': self.field.id if self.field else None,
             'loop': self._loop,
-            'three_point_turn': self.three_point_turn,
             'three_point_turn_radius': self.three_point_turn_radius,
             'wait_distance': self.wait_distance,
             'force_first_row_start': self.force_first_row_start,
@@ -352,7 +338,6 @@ class FieldNavigation(StraightLineNavigation):
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self._loop = data.get('loop', False)
-        self.three_point_turn = data.get('three_point_turn', True)
         self.three_point_turn_radius = data.get('three_point_turn_radius', self.three_point_turn_radius)
         self.force_first_row_start = data.get('force_first_row_start', self.force_first_row_start)
         self.wait_distance = data.get('wait_distance', self.wait_distance)
@@ -365,7 +350,7 @@ class FieldNavigation(StraightLineNavigation):
                 .props('dense outlined') \
                 .classes('w-24') \
                 .bind_value(self, 'three_point_turn_radius') \
-                .bind_visibility_from(self, 'three_point_turn', lambda three_point_turn: three_point_turn)
+                .tooltip(f'Radius when changing rows (default: {self.THREE_POINT_TURN_RADIUS:.1f}m)')
 
     def developer_ui(self) -> None:
         # super().developer_ui()
@@ -373,7 +358,6 @@ class FieldNavigation(StraightLineNavigation):
         ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
         ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
         ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
-        ui.checkbox('Three point turn', on_change=self.request_backup).bind_value(self, 'three_point_turn')
         ui.checkbox('Force first row start', on_change=self.request_backup).bind_value(self, 'force_first_row_start')
         ui.checkbox('Is in swarm', on_change=self.request_backup).bind_value(self, 'is_in_swarm')
         ui.checkbox('Allowed to turn').bind_value(self, 'allowed_to_turn')
