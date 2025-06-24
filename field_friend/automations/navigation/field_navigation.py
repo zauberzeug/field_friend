@@ -209,7 +209,7 @@ class FieldNavigation(StraightLineNavigation):
     async def _run_change_row(self) -> State:
         self.set_start_and_end_points()
         if self.three_point_turn:
-            await self._run_three_point_turn()
+            await self._run_three_point_turn(self.three_point_turn_radius)
         else:
             await self._simple_turn()
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
