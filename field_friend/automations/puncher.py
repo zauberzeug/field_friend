@@ -160,9 +160,9 @@ class Puncher:
                     raise PuncherException('homing failed')
                 await rosys.sleep(0.5)
             await self.field_friend.z_axis.move_down_until_reference(min_position=-0.058 if self.is_demo else None)
+            # TODO: find out why this sleep is needed
+            await rosys.sleep(2.0)
             if depth != 0.0 and not self.is_demo:
-                # TODO: are 2 seconds needed here?
-                await rosys.sleep(2.0)
                 await self.field_friend.z_axis.move_to(min(self.field_friend.z_axis.position_z + depth, 0))
 
             await self.field_friend.z_axis.turn_knifes_to(angle)
