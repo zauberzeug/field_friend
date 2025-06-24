@@ -710,3 +710,55 @@ async def test_field_with_bed_crops_with_tornado(system_with_tornado: System, fi
     end_point = field_with_beds.rows[-1].points[0].to_local()
     assert_point(system.robot_locator.pose.point, end_point, tolerance=0.05)
     assert system.automator.is_stopped
+
+
+@pytest.mark.parametrize('automation_action', ('pause', 'stop'))
+async def test_add_waypoint_during_navigation(system: System, field: ComputedField, automation_action: str):
+    # pylint: disable=protected-access
+    assert system.gnss.last_measurement
+    assert ROBOT_GEO_START_POSITION is not None
+    assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
+
+    system.field_provider.select_field(field.source.id)
+    system.current_navigation = system.field_navigation
+
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.CHANGE_ROW)
+    await forward(until=lambda: system.field_navigation._state == FieldNavigationState.FOLLOW_ROW)
+    assert system.field_navigation.row_index == 1
+
+    row_1_start = field.rows[1].points[0].to_local()
+    row_1_end = field.rows[1].points[-1].to_local()
+    middle_distance = row_1_start.distance(row_1_end) / 2
+    await forward(until=lambda: system.robot_locator.pose.point.distance(row_1_start) >= middle_distance * 0.8)
+    if automation_action == 'pause':
+        system.automator.pause(because='Adding waypoint')
+        await forward(until=lambda: system.automator.is_paused)
+    else:  # stop
+        system.automator.stop(because='Adding waypoint')
+        await forward(until=lambda: system.automator.is_stopped)
+    # NOTE: Move robot away from current row to create a meaningful bend
+    current_pos = system.robot_locator.pose.point
+    bend_point = current_pos.polar(0.3, system.robot_locator.pose.yaw + math.pi/2)
+    await rosys.automation.parallelize(system.driver.drive_to(bend_point), forward(10))
+
+    assert system.field_navigation.add_waypoint()
+    field_description = system.field_provider.get_field_description(field.source.id)
+    assert field_description is not None
+    waypoints = [sp for sp in field_description.row_support_points if sp.row_index == 1]
+    assert len(waypoints) == 1, 'Should have exactly one waypoint for row 1'
+    assert waypoints[0].waypoint_index == 1, 'Waypoint should have waypoint_index 1'
+
+    field = system.field_provider.get_field(field.source.id)
+    assert field is not None
+    assert len(field.rows[1].points) == 3, 'Row 2 should have a new point after adding waypoint'
+    assert system.robot_locator.pose.point \
+        .distance(field.rows[1].points[1].to_local()) < 0.05, 'Waypoint should be near current robot position'
+    assert len(field.rows[3].points) > 2, 'Row 3 should have a followed the shape of row 2'
+
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(4)
+    assert system.automator.is_running
