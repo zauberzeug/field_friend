@@ -1,5 +1,6 @@
 -r requirements.txt
 autopep8
+livesync
 mypy
 odrive==0.6.9.post0
 pre-commit
@@ -7,4 +8,3 @@ pylint
 pytest
 pytest-asyncio
 ruff
-livesync
