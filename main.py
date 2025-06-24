@@ -13,8 +13,7 @@ from field_friend.system import System
 logger = log_configuration.configure()
 app.add_static_files('/assets', 'assets')
 
-
-load_dotenv('.env')
+load_dotenv('.env', override=True)
 
 
 def startup() -> None:
