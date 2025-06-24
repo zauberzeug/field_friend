@@ -94,7 +94,7 @@ class Puncher:
                 assert isinstance(self.field_friend.y_axis, Axis)
                 await rosys.run.retry(lambda y=y: self.field_friend.y_axis.move_to(y),  # type: ignore
                                       on_failed=self.field_friend.y_axis.recover)
-                await self.tornado_drill(angle=angle, turns=turns, with_open_drill=with_open_tornado)
+                await self.tornado_drill(angle=angle, depth=depth, turns=turns, with_open_drill=with_open_tornado)
 
             elif isinstance(self.field_friend.z_axis, Axis):
                 await self.field_friend.y_axis.move_to(y)
