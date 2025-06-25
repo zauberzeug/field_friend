@@ -91,7 +91,7 @@ class Tornado(WeedingImplement):
         self.next_punch_y_position = closest_crop_position.y
         return closest_crop_world_position.projection()
 
-    def _crops_in_drill_range(self, crop_id: str, crop_position: rosys.geometry.Point, angle: float) -> bool:
+    def _crops_in_drill_range(self, crop_id: str, crop_position: Point, angle: float) -> bool:
         inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
         crop_world_position = self.system.robot_locator.pose.transform(crop_position)
         for crop in self.system.plant_provider.crops:
