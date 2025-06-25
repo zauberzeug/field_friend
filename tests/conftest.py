@@ -5,7 +5,6 @@ import pytest
 import rosys
 from rosys.geometry import GeoPoint, GeoReference
 from rosys.hardware import GnssSimulation
-from rosys.persistence import Persistable
 from rosys.testing import forward, helpers
 
 from field_friend.automations import Field, Row
@@ -24,9 +23,7 @@ log = logging.getLogger('field_friend.testing')
 
 @pytest.fixture
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
-    # TODO: solve in RoSys
-    Persistable.instances.clear()
-    s = System(getattr(request, 'param', 'u6'), restore_persistence=False)
+    s = System(getattr(request, 'param', 'u6'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
@@ -43,9 +40,7 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
 
 @pytest.fixture
 async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[System, None]:
-    # TODO: solve in RoSys
-    Persistable.instances.clear()
-    s = System(getattr(request, 'param', 'u4'), restore_persistence=False)
+    s = System(getattr(request, 'param', 'u4'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
@@ -59,11 +54,10 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
     assert s.gnss.last_measurement.point.distance(GeoReference.current.origin) == pytest.approx(0, abs=1e-8)
     yield s
 
+
 @pytest.fixture
 async def system_with_acceleration(rosys_integration) -> AsyncGenerator[System, None]:
-    # TODO: solve in RoSys
-    Persistable.instances.clear()
-    s = System('u4', restore_persistence=False, use_acceleration=True)
+    s = System('u4', use_acceleration=True)
     assert isinstance(s.field_friend.wheels, WheelsSimulationWithAcceleration)
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
