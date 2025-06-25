@@ -207,6 +207,7 @@ class System(rosys.persistence.Persistable):
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.driver.parameters.hook_bending_factor = 0.25
         self.driver.parameters.minimum_drive_distance = 0.005
+        self.driver.parameters.throttle_at_end_min_speed = 0.05
 
     def setup_shape(self) -> None:
         width = 0.64
