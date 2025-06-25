@@ -232,16 +232,16 @@ class FieldNavigation(StraightLineNavigation):
         direction_to_start = start_pose.relative_direction(self.start_point)
         distance_to_start = start_pose.distance(self.start_point)
         y_offset = max(radius, distance_to_start)
+        row_yaw = self.start_point.direction(self.end_point)
         first_turn_pose = start_pose.transform_pose(
             Pose(x=radius, y=y_offset * np.sign(direction_to_start), yaw=direction_to_start))
-        await self.driver.drive_spline(Spline.from_poses(start_pose, first_turn_pose))
-        row_yaw = self.start_point.direction(self.end_point)
         row_start_pose = Pose(x=self.start_point.x, y=self.start_point.y, yaw=row_yaw)
         back_up_pose = row_start_pose.transform_pose(
             Pose(x=-radius, y=radius * np.sign(direction_to_start), yaw=-direction_to_start))
+
+        await self.driver.drive_spline(Spline.from_poses(start_pose, first_turn_pose))
         with self.driver.parameters.set(can_drive_backwards=True):
             await self.driver.drive_to(target=back_up_pose.point, backward=True)
-
         await self.driver.drive_spline(Spline.from_poses(back_up_pose, row_start_pose))
 
     @track
