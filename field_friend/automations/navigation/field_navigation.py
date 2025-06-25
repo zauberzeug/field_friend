@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gc
 from enum import Enum, auto
 from random import randint
@@ -34,7 +36,7 @@ class FieldNavigation(StraightLineNavigation):
     MAX_ANGLE_DEVIATION = np.deg2rad(10.0)
     THREE_POINT_TURN_RADIUS = 1.5
 
-    def __init__(self, system: 'System', implement: Implement) -> None:
+    def __init__(self, system: System, implement: Implement) -> None:
         super().__init__(system, implement)
         self.name = 'Field Navigation'
         self.gnss = system.gnss
