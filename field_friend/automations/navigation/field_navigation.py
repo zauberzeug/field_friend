@@ -166,18 +166,19 @@ class FieldNavigation(StraightLineNavigation):
     @track
     async def _drive(self) -> None:
         assert self.field is not None
-        if self._state == State.FOLLOW_ROW:
-            self._state = await self._run_follow_row()
-            return
-        with self.implement.blocked():
-            if self._state == State.APPROACH_START_ROW:
-                self._state = await self._run_approach_start_row()
-            elif self._state == State.CHANGE_ROW:
-                self._state = await self._run_change_row()
-            elif self._state == State.ROW_COMPLETED:
-                self._state = await self._run_row_completed()
-            elif self._state == State.WAITING_FOR_CONFIRMATION:
-                self._state = await self._run_waiting_for_confirmation()
+        while not self._should_finish():
+            if self._state == State.FOLLOW_ROW:
+                self._state = await self._run_follow_row()
+                continue
+            with self.implement.blocked():
+                if self._state == State.APPROACH_START_ROW:
+                    self._state = await self._run_approach_start_row()
+                elif self._state == State.CHANGE_ROW:
+                    self._state = await self._run_change_row()
+                elif self._state == State.ROW_COMPLETED:
+                    self._state = await self._run_row_completed()
+                elif self._state == State.WAITING_FOR_CONFIRMATION:
+                    self._state = await self._run_waiting_for_confirmation()
 
     @track
     async def _run_approach_start_row(self) -> State:
