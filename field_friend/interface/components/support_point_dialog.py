@@ -10,7 +10,7 @@ from nicegui import ui
 from rosys.geometry import GeoPoint
 from rosys.hardware.gnss import GpsQuality
 
-from ...automations.field import RowSupportPoint
+from ...automations.field_description import RowSupportPoint
 
 if TYPE_CHECKING:
     from ...system import System
@@ -56,19 +56,19 @@ class SupportPointDialog:
         with self.content:
             rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
             ui.label('1. Drive the robot on the row you want to give a fixed support point.').classes('text-lg')
-            if self.field_provider.selected_field and self.field_provider.selected_field.bed_count == 1:
+            if self.field_provider.selected_field and self.field_provider.selected_field.source.bed_count == 1:
                 ui.label('2. Enter the row number for the support point:').classes('text-lg')
-                ui.select(list(range(self.field_provider.selected_field.row_count)), label='Row') \
+                ui.select(list(range(self.field_provider.selected_field.source.row_count)), label='Row') \
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the row index you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
             elif self.field_provider.selected_field is not None:
                 ui.label('2. Enter the bed and row number for the support point:').classes('text-lg')
-                ui.select(list(range(self.field_provider.selected_field.bed_count)), label='Bed') \
+                ui.select(list(range(self.field_provider.selected_field.source.bed_count)), label='Bed') \
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the bed index the row is on.') \
                     .bind_value(self, 'bed_number')
-                ui.select(list(range(self.field_provider.selected_field.row_count)), label='Bed Row') \
+                ui.select(list(range(self.field_provider.selected_field.source.row_count)), label='Bed Row') \
                     .props('dense outlined').classes('w-40') \
                     .tooltip('Choose the row index you would like to give a fixed support point to.') \
                     .bind_value(self, 'row_name')
@@ -86,7 +86,7 @@ class SupportPointDialog:
             with ui.row().classes('items-center'):
                 with ui.column():
                     ui.label('').classes('text-lg').bind_text_from(self, 'support_point_coordinates', lambda p: f'{p}')
-                    if self.field_provider.selected_field and self.field_provider.selected_field.bed_count > 1:
+                    if self.field_provider.selected_field and self.field_provider.selected_field.source.bed_count > 1:
                         ui.label(f'Bed Number: {round(self.bed_number)}').classes('text-lg')
                     ui.label(f'Row Number: {round(self.row_name)}').classes('text-lg')
             with ui.row().classes('items-center'):
@@ -104,9 +104,9 @@ class SupportPointDialog:
         if field is None:
             ui.notify('No field selected.')
             return
-        row_index = self.bed_number * field.row_count + self.row_name
-        row_support_point = RowSupportPoint.from_geopoint(self.support_point_coordinates, row_index)
-        self.field_provider.add_row_support_point(field.id, row_support_point)
+        row_index = self.bed_number * field.source.row_count + self.row_name
+        row_support_point = RowSupportPoint.from_geopoint(self.support_point_coordinates, row_index, waypoint_index=0)
+        self.field_provider.add_row_support_point(field.source.id, row_support_point)
         ui.notify('Support point added.')
 
     def update_front_cam(self) -> None:

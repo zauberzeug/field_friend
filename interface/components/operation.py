@@ -3,10 +3,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+import rosys
 from nicegui import app, events, ui
 
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
+from .support_point_dialog import SupportPointDialog
 
 if TYPE_CHECKING:
     from ...system import System
@@ -84,31 +86,33 @@ class Operation:
             self.system.current_navigation.settings_ui()
 
     def edit_selected_field(self, parameters: dict):
-        if self.field_provider.selected_field:
-            name = self.field_provider.selected_field.source.name
-            self.field_provider.update_field_parameters(
-                field_id=self.field_provider.selected_field.source.id,
-                name=parameters['name'],
-                row_count=int(parameters['row_count']),
-                row_spacing=float(parameters['row_spacing']),
-                outline_buffer_width=float(parameters['outline_buffer_width']),
-                bed_count=int(parameters['bed_count']),
-                bed_spacing=float(parameters['bed_spacing']),
-                bed_crops=parameters['bed_crops']
-            )
-            ui.notify(f'Parameters of Field "{name}" has been changed')
-        else:
-            ui.notify('No field selected', color='warning')
+        if self.field_provider.selected_field is None:
+            return
+        field_id = self.field_provider.selected_field.source.id
+        name = self.field_provider.selected_field.source.name
+        self.field_provider.update_field_parameters(
+            field_id=field_id,
+            name=parameters['name'] if parameters['name'] != '' else name,
+            row_count=parameters['row_count'],
+            row_spacing=parameters['row_spacing'],
+            outline_buffer_width=parameters['outline_buffer_width'],
+            bed_count=parameters['bed_count'],
+            bed_spacing=parameters['bed_spacing'],
+            bed_crops=parameters['bed_crops'])
+        self.field_provider.invalidate()
+        self.field_provider.request_backup()
+        ui.notify(f'Parameters of Field "{parameters["name"] if parameters["name"] != "" else name}" has been changed')
         if self.edit_field_dialog:
             self.edit_field_dialog.close()
 
     def _delete_selected_field(self):
-        if self.field_provider.selected_field:
-            name = self.field_provider.selected_field.source.name
-            self.field_provider.delete_selected_field()
-            ui.notify(f'Field "{name}" has been deleted')
-        else:
-            ui.notify('No field selected', color='warning')
+        if self.field_provider.selected_field is None:
+            return
+        name = self.field_provider.selected_field.source.name
+        self.field_provider.delete_selected_field()
+        self.field_provider.invalidate()
+        self.field_provider.request_backup()
+        rosys.notify(f'Deleted field {name}', type='info')
         if self.delete_field_dialog:
             self.delete_field_dialog.close()
 
@@ -176,23 +180,24 @@ class Operation:
             with ui.row():
                 ui.button('Cancel', on_click=self.delete_field_dialog.close)
                 ui.button('Delete', on_click=self._delete_selected_field, color='red')
-        with ui.row().classes('w-full mt-2 items-center'):
-            ui.button(icon='add_box', text='New', on_click=lambda: FieldCreator(self.system)) \
+        with ui.row().style('width:100%;'):
+            ui.button(icon='add_box', text='Field', on_click=lambda: FieldCreator(self.system)) \
                 .tooltip('Create a field with AB-line in a few simple steps')
-            if len(self.field_provider.fields) <= 0:
-                return
+        if len(self.field_provider.fields) <= 0:
+            return
+        with ui.row().classes('w-full mt-2'):
             self.field_select = ui.select(
                 value=self.field_provider.selected_field.source.id if self.field_provider.selected_field else None,
                 options={field.source.id: field.source.name for field in self.field_provider.fields},
                 label='Select Field',
                 on_change=lambda e: self.field_provider.select_field(e.value)
-            ).classes('w-2/6')
+            ).classes('w-3/4')
             if self.field_provider.selected_field:
                 with ui.row():
                     ui.button(icon='edit', on_click=self.edit_field_dialog.open) \
                         .classes('ml-2').tooltip('Edit the selected field')
-                    # ui.button(icon='add_box', text='Waypoint', on_click=lambda: SupportPointDialog(self.system)) \
-                    #     .tooltip('Add a support point for a row')
+                    ui.button(icon='add_box', text='Row Point', on_click=lambda: SupportPointDialog(self.system)) \
+                        .tooltip('Add a support point for a row')
                     ui.button(icon='delete', on_click=self.delete_field_dialog.open) \
                         .props('color=red').classes('ml-2').tooltip('Delete the selected field')
                 if self.field_provider.selected_field.source.bed_count > 1:

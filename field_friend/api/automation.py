@@ -24,7 +24,7 @@ class Automation:
                     'automation_running': self.system.automator.is_running,
                     'state': f'{self.system.field_navigation._state.name}',  # pylint: disable=protected-access
                     'current_row': f'{self.system.field_navigation.current_row.name}' if self.system.field_navigation.current_row else None,
-                    'field': f'{self.system.field_navigation.field.name}' if self.system.field_navigation.field else None,
+                    'field': f'{self.system.field_navigation.field.source.name}' if self.system.field_navigation.field else None,
                     'distance_to_end': distance_to_end,
                     'allowed_to_turn': self.system.field_navigation.allowed_to_turn
                 }

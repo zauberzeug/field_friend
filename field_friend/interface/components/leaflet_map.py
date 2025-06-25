@@ -81,7 +81,7 @@ class LeafletMap:
                 self.m.remove_layer(layer)
         self.field_layers = []
         for field in self.field_provider.fields:
-            color = '#6E93D6' if self.field_provider.selected_field is not None and field.id == self.field_provider.selected_field.id else '#999'
+            color = '#6E93D6' if self.field_provider.selected_field is not None and field.source.id == self.field_provider.selected_field.source.id else '#999'
             field_outline = [p.degree_tuple for p in field.outline]
             self.field_layers.append(self.m.generic_layer(name='polygon', args=[field_outline, {'color': color}]))
         for layer in self.row_layers:
