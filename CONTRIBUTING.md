@@ -32,6 +32,7 @@ The `.cursor/rules/` directory contains guidelines specifically for AI assistant
 - Avoid having files over 200-300 lines of code. Refactor at that point
 - Use single quotes for strings in Python, double quotes in JavaScript
 - Use f-strings wherever possible for better readability (except in performance-critical sections which should be marked with "NOTE:" comments)
+- Use % string formatting in logging statements (e.g., `logging.info('Value: %s', value)`) instead of f-strings or .format()
 - Follow autopep8 formatting with 120 character line length
 - Use ruff for linting and code checks
 
