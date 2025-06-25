@@ -99,6 +99,11 @@ class FieldNavigation(StraightLineNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
+        outer_turn_radius = self.three_point_turn_radius + self.system.config.measurements.wheel_distance / 2
+        if outer_turn_radius > self.field.outline_buffer_width:
+            rosys.notify('Decrease the turn radius or increase your field\'s buffer width. ' +
+                         'Your robot will leave the field boundaries', 'negative')
+            return False
         nearest_row = self.get_nearest_row()
         if nearest_row is None:
             return False
