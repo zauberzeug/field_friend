@@ -91,6 +91,7 @@ class Navigation(rosys.persistence.Persistable):
                     await self.drive_towards_target(move_pose)
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
+                    await rosys.sleep(0.1)
                 await rosys.sleep(0.1)
         except WorkflowException as e:
             rosys.notify(f'Navigation failed: {e}', 'negative')
