@@ -38,7 +38,7 @@ icecream.install()
 
 class System(rosys.persistence.Persistable):
 
-    def __init__(self, robot_id: str, *, use_acceleration: bool = True) -> None:
+    def __init__(self, robot_id: str, *, use_acceleration: bool = False) -> None:
         super().__init__()
         self.robot_id = robot_id
         assert self.robot_id != 'unknown'
