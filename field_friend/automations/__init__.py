@@ -1,6 +1,7 @@
 
 from .automation_watcher import AutomationWatcher
 from .battery_watcher import BatteryWatcher
+from .charging_station import ChargingStation
 from .entity_locator import EntityLocator
 from .field import Field, Row, RowSupportPoint
 from .field_provider import FieldProvider
@@ -15,6 +16,7 @@ from .puncher import Puncher
 __all__ = [
     'AutomationWatcher',
     'BatteryWatcher',
+    'ChargingStation',
     'EntityLocator',
     'Field',
     'FieldProvider',

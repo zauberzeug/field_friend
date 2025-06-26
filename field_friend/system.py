@@ -16,6 +16,7 @@ from .app_controls import AppControls as app_controls
 from .automations import (
     AutomationWatcher,
     BatteryWatcher,
+    ChargingStation,
     FieldProvider,
     KpiProvider,
     PathProvider,
@@ -100,6 +101,7 @@ class System(rosys.persistence.Persistable):
 
         self.puncher: Puncher = Puncher(self.field_friend, self.driver)
         self.plant_locator: PlantLocator = PlantLocator(self).persistent(restore=self.restore_persistence)
+        self.charging_station: ChargingStation = ChargingStation(self)
 
         rosys.on_repeat(watch_robot, 1.0)
 
