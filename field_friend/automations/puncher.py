@@ -151,7 +151,9 @@ class Puncher:
         :param with_open_drill: will drill again with open drill after the first drill
         """
         assert 0 <= angle <= 180, f'angle must be between 0 and 180, got {angle}'
-        self.log.debug('Drilling with tornado at %.1f°...', angle)
+        # NOTE: to not harm the plant, we need to turn the knifes to the opposite side (90° -> 270°, 170° -> 190°)
+        corrected_angle = (360 - angle) % 360
+        self.log.debug('Drilling with tornado at %.1f° (corrected from %.1f°)', corrected_angle, angle)
         if not isinstance(self.field_friend.z_axis, Tornado):
             raise PuncherException('tornado drill is only available for tornado axis')
         try:
@@ -167,8 +169,6 @@ class Puncher:
             if depth != 0.0 and not self.is_demo:
                 await self.field_friend.z_axis.move_to(min(self.field_friend.z_axis.position_z + depth, 0))
 
-            # NOTE: to not harm the plant, we need to turn the knifes to the opposite side (90° -> 270°, 170° -> 190°)
-            corrected_angle = (360 - angle) % 360
             await self.field_friend.z_axis.turn_knifes_to(corrected_angle)
             await rosys.sleep(0.2)
             await self.field_friend.z_axis.turn_by(turns)
