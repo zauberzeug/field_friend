@@ -24,12 +24,7 @@ from .automations import (
     Puncher,
 )
 from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import (
-    CrossglideDemoNavigation,
-    FieldNavigation,
-    Navigation,
-    StraightLineNavigation,
-)
+from .automations.navigation import CrossglideDemoNavigation, FieldNavigation, Navigation, StraightLineNavigation
 from .config import get_config
 from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
@@ -70,7 +65,8 @@ class System(rosys.persistence.Persistable):
                 self.log.exception(f'failed to initialize FieldFriendHardware {self.robot_id}')
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = self.setup_gnss()
-            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu).persistent(restore=self.restore_persistence)
+            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu) \
+                .persistent(restore=self.restore_persistence)
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
@@ -78,7 +74,8 @@ class System(rosys.persistence.Persistable):
             self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = self.setup_gnss(self.field_friend.wheels)
-            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu).persistent(restore=self.restore_persistence)
+            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu) \
+                .persistent(restore=self.restore_persistence)
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             if self.camera_provider is not None:
@@ -247,8 +244,10 @@ class System(rosys.persistence.Persistable):
 
     def setup_navigations(self) -> None:
         first_implement = next(iter(self.implements.values()))
-        self.straight_line_navigation = StraightLineNavigation(self, first_implement).persistent(restore=self.restore_persistence)
-        self.field_navigation = FieldNavigation(self, first_implement).persistent(restore=self.restore_persistence) if self.gnss is not None else None
+        self.straight_line_navigation = StraightLineNavigation(self, first_implement) \
+            .persistent(restore=self.restore_persistence)
+        self.field_navigation = FieldNavigation(self, first_implement) \
+            .persistent(restore=self.restore_persistence) if self.gnss is not None else None
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent(restore=self.restore_persistence) \
             if isinstance(self.field_friend.y_axis, AxisD1) else None
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
