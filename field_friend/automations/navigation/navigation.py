@@ -25,7 +25,6 @@ class WorkflowException(Exception):
 
 class Navigation(rosys.persistence.Persistable):
     LINEAR_SPEED_LIMIT: float = 0.13
-    LINEAR_SPEED_MINIMUM: float = 0.01
 
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__()
@@ -80,7 +79,7 @@ class Navigation(rosys.persistence.Persistable):
                     get_nearest_target(),
                     return_when_first_completed=True,
                 )
-                while True:
+                while not self._should_finish():
                     move_target = await self.implement.get_move_target()
                     if not move_target:
                         self.log.warning('Stopped to weed, because no move target found')
@@ -88,6 +87,7 @@ class Navigation(rosys.persistence.Persistable):
                     move_pose = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
                     # TODO: using WORK_Y doesnt seem to work, we should check that
                     move_pose = move_pose.transform_pose(Pose(x=-self.system.field_friend.WORK_X, y=0, yaw=0))
+                    # TODO: min(navigation_target, move_pose)
                     await self.drive_towards_target(move_pose)
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()

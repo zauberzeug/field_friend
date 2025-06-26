@@ -24,7 +24,13 @@ from .automations import (
     Puncher,
 )
 from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import CrossglideDemoNavigation, FieldNavigation, Navigation, StraightLineNavigation
+from .automations.navigation import (
+    CrossglideDemoNavigation,
+    FieldNavigation,
+    Navigation,
+    StraightLineNavigation,
+    WaypointNavigation,
+)
 from .config import get_config
 from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
@@ -250,9 +256,12 @@ class System(rosys.persistence.Persistable):
             .persistent(restore=self.restore_persistence) if self.gnss is not None else None
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent(restore=self.restore_persistence) \
             if isinstance(self.field_friend.y_axis, AxisD1) else None
+        self.waypoint_navigation = WaypointNavigation(
+            self, first_implement).persistent(restore=self.restore_persistence)
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
                                                           self.field_navigation,
                                                           self.crossglide_demo_navigation,
+                                                          self.waypoint_navigation,
                                                           ] if n is not None}
         self.current_navigation = self.straight_line_navigation
 
