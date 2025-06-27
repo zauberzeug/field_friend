@@ -50,33 +50,65 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  ) -> None:
         self.estop_active = False
         # implement lizard stop method for available hardware
-        lizard_code = f'let stop do {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.speed(0, 0);'
+        lizard_code = 'bool disabled = false\n'
+        lizard_code += f'let disable do disabled = true; {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.disable();'
         if y_axis is not None:
             if isinstance(y_axis, AxisD1):
-                lizard_code += f'{y_axis.config.name}_motor.stop();'
+                lizard_code += f'{y_axis.config.name}_motor.disable();'
             else:
-                lizard_code += f' {y_axis.config.name}.stop();'
+                lizard_code += f' {y_axis.config.name}.disable();'
         if z_axis is not None:
             if isinstance(z_axis, TornadoHardware):
-                lizard_code += f'{z_axis.config.name}_z.stop();'
-                lizard_code += f'{z_axis.config.name}_motor_turn.speed(0);'
+                lizard_code += f'{z_axis.config.name}_z.disable();'
+                lizard_code += f'{z_axis.config.name}_motor_turn.disable();'
             elif isinstance(z_axis, AxisD1):
-                lizard_code += f'{z_axis.config.name}_motor.stop();'
+                lizard_code += f'{z_axis.config.name}_motor.disable();'
             elif isinstance(z_axis, SprayerHardware):
                 lizard_code += f'{z_axis.config.name}_pump.off(); {z_axis.config.name}_valve.off();'
             else:
-                lizard_code += f' {z_axis.config.name}.stop();'
+                lizard_code += f' {z_axis.config.name}.disable();'
         if isinstance(flashlight, FlashlightHardware):
-            lizard_code += f' {flashlight.config.name}.on();'
+            lizard_code += f' {flashlight.config.name}.disable();'
         elif isinstance(flashlight, FlashlightHardwareV2):
-            lizard_code += f' {flashlight.config.name}_front.off(); {flashlight.config.name}_back.off();'
+            lizard_code += f' {flashlight.config.name}_front.disable(); {flashlight.config.name}_back.disable();'
         lizard_code += 'end\n'
+
+        lizard_code += f'let enable do disabled = false; {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.enable();'
+        if y_axis is not None:
+            if isinstance(y_axis, AxisD1):
+                lizard_code += f'{y_axis.config.name}_motor.enable();'
+            else:
+                lizard_code += f' {y_axis.config.name}.enable();'
+        if z_axis is not None:
+            if isinstance(z_axis, TornadoHardware):
+                lizard_code += f'{z_axis.config.name}_z.enable();'
+                lizard_code += f'{z_axis.config.name}_motor_turn.enable();'
+            elif isinstance(z_axis, AxisD1):
+                lizard_code += f'{z_axis.config.name}_motor.enable();'
+            else:
+                lizard_code += f' {z_axis.config.name}.enable();'
+        if isinstance(flashlight, FlashlightHardware):
+            lizard_code += f' {flashlight.config.name}.enable();'
+        elif isinstance(flashlight, FlashlightHardwareV2):
+            lizard_code += f' {flashlight.config.name}_front.enable(); {flashlight.config.name}_back.enable();'
+        lizard_code += 'end\n'
+
         # implement stop call for estops and bumpers
-        for name in estop.pins:
-            lizard_code += f'when estop_{name}.level == 0 then stop(); end\n'
+        if estop.pins:
+            lizard_code += 'bool estop_active = false\n'
+            enable_conditions = [f'estop_{name}.active == false' for name in estop.pins]
+            disable_conditions = [f'estop_{name}.active == true' for name in estop.pins]
+            lizard_code += f'when {" and ".join(enable_conditions)} then estop_active = false; end\n'
+            lizard_code += f'when {" or ".join(disable_conditions)} then estop_active = true; end\n'
         if isinstance(bumper, rosys.hardware.BumperHardware):
-            for name in bumper.pins:
-                lizard_code += f'when bumper_{name}.level == 1 then stop(); end\n'
+            lizard_code += 'bool bumper_active = false\n'
+            enable_conditions = [f'bumper_{name}.active == false' for name in bumper.pins]
+            disable_conditions = [f'bumper_{name}.active == true' for name in bumper.pins]
+            lizard_code += f'when {" and ".join(enable_conditions)} then bumper_active = false; end\n'
+            lizard_code += f'when {" or ".join(disable_conditions)} then bumper_active = true; end\n'
+        if estop.pins:
+            lizard_code += f'when estop_active == false and disabled == true {"and bumper_active == false" if isinstance(bumper, rosys.hardware.BumperHardware) else ""} then enable(); end\n'
+            lizard_code += f'when estop_active {"or bumper_active" if isinstance(bumper, rosys.hardware.BumperHardware) else ""} then disable(); end\n'
 
         # implement stop call for "ground check" reference sensors
         if isinstance(y_axis, ChainAxisHardware):
@@ -86,9 +118,9 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                 lizard_code += f'when {z_axis.config.name}_ref_knife_ground.active then \
                     {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.speed(0, 0); {y_axis.config.name}.stop(); end\n'
 
-        # implement watchdog for rosys modules
+        # # implement watchdog for rosys modules
         lizard_code += f'when core.last_message_age > 1000 then {wheels.config.name if isinstance(wheels, DoubleWheelsHardware) else wheels.name}.speed(0, 0); end\n'
-        lizard_code += 'when core.last_message_age > 20000 then stop(); end\n'
+        lizard_code += 'when core.last_message_age > 20000 then disable(); end\n'
 
         if bumper is not None:
             bumper.BUMPER_TRIGGERED.register(self.bumper_safety_notifications)

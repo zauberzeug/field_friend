@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gc
 from enum import Enum, auto
 from random import randint
@@ -7,7 +9,7 @@ import numpy as np
 import rosys
 from nicegui import ui
 from rosys.analysis import track
-from rosys.geometry import Point
+from rosys.geometry import Point, Point3d, Pose, Spline
 
 from ..field import Field, Row
 from ..implements.implement import Implement
@@ -32,8 +34,9 @@ class State(Enum):
 class FieldNavigation(StraightLineNavigation):
     MAX_DISTANCE_DEVIATION = 0.05
     MAX_ANGLE_DEVIATION = np.deg2rad(10.0)
+    THREE_POINT_TURN_RADIUS = 1.5
 
-    def __init__(self, system: 'System', implement: Implement) -> None:
+    def __init__(self, system: System, implement: Implement) -> None:
         super().__init__(system, implement)
         self.name = 'Field Navigation'
         self.gnss = system.gnss
@@ -46,6 +49,7 @@ class FieldNavigation(StraightLineNavigation):
         self.row_index = 0
         self.start_point: Point | None = None
         self.end_point: Point | None = None
+        self.three_point_turn_radius: float = self.THREE_POINT_TURN_RADIUS
         self.force_first_row_start: bool = False
         self.is_in_swarm: bool = False
         self.allowed_to_turn: bool = False
@@ -95,6 +99,11 @@ class FieldNavigation(StraightLineNavigation):
             if not len(row.points) >= 2:
                 rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
                 return False
+        outer_turn_radius = self.three_point_turn_radius + self.system.config.measurements.wheel_distance / 2
+        if outer_turn_radius > self.field.outline_buffer_width:
+            rosys.notify('Decrease the turn radius or increase your field\'s buffer width. ' +
+                         'Your robot will leave the field boundaries', 'negative')
+            return False
         nearest_row = self.get_nearest_row()
         if nearest_row is None:
             return False
@@ -120,12 +129,9 @@ class FieldNavigation(StraightLineNavigation):
         if self.force_first_row_start:
             self.row_index = 0
         else:
-            row = min(self.rows_to_work_on, key=lambda r: r.line_segment().line.foot_point(
-                self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
+            row = min(self.rows_to_work_on,
+                      key=lambda r: r.line_segment().line.foot_point(self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
             self.log.debug(f'Nearest row is {row.name}')
-            if row not in self.rows_to_work_on:
-                rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
-                return None
             self.row_index = self.rows_to_work_on.index(row)
         return self.rows_to_work_on[self.row_index]
 
@@ -164,18 +170,19 @@ class FieldNavigation(StraightLineNavigation):
     @track
     async def _drive(self) -> None:
         assert self.field is not None
-        if self._state == State.FOLLOW_ROW:
-            self._state = await self._run_follow_row()
-            return
-        with self.implement.blocked():
-            if self._state == State.APPROACH_START_ROW:
-                self._state = await self._run_approach_start_row()
-            elif self._state == State.CHANGE_ROW:
-                self._state = await self._run_change_row()
-            elif self._state == State.ROW_COMPLETED:
-                self._state = await self._run_row_completed()
-            elif self._state == State.WAITING_FOR_CONFIRMATION:
-                self._state = await self._run_waiting_for_confirmation()
+        while not self._should_finish():
+            if self._state == State.FOLLOW_ROW:
+                self._state = await self._run_follow_row()
+                continue
+            with self.implement.blocked():
+                if self._state == State.APPROACH_START_ROW:
+                    self._state = await self._run_approach_start_row()
+                elif self._state == State.CHANGE_ROW:
+                    self._state = await self._run_change_row()
+                elif self._state == State.ROW_COMPLETED:
+                    self._state = await self._run_row_completed()
+                elif self._state == State.WAITING_FOR_CONFIRMATION:
+                    self._state = await self._run_waiting_for_confirmation()
 
     @track
     async def _run_approach_start_row(self) -> State:
@@ -205,13 +212,7 @@ class FieldNavigation(StraightLineNavigation):
     @track
     async def _run_change_row(self) -> State:
         self.set_start_and_end_points()
-        assert self.start_point is not None
-        target_yaw = self.robot_locator.pose.direction(self.start_point)
-        await self.turn_to_yaw(target_yaw)
-        await self.drive_towards_target(rosys.geometry.Pose(x=self.start_point.x, y=self.start_point.y, yaw=target_yaw), target_heading=target_yaw)
-        assert self.end_point is not None
-        row_yaw = self.start_point.direction(self.end_point)
-        await self.turn_to_yaw(row_yaw)
+        await self._run_three_point_turn(self.three_point_turn_radius)
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.create_simulation()
         else:
@@ -221,11 +222,31 @@ class FieldNavigation(StraightLineNavigation):
         return State.FOLLOW_ROW
 
     @track
+    async def _run_three_point_turn(self, radius: float = 1.5) -> None:
+        assert self.start_point is not None
+        assert self.end_point is not None
+        start_pose = self.robot_locator.pose
+        direction_to_start = start_pose.relative_direction(self.start_point)
+        distance_to_start = start_pose.distance(self.start_point)
+        y_offset = max(radius, distance_to_start)
+        row_yaw = self.start_point.direction(self.end_point)
+        first_turn_pose = start_pose.transform_pose(
+            Pose(x=radius, y=y_offset * np.sign(direction_to_start), yaw=direction_to_start))
+        row_start_pose = Pose(x=self.start_point.x, y=self.start_point.y, yaw=row_yaw)
+        back_up_pose = row_start_pose.transform_pose(
+            Pose(x=-radius, y=radius * np.sign(direction_to_start), yaw=-direction_to_start))
+
+        await self.driver.drive_spline(Spline.from_poses(start_pose, first_turn_pose))
+        with self.driver.parameters.set(can_drive_backwards=True):
+            await self.driver.drive_to(target=back_up_pose.point, backward=True)
+        await self.driver.drive_spline(Spline.from_poses(back_up_pose, row_start_pose))
+
+    @track
     async def _run_follow_row(self) -> State:
         assert self.end_point is not None
         assert self.start_point is not None
-        end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
-                                       yaw=self.start_point.direction(self.end_point), time=0)
+        end_yaw = self.start_point.direction(self.end_point)
+        end_pose = Pose(x=self.end_point.x, y=self.end_point.y, yaw=end_yaw)
         distance_from_end = end_pose.relative_point(self.robot_locator.pose.point).x
         if distance_from_end > 0:
             await self.driver.wheels.stop()
@@ -269,7 +290,7 @@ class FieldNavigation(StraightLineNavigation):
 
     def _set_cultivated_crop(self) -> None:
         if not isinstance(self.implement, WeedingImplement):
-            self.log.warning('Implement is not a weeding implement')
+            self.log.debug('Implement is not a weeding implement. Cannot set cultivated crop')
             return
         if self.current_row is None:
             self.log.warning('No current row')
@@ -290,7 +311,7 @@ class FieldNavigation(StraightLineNavigation):
 
     def _is_start_allowed(self, start_point: Point, end_point: Point, robot_in_working_area: bool) -> bool:
         if not robot_in_working_area:
-            self.log.warning('Robot is not in working area')
+            self.log.debug('Robot is not in working area, will approach start row')
             return True
         if self.current_row is None:
             self.log.warning('No current row')
@@ -311,6 +332,7 @@ class FieldNavigation(StraightLineNavigation):
         return super().backup_to_dict() | {
             'field_id': self.field.id if self.field else None,
             'loop': self._loop,
+            'three_point_turn_radius': self.three_point_turn_radius,
             'wait_distance': self.wait_distance,
             'force_first_row_start': self.force_first_row_start,
             'is_in_swarm': self.is_in_swarm,
@@ -321,6 +343,7 @@ class FieldNavigation(StraightLineNavigation):
         field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
         self.field = self.field_provider.get_field(field_id)
         self._loop = data.get('loop', False)
+        self.three_point_turn_radius = data.get('three_point_turn_radius', self.three_point_turn_radius)
         self.force_first_row_start = data.get('force_first_row_start', self.force_first_row_start)
         self.wait_distance = data.get('wait_distance', self.wait_distance)
         self.is_in_swarm = data.get('is_in_swarm', self.is_in_swarm)
@@ -328,6 +351,11 @@ class FieldNavigation(StraightLineNavigation):
     def settings_ui(self) -> None:
         with ui.row():
             super().settings_ui()
+            ui.number('Turn radius', step=0.1, min=0.0, max=10.0, format='%.1f', suffix='m', on_change=self.request_backup) \
+                .props('dense outlined') \
+                .classes('w-24') \
+                .bind_value(self, 'three_point_turn_radius') \
+                .tooltip(f'Radius when changing rows (default: {self.THREE_POINT_TURN_RADIUS:.1f}m)')
 
     def developer_ui(self) -> None:
         # super().developer_ui()
@@ -361,7 +389,7 @@ class FieldNavigation(StraightLineNavigation):
                     p.y += 0.20
                 else:
                     p.y += randint(-5, 5) * 0.01
-                p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
+                p3d = Point3d(x=p.x, y=p.y, z=0)
                 plant = rosys.vision.SimulatedObject(category_name=crop, position=p3d)
                 self.detector.simulated_objects.append(plant)
 
@@ -369,4 +397,4 @@ class FieldNavigation(StraightLineNavigation):
                     p = self.start_point.polar(crop_distance * (i+1) + randint(-5, 5) * 0.01, self.start_point.direction(self.end_point)) \
                         .polar(randint(-15, 15)*0.01, self.robot_locator.pose.yaw + np.pi/2)
                     self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                                        position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
+                                                                                        position=Point3d(x=p.x, y=p.y, z=0)))

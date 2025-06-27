@@ -14,7 +14,7 @@ from ..vision.zedxmini_camera import StereoCamera
 from .entity_locator import EntityLocator
 from .plant import Plant
 
-WEED_CATEGORY_NAME = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
+WEED_CATEGORY_NAME = ['weed', 'weedy_area', 'coin', 'big_weed']
 CROP_CATEGORY_NAME: dict[str, str] = {}
 MINIMUM_CROP_CONFIDENCE = 0.3
 MINIMUM_WEED_CONFIDENCE = 0.3
@@ -146,7 +146,7 @@ class PlantLocator(EntityLocator):
             elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
                 self.plant_provider.add_crop(plant)
             elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
-                self.log.info(f'{d.category_name} not in categories')
+                self.log.error('Detected category "%s" is unknown', d.category_name)
 
     def _detection_watchdog(self) -> None:
         if self.is_paused:

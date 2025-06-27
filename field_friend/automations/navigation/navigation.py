@@ -91,6 +91,7 @@ class Navigation(rosys.persistence.Persistable):
                     await self.drive_towards_target(move_pose)
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
+                    await rosys.sleep(0.1)
                 await rosys.sleep(0.1)
         except WorkflowException as e:
             rosys.notify(f'Navigation failed: {e}', 'negative')
@@ -195,7 +196,7 @@ class Navigation(rosys.persistence.Persistable):
         pass
 
     def settings_ui(self) -> None:
-        ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f', on_change=self.request_backup) \
+        ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f', suffix='m/s', on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \

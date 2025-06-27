@@ -59,6 +59,7 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
     assert s.gnss.last_measurement.point.distance(GeoReference.current.origin) == pytest.approx(0, abs=1e-8)
     yield s
 
+
 @pytest.fixture
 async def system_with_acceleration(rosys_integration) -> AsyncGenerator[System, None]:
     # TODO: solve in RoSys
