@@ -9,6 +9,7 @@ from nicegui import ui
 from rosys.analysis import track
 from rosys.helpers import eliminate_2pi
 
+from ..hardware.sprayer import Sprayer
 from ..system import System
 from .components import create_header
 from .components.hardware_control import create_hardware_control_ui
@@ -56,6 +57,10 @@ class DevPage:
                             rosys.simulation_ui()
                     create_hardware_control_ui(self.system.field_friend, self.system.automator, self.system.puncher)
                     status_dev_page(self.system.field_friend, self.system)
+                    if isinstance(self.system.field_friend.z_axis, Sprayer):
+                        with ui.card():
+                            with ui.column():
+                                self.system.field_friend.z_axis.developer_ui()
 
         with ui.row():
             with ui.card():

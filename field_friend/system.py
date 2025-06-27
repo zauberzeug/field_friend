@@ -23,7 +23,7 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
-from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
+from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
 from .automations.navigation import CrossglideDemoNavigation, FieldNavigation, Navigation, StraightLineNavigation
 from .config import get_config
 from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
@@ -236,6 +236,8 @@ class System(rosys.persistence.Persistable):
                 implements.append(Recorder(self))
             case 'recorder':
                 implements.append(Recorder(self))
+            case 'sprayer':
+                implements.append(WeedingSprayer(self))
             case None:
                 implements.append(Implement())
             case _:

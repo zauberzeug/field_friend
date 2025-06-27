@@ -1,0 +1,76 @@
+{
+    "cameras": {
+        "b8:a4:4f:e8:c2:d1-1": {
+            "id": "b8:a4:4f:e8:c2:d1-1",
+            "name": "b8:a4:4f:e8:c2:d1-1",
+            "connect_after_init": true,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
+            "username": "root",
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
+        },
+        "b8:a4:4f:e8:c2:d1-2": {
+            "id": "b8:a4:4f:e8:c2:d1-2",
+            "name": "b8:a4:4f:e8:c2:d1-2",
+            "connect_after_init": true,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
+            "username": "root",
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
+        },
+        "b8:a4:4f:e8:c2:d1-3": {
+            "id": "b8:a4:4f:e8:c2:d1-3",
+            "name": "b8:a4:4f:e8:c2:d1-3",
+            "connect_after_init": true,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
+            "username": "root",
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
+        },
+        "b8:a4:4f:e8:c2:d1-4": {
+            "id": "b8:a4:4f:e8:c2:d1-4",
+            "name": "b8:a4:4f:e8:c2:d1-4",
+            "connect_after_init": true,
+            "image_history_length": 256,
+            "base_path_overwrite": null,
+            "crop": null,
+            "rotation": 0,
+            "fps": 10,
+            "resolution": [
+                640,
+                480
+            ],
+            "mirrored": false,
+            "username": "root",
+            "password": "zauberzg!",
+            "ip": "192.168.42.3"
+        }
+    }
+}
