@@ -1,0 +1,20 @@
+---
+description: General overview and context
+globs:
+alwaysApply: true
+---
+# Project Description
+
+This is the official repository for the Field Friend -- a modular agricultur robot for weeding.
+
+# Technical Stack
+
+- build on RoSys which itself is based on NiceGUI
+- NiceGUI
+  - Python/FastAPI for the backend
+  - Vue/Quasar in the frontend
+  - socket.io for communication between frontend and backend
+
+# Design Decisions
+
+- ...
