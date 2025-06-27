@@ -8,8 +8,8 @@ from nicegui import events, ui
 
 from .field_friend_object import FieldFriendObject as field_friend_object
 from .field_object import FieldObject as field_object
+from .path_object import PathObject as path_object
 from .plant_object import PlantObjects as plant_objects
-from .visualizer_object import VisualizerObject as visualizer_object
 
 if TYPE_CHECKING:
     from ...system import System
@@ -36,7 +36,7 @@ class RobotScene:
                                     self.system.field_friend, width=self.system.config.measurements.wheel_distance)
                 rosys.driving.driver_object(self.system.driver)
                 plant_objects(self.system)
-                visualizer_object(self.system)
+                path_object(self.system)
                 field_object(self.system)
                 self.scene.move_camera(-0.5, -1, 2)
 
