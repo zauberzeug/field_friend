@@ -64,7 +64,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
             elif isinstance(z_axis, AxisD1):
                 lizard_code += f'{z_axis.config.name}_motor.disable();'
             elif isinstance(z_axis, SprayerHardware):
-                lizard_code += f'{z_axis.config.name}_pump.off(); {z_axis.config.name}_valve.off();'
+                lizard_code += f'{z_axis.config.name}_pump.disable(); {z_axis.config.name}_valve.disable();'
             else:
                 lizard_code += f' {z_axis.config.name}.disable();'
         if isinstance(flashlight, FlashlightHardware):
@@ -85,6 +85,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                 lizard_code += f'{z_axis.config.name}_motor_turn.enable();'
             elif isinstance(z_axis, AxisD1):
                 lizard_code += f'{z_axis.config.name}_motor.enable();'
+            elif isinstance(z_axis, SprayerHardware):
+                lizard_code += f'{z_axis.config.name}_pump.enable(); {z_axis.config.name}_valve.enable();'
             else:
                 lizard_code += f' {z_axis.config.name}.enable();'
         if isinstance(flashlight, FlashlightHardware):
