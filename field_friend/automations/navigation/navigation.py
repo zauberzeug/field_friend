@@ -126,7 +126,7 @@ class Navigation(rosys.persistence.Persistable):
     async def drive_towards_target(self,
                                    target: Point | Pose, *,
                                    target_heading: float | None = None,
-                                   max_turn_angle: float = np.deg2rad(1.0),
+                                   max_turn_angle: float = np.deg2rad(0.1),
                                    minimum_distance: float = 0.005) -> None:
         """Drives the robot towards a target point, but keeps the robot on a set heading with a limited turn angle.
 
@@ -142,6 +142,8 @@ class Navigation(rosys.persistence.Persistable):
         if max_turn_angle != 0:
             angle_diff = rosys.helpers.eliminate_2pi(self.robot_locator.pose.direction(target) - target_heading)
             target_heading = target_heading + np.clip(angle_diff, -max_turn_angle, max_turn_angle)
+            self.log.warning(
+                f'target_heading: {target_heading} from angle_diff: {angle_diff} from {self.target_heading}')
 
         assert target_heading is not None
         line_end = self.robot_locator.pose.point.polar(self.robot_locator.pose.distance(target), target_heading)
@@ -155,9 +157,9 @@ class Navigation(rosys.persistence.Persistable):
         if relative_target.x <= 0:
             self.log.warning('%s is behind the robot at %s, skipping', adjusted_target, self.robot_locator.pose)
             return
-        self.log.debug('Driving towards %s with adjusted %s from %s', target, adjusted_target, self.robot_locator.pose)
+        self.log.error('Driving towards %s with adjusted %s from %s', target, adjusted_target, self.robot_locator.pose)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
-            await self.driver.drive_to(adjusted_target)
+            await self.driver.drive_to(target)
 
     @track
     async def turn_to_yaw(self, target_yaw: float, *, angle_threshold: float = np.deg2rad(1.0)) -> None:

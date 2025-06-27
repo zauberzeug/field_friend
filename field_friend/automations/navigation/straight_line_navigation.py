@@ -6,11 +6,10 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import rosys
 from nicegui import ui
-from rosys.driving import PathSegment
-from rosys.geometry import Point, Point3d, Pose, Spline
+from rosys.geometry import Point, Point3d, Pose
 
 from ...automations.implements.implement import Implement
-from .waypoint_navigation import WaypointNavigation, WorkingSegment
+from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
 
 if TYPE_CHECKING:
     from ...system import System
@@ -32,8 +31,8 @@ class StraightLineNavigation(WaypointNavigation):
 
     def generate_path(self) -> list[PathSegment | WorkingSegment]:
         last_pose = self.system.robot_locator.pose
-        target_pose = last_pose.transform_pose(Pose(x=self.length, y=0, yaw=last_pose.yaw))
-        segment = WorkingSegment(spline=Spline.from_poses(last_pose, target_pose))
+        target_pose = last_pose.transform_pose(Pose(x=self.length))
+        segment = WorkingSegment.from_poses(last_pose, target_pose)
         return [segment]
 
     def _should_finish(self) -> bool:
