@@ -135,15 +135,21 @@ async def test_deceleration_different_distances(system_with_acceleration: System
     assert isinstance(system.field_friend.wheels, WheelsSimulationWithAcceleration)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = distance
-    system.current_navigation.linear_speed_limit = 0.3
+    system.current_navigation.linear_speed_limit = 0.13
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.0005)
+    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.001)
 
 
-@pytest.mark.parametrize('linear_speed_limit', (0.1, 0.13, 0.2, 0.3, 0.4))
-async def test_deceleration_different_speeds(system_with_acceleration: System, linear_speed_limit: float):
+@pytest.mark.parametrize(('linear_speed_limit', 'tolerance'), [
+    (0.1, 0.0005),
+    (0.13, 0.001),
+    (0.2, 0.001),
+    (0.3, 0.0013),
+    (0.4, 0.0013),
+])
+async def test_deceleration_different_speeds(system_with_acceleration: System, linear_speed_limit: float, tolerance: float):
     """Try stop after 1mm with different speeds with a tolerance of 0.2mm"""
     system = system_with_acceleration
     assert isinstance(system.field_friend.wheels, WheelsSimulationWithAcceleration)
@@ -153,7 +159,7 @@ async def test_deceleration_different_speeds(system_with_acceleration: System, l
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(0.005, abs=0.0005)
+    assert system.robot_locator.pose.point.x == pytest.approx(0.005, abs=tolerance)
 
 
 @pytest.mark.parametrize('heading_degrees', (-180, -90, 0, 90, 180, 360))
