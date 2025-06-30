@@ -229,10 +229,10 @@ class System(rosys.persistence.Persistable):
         match self.field_friend.implement_name:
             case 'tornado':
                 implements.append(Recorder(self))
-                implements.append(Tornado(self).persistent(key=persistence_key, ))
+                implements.append(Tornado(self).persistent(key=persistence_key))
             case 'weed_screw':
                 implements.append(Recorder(self))
-                implements.append(WeedingScrew(self).persistent(key=persistence_key, ))
+                implements.append(WeedingScrew(self).persistent(key=persistence_key))
             case 'dual_mechanism':
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
@@ -252,8 +252,7 @@ class System(rosys.persistence.Persistable):
         self.field_navigation = FieldNavigation(self, first_implement).persistent() if self.gnss is not None else None
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent() \
             if isinstance(self.field_friend.y_axis, AxisD1) else None
-        self.waypoint_navigation = WaypointNavigation(
-            self, first_implement).persistent(restore=self.restore_persistence)
+        self.waypoint_navigation = WaypointNavigation(self, first_implement).persistent()
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
                                                           self.field_navigation,
                                                           self.crossglide_demo_navigation,
