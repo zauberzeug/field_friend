@@ -15,15 +15,16 @@ class Implement(rosys.persistence.Persistable):
         self.is_active = False
         self._is_blocked = False
 
+    # TODO: parameter blocked looks dumb
     @contextlib.contextmanager
-    def blocked(self) -> Generator[None, None, None]:
+    def blocked(self, blocked: bool = True) -> Generator[None, None, None]:
         """Context manager to temporarily block the implement from working.
 
         Usage:
             with implement.blocked():
                 # do something where implement is not allowed
         """
-        self._is_blocked = True
+        self._is_blocked = blocked
         try:
             yield
         finally:
