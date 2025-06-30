@@ -196,11 +196,17 @@ class Navigation(rosys.persistence.Persistable):
         pass
 
     def settings_ui(self) -> None:
-        ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f', suffix='m/s', on_change=self.request_backup) \
+        ui.number('Linear Speed',
+                  step=0.01,
+                  min=self.driver.parameters.throttle_at_end_min_speed,
+                  max=self.driver.parameters.linear_speed_limit,
+                  format='%.2f',
+                  suffix='m/s',
+                  on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
-            .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
+            .tooltip(f'Forward speed limit between {self.driver.parameters.throttle_at_end_min_speed} and {self.driver.parameters.linear_speed_limit} m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
 
 
 def is_reference_valid(gnss: Gnss | None, *, max_distance: float = 5000.0) -> bool:
