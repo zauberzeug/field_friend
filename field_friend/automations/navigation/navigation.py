@@ -196,7 +196,13 @@ class Navigation(rosys.persistence.Persistable):
         pass
 
     def settings_ui(self) -> None:
-        ui.number('Linear Speed', step=0.01, min=0.01, max=1.0, format='%.2f', suffix='m/s', on_change=self.request_backup) \
+        ui.number('Linear Speed',
+                  step=0.01,
+                  min=self.driver.parameters.throttle_at_end_min_speed,
+                  max=self.driver.parameters.linear_speed_limit,
+                  format='%.2f',
+                  suffix='m/s',
+                  on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
