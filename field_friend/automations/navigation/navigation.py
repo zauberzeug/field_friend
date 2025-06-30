@@ -206,7 +206,7 @@ class Navigation(rosys.persistence.Persistable):
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'linear_speed_limit') \
-            .tooltip(f'Forward speed limit in m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
+            .tooltip(f'Forward speed limit between {self.driver.parameters.throttle_at_end_min_speed} and {self.driver.parameters.linear_speed_limit} m/s (default: {self.LINEAR_SPEED_LIMIT:.2f})')
 
 
 def is_reference_valid(gnss: Gnss | None, *, max_distance: float = 5000.0) -> bool:
