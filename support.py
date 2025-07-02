@@ -69,7 +69,7 @@ def install_air_link_package() -> bool:
         return False
 
 
-def setup_air_link_service(on_air_token: str | None = None) -> bool:
+def setup_air_link_service(on_air_token: str) -> bool:
     """Setup Air Link as a system service with On Air token"""
     try:
         # Check if air-link command is available
@@ -82,12 +82,8 @@ def setup_air_link_service(on_air_token: str | None = None) -> bool:
         # Install air-link as service
         log.info('Setting up Air Link service...')
         install_cmd = ['air-link', 'install']
-
-        if on_air_token:
-            install_cmd.append(on_air_token)
-            log.info('Installing Air Link service with On Air token')
-        else:
-            log.info('Installing Air Link service without On Air token')
+        install_cmd.append(on_air_token)
+        log.info('Installing Air Link service with On Air token')
 
         # NOTE: air-link install handles sudo internally
         result = subprocess.run(install_cmd, check=False, text=True, timeout=120)
@@ -167,13 +163,11 @@ def update_air_link(on_air_token: str | None = None) -> bool:
         # Only proceed if a token is provided
         if not on_air_token:
             log.info('No On Air token provided, skipping Air Link setup')
-            return True
+            return False
 
-        # First, install or update the package
         if not install_air_link_package():
             return False
 
-        # Check if service already exists
         service_cmd = ['systemctl', 'list-units', '--full', '--all', 'air-link.service']
         if os.getuid() != 0:
             service_cmd = ['sudo', *service_cmd]
@@ -182,14 +176,11 @@ def update_air_link(on_air_token: str | None = None) -> bool:
         service_exists = 'air-link.service' in service_check.stdout
 
         if not service_exists:
-            # Service doesn't exist, install it
             if not setup_air_link_service(on_air_token):
                 return False
         else:
-            # Service exists, set token if provided and restart
-            if on_air_token:
-                if not set_air_link_token(on_air_token):
-                    log.warning('Failed to set token, but continuing...')
+            if not set_air_link_token(on_air_token):
+                log.warning('Failed to set token, but continuing...')
 
             if not restart_air_link_service():
                 return False
@@ -211,26 +202,22 @@ def update_nebula_file(source_file: str, target_name: str | None = None) -> bool
             log.error(f'Source file does not exist: {source}')
             return False
 
-        # Use source filename if target not specified
         if target_name is None:
             target_name = source.name
 
         target = NEBULA_CONFIG_DIR / target_name
 
-        # Create target directory if it doesn't exist
         if not NEBULA_CONFIG_DIR.exists():
             mkdir_cmd = ['sudo', 'mkdir', '-p', str(NEBULA_CONFIG_DIR)]
             subprocess.run(mkdir_cmd, check=True, capture_output=True, text=True)
             log.info(f'Created directory {NEBULA_CONFIG_DIR}')
 
-        # Backup existing file if it exists
         if target.exists():
             backup_path = target.with_suffix(target.suffix + '.backup')
             backup_cmd = ['sudo', 'cp', str(target), str(backup_path)]
             subprocess.run(backup_cmd, check=True, capture_output=True, text=True)
             log.info(f'Backed up existing file to {backup_path}')
 
-        # Copy the file with sudo
         copy_cmd = ['sudo', 'cp', str(source), str(target)]
         subprocess.run(copy_cmd, check=True, capture_output=True, text=True)
 
@@ -248,7 +235,6 @@ def update_nebula_file(source_file: str, target_name: str | None = None) -> bool
 def restart_nebula_service() -> bool:
     """Restart Nebula service if it exists"""
     try:
-        # Check if nebula service exists
         check_cmd = ['systemctl', 'is-enabled', 'nebula']
         if os.getuid() != 0:
             check_cmd = ['sudo', *check_cmd]
@@ -302,7 +288,6 @@ def main():
 
     args = parser.parse_args()
 
-    # If no files provided and not updating air-link, show help
     if not args.files and not args.on_air_token:
         parser.print_help()
         sys.exit(1)
@@ -311,7 +296,6 @@ def main():
 
     log.info('Starting system update process...')
 
-    # Check internet connection
     if not args.skip_internet_check:
         log.info('Checking internet connection...')
         if not has_internet():
@@ -320,7 +304,6 @@ def main():
         else:
             log.info('✓ Internet connection OK')
 
-    # Update Air Link
     if success:
         if not update_air_link(args.on_air_token):
             log.error('✗ Failed to update Air Link')
@@ -328,7 +311,6 @@ def main():
         else:
             log.info('✓ Air Link updated successfully')
 
-    # Update Nebula certificate files
     nebula_files_updated = False
     for cert_file in args.files:
         if update_nebula_file(cert_file):
@@ -336,7 +318,6 @@ def main():
         else:
             success = False
 
-    # Restart Nebula service if files were updated
     if nebula_files_updated:
         if restart_nebula_service():
             log.info('✓ Nebula service handling completed')
