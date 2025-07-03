@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-System update script for Field Friend with Air Link and Nebula VPN.
+System update script for Field Friend with Air Link and Nebula.
 Checks internet connection, installs/updates Air Link service with Air Link token,
 and updates Nebula certificate files.
 
-Usage: python update_system.py [options] <cert_file1> <cert_file2> ...
-Example: python update_system.py --on-air-token "your-token-here" host.crt host.key
-         python update_system.py host.crt host.key ca.crt config.yaml
+Usage: python support.py [options] <cert_file1> <cert_file2> ...
+Example: python support.py --on-air-token "your-token-here" host.crt host.key
+         python support.py host.crt host.key ca.crt config.yaml
 """
 
 import argparse
@@ -79,7 +79,6 @@ def setup_air_link_service(on_air_token: str) -> bool:
             log.error('air-link command not found after installation')
             return False
 
-        # Install air-link as service
         log.info('Setting up Air Link service...')
         install_cmd = ['air-link', 'install']
         install_cmd.append(on_air_token)
@@ -124,7 +123,6 @@ def restart_air_link_service() -> bool:
     try:
         log.info('Restarting Air Link service...')
 
-        # Check if we need sudo
         restart_cmd = ['systemctl', 'restart', 'air-link']
         if os.getuid() != 0:
             restart_cmd = ['sudo', *restart_cmd]
@@ -135,7 +133,6 @@ def restart_air_link_service() -> bool:
             log.error(f'Failed to restart service: {result.stderr}')
             return False
 
-        # Wait a moment and check if service is running
         time.sleep(3)
         status_cmd = ['systemctl', 'is-active', 'air-link']
         if os.getuid() != 0:
@@ -160,7 +157,6 @@ def restart_air_link_service() -> bool:
 def update_air_link(on_air_token: str | None = None) -> bool:
     """Install/update Air Link service with On Air token"""
     try:
-        # Only proceed if a token is provided
         if not on_air_token:
             log.info('No On Air token provided, skipping Air Link setup')
             return False
