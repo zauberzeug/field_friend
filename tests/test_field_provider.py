@@ -3,11 +3,12 @@ import uuid
 from pathlib import Path
 
 import pytest
-from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 from rosys.geometry import GeoPoint
 
 from field_friend import System
 from field_friend.automations import Field, RowSupportPoint
+
+from .conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 
 
 def test_loading_from_persistence(system: System):
