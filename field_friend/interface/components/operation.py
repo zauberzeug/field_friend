@@ -162,12 +162,17 @@ class Operation:
                             for i in range(parameters['bed_count']):
                                 with ui.row().classes('w-full item-center'):
                                     ui.label(f'Bed {i}:').classes('text-lg')
+
+                                    def forward_func(v, idx=i):
+                                        return {**parameters.get('bed_crops', {}), str(idx): v}
+
+                                    def backward_func(v, idx=i):
+                                        return v.get(str(idx))
                                     ui.select(self.plant_locator.crop_category_names) \
                                         .props('dense outlined').classes('w-40') \
                                         .bind_value(parameters, 'bed_crops',
-                                                    forward=lambda v, idx=i: {
-                                                        **parameters.get('bed_crops', {}), str(idx): v},
-                                                    backward=lambda v, idx=i: v.get(str(idx)))
+                                                    forward=forward_func,
+                                                    backward=backward_func)
             with ui.row():
                 ui.button('Cancel', on_click=self.edit_field_dialog.close)
                 ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters))
