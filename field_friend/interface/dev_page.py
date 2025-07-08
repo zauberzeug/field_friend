@@ -73,8 +73,9 @@ class DevPage:
             if hasattr(self.system, 'field_navigation') and self.system.field_navigation is not None:
                 with ui.card():
                     self.system.field_navigation.developer_ui()
-            with ui.card():
-                self.system.charging_station.developer_ui()
+            if self.system.is_real:
+                with ui.card():
+                    self.system.charging_station.developer_ui()
 
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
             with ui.row():

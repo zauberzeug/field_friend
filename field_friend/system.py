@@ -52,6 +52,7 @@ class System(rosys.persistence.Persistable):
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
+        self.monitoring_detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation | None = None
         self.field_friend: FieldFriend
@@ -71,6 +72,7 @@ class System(rosys.persistence.Persistable):
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
+            self.charging_station: ChargingStation = ChargingStation(self)
         else:
             self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
@@ -101,7 +103,6 @@ class System(rosys.persistence.Persistable):
 
         self.puncher: Puncher = Puncher(self.field_friend, self.driver)
         self.plant_locator: PlantLocator = PlantLocator(self).persistent(restore=self.restore_persistence)
-        self.charging_station: ChargingStation = ChargingStation(self)
 
         rosys.on_repeat(watch_robot, 1.0)
 
