@@ -443,6 +443,17 @@ class ZCanOpenConfiguration(BaseAxisConfiguration,
 
 
 @dataclass(slots=True, kw_only=True)
+class SprayerConfiguration:
+    name: str = 'sprayer'
+    version: str = 'sprayer'
+    valve_pin: int = 4
+    valve_pin_expander: bool = False
+    pump_pin: int = 5
+    pump_pin_expander: bool = False
+    spray_radius: float = 0.15
+
+
+@dataclass(slots=True, kw_only=True)
 class FieldFriendConfiguration:
     """Configuration for the FieldFriend robot.
 
@@ -456,14 +467,14 @@ class FieldFriendConfiguration:
     """
     name: str
     robot_brain: RobotBrainConfiguration
-    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'mower', 'recorder'] | None
+    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'sprayer', 'recorder'] | None
     measurements: MeasurementsConfiguration
     wheels: WheelsConfiguration
     has_status_control: bool
     camera: CameraConfiguration | None
     circle_sight_positions: CircleSightPositions | None
     y_axis: AxisD1Configuration | ChainAxisConfiguration | YStepperConfiguration | YCanOpenConfiguration | None
-    z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | None
+    z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | SprayerConfiguration | None
     can: CanConfiguration = field(default_factory=CanConfiguration)
     bms: BmsConfiguration = field(default_factory=BmsConfiguration)
     estop: EstopConfiguration = field(default_factory=EstopConfiguration)
