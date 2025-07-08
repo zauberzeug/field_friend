@@ -198,13 +198,18 @@ class FieldCreator:
             for i in range(int(self.bed_count)):
                 with ui.row().classes('w-full'):
                     ui.label(f'Bed {i}:').classes('text-lg')
+
+                    def forward_func(v, idx=i):
+                        return {**self.bed_crops, str(idx): v if v is not None else self.default_crop}
+
+                    def backward_func(v, idx=i):
+                        return v.get(str(idx))
                     ui.select(options=self.plant_locator.crop_category_names) \
                         .props('dense outlined').classes('w-40') \
                         .tooltip(f'Enter the crop name for bed {i}') \
                         .bind_value(self, 'bed_crops',
-                                    forward=lambda v, idx=i: {**self.bed_crops,
-                                                              str(idx): v if v is not None else self.default_crop},
-                                    backward=lambda v, idx=i: v.get(str(idx)))
+                                    forward=forward_func,
+                                    backward=backward_func)
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
