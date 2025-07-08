@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+import rosys.vision
 from nicegui import app, events, ui
 
 from .field_creator import FieldCreator
@@ -44,6 +45,9 @@ class Operation:
                     if self.plant_locator is not None:
                         with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row().classes('items-center'):
                             self.plant_provider.settings_ui()
+
+                    if self.system.is_real:
+                        self.circle_sight_ui()
 
         with activities:
             self.navigation_selection = ui.select(
@@ -211,3 +215,28 @@ class Operation:
                                       multiple=True, label='selected beds', clearable=True) \
                                 .classes('grow').props('use-chips') \
                                 .bind_value(self.field_provider, 'selected_beds')
+
+    def circle_sight_ui(self) -> None:
+        def id_to_source(camera_id: str) -> str | None:
+            if self.system.config.circle_sight_positions is None:
+                return None
+            if camera_id == self.system.config.circle_sight_positions.right:
+                return 'right'
+            if camera_id == self.system.config.circle_sight_positions.back:
+                return 'back'
+            if camera_id == self.system.config.circle_sight_positions.front:
+                return 'front'
+            if camera_id == self.system.config.circle_sight_positions.left:
+                return 'left'
+            return None
+
+        async def record_circle_sight():
+            for camera_id, camera in self.system.mjpeg_camera_provider.cameras.items():
+                latest_image = camera.latest_captured_image
+                if latest_image is None:
+                    self.log.debug(f'No image for camera {camera_id}')
+                    return
+                source = id_to_source(camera_id)
+            await self.system.monitoring_detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, source=source)
+            ui.notify('Circle sight recorded', type='positive')
+        ui.button('Record Circle Sight', on_click=record_circle_sight)
