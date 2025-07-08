@@ -200,7 +200,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         try:
             if min_position is None:
                 min_position = self.config.min_position
-            self.log.info(f'moving z axis down to {min_position}')
+            self.log.debug(f'moving z axis down to {min_position}')
             await self.robot_brain.send(
                 f'{self.config.name}_knife_stop_enabled = true;'
                 f'{self.config.name}_knife_ground_enabled = true;'
@@ -212,7 +212,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.5)
             while self.ref_knife_ground and not self.ref_knife_stop:
                 if min_position - 0.005 <= self.position_z <= min_position + 0.005:
-                    self.log.info('minimum position reached')
+                    self.log.debug('minimum position reached')
                     break
                 await self.robot_brain.send(
                     f'{self.config.name}_z.position({min_position}, {self.config.speed_limit}, 0);'
@@ -221,7 +221,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             if self.ref_knife_stop:
                 raise Exception('Error while moving z axis down: Ref knifes stop triggered')
             if not self.ref_knife_ground:
-                self.log.info('Ref ground not triggered: Bottom ground reached')
+                self.log.debug('Ref ground not triggered: Bottom ground reached')
         except Exception as e:
             self.log.error(f'error while moving z axis down: {e}')
             self.is_referenced = False
@@ -229,8 +229,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             self.turn_is_referenced = False
             raise Exception(e) from e
         finally:
-            # await rosys.sleep(1.5)
-            self.log.info('finalizing moving z axis down')
+            self.log.debug('finalizing moving z axis down')
             await self.robot_brain.send(
                 f'{self.config.name}_knife_stop_enabled = false;'
                 f'{self.config.name}_knife_ground_enabled = false;'
