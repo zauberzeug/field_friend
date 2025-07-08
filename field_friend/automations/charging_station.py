@@ -136,7 +136,11 @@ class ChargingStation:
             return
         self.image_width = latest_image.size.width
         assert self.detector is not None
-        detections = await self.detector.detect(latest_image)
+        try:
+            detections = await self.detector.detect(latest_image, tags=['charging_station', 'back'], source=self.system.robot_id)
+        except rosys.vision.detector.DetectorException:
+            self.log.warning('Stopped while detecting')
+            return
         if detections is None:
             self.last_detection = None
             return
