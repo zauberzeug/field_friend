@@ -43,8 +43,12 @@ class Navigation(rosys.persistence.Persistable):
 
     @property
     @abc.abstractmethod
-    def target_heading(self) -> float:
-        """The heading to the target point"""
+    def target(self) -> Pose | None:
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def target_heading(self) -> float | None:
         raise NotImplementedError
 
     @track
@@ -84,10 +88,15 @@ class Navigation(rosys.persistence.Persistable):
                     if not move_target:
                         self.log.debug('No move target found, continuing...')
                         break
+                    assert self.target is not None
+                    assert self.target_heading is not None
                     move_pose = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
                     # TODO: using WORK_Y doesnt seem to work, we should check that
                     move_pose = move_pose.transform_pose(Pose(x=-self.system.field_friend.WORK_X, y=0, yaw=0))
-                    # TODO: min(navigation_target, move_pose)
+                    if self.robot_locator.pose.distance(move_pose) > self.robot_locator.pose.distance(self.target):
+                        self.log.debug('Move target is too far, driving to end of navigation')
+                        await self.drive_towards_target(self.target)
+                        break
                     await self.drive_towards_target(move_pose)
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()

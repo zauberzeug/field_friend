@@ -41,6 +41,18 @@ class WaypointNavigation(Navigation):
             return None
         return self._upcoming_path[0]
 
+    @property
+    def target(self) -> Pose | None:
+        if self.current_segment is None:
+            return None
+        return self.current_segment.end
+
+    @property
+    def target_heading(self) -> float:
+        if self.current_segment is None:
+            return self.system.robot_locator.pose.yaw
+        return self.system.robot_locator.pose.direction(self.current_segment.end)
+
     def generate_path(self) -> list[PathSegment | WorkingSegment]:
         last_pose = self.system.robot_locator.pose
         path: list[PathSegment | WorkingSegment] = []
@@ -54,12 +66,6 @@ class WaypointNavigation(Navigation):
             path.append(segment)
             last_pose = next_pose
         return path
-
-    @property
-    def target_heading(self) -> float:
-        if self.current_segment is None:
-            return self.system.robot_locator.pose.yaw
-        return self.system.robot_locator.pose.direction(self.current_segment.end)
 
     async def prepare(self) -> bool:
         await super().prepare()

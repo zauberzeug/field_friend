@@ -141,6 +141,23 @@ async def test_slippage(system: System):
     assert_point(system.robot_locator.pose.point, Point(x=2.0, y=0))
 
 
+async def test_stop_when_target_after_end(system: System, detector: rosys.vision.DetectorSimulation):
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.25, y=0.0, z=0.0)))
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.60, y=0.0, z=0.0)))
+    system.current_implement = system.implements['Weed Screw']
+    system.current_navigation = system.straight_line_navigation
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = 0.5
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.001)
+    assert len(detector.simulated_objects) == 1
+    print(system.robot_locator.pose.point.x)
+
+
 # TODO: check path not driving
 async def test_straight_line(system: System):
     assert_point(system.robot_locator.pose.point, rosys.geometry.Point(x=0, y=0))
