@@ -147,7 +147,7 @@ class Navigation(rosys.persistence.Persistable):
         if isinstance(target, Pose):
             target = target.point
         if target_heading is None:
-            target_heading = self.target_heading
+            target_heading = self.target_heading or self.robot_locator.pose.yaw
         if max_turn_angle != 0:
             angle_diff = rosys.helpers.eliminate_2pi(self.robot_locator.pose.direction(target) - target_heading)
             target_heading = target_heading + np.clip(angle_diff, -max_turn_angle, max_turn_angle)

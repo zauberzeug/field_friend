@@ -24,7 +24,9 @@ class Implement(rosys.persistence.Persistable):
             with implement.blocked():
                 # do something where implement is not allowed
         """
-        self._is_blocked = blocked
+        # TODO: not optimal, but without we can overwrite one context manager with another
+        if not self._is_blocked:
+            self._is_blocked = blocked
         try:
             yield
         finally:
