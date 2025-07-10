@@ -82,7 +82,7 @@ class Navigation(rosys.persistence.Persistable):
                 while not self._should_finish():
                     move_target = await self.implement.get_move_target()
                     if not move_target:
-                        self.log.warning('Stopped to weed, because no move target found')
+                        self.log.debug('No move target found, continuing...')
                         break
                     move_pose = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
                     # TODO: using WORK_Y doesnt seem to work, we should check that
@@ -159,7 +159,7 @@ class Navigation(rosys.persistence.Persistable):
             return
         self.log.error('Driving towards %s with adjusted %s from %s', target, adjusted_target, self.robot_locator.pose)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
-            await self.driver.drive_to(target)
+            await self.driver.drive_to(adjusted_target)
 
     @track
     async def turn_to_yaw(self, target_yaw: float, *, angle_threshold: float = np.deg2rad(1.0)) -> None:
