@@ -35,7 +35,7 @@ class ChargingStation:
         self.last_error = 0.0
         self.dt = 0.1  # Time step
 
-        self._detector_repeater = rosys.on_repeat(self._detector_loop, 0.1, start_on_creation=False)
+        self._detector_repeater = rosys.rosys.Repeater(self._detector_loop, 0.1)
 
     def _reset_pid(self):
         """Reset PID controller state"""
