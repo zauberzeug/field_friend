@@ -85,7 +85,8 @@ class WaypointNavigation(Navigation):
                 self.system.plant_provider.clear()
                 self.create_segment_simulation(segment)
             stop_at_end = segment.stop_at_end or len(self._upcoming_path) == 1
-            with self.implement.blocked(not isinstance(segment, WorkingSegment)):
+            is_blocking_segment = not isinstance(segment, WorkingSegment)
+            with self.implement.blocked(is_blocking_segment):
                 with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, can_drive_backwards=segment.backward):
                     await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
             self._upcoming_path.pop(0)
