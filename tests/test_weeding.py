@@ -142,6 +142,7 @@ async def test_implement_blocking(system: System, detector: rosys.vision.Detecto
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
     if blocking:
+        assert system.current_implement is not None
         with system.current_implement.blocked():
             system.automator.start()
             await forward(until=lambda: system.automator.is_running)

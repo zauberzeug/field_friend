@@ -1,9 +1,10 @@
 import rosys
-from conftest import ROBOT_GEO_START_POSITION
 from rosys.hardware.gnss import GnssSimulation, GpsQuality
 from rosys.testing import assert_point, forward
 
 from field_friend.system import System
+
+from .conftest import ROBOT_GEO_START_POSITION
 
 
 async def test_driving(gnss_driving: System):

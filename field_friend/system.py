@@ -24,7 +24,13 @@ from .automations import (
     Puncher,
 )
 from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import CrossglideDemoNavigation, FieldNavigation, Navigation, StraightLineNavigation
+from .automations.navigation import (
+    CrossglideDemoNavigation,
+    FieldNavigation,
+    Navigation,
+    StraightLineNavigation,
+    WaypointNavigation,
+)
 from .config import get_config
 from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
@@ -223,10 +229,10 @@ class System(rosys.persistence.Persistable):
         match self.field_friend.implement_name:
             case 'tornado':
                 implements.append(Recorder(self))
-                implements.append(Tornado(self).persistent(key=persistence_key, ))
+                implements.append(Tornado(self).persistent(key=persistence_key))
             case 'weed_screw':
                 implements.append(Recorder(self))
-                implements.append(WeedingScrew(self).persistent(key=persistence_key, ))
+                implements.append(WeedingScrew(self).persistent(key=persistence_key))
             case 'dual_mechanism':
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
@@ -246,9 +252,11 @@ class System(rosys.persistence.Persistable):
         self.field_navigation = FieldNavigation(self, first_implement).persistent() if self.gnss is not None else None
         self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent() \
             if isinstance(self.field_friend.y_axis, AxisD1) else None
+        self.waypoint_navigation = WaypointNavigation(self, first_implement).persistent()
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
                                                           self.field_navigation,
                                                           self.crossglide_demo_navigation,
+                                                          self.waypoint_navigation,
                                                           ] if n is not None}
         self.current_navigation = self.straight_line_navigation
 

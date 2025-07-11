@@ -1,11 +1,12 @@
 import pytest
-from conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 from rosys.geometry import GeoPose
 
 from field_friend import System
 from field_friend.automations.field import Field
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.interface.components.support_point_dialog import SupportPointDialog
+
+from .conftest import FIELD_FIRST_ROW_END, FIELD_FIRST_ROW_START
 
 
 def test_field_creation(system: System, field_creator: FieldCreator):

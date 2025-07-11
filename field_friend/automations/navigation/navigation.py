@@ -25,7 +25,6 @@ class WorkflowException(Exception):
 
 class Navigation(rosys.persistence.Persistable):
     LINEAR_SPEED_LIMIT: float = 0.13
-    LINEAR_SPEED_MINIMUM: float = 0.01
 
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__()
@@ -44,8 +43,12 @@ class Navigation(rosys.persistence.Persistable):
 
     @property
     @abc.abstractmethod
-    def target_heading(self) -> float:
-        """The heading to the target point"""
+    def target(self) -> Pose | None:
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def target_heading(self) -> float | None:
         raise NotImplementedError
 
     @track
@@ -80,14 +83,20 @@ class Navigation(rosys.persistence.Persistable):
                     get_nearest_target(),
                     return_when_first_completed=True,
                 )
-                while True:
+                while not self._should_finish():
                     move_target = await self.implement.get_move_target()
                     if not move_target:
-                        self.log.warning('Stopped to weed, because no move target found')
+                        self.log.debug('No move target found, continuing...')
                         break
+                    assert self.target is not None
+                    assert self.target_heading is not None
                     move_pose = Pose(x=move_target.x, y=move_target.y, yaw=self.target_heading)
                     # TODO: using WORK_Y doesnt seem to work, we should check that
                     move_pose = move_pose.transform_pose(Pose(x=-self.system.field_friend.WORK_X, y=0, yaw=0))
+                    if self.robot_locator.pose.distance(move_pose) > self.robot_locator.pose.distance(self.target):
+                        self.log.debug('Move target is too far, driving to end of navigation')
+                        await self.drive_towards_target(self.target)
+                        break
                     await self.drive_towards_target(move_pose)
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
@@ -126,7 +135,7 @@ class Navigation(rosys.persistence.Persistable):
     async def drive_towards_target(self,
                                    target: Point | Pose, *,
                                    target_heading: float | None = None,
-                                   max_turn_angle: float = np.deg2rad(1.0),
+                                   max_turn_angle: float = np.deg2rad(0.1),
                                    minimum_distance: float = 0.005) -> None:
         """Drives the robot towards a target point, but keeps the robot on a set heading with a limited turn angle.
 
@@ -138,10 +147,12 @@ class Navigation(rosys.persistence.Persistable):
         if isinstance(target, Pose):
             target = target.point
         if target_heading is None:
-            target_heading = self.target_heading
+            target_heading = self.target_heading or self.robot_locator.pose.yaw
         if max_turn_angle != 0:
             angle_diff = rosys.helpers.eliminate_2pi(self.robot_locator.pose.direction(target) - target_heading)
             target_heading = target_heading + np.clip(angle_diff, -max_turn_angle, max_turn_angle)
+            self.log.warning(
+                f'target_heading: {target_heading} from angle_diff: {angle_diff} from {self.target_heading}')
 
         assert target_heading is not None
         line_end = self.robot_locator.pose.point.polar(self.robot_locator.pose.distance(target), target_heading)
@@ -155,7 +166,7 @@ class Navigation(rosys.persistence.Persistable):
         if relative_target.x <= 0:
             self.log.warning('%s is behind the robot at %s, skipping', adjusted_target, self.robot_locator.pose)
             return
-        self.log.debug('Driving towards %s with adjusted %s from %s', target, adjusted_target, self.robot_locator.pose)
+        self.log.error('Driving towards %s with adjusted %s from %s', target, adjusted_target, self.robot_locator.pose)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
             await self.driver.drive_to(adjusted_target)
 
