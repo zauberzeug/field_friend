@@ -50,8 +50,8 @@ class WaypointNavigation(Navigation):
     @property
     def target_heading(self) -> float:
         if self.current_segment is None:
-            return self.system.robot_locator.pose.yaw
-        return self.system.robot_locator.pose.direction(self.current_segment.end)
+            return self.robot_locator.pose.yaw
+        return self.robot_locator.pose.direction(self.current_segment.end)
 
     def generate_path(self) -> list[PathSegment | WorkingSegment]:
         last_pose = self.system.robot_locator.pose
