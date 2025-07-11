@@ -54,7 +54,7 @@ class WaypointNavigation(Navigation):
         return self.robot_locator.pose.direction(self.current_segment.end)
 
     def generate_path(self) -> list[PathSegment | WorkingSegment]:
-        last_pose = self.system.robot_locator.pose
+        last_pose = Pose(x=0, y=0, yaw=0)
         path: list[PathSegment | WorkingSegment] = []
         segment: PathSegment | WorkingSegment
         for waypoint in WAYPOINTS:
@@ -65,13 +65,27 @@ class WaypointNavigation(Navigation):
                 segment = PathSegment.from_poses(last_pose, next_pose, stop_at_end=False)
             path.append(segment)
             last_pose = next_pose
+        path = self._filter_path(path)
         return path
+
+    def _filter_path(self, path_segments: list[PathSegment | WorkingSegment]) -> list[PathSegment | WorkingSegment]:
+        # TODO: naming and docstring
+        current_pose = self.robot_locator.pose
+        start_index = 0
+        for i, segment in enumerate(path_segments):
+            t = segment.spline.closest_point(current_pose.x, current_pose.y, t_min=-0.1, t_max=1.1)
+            if t > 0.99:
+                continue
+            start_index = i
+            break
+        return path_segments[start_index:]
 
     async def prepare(self) -> bool:
         await super().prepare()
         self._upcoming_path = self.generate_path()
         self.PATH_GENERATED.emit(self._upcoming_path)
         if self._should_finish():
+            self.log.warning('End of path already reached')
             return False
         return True
 
