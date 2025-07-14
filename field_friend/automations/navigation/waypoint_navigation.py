@@ -85,7 +85,6 @@ class WaypointNavigation(Navigation):
         self._upcoming_path = self.generate_path()
         self.PATH_GENERATED.emit(self._upcoming_path)
         if self._should_finish():
-            self.log.warning('End of path already reached')
             return False
         return True
 
