@@ -7,6 +7,7 @@ import odrive
 import odrive.enums as enums  # noqa: PLR0402
 
 odrv0 = odrive.find_any()
+print('odrv0= %s' % odrv0)
 
 
 def assert_equal(a, b):
@@ -37,7 +38,8 @@ assert_equal(odrv0.axis1.config.can.heartbeat_rate_ms, 1000)
 assert_equal(odrv0.axis0.config.can.encoder_rate_ms, 10)
 assert_equal(odrv0.axis1.config.can.encoder_rate_ms, 10)
 
-for i, axis in enumerate([odrv0.axis0, odrv0.axis1]):
+#for i, axis in enumerate([odrv0.axis0, odrv0.axis1]):
+for i, axis in enumerate([odrv0.axis1, odrv0.axis0]):
     print(f'Axis {i}...')
 
     print('- Motor configuration')
@@ -82,35 +84,66 @@ finally:
     time.sleep(1.0)
     odrv0 = odrive.find_any()
 
+print('#######odrive.utils.dump_errors(odrv0)')
 odrive.utils.dump_errors(odrv0)
-print('- Calibration axis 0...')
-axis = odrv0.axis0
-odrv0.axis1.requested_state = enums.AXIS_STATE_IDLE
-while odrv0.axis1.current_state != enums.AXIS_STATE_IDLE:
-    time.sleep(0.1)
-axis.requested_state = enums.AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-time.sleep(0.1)
-while axis.current_state != enums.AXIS_STATE_IDLE:
-    time.sleep(0.1)
-    print(f'Axis {axis.current_state}...')
-print('  Done.')
 
-assert_equal(axis.motor.config.pre_calibrated, True)
-assert_equal(axis.encoder.config.pre_calibrated, True)
 
 print('- Calibration axis 1...')
 axis = odrv0.axis1
 odrv0.axis0.requested_state = enums.AXIS_STATE_IDLE
 while odrv0.axis0.current_state != enums.AXIS_STATE_IDLE:
-    time.sleep(0.1)
+    #joko
+    print('wait axis0 AXIS_STATE_IDLE')
+    #/joko
+    time.sleep(0.5)
+##joko
+#while odrv0.axis1.current_state != enums.AXIS_STATE_IDLE:
+#    print('wait axis1 AXIS_STATE_IDLE')
+#    time.sleep(0.5)
+##/joko
+
 axis.requested_state = enums.AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-time.sleep(0.1)
+print('sleep 1.1')
+time.sleep(1.1)
 while axis.current_state != enums.AXIS_STATE_IDLE:
-    print(f'Axis {axis.current_state}...')
     time.sleep(0.1)
+    print(f'Axis {axis.current_state}...')
 print('  Done.')
+
 assert_equal(axis.motor.config.pre_calibrated, True)
 assert_equal(axis.encoder.config.pre_calibrated, True)
+
+#joko
+odrive.utils.dump_errors(odrv0, True)
+print(f'Axis {axis.current_state}...')
+#/joko
+
+
+
+print('- Calibration axis 0...')
+axis = odrv0.axis0
+odrv0.axis1.requested_state = enums.AXIS_STATE_IDLE
+while odrv0.axis1.current_state != enums.AXIS_STATE_IDLE:
+    #joko
+    print('wait axis1 AXIS_STATE_IDLE')
+    #/joko
+    time.sleep(0.5)
+axis.requested_state = enums.AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+print('')
+time.sleep(1.1)
+while axis.current_state != enums.AXIS_STATE_IDLE:
+    time.sleep(0.1)
+    print(f'Axis {axis.current_state}...')
+print('  Done.')
+
+assert_equal(axis.motor.config.pre_calibrated, True)
+assert_equal(axis.encoder.config.pre_calibrated, True)
+
+
+
+
+
+
 
 odrive.utils.dump_errors(odrv0, True)
 print(f'Axis {axis.current_state}...')
@@ -118,3 +151,4 @@ print(f'Axis {axis.current_state}...')
 #     # odrv0.save_configuration()
 #     # except:
 #     #     sys.exit(0)
+#print('odrv0= %s' % odrv0)
