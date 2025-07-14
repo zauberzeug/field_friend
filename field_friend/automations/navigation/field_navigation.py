@@ -4,8 +4,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import rosys
+from rosys import helpers
 from rosys.geometry import Pose
 
+from ..field import Row
 from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
 
 if TYPE_CHECKING:
@@ -14,6 +16,9 @@ if TYPE_CHECKING:
 
 
 class FieldNavigation(WaypointNavigation):
+    MAX_DISTANCE_DEVIATION = 0.1
+    MAX_ANGLE_DEVIATION = np.deg2rad(15.0)
+
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__(system, implement)
         self.name = 'Field Navigation'
@@ -38,26 +43,33 @@ class FieldNavigation(WaypointNavigation):
         path_segments: list[PathSegment | WorkingSegment] = []
         current_pose = self.system.robot_locator.pose
         start_row_index = self._find_closest_row(rows_to_work_on)
+        row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
         for i in range(len(rows_to_work_on)):
             row_idx = (start_row_index + i) % len(rows_to_work_on)
             current_row = rows_to_work_on[row_idx]
             start_point = current_row.points[0].to_local()
             end_point = current_row.points[-1].to_local()
-
-            if current_pose.distance(end_point) < current_pose.distance(start_point):
+            if row_reversed:
                 start_point, end_point = end_point, start_point
 
             start_pose = Pose(x=start_point.x, y=start_point.y, yaw=start_point.direction(end_point))
             end_pose = Pose(x=end_point.x, y=end_point.y, yaw=start_point.direction(end_point))
             if path_segments:
                 path_segments.extend(self._generate_three_point_turn(current_pose, start_pose))
-
             path_segments.append(WorkingSegment.from_poses(start_pose, end_pose))
             current_pose = end_pose
+            row_reversed = not row_reversed
 
-        if path_segments:
-            path_segments.insert(0, PathSegment.from_poses(self.system.robot_locator.pose, path_segments[0].start))
-        return path_segments
+        filtered_path = self._filter_path(path_segments)
+        if filtered_path:
+            if not self._is_allowed_to_start(filtered_path[0]):
+                return []
+            current_pose = self.system.robot_locator.pose
+            same_length = len(filtered_path) == len(path_segments)
+            t = filtered_path[0].spline.closest_point(current_pose.x, current_pose.y, t_min=-0.1, t_max=1.1)
+            if same_length and t < 0:
+                filtered_path.insert(0, PathSegment.from_poses(self.system.robot_locator.pose, filtered_path[0].start))
+        return filtered_path
 
     def _find_closest_row(self, rows: list) -> int:
         """Find the index of the closest row to the current position"""
@@ -65,6 +77,43 @@ class FieldNavigation(WaypointNavigation):
         shortest_row_distances = [min(robot_pose.distance(row.points[0].to_local()),
                                       robot_pose.distance(row.points[-1].to_local())) for row in rows]
         return int(np.argmin(shortest_row_distances))
+
+    def _is_row_reversed(self, row: Row) -> bool:
+        current_pose = self.system.robot_locator.pose
+        row_start = row.points[0].to_local()
+        row_end = row.points[-1].to_local()
+        relative_start = current_pose.relative_point(row_start)
+        relative_end = current_pose.relative_point(row_end)
+        robot_in_working_area = relative_start.x * relative_end.x <= 0.0
+        if robot_in_working_area:
+            return relative_start.x > 0
+        distance_to_start = current_pose.distance(row_start)
+        distance_to_end = current_pose.distance(row_end)
+        return distance_to_start > distance_to_end
+
+    def _is_allowed_to_start(self, segment: PathSegment) -> bool:
+        current_pose = self.system.robot_locator.pose
+        relative_start = current_pose.relative_point(segment.start.point)
+        relative_end = current_pose.relative_point(segment.end.point)
+        robot_in_working_area = relative_start.x * relative_end.x <= 0.0
+        if robot_in_working_area:
+            t = segment.spline.closest_point(current_pose.x, current_pose.y)
+            spline_pose = segment.spline.pose(t)
+            if current_pose.distance(spline_pose) > self.MAX_DISTANCE_DEVIATION:
+                rosys.notify('Distance to row is too large', 'negative')
+                return False
+            if abs(helpers.angle(current_pose.yaw, spline_pose.yaw)) > self.MAX_ANGLE_DEVIATION:
+                rosys.notify('Robot is not aligned with the row', 'negative')
+                return False
+        else:
+            if abs(current_pose.relative_direction(segment.start)) > self.MAX_ANGLE_DEVIATION:
+                rosys.notify('Robot is not aligned with the row', 'negative')
+                return False
+            self.log.warning('distance to end %f', relative_end.x)
+            if abs(relative_start.x) > 2.0:
+                rosys.notify('Robot is too far from the row', 'negative')
+                return False
+        return True
 
     def _generate_three_point_turn(self, end_pose_current_row: Pose, start_pose_next_row: Pose, radius: float = 1.5) -> list[PathSegment]:
         direction_to_start = end_pose_current_row.relative_direction(start_pose_next_row)
