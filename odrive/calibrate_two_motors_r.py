@@ -77,43 +77,49 @@ for i, axis in enumerate([odrv0.axis0, odrv0.axis1]):
 try:
     odrv0.save_configuration()
 except:
-    pass
+    print('Error saving configuration')
 finally:
     time.sleep(1.0)
     odrv0 = odrive.find_any()
 
-odrive.utils.dump_errors(odrv0)
-print('- Calibration axis 0...')
-axis = odrv0.axis0
-odrv0.axis1.requested_state = enums.AXIS_STATE_IDLE
-while odrv0.axis1.current_state != enums.AXIS_STATE_IDLE:
-    time.sleep(0.1)
-axis.requested_state = enums.AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-time.sleep(0.1)
-while axis.current_state != enums.AXIS_STATE_IDLE:
-    time.sleep(0.1)
-    print(f'Axis {axis.current_state}...')
-print('  Done.')
 
-assert_equal(axis.motor.config.pre_calibrated, True)
-assert_equal(axis.encoder.config.pre_calibrated, True)
+# print('- Calibration axis 0...')
+# axis = odrv0.axis0
+# odrv0.axis1.requested_state = enums.AXIS_STATE_IDLE
+# while odrv0.axis1.current_state != enums.AXIS_STATE_IDLE:
+#     time.sleep(0.1)
+# axis.requested_state = enums.AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+# time.sleep(0.1)
+# while axis.current_state != enums.AXIS_STATE_IDLE:
+#     time.sleep(0.1)
+#     print(f'Axis {enums.AxisState(axis.current_state).name}...')
+# print(f'Done with Axis-State {enums.AxisState(axis.current_state).name}...')
 
+# assert_equal(axis.motor.config.pre_calibrated, True)
+# assert_equal(axis.encoder.config.pre_calibrated, True)
+
+
+odrive.utils.dump_errors(odrv0, True)
 print('- Calibration axis 1...')
 axis = odrv0.axis1
+print('Axis 1:', axis.current_state)
 odrv0.axis0.requested_state = enums.AXIS_STATE_IDLE
 while odrv0.axis0.current_state != enums.AXIS_STATE_IDLE:
     time.sleep(0.1)
 axis.requested_state = enums.AXIS_STATE_FULL_CALIBRATION_SEQUENCE
 time.sleep(0.1)
 while axis.current_state != enums.AXIS_STATE_IDLE:
-    print(f'Axis {axis.current_state}...')
     time.sleep(0.1)
-print('  Done.')
+    print(f'Axis-State{enums.AxisState(axis.current_state).name}...')
+print(f'Done with Axis-State {enums.AxisState(axis.current_state).name}...')
 assert_equal(axis.motor.config.pre_calibrated, True)
 assert_equal(axis.encoder.config.pre_calibrated, True)
 
 odrive.utils.dump_errors(odrv0, True)
-print(f'Axis {axis.current_state}...')
+
+
+# odrive.utils.dump_errors(odrv0, True)
+
 # try:
 #     # odrv0.save_configuration()
 #     # except:
