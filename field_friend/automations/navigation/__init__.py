@@ -1,5 +1,5 @@
 from .crossglide_demo_navigation import CrossglideDemoNavigation
-from .field_navigation import FieldNavigation
+from .field_navigation import FieldNavigation, RowSegment
 from .navigation import Navigation, WorkflowException
 from .straight_line_navigation import StraightLineNavigation
 from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
@@ -9,6 +9,7 @@ __all__ = [
     'FieldNavigation',
     'Navigation',
     'PathSegment',
+    'RowSegment',
     'StraightLineNavigation',
     'WaypointNavigation',
     'WorkflowException',
