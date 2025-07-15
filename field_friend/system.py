@@ -110,7 +110,7 @@ class System(rosys.persistence.Persistable):
         self.field_provider: FieldProvider = FieldProvider().persistent()
         self.setup_shape()
         self.automator: rosys.automation.Automator = rosys.automation.Automator(
-            self.steerer, on_interrupt=self.field_friend.stop)
+            self.steerer, on_interrupt=self.field_friend.stop, notify=False)
         self.automation_watcher: AutomationWatcher = AutomationWatcher(self)
 
         self.setup_timelapse()
