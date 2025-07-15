@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Self
 
 import numpy as np
 import rosys
@@ -47,17 +48,11 @@ class FieldNavigation(WaypointNavigation):
         for i in range(len(rows_to_work_on)):
             row_idx = (start_row_index + i) % len(rows_to_work_on)
             current_row = rows_to_work_on[row_idx]
-            start_point = current_row.points[0].to_local()
-            end_point = current_row.points[-1].to_local()
-            if row_reversed:
-                start_point, end_point = end_point, start_point
-
-            start_pose = Pose(x=start_point.x, y=start_point.y, yaw=start_point.direction(end_point))
-            end_pose = Pose(x=end_point.x, y=end_point.y, yaw=start_point.direction(end_point))
+            row_segment = RowSegment.from_row(current_row, reverse=row_reversed)
             if path_segments:
-                path_segments.extend(self._generate_three_point_turn(current_pose, start_pose))
-            path_segments.append(WorkingSegment.from_poses(start_pose, end_pose))
-            current_pose = end_pose
+                path_segments.extend(self._generate_three_point_turn(current_pose, row_segment.start))
+            path_segments.append(row_segment)
+            current_pose = row_segment.end
             row_reversed = not row_reversed
 
         filtered_path = self._filter_path(path_segments)
@@ -127,3 +122,19 @@ class FieldNavigation(WaypointNavigation):
             PathSegment.from_poses(first_turn_pose, back_up_pose, backward=True),
             PathSegment.from_poses(back_up_pose, start_pose_next_row),
         ]
+
+
+@dataclass(slots=True, kw_only=True)
+class RowSegment(WorkingSegment):
+    row: Row
+
+    @classmethod
+    def from_row(cls, row: Row, *, reverse: bool = False) -> Self:
+        start_point = row.points[0].to_local()
+        end_point = row.points[-1].to_local()
+        if reverse:
+            start_point, end_point = end_point, start_point
+        start_pose = Pose(x=start_point.x, y=start_point.y, yaw=start_point.direction(end_point))
+        end_pose = Pose(x=end_point.x, y=end_point.y, yaw=start_point.direction(end_point))
+        segment = WorkingSegment.from_poses(start_pose, end_pose)
+        return cls(row=row, spline=segment.spline, backward=segment.backward, stop_at_end=segment.stop_at_end)

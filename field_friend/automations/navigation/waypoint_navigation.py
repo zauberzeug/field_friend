@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from random import randint
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import numpy as np
 import rosys
@@ -149,28 +149,18 @@ class PathSegment(rosys.driving.PathSegment):
     def end(self) -> Pose:
         return self.spline.pose(t=1)
 
-    @staticmethod
-    def from_poses(start: Pose, end: Pose, *, backward: bool = False, stop_at_end: bool = True) -> PathSegment:
-        return PathSegment(
-            spline=Spline.from_poses(start, end, backward=backward), backward=backward, stop_at_end=stop_at_end,
-        )
+    @classmethod
+    def from_poses(cls, start: Pose, end: Pose, *, backward: bool = False, stop_at_end: bool = True) -> Self:
+        return cls(spline=Spline.from_poses(start, end, backward=backward), backward=backward, stop_at_end=stop_at_end)
 
-    @staticmethod
-    def from_points(start: Point, end: Point, *, backward: bool = False, stop_at_end: bool = True) -> PathSegment:
+    @classmethod
+    def from_points(cls, start: Point, end: Point, *, backward: bool = False, stop_at_end: bool = True) -> Self:
         yaw = start.direction(end)
         start_pose = Pose(x=start.x, y=start.y, yaw=yaw)
         end_pose = Pose(x=end.x, y=end.y, yaw=yaw)
-        return PathSegment.from_poses(start_pose, end_pose, backward=backward, stop_at_end=stop_at_end)
+        return cls.from_poses(start_pose, end_pose, backward=backward, stop_at_end=stop_at_end)
 
 
 @dataclass(slots=True, kw_only=True)
 class WorkingSegment(PathSegment):
-    @staticmethod
-    def from_poses(start: Pose, end: Pose, *, backward: bool = False, stop_at_end: bool = True) -> WorkingSegment:
-        segment = PathSegment.from_poses(start, end, backward=backward, stop_at_end=stop_at_end)
-        return WorkingSegment(spline=segment.spline, backward=backward, stop_at_end=stop_at_end)
-
-    @staticmethod
-    def from_points(start: Point, end: Point, *, backward: bool = False, stop_at_end: bool = True) -> WorkingSegment:
-        segment = PathSegment.from_points(start, end, backward=backward, stop_at_end=stop_at_end)
-        return WorkingSegment(spline=segment.spline, backward=backward, stop_at_end=stop_at_end)
+    ...
