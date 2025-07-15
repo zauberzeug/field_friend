@@ -109,7 +109,6 @@ class FieldNavigation(WaypointNavigation):
             if abs(current_pose.relative_direction(segment.start)) > self.MAX_ANGLE_DEVIATION:
                 rosys.notify('Robot is not aligned with the row', 'negative')
                 return False
-            self.log.warning('distance to end %f', relative_end.x)
             if abs(relative_start.x) > 2.0:
                 rosys.notify('Robot is too far from the row', 'negative')
                 return False

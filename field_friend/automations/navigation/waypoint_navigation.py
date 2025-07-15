@@ -83,8 +83,12 @@ class WaypointNavigation(Navigation):
     async def prepare(self) -> bool:
         await super().prepare()
         self._upcoming_path = self.generate_path()
+        if not self._upcoming_path:
+            self.log.error('Path generation failed')
+            return False
         self.PATH_GENERATED.emit(self._upcoming_path)
         if self._should_finish():
+            self.log.error('Preparation failed - should finish')
             return False
         return True
 

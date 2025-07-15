@@ -61,7 +61,7 @@ class Navigation(rosys.persistence.Persistable):
                 self.log.error('Preparation failed')
                 return
             if not await self.implement.prepare():
-                self.log.error('Tool-Preparation failed')
+                self.log.error('Implement preparation failed')
                 return
             rosys.notify(f'Activating {self.implement.name}...')
             await self.implement.activate()
