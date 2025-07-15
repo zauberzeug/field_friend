@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 DEFAULT_RESUME_DELAY = 1.0
 RESET_POSE_DISTANCE = 1.0
+ALLOWED_RESUME_DEVIATION = 0.2
 
 
 class AutomationWatcher:
-
     def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.automation_watcher')
 
@@ -49,6 +49,20 @@ class AutomationWatcher:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
         self.steerer.STEERING_STARTED.register(lambda: self.pause('steering started'))
         # self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
+        self.automator.AUTOMATION_PAUSED.register(self._on_pause)
+        self.automator.AUTOMATION_RESUMED.register(self._on_resume)
+
+    def _on_pause(self, reason: str) -> None:
+        self.log.debug('automation paused, because %s', reason)
+        self.incidence_time = rosys.time()
+        self.incidence_pose = deepcopy(self.robot_locator.pose)
+
+    def _on_resume(self) -> None:
+        self.log.debug('automation resumed')
+        if self.robot_locator.pose.distance(self.incidence_pose) > ALLOWED_RESUME_DEVIATION:
+            # NOTE: the robot should not be moved while paused
+            self.automator.stop(because='Robot was moved while paused')
+            self.try_resume_active = False
 
     def pause(self, reason: str) -> None:
         # TODO re-think integration of path recorder
