@@ -220,13 +220,13 @@ class Operation:
         def id_to_camera_name(camera_id: str) -> str | None:
             if self.system.config.circle_sight_positions is None:
                 return None
-            if camera_id == self.system.config.circle_sight_positions.right:
+            if camera_id.endswith(self.system.config.circle_sight_positions.right):
                 return 'right'
-            if camera_id == self.system.config.circle_sight_positions.back:
+            if camera_id.endswith(self.system.config.circle_sight_positions.back):
                 return 'back'
-            if camera_id == self.system.config.circle_sight_positions.front:
+            if camera_id.endswith(self.system.config.circle_sight_positions.front):
                 return 'front'
-            if camera_id == self.system.config.circle_sight_positions.left:
+            if camera_id.endswith(self.system.config.circle_sight_positions.left):
                 return 'left'
             return None
 
