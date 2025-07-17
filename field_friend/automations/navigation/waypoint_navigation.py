@@ -51,7 +51,13 @@ class WaypointNavigation(Navigation):
     def target_heading(self) -> float:
         if self.current_segment is None:
             return self.robot_locator.pose.yaw
-        return self.robot_locator.pose.direction(self.current_segment.end)
+        current_pose = self.robot_locator.pose
+        # TODO: estimated_length is costly, it should be cached
+        look_ahead_t = 0.1 / self.current_segment.spline.estimated_length()
+        t = self.current_segment.spline.closest_point(current_pose.x, current_pose.y)
+        # TODO: test if this can cause issues, when t = 1.0
+        spline_pose = self.current_segment.spline.pose(min(1.0, t + look_ahead_t))
+        return current_pose.direction(spline_pose.point)
 
     def generate_path(self) -> list[PathSegment | WorkingSegment]:
         last_pose = Pose(x=0, y=0, yaw=0)
