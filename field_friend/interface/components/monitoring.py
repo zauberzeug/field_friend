@@ -22,7 +22,7 @@ class Monitoring:
         # TODO: in simulation there is no mjpeg camera provider
         self.mjpg_camera_provider = getattr(system, 'mjpeg_camera_provider', None)
         self.detector = getattr(system, 'detector', None)
-        self.monitoring_detector = getattr(system, 'monitoring_detector', None)
+        self.monitoring_detector = getattr(system, 'circle_sight_detector', None)
         self.monitoring_active = False
         self.plant_locator = getattr(system, 'plant_locator', None)
         self.field_friend = system.field_friend
