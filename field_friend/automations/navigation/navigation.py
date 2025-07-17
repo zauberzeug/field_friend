@@ -64,12 +64,12 @@ class Navigation(rosys.persistence.Persistable):
             if not await self.implement.prepare():
                 self.log.error('Implement preparation failed')
                 return
-            rosys.notify(f'Activating {self.implement.name}...')
             await self.implement.activate()
             self.start_position = self.robot_locator.pose.point
             if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
                 self.create_simulation()
-            self.log.info('Navigation started')
+            rosys.notify('Automation started')
+            self.log.debug('Navigation started')
 
             async def get_nearest_target() -> Point:
                 while True:
@@ -103,8 +103,9 @@ class Navigation(rosys.persistence.Persistable):
                     await self.implement.stop_workflow()
                     await rosys.sleep(0.1)
                 await rosys.sleep(0.1)
+                rosys.notify('Automation finished', 'positive')
         except WorkflowException as e:
-            rosys.notify(f'Navigation failed: {e}', 'negative')
+            rosys.notify(f'Automation failed: {e}', 'negative')
         finally:
             await self.implement.finish()
             await self.finish()
@@ -126,7 +127,7 @@ class Navigation(rosys.persistence.Persistable):
     @track
     async def finish(self) -> None:
         """Executed after the navigation is done"""
-        self.log.info('Navigation finished')
+        self.log.debug('Navigation finished')
         gc.collect()
 
     @abc.abstractmethod

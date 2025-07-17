@@ -51,18 +51,26 @@ class AutomationWatcher:
         # self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
         self.automator.AUTOMATION_PAUSED.register(self._on_pause)
         self.automator.AUTOMATION_RESUMED.register(self._on_resume)
+        self.automator.AUTOMATION_STOPPED.register(self._on_stop)
 
     def _on_pause(self, reason: str) -> None:
-        self.log.debug('automation paused, because %s', reason)
+        rosys.notify('Automation paused')
+        self.log.debug('automation paused because %s', reason)
         self.incidence_time = rosys.time()
         self.incidence_pose = deepcopy(self.robot_locator.pose)
 
     def _on_resume(self) -> None:
-        self.log.debug('automation resumed')
         if self.robot_locator.pose.distance(self.incidence_pose) > ALLOWED_RESUME_DEVIATION:
-            # NOTE: the robot should not be moved while paused
+            rosys.notify('Robot must not be moved while paused', 'negative')
             self.automator.stop(because='Robot was moved while paused')
             self.try_resume_active = False
+            return
+        rosys.notify('Automation resumed')
+        self.log.debug('automation resumed')
+
+    def _on_stop(self, reason: str) -> None:
+        rosys.notify('Automation stopped')
+        self.log.debug('automation stopped because %s', reason)
 
     def pause(self, reason: str) -> None:
         # TODO re-think integration of path recorder
