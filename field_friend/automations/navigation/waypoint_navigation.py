@@ -103,10 +103,11 @@ class WaypointNavigation(Navigation):
             segment = self.current_segment
             if segment is None:
                 return
-            if isinstance(segment, WorkingSegment) and isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
+            if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
                 self.detector.simulated_objects.clear()
                 self.system.plant_provider.clear()
-                self.create_segment_simulation(segment)
+                if isinstance(segment, WorkingSegment):
+                    self.create_segment_simulation(segment)
             stop_at_end = segment.stop_at_end or len(self._upcoming_path) == 1
             self._use_implement = isinstance(segment, WorkingSegment)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, can_drive_backwards=segment.backward):
