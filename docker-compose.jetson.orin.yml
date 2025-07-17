@@ -19,7 +19,7 @@ services:
     volumes:
       - ~/data_plants:/data
 
-  monitoring:
+  circle_sight:
     image: "zauberzeug/yolov5-detector:0.1.11-nlv0.14.0-35.4.1"
     restart: always
     ports:
