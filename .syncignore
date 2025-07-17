@@ -4,13 +4,16 @@
 .mypy_cache/
 .pytest_cache/
 .vscode/
+.ruff_cache/
 tests/
 \*.swp
 .env
 config.hjson
 sync.sh
+field_friend.egg-info/
 nicegui
 rosys
+site
 .nicegui
 .venv
 .DS_Store
