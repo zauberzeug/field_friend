@@ -103,7 +103,7 @@ class Navigation(rosys.persistence.Persistable):
                     await self.implement.stop_workflow()
                     await rosys.sleep(0.1)
                 await rosys.sleep(0.1)
-                rosys.notify('Automation finished', 'positive')
+            rosys.notify('Automation finished', 'positive')
         except WorkflowException as e:
             rosys.notify(f'Automation failed: {e}', 'negative')
         finally:
