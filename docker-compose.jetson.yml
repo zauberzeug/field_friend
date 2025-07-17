@@ -13,11 +13,11 @@ services:
     hostname: ${ROBOT_ID}
     environment:
       - HOST=learning-loop.ai
-      - ORGANIZATION=zauberzeug
-      - PROJECT=coins
+      - ORGANIZATION=feldfreund
+      - PROJECT=plants
       - NVIDIA_VISIBLE_DEVICES=all
     volumes:
-      - ~/data_coins:/data
+      - ~/data_plants:/data
 
   circle_sight:
     image: "zauberzeug/yolov5-detector:nlv0.8.8-32.6.1"
