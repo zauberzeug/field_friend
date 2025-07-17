@@ -1,5 +1,3 @@
-import contextlib
-from collections.abc import Generator
 from typing import Any
 
 import rosys
@@ -13,29 +11,6 @@ class Implement(rosys.persistence.Persistable):
         super().__init__()
         self.name = name
         self.is_active = False
-        self._is_blocked = False
-
-    # TODO: parameter blocked looks dumb
-    @contextlib.contextmanager
-    def blocked(self, blocked: bool = True) -> Generator[None, None, None]:
-        """Context manager to temporarily block the implement from working.
-
-        Usage:
-            with implement.blocked():
-                # do something where implement is not allowed
-        """
-        # TODO: not optimal, but without we can overwrite one context manager with another
-        if not self._is_blocked:
-            self._is_blocked = blocked
-        try:
-            yield
-        finally:
-            self._is_blocked = False
-
-    @property
-    def is_blocked(self) -> bool:
-        """Returns whether the implement is currently blocked from working."""
-        return self._is_blocked
 
     async def prepare(self) -> bool:
         """Prepare the implement once at the beginning (for reference points, etc.);
@@ -69,7 +44,6 @@ class Implement(rosys.persistence.Persistable):
 
         Returns True if the robot can drive forward, if the implement whishes to stay at the current location, return False
         """
-        assert not self._is_blocked
 
     @track
     async def stop_workflow(self) -> None:

@@ -38,6 +38,7 @@ class Navigation(rosys.persistence.Persistable):
         self.implement = implement
         self.detector = system.detector
         self.name = 'Unknown'
+        self._use_implement = True
         self.start_position = self.robot_locator.pose.point
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
 
@@ -73,8 +74,7 @@ class Navigation(rosys.persistence.Persistable):
             async def get_nearest_target() -> Point:
                 while True:
                     move_target = await self.implement.get_move_target()
-                    # TODO: navigation.use_implement
-                    if move_target and not self.implement.is_blocked:
+                    if move_target and self._use_implement:
                         return move_target
                     await rosys.sleep(0.1)
 
@@ -120,6 +120,7 @@ class Navigation(rosys.persistence.Persistable):
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects = []
         self.log.info('clearing plant provider')
+        self._use_implement = True
         return True
 
     @track

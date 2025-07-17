@@ -1,9 +1,11 @@
 import pytest
 import rosys
+from rosys.geometry import Pose
 from rosys.testing import forward
 
 from field_friend import System
 from field_friend.automations.implements import Tornado, WeedingScrew
+from field_friend.automations.navigation import PathSegment, WaypointNavigation, WorkingSegment
 
 
 async def test_working_with_weeding_screw(system: System, detector: rosys.vision.DetectorSimulation):
@@ -134,25 +136,28 @@ async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_th
     assert len(detector.simulated_objects) == 4, 'last weed should be removed'
 
 
-@pytest.mark.parametrize('blocking', (False, True))
-async def test_implement_blocking(system: System, detector: rosys.vision.DetectorSimulation, blocking: bool):
+async def test_implement_usage(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.5, y=0.0, z=0.0)))
-    assert len(detector.simulated_objects) == 1
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=1.5, y=0.0, z=0.0)))
+
+    def generate_path():
+        pose1 = Pose(x=0.5, y=0.0, yaw=0.0)
+        pose2 = Pose(x=0.5, y=0.0, yaw=0.0)
+        return [
+            WorkingSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
+            PathSegment.from_poses(pose1, pose2),
+        ]
+    system.current_navigation = system.waypoint_navigation
     system.current_implement = system.implements['Weed Screw']
-    system.current_navigation = system.straight_line_navigation
-    if blocking:
-        assert system.current_implement is not None
-        with system.current_implement.blocked():
-            system.automator.start()
-            await forward(until=lambda: system.automator.is_running)
-            await forward(until=lambda: system.automator.is_stopped)
-        assert len(detector.simulated_objects) == 1
-    else:
-        system.automator.start()
-        await forward(until=lambda: system.automator.is_running)
-        await forward(until=lambda: system.automator.is_stopped)
-        assert len(detector.simulated_objects) == 0
+    assert isinstance(system.current_navigation, WaypointNavigation)
+    system.current_navigation.generate_path = generate_path  # type: ignore
+    assert len(detector.simulated_objects) == 2
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert len(detector.simulated_objects) == 1
 
 
 @pytest.mark.parametrize('work_x', (0.0, 0.3))
