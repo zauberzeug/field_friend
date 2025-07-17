@@ -238,6 +238,6 @@ class Operation:
                     return
                 camera_name = id_to_camera_name(camera_id)
                 tags = [] if camera_name is None else [camera_name]
-                await self.system.monitoring_detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, tags=tags, source=self.system.robot_id)
+                await self.system.circle_sight_detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, tags=tags, source=self.system.robot_id)
             ui.notify('Circle sight recorded', type='positive')
         ui.button('Record Circle Sight', on_click=record_circle_sight)
