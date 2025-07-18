@@ -5,7 +5,7 @@ from rosys.testing import assert_point, forward
 
 from field_friend import System
 from field_friend.automations import Field
-from field_friend.automations.implements import Recorder
+from field_friend.automations.implements import Recorder, WeedingImplement
 from field_friend.automations.navigation import FieldNavigation, PathSegment, RowSegment
 
 from ..conftest import ROBOT_GEO_START_POSITION, set_start_pose
@@ -179,3 +179,30 @@ async def test_selected_beds(system: System, field_with_beds: Field):
     assert len(row_segments) == 2
     assert row_segments[0].row.id == field_with_beds.rows[0].id
     assert row_segments[1].row.id == field_with_beds.rows[2].id
+
+
+async def test_bed_crops(system: System, field_with_beds: Field):
+    system.field_provider.select_field(field_with_beds.id)
+    system.field_provider.only_specific_beds = True
+    system.field_provider.selected_beds = [0, 2]
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    system.current_implement = system.implements['Weed Screw']
+    assert isinstance(system.current_implement, WeedingImplement)
+    driven_segments = 0
+
+    def count_driven_segments():
+        nonlocal driven_segments
+        driven_segments += 1
+    system.current_navigation.WAYPOINT_REACHED.register(count_driven_segments)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: driven_segments == 1)
+    await forward(2)
+    assert system.current_implement.cultivated_crop == field_with_beds.bed_crops[str(0)]
+
+    await forward(until=lambda: driven_segments == 5, timeout=200)
+    await forward(2)
+    assert system.current_implement.cultivated_crop == field_with_beds.bed_crops[str(2)]
+    await forward(until=lambda: system.automator.is_stopped)

@@ -11,6 +11,7 @@ from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
 from ..field import Row
+from ..implements import WeedingImplement
 from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
 
 if TYPE_CHECKING:
@@ -31,6 +32,15 @@ class FieldNavigation(WaypointNavigation):
         self.automator = system.automator
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
+        self.WAYPOINT_REACHED.register(self._on_waypoint_reached)
+
+    def _on_waypoint_reached(self) -> None:
+        segment = self.current_segment
+        if segment is None:
+            return
+        if isinstance(segment, RowSegment) and isinstance(self.implement, WeedingImplement):
+            self.log.debug(f'Setting crop to {segment.row.crop}')
+            self.implement.cultivated_crop = segment.row.crop
 
     async def prepare(self) -> bool:
         await super().prepare()
