@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 
 class FieldNavigation(WaypointNavigation):
+    MAX_START_DISTANCE = 2.0
     MAX_DISTANCE_DEVIATION = 0.1
     MAX_ANGLE_DEVIATION = np.deg2rad(15.0)
 
@@ -29,6 +30,12 @@ class FieldNavigation(WaypointNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
+    async def prepare(self) -> bool:
+        await super().prepare()
+        if not self._is_allowed_to_start():
+            return False
+        return True
+
     def generate_path(self) -> list[PathSegment | WorkingSegment]:
         field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
         field = self.field_provider.get_field(field_id)
@@ -39,7 +46,6 @@ class FieldNavigation(WaypointNavigation):
         if not rows_to_work_on:
             rosys.notify('No rows to work on', 'negative')
             return []
-
         path_segments: list[PathSegment | WorkingSegment] = []
         current_pose = self.system.robot_locator.pose
         start_row_index = self._find_closest_row(rows_to_work_on)
@@ -80,14 +86,17 @@ class FieldNavigation(WaypointNavigation):
         distance_to_end = current_pose.distance(row_end)
         return distance_to_start > distance_to_end
 
-    def _is_allowed_to_start(self, segment: PathSegment) -> bool:
+    def _is_allowed_to_start(self) -> bool:
+        first_row_segment = next((segment for segment in self._upcoming_path if isinstance(segment, RowSegment)), None)
+        if first_row_segment is None:
+            return False
         current_pose = self.system.robot_locator.pose
-        relative_start = current_pose.relative_point(segment.start.point)
-        relative_end = current_pose.relative_point(segment.end.point)
+        relative_start = current_pose.relative_point(first_row_segment.start.point)
+        relative_end = current_pose.relative_point(first_row_segment.end.point)
         robot_in_working_area = relative_start.x * relative_end.x <= 0.0
         if robot_in_working_area:
-            t = segment.spline.closest_point(current_pose.x, current_pose.y)
-            spline_pose = segment.spline.pose(t)
+            t = first_row_segment.spline.closest_point(current_pose.x, current_pose.y)
+            spline_pose = first_row_segment.spline.pose(t)
             if current_pose.distance(spline_pose) > self.MAX_DISTANCE_DEVIATION:
                 rosys.notify('Distance to row is too large', 'negative')
                 return False
@@ -95,10 +104,10 @@ class FieldNavigation(WaypointNavigation):
                 rosys.notify('Robot is not aligned with the row', 'negative')
                 return False
         else:
-            if abs(current_pose.relative_direction(segment.start)) > self.MAX_ANGLE_DEVIATION:
+            if abs(current_pose.relative_direction(first_row_segment.start)) > self.MAX_ANGLE_DEVIATION:
                 rosys.notify('Robot is not aligned with the row', 'negative')
                 return False
-            if abs(relative_start.x) > 2.0:
+            if abs(relative_start.x) > self.MAX_START_DISTANCE:
                 rosys.notify('Robot is too far from the row', 'negative')
                 return False
         return True
