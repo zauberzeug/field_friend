@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import rosys.vision
 from nicegui import app, events, ui
 
+from ...vision.calibratable_usb_camera_provider import CalibratableUsbCameraProvider
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
 from .support_point_dialog import SupportPointDialog
@@ -241,3 +242,21 @@ class Operation:
                 await self.system.circle_sight_detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, tags=tags, source=self.system.robot_id)
             ui.notify('Circle sight recorded', type='positive')
         ui.button('Record Circle Sight', on_click=record_circle_sight)
+
+        async def record_main_camera():
+            if not isinstance(self.system.camera_provider, CalibratableUsbCameraProvider):
+                self.log.debug('No camera provider configured, skipping main camera recording')
+                return
+            camera = self.system.camera_provider.first_connected_camera
+            if camera is None:
+                self.log.debug('No camera connected')
+                return
+            latest_image = camera.latest_captured_image
+            if latest_image is None:
+                self.log.debug('No image for main camera')
+                return
+            assert isinstance(self.system.detector, rosys.vision.DetectorHardware)
+            await self.system.detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, source=self.system.robot_id)
+
+            ui.notify('Main camera recorded', type='positive')
+        ui.button('Record Main Camera', on_click=record_main_camera)
