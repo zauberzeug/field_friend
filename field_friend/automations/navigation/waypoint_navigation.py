@@ -71,11 +71,11 @@ class WaypointNavigation(Navigation):
                 segment = PathSegment.from_poses(last_pose, next_pose, stop_at_end=False)
             path.append(segment)
             last_pose = next_pose
-        path = self._filter_path(path)
+        path = self._start_at_closest_segment(path)
         return path
 
-    def _filter_path(self, path_segments: list[PathSegment | WorkingSegment]) -> list[PathSegment | WorkingSegment]:
-        # TODO: naming and docstring
+    def _start_at_closest_segment(self, path_segments: list[PathSegment | WorkingSegment]) -> list[PathSegment | WorkingSegment]:
+        """Filter path segments to start at the closest segment to the current pose"""
         current_pose = self.robot_locator.pose
         start_index = 0
         for i, segment in enumerate(path_segments):
