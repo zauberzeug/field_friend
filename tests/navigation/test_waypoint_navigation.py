@@ -84,7 +84,7 @@ async def test_skip_first_segment(system: System):
             PathSegment.from_poses(pose4, pose1),
         ]
         assert isinstance(system.current_navigation, WaypointNavigation)
-        path = system.current_navigation._filter_path(path)  # pylint: disable=protected-access
+        path = system.current_navigation._start_at_closest_segment(path)  # pylint: disable=protected-access
         return path
     system.current_navigation = system.waypoint_navigation
     assert isinstance(system.current_navigation, WaypointNavigation)
