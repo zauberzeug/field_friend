@@ -25,14 +25,14 @@ from .automations import (
 )
 from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
 from .automations.navigation import (
-    CrossglideDemoNavigation,
     FieldNavigation,
+    ImplementDemoNavigation,
     Navigation,
     StraightLineNavigation,
     WaypointNavigation,
 )
 from .config import get_config
-from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
+from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
 from .kpi_generator import generate_kpis
 from .robot_locator import RobotLocator
@@ -250,12 +250,12 @@ class System(rosys.persistence.Persistable):
         first_implement = next(iter(self.implements.values()))
         self.straight_line_navigation = StraightLineNavigation(self, first_implement).persistent()
         self.field_navigation = FieldNavigation(self, first_implement).persistent() if self.gnss is not None else None
-        self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent() \
-            if isinstance(self.field_friend.y_axis, AxisD1) else None
+        self.implement_demo_navigation = ImplementDemoNavigation(self, first_implement).persistent() \
+            if isinstance(self.field_friend.y_axis, Axis) else None
         self.waypoint_navigation = WaypointNavigation(self, first_implement).persistent()
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
                                                           self.field_navigation,
-                                                          self.crossglide_demo_navigation,
+                                                          self.implement_demo_navigation,
                                                           self.waypoint_navigation,
                                                           ] if n is not None}
         self.current_navigation = self.straight_line_navigation
