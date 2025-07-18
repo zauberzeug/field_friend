@@ -50,6 +50,28 @@ async def test_complete_field(system: System, field: Field):
     assert combined_turn_length == pytest.approx(3 * 2 * 2.461 + 3 * 2.550, abs=0.001)
 
 
+async def test_start_second_row(system: System, field: Field):
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    set_start_pose(system, Pose(x=1.0, y=-0.5, yaw=0.0))
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    assert system.current_navigation.target is not None
+    assert isinstance(system.current_navigation.path[0], RowSegment)
+
+    row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
+    assert len(row_segments) == 3
+    combined_row_length = sum(segment.spline.estimated_length() for segment in row_segments)
+    assert combined_row_length == pytest.approx(3 * 10, abs=0.0001)
+    turn_segments = [segment for segment in system.current_navigation.path[1:]
+                     if not isinstance(segment, RowSegment)]
+    assert len(turn_segments) == 2 * 3
+    combined_turn_length = sum(segment.spline.estimated_length() for segment in turn_segments)
+    assert combined_turn_length == pytest.approx(2 * 2 * 2.461 + 2 * 2.550, abs=0.001)
+
+
 async def test_row_change(system: System, field: Field):
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
@@ -68,13 +90,14 @@ async def test_row_change(system: System, field: Field):
     assert_point(turn_segments[3].spline.end, row_segments[1].start.point)
 
 
-@pytest.mark.parametrize('direction', (0, np.pi))
-async def test_start_direction(system: System, field: Field, direction: float):
+@pytest.mark.parametrize('heading_degrees', (0, 180))
+async def test_start_direction(system: System, field: Field, heading_degrees: float):
+    heading = np.deg2rad(heading_degrees)
     first_row_start = field.first_row_start.to_local()
     first_row_end = field.first_row_end.to_local()
     distance = first_row_start.distance(first_row_end)
     start_position = first_row_start.polar(distance / 2, first_row_start.direction(first_row_end))
-    set_start_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=direction))
+    set_start_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=heading))
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
@@ -82,31 +105,50 @@ async def test_start_direction(system: System, field: Field, direction: float):
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.target is not None
-    if direction == 0:
+    if heading == 0:
         assert system.current_navigation.target.x == pytest.approx(first_row_end.x, abs=0.1)
         assert system.current_navigation.target.y == pytest.approx(first_row_end.y, abs=0.1)
-    elif direction == np.pi:
+    elif heading == np.pi:
         assert system.current_navigation.target.x == pytest.approx(first_row_start.x, abs=0.1)
         assert system.current_navigation.target.y == pytest.approx(first_row_start.y, abs=0.1)
     else:
         raise ValueError('Invalid direction')
 
 
-@pytest.mark.skip(reason='Not implemented yet')
-@pytest.mark.parametrize('offset', (0, -0.06))
+@pytest.mark.parametrize('offset', (0, 0.10, 0.11))
 async def test_between_rows(system: System, field: Field, offset: float):
+    first_row_start = field.first_row_start.to_local()
+    first_row_end = field.first_row_end.to_local()
+    direction = first_row_start.direction(first_row_end)
+    start_position = first_row_start.polar(0.1, direction).polar(offset, direction + np.pi/2)
+    set_start_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=direction))
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
-    set_start_pose(system, Pose(x=1.0, y=offset, yaw=0.0))
     system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    assert system.current_navigation.target is not None
-    # TODO: handle error
+    await forward(1)
+    if offset <= FieldNavigation.MAX_DISTANCE_DEVIATION:
+        assert system.automator.is_running
+    else:
+        assert not system.automator.is_running
 
 
-@pytest.mark.skip(reason='Not implemented yet')
-@pytest.mark.parametrize('heading_degrees', (0, 40))
+@pytest.mark.parametrize('heading_degrees', (0, 15, 16))
 async def test_heading_deviation(system: System, field: Field, heading_degrees: float):
-    pass
+    heading = np.deg2rad(heading_degrees)
+    first_row_start = field.first_row_start.to_local()
+    first_row_end = field.first_row_end.to_local()
+    direction = first_row_start.direction(first_row_end)
+    start_position = first_row_start.polar(0.1, direction)
+    set_start_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=direction + heading))
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(1)
+    if heading <= FieldNavigation.MAX_ANGLE_DEVIATION:
+        assert system.automator.is_running
+    else:
+        assert not system.automator.is_running
