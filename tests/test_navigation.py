@@ -5,6 +5,7 @@ import random
 import numpy as np
 import pytest
 import rosys
+from conftest import set_start_pose
 from rosys.geometry import Point, Pose
 from rosys.helpers import angle
 from rosys.testing import assert_point, forward
@@ -14,8 +15,6 @@ from field_friend.automations import AutomationWatcher
 from field_friend.automations.implements import Implement, Recorder, Tornado
 from field_friend.automations.navigation import Navigation, StraightLineNavigation
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
-
-from ..conftest import set_start_pose
 
 
 @pytest.mark.parametrize('target, end_pose, max_turn_angle', [

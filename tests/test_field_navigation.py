@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from conftest import ROBOT_GEO_START_POSITION, set_start_pose
 from rosys.geometry import Pose
 from rosys.testing import assert_point, forward
 
@@ -7,8 +8,6 @@ from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Recorder, WeedingImplement
 from field_friend.automations.navigation import FieldNavigation, PathSegment, RowSegment
-
-from ..conftest import ROBOT_GEO_START_POSITION, set_start_pose
 
 
 async def test_approach_first_row(system: System, field: Field):
