@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from rosys.geometry import Pose
-from rosys.testing import forward
+from rosys.testing import assert_point, forward
 
 from field_friend import System
 from field_friend.automations import Field
@@ -55,7 +55,6 @@ async def test_start_direction(system: System, field: Field, direction: float):
         raise ValueError('Invalid direction')
 
 
-# @pytest.mark.skip(reason='Not implemented yet')
 async def test_row_change(system: System, field: Field):
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
@@ -64,6 +63,17 @@ async def test_row_change(system: System, field: Field):
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.target is not None
+
+    row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
+    turn_segments = [segment for segment in system.current_navigation.path[1:]
+                     if not isinstance(segment, RowSegment)]
+
+    assert len(turn_segments) == 3
+    assert turn_segments[1].spline.estimated_length() == pytest.approx(2.4611, abs=0.0001)
+    assert turn_segments[2].spline.estimated_length() == pytest.approx(2.5500, abs=0.0001)
+    assert turn_segments[3].spline.estimated_length() == pytest.approx(2.4611, abs=0.0001)
+    assert_point(turn_segments[1].spline.start, row_segments[0].end.point)
+    assert_point(turn_segments[3].spline.end, row_segments[1].start.point)
 
 
 @pytest.mark.skip(reason='Not implemented yet')
