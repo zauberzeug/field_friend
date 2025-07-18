@@ -79,7 +79,7 @@ async def test_outside_of_field(system: System, field: Field):
     assert isinstance(system.current_navigation.implement, Recorder)
     set_start_pose(system, Pose(x=-5, y=0, yaw=0.0))
     system.automator.start()
-    await forward(1)
+    await forward(2)
     assert not system.automator.is_running
 
 
@@ -138,7 +138,7 @@ async def test_between_rows(system: System, field: Field, offset: float):
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
-    await forward(1)
+    await forward(2)
     if offset <= FieldNavigation.MAX_DISTANCE_DEVIATION:
         assert system.automator.is_running
     else:
@@ -158,7 +158,7 @@ async def test_heading_deviation(system: System, field: Field, heading_degrees: 
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
-    await forward(1)
+    await forward(2)
     if heading <= FieldNavigation.MAX_ANGLE_DEVIATION:
         assert system.automator.is_running
     else:
