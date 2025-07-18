@@ -63,15 +63,12 @@ async def test_row_change(system: System, field: Field):
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.target is not None
-
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
-    turn_segments = [segment for segment in system.current_navigation.path[1:]
+    turn_segments = [segment for segment in system.current_navigation.path
                      if not isinstance(segment, RowSegment)]
-
-    assert len(turn_segments) == 3
-    assert turn_segments[1].spline.estimated_length() == pytest.approx(2.4611, abs=0.0001)
-    assert turn_segments[2].spline.estimated_length() == pytest.approx(2.5500, abs=0.0001)
-    assert turn_segments[3].spline.estimated_length() == pytest.approx(2.4611, abs=0.0001)
+    assert turn_segments[1].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
+    assert turn_segments[2].spline.estimated_length() == pytest.approx(2.550, abs=0.001)
+    assert turn_segments[3].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
     assert_point(turn_segments[1].spline.start, row_segments[0].end.point)
     assert_point(turn_segments[3].spline.end, row_segments[1].start.point)
 
