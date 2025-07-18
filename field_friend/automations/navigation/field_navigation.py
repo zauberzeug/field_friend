@@ -32,7 +32,6 @@ class FieldNavigation(WaypointNavigation):
     def generate_path(self) -> list[PathSegment | WorkingSegment]:
         field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
         field = self.field_provider.get_field(field_id)
-
         if field is None:
             rosys.notify('No field selected', 'negative')
             return []
@@ -46,25 +45,20 @@ class FieldNavigation(WaypointNavigation):
         start_row_index = self._find_closest_row(rows_to_work_on)
         row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
         for i in range(len(rows_to_work_on)):
-            row_idx = (start_row_index + i) % len(rows_to_work_on)
-            current_row = rows_to_work_on[row_idx]
-            row_segment = RowSegment.from_row(current_row, reverse=row_reversed)
+            if i < start_row_index:
+                continue
+            row_segment = RowSegment.from_row(field.rows[i], reverse=row_reversed)
             if path_segments:
                 path_segments.extend(self._generate_three_point_turn(current_pose, row_segment.start))
             path_segments.append(row_segment)
             current_pose = row_segment.end
             row_reversed = not row_reversed
 
-        filtered_path = self._filter_path(path_segments)
-        if filtered_path:
-            if not self._is_allowed_to_start(filtered_path[0]):
-                return []
-            current_pose = self.system.robot_locator.pose
-            same_length = len(filtered_path) == len(path_segments)
-            t = filtered_path[0].spline.closest_point(current_pose.x, current_pose.y, t_min=-0.1, t_max=1.1)
-            if same_length and t < 0:
-                filtered_path.insert(0, PathSegment.from_poses(self.system.robot_locator.pose, filtered_path[0].start))
-        return filtered_path
+        current_pose = self.system.robot_locator.pose
+        t = path_segments[0].spline.closest_point(current_pose.x, current_pose.y, t_min=-0.1, t_max=1.1)
+        if t < 0:
+            path_segments.insert(0, PathSegment.from_poses(self.system.robot_locator.pose, path_segments[0].start))
+        return path_segments
 
     def _find_closest_row(self, rows: list) -> int:
         """Find the index of the closest row to the current position"""
