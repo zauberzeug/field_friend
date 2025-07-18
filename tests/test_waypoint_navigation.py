@@ -1,11 +1,13 @@
 import numpy as np
 import pytest
+from conftest import set_start_pose
 from rosys.geometry import Pose
+from rosys.helpers import angle
 from rosys.testing import forward
 
 from field_friend import System
 from field_friend.automations.implements import Recorder
-from field_friend.automations.navigation import PathSegment, WaypointNavigation
+from field_friend.automations.navigation import PathSegment, StraightLineNavigation, WaypointNavigation
 
 
 async def test_straight_path(system: System):
@@ -48,7 +50,6 @@ async def test_start_inbetween_waypoints(system: System, start_offset: float):
     assert system.current_navigation.target.point.x == pytest.approx(end.x, abs=0.1)
     assert system.current_navigation.target.point.y == pytest.approx(end.y, abs=0.1)
     assert system.current_navigation.target.yaw_deg == pytest.approx(end.yaw_deg, abs=0.1)
-    system.automator.stop('test done')
 
 
 async def test_start_on_end(system: System):
@@ -97,4 +98,29 @@ async def test_skip_first_segment(system: System):
     assert system.current_navigation.target.x == pytest.approx(pose3.x, abs=0.1)
     assert system.current_navigation.target.y == pytest.approx(pose3.y, abs=0.1)
     assert system.current_navigation.target.yaw_deg == pytest.approx(pose3.yaw_deg, abs=0.1)
-    system.automator.stop('test done')
+
+
+@pytest.mark.parametrize('length', (1.0, 2.0))
+async def test_straight_line(system: System, length: float):
+    system.current_navigation = system.straight_line_navigation
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = length
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    current_segment = system.current_navigation.current_segment
+    assert current_segment is not None
+    assert current_segment.spline.estimated_length() == length
+
+
+@pytest.mark.parametrize('heading_degrees', (-180, -90, -45, 0, 45, 90, 180, 360))
+async def test_straight_line_different_headings(system: System, heading_degrees: float):
+    heading = np.deg2rad(heading_degrees)
+    current_pose = system.robot_locator.pose
+    set_start_pose(system, Pose(x=current_pose.x, y=current_pose.y, yaw=heading))
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    current_segment = system.current_navigation.current_segment
+    assert current_segment is not None
+    direction = current_segment.spline.start.direction(current_segment.spline.end)
+    assert angle(direction, heading) == pytest.approx(0, abs=0.1)
