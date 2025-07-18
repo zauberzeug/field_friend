@@ -80,7 +80,7 @@ async def test_outside_of_field(system: System, field: Field):
     set_start_pose(system, Pose(x=-5, y=0, yaw=0.0))
     system.automator.start()
     await forward(2)
-    assert not system.automator.is_running
+    assert system.automator.is_stopped
 
 
 async def test_row_change(system: System, field: Field):
@@ -142,7 +142,7 @@ async def test_between_rows(system: System, field: Field, offset: float):
     if offset <= FieldNavigation.MAX_DISTANCE_DEVIATION:
         assert system.automator.is_running
     else:
-        assert not system.automator.is_running
+        assert system.automator.is_stopped
 
 
 @pytest.mark.parametrize('heading_degrees', (0, 15, 16))
@@ -162,7 +162,7 @@ async def test_heading_deviation(system: System, field: Field, heading_degrees: 
     if heading <= FieldNavigation.MAX_ANGLE_DEVIATION:
         assert system.automator.is_running
     else:
-        assert not system.automator.is_running
+        assert system.automator.is_stopped
 
 
 async def test_selected_beds(system: System, field_with_beds: Field):
