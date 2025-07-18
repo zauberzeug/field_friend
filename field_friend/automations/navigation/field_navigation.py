@@ -7,6 +7,8 @@ import numpy as np
 import rosys
 from rosys import helpers
 from rosys.geometry import Pose
+from shapely.geometry import Point as ShapelyPoint
+from shapely.geometry import Polygon as ShapelyPolygon
 
 from ..field import Row
 from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
@@ -91,6 +93,11 @@ class FieldNavigation(WaypointNavigation):
         if first_row_segment is None:
             return False
         current_pose = self.system.robot_locator.pose
+        assert self.field_provider.selected_field is not None
+        field_polygon = ShapelyPolygon([point.to_local().tuple for point in self.field_provider.selected_field.outline])
+        if not field_polygon.contains(ShapelyPoint(current_pose.x, current_pose.y)):
+            rosys.notify('Robot is outside of field boundaries', 'negative')
+            return False
         relative_start = current_pose.relative_point(first_row_segment.start.point)
         relative_end = current_pose.relative_point(first_row_segment.end.point)
         robot_in_working_area = relative_start.x * relative_end.x <= 0.0

@@ -72,6 +72,17 @@ async def test_start_second_row(system: System, field: Field):
     assert combined_turn_length == pytest.approx(2 * 2 * 2.461 + 2 * 2.550, abs=0.001)
 
 
+async def test_outside_of_field(system: System, field: Field):
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    set_start_pose(system, Pose(x=-5, y=0, yaw=0.0))
+    system.automator.start()
+    await forward(1)
+    assert not system.automator.is_running
+
+
 async def test_row_change(system: System, field: Field):
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
@@ -168,5 +179,3 @@ async def test_selected_beds(system: System, field_with_beds: Field):
     assert len(row_segments) == 2
     assert row_segments[0].row.id == field_with_beds.rows[0].id
     assert row_segments[1].row.id == field_with_beds.rows[2].id
-
-
