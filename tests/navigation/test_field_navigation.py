@@ -71,7 +71,6 @@ async def test_row_change(system: System, field: Field):
     assert_point(turn_segments[3].spline.end, row_segments[1].start.point)
 
 
-@pytest.mark.skip(reason='Not implemented yet')
 async def test_complete_field(system: System, field: Field):
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
@@ -80,28 +79,17 @@ async def test_complete_field(system: System, field: Field):
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.target is not None
-    # system.automator.pause('')
-
+    assert isinstance(system.current_navigation.path[0], PathSegment)
+    assert system.current_navigation.path[0].spline.estimated_length() == pytest.approx(0.3345, abs=0.0001)
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
     assert len(row_segments) == 4
-    assert isinstance(system.current_navigation.path[0], PathSegment)
+    combined_row_length = sum(segment.spline.estimated_length() for segment in row_segments)
+    assert combined_row_length == pytest.approx(4 * 10, abs=0.0001)
     turn_segments = [segment for segment in system.current_navigation.path[1:]
                      if not isinstance(segment, RowSegment)]
     assert len(turn_segments) == 3 * 3
-
-    # system.automator.resume()
-    # await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped, timeout=10000.0)
-    last_row_start = field.rows[-1].points[0].to_local()
-    last_row_end = field.rows[-1].points[-1].to_local()
-    assert system.robot_locator.pose.x == pytest.approx(last_row_end.x, abs=0.1)
-    assert system.robot_locator.pose.y == pytest.approx(last_row_end.y, abs=0.1)
-    assert system.robot_locator.pose.yaw == pytest.approx(last_row_start.direction(last_row_end), abs=0.1)
-
-
-@pytest.mark.skip(reason='Not implemented yet')
-async def test_resume_field(system: System, field: Field):
-    pass
+    combined_turn_length = sum(segment.spline.estimated_length() for segment in turn_segments)
+    assert combined_turn_length == pytest.approx(3 * 2 * 2.461 + 3 * 2.550, abs=0.001)
 
 
 # @pytest.mark.skip(reason='Not implemented yet')
