@@ -50,10 +50,10 @@ class FieldNavigation(WaypointNavigation):
         current_pose = self.system.robot_locator.pose
         start_row_index = self._find_closest_row(rows_to_work_on)
         row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
-        for i in range(len(rows_to_work_on)):
+        for i, row in enumerate(rows_to_work_on):
             if i < start_row_index:
                 continue
-            row_segment = RowSegment.from_row(field.rows[i], reverse=row_reversed)
+            row_segment = RowSegment.from_row(row, reverse=row_reversed)
             if path_segments:
                 path_segments.extend(self._generate_three_point_turn(current_pose, row_segment.start))
             path_segments.append(row_segment)

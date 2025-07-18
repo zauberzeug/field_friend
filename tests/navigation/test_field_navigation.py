@@ -152,3 +152,21 @@ async def test_heading_deviation(system: System, field: Field, heading_degrees: 
         assert system.automator.is_running
     else:
         assert not system.automator.is_running
+
+
+async def test_selected_beds(system: System, field_with_beds: Field):
+    system.field_provider.select_field(field_with_beds.id)
+    system.field_provider.only_specific_beds = True
+    system.field_provider.selected_beds = [0, 2]
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
+    assert len(row_segments) == 2
+    assert row_segments[0].row.id == field_with_beds.rows[0].id
+    assert row_segments[1].row.id == field_with_beds.rows[2].id
+
+
