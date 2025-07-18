@@ -27,7 +27,6 @@ async def test_approach_first_row(system: System, field: Field):
     assert system.current_navigation.target.point.x == pytest.approx(first_row_start.x, abs=0.1)
     assert system.current_navigation.target.point.y == pytest.approx(first_row_start.y, abs=0.1)
     assert system.current_navigation.target.yaw_deg == pytest.approx(first_row_start.direction(first_row_end), abs=0.1)
-    system.automator.stop('test done')
 
 
 @pytest.mark.parametrize('direction', (0, np.pi))
@@ -37,7 +36,6 @@ async def test_start_direction(system: System, field: Field, direction: float):
     distance = first_row_start.distance(first_row_end)
     start_position = first_row_start.polar(distance / 2, first_row_start.direction(first_row_end))
     set_start_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=direction))
-
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
