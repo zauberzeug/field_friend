@@ -10,9 +10,12 @@ from rosys.helpers import angle
 from rosys.testing import assert_point, forward
 
 from field_friend import System
+from field_friend.automations import AutomationWatcher
 from field_friend.automations.implements import Implement, Recorder, Tornado
 from field_friend.automations.navigation import Navigation, StraightLineNavigation
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
+
+from ..conftest import set_start_pose
 
 
 @pytest.mark.parametrize('target, end_pose, max_turn_angle', [
@@ -175,7 +178,6 @@ async def test_straight_line_with_tornado(system_with_tornado: System):
     system = system_with_tornado
     assert_point(system.robot_locator.pose.point, rosys.geometry.Point(x=0, y=0))
     assert isinstance(system.current_navigation, StraightLineNavigation)
-    assert isinstance(system.current_navigation.implement, Recorder)
     system.current_implement = system.implements['Tornado']
     assert isinstance(system.current_navigation.implement, Tornado)
     system.automator.start()
@@ -206,27 +208,24 @@ async def test_straight_line_with_high_angles(system: System):
     assert system.robot_locator.pose.yaw_deg == pytest.approx(predicted_yaw, abs=5)
 
 
-# # @pytest.mark.skip(reason='Not implemented yet')
-# async def test_resume_field_after_pause(system: System, field: Field):
-#     assert system.field_navigation is not None
-#     system.current_navigation = system.field_navigation
-#     assert isinstance(system.current_navigation, FieldNavigation)
-#     assert isinstance(system.current_navigation.implement, Recorder)
-#     system.automator.start()
-#     await forward(until=lambda: system.automator.is_running)
-#     system.automator.pause('')
-
-
-# @pytest.mark.skip(reason='Not implemented yet')
-# async def test_resume_field_after_manual_move(system: System, field: Field):
-#     assert system.field_navigation is not None
-#     system.current_navigation = system.field_navigation
-#     assert isinstance(system.current_navigation, FieldNavigation)
-#     assert isinstance(system.current_navigation.implement, Recorder)
-#     system.automator.start()
-#     await forward(until=lambda: system.automator.is_running)
-#     system.automator.pause('')
-#     current_pose = system.robot_locator.pose
-#     set_start_pose(system, Pose(x=current_pose.x + 1.0, y=current_pose.y, yaw=current_pose.yaw))
-#     system.automator.resume()
-#     # TODO: handle error -> not implemented yet
+@pytest.mark.parametrize('manual_move', (0, 0.20, 0.21))
+async def test_resume_after_pause(system: System, manual_move: float):
+    assert system.field_navigation is not None
+    system.current_navigation = system.straight_line_navigation
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    system.automator.pause('test')
+    await forward(until=lambda: system.automator.is_paused)
+    moved_pose = system.robot_locator.pose
+    moved_pose.x += manual_move
+    set_start_pose(system, moved_pose)
+    system.automator.resume()
+    await forward(2)
+    if manual_move <= AutomationWatcher.ALLOWED_RESUME_DEVIATION:
+        assert system.automator.is_running
+        await forward(until=lambda: system.automator.is_stopped)
+        assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
+    else:
+        assert system.automator.is_stopped

@@ -13,12 +13,12 @@ from shapely.geometry import Polygon as ShapelyPolygon
 if TYPE_CHECKING:
     from ..system import System
 
-DEFAULT_RESUME_DELAY = 1.0
-RESET_POSE_DISTANCE = 1.0
-ALLOWED_RESUME_DEVIATION = 0.2
-
 
 class AutomationWatcher:
+    DEFAULT_RESUME_DELAY = 1.0
+    RESET_POSE_DISTANCE = 1.0
+    ALLOWED_RESUME_DEVIATION = 0.2
+
     def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.automation_watcher')
 
@@ -32,7 +32,7 @@ class AutomationWatcher:
         self.try_resume_active: bool = False
         self.incidence_time: float = 0.0
         self.incidence_pose: Pose = Pose()
-        self.resume_delay: float = DEFAULT_RESUME_DELAY
+        self.resume_delay: float = self.DEFAULT_RESUME_DELAY
         self.field_polygon: ShapelyPolygon | None = None
         self.kpi_provider = system.kpi_provider
 
@@ -60,7 +60,7 @@ class AutomationWatcher:
         self.incidence_pose = deepcopy(self.robot_locator.pose)
 
     def _on_resume(self) -> None:
-        if self.robot_locator.pose.distance(self.incidence_pose) > ALLOWED_RESUME_DEVIATION:
+        if self.robot_locator.pose.distance(self.incidence_pose) > self.ALLOWED_RESUME_DEVIATION:
             rosys.notify('Robot must not be moved while paused', 'negative')
             self.automator.stop(because='Robot was moved while paused')
             self.try_resume_active = False
@@ -130,10 +130,10 @@ class AutomationWatcher:
             self.automator.resume()
             self.try_resume_active = False
 
-        if self.robot_locator.pose.distance(self.incidence_pose) > RESET_POSE_DISTANCE:
-            if self.resume_delay != DEFAULT_RESUME_DELAY:
+        if self.robot_locator.pose.distance(self.incidence_pose) > self.RESET_POSE_DISTANCE:
+            if self.resume_delay != self.DEFAULT_RESUME_DELAY:
                 self.log.debug('resetting resume_delay')
-                self.resume_delay = DEFAULT_RESUME_DELAY
+                self.resume_delay = self.DEFAULT_RESUME_DELAY
 
     def start_field_watch(self, field_boundaries: list[GeoPoint]) -> None:
         self.field_polygon = ShapelyPolygon([point.to_local().tuple for point in field_boundaries])
