@@ -204,3 +204,29 @@ async def test_straight_line_with_high_angles(system: System):
     assert system.robot_locator.pose.point.x == pytest.approx(-0.985, abs=0.1)
     assert system.robot_locator.pose.point.y == pytest.approx(-0.174, abs=0.1)
     assert system.robot_locator.pose.yaw_deg == pytest.approx(predicted_yaw, abs=5)
+
+
+# # @pytest.mark.skip(reason='Not implemented yet')
+# async def test_resume_field_after_pause(system: System, field: Field):
+#     assert system.field_navigation is not None
+#     system.current_navigation = system.field_navigation
+#     assert isinstance(system.current_navigation, FieldNavigation)
+#     assert isinstance(system.current_navigation.implement, Recorder)
+#     system.automator.start()
+#     await forward(until=lambda: system.automator.is_running)
+#     system.automator.pause('')
+
+
+# @pytest.mark.skip(reason='Not implemented yet')
+# async def test_resume_field_after_manual_move(system: System, field: Field):
+#     assert system.field_navigation is not None
+#     system.current_navigation = system.field_navigation
+#     assert isinstance(system.current_navigation, FieldNavigation)
+#     assert isinstance(system.current_navigation.implement, Recorder)
+#     system.automator.start()
+#     await forward(until=lambda: system.automator.is_running)
+#     system.automator.pause('')
+#     current_pose = system.robot_locator.pose
+#     set_start_pose(system, Pose(x=current_pose.x + 1.0, y=current_pose.y, yaw=current_pose.yaw))
+#     system.automator.resume()
+#     # TODO: handle error -> not implemented yet

@@ -29,6 +29,45 @@ async def test_approach_first_row(system: System, field: Field):
     assert system.current_navigation.target.yaw_deg == pytest.approx(first_row_start.direction(first_row_end), abs=0.1)
 
 
+async def test_complete_field(system: System, field: Field):
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    assert system.current_navigation.target is not None
+    assert isinstance(system.current_navigation.path[0], PathSegment)
+    assert system.current_navigation.path[0].spline.estimated_length() == pytest.approx(0.3345, abs=0.0001)
+    row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
+    assert len(row_segments) == 4
+    combined_row_length = sum(segment.spline.estimated_length() for segment in row_segments)
+    assert combined_row_length == pytest.approx(4 * 10, abs=0.0001)
+    turn_segments = [segment for segment in system.current_navigation.path[1:]
+                     if not isinstance(segment, RowSegment)]
+    assert len(turn_segments) == 3 * 3
+    combined_turn_length = sum(segment.spline.estimated_length() for segment in turn_segments)
+    assert combined_turn_length == pytest.approx(3 * 2 * 2.461 + 3 * 2.550, abs=0.001)
+
+
+async def test_row_change(system: System, field: Field):
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    assert system.current_navigation.target is not None
+    row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
+    turn_segments = [segment for segment in system.current_navigation.path
+                     if not isinstance(segment, RowSegment)]
+    assert turn_segments[1].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
+    assert turn_segments[2].spline.estimated_length() == pytest.approx(2.550, abs=0.001)
+    assert turn_segments[3].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
+    assert_point(turn_segments[1].spline.start, row_segments[0].end.point)
+    assert_point(turn_segments[3].spline.end, row_segments[1].start.point)
+
+
 @pytest.mark.parametrize('direction', (0, np.pi))
 async def test_start_direction(system: System, field: Field, direction: float):
     first_row_start = field.first_row_start.to_local()
@@ -53,72 +92,7 @@ async def test_start_direction(system: System, field: Field, direction: float):
         raise ValueError('Invalid direction')
 
 
-async def test_row_change(system: System, field: Field):
-    assert system.field_navigation is not None
-    system.current_navigation = system.field_navigation
-    assert isinstance(system.current_navigation, FieldNavigation)
-    assert isinstance(system.current_navigation.implement, Recorder)
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    assert system.current_navigation.target is not None
-    row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
-    turn_segments = [segment for segment in system.current_navigation.path
-                     if not isinstance(segment, RowSegment)]
-    assert turn_segments[1].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
-    assert turn_segments[2].spline.estimated_length() == pytest.approx(2.550, abs=0.001)
-    assert turn_segments[3].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
-    assert_point(turn_segments[1].spline.start, row_segments[0].end.point)
-    assert_point(turn_segments[3].spline.end, row_segments[1].start.point)
-
-
-async def test_complete_field(system: System, field: Field):
-    assert system.field_navigation is not None
-    system.current_navigation = system.field_navigation
-    assert isinstance(system.current_navigation, FieldNavigation)
-    assert isinstance(system.current_navigation.implement, Recorder)
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    assert system.current_navigation.target is not None
-    assert isinstance(system.current_navigation.path[0], PathSegment)
-    assert system.current_navigation.path[0].spline.estimated_length() == pytest.approx(0.3345, abs=0.0001)
-    row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
-    assert len(row_segments) == 4
-    combined_row_length = sum(segment.spline.estimated_length() for segment in row_segments)
-    assert combined_row_length == pytest.approx(4 * 10, abs=0.0001)
-    turn_segments = [segment for segment in system.current_navigation.path[1:]
-                     if not isinstance(segment, RowSegment)]
-    assert len(turn_segments) == 3 * 3
-    combined_turn_length = sum(segment.spline.estimated_length() for segment in turn_segments)
-    assert combined_turn_length == pytest.approx(3 * 2 * 2.461 + 3 * 2.550, abs=0.001)
-
-
-# @pytest.mark.skip(reason='Not implemented yet')
-async def test_resume_field_after_pause(system: System, field: Field):
-    assert system.field_navigation is not None
-    system.current_navigation = system.field_navigation
-    assert isinstance(system.current_navigation, FieldNavigation)
-    assert isinstance(system.current_navigation.implement, Recorder)
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    system.automator.pause('')
-
-
 @pytest.mark.skip(reason='Not implemented yet')
-async def test_resume_field_after_manual_move(system: System, field: Field):
-    assert system.field_navigation is not None
-    system.current_navigation = system.field_navigation
-    assert isinstance(system.current_navigation, FieldNavigation)
-    assert isinstance(system.current_navigation.implement, Recorder)
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    system.automator.pause('')
-    current_pose = system.robot_locator.pose
-    set_start_pose(system, Pose(x=current_pose.x + 1.0, y=current_pose.y, yaw=current_pose.yaw))
-    system.automator.resume()
-    # TODO: handle error -> not implemented yet
-
-
-# @pytest.mark.skip(reason='Not implemented yet')
 @pytest.mark.parametrize('offset', (0, -0.06))
 async def test_between_rows(system: System, field: Field, offset: float):
     assert system.field_navigation is not None
