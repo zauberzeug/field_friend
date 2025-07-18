@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
+from rosys.geometry import Pose
 
 from ...automations.implements.implement import Implement
 from ...automations.implements.weeding_implement import WeedingImplement
@@ -26,8 +27,10 @@ class CrossglideDemoNavigation(Navigation):
         self.MAX_STRETCH_DISTANCE: float = 5.0
         self.detector = system.detector
         self.name = 'Crossglide Demo'
-        self.origin: rosys.geometry.Point
-        self.target: rosys.geometry.Point
+
+    @property
+    def target(self) -> Pose | None:
+        return self.system.robot_locator.pose
 
     @property
     def target_heading(self) -> float:
