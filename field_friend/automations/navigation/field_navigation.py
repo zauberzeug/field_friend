@@ -10,7 +10,7 @@ from rosys.geometry import Pose
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
-from ..field import Row
+from ..field import Field, Row
 from ..implements import WeedingImplement
 from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
 
@@ -33,6 +33,14 @@ class FieldNavigation(WaypointNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
         self.WAYPOINT_REACHED.register(self._on_waypoint_reached)
+
+    @property
+    def field(self) -> Field | None:
+        return self.field_provider.selected_field
+
+    @property
+    def current_row(self) -> Row | None:
+        return self.current_segment.row if isinstance(self.current_segment, RowSegment) else None
 
     def _on_waypoint_reached(self) -> None:
         segment = self.current_segment
