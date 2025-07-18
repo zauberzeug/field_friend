@@ -73,7 +73,7 @@ class System(rosys.persistence.Persistable):
             self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu).persistent()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
-            self.monitoring_detector = rosys.vision.DetectorHardware(port=8005)
+            self.circle_sight_detector = rosys.vision.DetectorHardware(port=8005)
         else:
             self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
