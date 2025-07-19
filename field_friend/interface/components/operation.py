@@ -3,10 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import rosys.vision
 from nicegui import app, events, ui
 
-from ...vision.calibratable_usb_camera_provider import CalibratableUsbCameraProvider
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
 from .support_point_dialog import SupportPointDialog
@@ -46,9 +44,6 @@ class Operation:
                     if self.plant_locator is not None:
                         with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row().classes('items-center'):
                             self.plant_provider.settings_ui()
-
-                    if self.system.is_real:
-                        self.circle_sight_ui()
 
         with activities:
             self.navigation_selection = ui.select(
@@ -216,47 +211,3 @@ class Operation:
                                       multiple=True, label='selected beds', clearable=True) \
                                 .classes('grow').props('use-chips') \
                                 .bind_value(self.field_provider, 'selected_beds')
-
-    def circle_sight_ui(self) -> None:
-        def id_to_camera_name(camera_id: str) -> str | None:
-            if self.system.config.circle_sight_positions is None:
-                return None
-            if camera_id.endswith(self.system.config.circle_sight_positions.right):
-                return 'right'
-            if camera_id.endswith(self.system.config.circle_sight_positions.back):
-                return 'back'
-            if camera_id.endswith(self.system.config.circle_sight_positions.front):
-                return 'front'
-            if camera_id.endswith(self.system.config.circle_sight_positions.left):
-                return 'left'
-            return None
-
-        async def record_circle_sight():
-            for camera_id, camera in self.system.mjpeg_camera_provider.cameras.items():
-                latest_image = camera.latest_captured_image
-                if latest_image is None:
-                    self.log.debug(f'No image for camera {camera_id}')
-                    return
-                camera_name = id_to_camera_name(camera_id)
-                tags = [] if camera_name is None else [camera_name]
-                await self.system.circle_sight_detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, tags=tags, source=self.system.robot_id)
-            ui.notify('Circle sight recorded', type='positive')
-        ui.button('Record Circle Sight', on_click=record_circle_sight)
-
-        async def record_main_camera():
-            if not isinstance(self.system.camera_provider, CalibratableUsbCameraProvider):
-                self.log.debug('No camera provider configured, skipping main camera recording')
-                return
-            camera = self.system.camera_provider.first_connected_camera
-            if camera is None:
-                self.log.debug('No camera connected')
-                return
-            latest_image = camera.latest_captured_image
-            if latest_image is None:
-                self.log.debug('No image for main camera')
-                return
-            assert isinstance(self.system.detector, rosys.vision.DetectorHardware)
-            await self.system.detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, source=self.system.robot_id)
-
-            ui.notify('Main camera recorded', type='positive')
-        ui.button('Record Main Camera', on_click=record_main_camera)
