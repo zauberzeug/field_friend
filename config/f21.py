@@ -23,7 +23,7 @@ config = FieldFriendConfiguration(
         width=1280,
         height=720,
         fps=10,
-        rotation=180,
+        rotation=0,
     ),
     wheels=WheelsConfiguration(
         is_left_reversed=False,
