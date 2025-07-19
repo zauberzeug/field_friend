@@ -1,17 +1,17 @@
 from rosys.geometry import Pose, Rotation
 
 from field_friend.config.configuration import (
-    BumperConfiguration,
-    CameraConfiguration,
-    CircleSightPositions,
-    FieldFriendConfiguration,
-    FlashlightConfiguration,
-    GnssConfiguration,
-    ImuConfiguration,
-    MeasurementsConfiguration,
-    RobotBrainConfiguration,
-    SprayerConfiguration,
-    WheelsConfiguration,
+                                               BumperConfiguration,
+                                               CameraConfiguration,
+                                               CircleSightPositions,
+                                               FieldFriendConfiguration,
+                                               FlashlightConfiguration,
+                                               GnssConfiguration,
+                                               ImuConfiguration,
+                                               MeasurementsConfiguration,
+                                               RobotBrainConfiguration,
+                                               SprayerConfiguration,
+                                               WheelsConfiguration,
 )
 
 config = FieldFriendConfiguration(
