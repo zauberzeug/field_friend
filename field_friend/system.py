@@ -25,6 +25,7 @@ from .automations import (
 )
 from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
 from .automations.navigation import CrossglideDemoNavigation, FieldNavigation, Navigation, StraightLineNavigation
+from .capture import Capture
 from .config import get_config
 from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
@@ -56,6 +57,8 @@ class System(rosys.persistence.Persistable):
         self._current_navigation: Navigation | None = None
         self.implements: dict[str, Implement] = {}
         self.navigation_strategies: dict[str, Navigation] = {}
+        self.mjpeg_camera_provider: rosys.vision.MjpegCameraProvider | None = None
+        self.circle_sight_detector: rosys.vision.DetectorHardware | None = None
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware(self.config)
@@ -78,6 +81,7 @@ class System(rosys.persistence.Persistable):
             if self.camera_provider is not None:
                 self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
 
+        self.capture = Capture(self)
         if self.config.camera is not None:
             assert self.camera_provider is not None
             self.camera_configurator = CameraConfigurator(
