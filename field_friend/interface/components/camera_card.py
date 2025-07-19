@@ -16,7 +16,7 @@ from rosys.vision import CalibratableCamera
 
 from ...automations.implements.tornado import Tornado as TornadoImplement
 from ...automations.implements.weeding_implement import WeedingImplement
-from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Tornado
+from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Sprayer, Tornado
 from ...vision.zedxmini_camera import StereoCamera
 from .calibration_dialog import CalibrationDialog as calibration_dialog
 
@@ -204,6 +204,8 @@ class CameraCard:
             svg += self.build_svg_for_tool_axis()
             if self.show_plants_to_handle:
                 svg += self.build_svg_for_plants_to_handle()
+        elif isinstance(self.system.field_friend.z_axis, Sprayer):
+            svg += self.build_svg_for_sprayer_position()
         self.image_view.set_content(svg)
 
     def draw_cross(self, point: Point, *, color: str = 'red', size: int = 5, width: int = 1) -> str:
@@ -229,6 +231,18 @@ class CameraCard:
         assert self.camera.calibration is not None
         assert isinstance(self.field_friend.y_axis, Axis)
         tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position + self.field_friend.WORK_Y, z=0) \
+            .in_frame(self.robot_locator.pose_frame).resolve().point_3d
+        tool_2d = self.camera.calibration.project_to_image(tool_3d)
+        if tool_2d:
+            tool_2d = tool_2d / self.shrink_factor
+            return f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" stroke="black" stroke-width="1" fill="transparent"/>'
+        return ''
+
+    def build_svg_for_sprayer_position(self) -> str:
+        assert self.camera is not None
+        assert self.camera.calibration is not None
+        assert isinstance(self.field_friend.z_axis, Sprayer)
+        tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.WORK_Y, z=0) \
             .in_frame(self.robot_locator.pose_frame).resolve().point_3d
         tool_2d = self.camera.calibration.project_to_image(tool_3d)
         if tool_2d:
