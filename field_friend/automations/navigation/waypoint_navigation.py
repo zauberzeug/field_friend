@@ -59,18 +59,17 @@ class WaypointNavigation(Navigation):
         spline_pose = self.current_segment.spline.pose(min(1.0, t + look_ahead_t))
         return current_pose.direction(spline_pose.point)
 
-    def generate_path(self) -> list[PathSegment | WorkingSegment]:
-        last_pose = Pose(x=0, y=0, yaw=0)
-        path: list[PathSegment | WorkingSegment] = []
-        segment: PathSegment | WorkingSegment
-        for waypoint in WAYPOINTS:
-            next_pose = Pose(x=waypoint.x, y=waypoint.y, yaw=last_pose.yaw)
-            if next_pose.y % 2:
-                segment = WorkingSegment.from_poses(last_pose, next_pose, stop_at_end=False)
-            else:
-                segment = PathSegment.from_poses(last_pose, next_pose, stop_at_end=False)
-            path.append(segment)
-            last_pose = next_pose
+    def generate_path(self):
+        pose1 = Pose(x=-1, y=1, yaw=-np.pi/2)
+        pose2 = Pose(x=0, y=0.0, yaw=0.0)
+        pose3 = Pose(x=1.0, y=1.0, yaw=np.pi/2)
+        pose4 = Pose(x=0, y=2.0, yaw=np.pi)
+        path: list[PathSegment | WorkingSegment] = [
+            WorkingSegment.from_poses(pose1, pose2, stop_at_end=False),
+            WorkingSegment.from_poses(pose2, pose3, stop_at_end=False),
+            WorkingSegment.from_poses(pose3, pose4, stop_at_end=False),
+            WorkingSegment.from_poses(pose4, pose1),
+        ]
         path = self._start_at_closest_segment(path)
         return path
 
