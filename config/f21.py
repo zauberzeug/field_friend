@@ -1,21 +1,21 @@
 from rosys.geometry import Pose, Rotation
 
 from field_friend.config.configuration import (
-                                               BumperConfiguration,
-                                               CameraConfiguration,
-                                               CircleSightPositions,
-                                               FieldFriendConfiguration,
-                                               FlashlightConfiguration,
-                                               GnssConfiguration,
-                                               ImuConfiguration,
-                                               MeasurementsConfiguration,
-                                               RobotBrainConfiguration,
-                                               SprayerConfiguration,
-                                               WheelsConfiguration,
+    BumperConfiguration,
+    CameraConfiguration,
+    CircleSightPositions,
+    FieldFriendConfiguration,
+    FlashlightConfiguration,
+    GnssConfiguration,
+    ImuConfiguration,
+    MeasurementsConfiguration,
+    RobotBrainConfiguration,
+    SprayerConfiguration,
+    WheelsConfiguration,
 )
 
 config = FieldFriendConfiguration(
-    name='field-friend-f21',
+    name='fieldfriend-f21',
     robot_brain=RobotBrainConfiguration(name='rb54', flash_params=['orin', 'v05', 'nand']),
     tool='sprayer',
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033),
