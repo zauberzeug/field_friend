@@ -57,12 +57,14 @@ class WeedingSprayer(WeedingImplement):
                     obj for obj in self.system.detector.simulated_objects
                     if obj.position.projection().distance(punch_position.projection()) > self.sprayer_hardware.spray_radius]
         except Exception as e:
+            await self.sprayer_hardware.close_valve()
             raise ImplementException(f'Error in Weed Spray Workflow: {e}') from e
 
-
     @track
-    async def get_move_target(self) -> Point | None:  # pylint: disable=unused-argument
+    async def get_move_target(self) -> Point | None:
         """Return the target position to drive to."""
+        # pylint: disable=unused-argument
+        # pylint: disable=duplicate-code
         assert isinstance(self.system.field_friend.z_axis, Sprayer)
         super()._has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
@@ -73,10 +75,6 @@ class WeedingSprayer(WeedingImplement):
         self.log.debug(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
         for next_weed_id, next_weed_position in weeds_in_range.items():
             weed_world_position = self.system.robot_locator.pose.transform3d(next_weed_position)
-            # crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
-            # if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
-            #     self.log.debug('Skipping weed because it is to far from the cultivated crops')
-            #     continue
             if any(p.distance(weed_world_position) < self.sprayer_hardware.spray_radius for p in self.last_punches):
                 self.log.debug('Skipping weed because it was already punched')
                 continue
@@ -84,13 +82,14 @@ class WeedingSprayer(WeedingImplement):
             if relative_x < - self.sprayer_hardware.spray_radius:
                 self.log.debug(f'Skipping weed {next_weed_id} because it is behind the robot')
                 continue
-            self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s', next_weed_id, relative_x, weed_world_position, next_weed_position)
+            self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s',
+                           next_weed_id, relative_x, weed_world_position, next_weed_position)
             self.next_punch_y_position = next_weed_position.y
             return weed_world_position.projection()
         return None
 
     async def finish(self) -> None:
-        # TODO: stop pump
+        await self.sprayer_hardware.stop()
         await super().finish()
 
     def backup_to_dict(self) -> dict[str, Any]:
