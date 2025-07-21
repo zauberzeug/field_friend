@@ -46,12 +46,8 @@ class WeedingSprayer(WeedingImplement):
             await self.sprayer_hardware.close_valve()
             punched_weeds = [weed.id for weed in self.system.plant_provider.get_relevant_weeds(self.system.robot_locator.pose.point_3d())
                              if weed.position.distance(punch_position) <= self.sprayer_hardware.spray_radius]
-            punched_crops = [crop.id for crop in self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
-                             if crop.position.distance(punch_position) <= self.sprayer_hardware.spray_radius]
             for weed_id in punched_weeds:
                 self.system.plant_provider.remove_weed(weed_id)
-            for crop_id in punched_crops:
-                self.system.plant_provider.remove_crop(crop_id)
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
                 self.system.detector.simulated_objects = [
                     obj for obj in self.system.detector.simulated_objects
