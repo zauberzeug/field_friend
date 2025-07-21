@@ -26,6 +26,9 @@ class Capture:
         if self.circle_sight_provider is None:
             self.log.debug('No circle sight camera provider configured, skipping circle sight capture')
             return
+        if not isinstance(self.circle_sight_detector, rosys.vision.DetectorHardware):
+            self.log.debug('No DetectorHardware configured, skipping circle sight capture')
+            return
         for camera_id, camera in self.circle_sight_provider.cameras.items():
             camera_name = self._id_to_camera_name(camera_id)
             if direction is not None and camera_name != direction:
@@ -41,6 +44,9 @@ class Capture:
     async def inner(self):
         if self.inner_camera_provider is None:
             self.log.debug('No camera provider configured, skipping inner camera capture')
+            return
+        if not isinstance(self.inner_camera_detector, rosys.vision.DetectorHardware):
+            self.log.debug('No DetectorHardware configured, skipping inner camera capture')
             return
         camera = self.inner_camera_provider.first_connected_camera
         if camera is None:
