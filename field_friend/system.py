@@ -124,7 +124,7 @@ class System(rosys.persistence.Persistable):
             assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
-            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend)
+            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, self.capture)
             rosys.on_repeat(self.log_status, 60 * 5)
         rosys.on_repeat(self._garbage_collection, 60*5)
         rosys.config.garbage_collection_mbyte_limit = 0

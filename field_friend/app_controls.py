@@ -25,9 +25,9 @@ class AppControls(RosysAppControls):
         self.last_bumpers_active: list[str] = []
         self.last_info: str = ''
         self.APP_CONNECTED.register(self.reset)
-        self.extra_buttons['capture front'] = \
-            AppButton('grass', released=lambda: self.capture.circle_sight(direction='front'))
-        self.extra_buttons['capture inner'] = AppButton('photo_prints', released=self.capture.inner)
+        self.extra_buttons['front'] = \
+            AppButton('file_upload', released=self.capture.front)
+        self.extra_buttons['inner'] = AppButton('file_download', released=self.capture.inner)
         rosys.on_repeat(self.check_status, 2.0)
 
     async def check_status(self) -> None:

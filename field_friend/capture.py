@@ -19,6 +19,9 @@ class Capture:
         self.circle_sight_positions = system.config.circle_sight_positions
         self.robot_id = system.robot_id
 
+    async def front(self):
+        await self.circle_sight(direction='front')
+
     async def circle_sight(self, *, direction: str | None = None):
         if self.circle_sight_provider is None:
             self.log.debug('No circle sight camera provider configured, skipping circle sight capture')
@@ -33,7 +36,7 @@ class Capture:
                 return
             tags = [] if camera_name is None else [camera_name]
             await self.circle_sight_detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, tags=tags, source=self.robot_id)
-        rosys.notify('Circle sight captured', type='positive')
+        rosys.notify(f'{direction} camera captured', type='positive')
 
     async def inner(self):
         if self.inner_camera_provider is None:
