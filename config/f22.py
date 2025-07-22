@@ -10,7 +10,7 @@ from field_friend.config.configuration import (
 )
 
 config = FieldFriendConfiguration(
-    name='field-friend-f22',
+    name='fieldfriend-f22',
     robot_brain=RobotBrainConfiguration(name='rb55', flash_params=['orin', 'v05', 'nand']),
     tool=None,
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033, work_x=0, wheel_distance=1.49),

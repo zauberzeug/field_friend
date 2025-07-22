@@ -19,6 +19,7 @@ from ...hardware import (
 from .status_bulb import StatusBulb as status_bulb
 
 
+# TODO: over time, this should be refactored and removed -> move ui to the implement classes
 def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
     with ui.card().style('background-color: #3E63A6; color: white;'), ui.row():
         with ui.column().classes('items-stretch'):
@@ -176,7 +177,7 @@ def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.autom
                 if isinstance(field_friend.z_axis, Tornado):
                     angle = ui.number('angle', value=180, format='%.0f', step=1,
                                       min=0, max=180).classes('w-24').style('background-color: white; padding: 0.5rem; border-radius: 5px;')
-                else:
+                elif isinstance(field_friend.z_axis, Axis):
                     depth = ui.number('punch depth', value=0.02, format='%.2f', step=0.01, min=field_friend.z_axis.max_position, max=field_friend.z_axis.min_position*-1).classes('w-24').style(
                         'background-color: white; padding: 0.5rem; border-radius: 5px;')
                 with ui.row():

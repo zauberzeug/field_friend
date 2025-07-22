@@ -23,7 +23,7 @@ from .automations import (
     PlantProvider,
     Puncher,
 )
-from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
+from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
 from .automations.navigation import FieldNavigation, ImplementDemoNavigation, Navigation, StraightLineNavigation
 from .config import get_config
 from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
@@ -232,6 +232,9 @@ class System(rosys.persistence.Persistable):
                 # implements.append(ChopAndScrew(self))
                 self.log.error('Dual mechanism not implemented')
                 implements.append(Recorder(self))
+            case 'sprayer':
+                implements.append(Recorder(self))
+                implements.append(WeedingSprayer(self))
             case 'recorder':
                 implements.append(Recorder(self))
             case None:
