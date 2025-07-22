@@ -48,7 +48,7 @@ class WeedingScrew(WeedingImplement):
     @track
     async def get_move_target(self) -> Point | None:  # pylint: disable=unused-argument
         """Return the target position to drive to."""
-        super()._has_plants_to_handle()
+        self._has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
                           if self.system.field_friend.can_reach(position.projection())}
         if not weeds_in_range:
@@ -68,7 +68,8 @@ class WeedingScrew(WeedingImplement):
             if relative_x < - self.system.field_friend.DRILL_RADIUS:
                 self.log.debug(f'Skipping weed {next_weed_id} because it is behind the robot')
                 continue
-            self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s', next_weed_id, relative_x, weed_world_position, next_weed_position)
+            self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s',
+                           next_weed_id, relative_x, weed_world_position, next_weed_position)
             self.next_punch_y_position = next_weed_position.y
             return weed_world_position.projection()
         return None
