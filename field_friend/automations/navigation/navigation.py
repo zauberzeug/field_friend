@@ -187,7 +187,7 @@ class Navigation(rosys.persistence.Persistable):
         return path_segments[start_index:]
 
     @track
-    async def drive_towards_target(self, target: Point, **kwargs) -> bool:
+    async def drive_towards_target(self, target: Point) -> bool:
         """Drives the robot towards a target point, but keeps the robot on a set heading with a limited turn angle.
 
         :param target: The target point to drive towards
