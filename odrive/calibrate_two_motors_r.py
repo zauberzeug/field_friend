@@ -42,7 +42,7 @@ for i, axis in enumerate([odrv0.axis0, odrv0.axis1]):
 
     print('- Motor configuration')
     assert_equal(axis.motor.config.pole_pairs, 8)
-    assert_equal(axis.motor.config.calibration_current, 10)
+    assert_equal(axis.motor.config.calibration_current, 15)
     assert_equal(axis.motor.config.current_lim, 35)
     assert_equal(axis.motor.config.current_lim_margin, 15)
     assert_equal(axis.motor.config.torque_constant, 1.4500000476837158)
