@@ -39,7 +39,8 @@ class Capture:
                 return
             tags = [] if camera_name is None else [camera_name]
             await self.circle_sight_detector.detect(latest_image, autoupload=rosys.vision.Autoupload.ALL, tags=tags, source=self.robot_id)
-        rosys.notify(f'{direction} camera captured', type='positive')
+        message = 'Circle sight captured' if direction is None else f'{direction.title()} camera captured'
+        rosys.notify(message, type='positive')
 
     async def inner(self):
         if self.inner_camera_provider is None:
