@@ -25,6 +25,7 @@ from .automations import (
 )
 from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
 from .automations.navigation import FieldNavigation, ImplementDemoNavigation, Navigation, StraightLineNavigation
+from .capture import Capture
 from .config import get_config
 from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
@@ -56,6 +57,8 @@ class System(rosys.persistence.Persistable):
         self._current_navigation: Navigation | None = None
         self.implements: dict[str, Implement] = {}
         self.navigation_strategies: dict[str, Navigation] = {}
+        self.mjpeg_camera_provider: rosys.vision.MjpegCameraProvider | None = None
+        self.circle_sight_detector: rosys.vision.DetectorHardware | None = None
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware(self.config)
@@ -78,6 +81,7 @@ class System(rosys.persistence.Persistable):
             if self.camera_provider is not None:
                 self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
 
+        self.capture = Capture(self)
         if self.config.camera is not None:
             assert self.camera_provider is not None
             self.camera_configurator = CameraConfigurator(
@@ -120,7 +124,7 @@ class System(rosys.persistence.Persistable):
             assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
-            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend)
+            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, self.capture)
             rosys.on_repeat(self.log_status, 60 * 5)
         rosys.on_repeat(self._garbage_collection, 60*5)
         rosys.config.garbage_collection_mbyte_limit = 0
@@ -237,6 +241,8 @@ class System(rosys.persistence.Persistable):
                 implements.append(WeedingSprayer(self))
             case 'recorder':
                 implements.append(Recorder(self))
+            case 'sprayer':
+                implements.append(WeedingSprayer(self))
             case None:
                 implements.append(Implement())
             case _:

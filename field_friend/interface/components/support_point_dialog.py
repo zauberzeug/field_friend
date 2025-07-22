@@ -20,7 +20,7 @@ class SupportPointDialog:
 
     def __init__(self, system: System) -> None:
         self.front_cam: rosys.vision.MjpegCamera | None = None
-        if hasattr(system, 'mjpeg_camera_provider') and system.config.circle_sight_positions is not None:
+        if system.mjpeg_camera_provider is not None and system.config.circle_sight_positions is not None:
             self.front_cam = next((value for key, value in system.mjpeg_camera_provider.cameras.items()
                                    if system.config.circle_sight_positions.front in key), None)
         self.steerer = system.steerer
