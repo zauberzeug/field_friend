@@ -19,7 +19,7 @@ class ChargingStation:
         self.log = logging.getLogger(__name__)
         self.system = system
         self.mjpeg_camera_provider = system.mjpeg_camera_provider
-        self.detector = system.monitoring_detector
+        self.detector = system.circle_sight_detector
 
         self.docking_distance = self.DOCKING_DISTANCE
         self.docking_speed = self.DOCKING_SPEED
