@@ -245,10 +245,10 @@ def detector(system: System) -> Generator[rosys.vision.DetectorSimulation, None,
 
 def set_start_pose(system: System, pose: Pose):
     # pylint: disable=protected-access
+    assert isinstance(system.field_friend.wheels, WheelsSimulation)
     system.robot_locator._x[0, 0] = pose.x
     system.robot_locator._x[1, 0] = pose.y
     system.robot_locator._x[2, 0] = pose.yaw
-    assert isinstance(system.field_friend.wheels, WheelsSimulation)
     system.field_friend.wheels.pose.x = pose.x
     system.field_friend.wheels.pose.y = pose.y
     system.field_friend.wheels.pose.yaw = pose.yaw
