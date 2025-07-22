@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Self
 import numpy as np
 import rosys
 from rosys import helpers
+from rosys.analysis import track
 from rosys.geometry import Pose
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
@@ -50,6 +51,7 @@ class FieldNavigation(WaypointNavigation):
             self.log.debug(f'Setting crop to {segment.row.crop}')
             self.implement.cultivated_crop = segment.row.crop
 
+    @track
     async def prepare(self) -> bool:
         await super().prepare()
         if not self._is_allowed_to_start():

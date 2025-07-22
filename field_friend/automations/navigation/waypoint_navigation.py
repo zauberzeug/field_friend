@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING, Self
 
 import numpy as np
 import rosys
+from rosys.analysis import track
 from rosys.event import Event
-from rosys.geometry import Point, Point3d, Pose, Spline
+from rosys.geometry import Point, Point3d, Pose, PoseStep, Spline
 
 from .navigation import Navigation
 
@@ -60,16 +61,17 @@ class WaypointNavigation(Navigation):
         return current_pose.direction(spline_pose.point)
 
     def generate_path(self):
-        pose1 = Pose(x=-1, y=1, yaw=-np.pi/2)
-        pose2 = Pose(x=0, y=0.0, yaw=0.0)
-        pose3 = Pose(x=1.0, y=1.0, yaw=np.pi/2)
-        pose4 = Pose(x=0, y=2.0, yaw=np.pi)
-        path: list[PathSegment | WorkingSegment] = [
-            WorkingSegment.from_poses(pose1, pose2, stop_at_end=False),
-            WorkingSegment.from_poses(pose2, pose3, stop_at_end=False),
-            WorkingSegment.from_poses(pose3, pose4, stop_at_end=False),
-            WorkingSegment.from_poses(pose4, pose1),
-        ]
+        last_pose = Pose(x=0, y=0, yaw=0)
+        path: list[PathSegment | WorkingSegment] = []
+        segment: PathSegment | WorkingSegment
+        for waypoint in WAYPOINTS:
+            next_pose = Pose(x=waypoint.x, y=waypoint.y, yaw=last_pose.yaw)
+            if next_pose.y % 2:
+                segment = WorkingSegment.from_poses(last_pose, next_pose, stop_at_end=False)
+            else:
+                segment = PathSegment.from_poses(last_pose, next_pose, stop_at_end=False)
+            path.append(segment)
+            last_pose = next_pose
         path = self._start_at_closest_segment(path)
         return path
 
@@ -85,6 +87,7 @@ class WaypointNavigation(Navigation):
             break
         return path_segments[start_index:]
 
+    @track
     async def prepare(self) -> bool:
         await super().prepare()
         self._upcoming_path = self.generate_path()
@@ -97,6 +100,7 @@ class WaypointNavigation(Navigation):
             return False
         return True
 
+    @track
     async def _drive(self) -> None:
         while not self._should_finish():
             segment = self.current_segment
@@ -113,6 +117,36 @@ class WaypointNavigation(Navigation):
                 await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
             self._upcoming_path.pop(0)
             self.WAYPOINT_REACHED.emit()
+
+    @track
+    async def drive_towards_target(self, target: Point | Pose, **kwargs) -> None:
+        """Drives the robot towards a target point, but keeps the robot on a set heading with a limited turn angle.
+
+        :param target: The target point to drive towards
+        """
+        current_segment = self.current_segment
+        if current_segment is None:
+            return
+        current_pose = self.robot_locator.pose
+        spline = current_segment.spline
+        current_t = spline.closest_point(current_pose.x, current_pose.y)
+        target_t = spline.closest_point(target.x, target.y, t_min=-0.2, t_max=1.2)
+        target_in_front = current_t < target_t
+        stop_at_end = True
+        if target_in_front:
+            target_pose = spline.pose(target_t)
+            self.log.debug('Driving to %s from target %s', target_pose, target)
+            new_spline = sub_spline(spline, current_t, target_t)
+        else:
+            # TODO: inspect why the target is sometimes behind the robot on the spline
+            self.log.debug('Target behind robot, continue for %s meters', self.driver.parameters.minimum_drive_distance)
+            step = PoseStep(linear=self.driver.parameters.minimum_drive_distance, angular=0.0, time=0.0)
+            target_pose = current_pose + step
+            target_t = spline.closest_point(target_pose.x, target_pose.y)
+            new_spline = sub_spline(spline, current_t, target_t)
+            stop_at_end = False
+        with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, can_drive_backwards=False):
+            await self.driver.drive_spline(new_spline, flip_hook=False, throttle_at_end=True, stop_at_end=stop_at_end)
 
     def _should_finish(self) -> bool:
         return self.current_segment is None
@@ -169,3 +203,23 @@ class PathSegment(rosys.driving.PathSegment):
 @dataclass(slots=True, kw_only=True)
 class WorkingSegment(PathSegment):
     ...
+
+
+def sub_spline(spline: Spline, t_min: float, t_max: float) -> Spline:
+    """Creates a new spline from a sub-segment of the given spline"""
+    # TODO: move to rosys.geometry.spline
+    def split_cubic(p0: Point, p1: Point, p2: Point, p3: Point, t: float) -> tuple[tuple[Point, Point, Point, Point], tuple[Point, Point, Point, Point]]:
+        """Split a cubic Bezier at t, returns left and right as (start, c1, c2, end)"""
+        q0 = p0.interpolate(p1, t)
+        q1 = p1.interpolate(p2, t)
+        q2 = p2.interpolate(p3, t)
+        r0 = q0.interpolate(q1, t)
+        r1 = q1.interpolate(q2, t)
+        s0 = r0.interpolate(r1, t)
+        return (p0, q0, r0, s0), (s0, r1, q2, p3)
+
+    P0, P1, P2, P3 = spline.start, spline.control1, spline.control2, spline.end
+    _, (Q0, Q1, Q2, Q3) = split_cubic(P0, P1, P2, P3, t_min)
+    s = (t_max - t_min) / (1 - t_min) if t_min != 1 else 0.0
+    (R0, R1, R2, R3), _ = split_cubic(Q0, Q1, Q2, Q3, s)
+    return Spline(start=R0, control1=R1, control2=R2, end=R3)
