@@ -101,12 +101,12 @@ class FieldNavigation(Navigation):
         row_end = row.points[-1].to_local()
         relative_start = current_pose.relative_point(row_start)
         relative_end = current_pose.relative_point(row_end)
-        robot_in_working_area = relative_start.x * relative_end.x <= 0.0
-        if robot_in_working_area:
-            return relative_start.x > 0
-        distance_to_start = current_pose.distance(row_start)
-        distance_to_end = current_pose.distance(row_end)
-        return distance_to_start > distance_to_end
+        robot_on_headland = relative_start.x * relative_end.x > 0.0
+        if robot_on_headland:
+            distance_to_start = current_pose.distance(row_start)
+            distance_to_end = current_pose.distance(row_end)
+            return distance_to_start > distance_to_end
+        return relative_start.x > 0
 
     def _is_allowed_to_start(self) -> bool:
         first_row_segment = next((segment for segment in self._upcoming_path if isinstance(segment, RowSegment)), None)
@@ -120,8 +120,15 @@ class FieldNavigation(Navigation):
             return False
         relative_start = current_pose.relative_point(first_row_segment.start.point)
         relative_end = current_pose.relative_point(first_row_segment.end.point)
-        robot_in_working_area = relative_start.x * relative_end.x <= 0.0
-        if robot_in_working_area:
+        robot_on_headland = relative_start.x * relative_end.x > 0.0
+        if robot_on_headland:
+            if abs(current_pose.relative_direction(first_row_segment.start)) > self.MAX_ANGLE_DEVIATION:
+                rosys.notify('Robot is not aligned with the row', 'negative')
+                return False
+            if abs(relative_start.x) > self.MAX_START_DISTANCE:
+                rosys.notify('Robot is too far from the row', 'negative')
+                return False
+        else:
             t = first_row_segment.spline.closest_point(current_pose.x, current_pose.y)
             spline_pose = first_row_segment.spline.pose(t)
             if current_pose.distance(spline_pose) > self.MAX_DISTANCE_DEVIATION:
@@ -129,13 +136,6 @@ class FieldNavigation(Navigation):
                 return False
             if abs(helpers.angle(current_pose.yaw, spline_pose.yaw)) > self.MAX_ANGLE_DEVIATION:
                 rosys.notify('Robot is not aligned with the row', 'negative')
-                return False
-        else:
-            if abs(current_pose.relative_direction(first_row_segment.start)) > self.MAX_ANGLE_DEVIATION:
-                rosys.notify('Robot is not aligned with the row', 'negative')
-                return False
-            if abs(relative_start.x) > self.MAX_START_DISTANCE:
-                rosys.notify('Robot is too far from the row', 'negative')
                 return False
         return True
 
