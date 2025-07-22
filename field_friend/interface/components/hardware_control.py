@@ -19,6 +19,7 @@ from ...hardware import (
 from .status_bulb import StatusBulb as status_bulb
 
 
+# TODO: over time, this should be refactored and removed -> move ui to the implement classes
 def create_hardware_control_ui(field_friend: FieldFriend, automator: rosys.automation.Automator, puncher: Puncher) -> None:
     with ui.card().style('background-color: #3E63A6; color: white;'), ui.row():
         with ui.column().classes('items-stretch'):

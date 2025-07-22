@@ -40,6 +40,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
     """This module implements safety hardware."""
 
     # TODO: add support for AxisD1
+    # TODO: we should move enable/disable to the hardware classes. Maybe even in RoSys
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware,
                  estop: rosys.hardware.EStopHardware,
