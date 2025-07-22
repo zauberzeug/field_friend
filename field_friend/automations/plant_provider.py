@@ -109,8 +109,8 @@ class PlantProvider(rosys.persistence.Persistable):
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_CROP.emit()
 
-    def remove_crop(self, crop: Plant) -> None:
-        self.crops[:] = [c for c in self.crops if c.id != crop.id]
+    def remove_crop(self, crop_id: str) -> None:
+        self.crops[:] = [c for c in self.crops if c.id != crop_id]
         self.PLANTS_CHANGED.emit()
 
     def clear_crops(self) -> None:

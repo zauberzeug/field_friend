@@ -7,6 +7,7 @@ from .flashlight import Flashlight
 from .flashlight_pwm import FlashlightPWM
 from .flashlight_v2 import FlashlightV2
 from .safety import Safety
+from .sprayer import Sprayer
 from .tornado import Tornado
 
 
@@ -30,7 +31,7 @@ class FieldFriend(rosys.hardware.Robot):
             wheels: rosys.hardware.Wheels,
             flashlight: Flashlight | FlashlightV2 | FlashlightPWM | None,
             y_axis: Axis | ChainAxis | None,
-            z_axis: Axis | Tornado | None,
+            z_axis: Axis | Tornado | Sprayer | None,
             imu: rosys.hardware.Imu | None,
             estop: rosys.hardware.EStop,
             bumper: rosys.hardware.Bumper | None,
@@ -75,6 +76,9 @@ class FieldFriend(rosys.hardware.Robot):
             if second_tool:
                 return self.y_axis.MIN_POSITION <= local_point.y <= self.y_axis.MAX_POSITION
             return self.y_axis.min_position <= local_point.y <= self.y_axis.max_position
+        if self.implement_name in ['sprayer']:
+            assert isinstance(self.z_axis, Sprayer)
+            return abs(local_point.y) <= self.z_axis.spray_radius
         raise NotImplementedError(f'Tool {self.implement_name} is not implemented for reachability check')
 
     def tornado_diameters(self, angle: float) -> tuple:

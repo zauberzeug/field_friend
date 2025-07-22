@@ -8,7 +8,7 @@ from nicegui import ui
 from rosys.analysis import track
 from rosys.geometry import Point
 
-from ...hardware import Tornado
+from ...hardware import Axis
 from .weeding_implement import ImplementException, WeedingImplement
 
 if TYPE_CHECKING:
@@ -68,15 +68,16 @@ class WeedingScrew(WeedingImplement):
             if relative_x < - self.system.field_friend.DRILL_RADIUS:
                 self.log.debug(f'Skipping weed {next_weed_id} because it is behind the robot')
                 continue
-            self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s', next_weed_id, relative_x, weed_world_position, next_weed_position)
+            self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s',
+                           next_weed_id, relative_x, weed_world_position, next_weed_position)
             self.next_punch_y_position = next_weed_position.y
             return weed_world_position.projection()
         return None
 
     def settings_ui(self):
         super().settings_ui()
-        # TODO: handle Tornado case -> no max_position property
-        if self.system.field_friend.z_axis and not isinstance(self.system.field_friend.z_axis, Tornado):
+        if self.system.field_friend.z_axis:
+            assert isinstance(self.system.field_friend.z_axis, Axis)
             ui.number('Drill depth', format='%.2f', step=0.01,
                       min=self.system.field_friend.z_axis.max_position,
                       max=self.system.field_friend.z_axis.min_position*-1,
