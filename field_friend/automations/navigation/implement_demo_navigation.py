@@ -6,36 +6,21 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import rosys
-from rosys.geometry import Pose
 
 from ...hardware import Axis
 from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
-from .navigation import Navigation
+from .navigation import Navigation, WorkflowException
 
 if TYPE_CHECKING:
     from ...system import System
-
-
-class WorkflowException(Exception):
-    pass
 
 
 class ImplementDemoNavigation(Navigation):
 
     def __init__(self, system: System, tool: Implement) -> None:
         super().__init__(system, tool)
-        self.MAX_STRETCH_DISTANCE: float = 5.0
-        self.detector = system.detector
         self.name = 'Implement Demo'
-
-    @property
-    def target(self) -> Pose | None:
-        return self.system.robot_locator.pose
-
-    @property
-    def target_heading(self) -> float:
-        return self.system.robot_locator.pose.yaw
 
     async def prepare(self) -> bool:
         await super().prepare()
@@ -56,41 +41,32 @@ class ImplementDemoNavigation(Navigation):
             if not await self.prepare():
                 self.log.error('Preparation failed')
                 return
-            if isinstance(self.driver.wheels, rosys.hardware.WheelsSimulation) and not rosys.is_test:
-                self.create_simulation()
             self.log.info('Navigation started')
             while not self._should_finish():
                 # TODO: implement has no attribute next_punch_y_position, only weeding implement has it
                 # what is the correct way to handle this? currently it's initialized with a recorder as the implement
-                if isinstance(self.implement, WeedingImplement):
-                    assert isinstance(self.system.field_friend.y_axis, Axis)
-                    y_min = self.system.field_friend.y_axis.min_position + \
-                        (self.system.config.measurements.work_y or 0.0)
-                    y_max = self.system.field_friend.y_axis.max_position - \
-                        (self.system.config.measurements.work_y or 0.0)
-                    self.implement.next_punch_y_position = np.random.uniform(y_min, y_max)
-                    self.log.warning(f'next_punch_y_position: {self.implement.next_punch_y_position}')
+                assert isinstance(self.implement, WeedingImplement)
+                assert isinstance(self.system.field_friend.y_axis, Axis)
+                y_min = self.system.field_friend.y_axis.min_position + \
+                    (self.system.config.measurements.work_y or 0.0)
+                y_max = self.system.field_friend.y_axis.max_position - \
+                    (self.system.config.measurements.work_y or 0.0)
+                self.implement.next_punch_y_position = np.random.uniform(y_min, y_max)
+                self.log.warning(f'next_punch_y_position: {self.implement.next_punch_y_position}')
                 await self.implement.start_workflow()
         except WorkflowException as e:
             self.log.error(f'WorkflowException: {e}')
         finally:
             await self.implement.finish()
             await self.finish()
+            await self.implement.deactivate()
             await self.driver.wheels.stop()
-
-    async def finish(self) -> None:
-        await super().finish()
-        await self.implement.deactivate()
-
-    async def _drive(self) -> None:
-        pass
 
     def _should_finish(self) -> bool:
         return False
 
-    def create_simulation(self):
-        pass
-        # TODO: implement create_simulation
+    def generate_path(self):
+        return []
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {

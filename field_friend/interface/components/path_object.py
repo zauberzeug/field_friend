@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from nicegui import ui
 from nicegui.elements.scene_objects import Curve
 
-from ...automations.navigation.waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
+from ...automations.navigation import PathSegment, WorkingSegment
 
 if TYPE_CHECKING:
     from ... import System
@@ -27,11 +27,11 @@ class PathObject(ui.scene.group):
         self.system.automator.AUTOMATION_STOPPED.register_ui(lambda _: self.clear_path())
 
     def register(self) -> None:
-        if not isinstance(self.system.current_navigation, WaypointNavigation):
+        if self.system.current_navigation is None:
             return
 
         def update_upcoming_path() -> None:
-            assert isinstance(self.system.current_navigation, WaypointNavigation)
+            assert self.system.current_navigation is not None
             self.update(self.system.current_navigation.path)
         self.system.current_navigation.WAYPOINT_REACHED.register_ui(update_upcoming_path)
         self.system.current_navigation.PATH_GENERATED.register_ui(self.update)

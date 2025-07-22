@@ -20,12 +20,13 @@ async def test_approach_first_row(system: System, field: Field):
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    assert system.current_navigation.target is not None
+    assert system.current_navigation.current_segment is not None
     first_row_start = field.first_row_start.to_local()
     first_row_end = field.first_row_end.to_local()
-    assert system.current_navigation.target.point.x == pytest.approx(first_row_start.x, abs=0.1)
-    assert system.current_navigation.target.point.y == pytest.approx(first_row_start.y, abs=0.1)
-    assert system.current_navigation.target.yaw_deg == pytest.approx(first_row_start.direction(first_row_end), abs=0.1)
+    assert system.current_navigation.current_segment.end.x == pytest.approx(first_row_start.x, abs=0.1)
+    assert system.current_navigation.current_segment.end.y == pytest.approx(first_row_start.y, abs=0.1)
+    assert system.current_navigation.current_segment.end.yaw_deg == pytest.approx(
+        first_row_start.direction(first_row_end), abs=0.1)
 
 
 async def test_complete_field(system: System, field: Field):
@@ -35,7 +36,7 @@ async def test_complete_field(system: System, field: Field):
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    assert system.current_navigation.target is not None
+    assert system.current_navigation.current_segment is not None
     assert isinstance(system.current_navigation.path[0], PathSegment)
     assert system.current_navigation.path[0].spline.estimated_length() == pytest.approx(0.3345, abs=0.0001)
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
@@ -57,7 +58,7 @@ async def test_start_second_row(system: System, field: Field):
     set_start_pose(system, Pose(x=1.0, y=-0.5, yaw=0.0))
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    assert system.current_navigation.target is not None
+    assert system.current_navigation.current_segment is not None
     assert isinstance(system.current_navigation.path[0], RowSegment)
 
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
@@ -89,15 +90,15 @@ async def test_row_change(system: System, field: Field):
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    assert system.current_navigation.target is not None
+    assert system.current_navigation.current_segment is not None
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
     turn_segments = [segment for segment in system.current_navigation.path
                      if not isinstance(segment, RowSegment)]
     assert turn_segments[1].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
     assert turn_segments[2].spline.estimated_length() == pytest.approx(2.550, abs=0.001)
     assert turn_segments[3].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
-    assert_point(turn_segments[1].spline.start, row_segments[0].end.point)
-    assert_point(turn_segments[3].spline.end, row_segments[1].start.point)
+    assert_point(turn_segments[1].start.point, row_segments[0].end.point)
+    assert_point(turn_segments[3].end.point, row_segments[1].start.point)
 
 
 @pytest.mark.parametrize('heading_degrees', (0, 180))
@@ -114,13 +115,13 @@ async def test_start_direction(system: System, field: Field, heading_degrees: fl
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    assert system.current_navigation.target is not None
+    assert system.current_navigation.current_segment is not None
     if heading == 0:
-        assert system.current_navigation.target.x == pytest.approx(first_row_end.x, abs=0.1)
-        assert system.current_navigation.target.y == pytest.approx(first_row_end.y, abs=0.1)
+        assert system.current_navigation.current_segment.end.x == pytest.approx(first_row_end.x, abs=0.1)
+        assert system.current_navigation.current_segment.end.y == pytest.approx(first_row_end.y, abs=0.1)
     elif heading == np.pi:
-        assert system.current_navigation.target.x == pytest.approx(first_row_start.x, abs=0.1)
-        assert system.current_navigation.target.y == pytest.approx(first_row_start.y, abs=0.1)
+        assert system.current_navigation.current_segment.end.x == pytest.approx(first_row_start.x, abs=0.1)
+        assert system.current_navigation.current_segment.end.y == pytest.approx(first_row_start.y, abs=0.1)
     else:
         raise ValueError('Invalid direction')
 

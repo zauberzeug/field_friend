@@ -13,28 +13,8 @@ from rosys.testing import assert_point, forward
 from field_friend import System
 from field_friend.automations import AutomationWatcher
 from field_friend.automations.implements import Implement, Recorder
-from field_friend.automations.navigation import Navigation, StraightLineNavigation
+from field_friend.automations.navigation import Navigation, PathSegment, StraightLineNavigation
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
-
-
-@pytest.mark.parametrize('target, end_pose, max_turn_angle', [
-    (Point(x=1.0, y=0.0), Pose(x=1.0, y=0.0, yaw=0.0), 1.0),
-    (Point(x=1.0, y=0.005), Pose(x=1.0, y=0.005, yaw=np.deg2rad(0.29)), 1.0),
-    (Point(x=1.0, y=0.01), Pose(x=1.0, y=0.01, yaw=np.deg2rad(0.58)), 1.0),
-    (Point(x=1.0, y=0.1), Pose(x=1.0, y=0.018, yaw=np.deg2rad(1.0)), 1.0),
-    (Point(x=1.0, y=1.0), Pose(x=1.0, y=1.0, yaw=np.deg2rad(45.0)), 45.0),
-])
-async def test_driving_towards_target(system: System, target: Point, end_pose: Pose, max_turn_angle: float):
-    max_turn_angle = np.deg2rad(max_turn_angle)
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.linear_speed_limit = 0.1
-    system.automator.start(system.current_navigation.drive_towards_target(
-        target, target_heading=0.0, max_turn_angle=max_turn_angle))
-    await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped, timeout=300)
-    assert system.robot_locator.pose.point.x == pytest.approx(end_pose.x, abs=0.005)
-    assert system.robot_locator.pose.point.y == pytest.approx(end_pose.y, abs=0.005)
-    assert system.robot_locator.pose.yaw_deg == pytest.approx(end_pose.yaw_deg, abs=0.5)
 
 
 async def test_driving_to_exact_positions(system: System):
@@ -147,7 +127,7 @@ async def test_stop_when_target_after_end(system: System, detector: rosys.vision
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.25, y=0.0, z=0.0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.60, y=0.0, z=0.0)))
+                                                                   position=rosys.geometry.Point3d(x=0.0, y=0.0, z=0.0)))
     system.current_implement = system.implements['Weed Screw']
     system.current_navigation = system.straight_line_navigation
     assert isinstance(system.current_navigation, StraightLineNavigation)
@@ -180,3 +160,120 @@ async def test_resume_after_pause(system: System, manual_move: float):
         assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
     else:
         assert system.automator.is_stopped
+
+
+async def test_straight_path(system: System):
+    pose1 = Pose(x=1.0, y=0.0, yaw=0.0)
+    pose2 = Pose(x=2.0, y=0.0, yaw=0.0)
+
+    def generate_path():
+        return [
+            PathSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
+            PathSegment.from_poses(pose1, pose2),
+        ]
+    system.current_navigation = system.waypoint_navigation
+    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.current_navigation.generate_path = generate_path  # type: ignore
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.robot_locator.pose.point.x == pytest.approx(pose2.x, abs=0.1)
+    assert system.robot_locator.pose.point.y == pytest.approx(pose2.y, abs=0.1)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(pose2.yaw_deg, abs=0.1)
+
+
+@pytest.mark.parametrize('start_offset', (0.5, 0.0, -0.25, -0.5, -0.75, -0.99))
+async def test_start_inbetween_waypoints(system: System, start_offset: float):
+    start = system.robot_locator.pose.transform_pose(Pose(x=start_offset, y=0.0, yaw=0.0))
+    end = start.transform_pose(Pose(x=1.0, y=0.0, yaw=0.0))
+
+    def generate_path():
+        return [
+            PathSegment.from_poses(start, end),
+        ]
+    system.current_navigation = system.waypoint_navigation
+    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.current_navigation.generate_path = generate_path  # type: ignore
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    assert system.current_navigation.current_segment is not None
+    assert system.current_navigation.current_segment.end.x == pytest.approx(end.x, abs=0.1)
+    assert system.current_navigation.current_segment.end.y == pytest.approx(end.y, abs=0.1)
+    assert system.current_navigation.current_segment.end.yaw_deg == pytest.approx(end.yaw_deg, abs=0.1)
+
+
+async def test_start_on_end(system: System):
+    start = system.robot_locator.pose.transform_pose(Pose(x=-1, y=0.0, yaw=0.0))
+    end = system.robot_locator.pose
+
+    def generate_path():
+        return [
+            PathSegment.from_poses(start, end),
+        ]
+    system.current_navigation = system.waypoint_navigation
+    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.current_navigation.generate_path = generate_path  # type: ignore
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    assert system.current_navigation.current_segment is not None
+    assert system.robot_locator.pose.x == pytest.approx(end.x, abs=0.1)
+    assert system.robot_locator.pose.y == pytest.approx(end.y, abs=0.1)
+    assert system.robot_locator.pose.yaw_deg == pytest.approx(end.yaw_deg, abs=0.1)
+
+
+async def test_skip_first_segment(system: System):
+    pose1 = Pose(x=-1, y=1, yaw=-np.pi/2)
+    pose2 = Pose(x=0, y=0.0, yaw=0.0)
+    pose3 = Pose(x=1.0, y=1.0, yaw=np.pi/2)
+    pose4 = Pose(x=0, y=2.0, yaw=np.pi)
+
+    def generate_path():
+        path = [
+            PathSegment.from_poses(pose1, pose2, stop_at_end=False),
+            PathSegment.from_poses(pose2, pose3, stop_at_end=False),
+            PathSegment.from_poses(pose3, pose4, stop_at_end=False),
+            PathSegment.from_poses(pose4, pose1),
+        ]
+        assert system.current_navigation is not None
+        path = system.current_navigation._start_at_closest_segment(path)  # pylint: disable=protected-access
+        return path
+    system.current_navigation = system.waypoint_navigation
+    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation.implement, Recorder)
+    system.current_navigation.generate_path = generate_path  # type: ignore
+    system.automator.start()
+    await forward(until=lambda: system.current_navigation is not None and system.current_navigation.current_segment is not None)
+    assert system.current_navigation.current_segment is not None
+    assert len(system.current_navigation.path) == 3
+    assert system.current_navigation.current_segment.end.x == pytest.approx(pose3.x, abs=0.1)
+    assert system.current_navigation.current_segment.end.y == pytest.approx(pose3.y, abs=0.1)
+    assert system.current_navigation.current_segment.end.yaw_deg == pytest.approx(pose3.yaw_deg, abs=0.1)
+
+
+@pytest.mark.parametrize('length', (1.0, 2.0))
+async def test_straight_line(system: System, length: float):
+    system.current_navigation = system.straight_line_navigation
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = length
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    current_segment = system.current_navigation.current_segment
+    assert current_segment is not None
+    assert current_segment.spline.estimated_length() == length
+
+
+@pytest.mark.parametrize('heading_degrees', (-180, -90, -45, 0, 45, 90, 180, 360))
+async def test_straight_line_different_headings(system: System, heading_degrees: float):
+    heading = np.deg2rad(heading_degrees)
+    current_pose = system.robot_locator.pose
+    set_start_pose(system, Pose(x=current_pose.x, y=current_pose.y, yaw=heading))
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    current_segment = system.current_navigation.current_segment
+    assert current_segment is not None
+    direction = current_segment.spline.start.direction(current_segment.spline.end)
+    assert angle(direction, heading) == pytest.approx(0, abs=0.1)
