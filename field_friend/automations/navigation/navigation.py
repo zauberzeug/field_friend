@@ -99,6 +99,7 @@ class Navigation(rosys.persistence.Persistable):
                         await self.drive_towards_target(self.target)
                         break
                     await self.drive_towards_target(move_pose)
+                    await self.implement.get_move_target()
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
                     await rosys.sleep(0.1)
