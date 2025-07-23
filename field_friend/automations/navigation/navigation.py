@@ -143,6 +143,7 @@ class Navigation(rosys.persistence.Persistable):
     @track
     async def _drive(self) -> None:
         """Drive the robot to the next waypoint of the navigation"""
+        segment: PathSegment | WorkingSegment | None
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects.clear()
             self.system.plant_provider.clear()
