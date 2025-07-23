@@ -306,7 +306,10 @@ class System(rosys.persistence.Persistable):
             gnss_hardware.MAX_TIMESTAMP_DIFF = 0.1
             return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
-        return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
+        if rosys.is_test:
+            # NOTE: quick fix for https://github.com/zauberzeug/field_friend/issues/348
+            return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
+        return GnssSimulation(wheels=wheels, lat_std_dev=1e-5, lon_std_dev=1e-5, heading_std_dev=1e-5)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
         if reference is None:
