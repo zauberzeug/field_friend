@@ -53,7 +53,7 @@ class WeedingImplement(Implement):
             rosys.notify('Dectection model information not available', 'negative')
             return False
         if self.cultivated_crop_select is not None:
-            self.log.warning('setting cultivated crop options')
+            self.log.debug('setting cultivated crop options')
             self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
         self.log.info(f'start weeding {self.relevant_weeds} with {self.name} ...')
         self.request_backup()

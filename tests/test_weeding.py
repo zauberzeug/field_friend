@@ -177,6 +177,22 @@ async def test_work_offset_navigation(system: System, detector: rosys.vision.Det
     assert len(detector.simulated_objects) == 0
 
 
+async def test_advance_when_target_behind_robot(system: System, detector: rosys.vision.DetectorSimulation):
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
+                                                                   position=rosys.geometry.Point3d(x=0.742, y=0.117, z=0)))
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.812, y=-0.008, z=0)))
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.771, y=0.126, z=0)))
+    system.current_implement = system.implements['Weed Screw']
+    system.current_navigation = system.waypoint_navigation
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped, timeout=1000)
+    # NOTE: due to the advance, one weed is skipped
+    assert len(detector.simulated_objects) == 2
+
+
 @pytest.mark.parametrize('system', ['u4'], indirect=True)
 async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys.vision.DetectorSimulation):
     assert isinstance(system.implements['Tornado'], Tornado)

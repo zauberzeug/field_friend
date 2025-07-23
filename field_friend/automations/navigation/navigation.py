@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from ...system import System
 
 
-WAYPOINTS = [Point(x=3.0 * x, y=x % 2) for x in range(1, 10)]
+WAYPOINTS = [Point(x=3.0 * x, y=x % 2) for x in range(1, 15)]
 
 
 class Navigation(rosys.persistence.Persistable):
@@ -143,15 +143,16 @@ class Navigation(rosys.persistence.Persistable):
     @track
     async def _drive(self) -> None:
         """Drive the robot to the next waypoint of the navigation"""
+        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
+            self.detector.simulated_objects.clear()
+            self.system.plant_provider.clear()
+            for segment in self._upcoming_path:
+                if isinstance(segment, WorkingSegment):
+                    self.create_segment_simulation(segment)
         while not self._should_finish():
             segment = self.current_segment
             if segment is None:
                 return
-            if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
-                self.detector.simulated_objects.clear()
-                self.system.plant_provider.clear()
-                if isinstance(segment, WorkingSegment):
-                    self.create_segment_simulation(segment)
             stop_at_end = segment.stop_at_end or len(self._upcoming_path) == 1
             self._use_implement = isinstance(segment, WorkingSegment)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, can_drive_backwards=segment.backward):
@@ -163,9 +164,9 @@ class Navigation(rosys.persistence.Persistable):
         last_pose = Pose(x=0, y=0, yaw=0)
         path: list[PathSegment | WorkingSegment] = []
         segment: PathSegment | WorkingSegment
-        for waypoint in WAYPOINTS:
+        for i, waypoint in enumerate(WAYPOINTS):
             next_pose = Pose(x=waypoint.x, y=waypoint.y, yaw=last_pose.yaw)
-            if next_pose.y % 2:
+            if (i+1) % 3:
                 segment = WorkingSegment.from_poses(last_pose, next_pose, stop_at_end=False)
             else:
                 segment = PathSegment.from_poses(last_pose, next_pose, stop_at_end=False)
@@ -203,20 +204,20 @@ class Navigation(rosys.persistence.Persistable):
         work_x_corrected_pose = target_pose + PoseStep(linear=-self.system.field_friend.WORK_X, angular=0, time=0)
         target_t = spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y, t_min=-0.2, t_max=1.2)
         if current_t >= target_t:
-            # TODO: inspect why the target is sometimes behind the robot on the spline
-            self.log.warning('Target behind robot, continue for %s meters',
-                             self.driver.parameters.minimum_drive_distance)
-            step = PoseStep(linear=self.driver.parameters.minimum_drive_distance, angular=0.0, time=0.0)
-            target_pose = current_pose + step
+            # TODO: we need a sturdy function to advance a certain distance on a spline, because this method is off by a tiny amount. That's why +0.00003
+            # test_weeding.py::test_advance_when_target_behind_robot tests this case. The weed is skipped in this case
+            advance_distance = self.driver.parameters.minimum_drive_distance + 0.00003
+            target_pose = current_pose + PoseStep(linear=advance_distance, angular=0.0, time=0.0)
             target_t = spline.closest_point(target_pose.x, target_pose.y)
-            new_spline = sub_spline(spline, current_t, target_t)
+            advance_spline = sub_spline(spline, current_t, target_t)
+            self.log.debug('Target behind robot, continue for %s meters', advance_distance)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
-                await self.driver.drive_spline(new_spline, flip_hook=False, throttle_at_end=True, stop_at_end=False)
+                await self.driver.drive_spline(advance_spline, throttle_at_end=False, stop_at_end=False)
             return False
-        self.log.warning('Driving to %s from target %s', target_pose, target)
-        new_spline = sub_spline(spline, current_t, target_t)
+        self.log.debug('Driving to %s from target %s', target_pose, target)
+        target_spline = sub_spline(spline, current_t, target_t)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
-            await self.driver.drive_spline(new_spline, flip_hook=False, throttle_at_end=True, stop_at_end=True)
+            await self.driver.drive_spline(target_spline)
         return True
 
     @track
