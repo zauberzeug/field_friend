@@ -190,9 +190,9 @@ class Navigation(rosys.persistence.Persistable):
 
     @track
     async def drive_towards_target(self, target: Point) -> bool:
-        """Drives the robot towards a target point, but keeps the robot on a set heading with a limited turn angle.
+        """Drives to a target point along the current spline.
 
-        :param target: The target point to drive towards
+        :param target: The target point to drive to
         """
         current_segment = self.current_segment
         if current_segment is None:
@@ -204,7 +204,7 @@ class Navigation(rosys.persistence.Persistable):
         target_pose = spline.pose(target_t)
         work_x_corrected_pose = target_pose + PoseStep(linear=-self.system.field_friend.WORK_X, angular=0, time=0)
         target_t = spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y, t_min=-0.2, t_max=1.2)
-        if current_t >= target_t:
+        if target_t < current_t:
             # TODO: we need a sturdy function to advance a certain distance on a spline, because this method is off by a tiny amount. That's why +0.00003
             # test_weeding.py::test_advance_when_target_behind_robot tests this case. The weed is skipped in this case
             advance_distance = self.driver.parameters.minimum_drive_distance + 0.00003
