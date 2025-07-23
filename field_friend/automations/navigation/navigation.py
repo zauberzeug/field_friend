@@ -161,7 +161,7 @@ class Navigation(rosys.persistence.Persistable):
             self._upcoming_path.pop(0)
             self.WAYPOINT_REACHED.emit()
 
-    def generate_path(self):
+    def generate_path(self) -> list[PathSegment | WorkingSegment]:
         last_pose = Pose(x=0, y=0, yaw=0)
         path: list[PathSegment | WorkingSegment] = []
         segment: PathSegment | WorkingSegment
