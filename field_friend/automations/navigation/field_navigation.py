@@ -68,7 +68,7 @@ class FieldNavigation(Navigation):
         if not rows_to_work_on:
             rosys.notify('No rows to work on', 'negative')
             return []
-        path_segments: list[PathSegment | WorkingSegment] = []
+        path_segments: list[PathSegment | RowSegment] = []
         current_pose = self.system.robot_locator.pose
         start_row_index = self._find_closest_row(rows_to_work_on)
         row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])

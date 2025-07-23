@@ -33,12 +33,13 @@ class Navigation(rosys.persistence.Persistable):
         self.log = logging.getLogger('field_friend.navigation')
         self.system = system
         self.implement = implement
+
+        self.detector = system.detector
         self.driver = system.driver
-        self.robot_locator = system.robot_locator
         self.gnss = system.gnss
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
-        self.detector = system.detector
+        self.robot_locator = system.robot_locator
 
         self.name = 'Waypoint Navigation'
         self._upcoming_path: list[PathSegment | WorkingSegment] = []
