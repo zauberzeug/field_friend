@@ -58,7 +58,7 @@ class FieldNavigation(Navigation):
             return False
         return True
 
-    def generate_path(self) -> list[PathSegment | WorkingSegment]:
+    def generate_path(self) -> list[PathSegment | RowSegment]:
         field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
         field = self.field_provider.get_field(field_id)
         if field is None:
