@@ -29,11 +29,10 @@ class FieldNavigation(Navigation):
         super().__init__(system, implement)
         self.name = 'Field Navigation'
         self.gnss = system.gnss
-        self.bms = system.field_friend.bms
         self.automator = system.automator
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
-        self.WAYPOINT_REACHED.register(self._on_waypoint_reached)
+        self.WAYPOINT_REACHED.register(self._handle_waypoint_reached)
 
     @property
     def field(self) -> Field | None:
@@ -43,7 +42,7 @@ class FieldNavigation(Navigation):
     def current_row(self) -> Row | None:
         return self.current_segment.row if isinstance(self.current_segment, RowSegment) else None
 
-    def _on_waypoint_reached(self) -> None:
+    def _handle_waypoint_reached(self) -> None:
         segment = self.current_segment
         if segment is None:
             return

@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from conftest import ROBOT_GEO_START_POSITION, set_start_pose
+from conftest import ROBOT_GEO_START_POSITION, set_robot_pose
 from rosys.geometry import Pose
 from rosys.testing import assert_point, forward
 
@@ -55,7 +55,7 @@ async def test_start_second_row(system: System, field: Field):
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
-    set_start_pose(system, Pose(x=1.0, y=-0.5, yaw=0.0))
+    set_robot_pose(system, Pose(x=1.0, y=-0.5, yaw=0.0))
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
@@ -77,7 +77,7 @@ async def test_outside_of_field(system: System, field: Field):
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
-    set_start_pose(system, Pose(x=-5, y=0, yaw=0.0))
+    set_robot_pose(system, Pose(x=-5, y=0, yaw=0.0))
     system.automator.start()
     await forward(2)
     assert system.automator.is_stopped
@@ -108,7 +108,7 @@ async def test_start_direction(system: System, field: Field, heading_degrees: fl
     first_row_end = field.first_row_end.to_local()
     distance = first_row_start.distance(first_row_end)
     start_position = first_row_start.polar(distance / 2, first_row_start.direction(first_row_end))
-    set_start_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=heading))
+    set_robot_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=heading))
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
@@ -132,7 +132,7 @@ async def test_between_rows(system: System, field: Field, offset: float):
     first_row_end = field.first_row_end.to_local()
     direction = first_row_start.direction(first_row_end)
     start_position = first_row_start.polar(0.1, direction).polar(offset, direction + np.pi/2)
-    set_start_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=direction))
+    set_robot_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=direction))
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
@@ -152,7 +152,7 @@ async def test_heading_deviation(system: System, field: Field, heading_degrees: 
     first_row_end = field.first_row_end.to_local()
     direction = first_row_start.direction(first_row_end)
     start_position = first_row_start.polar(0.1, direction)
-    set_start_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=direction + heading))
+    set_robot_pose(system, Pose(x=start_position.x, y=start_position.y, yaw=direction + heading))
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)

@@ -38,7 +38,6 @@ class Navigation(rosys.persistence.Persistable):
         self.driver = system.driver
         self.gnss = system.gnss
         self.plant_provider = system.plant_provider
-        self.puncher = system.puncher
         self.robot_locator = system.robot_locator
 
         self.name = 'Waypoint Navigation'
@@ -80,17 +79,16 @@ class Navigation(rosys.persistence.Persistable):
             rosys.notify('Automation started')
             self.log.debug('Navigation started')
 
-            async def get_nearest_target() -> Point:
+            async def get_target_from_implement() -> Point:
                 while True:
-                    move_target = await self.implement.get_move_target()
-                    if move_target and self._use_implement:
-                        return move_target
+                    if self._use_implement and (target := await self.implement.get_move_target()):
+                        return target
                     await rosys.sleep(0.1)
 
             while not self._should_finish():
                 await rosys.automation.parallelize(
                     self._drive(),
-                    get_nearest_target(),
+                    get_target_from_implement(),
                     return_when_first_completed=True,
                 )
                 while not self._should_finish():
@@ -139,7 +137,7 @@ class Navigation(rosys.persistence.Persistable):
     async def finish(self) -> None:
         """Executed after the navigation is done"""
         self.log.debug('Navigation finished')
-        gc.collect()
+        gc.collect()  # NOTE: auto garbage collection is deactivated to avoid hiccups from Global Interpreter Lock (GIL) so we collect here to reduce memory pressure
 
     @track
     async def _drive(self) -> None:
@@ -174,11 +172,11 @@ class Navigation(rosys.persistence.Persistable):
                 segment = PathSegment.from_poses(last_pose, next_pose, stop_at_end=False)
             path.append(segment)
             last_pose = next_pose
-        path = self._start_at_closest_segment(path)
+        path = self._remove_segments_behind_robot(path)
         return path
 
-    def _start_at_closest_segment(self, path_segments: list[PathSegment | WorkingSegment]) -> list[PathSegment | WorkingSegment]:
-        """Filter path segments to start at the closest segment to the current pose"""
+    def _remove_segments_behind_robot(self, path_segments: list[PathSegment | WorkingSegment]) -> list[PathSegment | WorkingSegment]:
+        """Create new path (list of segments) starting at the closest segment to the current pose"""
         current_pose = self.robot_locator.pose
         start_index = 0
         for i, segment in enumerate(path_segments):

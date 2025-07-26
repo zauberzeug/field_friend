@@ -206,10 +206,10 @@ async def test_tornado_removes_weeds_around_crop(system: System, detector: rosys
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=OUTER_RADIUS + 0.01, z=0)))
     targets = [
-        rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(
-            x=0.2, y=INNER_RADIUS + 0.01, z=0)),
-        rosys.vision.SimulatedObject(
-            category_name='weed',  position=rosys.geometry.Point3d(x=0.2, y=OUTER_RADIUS - 0.01, z=0))
+        rosys.vision.SimulatedObject(category_name='weed',
+                                     position=rosys.geometry.Point3d(x=0.2, y=INNER_RADIUS + 0.01, z=0)),
+        rosys.vision.SimulatedObject(category_name='weed',
+                                     position=rosys.geometry.Point3d(x=0.2, y=OUTER_RADIUS - 0.01, z=0))
     ]
     detector.simulated_objects.extend(targets)
     system.current_implement = system.implements['Tornado']

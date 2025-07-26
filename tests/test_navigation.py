@@ -1,11 +1,12 @@
 
 
 import random
+from typing import override
 
 import numpy as np
 import pytest
 import rosys
-from conftest import set_start_pose
+from conftest import set_robot_pose
 from rosys.geometry import Point, Pose
 from rosys.helpers import angle
 from rosys.testing import assert_point, forward
@@ -18,7 +19,7 @@ from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 
 
 async def test_driving_to_exact_positions(system: System):
-    class Stopper(Implement):
+    class StopperImplement(Implement):
         def __init__(self, system: System) -> None:
             super().__init__('Stopper')
             self.system = system
@@ -28,37 +29,41 @@ async def test_driving_to_exact_positions(system: System):
                 Point(x=0.1 + i * 0.02 + random.uniform(0, 0.005), y=0) for i in range(1, 40)
             ]
             self.current_target_position: Point | None = None
-            self.new_target_position()
+            self.pick_next_target_position()
 
+        @override
         async def get_move_target(self) -> Point | None:
             return self.current_target_position
 
-        def new_target_position(self) -> None:
-            if not self.target_positions:
-                self.current_target_position = None
-                return
-            self.current_target_position = self.target_positions.pop(0)
-
+        @override
         async def start_workflow(self) -> None:
             self.workflow_started = True
             deadline = rosys.time() + 1
             while self.workflow_started and rosys.time() < deadline:
                 await rosys.sleep(0.1)
             self.workflow_started = False
-            self.new_target_position()
+            self.pick_next_target_position()
+
+        def pick_next_target_position(self) -> None:
+            if not self.target_positions:
+                self.current_target_position = None
+                return
+            self.current_target_position = self.target_positions.pop(0)
 
     system.field_friend.WORK_X = 0.0
-    system.current_implement = stopper = Stopper(system)
+    system.current_implement = stopper_implement = StopperImplement(system)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = 1.0
     system.current_navigation.linear_speed_limit = 0.02  # drive really slow so we can archive the accuracy tested below
     system.automator.start()
     await forward(until=lambda: system.automator.is_running, dt=0.01)
-    while stopper.target_positions:
-        await forward(until=lambda: stopper.workflow_started and system.automator.is_running, dt=0.01)
-        assert isinstance(stopper.current_target_position, Point)
-        assert system.robot_locator.pose.point.x == pytest.approx(stopper.current_target_position.x, abs=0.001)
-        assert system.robot_locator.pose.point.y == pytest.approx(stopper.current_target_position.y, abs=0.001)
+    while stopper_implement.target_positions:
+        await forward(until=lambda: stopper_implement.workflow_started and system.automator.is_running, dt=0.01)
+        assert isinstance(stopper_implement.current_target_position, Point)
+        assert system.robot_locator.pose.point.x == pytest.approx(
+            stopper_implement.current_target_position.x, abs=0.001)
+        assert system.robot_locator.pose.point.y == pytest.approx(
+            stopper_implement.current_target_position.y, abs=0.001)
         await forward(0.1)  # give robot time to update position
     system.current_navigation.linear_speed_limit = Navigation.LINEAR_SPEED_LIMIT
     await forward(until=lambda: system.automator.is_stopped)
@@ -123,7 +128,7 @@ async def test_slippage(system: System):
     assert_point(system.robot_locator.pose.point, Point(x=2.0, y=0))
 
 
-async def test_stop_when_target_after_end(system: System, detector: rosys.vision.DetectorSimulation):
+async def test_stop_when_reaching_end(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.25, y=0.0, z=0.0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
@@ -151,7 +156,7 @@ async def test_resume_after_pause(system: System, manual_move: float):
     await forward(until=lambda: system.automator.is_paused)
     moved_pose = system.robot_locator.pose
     moved_pose.x += manual_move
-    set_start_pose(system, moved_pose)
+    set_robot_pose(system, moved_pose)
     system.automator.resume()
     await forward(2)
     if manual_move <= AutomationWatcher.ALLOWED_RESUME_DEVIATION:
@@ -163,18 +168,15 @@ async def test_resume_after_pause(system: System, manual_move: float):
 
 
 async def test_straight_path(system: System):
-    pose1 = Pose(x=1.0, y=0.0, yaw=0.0)
-    pose2 = Pose(x=2.0, y=0.0, yaw=0.0)
-
-    def generate_path():
-        return [
-            PathSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
-            PathSegment.from_poses(pose1, pose2),
-        ]
     system.current_navigation = system.waypoint_navigation
     assert system.current_navigation is not None
     assert isinstance(system.current_navigation.implement, Recorder)
-    system.current_navigation.generate_path = generate_path  # type: ignore
+    pose1 = Pose(x=1.0, y=0.0, yaw=0.0)
+    pose2 = Pose(x=2.0, y=0.0, yaw=0.0)
+    system.current_navigation.generate_path = lambda: [
+        PathSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
+        PathSegment.from_poses(pose1, pose2),
+    ]
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
@@ -185,17 +187,13 @@ async def test_straight_path(system: System):
 
 @pytest.mark.parametrize('start_offset', (0.5, 0.0, -0.25, -0.5, -0.75, -0.99))
 async def test_start_inbetween_waypoints(system: System, start_offset: float):
-    start = system.robot_locator.pose.transform_pose(Pose(x=start_offset, y=0.0, yaw=0.0))
-    end = start.transform_pose(Pose(x=1.0, y=0.0, yaw=0.0))
-
-    def generate_path():
-        return [
-            PathSegment.from_poses(start, end),
-        ]
     system.current_navigation = system.waypoint_navigation
     assert system.current_navigation is not None
     assert isinstance(system.current_navigation.implement, Recorder)
-    system.current_navigation.generate_path = generate_path  # type: ignore
+    # generate path which expands left and right from current pose
+    start = system.robot_locator.pose.transform_pose(Pose(x=start_offset, y=0.0, yaw=0.0))
+    end = start.transform_pose(Pose(x=1.0, y=0.0, yaw=0.0))
+    system.current_navigation.generate_path = lambda: [PathSegment.from_poses(start, end)]
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
@@ -205,17 +203,13 @@ async def test_start_inbetween_waypoints(system: System, start_offset: float):
 
 
 async def test_start_on_end(system: System):
-    start = system.robot_locator.pose.transform_pose(Pose(x=-1, y=0.0, yaw=0.0))
-    end = system.robot_locator.pose
-
-    def generate_path():
-        return [
-            PathSegment.from_poses(start, end),
-        ]
     system.current_navigation = system.waypoint_navigation
     assert system.current_navigation is not None
     assert isinstance(system.current_navigation.implement, Recorder)
-    system.current_navigation.generate_path = generate_path  # type: ignore
+    # set start of path 1m before current pose
+    start = system.robot_locator.pose.transform_pose(Pose(x=-1, y=0.0, yaw=0.0))
+    end = system.robot_locator.pose
+    system.current_navigation.generate_path = lambda: [PathSegment.from_poses(start, end)]
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
@@ -229,6 +223,9 @@ async def test_skip_first_segment(system: System):
     pose2 = Pose(x=0, y=0.0, yaw=0.0)
     pose3 = Pose(x=1.0, y=1.0, yaw=np.pi/2)
     pose4 = Pose(x=0, y=2.0, yaw=np.pi)
+    system.current_navigation = system.waypoint_navigation
+    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation.implement, Recorder)
 
     def generate_path():
         path = [
@@ -238,12 +235,9 @@ async def test_skip_first_segment(system: System):
             PathSegment.from_poses(pose4, pose1),
         ]
         assert system.current_navigation is not None
-        path = system.current_navigation._start_at_closest_segment(path)  # pylint: disable=protected-access
+        path = system.current_navigation._remove_segments_behind_robot(path)  # pylint: disable=protected-access
         return path
-    system.current_navigation = system.waypoint_navigation
-    assert system.current_navigation is not None
-    assert isinstance(system.current_navigation.implement, Recorder)
-    system.current_navigation.generate_path = generate_path  # type: ignore
+    system.current_navigation.generate_path = generate_path
     system.automator.start()
     await forward(until=lambda: system.current_navigation is not None and system.current_navigation.current_segment is not None)
     assert system.current_navigation.current_segment is not None
@@ -269,7 +263,7 @@ async def test_straight_line(system: System, length: float):
 async def test_straight_line_different_headings(system: System, heading_degrees: float):
     heading = np.deg2rad(heading_degrees)
     current_pose = system.robot_locator.pose
-    set_start_pose(system, Pose(x=current_pose.x, y=current_pose.y, yaw=heading))
+    set_robot_pose(system, Pose(x=current_pose.x, y=current_pose.y, yaw=heading))
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)

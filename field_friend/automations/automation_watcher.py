@@ -49,17 +49,17 @@ class AutomationWatcher:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
         self.steerer.STEERING_STARTED.register(lambda: self.pause('steering started'))
         # self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
-        self.automator.AUTOMATION_PAUSED.register(self._on_pause)
-        self.automator.AUTOMATION_RESUMED.register(self._on_resume)
-        self.automator.AUTOMATION_STOPPED.register(self._on_stop)
+        self.automator.AUTOMATION_PAUSED.register(self._handle_pause)
+        self.automator.AUTOMATION_RESUMED.register(self._handle_resume)
+        self.automator.AUTOMATION_STOPPED.register(self._handle_stop)
 
-    def _on_pause(self, reason: str) -> None:
+    def _handle_pause(self, reason: str) -> None:
         rosys.notify('Automation paused')
         self.log.debug('automation paused because %s', reason)
         self.incidence_time = rosys.time()
         self.incidence_pose = deepcopy(self.robot_locator.pose)
 
-    def _on_resume(self) -> None:
+    def _handle_resume(self) -> None:
         if self.robot_locator.pose.distance(self.incidence_pose) > self.ALLOWED_RESUME_DEVIATION:
             rosys.notify('Robot must not be moved while paused', 'negative')
             self.automator.stop(because='Robot was moved while paused')
@@ -68,7 +68,7 @@ class AutomationWatcher:
         rosys.notify('Automation resumed')
         self.log.debug('automation resumed')
 
-    def _on_stop(self, reason: str) -> None:
+    def _handle_stop(self, reason: str) -> None:
         rosys.notify('Automation stopped')
         self.log.debug('automation stopped because %s', reason)
 
