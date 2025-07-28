@@ -88,6 +88,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
 
             async def block_until_implement_has_target() -> Point:
                 while True:
+                    assert isinstance(self.current_segment, DriveSegment)
                     if self.current_segment.use_implement and (target := await self.implement.get_target()):
                         return target
                     await rosys.sleep(0.1)
