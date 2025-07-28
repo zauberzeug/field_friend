@@ -20,8 +20,24 @@ async def test_stopping_at_different_distances(system: System, distance: float):
     system.current_navigation.linear_speed_limit = 0.13
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
+    assert system.current_navigation.current_segment is not None
+    assert system.current_navigation.current_segment.spline.estimated_length() == distance
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.001)
+
+
+@pytest.mark.parametrize('heading_degrees', (-180, -90, -45, 0, 45, 90, 180, 360))
+async def test_straight_line_different_headings(system: System, heading_degrees: float):
+    heading = np.deg2rad(heading_degrees)
+    current_pose = system.robot_locator.pose
+    set_robot_pose(system, Pose(x=current_pose.x, y=current_pose.y, yaw=heading))
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    current_segment = system.current_navigation.current_segment
+    assert current_segment is not None
+    direction = current_segment.spline.start.direction(current_segment.spline.end)
+    assert angle(direction, heading) == pytest.approx(0, abs=0.1)
 
 
 @pytest.mark.parametrize('distance', (0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
@@ -105,23 +121,6 @@ async def test_resume_after_pause(system: System, manual_move: float):
         assert system.automator.is_stopped
 
 
-async def test_straight_path(system: System):
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    assert isinstance(system.current_navigation.implement, Recorder)
-    pose1 = Pose(x=0.5, y=0.0, yaw=0.0)
-    pose2 = Pose(x=1.0, y=0.0, yaw=0.0)
-    system.current_navigation.generate_path = lambda: [  # type: ignore[assignment]
-        DriveSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
-        DriveSegment.from_poses(pose1, pose2),
-    ]
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(pose2.x, abs=0.1)
-    assert system.robot_locator.pose.point.y == pytest.approx(pose2.y, abs=0.1)
-    assert system.robot_locator.pose.yaw_deg == pytest.approx(pose2.yaw_deg, abs=0.1)
-
-
 @pytest.mark.parametrize('start_offset', (0.5, 0.0, -0.25, -0.5, -0.75, -0.99))
 async def test_start_inbetween_waypoints(system: System, start_offset: float):
     assert isinstance(system.current_navigation, StraightLineNavigation)
@@ -179,28 +178,3 @@ async def test_skip_first_segment(system: System):
     assert system.current_navigation.current_segment.end.x == pytest.approx(pose3.x, abs=0.1)
     assert system.current_navigation.current_segment.end.y == pytest.approx(pose3.y, abs=0.1)
     assert system.current_navigation.current_segment.end.yaw_deg == pytest.approx(pose3.yaw_deg, abs=0.1)
-
-
-@pytest.mark.parametrize('length', (1.0, 2.0))
-async def test_straight_line(system: System, length: float):
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.length = length
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    current_segment = system.current_navigation.current_segment
-    assert current_segment is not None
-    assert current_segment.spline.estimated_length() == length
-
-
-@pytest.mark.parametrize('heading_degrees', (-180, -90, -45, 0, 45, 90, 180, 360))
-async def test_straight_line_different_headings(system: System, heading_degrees: float):
-    heading = np.deg2rad(heading_degrees)
-    current_pose = system.robot_locator.pose
-    set_robot_pose(system, Pose(x=current_pose.x, y=current_pose.y, yaw=heading))
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    current_segment = system.current_navigation.current_segment
-    assert current_segment is not None
-    direction = current_segment.spline.start.direction(current_segment.spline.end)
-    assert angle(direction, heading) == pytest.approx(0, abs=0.1)
