@@ -22,6 +22,10 @@ class ImplementDemoNavigation(Navigation):
         super().__init__(system, tool)
         self.name = 'Implement Demo'
 
+    @property
+    def has_waypoints(self) -> bool:
+        return True  # NOTE: this is a demo navigation, we want an infinite automation
+
     async def prepare(self) -> bool:
         await super().prepare()
         if not isinstance(self.implement, WeedingImplement) and self.system.field_friend.y_axis is not None:
@@ -42,7 +46,7 @@ class ImplementDemoNavigation(Navigation):
                 self.log.error('Preparation failed')
                 return
             self.log.info('Navigation started')
-            while not self._should_finish():
+            while self.has_waypoints:
                 # TODO: implement has no attribute next_punch_y_position, only weeding implement has it
                 # what is the correct way to handle this? currently it's initialized with a recorder as the implement
                 assert isinstance(self.implement, WeedingImplement)
@@ -61,9 +65,6 @@ class ImplementDemoNavigation(Navigation):
             await self.finish()
             await self.implement.deactivate()
             await self.driver.wheels.stop()
-
-    def _should_finish(self) -> bool:
-        return False
 
     def generate_path(self):
         return []

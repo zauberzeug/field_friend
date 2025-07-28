@@ -34,7 +34,7 @@ class Implement(rosys.persistence.Persistable):
         self.is_active = False
 
     @track
-    async def get_move_target(self) -> Point | None:
+    async def get_target(self) -> Point | None:
         """Return the target position to drive to."""
         return None
 

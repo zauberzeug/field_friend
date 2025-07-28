@@ -32,7 +32,7 @@ async def test_driving_to_exact_positions(system: System):
             self.pick_next_target_position()
 
         @override
-        async def get_move_target(self) -> Point | None:
+        async def get_target(self) -> Point | None:
             return self.current_target_position
 
         @override

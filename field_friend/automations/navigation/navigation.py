@@ -16,6 +16,7 @@ from rosys.geometry import GeoReference, Point, Point3d, Pose, PoseStep, Spline
 from rosys.hardware import Gnss
 
 from ..implements.implement import Implement
+from ..implements.weeding_implement import WeedingImplement
 
 if TYPE_CHECKING:
     from ...automations.implements.implement import Implement
@@ -62,6 +63,11 @@ class Navigation(rosys.persistence.Persistable):
             return None
         return self._upcoming_path[0]
 
+    @property
+    def has_waypoints(self) -> bool:
+        """Returns True as long as there are waypoints to drive to"""
+        return self.current_segment is not None
+
     @track
     async def start(self) -> None:
         try:
@@ -79,31 +85,34 @@ class Navigation(rosys.persistence.Persistable):
             rosys.notify('Automation started')
             self.log.debug('Navigation started')
 
-            async def get_target_from_implement() -> Point:
+            async def block_until_implement_has_target() -> Point:
                 while True:
-                    if self._use_implement and (target := await self.implement.get_move_target()):
+                    if self._use_implement and (target := await self.implement.get_target()):
                         return target
                     await rosys.sleep(0.1)
 
-            while not self._should_finish():
-                await rosys.automation.parallelize(
-                    self._drive(),
-                    get_target_from_implement(),
-                    return_when_first_completed=True,
-                )
-                while not self._should_finish():
-                    move_target = await self.implement.get_move_target()
-                    if not move_target:
-                        self.log.debug('No move target found, continuing...')
+            while self.has_waypoints:
+                implement_target = await self.implement.get_target()
+                if not implement_target:
+                    self.log.debug('No move target found, continuing...')
+                    await rosys.automation.parallelize(
+                        self._drive_along_path(),
+                        block_until_implement_has_target(),
+                        return_when_first_completed=True,
+                    )
+
+                if isinstance(self.implement, WeedingImplement):
+                    implement_target = await self.implement.get_target()
+                    if not implement_target:
+                        self.log.debug('Implement has no target anymore. Possibly overshot, continuing...')
                         break
-                    if not await self.drive_towards_target(move_target):
-                        await self.implement.get_move_target()
-                        await rosys.sleep(0.1)
+                    if not await self._follow_segment_until(implement_target):
+                        assert isinstance(self.detector, rosys.vision.Detector)
+                        await self.detector.NEW_DETECTIONS.emitted(5)
                         continue
-                    await self.implement.get_move_target()
+                    self.implement.has_plants_to_handle()
                     await self.implement.start_workflow()
                     await self.implement.stop_workflow()
-                    await rosys.sleep(0.1)
                 await rosys.sleep(0.1)
             rosys.notify('Automation finished', 'positive')
         except WorkflowException as e:
@@ -128,9 +137,6 @@ class Navigation(rosys.persistence.Persistable):
             self.log.error('Path generation failed')
             return False
         self.PATH_GENERATED.emit(self._upcoming_path)
-        if self._should_finish():
-            self.log.error('Preparation failed - should finish')
-            return False
         return True
 
     @track
@@ -140,7 +146,7 @@ class Navigation(rosys.persistence.Persistable):
         gc.collect()  # NOTE: auto garbage collection is deactivated to avoid hiccups from Global Interpreter Lock (GIL) so we collect here to reduce memory pressure
 
     @track
-    async def _drive(self) -> None:
+    async def _drive_along_path(self) -> None:
         """Drive the robot to the next waypoint of the navigation"""
         segment: PathSegment | WorkingSegment | None
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
@@ -149,7 +155,7 @@ class Navigation(rosys.persistence.Persistable):
             for segment in self._upcoming_path:
                 if isinstance(segment, WorkingSegment):
                     self.create_segment_simulation(segment)
-        while not self._should_finish():
+        while self.has_waypoints:
             segment = self.current_segment
             if segment is None:
                 return
@@ -188,7 +194,7 @@ class Navigation(rosys.persistence.Persistable):
         return path_segments[start_index:]
 
     @track
-    async def drive_towards_target(self, target: Point) -> bool:
+    async def _follow_segment_until(self, target: Point) -> bool:
         """Drives to a target point along the current spline.
 
         :param target: The target point to drive to
@@ -237,10 +243,6 @@ class Navigation(rosys.persistence.Persistable):
             await self.driver.wheels.drive(*self.driver._throttle(0.0, angular))  # pylint: disable=protected-access
             await rosys.sleep(0.1)
         await self.driver.wheels.stop()
-
-    def _should_finish(self) -> bool:
-        """Returns True if the navigation should stop and be finished"""
-        return self.current_segment is None
 
     def backup_to_dict(self) -> dict[str, Any]:
         return {

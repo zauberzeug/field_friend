@@ -57,12 +57,12 @@ class WeedingSprayer(WeedingImplement):
             raise ImplementException(f'Error in Weed Spray Workflow: {e}') from e
 
     @track
-    async def get_move_target(self) -> Point | None:
+    async def get_target(self) -> Point | None:
         """Return the target position to drive to."""
         # pylint: disable=unused-argument
         # pylint: disable=duplicate-code
         assert isinstance(self.system.field_friend.z_axis, Sprayer)
-        super()._has_plants_to_handle()
+        super().has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
                           if self.system.field_friend.can_reach(position.projection())}
         if not weeds_in_range:
