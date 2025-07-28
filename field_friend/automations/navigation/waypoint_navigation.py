@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gc
 import logging
+from abc import abstractmethod
 from dataclasses import dataclass
 from random import randint
 from typing import TYPE_CHECKING, Any, Self
@@ -20,7 +21,6 @@ from ..implements.weeding_implement import WeedingImplement
 
 if TYPE_CHECKING:
     from ...system import System
-    from ..implements.implement import Implement
 
 
 WAYPOINTS = [Point(x=3.0 * x, y=x % 2) for x in range(1, 15)]
@@ -67,6 +67,10 @@ class WaypointNavigation(rosys.persistence.Persistable):
     def has_waypoints(self) -> bool:
         """Returns True as long as there are waypoints to drive to"""
         return self.current_segment is not None
+
+    @abstractmethod
+    def generate_path(self) -> list[PathSegment | WorkingSegment]:
+        raise NotImplementedError('Subclasses must implement this method')
 
     @track
     async def start(self) -> None:
@@ -165,21 +169,6 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
             self._upcoming_path.pop(0)
             self.WAYPOINT_REACHED.emit()
-
-    def generate_path(self) -> list[PathSegment | WorkingSegment]:
-        last_pose = Pose(x=0, y=0, yaw=0)
-        path: list[PathSegment | WorkingSegment] = []
-        segment: PathSegment | WorkingSegment
-        for i, waypoint in enumerate(WAYPOINTS):
-            next_pose = Pose(x=waypoint.x, y=waypoint.y, yaw=last_pose.yaw)
-            if (i+1) % 3:
-                segment = WorkingSegment.from_poses(last_pose, next_pose, stop_at_end=False)
-            else:
-                segment = PathSegment.from_poses(last_pose, next_pose, stop_at_end=False)
-            path.append(segment)
-            last_pose = next_pose
-        path = self._remove_segments_behind_robot(path)
-        return path
 
     def _remove_segments_behind_robot(self, path_segments: list[PathSegment | WorkingSegment]) -> list[PathSegment | WorkingSegment]:
         """Create new path (list of segments) starting at the closest segment to the current pose"""

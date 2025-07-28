@@ -146,7 +146,6 @@ async def test_stop_when_reaching_end(system: System, detector: rosys.vision.Det
 
 @pytest.mark.parametrize('manual_move', (0, 0.20, 0.21))
 async def test_resume_after_pause(system: System, manual_move: float):
-    assert system.field_navigation is not None
     system.current_navigation = system.straight_line_navigation
     assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
@@ -168,12 +167,11 @@ async def test_resume_after_pause(system: System, manual_move: float):
 
 
 async def test_straight_path(system: System):
-    system.current_navigation = system.waypoint_navigation
-    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
-    pose1 = Pose(x=1.0, y=0.0, yaw=0.0)
-    pose2 = Pose(x=2.0, y=0.0, yaw=0.0)
-    system.current_navigation.generate_path = lambda: [
+    pose1 = Pose(x=0.5, y=0.0, yaw=0.0)
+    pose2 = Pose(x=1.0, y=0.0, yaw=0.0)
+    system.current_navigation.generate_path = lambda: [  # type: ignore[assignment]
         PathSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
         PathSegment.from_poses(pose1, pose2),
     ]
@@ -187,13 +185,12 @@ async def test_straight_path(system: System):
 
 @pytest.mark.parametrize('start_offset', (0.5, 0.0, -0.25, -0.5, -0.75, -0.99))
 async def test_start_inbetween_waypoints(system: System, start_offset: float):
-    system.current_navigation = system.waypoint_navigation
-    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     # generate path which expands left and right from current pose
     start = system.robot_locator.pose.transform_pose(Pose(x=start_offset, y=0.0, yaw=0.0))
     end = start.transform_pose(Pose(x=1.0, y=0.0, yaw=0.0))
-    system.current_navigation.generate_path = lambda: [PathSegment.from_poses(start, end)]
+    system.current_navigation.generate_path = lambda: [PathSegment.from_poses(start, end)]  # type: ignore[assignment]
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
@@ -203,13 +200,12 @@ async def test_start_inbetween_waypoints(system: System, start_offset: float):
 
 
 async def test_start_on_end(system: System):
-    system.current_navigation = system.waypoint_navigation
-    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     # set start of path 1m before current pose
     start = system.robot_locator.pose.transform_pose(Pose(x=-1, y=0.0, yaw=0.0))
     end = system.robot_locator.pose
-    system.current_navigation.generate_path = lambda: [PathSegment.from_poses(start, end)]
+    system.current_navigation.generate_path = lambda: [PathSegment.from_poses(start, end)]  # type: ignore[assignment]
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
@@ -223,8 +219,7 @@ async def test_skip_first_segment(system: System):
     pose2 = Pose(x=0, y=0.0, yaw=0.0)
     pose3 = Pose(x=1.0, y=1.0, yaw=np.pi/2)
     pose4 = Pose(x=0, y=2.0, yaw=np.pi)
-    system.current_navigation = system.waypoint_navigation
-    assert system.current_navigation is not None
+    assert isinstance(system.current_navigation, StraightLineNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
 
     def generate_path():
@@ -237,7 +232,7 @@ async def test_skip_first_segment(system: System):
         assert system.current_navigation is not None
         path = system.current_navigation._remove_segments_behind_robot(path)  # pylint: disable=protected-access
         return path
-    system.current_navigation.generate_path = generate_path
+    system.current_navigation.generate_path = generate_path  # type: ignore[assignment]
     system.automator.start()
     await forward(until=lambda: system.current_navigation is not None and system.current_navigation.current_segment is not None)
     assert system.current_navigation.current_segment is not None
@@ -249,7 +244,6 @@ async def test_skip_first_segment(system: System):
 
 @pytest.mark.parametrize('length', (1.0, 2.0))
 async def test_straight_line(system: System, length: float):
-    system.current_navigation = system.straight_line_navigation
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = length
     system.automator.start()
