@@ -44,7 +44,6 @@ class WaypointNavigation(rosys.persistence.Persistable):
         self.name = 'Waypoint Navigation'
         self._upcoming_path: list[PathSegment | WorkingSegment] = []
         self._use_implement = True
-        self.start_position = self.robot_locator.pose.point
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
 
         self.PATH_GENERATED = Event[list[PathSegment | WorkingSegment]]()
@@ -85,7 +84,6 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 self.log.error('Implement preparation failed')
                 return
             await self.implement.activate()
-            self.start_position = self.robot_locator.pose.point
             rosys.notify('Automation started')
             self.log.debug('Navigation started')
 
