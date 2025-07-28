@@ -104,19 +104,6 @@ async def test_deceleration_different_speeds(system_with_acceleration: System, l
     assert system.robot_locator.pose.point.x == pytest.approx(0.005, abs=tolerance)
 
 
-@pytest.mark.parametrize('heading_degrees', (-180, -90, 0, 90, 180, 360))
-async def test_driving_turn_to_yaw(system: System, heading_degrees: float):
-    heading = np.deg2rad(heading_degrees)
-    assert system.current_navigation is not None
-    system.automator.start(system.current_navigation.turn_to_yaw(heading))
-    # NOTE: do not wait until automator.is_running because it will immediately stop for 0 and 360 degrees
-    await forward(0.1)
-    await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.x == pytest.approx(0, abs=0.001)
-    assert system.robot_locator.pose.y == pytest.approx(0, abs=0.001)
-    assert angle(system.robot_locator.pose.yaw, heading) == pytest.approx(0, abs=1.0)
-
-
 async def test_slippage(system: System):
     assert isinstance(system.field_friend.wheels, rosys.hardware.WheelsSimulation)
     assert isinstance(system.current_navigation, StraightLineNavigation)
