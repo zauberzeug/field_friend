@@ -15,7 +15,6 @@ from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 
 @pytest.mark.parametrize('distance', (0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
 async def test_stopping_at_different_distances(system: System, distance: float):
-    """Try to stop after different distances with a tolerance of 10% and a linear speed limit of 0.13m/s"""
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_navigation.length = distance
     system.current_navigation.linear_speed_limit = 0.13
@@ -27,7 +26,6 @@ async def test_stopping_at_different_distances(system: System, distance: float):
 
 @pytest.mark.parametrize('distance', (0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
 async def test_deceleration_different_distances(system_with_acceleration: System, distance: float):
-    """Try to stop after different distances with a tolerance of 10% and a linear speed limit of 0.13m/s"""
     system = system_with_acceleration
     assert isinstance(system.field_friend.wheels, WheelsSimulationWithAcceleration)
     assert isinstance(system.current_navigation, StraightLineNavigation)
@@ -47,7 +45,6 @@ async def test_deceleration_different_distances(system_with_acceleration: System
     (0.4, 0.0013),
 ])
 async def test_deceleration_different_speeds(system_with_acceleration: System, linear_speed_limit: float, tolerance: float):
-    """Try stop after 1mm with different speeds with a tolerance of 0.2mm"""
     system = system_with_acceleration
     assert isinstance(system.field_friend.wheels, WheelsSimulationWithAcceleration)
     assert isinstance(system.current_navigation, StraightLineNavigation)
