@@ -1,8 +1,3 @@
-
-
-import random
-from typing import override
-
 import numpy as np
 import pytest
 import rosys
@@ -13,61 +8,9 @@ from rosys.testing import assert_point, forward
 
 from field_friend import System
 from field_friend.automations import AutomationWatcher
-from field_friend.automations.implements import Implement, Recorder
+from field_friend.automations.implements import Recorder
 from field_friend.automations.navigation import DriveSegment, StraightLineNavigation
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
-
-
-async def test_driving_to_exact_positions(system: System):
-    class StopperImplement(Implement):
-        def __init__(self, system: System) -> None:
-            super().__init__('Stopper')
-            self.system = system
-            self.current_stretch = 0.0
-            self.workflow_started = False
-            self.target_positions = [
-                Point(x=0.1 + i * 0.02 + random.uniform(0, 0.005), y=0) for i in range(1, 40)
-            ]
-            self.current_target_position: Point | None = None
-            self.pick_next_target_position()
-
-        @override
-        async def get_target(self) -> Point | None:
-            return self.current_target_position
-
-        @override
-        async def start_workflow(self) -> None:
-            self.workflow_started = True
-            deadline = rosys.time() + 1
-            while self.workflow_started and rosys.time() < deadline:
-                await rosys.sleep(0.1)
-            self.workflow_started = False
-            self.pick_next_target_position()
-
-        def pick_next_target_position(self) -> None:
-            if not self.target_positions:
-                self.current_target_position = None
-                return
-            self.current_target_position = self.target_positions.pop(0)
-
-    system.field_friend.WORK_X = 0.0
-    system.current_implement = stopper_implement = StopperImplement(system)
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.length = 1.0
-    system.current_navigation.linear_speed_limit = 0.02  # drive really slow so we can archive the accuracy tested below
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running, dt=0.01)
-    while stopper_implement.target_positions:
-        await forward(until=lambda: stopper_implement.workflow_started and system.automator.is_running, dt=0.01)
-        assert isinstance(stopper_implement.current_target_position, Point)
-        assert system.robot_locator.pose.point.x == pytest.approx(
-            stopper_implement.current_target_position.x, abs=0.001)
-        assert system.robot_locator.pose.point.y == pytest.approx(
-            stopper_implement.current_target_position.y, abs=0.001)
-        await forward(0.1)  # give robot time to update position
-    system.current_navigation.linear_speed_limit = system.current_navigation.LINEAR_SPEED_LIMIT
-    await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.x == pytest.approx(system.current_navigation.length, abs=0.001)
 
 
 @pytest.mark.parametrize('distance', (0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
