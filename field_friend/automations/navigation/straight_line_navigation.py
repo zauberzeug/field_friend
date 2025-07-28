@@ -6,13 +6,13 @@ from nicegui import ui
 from rosys.geometry import Pose
 
 from ...automations.implements.implement import Implement
-from .navigation import Navigation, PathSegment, WorkingSegment
+from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
 
 if TYPE_CHECKING:
     from ...system import System
 
 
-class StraightLineNavigation(Navigation):
+class StraightLineNavigation(WaypointNavigation):
     LENGTH: float = 2.0
 
     def __init__(self, system: System, tool: Implement) -> None:

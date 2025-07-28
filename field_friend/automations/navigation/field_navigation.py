@@ -13,14 +13,14 @@ from shapely.geometry import Polygon as ShapelyPolygon
 
 from ..field import Field, Row
 from ..implements import WeedingImplement
-from .navigation import Navigation, PathSegment, WorkingSegment
+from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
 
 if TYPE_CHECKING:
     from ...automations.implements.implement import Implement
     from ...system import System
 
 
-class FieldNavigation(Navigation):
+class FieldNavigation(WaypointNavigation):
     MAX_START_DISTANCE = 2.0
     MAX_DISTANCE_DEVIATION = 0.1
     MAX_ANGLE_DEVIATION = np.deg2rad(15.0)

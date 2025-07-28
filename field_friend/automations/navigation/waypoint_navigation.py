@@ -19,14 +19,14 @@ from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
 
 if TYPE_CHECKING:
-    from ...automations.implements.implement import Implement
     from ...system import System
+    from ..implements.implement import Implement
 
 
 WAYPOINTS = [Point(x=3.0 * x, y=x % 2) for x in range(1, 15)]
 
 
-class Navigation(rosys.persistence.Persistable):
+class WaypointNavigation(rosys.persistence.Persistable):
     LINEAR_SPEED_LIMIT: float = 0.13
 
     def __init__(self, system: System, implement: Implement) -> None:

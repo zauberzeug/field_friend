@@ -10,13 +10,13 @@ import rosys
 from ...hardware import Axis
 from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
-from .navigation import Navigation, WorkflowException
+from .waypoint_navigation import WaypointNavigation, WorkflowException
 
 if TYPE_CHECKING:
     from ...system import System
 
 
-class ImplementDemoNavigation(Navigation):
+class ImplementDemoNavigation(WaypointNavigation):
 
     def __init__(self, system: System, tool: Implement) -> None:
         super().__init__(system, tool)

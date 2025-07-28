@@ -24,7 +24,7 @@ from .automations import (
     Puncher,
 )
 from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
-from .automations.navigation import FieldNavigation, ImplementDemoNavigation, Navigation, StraightLineNavigation
+from .automations.navigation import FieldNavigation, ImplementDemoNavigation, StraightLineNavigation, WaypointNavigation
 from .capture import Capture
 from .config import get_config
 from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
@@ -54,9 +54,9 @@ class System(rosys.persistence.Persistable):
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation | None = None
         self.field_friend: FieldFriend
-        self._current_navigation: Navigation | None = None
+        self._current_navigation: WaypointNavigation | None = None
         self.implements: dict[str, Implement] = {}
-        self.navigation_strategies: dict[str, Navigation] = {}
+        self.navigation_strategies: dict[str, WaypointNavigation] = {}
         self.mjpeg_camera_provider: rosys.vision.MjpegCameraProvider | None = None
         self.circle_sight_detector: rosys.vision.DetectorHardware | None = None
         if self.is_real:
@@ -181,11 +181,11 @@ class System(rosys.persistence.Persistable):
         self.log.debug(f'selected implement: {implement.name}')
 
     @property
-    def current_navigation(self) -> Navigation | None:
+    def current_navigation(self) -> WaypointNavigation | None:
         return self._current_navigation
 
     @current_navigation.setter
-    def current_navigation(self, navigation: Navigation) -> None:
+    def current_navigation(self, navigation: WaypointNavigation) -> None:
         old_navigation = self._current_navigation
         if old_navigation is not None and self.current_implement is not None:
             implement = self.current_implement
@@ -258,7 +258,7 @@ class System(rosys.persistence.Persistable):
         self.field_navigation = FieldNavigation(self, first_implement).persistent() if self.gnss is not None else None
         self.implement_demo_navigation = ImplementDemoNavigation(self, first_implement).persistent() \
             if isinstance(self.field_friend.y_axis, Axis) else None
-        self.waypoint_navigation = Navigation(self, first_implement).persistent()
+        self.waypoint_navigation = WaypointNavigation(self, first_implement).persistent()
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
                                                           self.field_navigation,
                                                           self.implement_demo_navigation,
