@@ -42,22 +42,21 @@ class WaypointNavigation(rosys.persistence.Persistable):
         self.robot_locator = system.robot_locator
 
         self.name = 'Waypoint Navigation'
-        self._upcoming_path: list[PathSegment | WorkingSegment] = []
-        self._use_implement = True
+        self._upcoming_path: list[DriveSegment] = []
         self.linear_speed_limit = self.LINEAR_SPEED_LIMIT
 
-        self.PATH_GENERATED = Event[list[PathSegment | WorkingSegment]]()
-        """a new path has been generated (argument: ``list[PathSegment | WorkingSegment]``)"""
+        self.PATH_GENERATED = Event[list[DriveSegment]]()
+        """a new path has been generated (argument: ``list[DriveSegment]``)"""
 
         self.WAYPOINT_REACHED = Event[[]]()
         """a waypoint has been reached"""
 
     @property
-    def path(self) -> list[PathSegment | WorkingSegment]:
+    def path(self) -> list[DriveSegment]:
         return self._upcoming_path
 
     @property
-    def current_segment(self) -> PathSegment | WorkingSegment | None:
+    def current_segment(self) -> DriveSegment | None:
         if not self._upcoming_path:
             return None
         return self._upcoming_path[0]
@@ -68,7 +67,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
         return self.current_segment is not None
 
     @abstractmethod
-    def generate_path(self) -> list[PathSegment | WorkingSegment]:
+    def generate_path(self) -> list[DriveSegment]:
         raise NotImplementedError('Subclasses must implement this method')
 
     @track
@@ -89,7 +88,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
 
             async def block_until_implement_has_target() -> Point:
                 while True:
-                    if self._use_implement and (target := await self.implement.get_target()):
+                    if self.current_segment.use_implement and (target := await self.implement.get_target()):
                         return target
                     await rosys.sleep(0.1)
 
@@ -150,25 +149,24 @@ class WaypointNavigation(rosys.persistence.Persistable):
     @track
     async def _drive_along_path(self) -> None:
         """Drive the robot to the next waypoint of the navigation"""
-        segment: PathSegment | WorkingSegment | None
+        segment: DriveSegment | None
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects.clear()
             self.system.plant_provider.clear()
             for segment in self._upcoming_path:
-                if isinstance(segment, WorkingSegment):
+                if segment.use_implement:
                     self.create_segment_simulation(segment)
         while self.has_waypoints:
             segment = self.current_segment
             if segment is None:
                 return
             stop_at_end = segment.stop_at_end or len(self._upcoming_path) == 1
-            self._use_implement = isinstance(segment, WorkingSegment)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, can_drive_backwards=segment.backward):
                 await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
             self._upcoming_path.pop(0)
             self.WAYPOINT_REACHED.emit()
 
-    def _remove_segments_behind_robot(self, path_segments: list[PathSegment | WorkingSegment]) -> list[PathSegment | WorkingSegment]:
+    def _remove_segments_behind_robot(self, path_segments: list[DriveSegment]) -> list[DriveSegment]:
         """Create new path (list of segments) starting at the closest segment to the current pose"""
         current_pose = self.robot_locator.pose
         start_index = 0
@@ -221,7 +219,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         self.linear_speed_limit = data.get('linear_speed_limit', self.linear_speed_limit)
 
-    def create_segment_simulation(self, segment: WorkingSegment, *, first_plant_distance: float = 0.3, crop_distance: float = 0.3) -> None:
+    def create_segment_simulation(self, segment: DriveSegment, *, first_plant_distance: float = 0.3, crop_distance: float = 0.3) -> None:
         detector = self.system.detector
         if not isinstance(detector, rosys.vision.DetectorSimulation):
             return
@@ -264,7 +262,9 @@ class WorkflowException(Exception):
 
 
 @dataclass(slots=True, kw_only=True)
-class PathSegment(rosys.driving.PathSegment):
+class DriveSegment(rosys.driving.PathSegment):
+    # TODO: move methods to rosys.driving.PathSegment
+    use_implement: bool = False
     stop_at_end: bool = True
 
     @property
@@ -276,20 +276,15 @@ class PathSegment(rosys.driving.PathSegment):
         return self.spline.pose(t=1)
 
     @classmethod
-    def from_poses(cls, start: Pose, end: Pose, *, backward: bool = False, stop_at_end: bool = True) -> Self:
-        return cls(spline=Spline.from_poses(start, end, backward=backward), backward=backward, stop_at_end=stop_at_end)
+    def from_poses(cls, start: Pose, end: Pose, *, use_implement: bool = False, backward: bool = False, stop_at_end: bool = True) -> Self:
+        return cls(spline=Spline.from_poses(start, end, backward=backward), use_implement=use_implement, backward=backward, stop_at_end=stop_at_end)
 
     @classmethod
-    def from_points(cls, start: Point, end: Point, *, backward: bool = False, stop_at_end: bool = True) -> Self:
+    def from_points(cls, start: Point, end: Point, *, use_implement: bool = False, backward: bool = False, stop_at_end: bool = True) -> Self:
         yaw = start.direction(end)
         start_pose = Pose(x=start.x, y=start.y, yaw=yaw)
         end_pose = Pose(x=end.x, y=end.y, yaw=yaw)
-        return cls.from_poses(start_pose, end_pose, backward=backward, stop_at_end=stop_at_end)
-
-
-@dataclass(slots=True, kw_only=True)
-class WorkingSegment(PathSegment):
-    ...
+        return cls.from_poses(start_pose, end_pose, use_implement=use_implement, backward=backward, stop_at_end=stop_at_end)
 
 
 def is_reference_valid(gnss: Gnss | None, *, max_distance: float = 5000.0) -> bool:

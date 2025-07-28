@@ -13,7 +13,7 @@ from shapely.geometry import Polygon as ShapelyPolygon
 
 from ..field import Field, Row
 from ..implements import WeedingImplement
-from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
+from .waypoint_navigation import DriveSegment, WaypointNavigation
 
 if TYPE_CHECKING:
     from ...automations.implements.implement import Implement
@@ -57,7 +57,7 @@ class FieldNavigation(WaypointNavigation):
             return False
         return True
 
-    def generate_path(self) -> list[PathSegment | RowSegment]:
+    def generate_path(self) -> list[DriveSegment | RowSegment]:
         field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
         field = self.field_provider.get_field(field_id)
         if field is None:
@@ -67,7 +67,7 @@ class FieldNavigation(WaypointNavigation):
         if not rows_to_work_on:
             rosys.notify('No rows to work on', 'negative')
             return []
-        path_segments: list[PathSegment | RowSegment] = []
+        path_segments: list[DriveSegment | RowSegment] = []
         current_pose = self.system.robot_locator.pose
         start_row_index = self._find_closest_row(rows_to_work_on)
         row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
@@ -84,7 +84,7 @@ class FieldNavigation(WaypointNavigation):
         current_pose = self.system.robot_locator.pose
         t = path_segments[0].spline.closest_point(current_pose.x, current_pose.y, t_min=-0.1, t_max=1.1)
         if t < 0:
-            path_segments.insert(0, PathSegment.from_poses(self.system.robot_locator.pose, path_segments[0].start))
+            path_segments.insert(0, DriveSegment.from_poses(self.system.robot_locator.pose, path_segments[0].start))
         return path_segments
 
     def _find_closest_row(self, rows: list) -> int:
@@ -138,7 +138,7 @@ class FieldNavigation(WaypointNavigation):
                 return False
         return True
 
-    def _generate_three_point_turn(self, end_pose_current_row: Pose, start_pose_next_row: Pose, radius: float = 1.5) -> list[PathSegment]:
+    def _generate_three_point_turn(self, end_pose_current_row: Pose, start_pose_next_row: Pose, radius: float = 1.5) -> list[DriveSegment]:
         direction_to_start = end_pose_current_row.relative_direction(start_pose_next_row)
         distance_to_start = end_pose_current_row.distance(start_pose_next_row)
         y_offset = max(radius, distance_to_start)
@@ -147,14 +147,14 @@ class FieldNavigation(WaypointNavigation):
         back_up_pose = start_pose_next_row.transform_pose(
             Pose(x=-radius, y=radius * np.sign(direction_to_start), yaw=-direction_to_start))
         return [
-            PathSegment.from_poses(end_pose_current_row, first_turn_pose),
-            PathSegment.from_poses(first_turn_pose, back_up_pose, backward=True),
-            PathSegment.from_poses(back_up_pose, start_pose_next_row),
+            DriveSegment.from_poses(end_pose_current_row, first_turn_pose),
+            DriveSegment.from_poses(first_turn_pose, back_up_pose, backward=True),
+            DriveSegment.from_poses(back_up_pose, start_pose_next_row),
         ]
 
 
 @dataclass(slots=True, kw_only=True)
-class RowSegment(WorkingSegment):
+class RowSegment(DriveSegment):
     row: Row
 
     @classmethod
@@ -165,5 +165,5 @@ class RowSegment(WorkingSegment):
             start_point, end_point = end_point, start_point
         start_pose = Pose(x=start_point.x, y=start_point.y, yaw=start_point.direction(end_point))
         end_pose = Pose(x=end_point.x, y=end_point.y, yaw=start_point.direction(end_point))
-        segment = WorkingSegment.from_poses(start_pose, end_pose)
-        return cls(row=row, spline=segment.spline, backward=segment.backward, stop_at_end=segment.stop_at_end)
+        segment = DriveSegment.from_poses(start_pose, end_pose, use_implement=True)
+        return cls(row=row, spline=segment.spline, use_implement=segment.use_implement, backward=segment.backward, stop_at_end=segment.stop_at_end)

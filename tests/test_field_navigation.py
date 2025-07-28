@@ -7,7 +7,7 @@ from rosys.testing import assert_point, forward
 from field_friend import System
 from field_friend.automations import Field
 from field_friend.automations.implements import Recorder, WeedingImplement
-from field_friend.automations.navigation import FieldNavigation, PathSegment, RowSegment
+from field_friend.automations.navigation import DriveSegment, FieldNavigation, RowSegment
 
 
 async def test_approach_first_row(system: System, field: Field):
@@ -37,7 +37,7 @@ async def test_complete_field(system: System, field: Field):
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
-    assert isinstance(system.current_navigation.path[0], PathSegment)
+    assert isinstance(system.current_navigation.path[0], DriveSegment)
     assert system.current_navigation.path[0].spline.estimated_length() == pytest.approx(0.3345, abs=0.0001)
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
     assert len(row_segments) == 4

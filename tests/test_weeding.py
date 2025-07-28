@@ -5,7 +5,7 @@ from rosys.testing import forward
 
 from field_friend import System
 from field_friend.automations.implements import Tornado, WeedingScrew
-from field_friend.automations.navigation import PathSegment, StraightLineNavigation, WorkingSegment
+from field_friend.automations.navigation import DriveSegment, StraightLineNavigation
 
 
 async def test_working_with_weeding_screw(system: System, detector: rosys.vision.DetectorSimulation):
@@ -147,8 +147,8 @@ async def test_implement_usage(system: System, detector: rosys.vision.DetectorSi
     pose1 = Pose(x=0.5, y=0.0, yaw=0.0)
     pose2 = Pose(x=1.0, y=0.0, yaw=0.0)
     system.current_navigation.generate_path = lambda: [  # type: ignore[assignment]
-        PathSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
-        WorkingSegment.from_poses(pose1, pose2),
+        DriveSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
+        DriveSegment.from_poses(pose1, pose2, use_implement=True),
     ]
     assert len(detector.simulated_objects) == 2
     system.automator.start()

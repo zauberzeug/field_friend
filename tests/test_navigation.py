@@ -14,7 +14,7 @@ from rosys.testing import assert_point, forward
 from field_friend import System
 from field_friend.automations import AutomationWatcher
 from field_friend.automations.implements import Implement, Recorder
-from field_friend.automations.navigation import PathSegment, StraightLineNavigation, WaypointNavigation
+from field_friend.automations.navigation import DriveSegment, StraightLineNavigation
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 
 
@@ -65,7 +65,7 @@ async def test_driving_to_exact_positions(system: System):
         assert system.robot_locator.pose.point.y == pytest.approx(
             stopper_implement.current_target_position.y, abs=0.001)
         await forward(0.1)  # give robot time to update position
-    system.current_navigation.linear_speed_limit = WaypointNavigation.LINEAR_SPEED_LIMIT
+    system.current_navigation.linear_speed_limit = system.current_navigation.LINEAR_SPEED_LIMIT
     await forward(until=lambda: system.automator.is_stopped)
     assert system.robot_locator.pose.x == pytest.approx(system.current_navigation.length, abs=0.001)
 
@@ -159,8 +159,8 @@ async def test_straight_path(system: System):
     pose1 = Pose(x=0.5, y=0.0, yaw=0.0)
     pose2 = Pose(x=1.0, y=0.0, yaw=0.0)
     system.current_navigation.generate_path = lambda: [  # type: ignore[assignment]
-        PathSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
-        PathSegment.from_poses(pose1, pose2),
+        DriveSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
+        DriveSegment.from_poses(pose1, pose2),
     ]
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -177,7 +177,7 @@ async def test_start_inbetween_waypoints(system: System, start_offset: float):
     # generate path which expands left and right from current pose
     start = system.robot_locator.pose.transform_pose(Pose(x=start_offset, y=0.0, yaw=0.0))
     end = start.transform_pose(Pose(x=1.0, y=0.0, yaw=0.0))
-    system.current_navigation.generate_path = lambda: [PathSegment.from_poses(start, end)]  # type: ignore[assignment]
+    system.current_navigation.generate_path = lambda: [DriveSegment.from_poses(start, end)]  # type: ignore[assignment]
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
@@ -192,7 +192,7 @@ async def test_start_on_end(system: System):
     # set start of path 1m before current pose
     start = system.robot_locator.pose.transform_pose(Pose(x=-1, y=0.0, yaw=0.0))
     end = system.robot_locator.pose
-    system.current_navigation.generate_path = lambda: [PathSegment.from_poses(start, end)]  # type: ignore[assignment]
+    system.current_navigation.generate_path = lambda: [DriveSegment.from_poses(start, end)]  # type: ignore[assignment]
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
@@ -211,10 +211,10 @@ async def test_skip_first_segment(system: System):
 
     def generate_path():
         path = [
-            PathSegment.from_poses(pose1, pose2, stop_at_end=False),
-            PathSegment.from_poses(pose2, pose3, stop_at_end=False),
-            PathSegment.from_poses(pose3, pose4, stop_at_end=False),
-            PathSegment.from_poses(pose4, pose1),
+            DriveSegment.from_poses(pose1, pose2, stop_at_end=False),
+            DriveSegment.from_poses(pose2, pose3, stop_at_end=False),
+            DriveSegment.from_poses(pose3, pose4, stop_at_end=False),
+            DriveSegment.from_poses(pose4, pose1),
         ]
         assert system.current_navigation is not None
         path = system.current_navigation._remove_segments_behind_robot(path)  # pylint: disable=protected-access

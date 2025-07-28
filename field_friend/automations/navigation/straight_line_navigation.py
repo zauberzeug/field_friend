@@ -6,7 +6,7 @@ from nicegui import ui
 from rosys.geometry import Pose
 
 from ...automations.implements.implement import Implement
-from .waypoint_navigation import PathSegment, WaypointNavigation, WorkingSegment
+from .waypoint_navigation import DriveSegment, WaypointNavigation
 
 if TYPE_CHECKING:
     from ...system import System
@@ -20,10 +20,10 @@ class StraightLineNavigation(WaypointNavigation):
         self.length = self.LENGTH
         self.name = 'Straight Line'
 
-    def generate_path(self) -> list[PathSegment | WorkingSegment]:
+    def generate_path(self) -> list[DriveSegment]:
         last_pose = self.system.robot_locator.pose
         target_pose = last_pose.transform_pose(Pose(x=self.length))
-        segment = WorkingSegment.from_poses(last_pose, target_pose)
+        segment = DriveSegment.from_poses(last_pose, target_pose, use_implement=True)
         return [segment]
 
     def settings_ui(self) -> None:

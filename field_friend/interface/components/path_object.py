@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from nicegui import ui
 from nicegui.elements.scene_objects import Curve
 
-from ...automations.navigation import PathSegment, WorkingSegment
+from ...automations.navigation import DriveSegment
 
 if TYPE_CHECKING:
     from ... import System
@@ -36,12 +36,12 @@ class PathObject(ui.scene.group):
         self.system.current_navigation.WAYPOINT_REACHED.register_ui(update_upcoming_path)
         self.system.current_navigation.PATH_GENERATED.register_ui(self.update)
 
-    def update(self, path: list[PathSegment | WorkingSegment]) -> None:
+    def update(self, path: list[DriveSegment]) -> None:
         self.clear_path()
         with self.scene or nullcontext():
             for segment in path:
                 color: str
-                if isinstance(segment, WorkingSegment):
+                if segment.use_implement:
                     color = '#ff0000'  # red
                 else:
                     color = '#87ceeb'  # light blue
