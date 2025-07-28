@@ -140,16 +140,16 @@ async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_th
 
 async def test_implement_usage(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.5, y=0.0, z=0.0)))
+                                                                   position=rosys.geometry.Point3d(x=0.4, y=0.0, z=0.0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=1.5, y=0.0, z=0.0)))
+                                                                   position=rosys.geometry.Point3d(x=0.75, y=0.0, z=0.0)))
 
     def generate_path():
         pose1 = Pose(x=0.5, y=0.0, yaw=0.0)
-        pose2 = Pose(x=0.5, y=0.0, yaw=0.0)
+        pose2 = Pose(x=1.0, y=0.0, yaw=0.0)
         return [
-            WorkingSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
-            PathSegment.from_poses(pose1, pose2),
+            PathSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
+            WorkingSegment.from_poses(pose1, pose2),
         ]
     system.current_navigation = system.waypoint_navigation
     system.current_implement = system.implements['Weed Screw']
