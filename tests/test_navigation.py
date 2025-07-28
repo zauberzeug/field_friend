@@ -14,6 +14,18 @@ from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 
 
 @pytest.mark.parametrize('distance', (0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
+async def test_stopping_at_different_distances(system: System, distance: float):
+    """Try to stop after different distances with a tolerance of 10% and a linear speed limit of 0.13m/s"""
+    assert isinstance(system.current_navigation, StraightLineNavigation)
+    system.current_navigation.length = distance
+    system.current_navigation.linear_speed_limit = 0.13
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.automator.is_stopped)
+    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.001)
+
+
+@pytest.mark.parametrize('distance', (0.005, 0.01, 0.05, 0.1, 0.5, 1.0))
 async def test_deceleration_different_distances(system_with_acceleration: System, distance: float):
     """Try to stop after different distances with a tolerance of 10% and a linear speed limit of 0.13m/s"""
     system = system_with_acceleration
