@@ -18,7 +18,6 @@ from .automations import (
     BatteryWatcher,
     FieldProvider,
     KpiProvider,
-    PathProvider,
     PlantLocator,
     PlantProvider,
     Puncher,
@@ -104,7 +103,6 @@ class System(rosys.persistence.Persistable):
 
         rosys.on_repeat(watch_robot, 1.0)
 
-        self.path_provider: PathProvider = PathProvider().persistent()
         self.field_provider: FieldProvider = FieldProvider().persistent()
         self.setup_shape()
         self.automator: rosys.automation.Automator = rosys.automation.Automator(
