@@ -104,7 +104,6 @@ class System(rosys.persistence.Persistable):
         rosys.on_repeat(watch_robot, 1.0)
 
         self.field_provider: FieldProvider = FieldProvider().persistent()
-        self.setup_shape()
         self.automator: rosys.automation.Automator = rosys.automation.Automator(
             self.steerer,
             on_interrupt=self.field_friend.stop,
@@ -208,20 +207,6 @@ class System(rosys.persistence.Persistable):
         self.driver.parameters.minimum_drive_distance = 0.005
         self.driver.parameters.throttle_at_end_min_speed = 0.05
 
-    def setup_shape(self) -> None:
-        width = 0.64
-        length = 0.78
-        offset = 0.36
-        height = 0.67
-        self.shape = rosys.geometry.Prism(
-            outline=[
-                (-offset, -width/2),
-                (length - offset, -width/2),
-                (length - offset, width/2),
-                (-offset, width/2)
-            ],
-            height=height)
-
     def setup_implements(self) -> None:
         persistence_key = 'field_friend.automations.implements.weeding'
         implements: list[Implement] = []
@@ -242,8 +227,6 @@ class System(rosys.persistence.Persistable):
                 implements.append(WeedingSprayer(self))
             case 'recorder':
                 implements.append(Recorder(self))
-            case 'sprayer':
-                implements.append(WeedingSprayer(self))
             case None:
                 implements.append(Implement())
             case _:
