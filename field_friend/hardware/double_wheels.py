@@ -52,6 +52,9 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             linear = -0.0
         if angular == 0.0:
             angular = -0.0  # TODO: Temp fix
+        if not self.robot_brain.is_ready:
+            self.log.warning('Robot brain not ready')
+            return
         await self.robot_brain.send(f'{self.config.name}.speed({linear}, {angular})')
 
     async def reset_motors(self) -> None:
@@ -128,16 +131,16 @@ class WheelsSimulationWithAcceleration(rosys.hardware.WheelsSimulation):
         else:
             if self.linear_velocity < self.linear_target_speed:
                 self.linear_velocity = min(self.linear_velocity + self.linear_acceleration * dt,
-                                        self.linear_target_speed)
+                                           self.linear_target_speed)
             elif self.linear_velocity > self.linear_target_speed:
                 self.linear_velocity = max(self.linear_velocity - self.linear_deceleration * dt,
-                                        self.linear_target_speed)
+                                           self.linear_target_speed)
             if self.angular_velocity < self.angular_target_speed:
                 self.angular_velocity = min(self.angular_velocity + self.angular_acceleration * dt,
-                                         self.angular_target_speed)
+                                            self.angular_target_speed)
             elif self.angular_velocity > self.angular_target_speed:
                 self.angular_velocity = max(self.angular_velocity - self.angular_deceleration * dt,
-                                         self.angular_target_speed)
+                                            self.angular_target_speed)
 
         self.linear_velocity *= 1 - self.friction_factor
         self.angular_velocity *= 1 - self.friction_factor
@@ -146,7 +149,8 @@ class WheelsSimulationWithAcceleration(rosys.hardware.WheelsSimulation):
         left_speed *= 1 - self.slip_factor_left
         right_speed *= 1 - self.slip_factor_right
         self.pose += rosys.geometry.PoseStep(linear=dt * (left_speed + right_speed) / 2,
-                            angular=dt * (right_speed - left_speed) / self.width,
-                            time=rosys.time())
-        velocity = rosys.geometry.Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=self.pose.time)
+                                             angular=dt * (right_speed - left_speed) / self.width,
+                                             time=rosys.time())
+        velocity = rosys.geometry.Velocity(linear=self.linear_velocity,
+                                           angular=self.angular_velocity, time=self.pose.time)
         self.VELOCITY_MEASURED.emit([velocity])
