@@ -3,8 +3,8 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import rosys
-from rosys.geometry import GeoPoint, GeoReference
-from rosys.hardware import GnssSimulation
+from rosys.geometry import GeoPoint, GeoReference, Pose
+from rosys.hardware import GnssSimulation, WheelsSimulation
 from rosys.testing import forward, helpers
 
 from field_friend.automations import Field, Row
@@ -241,3 +241,14 @@ def gnss_driving(system: System) -> Generator[System, None, None]:
 def detector(system: System) -> Generator[rosys.vision.DetectorSimulation, None, None]:
     assert isinstance(system.detector, rosys.vision.DetectorSimulation)
     yield system.detector
+
+
+def set_robot_pose(system: System, pose: Pose):
+    # pylint: disable=protected-access
+    assert isinstance(system.field_friend.wheels, WheelsSimulation)
+    system.robot_locator._x[0, 0] = pose.x
+    system.robot_locator._x[1, 0] = pose.y
+    system.robot_locator._x[2, 0] = pose.yaw
+    system.field_friend.wheels.pose.x = pose.x
+    system.field_friend.wheels.pose.y = pose.y
+    system.field_friend.wheels.pose.yaw = pose.yaw
