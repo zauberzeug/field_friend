@@ -1,7 +1,7 @@
 from .field_navigation import FieldNavigation, RowSegment
 from .implement_demo_navigation import ImplementDemoNavigation
 from .straight_line_navigation import StraightLineNavigation
-from .waypoint_navigation import DriveSegment, WaypointNavigation, WorkflowException
+from .waypoint_navigation import DriveSegment, WaypointNavigation, WorkflowException, is_reference_valid
 
 __all__ = [
     'DriveSegment',
@@ -11,4 +11,5 @@ __all__ = [
     'StraightLineNavigation',
     'WaypointNavigation',
     'WorkflowException',
+    'is_reference_valid',
 ]
