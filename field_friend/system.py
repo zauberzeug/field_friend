@@ -288,7 +288,7 @@ class System(rosys.persistence.Persistable):
             return None
         if self.is_real:
             gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
-            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.1
+            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.25
             return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
         if rosys.is_test:
