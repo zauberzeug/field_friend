@@ -1,4 +1,4 @@
-from rosys.geometry import Pose, Rotation
+from rosys.geometry import Rotation
 
 from field_friend.config.configuration import (
     AxisD1Configuration,
@@ -87,6 +87,6 @@ config = FieldFriendConfiguration(
         axis_offset=-0.01,
         reversed_direction=True,
     ),
-    gnss=GnssConfiguration(antenna_pose=Pose(x=0.072, y=-0.255, yaw=0.0)),
+    gnss=GnssConfiguration(x=0.072),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.570796, 0, 0)),
 )

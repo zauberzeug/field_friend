@@ -1,4 +1,4 @@
-from rosys.geometry import Pose, Rotation
+from rosys.geometry import Rotation
 
 from field_friend.config.configuration import (
     BumperConfiguration,
@@ -17,7 +17,8 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='uckerbot-u6',
-    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=['orin', 'v05'], enable_esp_on_startup=True, use_espresso=True),
+    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=[
+                                        'orin', 'v05'], enable_esp_on_startup=True, use_espresso=True),
     tool='weed_screw',
     measurements=MeasurementsConfiguration(tooth_count=17, pitch=0.041, work_x=0.085),
     camera=CameraConfiguration(
@@ -77,6 +78,6 @@ config = FieldFriendConfiguration(
         version='z_axis_canopen',
     ),
     circle_sight_positions=CircleSightPositions(),
-    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
+    gnss=GnssConfiguration(),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.6006605, 0.0242387, 0.0)),
 )

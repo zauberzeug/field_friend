@@ -1,4 +1,4 @@
-from rosys.geometry import Pose, Rotation
+from rosys.geometry import Rotation
 
 from field_friend.config.configuration import (
     BumperConfiguration,
@@ -18,7 +18,8 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='uckerbot-u4',
-    robot_brain=RobotBrainConfiguration(name='rb28', flash_params=['orin'], enable_esp_on_startup=True, use_espresso=True),
+    robot_brain=RobotBrainConfiguration(name='rb28', flash_params=[
+                                        'orin'], enable_esp_on_startup=True, use_espresso=True),
     tool='tornado',
     measurements=MeasurementsConfiguration(
         tooth_count=17,
@@ -89,6 +90,6 @@ config = FieldFriendConfiguration(
         turn_speed_limit=1.3,
         odrive_version=6,
     ),
-    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
+    gnss=GnssConfiguration(),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.570796, 0, 0)),
 )

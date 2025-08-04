@@ -271,8 +271,7 @@ class System(rosys.persistence.Persistable):
                                                                             pitch=np.deg2rad(0),
                                                                             yaw=np.deg2rad(90),
                                                                             color='#cccccc',
-                                                                            frame=self.robot_locator.pose_frame,
-                                                                            )
+                                                                            frame=self.robot_locator.pose_frame)
         assert isinstance(self.camera_provider, rosys.vision.SimulatedCameraProvider)
         self.camera_provider.add_camera(camera)
 
@@ -287,7 +286,7 @@ class System(rosys.persistence.Persistable):
         if self.config.gnss is None:
             return None
         if self.is_real:
-            gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
+            gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.pose)
             gnss_hardware.MAX_TIMESTAMP_DIFF = 0.25
             return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)

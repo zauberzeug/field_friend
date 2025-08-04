@@ -1,4 +1,3 @@
-from rosys.geometry import Pose
 
 from field_friend.config.configuration import (
     BumperConfiguration,
@@ -47,8 +46,7 @@ config = FieldFriendConfiguration(
         back_pin=23,
     ),
     bumper=BumperConfiguration(pin_front_top=21, pin_front_bottom=35, pin_back=18),
-
-    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
+    gnss=GnssConfiguration(),
     # TODO: add IMU, when the next stable version is released
     # ImuConfiguration(offset_rotation=Rotation.from_euler(0.0, 0, 0))
     imu=None,

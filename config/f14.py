@@ -31,6 +31,6 @@ config = FieldFriendConfiguration(
     y_axis=None,
     z_axis=None,
     circle_sight_positions=CircleSightPositions(),
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.5999433, 0.0127409, 0.0)),
     gnss=GnssConfiguration(),
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.5999433, 0.0127409, 0.0)),
 )

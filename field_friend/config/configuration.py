@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from rosys.geometry import Pose, Rectangle, Rotation
+from rosys.geometry import Point3d, Pose, Rectangle, Rotation
 
 
 @dataclass(kw_only=True)
@@ -253,12 +253,26 @@ class FlashlightConfiguration:
 class GnssConfiguration:
     """Configuration for the gnss of the FieldFriend robot.
 
-    The yaw should be 90°, but the offset is configured in the septentrio software.
+    The yaw is the direction to the auxiliary antenna. It should be 90°, but the offset is configured in the septentrio software.
 
     Defaults:
-        antenna_pose: Pose(x=0.041, y=-0.255, yaw=0.0)
+        x: 0.041
+        y: -0.255
+        z: 0.6225
+        yaw: 0.0
     """
-    antenna_pose: Pose = field(default_factory=lambda: Pose(x=0.041, y=-0.255, yaw=0.0))
+    x: float = 0.041
+    y: float = -0.255
+    z: float = 0.6225
+    yaw: float = 0.0
+
+    @property
+    def pose(self) -> Pose:
+        return Pose(x=self.x, y=self.y, yaw=self.yaw)
+
+    @property
+    def point3d(self) -> Point3d:
+        return Point3d(x=self.x, y=self.y, z=self.z)
 
 
 @dataclass(slots=True, kw_only=True)
