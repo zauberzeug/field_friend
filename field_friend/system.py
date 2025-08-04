@@ -46,7 +46,7 @@ class System(rosys.persistence.Persistable):
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED: Event[str] = Event()
-        self.config = get_config(self.robot_id)
+        self.GNSS_REFERENCE_CHANGED: Event[[]] = Event()
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
@@ -79,7 +79,7 @@ class System(rosys.persistence.Persistable):
             rosys.on_startup(self.setup_simulated_usb_camera)
             if self.camera_provider is not None:
                 self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
-
+        self.GNSS_REFERENCE_CHANGED.register(self.robot_locator.reset)
         self.capture = Capture(self)
         if self.config.camera is not None:
             assert self.camera_provider is not None
@@ -305,6 +305,7 @@ class System(rosys.persistence.Persistable):
                                      direction=self.gnss.last_measurement.heading)
         self.log.debug('Updating GNSS reference to %s', reference)
         GeoReference.update_current(reference)
+        self.GNSS_REFERENCE_CHANGED.emit()
         self.request_backup()
 
     def get_jetson_cpu_temperature(self):

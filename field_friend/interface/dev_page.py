@@ -72,6 +72,7 @@ class DevPage:
             if self.system.gnss is not None:
                 with ui.card():
                     self.system.gnss.developer_ui()
+                    ui.button('Update reference', on_click=self.system.update_gnss_reference)
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
                     self.system.field_friend.imu.developer_ui()
