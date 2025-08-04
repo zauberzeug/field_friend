@@ -42,6 +42,7 @@ class System(rosys.persistence.Persistable):
         super().__init__()
         self.robot_id = robot_id
         assert self.robot_id != 'unknown'
+        self.config = get_config(self.robot_id)
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
@@ -83,8 +84,10 @@ class System(rosys.persistence.Persistable):
         self.capture = Capture(self)
         if self.config.camera is not None:
             assert self.camera_provider is not None
-            self.camera_configurator = CameraConfigurator(
-                self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
+            self.camera_configurator = CameraConfigurator(self.camera_provider,
+                                                          robot_locator=self.robot_locator,
+                                                          robot_id=self.robot_id,
+                                                          camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
         self.plant_provider = PlantProvider().persistent()
@@ -124,7 +127,7 @@ class System(rosys.persistence.Persistable):
             assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
-            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, self.capture)
+            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, capture=self.capture)
             rosys.on_repeat(self.log_status, 60 * 5)
         rosys.on_repeat(self._garbage_collection, 60*5)
         rosys.config.garbage_collection_mbyte_limit = 0

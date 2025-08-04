@@ -130,10 +130,11 @@ class WaypointNavigation(rosys.persistence.Persistable):
         """Prepares the navigation for the start of the automation
 
         Returns true if all preparations were successful, otherwise false."""
-        self.plant_provider.clear()
+        if self.plant_provider is not None:
+            self.log.debug('Clearing plant provider')
+            self.plant_provider.clear()
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects = []
-        self.log.info('clearing plant provider')
         self._upcoming_path = self.generate_path()
         if not self._upcoming_path:
             self.log.error('Path generation failed')
@@ -153,7 +154,8 @@ class WaypointNavigation(rosys.persistence.Persistable):
         segment: DriveSegment | None
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects.clear()
-            self.system.plant_provider.clear()
+            if self.plant_provider is not None:
+                self.plant_provider.clear()
             for segment in self._upcoming_path:
                 if segment.use_implement:
                     self.create_segment_simulation(segment)

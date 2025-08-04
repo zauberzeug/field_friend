@@ -13,7 +13,8 @@ class AppControls(RosysAppControls):
                  robot_brain: RobotBrain,
                  automator: Automator,
                  field_friend: FieldFriend,
-                 capture: Capture,
+                 *,
+                 capture: Capture | None = None,
                  ) -> None:
         super().__init__(robot_brain, automator)
         self.field_friend = field_friend
@@ -25,9 +26,10 @@ class AppControls(RosysAppControls):
         self.last_bumpers_active: list[str] = []
         self.last_info: str = ''
         self.APP_CONNECTED.register(self.reset)
-        self.extra_buttons['front'] = \
-            AppButton('file_upload', released=self.capture.front)
-        self.extra_buttons['inner'] = AppButton('file_download', released=self.capture.inner)
+        if self.capture:
+            self.extra_buttons['front'] = \
+                AppButton('file_upload', released=self.capture.front)
+            self.extra_buttons['inner'] = AppButton('file_download', released=self.capture.inner)
         rosys.on_repeat(self.check_status, 2.0)
 
     async def check_status(self) -> None:

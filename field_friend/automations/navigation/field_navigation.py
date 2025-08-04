@@ -12,11 +12,10 @@ from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
 from ..field import Field, Row
-from ..implements import WeedingImplement
+from ..implements import Implement, WeedingImplement
 from .waypoint_navigation import DriveSegment, WaypointNavigation
 
 if TYPE_CHECKING:
-    from ...automations.implements.implement import Implement
     from ...system import System
 
 
