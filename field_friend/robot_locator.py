@@ -46,7 +46,7 @@ class RobotLocator(rosys.persistence.Persistable):
         self._wheels.VELOCITY_MEASURED.register(self._handle_velocity_measurement)
         if self._gnss is not None:
             self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
-        rosys.on_startup(self._reset)
+        rosys.on_startup(self.reset)
 
     def backup_to_dict(self) -> dict[str, Any]:
         return {
@@ -185,7 +185,7 @@ class RobotLocator(rosys.persistence.Persistable):
         self.pose_frame.y = self._x[1, 0]
         self.pose_frame.rotation = Rotation.from_euler(0, 0, self._x[2, 0])
 
-    async def _reset(self, *, gnss_timeout: float = 2.0) -> None:
+    async def reset(self, *, gnss_timeout: float = 2.0) -> None:
         reset_pose = Pose(x=0.0, y=0.0, yaw=0.0)
         r_xy = 0.0
         r_theta = 0.0
@@ -238,5 +238,5 @@ class RobotLocator(rosys.persistence.Persistable):
                     ui.number(label='ω odom weight', min=0, step=0.01, format='%.3f', value=self._odometry_angular_weight, on_change=self.request_backup) \
                         .bind_value_to(self, '_odometry_angular_weight')
 
-            ui.button('Reset', on_click=self._reset) \
+            ui.button('Reset', on_click=self.reset) \
                 .tooltip('Reset the position to the GNSS measurement or zero position if GNSS is not available or ignored.')

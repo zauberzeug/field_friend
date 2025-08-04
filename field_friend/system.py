@@ -42,11 +42,12 @@ class System(rosys.persistence.Persistable):
         super().__init__()
         self.robot_id = robot_id
         assert self.robot_id != 'unknown'
+        self.config = get_config(self.robot_id)
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED: Event[str] = Event()
-        self.config = get_config(self.robot_id)
+        self.GNSS_REFERENCE_CHANGED: Event[[]] = Event()
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
@@ -79,12 +80,14 @@ class System(rosys.persistence.Persistable):
             rosys.on_startup(self.setup_simulated_usb_camera)
             if self.camera_provider is not None:
                 self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
-
+        self.GNSS_REFERENCE_CHANGED.register(self.robot_locator.reset)
         self.capture = Capture(self)
         if self.config.camera is not None:
             assert self.camera_provider is not None
-            self.camera_configurator = CameraConfigurator(
-                self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
+            self.camera_configurator = CameraConfigurator(self.camera_provider,
+                                                          robot_locator=self.robot_locator,
+                                                          robot_id=self.robot_id,
+                                                          camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
         self.plant_provider = PlantProvider().persistent()
@@ -124,7 +127,7 @@ class System(rosys.persistence.Persistable):
             assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
-            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, self.capture)
+            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, capture=self.capture)
             rosys.on_repeat(self.log_status, 60 * 5)
         rosys.on_repeat(self._garbage_collection, 60*5)
         rosys.config.garbage_collection_mbyte_limit = 0
@@ -285,7 +288,7 @@ class System(rosys.persistence.Persistable):
             return None
         if self.is_real:
             gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
-            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.1
+            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.25
             return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
         if rosys.is_test:
@@ -305,6 +308,7 @@ class System(rosys.persistence.Persistable):
                                      direction=self.gnss.last_measurement.heading)
         self.log.debug('Updating GNSS reference to %s', reference)
         GeoReference.update_current(reference)
+        self.GNSS_REFERENCE_CHANGED.emit()
         self.request_backup()
 
     def get_jetson_cpu_temperature(self):
