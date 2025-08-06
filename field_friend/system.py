@@ -68,9 +68,9 @@ class System(rosys.persistence.Persistable):
             assert isinstance(self.field_friend, FieldFriendHardware)
             self.gnss = self.setup_gnss()
             self.robot_locator = RobotLocator(self.field_friend.wheels,
-                                              self.gnss,
-                                              self.field_friend.imu,
-                                              gnss_height=self.config.gnss.z if self.config.gnss is not None else 0.0).persistent()
+                                              gnss=self.gnss,
+                                              imu=self.field_friend.imu,
+                                              gnss_config=self.config.gnss).persistent()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.circle_sight_detector = rosys.vision.DetectorHardware(port=8005)
@@ -78,7 +78,10 @@ class System(rosys.persistence.Persistable):
             self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
             self.gnss = self.setup_gnss(self.field_friend.wheels)
-            self.robot_locator = RobotLocator(self.field_friend.wheels, self.gnss, self.field_friend.imu).persistent()
+            self.robot_locator = RobotLocator(self.field_friend.wheels,
+                                              gnss=self.gnss,
+                                              imu=self.field_friend.imu,
+                                              gnss_config=self.config.gnss).persistent()
             # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
             rosys.on_startup(self.setup_simulated_usb_camera)
             if self.camera_provider is not None:

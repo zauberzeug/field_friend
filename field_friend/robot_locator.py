@@ -8,6 +8,8 @@ from nicegui import ui
 from rosys.geometry import Pose, Pose3d, Rotation, Velocity
 from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuHardware, ImuMeasurement, Wheels, WheelsSimulation
 
+from .config.configuration import GnssConfiguration
+
 
 class RobotLocator(rosys.persistence.Persistable):
     R_ODOM_LINEAR = 0.1
@@ -15,7 +17,7 @@ class RobotLocator(rosys.persistence.Persistable):
     R_IMU_ANGULAR = 0.01
     ODOMETRY_ANGULAR_WEIGHT = 0.1
 
-    def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None, *, gnss_height: float = 0.0) -> None:
+    def __init__(self, wheels: Wheels, *, gnss: Gnss | None = None, imu: Imu | None = None, gnss_config: GnssConfiguration | None = None) -> None:
         """Robot Locator based on an extended Kalman filter."""
         super().__init__()
         self.log = logging.getLogger('field_friend.robot_locator')
@@ -23,7 +25,7 @@ class RobotLocator(rosys.persistence.Persistable):
         self._wheels = wheels
         self._gnss = gnss
         self._imu = imu
-        self._gnss_height = gnss_height
+        self._gnss_config = gnss_config
 
         self.pose_frame = Pose3d().as_frame('field_friend.robot_locator')
 
@@ -154,15 +156,15 @@ class RobotLocator(rosys.persistence.Persistable):
             # but the field friend needs the rtk accuracy to function properly
             return
         pose, r_xy, r_theta = self._get_local_pose_and_uncertainty(gnss_measurement)
-        self.log.warning(f'pose: {pose}')
         if self._correct_gnss_with_imu and self._imu is not None and self._imu.last_measurement is not None:
             assert isinstance(self._imu, ImuHardware)
-            offset_pose = Pose(x=self._gnss_height * -np.sin(self._imu.last_measurement.rotation.roll),
-                               y=self._gnss_height * np.sin(self._imu.last_measurement.rotation.pitch),
-                               yaw=0)
-            self.log.warning(f'offset_pose: {offset_pose}')
-            pose = pose.transform_pose(offset_pose)
-            self.log.warning(f'corrected pose: {pose}')
+            assert self._gnss_config is not None
+            roll = self._imu.last_measurement.rotation.roll
+            pitch = self._imu.last_measurement.rotation.pitch
+            antenna_roll_correction = Pose(x=0, y=self._gnss_config.y * (1 - np.cos(roll)), yaw=0)
+            height_correction = Pose(x=self._gnss_config.z * -np.sin(pitch),
+                                     y=self._gnss_config.z * np.sin(roll), yaw=0)
+            pose = pose.transform_pose(antenna_roll_correction).transform_pose(height_correction)
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self._x[0, 0]], [self._x[1, 0]], [self._x[2, 0]]]
         H = np.eye(3)
