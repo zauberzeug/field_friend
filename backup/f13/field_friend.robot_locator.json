@@ -1,0 +1,11 @@
+{
+    "q_odometry_v": 0.01,
+    "q_odometry_omega": 0.01,
+    "q_imu_yaw": 0.3,
+    "r_x": 0.01,
+    "r_y": 0.01,
+    "r_theta": 0.01,
+    "r_v": 0.01,
+    "r_omega": 1.0,
+    "r_a": 1.0
+}

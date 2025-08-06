@@ -1,14 +1,14 @@
-
 import logging
 from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import rosys
-from rosys.geometry import GeoPoint, GeoReference
-from rosys.hardware import GnssSimulation
+from rosys.geometry import GeoPoint, GeoReference, Pose
+from rosys.hardware import GnssSimulation, WheelsSimulation
 from rosys.testing import forward, helpers
 
 from field_friend.automations import Field, Row
+from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.system import System
 
@@ -27,7 +27,7 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
-    helpers.odometer = s.odometer
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -44,7 +44,25 @@ async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[Syst
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
-    helpers.odometer = s.odometer
+    helpers.odometer = s.robot_locator
+    helpers.driver = s.driver
+    helpers.automator = s.automator
+    await forward(3)
+    assert s.gnss.is_connected, 'device should be created'
+    assert s.gnss.last_measurement is not None
+    assert GeoReference.current is not None
+    assert s.gnss.last_measurement.point.distance(GeoReference.current.origin) == pytest.approx(0, abs=1e-8)
+    yield s
+
+
+@pytest.fixture
+async def system_with_acceleration(rosys_integration) -> AsyncGenerator[System, None]:
+    s = System('u4', use_acceleration=True)
+    assert isinstance(s.field_friend.wheels, WheelsSimulationWithAcceleration)
+    assert isinstance(s.detector, rosys.vision.DetectorSimulation)
+    s.detector.detection_delay = 0.1
+    GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -223,3 +241,14 @@ def gnss_driving(system: System) -> Generator[System, None, None]:
 def detector(system: System) -> Generator[rosys.vision.DetectorSimulation, None, None]:
     assert isinstance(system.detector, rosys.vision.DetectorSimulation)
     yield system.detector
+
+
+def set_robot_pose(system: System, pose: Pose):
+    # pylint: disable=protected-access
+    assert isinstance(system.field_friend.wheels, WheelsSimulation)
+    system.robot_locator._x[0, 0] = pose.x
+    system.robot_locator._x[1, 0] = pose.y
+    system.robot_locator._x[2, 0] = pose.yaw
+    system.field_friend.wheels.pose.x = pose.x
+    system.field_friend.wheels.pose.y = pose.y
+    system.field_friend.wheels.pose.yaw = pose.yaw

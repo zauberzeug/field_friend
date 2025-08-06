@@ -27,6 +27,9 @@ class CameraConfigurator:
         self.log.debug('updating camera config')
         camera = None
         start_time = rosys.time()
+        if self.camera_provider is None:
+            self.log.error('no camera provider configured')
+            return
         while not camera:
             if rosys.time() - start_time > 60:
                 raise RuntimeError('No active camera found after 60s')
@@ -43,9 +46,9 @@ class CameraConfigurator:
             else:
                 # only set parameters that have changed
                 for name, value in self.config.parameters.items():
-                    self.log.info(f'parameter {name} with value {value}')
+                    self.log.debug(f'parameter {name} with value {value}')
                     if camera.parameters[name] != value:
-                        self.log.info(f'{camera.parameters[name]} != {value}')
+                        self.log.debug(f'{camera.parameters[name]} != {value}')
                         await camera.set_parameters({name: value})
                         parameters_changed = True
             if camera.calibration is not None and not camera.calibration.extrinsics.frame_id:
@@ -60,7 +63,7 @@ class CameraConfigurator:
             if camera.rotation_angle != self.config.rotation:
                 camera.rotation_angle += self.config.rotation
                 parameters_changed = True
-                self.log.info(f'camera rotation: {camera.rotation}; {camera.rotation_angle}')
+                self.log.debug(f'camera rotation: {camera.rotation}; {camera.rotation_angle}')
             else:
                 camera.rotation_angle = 0
 

@@ -8,23 +8,26 @@ import rosys
 from ..config import (
     AxisD1Configuration,
     FieldFriendConfiguration,
+    SprayerConfiguration,
     TornadoConfiguration,
     ZCanOpenConfiguration,
     ZStepperConfiguration,
 )
 from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
+from .double_wheels import WheelsSimulationWithAcceleration
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
 from .flashlight_v2 import FlashlightSimulationV2
 from .safety import SafetySimulation
+from .sprayer import SprayerSimulation
 from .tornado import TornadoSimulation
 
 
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
-    def __init__(self, config: FieldFriendConfiguration) -> None:
+    def __init__(self, config: FieldFriendConfiguration, *, use_acceleration: bool = False) -> None:
         self.MOTOR_GEAR_RATIO = config.measurements.motor_gear_ratio
         self.TOOTH_COUNT = config.measurements.tooth_count
         self.PITCH = config.measurements.pitch
@@ -32,7 +35,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE = config.measurements.wheel_distance
         tool = config.tool
-        if tool in ['tornado', 'weed_screw', None]:
+        if tool in ['tornado', 'weed_screw', 'sprayer', None]:
             self.WORK_X = config.measurements.work_x
             if config.measurements.work_y:
                 self.WORK_Y = config.measurements.work_y
@@ -46,7 +49,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             self.CHOP_RADIUS = config.measurements.chop_radius
         else:
             logging.warning('Unknown FieldFriend tool: %s', tool)
-        wheels = rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
+        wheels = WheelsSimulationWithAcceleration(self.WHEEL_DISTANCE) if use_acceleration else rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
 
         y_axis: AxisSimulation | ChainAxisSimulation | None
         if not config.y_axis:
@@ -62,7 +65,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown Y-Axis version: {config.y_axis.version}')
 
-        z_axis: AxisSimulation | TornadoSimulation | None
+        z_axis: AxisSimulation | TornadoSimulation | SprayerSimulation | None
         if not config.z_axis:
             z_axis = None
         elif isinstance(config.z_axis, ZStepperConfiguration | ZCanOpenConfiguration | AxisD1Configuration):
@@ -73,6 +76,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             )
         elif isinstance(config.z_axis, TornadoConfiguration):
             z_axis = TornadoSimulation(config=config.z_axis)
+        elif isinstance(config.z_axis, SprayerConfiguration):
+            z_axis = SprayerSimulation()
         else:
             raise NotImplementedError(f'Unknown Z-Axis version: {config.z_axis.version}')
 

@@ -42,10 +42,12 @@ class Axis(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def move_to(self, position: float, speed: int | None = None) -> None:
+        if self.alarm:
+            raise RuntimeError('axis is in alarm state')
         if speed is None:
             speed = self.max_speed
         if not self.is_referenced:
-            raise RuntimeError('zaxis is not referenced, reference first')
+            raise RuntimeError('axis is not referenced, reference first')
         if speed > self.max_speed:
             raise RuntimeError(f'axis speed is too high, max speed is {self.max_speed}')
         if not self.min_position <= position <= self.max_position:
@@ -54,7 +56,16 @@ class Axis(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def try_reference(self) -> bool:
+        self.log.warning('try_reference')
         return True
+
+    @abc.abstractmethod
+    async def reset_fault(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def recover(self) -> None:
+        pass
 
     def compute_steps(self, position: float) -> int:
         return int((position + self.axis_offset) * self.steps_per_m) * (-1 if self.reversed_direction else 1)
@@ -104,11 +115,7 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if speed is None:
             speed = self.max_speed
-        try:
-            await super().move_to(position, speed)
-        except RuntimeError as e:
-            self.log.error(f'could not move axis to {position} because of {e}')
-            return
+        await super().move_to(position, speed)
         self.target_steps = self.compute_steps(position)
         self.speed = speed if self.target_steps > self.steps else speed * -1
         while self.target_steps is not None:
@@ -123,6 +130,14 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
 
     async def reset_fault(self) -> None:
         self.alarm = False
+
+    def set_alarm(self) -> None:
+        self.alarm = True
+
+    async def recover(self) -> None:
+        self.log.debug('recovering axis')
+        await rosys.run.retry(self.reset_fault, max_timeout=2.0)
+        await self.try_reference()
 
     async def step(self, dt: float) -> None:
         await super().step(dt)

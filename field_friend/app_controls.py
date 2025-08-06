@@ -1,8 +1,9 @@
 import rosys
-from rosys.automation import Automator
+from rosys.automation import AppButton, Automator
 from rosys.automation.app_controls_ import AppControls as RosysAppControls
 from rosys.hardware import RobotBrain
 
+from .capture import Capture
 from .hardware.field_friend import FieldFriend
 
 
@@ -12,9 +13,12 @@ class AppControls(RosysAppControls):
                  robot_brain: RobotBrain,
                  automator: Automator,
                  field_friend: FieldFriend,
+                 *,
+                 capture: Capture | None = None,
                  ) -> None:
         super().__init__(robot_brain, automator)
         self.field_friend = field_friend
+        self.capture = capture
         self.last_battery_percentage: float | None = self.field_friend.bms.state.percentage
         self.last_charging: bool | None = self.field_friend.bms.state.is_charging
         self.last_estops_pressed: list[int] = []
@@ -22,6 +26,10 @@ class AppControls(RosysAppControls):
         self.last_bumpers_active: list[str] = []
         self.last_info: str = ''
         self.APP_CONNECTED.register(self.reset)
+        if self.capture:
+            self.extra_buttons['front'] = \
+                AppButton('file_upload', released=self.capture.front)
+            self.extra_buttons['inner'] = AppButton('file_download', released=self.capture.inner)
         rosys.on_repeat(self.check_status, 2.0)
 
     async def check_status(self) -> None:

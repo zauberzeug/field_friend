@@ -1,12 +1,14 @@
-import abc
+from typing import Any
 
+import rosys
 from rosys.analysis import track
+from rosys.geometry import Point
 
 
-# TODO: should some of these methods be abstract?
-class Implement(abc.ABC):  # noqa: B024
+class Implement(rosys.persistence.Persistable):
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str = 'None') -> None:
+        super().__init__()
         self.name = name
         self.is_active = False
 
@@ -32,9 +34,9 @@ class Implement(abc.ABC):  # noqa: B024
         self.is_active = False
 
     @track
-    async def get_stretch(self, max_distance: float) -> float:  # pylint: disable=unused-argument
-        """Return the stretch which the implement thinks is safe to drive forward."""
-        return 0.02
+    async def get_target(self) -> Point | None:
+        """Return the target position to drive to."""
+        return None
 
     @track
     async def start_workflow(self) -> None:
@@ -42,13 +44,17 @@ class Implement(abc.ABC):  # noqa: B024
 
         Returns True if the robot can drive forward, if the implement whishes to stay at the current location, return False
         """
-        # TODO: docstring says returns True, but type hints say None
-        return None
 
     @track
     async def stop_workflow(self) -> None:
         """Called after workflow has been performed to stop the workflow"""
         return None
+
+    def backup_to_dict(self) -> dict[str, Any]:
+        return {}
+
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        pass
 
     def settings_ui(self) -> None:
         """Create UI for settings and configuration."""

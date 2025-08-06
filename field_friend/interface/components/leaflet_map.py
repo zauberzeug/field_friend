@@ -34,7 +34,7 @@ class LeafletMap:
             'edit': False,
         }
         center_point = GeoPoint.from_degrees(51.983159, 7.434212)
-        if self.system.gnss.last_measurement is not None:
+        if self.system.gnss is not None and self.system.gnss.last_measurement is not None:
             center_point = self.system.gnss.last_measurement.point
         self.m: ui.leaflet
         if draw_tools:
@@ -53,7 +53,8 @@ class LeafletMap:
         self.field_provider.FIELDS_CHANGED.register_ui(self.update_layers)
         self.field_provider.FIELD_SELECTED.register_ui(self.update_layers)
 
-        self.gnss.NEW_MEASUREMENT.register_ui(self.update_robot_position)
+        if self.gnss is not None:
+            self.gnss.NEW_MEASUREMENT.register_ui(self.update_robot_position)
 
     def buttons(self) -> None:
         """Builds additional buttons to interact with the map."""
@@ -102,8 +103,8 @@ class LeafletMap:
         self.robot_marker.move(*measurement.point.degree_tuple)
 
     def zoom_to_robot(self) -> None:
-        if self.gnss.last_measurement is None:
-            self.log.warning('No GNSS position available, could not zoom to robot')
+        if self.gnss is None or self.gnss.last_measurement is None:
+            self.log.debug('No GNSS position available, could not zoom to robot')
             return
         self.m.set_center(self.gnss.last_measurement.point.degree_tuple)
         if self.current_basemap is not None:

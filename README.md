@@ -10,7 +10,7 @@ Please see the [documentation](https://docs.feldfreund.de) for details on instal
 
 ## Setup
 
-To use the Field Friend software, you'll need to have Python 3.11 and pip installed.
+To use the Field Friend software, you'll need to have Python 3.12 and pip installed.
 If this is not your current Python version, check out [pyenv](https://github.com/pyenv/pyenv).
 
 If you want to separate the Field Friend environment from other projects, you can use a virtual environment.

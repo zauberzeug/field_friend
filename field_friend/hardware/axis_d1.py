@@ -83,13 +83,13 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
 
     async def enable_motor(self):
         if self.fault:
-            await self.reset_error()
+            await self.reset_fault()
         self.log.debug(f'AxisD1 {self.config.name} motor.setup()')
         await self.robot_brain.send(f'{self.config.name}_motor.setup()')
         await rosys.sleep(2.0)
         self.log.debug(f'AxisD1 {self.config.name} motor.setup() done')
 
-    async def reset_error(self):
+    async def reset_fault(self):
         if self.fault:
             self.log.debug(f'AxisD1 {self.config.name} motor.reset()')
             await self.robot_brain.send(f'{self.config.name}_motor.reset()')
@@ -111,6 +111,10 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             while not self.is_referenced:
                 await rosys.sleep(0.1)
         return self.is_referenced
+
+    async def recover(self):
+        await self.reset_fault()
+        await self.try_reference()
 
     async def speed_mode(self, speed: int):
         if not self._valid_status():

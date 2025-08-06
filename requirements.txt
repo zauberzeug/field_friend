@@ -5,6 +5,6 @@ icecream
 pillow
 prompt-toolkit # for lizard monitor
 pynmea2
-rosys == v0.23.0
+rosys == 0.28.0
 shapely
 uvicorn == 0.28.1

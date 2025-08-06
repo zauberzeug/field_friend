@@ -22,9 +22,10 @@ class Monitoring:
         # TODO: in simulation there is no mjpeg camera provider
         self.mjpg_camera_provider = getattr(system, 'mjpeg_camera_provider', None)
         self.detector = getattr(system, 'detector', None)
-        self.monitoring_detector = getattr(system, 'monitoring_detector', None)
+        self.monitoring_detector = getattr(system, 'circle_sight_detector', None)
         self.monitoring_active = False
         self.plant_locator = getattr(system, 'plant_locator', None)
+        self.capture = system.capture
         self.field_friend = system.field_friend
         self.automator = system.automator
         self.system = system
@@ -32,8 +33,11 @@ class Monitoring:
         self.animal_count = 0
         self.shrink_factor = shrink_factor
         self.sights: dict[str, ui.interactive_image] = {}
-        assert system.config.circle_sight_positions is not None
-        self.camera_positions = system.config.circle_sight_positions
+        if system.config.circle_sight_positions is None:
+            self.log.warning('No circle sight positions configured, camera views will not be available')
+            self.camera_positions = None
+        else:
+            self.camera_positions = system.config.circle_sight_positions
         KeyControls(system)
         ui.keyboard(self.handle_key)
         with ui.row().classes('w-full items-stretch gap-0'):
@@ -65,6 +69,9 @@ class Monitoring:
                         ui.switch('Plant detection') \
                             .bind_value(self.plant_locator, 'is_paused', forward=lambda x: not x, backward=lambda x: not x) \
                             .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                        ui.button('Capture Outer', on_click=self.capture.circle_sight)
+                        ui.button('Capture Front', on_click=lambda: self.capture.circle_sight(direction='front'))
+                        ui.button('Capture Inner', on_click=self.capture.inner)
 
         with ui.row().classes('w-full items-stretch gap-0'):
             column_classes = 'w-1/3 items-center mt-[50px]'
@@ -107,6 +114,9 @@ class Monitoring:
                 continue
             if camera.id in self.sights:
                 self.sights[camera.id].set_source(camera.get_latest_image_url())
+                continue
+            if self.camera_positions is None:
+                self.log.warning(f'Camera {camera.id} detected but no camera positions configured')
                 continue
             if self.camera_positions.front in camera.id:
                 self.front_view.clear()

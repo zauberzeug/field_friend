@@ -13,11 +13,11 @@ from shapely.geometry import Polygon as ShapelyPolygon
 if TYPE_CHECKING:
     from ..system import System
 
-DEFAULT_RESUME_DELAY = 1.0
-RESET_POSE_DISTANCE = 1.0
-
 
 class AutomationWatcher:
+    DEFAULT_RESUME_DELAY = 1.0
+    RESET_POSE_DISTANCE = 1.0
+    ALLOWED_RESUME_DEVIATION = 0.2
 
     def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.automation_watcher')
@@ -32,7 +32,7 @@ class AutomationWatcher:
         self.try_resume_active: bool = False
         self.incidence_time: float = 0.0
         self.incidence_pose: Pose = Pose()
-        self.resume_delay: float = DEFAULT_RESUME_DELAY
+        self.resume_delay: float = self.DEFAULT_RESUME_DELAY
         self.field_polygon: ShapelyPolygon | None = None
         self.kpi_provider = system.kpi_provider
 
@@ -49,6 +49,28 @@ class AutomationWatcher:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
         self.steerer.STEERING_STARTED.register(lambda: self.pause('steering started'))
         # self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
+        self.automator.AUTOMATION_PAUSED.register(self._handle_pause)
+        self.automator.AUTOMATION_RESUMED.register(self._handle_resume)
+        self.automator.AUTOMATION_STOPPED.register(self._handle_stop)
+
+    def _handle_pause(self, reason: str) -> None:
+        rosys.notify('Automation paused')
+        self.log.debug('automation paused because %s', reason)
+        self.incidence_time = rosys.time()
+        self.incidence_pose = deepcopy(self.robot_locator.pose)
+
+    def _handle_resume(self) -> None:
+        if self.robot_locator.pose.distance(self.incidence_pose) > self.ALLOWED_RESUME_DEVIATION:
+            rosys.notify('Robot must not be moved while paused', 'negative')
+            self.automator.stop(because='Robot was moved while paused')
+            self.try_resume_active = False
+            return
+        rosys.notify('Automation resumed')
+        self.log.debug('automation resumed')
+
+    def _handle_stop(self, reason: str) -> None:
+        rosys.notify('Automation stopped')
+        self.log.debug('automation stopped because %s', reason)
 
     def pause(self, reason: str) -> None:
         # TODO re-think integration of path recorder
@@ -81,10 +103,11 @@ class AutomationWatcher:
         self.incidence_pose = deepcopy(self.robot_locator.pose)
 
     def is_gnss_ready(self) -> bool:
+        assert self.gnss is not None
         return self.gnss.is_connected \
             and self.gnss.last_measurement is not None \
             and rosys.time() - self.gnss.last_measurement.time < 2.0 \
-            and self.gnss.last_measurement.gps_quality in (GpsQuality.RTK_FIXED, GpsQuality.RTK_FLOAT)
+            and self.gnss.last_measurement.gps_quality == GpsQuality.RTK_FIXED
 
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
@@ -107,10 +130,10 @@ class AutomationWatcher:
             self.automator.resume()
             self.try_resume_active = False
 
-        if self.robot_locator.pose.distance(self.incidence_pose) > RESET_POSE_DISTANCE:
-            if self.resume_delay != DEFAULT_RESUME_DELAY:
+        if self.robot_locator.pose.distance(self.incidence_pose) > self.RESET_POSE_DISTANCE:
+            if self.resume_delay != self.DEFAULT_RESUME_DELAY:
                 self.log.debug('resetting resume_delay')
-                self.resume_delay = DEFAULT_RESUME_DELAY
+                self.resume_delay = self.DEFAULT_RESUME_DELAY
 
     def start_field_watch(self, field_boundaries: list[GeoPoint]) -> None:
         self.field_polygon = ShapelyPolygon([point.to_local().tuple for point in field_boundaries])

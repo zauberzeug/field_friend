@@ -1,374 +1,168 @@
-from enum import Enum, auto
-from random import randint
-from typing import TYPE_CHECKING, Any
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Self
 
 import numpy as np
 import rosys
-from nicegui import ui
+from rosys import helpers
 from rosys.analysis import track
-from rosys.geometry import Point
+from rosys.geometry import Pose
+from shapely.geometry import Point as ShapelyPoint
+from shapely.geometry import Polygon as ShapelyPolygon
 
 from ..field import Field, Row
-from ..implements.implement import Implement
-from ..implements.weeding_implement import WeedingImplement
-from .navigation import WorkflowException, is_reference_valid
-from .straight_line_navigation import StraightLineNavigation
+from ..implements import Implement, WeedingImplement
+from .waypoint_navigation import DriveSegment, WaypointNavigation
 
 if TYPE_CHECKING:
     from ...system import System
 
 
-class State(Enum):
-    APPROACH_START_ROW = auto()
-    CHANGE_ROW = auto()
-    FOLLOW_ROW = auto()
-    WAITING_FOR_CONFIRMATION = auto()
-    ROW_COMPLETED = auto()
-    FIELD_COMPLETED = auto()
-    ERROR = auto()
+class FieldNavigation(WaypointNavigation):
+    MAX_START_DISTANCE = 2.0
+    MAX_DISTANCE_DEVIATION = 0.1
+    MAX_ANGLE_DEVIATION = np.deg2rad(15.0)
 
-
-class FieldNavigation(StraightLineNavigation):
-    MAX_DISTANCE_DEVIATION = 0.05
-    MAX_ANGLE_DEVIATION = np.deg2rad(10.0)
-
-    def __init__(self, system: 'System', implement: Implement) -> None:
+    def __init__(self, system: System, implement: Implement) -> None:
         super().__init__(system, implement)
         self.name = 'Field Navigation'
         self.gnss = system.gnss
-        self.bms = system.field_friend.bms
         self.automator = system.automator
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
+        self.WAYPOINT_REACHED.register(self._handle_waypoint_reached)
 
-        self._state = State.APPROACH_START_ROW
-        self.row_index = 0
-        self.start_point: Point | None = None
-        self.end_point: Point | None = None
-        self.force_first_row_start: bool = False
-        self.is_in_swarm: bool = False
-        self.allowed_to_turn: bool = False
-        self.wait_distance: float = 1.3
-
-        self.field: Field | None = None
-        self.field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
-        self.field_provider.FIELD_SELECTED.register(self._set_field_id)
-        self._loop: bool = False
-        self.rows_to_work_on: list[Row] = []
+    @property
+    def field(self) -> Field | None:
+        return self.field_provider.selected_field
 
     @property
     def current_row(self) -> Row | None:
-        assert self.field
-        if len(self.rows_to_work_on) == 0:
-            self.log.warning('No rows to work on')
-            return None
-        return self.rows_to_work_on[self.row_index]
+        return self.current_segment.row if isinstance(self.current_segment, RowSegment) else None
+
+    def _handle_waypoint_reached(self) -> None:
+        segment = self.current_segment
+        if segment is None:
+            return
+        if isinstance(segment, RowSegment) and isinstance(self.implement, WeedingImplement):
+            self.log.debug(f'Setting crop to {segment.row.crop}')
+            self.implement.cultivated_crop = segment.row.crop
 
     @track
-    async def start(self) -> None:
-        if not is_reference_valid(self.gnss):
-            raise WorkflowException('reference to far away from robot')
-        await super().start()
-
     async def prepare(self) -> bool:
         await super().prepare()
-        self.field = self.field_provider.get_field(self.field_id)
-        if self.field is None:
+        if not self._is_allowed_to_start():
+            return False
+        return True
+
+    def generate_path(self) -> list[DriveSegment | RowSegment]:
+        field_id: str | None = self.field_provider.selected_field.id if self.field_provider.selected_field else None
+        field = self.field_provider.get_field(field_id)
+        if field is None:
             rosys.notify('No field selected', 'negative')
+            return []
+        rows_to_work_on = self.field_provider.get_rows_to_work_on()
+        if not rows_to_work_on:
+            rosys.notify('No rows to work on', 'negative')
+            return []
+        path_segments: list[DriveSegment | RowSegment] = []
+        current_pose = self.system.robot_locator.pose
+        start_row_index = self._find_closest_row(rows_to_work_on)
+        row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
+        for i, row in enumerate(rows_to_work_on):
+            if i < start_row_index:
+                continue
+            row_segment = RowSegment.from_row(row, reverse=row_reversed)
+            if path_segments:
+                path_segments.extend(self._generate_three_point_turn(current_pose, row_segment.start))
+            path_segments.append(row_segment)
+            current_pose = row_segment.end
+            row_reversed = not row_reversed
+
+        current_pose = self.system.robot_locator.pose
+        t = path_segments[0].spline.closest_point(current_pose.x, current_pose.y, t_min=-0.1, t_max=1.1)
+        if t < 0:
+            path_segments.insert(0, DriveSegment.from_poses(self.system.robot_locator.pose, path_segments[0].start))
+        return path_segments
+
+    def _find_closest_row(self, rows: list) -> int:
+        """Find the index of the closest row to the current position"""
+        robot_pose = self.system.robot_locator.pose
+        shortest_row_distances = [min(robot_pose.distance(row.points[0].to_local()),
+                                      robot_pose.distance(row.points[-1].to_local())) for row in rows]
+        return int(np.argmin(shortest_row_distances))
+
+    def _is_row_reversed(self, row: Row) -> bool:
+        current_pose = self.system.robot_locator.pose
+        row_start = row.points[0].to_local()
+        row_end = row.points[-1].to_local()
+        relative_start = current_pose.relative_point(row_start)
+        relative_end = current_pose.relative_point(row_end)
+        robot_on_headland = relative_start.x * relative_end.x > 0.0
+        if robot_on_headland:
+            distance_to_start = current_pose.distance(row_start)
+            distance_to_end = current_pose.distance(row_end)
+            return distance_to_start > distance_to_end
+        return relative_start.x > 0
+
+    def _is_allowed_to_start(self) -> bool:
+        first_row_segment = next((segment for segment in self._upcoming_path if isinstance(segment, RowSegment)), None)
+        if first_row_segment is None:
             return False
-        self.rows_to_work_on = self.field_provider.get_rows_to_work_on()
-        if not self.rows_to_work_on or len(self.rows_to_work_on) == 0:
-            rosys.notify('No rows available', 'negative')
+        current_pose = self.system.robot_locator.pose
+        assert self.field_provider.selected_field is not None
+        field_polygon = ShapelyPolygon([point.to_local().tuple for point in self.field_provider.selected_field.outline])
+        if not field_polygon.contains(ShapelyPoint(current_pose.x, current_pose.y)):
+            rosys.notify('Robot is outside of field boundaries', 'negative')
             return False
-        if not self.gnss.is_connected:
-            rosys.notify('GNSS is not available', 'negative')
-            return False
-        for idx, row in enumerate(self.rows_to_work_on):
-            if not len(row.points) >= 2:
-                rosys.notify(f'Row {idx} on field {self.field.name} has not enough points', 'negative')
+        relative_start = current_pose.relative_point(first_row_segment.start.point)
+        relative_end = current_pose.relative_point(first_row_segment.end.point)
+        robot_on_headland = relative_start.x * relative_end.x > 0.0
+        if robot_on_headland:
+            if abs(current_pose.relative_direction(first_row_segment.start)) > self.MAX_ANGLE_DEVIATION:
+                rosys.notify('Robot is not aligned with the row', 'negative')
                 return False
-        nearest_row = self.get_nearest_row()
-        if nearest_row is None:
-            return False
-        self._state = State.APPROACH_START_ROW
-        self.plant_provider.clear()
-        self.automation_watcher.start_field_watch(self.field.outline)
-        self.log.info(f'Activating {self.implement.name}...')
-        await self.implement.activate()
+            if abs(relative_start.x) > self.MAX_START_DISTANCE:
+                rosys.notify('Robot is too far from the row', 'negative')
+                return False
+        else:
+            t = first_row_segment.spline.closest_point(current_pose.x, current_pose.y)
+            spline_pose = first_row_segment.spline.pose(t)
+            if current_pose.distance(spline_pose) > self.MAX_DISTANCE_DEVIATION:
+                rosys.notify('Distance to row is too large', 'negative')
+                return False
+            if abs(helpers.angle(current_pose.yaw, spline_pose.yaw)) > self.MAX_ANGLE_DEVIATION:
+                rosys.notify('Robot is not aligned with the row', 'negative')
+                return False
         return True
 
-    def _should_finish(self) -> bool:
-        return self._state in (State.FIELD_COMPLETED, State.ERROR)
+    def _generate_three_point_turn(self, end_pose_current_row: Pose, start_pose_next_row: Pose, radius: float = 1.5) -> list[DriveSegment]:
+        direction_to_start = end_pose_current_row.relative_direction(start_pose_next_row)
+        distance_to_start = end_pose_current_row.distance(start_pose_next_row)
+        y_offset = max(radius, distance_to_start)
+        first_turn_pose = end_pose_current_row.transform_pose(
+            Pose(x=radius, y=y_offset * np.sign(direction_to_start), yaw=direction_to_start))
+        back_up_pose = start_pose_next_row.transform_pose(
+            Pose(x=-radius, y=radius * np.sign(direction_to_start), yaw=-direction_to_start))
+        return [
+            DriveSegment.from_poses(end_pose_current_row, first_turn_pose),
+            DriveSegment.from_poses(first_turn_pose, back_up_pose, backward=True),
+            DriveSegment.from_poses(back_up_pose, start_pose_next_row),
+        ]
 
-    async def finish(self) -> None:
-        await super().finish()
-        self.automation_watcher.stop_field_watch()
-        await self.implement.deactivate()
 
-    def get_nearest_row(self) -> Row | None:
-        assert self.field is not None
-        assert self.gnss.is_connected
-        if self.force_first_row_start:
-            self.row_index = 0
-        else:
-            row = min(self.rows_to_work_on, key=lambda r: r.line_segment().line.foot_point(
-                self.robot_locator.pose.point).distance(self.robot_locator.pose.point))
-            self.log.debug(f'Nearest row is {row.name}')
-            if row not in self.rows_to_work_on:
-                rosys.notify('Please place the robot in front of a selected bed\'s row', 'negative')
-                return None
-            self.row_index = self.rows_to_work_on.index(row)
-        return self.rows_to_work_on[self.row_index]
+@dataclass(slots=True, kw_only=True)
+class RowSegment(DriveSegment):
+    row: Row
 
-    def set_start_and_end_points(self):
-        assert self.field is not None
-        self.start_point = None
-        self.end_point = None
-        if self.current_row is None:
-            self.log.warning('No current row')
-            return
-        start_point = self.current_row.points[0].to_local()
-        end_point = self.current_row.points[-1].to_local()
-        swap_points: bool
-        if self._is_in_working_area(start_point, end_point):
-            abs_angle_to_start = abs(self.robot_locator.pose.relative_direction(start_point))
-            abs_angle_to_end = abs(self.robot_locator.pose.relative_direction(end_point))
-            swap_points = abs_angle_to_start < abs_angle_to_end
-        else:
-            distance_to_start = self.robot_locator.pose.distance(start_point)
-            distance_to_end = self.robot_locator.pose.distance(end_point)
-            swap_points = distance_to_start > distance_to_end
-        if swap_points:
-            self.log.debug('Swapping start and end points')
+    @classmethod
+    def from_row(cls, row: Row, *, reverse: bool = False) -> Self:
+        start_point = row.points[0].to_local()
+        end_point = row.points[-1].to_local()
+        if reverse:
             start_point, end_point = end_point, start_point
-        self.start_point = start_point
-        self.end_point = end_point
-        self.log.debug('Start point: %s End point: %s', self.start_point, self.end_point)
-        self.update_target()
-
-    def update_target(self) -> None:
-        self.origin = self.robot_locator.pose.point
-        if self.end_point is None:
-            return
-        self.target = self.end_point
-
-    @track
-    async def _drive(self, distance: float) -> None:
-        assert self.field is not None
-        if self._state == State.APPROACH_START_ROW:
-            self._state = await self._run_approach_start_row()
-        elif self._state == State.CHANGE_ROW:
-            self._state = await self._run_change_row()
-        elif self._state == State.FOLLOW_ROW:
-            self._state = await self._run_follow_row(distance)
-        elif self._state == State.ROW_COMPLETED:
-            self._state = await self._run_row_completed()
-        elif self._state == State.WAITING_FOR_CONFIRMATION:
-            self._state = await self._run_waiting_for_confirmation()
-
-    @track
-    async def _run_approach_start_row(self) -> State:
-        self.allowed_to_turn = False
-        self.set_start_and_end_points()
-        if self.start_point is None or self.end_point is None:
-            return State.ERROR
-        robot_in_working_area = self._is_in_working_area(self.start_point, self.end_point, position_error_margin=0.0)
-        if not self._is_start_allowed(self.start_point, self.end_point, robot_in_working_area):
-            return State.ERROR
-        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
-            self.create_simulation()
-        else:
-            self.plant_provider.clear()
-
-        if not robot_in_working_area:
-            assert self.start_point is not None
-            target_yaw = self.robot_locator.pose.direction(self.start_point)
-            await self.turn_to_yaw(target_yaw)
-            await self.driver.drive_to(self.start_point, backward=False)
-            assert self.end_point is not None
-        driving_yaw = self.robot_locator.pose.direction(self.end_point)
-        await self.turn_to_yaw(driving_yaw)
-        self._set_cultivated_crop()
-        return State.FOLLOW_ROW
-
-    @track
-    async def _run_change_row(self) -> State:
-        self.set_start_and_end_points()
-        assert self.start_point is not None
-        target_yaw = self.robot_locator.pose.direction(self.start_point)
-        await self.turn_to_yaw(target_yaw)
-        await self.driver.drive_to(self.start_point, backward=False)
-        assert self.end_point is not None
-        row_yaw = self.start_point.direction(self.end_point)
-        await self.turn_to_yaw(row_yaw)
-        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
-            self.create_simulation()
-        else:
-            self.plant_provider.clear()
-        self._set_cultivated_crop()
-        self.allowed_to_turn = False
-        return State.FOLLOW_ROW
-
-    @track
-    async def turn_to_yaw(self, target_yaw: float, angle_threshold: float | None = None) -> None:
-        # TODO: growing error because of the threshold
-        if angle_threshold is None:
-            angle_threshold = np.deg2rad(1.0)
-        while True:
-            angle = rosys.helpers.eliminate_2pi(target_yaw - self.robot_locator.pose.yaw)
-            if abs(angle) < angle_threshold:
-                break
-            linear = 0.5
-            sign = 1 if angle > 0 else -1
-            angular = linear / self.driver.parameters.minimum_turning_radius * sign
-            await self.driver.wheels.drive(*self.driver._throttle(linear, angular))  # pylint: disable=protected-access
-            await rosys.sleep(0.1)
-        await self.driver.wheels.stop()
-
-    @track
-    async def _run_follow_row(self, distance: float) -> State:
-        assert self.end_point is not None
-        assert self.start_point is not None
-        end_pose = rosys.geometry.Pose(x=self.end_point.x, y=self.end_point.y,
-                                       yaw=self.start_point.direction(self.end_point), time=0)
-        distance_from_end = end_pose.relative_point(self.robot_locator.pose.point).x
-        if distance_from_end > 0:
-            await self.driver.wheels.stop()
-            await self.implement.deactivate()
-            return State.ROW_COMPLETED
-        if self.is_in_swarm and not self.allowed_to_turn and -self.wait_distance < distance_from_end < 0:
-            await self.driver.wheels.stop()
-            return State.WAITING_FOR_CONFIRMATION
-        if not self.implement.is_active:
-            await self.implement.activate()
-        self.update_target()
-        await super()._drive(distance)
-        return State.FOLLOW_ROW
-
-    @track
-    async def _run_waiting_for_confirmation(self) -> State:
-        await self.driver.wheels.stop()
-        await rosys.sleep(0.1)
-        if self.allowed_to_turn:
-            return State.FOLLOW_ROW
-        return State.WAITING_FOR_CONFIRMATION
-
-    @track
-    async def _run_row_completed(self) -> State:
-        await self.driver.wheels.stop()
-        assert self.field
-        next_state: State = State.ROW_COMPLETED
-        if not self._loop and self.current_row == self.rows_to_work_on[-1]:
-            return State.FIELD_COMPLETED
-        self.row_index += 1
-        next_state = State.CHANGE_ROW
-
-        # TODO: rework later, when starting at any row is possible
-        if self.row_index >= len(self.rows_to_work_on):
-            if self._loop:
-                self.row_index = 0
-            else:
-                next_state = State.FIELD_COMPLETED
-        return next_state
-
-    def _set_cultivated_crop(self) -> None:
-        if not isinstance(self.implement, WeedingImplement):
-            self.log.warning('Implement is not a weeding implement')
-            return
-        if self.current_row is None:
-            self.log.warning('No current row')
-            return
-        if self.implement.cultivated_crop == self.current_row.crop:
-            return
-        self.implement.cultivated_crop = self.current_row.crop
-        self.implement.request_backup()
-
-    def _is_in_working_area(self, start_point: Point, end_point: Point, *, position_error_margin: float = 0.05) -> bool:
-        # TODO: check if in working rectangle, current just checks if between start and stop
-        relative_start = self.robot_locator.pose.relative_point(start_point)
-        relative_end = self.robot_locator.pose.relative_point(end_point)
-        robot_in_working_area = relative_start.x * relative_end.x <= 0.0
-        if abs(relative_start.x) < position_error_margin or abs(relative_end.x) < position_error_margin:
-            return False
-        return robot_in_working_area
-
-    def _is_start_allowed(self, start_point: Point, end_point: Point, robot_in_working_area: bool) -> bool:
-        if not robot_in_working_area:
-            self.log.warning('Robot is not in working area')
-            return True
-        if self.current_row is None:
-            self.log.warning('No current row')
-            return False
-        foot_point = self.current_row.line_segment().line.foot_point(self.robot_locator.pose.point)
-        distance_to_row = foot_point.distance(self.robot_locator.pose.point)
-        if distance_to_row > self.MAX_DISTANCE_DEVIATION:
-            rosys.notify('Robot is between two rows', 'negative')
-            return False
-        abs_angle_to_start = abs(self.robot_locator.pose.relative_direction(start_point))
-        abs_angle_to_end = abs(self.robot_locator.pose.relative_direction(end_point))
-        if abs_angle_to_start > self.MAX_ANGLE_DEVIATION and abs_angle_to_end > self.MAX_ANGLE_DEVIATION:
-            rosys.notify('Robot heading deviates too much from row direction', 'negative')
-            return False
-        return True
-
-    def backup(self) -> dict:
-        return super().backup() | {
-            'field_id': self.field.id if self.field else None,
-            'loop': self._loop,
-            'wait_distance': self.wait_distance,
-            'force_first_row_start': self.force_first_row_start,
-            'is_in_swarm': self.is_in_swarm,
-        }
-
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
-        field_id = data.get('field_id', self.field_provider.fields[0].id if self.field_provider.fields else None)
-        self.field = self.field_provider.get_field(field_id)
-        self._loop = data.get('loop', False)
-        self.force_first_row_start = data.get('force_first_row_start', self.force_first_row_start)
-        self.wait_distance = data.get('wait_distance', self.wait_distance)
-        self.is_in_swarm = data.get('is_in_swarm', self.is_in_swarm)
-
-    def settings_ui(self) -> None:
-        with ui.row():
-            super().settings_ui()
-
-    def developer_ui(self) -> None:
-        # super().developer_ui()
-        ui.label('Field Navigation').classes('text-center text-bold')
-        ui.label('').bind_text_from(self, '_state', lambda state: f'State: {state.name}')
-        ui.label('').bind_text_from(self, 'row_index', lambda row_index: f'Row Index: {row_index}')
-        ui.checkbox('Loop', on_change=self.request_backup).bind_value(self, '_loop')
-        ui.checkbox('Force first row start', on_change=self.request_backup).bind_value(self, 'force_first_row_start')
-        ui.checkbox('Is in swarm', on_change=self.request_backup).bind_value(self, 'is_in_swarm')
-        ui.checkbox('Allowed to turn').bind_value(self, 'allowed_to_turn')
-        ui.number('Wait distance', step=0.1, min=0.0, max=10.0, format='%.1f', suffix='m', on_change=self.request_backup) \
-            .bind_value(self, 'wait_distance').classes('w-20')
-
-    def _set_field_id(self) -> None:
-        self.field_id = self.field_provider.selected_field.id if self.field_provider.selected_field else None
-
-    def create_simulation(self, crop_distance: float = 0.3) -> None:
-        assert isinstance(self.detector, rosys.vision.DetectorSimulation)
-        self.detector.simulated_objects.clear()
-        self.plant_provider.clear()
-        if self.field is None:
-            return
-        if self.start_point is not None and self.end_point is not None:
-            length = self.start_point.distance(self.end_point)
-            crop_count = length / crop_distance
-            for i in range(int(crop_count)):
-                p = self.start_point.interpolate(self.end_point, (crop_distance * (i+1)) / length)
-                if i == 10:
-                    p.y += 0.20
-                else:
-                    p.y += randint(-5, 5) * 0.01
-                p3d = rosys.geometry.Point3d(x=p.x, y=p.y, z=0)
-                plant = rosys.vision.SimulatedObject(category_name='maize', position=p3d)
-                self.detector.simulated_objects.append(plant)
-
-                for _ in range(1, 7):
-                    p = self.start_point.polar(crop_distance * (i+1) + randint(-5, 5) * 0.01, self.start_point.direction(self.end_point)) \
-                        .polar(randint(-15, 15)*0.01, self.robot_locator.pose.yaw + np.pi/2)
-                    self.detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                                        position=rosys.geometry.Point3d(x=p.x, y=p.y, z=0)))
+        start_pose = Pose(x=start_point.x, y=start_point.y, yaw=start_point.direction(end_point))
+        end_pose = Pose(x=end_point.x, y=end_point.y, yaw=start_point.direction(end_point))
+        segment = DriveSegment.from_poses(start_pose, end_pose, use_implement=True)
+        return cls(row=row, spline=segment.spline, use_implement=segment.use_implement, backward=segment.backward, stop_at_end=segment.stop_at_end)

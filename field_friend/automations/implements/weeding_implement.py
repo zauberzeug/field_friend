@@ -18,14 +18,13 @@ class ImplementException(Exception):
     pass
 
 
-class WeedingImplement(Implement, rosys.persistence.PersistentModule):
+class WeedingImplement(Implement):
     WORKING_DISTANCE = 0.15
+    FLASHLIGHT_WAIT_TIME = 3.0
+    LOCATOR_WAIT_TIME = 5.0
 
-    def __init__(self,  name: str, system: 'System', persistence_key: str = 'weeding') -> None:
-        Implement.__init__(self, name)
-        rosys.persistence.PersistentModule.__init__(self,
-                                                    persistence_key=f'field_friend.automations.implements.{persistence_key}')
-
+    def __init__(self,  name: str, system: 'System') -> None:
+        super().__init__(name)
         self.relevant_weeds = system.plant_locator.weed_category_names
         self.log = logging.getLogger('field_friend.weeding')
         self.system = system
@@ -54,12 +53,14 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             rosys.notify('Dectection model information not available', 'negative')
             return False
         if self.cultivated_crop_select is not None:
+            self.log.debug('setting cultivated crop options')
             self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
         self.log.info(f'start weeding {self.relevant_weeds} with {self.name} ...')
         self.request_backup()
         if not await self._check_hardware_ready():
             rosys.notify('hardware is not ready')
             return False
+        self.last_punches.clear()
         return True
 
     async def finish(self) -> None:
@@ -72,8 +73,10 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         if self.system.field_friend.flashlight:
             await self.system.field_friend.flashlight.turn_on()
         await self.puncher.clear_view()
-        await rosys.sleep(3)
+        await rosys.sleep(self.FLASHLIGHT_WAIT_TIME)
         self.system.plant_locator.resume()
+        await rosys.sleep(self.LOCATOR_WAIT_TIME)
+        assert self.system.camera_provider is not None
         if self.record_video:
             self.system.timelapse_recorder.camera = self.system.camera_provider.first_connected_camera
         await super().activate()
@@ -88,20 +91,22 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
     async def start_workflow(self) -> None:
         # TODO: only sleep when moving
         await rosys.sleep(2)  # wait for robot to stand still
-        if not self._has_plants_to_handle():
+        if not self.has_plants_to_handle():
             return
-        self.log.info(f'Handling plants with {self.name}...')
+        self.log.debug(f'Handling plants with {self.name}...')
 
     async def stop_workflow(self) -> None:
         self.log.debug('workflow completed')
         self.crops_to_handle = {}
         self.weeds_to_handle = {}
 
-    # TODO: can we get rid of the pylint disable?
     @track
-    async def _check_hardware_ready(self) -> bool:  # pylint: disable=too-many-return-statements
+    async def _check_hardware_ready(self) -> bool:
         if self.system.field_friend.estop.active or self.system.field_friend.estop.is_soft_estop_active:
             rosys.notify('E-Stop is active, aborting', 'negative')
+            return False
+        if self.system.camera_provider is None:
+            rosys.notify('no camera provider configured')
             return False
         camera = self.system.camera_provider.first_connected_camera
         if not camera:
@@ -117,12 +122,14 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             if not self.system.field_friend.y_axis.ref_t:
                 rosys.notify('ChainAxis is not in top ref', 'negative')
                 return False
-        if not await self.system.puncher.try_home():
+        if self.system.field_friend.y_axis is not None and not self.system.field_friend.y_axis.is_referenced and \
+           self.system.field_friend.z_axis is not None and not self.system.field_friend.z_axis.is_referenced and \
+           not await self.system.puncher.try_home():
             rosys.notify('Puncher homing failed, aborting', 'negative')
             return False
         return True
 
-    def _has_plants_to_handle(self) -> bool:
+    def has_plants_to_handle(self) -> bool:
         relative_crop_positions = {
             c.id: Point3d.from_point(self.system.robot_locator.pose.relative_point(c.position.projection()))
             for c in self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
@@ -163,8 +170,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         self.weeds_to_handle = sorted_weeds
         return False
 
-    def backup(self) -> dict:
-        return {
+    def backup_to_dict(self) -> dict[str, Any]:
+        return super().backup_to_dict() | {
             'with_drilling': self.with_drilling,
             'with_chopping': self.with_chopping,
             'chop_if_no_crops': self.chop_if_no_crops,
@@ -174,7 +181,8 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             'is_demo': self.puncher.is_demo,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
         self.with_drilling = data.get('with_drilling', self.with_drilling)
         self.with_chopping = data.get('with_chopping', self.with_chopping)
         self.chop_if_no_crops = data.get('chop_if_no_crops', self.chop_if_no_crops)
@@ -193,6 +201,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
         async def update_cultivated_crop() -> None:
             assert self.cultivated_crop_select is not None
             if self.cultivated_crop_select.options:
+                self.log.debug('crop options already set')
                 return
             await self.system.plant_locator.fetch_detector_info()
             self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
@@ -206,7 +215,7 @@ class WeedingImplement(Implement, rosys.persistence.PersistentModule):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
-        ui.checkbox('Demo Mode') \
+        ui.checkbox('Demo Mode', on_change=self.request_backup) \
             .bind_value(self.puncher, 'is_demo') \
             .tooltip('If active, stop right before the ground')
         ui.checkbox('record video', on_change=self.request_backup) \

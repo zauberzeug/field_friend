@@ -7,6 +7,7 @@ from ..config import (
     AxisD1Configuration,
     ChainAxisConfiguration,
     FieldFriendConfiguration,
+    SprayerConfiguration,
     TornadoConfiguration,
     YCanOpenConfiguration,
     YStepperConfiguration,
@@ -22,6 +23,7 @@ from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
 from .safety import SafetyHardware
+from .sprayer import SprayerHardware
 from .status_control import StatusControlHardware
 from .tornado import TornadoHardware
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
@@ -60,11 +62,9 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             self.log.warning('Unknown implement: %s', implement)
 
         communication = rosys.hardware.SerialCommunication()
-        if config.robot_brain.enable_esp_on_startup is not None:
-            robot_brain = rosys.hardware.RobotBrain(communication,
-                                                    enable_esp_on_startup=config.robot_brain.enable_esp_on_startup)
-        else:
-            robot_brain = rosys.hardware.RobotBrain(communication)
+        robot_brain = rosys.hardware.RobotBrain(communication,
+                                                enable_esp_on_startup=config.robot_brain.enable_esp_on_startup,
+                                                use_espresso=config.robot_brain.use_espresso)
         robot_brain.lizard_firmware.flash_params += config.robot_brain.flash_params
 
         bluetooth = rosys.hardware.BluetoothHardware(robot_brain, name=config.name)
@@ -76,6 +76,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                               rx_pin=config.can.rx_pin,
                                               tx_pin=config.can.tx_pin,
                                               baud=config.can.baud)
+
+        estop = rosys.hardware.EStopHardware(robot_brain, name=config.estop.name, pins=config.estop.pins)
 
         wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware
         if config.wheels.version == 'wheels':
@@ -89,7 +91,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                                                    is_right_reversed=config.wheels.is_right_reversed,
                                                    is_left_reversed=config.wheels.is_left_reversed)
         elif config.wheels.version == 'double_wheels':
-            wheels = DoubleWheelsHardware(config.wheels, robot_brain, can=self.can,
+            wheels = DoubleWheelsHardware(config.wheels, robot_brain, estop, can=self.can,
                                           m_per_tick=self.M_PER_TICK, width=self.WHEEL_DISTANCE)
         else:
             raise NotImplementedError(f'Unknown wheels version: {config.wheels.version}')
@@ -113,7 +115,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown y_axis version: {config.y_axis.version}')
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | None
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | SprayerHardware | None
         if not config.z_axis:
             z_axis = None
         elif isinstance(config.z_axis, ZStepperConfiguration) and config.z_axis.version == 'z_axis_stepper':
@@ -124,10 +126,10 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             z_axis = TornadoHardware(config.z_axis, robot_brain, expander=expander, can=self.can)
         elif isinstance(config.z_axis, ZCanOpenConfiguration) and config.z_axis.version == 'z_axis_canopen':
             z_axis = ZAxisCanOpenHardware(config.z_axis, robot_brain, can=self.can, expander=expander)
+        elif isinstance(config.z_axis, SprayerConfiguration) and config.z_axis.version == 'sprayer':
+            z_axis = SprayerHardware(config.z_axis, robot_brain, expander=expander)
         else:
             raise NotImplementedError(f'Unknown z_axis version: {config.z_axis.version}')
-
-        estop = rosys.hardware.EStopHardware(robot_brain, name=config.estop.name, pins=config.estop.pins)
 
         bms = rosys.hardware.BmsHardware(robot_brain,
                                          expander=expander if config.bms.on_expander else None,

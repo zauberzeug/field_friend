@@ -1,6 +1,7 @@
 # pylint: disable=duplicate-code
 # TODO: refactor this and z_axis_stepper_hardware.py
 import rosys
+from rosys.analysis import track
 from rosys.helpers import remove_indentation
 
 from ..config import YStepperConfiguration
@@ -46,6 +47,7 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
     async def stop(self) -> None:
         await self.robot_brain.send(f'{self.config.name}.stop()')
 
+    @track
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if not speed:
             speed = self.max_speed
@@ -57,6 +59,7 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             raise Exception(  # pylint: disable=broad-exception-raised
                 f'could not move yaxis to {position} because of {error}') from error
         steps = self.compute_steps(position)
+        self.log.debug('Moving to %s with %d steps', position, steps)
         await self.robot_brain.send(f'{self.config.name}.position({steps}, {speed}, 250000);')
         await rosys.sleep(0.2)
         if not await self.check_idle_or_alarm():
@@ -70,6 +73,16 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
             return False
         return True
 
+    @track
+    async def reset_fault(self) -> None:
+        self.log.warning('not implemented for stepper motor')
+
+    @track
+    async def recover(self) -> None:
+        await self.stop()
+        await self.try_reference()
+
+    @track
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False

@@ -9,6 +9,7 @@ from nicegui import ui
 from rosys.analysis import track
 from rosys.helpers import eliminate_2pi
 
+from ..hardware.sprayer import Sprayer
 from ..system import System
 from .components import create_header
 from .components.hardware_control import create_hardware_control_ui
@@ -26,9 +27,9 @@ class DevPage:
     controls for the robot's hardware components, such as the wheels, IMU, and GNSS.
     """
 
-    def __init__(self, system: System) -> None:
+    def __init__(self, system: System, log_monitor: LogMonitor) -> None:
         self.system = system
-        self.log_monitor = LogMonitor()
+        self.log_monitor = log_monitor
 
         @ui.page('/dev')
         def page() -> None:
@@ -62,6 +63,10 @@ class DevPage:
                             rosys.simulation_ui()
                     create_hardware_control_ui(self.system.field_friend, self.system.automator, self.system.puncher)
                     status_dev_page(self.system.field_friend, self.system)
+                    if isinstance(self.system.field_friend.z_axis, Sprayer):
+                        with ui.card():
+                            with ui.column():
+                                self.system.field_friend.z_axis.developer_ui()
 
         with ui.row():
             with ui.card():
@@ -70,13 +75,13 @@ class DevPage:
                 self.odometer_ui()
                 if isinstance(self.system.field_friend.wheels, rosys.hardware.WheelsSimulation):
                     self.wheels_ui()
-            with ui.card():
-                self.system.gnss.developer_ui()
+            if self.system.gnss is not None:
+                with ui.card():
+                    self.system.gnss.developer_ui()
+                    ui.button('Update reference', on_click=self.system.update_gnss_reference)
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
                     self.system.field_friend.imu.developer_ui()
-            with ui.card():
-                self.system.field_navigation.developer_ui()
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
             with ui.row():
                 with ui.card().style('min-width: 200px;'):
