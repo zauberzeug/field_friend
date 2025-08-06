@@ -79,5 +79,5 @@ config = FieldFriendConfiguration(
     ),
     circle_sight_positions=CircleSightPositions(),
     gnss=GnssConfiguration(),
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.6006605, 0.0242387, 0.0)),
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.597158, 0.022681, 1.570198)),
 )
