@@ -271,11 +271,11 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../features/user_interface/" class="md-nav__link ">
+            <a href="../tutorials/tutorials/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
-    Features
+    Tutorials
   </span>
   
 
@@ -291,7 +291,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
-            Features
+            Tutorials
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -302,11 +302,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/user_interface/" class="md-nav__link">
+      <a href="../tutorials/docker_management/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    User Interface
+    docker.sh
   </span>
   
 
@@ -323,11 +323,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/field_planner/" class="md-nav__link">
+      <a href="../tutorials/field_creation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Field Planner
+    field creation
   </span>
   
 
@@ -386,6 +386,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/field_friend/api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    api
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/field_friend/hardware/" class="md-nav__link">
         
   
@@ -414,22 +435,30 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../reference/field_friend/interface/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     interface
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             interface
           </label>
@@ -552,6 +581,33 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cairosvg-on-mac" class="md-nav__link">
+    <span class="md-ellipsis">
+      CairoSVG on Mac
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#missing-linux-dependencies-when-running-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing Linux dependencies when running locally
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission-denied-directly-after-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission denied directly after startup
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -595,6 +651,33 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cairosvg-on-mac" class="md-nav__link">
+    <span class="md-ellipsis">
+      CairoSVG on Mac
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#missing-linux-dependencies-when-running-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing Linux dependencies when running locally
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permission-denied-directly-after-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission denied directly after startup
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -614,6 +697,8 @@
 
 
 <h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
+<p>This section provides guidance for diagnosing and resolving issues during operation. Begin by checking the robot’s logs for warnings or errors.</p>
+<p>Live logs can be viewed using <code>docker.sh l rosys</code>, and archived logs are stored on the robot inside the <code>~/.rosys</code> directory. If further detail is required, enable debug-level logging on the <a href="https://rosys.io/reference/rosys/analysis/#rosys.analysis.logging_page.LoggingPage">RoSys Logging Page</a> that is available at <a href="http://localhost/logging">/logging</a>.</p>
 <h2 id="asyncio-warning">Asyncio Warning<a class="headerlink" href="#asyncio-warning" title="Permanent link">&para;</a></h2>
 <p>While running RoSys you may see warnings similar to this one:</p>
 <div class="highlight"><pre><span></span><code>2021-10-31 15:08:04.040 [WARNING] asyncio: Executing &lt;Task pending name=&#39;Task-255&#39; coro=&lt;handle_event() running at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:344&gt; wait_for=&lt;_GatheringFuture pending cb=[&lt;TaskWakeupMethWrapper object at 0x7f7001f8e0&gt;()] created at /usr/local/lib/python3.9/asyncio/tasks.py:705&gt; created at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:261&gt; took 0.238 seconds
@@ -625,6 +710,22 @@ The warning also provides a (not so readable) hint where the time is consumed.</
 <p>The example above is one of the more frequent scenarios.
 It means some code inside a user interaction event handler (e.g. <code>handle_event()</code> in <code>justpy.py</code>) is blocking.
 Try to figure out which UI event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.</p>
+<h2 id="cairosvg-on-mac">CairoSVG on Mac<a class="headerlink" href="#cairosvg-on-mac" title="Permanent link">&para;</a></h2>
+<p>If <a href="https://cairosvg.org/">CairoSVG</a> was installed via <a href="https://brew.sh/">Homebrew</a>, python sometimes can't find the correct path to run CairoSVG.
+This will create a symbolic link to make the library accessible.</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/local/lib<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>ln<span class="w"> </span>-sf<span class="w"> </span>/opt/homebrew/lib/libcairo.2.dylib<span class="w"> </span>/usr/local/lib/libcairo.2.dylib
+</code></pre></div>
+<p>You can test it with this command:</p>
+<div class="highlight"><pre><span></span><code><span class="n">python3</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import cairocffi; import cairosvg; print(&#39;Cairo packages successfully imported!&#39;)&quot;</span>
+</code></pre></div>
+<h2 id="missing-linux-dependencies-when-running-locally">Missing Linux dependencies when running locally<a class="headerlink" href="#missing-linux-dependencies-when-running-locally" title="Permanent link">&para;</a></h2>
+<p>In case your Linux system is missing dependencies, look at the first lines of the provided <a href="https://github.com/zauberzeug/field_friend/blob/main/Dockerfile">Dockerfile</a> to find them.</p>
+<h2 id="permission-denied-directly-after-startup">Permission denied directly after startup<a class="headerlink" href="#permission-denied-directly-after-startup" title="Permanent link">&para;</a></h2>
+<p>If you get the <code>[Errno 13] Permission denied</code> error message right after you started <code>main.py</code>, your system is probably blocking the default port 80.
+Try setting a custom port in your <code>.env</code>-file, like this</p>
+<div class="highlight"><pre><span></span><code>ROBOT_ID=U4
+PORT=8080
+</code></pre></div>
 
 
 
