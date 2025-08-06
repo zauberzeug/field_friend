@@ -17,8 +17,10 @@ from field_friend.config.configuration import (  # ImuConfiguration,
 
 config = FieldFriendConfiguration(
     name='uckerbot-u4',
-    robot_brain=RobotBrainConfiguration(name='rb28', flash_params=[
-                                        'orin'], enable_esp_on_startup=True, use_espresso=True),
+    robot_brain=RobotBrainConfiguration(name='rb28',
+                                        flash_params=['orin'],
+                                        enable_esp_on_startup=True,
+                                        use_espresso=True),
     tool='tornado',
     measurements=MeasurementsConfiguration(
         tooth_count=17,

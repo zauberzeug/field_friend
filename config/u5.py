@@ -17,8 +17,10 @@ from field_friend.config.configuration import (  # ImuConfiguration,
 
 config = FieldFriendConfiguration(
     name='uckerbot-u5',
-    robot_brain=RobotBrainConfiguration(name='rb33', flash_params=[
-                                        'orin', 'v05'], enable_esp_on_startup=True, use_espresso=True),
+    robot_brain=RobotBrainConfiguration(name='rb33',
+                                        flash_params=['orin', 'v05'],
+                                        enable_esp_on_startup=True,
+                                        use_espresso=True),
     tool='weed_screw',
     measurements=MeasurementsConfiguration(
         tooth_count=17,
