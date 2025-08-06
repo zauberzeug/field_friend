@@ -20,6 +20,12 @@ from .components.status_dev import status_dev_page
 
 
 class DevPage:
+    """The development page gives are more detailed overview of the robot's status, that is more helpful for developers than for users.
+
+    This page provides detailed information about the robot's hardware components,
+    including the robot brain, communication, and other peripherals. It also includes
+    controls for the robot's hardware components, such as the wheels, IMU, and GNSS.
+    """
 
     def __init__(self, system: System, log_monitor: LogMonitor) -> None:
         self.system = system

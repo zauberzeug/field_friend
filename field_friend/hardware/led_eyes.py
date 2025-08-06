@@ -3,6 +3,7 @@ from rosys.helpers import remove_indentation
 
 
 class LedEyesHardware(rosys.hardware.ModuleHardware):
+    """Controls the LED eyes of the Field Friend robot."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain,
                  expander: rosys.hardware.ExpanderHardware | None,

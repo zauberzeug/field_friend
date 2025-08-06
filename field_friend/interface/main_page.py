@@ -11,6 +11,10 @@ from .components import create_header
 
 
 class MainPage:
+    """The main page of the Field Friend robot.
+
+    The main page displays the robot's current status and allows the control of the robot's automations.
+    """
 
     def __init__(self, system: System) -> None:
         self.system = system
