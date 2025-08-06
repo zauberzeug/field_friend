@@ -93,7 +93,6 @@ config = FieldFriendConfiguration(
         turn_speed_limit=1.5,
     ),
     gnss=GnssConfiguration(),
-    # TODO: add IMU, when the next stable version is released
-    # ImuConfiguration(offset_rotation=Rotation.from_euler(0.0, 0, 0))
+    # TODO: add IMU configuration
     imu=None,
 )
