@@ -253,6 +253,7 @@ class FlashlightConfiguration:
 class GnssConfiguration:
     """Configuration for the gnss of the FieldFriend robot.
 
+    X, Y, Z are the position of the main gnss antenna.
     The yaw is the direction to the auxiliary antenna. It should be 90°, but the offset is configured in the septentrio software.
 
     Defaults:
