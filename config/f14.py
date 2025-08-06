@@ -1,11 +1,10 @@
-from rosys.geometry import Rotation
+# from rosys.geometry import Rotation
 
-from field_friend.config import (
+from field_friend.config import (  # ImuConfiguration,
     BumperConfiguration,
     CircleSightPositions,
     FieldFriendConfiguration,
     GnssConfiguration,
-    ImuConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
@@ -32,5 +31,7 @@ config = FieldFriendConfiguration(
     z_axis=None,
     circle_sight_positions=CircleSightPositions(),
     gnss=GnssConfiguration(),
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.5999433, 0.0127409, 0.0)),
+    # TODO: IMU configuration is probably wrong. Check https://github.com/zauberzeug/field_friend/pull/361
+    # imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.5999433, 0.0127409, 0.0)),
+    imu=None,
 )

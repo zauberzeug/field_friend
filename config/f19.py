@@ -47,7 +47,6 @@ config = FieldFriendConfiguration(
     ),
     bumper=BumperConfiguration(pin_front_top=21, pin_front_bottom=35, pin_back=18),
     gnss=GnssConfiguration(),
-    # TODO: add IMU, when the next stable version is released
-    # ImuConfiguration(offset_rotation=Rotation.from_euler(0.0, 0, 0))
+    # TODO: add IMU configuration
     imu=None,
 )
