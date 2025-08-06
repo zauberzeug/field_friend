@@ -5,9 +5,6 @@ on:
   push:
     tags:
       - v**
-    # TODO: remove this before merging
-    branches:
-      - docu_update
 
 jobs:
   docs:
@@ -16,9 +13,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        # TODO: remove this before merging
-        with:
-          ref: docu_update
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
