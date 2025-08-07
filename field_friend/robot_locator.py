@@ -6,7 +6,7 @@ import rosys
 import rosys.helpers
 from nicegui import ui
 from rosys.geometry import Pose, Pose3d, Rotation, Velocity
-from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuHardware, ImuMeasurement, Wheels, WheelsSimulation
+from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels, WheelsSimulation
 
 from .config.configuration import GnssConfiguration
 
@@ -36,10 +36,9 @@ class RobotLocator(rosys.persistence.Persistable):
         # NOTE: the prediction step needs to be run once before the first GNSS update
         self._first_prediction_done = False
 
-        # bound attributes
         self._ignore_gnss = gnss is None
         self._ignore_imu = imu is None
-        self._use_height_correction = not self._ignore_imu and isinstance(imu, ImuHardware)
+        self._use_height_correction = isinstance(imu, Imu) and not self._ignore_imu
         self._r_odom_linear = self.R_ODOM_LINEAR
         self._r_odom_angular = self.R_ODOM_ANGULAR
         self._r_imu_angular = self.R_IMU_ANGULAR
