@@ -3,7 +3,8 @@ import pytest
 import rosys
 from conftest import ROBOT_GEO_START_POSITION
 from rosys.geometry import Pose
-from rosys.hardware import GnssSimulation, GpsQuality, ImuSimulation
+from rosys.hardware import GnssSimulation, ImuSimulation
+from rosys.hardware.gnss import GpsQuality
 from rosys.testing import assert_point, forward
 
 from field_friend.system import System
