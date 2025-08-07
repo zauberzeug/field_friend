@@ -25,6 +25,7 @@ class Monitoring:
         self.monitoring_detector = getattr(system, 'circle_sight_detector', None)
         self.monitoring_active = False
         self.plant_locator = getattr(system, 'plant_locator', None)
+        self.capture = system.capture
         self.field_friend = system.field_friend
         self.automator = system.automator
         self.system = system
@@ -68,6 +69,9 @@ class Monitoring:
                         ui.switch('Plant detection') \
                             .bind_value(self.plant_locator, 'is_paused', forward=lambda x: not x, backward=lambda x: not x) \
                             .bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
+                        ui.button('Capture Outer', on_click=self.capture.circle_sight)
+                        ui.button('Capture Front', on_click=lambda: self.capture.circle_sight(direction='front'))
+                        ui.button('Capture Inner', on_click=self.capture.inner)
 
         with ui.row().classes('w-full items-stretch gap-0'):
             column_classes = 'w-1/3 items-center mt-[50px]'

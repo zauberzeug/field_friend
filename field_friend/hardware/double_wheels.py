@@ -5,13 +5,9 @@ from ..config import WheelsConfiguration
 
 
 class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware):
-    """This module implements wheels hardware.
+    """Expands the RoSys wheels hardware to control the field friend's tracked wheels with dual motors."""
 
-    Drive and stop commands are forwarded to a given Robot Brain.
-    Velocities are read and emitted regularly.
-    """
-
-    def __init__(self, config: WheelsConfiguration, robot_brain: rosys.hardware.RobotBrain, *,
+    def __init__(self, config: WheelsConfiguration, robot_brain: rosys.hardware.RobotBrain, estop: rosys.hardware.EStopHardware, *,
                  can: rosys.hardware.CanHardware,
                  m_per_tick: float = 0.01,
                  width: float = 0.5) -> None:
@@ -45,6 +41,7 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             core_message_fields.extend(['l0.motor_error_flag', 'r0.motor_error_flag',
                                        'l1.motor_error_flag', 'r1.motor_error_flag'])
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+        self.estop = estop
 
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
@@ -58,6 +55,8 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
         await self.robot_brain.send(f'{self.config.name}.speed({linear}, {angular})')
 
     async def reset_motors(self) -> None:
+        if self.estop.active:
+            return
         if not self.motor_error:
             return
         if self.l0_error == 1:
@@ -68,24 +67,21 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             await self.robot_brain.send('l1.reset_motor()')
         if self.r1_error == 1:
             await self.robot_brain.send('r1.reset_motor()')
-        self.motor_error = False
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         velocity = rosys.geometry.Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time)
         self.VELOCITY_MEASURED.emit([velocity])
         if self.config.odrive_version == 6:
+            self.motor_error = any([self.l0_error, self.r0_error, self.l1_error, self.r1_error])
             self.l0_error = int(words.pop(0))
             if self.l0_error == 1 and not self.motor_error:
                 rosys.notify('Left Back Motor Error', 'warning')
-                self.motor_error = True
             self.r0_error = int(words.pop(0))
             if self.r0_error == 1 and not self.motor_error:
                 rosys.notify('Right Back Motor Error', 'warning')
-                self.motor_error = True
             self.l1_error = int(words.pop(0))
             if self.l1_error == 1 and not self.motor_error:
                 rosys.notify('Left Front Motor Error', 'warning')
-                self.motor_error = True
             self.r1_error = int(words.pop(0))
             if self.r1_error == 1 and not self.motor_error:
                 rosys.notify('Right Front Motor Error', 'warning')

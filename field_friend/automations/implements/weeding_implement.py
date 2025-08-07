@@ -53,7 +53,7 @@ class WeedingImplement(Implement):
             rosys.notify('Dectection model information not available', 'negative')
             return False
         if self.cultivated_crop_select is not None:
-            self.log.warning('setting cultivated crop options')
+            self.log.debug('setting cultivated crop options')
             self.cultivated_crop_select.set_options(self.system.plant_locator.crop_category_names)
         self.log.info(f'start weeding {self.relevant_weeds} with {self.name} ...')
         self.request_backup()
@@ -91,7 +91,7 @@ class WeedingImplement(Implement):
     async def start_workflow(self) -> None:
         # TODO: only sleep when moving
         await rosys.sleep(2)  # wait for robot to stand still
-        if not self._has_plants_to_handle():
+        if not self.has_plants_to_handle():
             return
         self.log.debug(f'Handling plants with {self.name}...')
 
@@ -129,7 +129,7 @@ class WeedingImplement(Implement):
             return False
         return True
 
-    def _has_plants_to_handle(self) -> bool:
+    def has_plants_to_handle(self) -> bool:
         relative_crop_positions = {
             c.id: Point3d.from_point(self.system.robot_locator.pose.relative_point(c.position.projection()))
             for c in self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())

@@ -11,6 +11,7 @@ from .components import create_header
 
 
 class BmsPage:
+    """The BMS page displays the robot's battery status and history."""
 
     def __init__(self, system: System) -> None:
         self.system = system

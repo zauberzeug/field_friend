@@ -9,7 +9,7 @@ from .axis import Axis
 
 
 class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
-    """The y axis hardware module is a simple example for a representation of real robot hardware."""
+    """Controls a horizontal axis using a stepper motor."""
 
     def __init__(self, config: YStepperConfiguration, robot_brain: rosys.hardware.RobotBrain, *,
                  expander: rosys.hardware.ExpanderHardware | None) -> None:

@@ -10,7 +10,7 @@ from .axis import Axis
 
 
 class ZAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
-    """The z axis hardware module is a simple example for a representation of real robot hardware."""
+    """Controls a vertical axis using a CANOpen motor."""
 
     def __init__(self, config: ZCanOpenConfiguration, robot_brain: rosys.hardware.RobotBrain, *,
                  can: rosys.hardware.CanHardware,

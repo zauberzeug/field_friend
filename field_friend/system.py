@@ -19,15 +19,15 @@ from .automations import (
     ChargingStation,
     FieldProvider,
     KpiProvider,
-    PathProvider,
     PlantLocator,
     PlantProvider,
     Puncher,
 )
-from .automations.implements import Implement, Recorder, Tornado, WeedingScrew
-from .automations.navigation import CrossglideDemoNavigation, FieldNavigation, Navigation, StraightLineNavigation
+from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
+from .automations.navigation import FieldNavigation, ImplementDemoNavigation, StraightLineNavigation, WaypointNavigation
+from .capture import Capture
 from .config import get_config
-from .hardware import AxisD1, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
+from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
 from .kpi_generator import generate_kpis
 from .robot_locator import RobotLocator
@@ -43,11 +43,12 @@ class System(rosys.persistence.Persistable):
         super().__init__()
         self.robot_id = robot_id
         assert self.robot_id != 'unknown'
+        self.config = get_config(self.robot_id)
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         self.log = logging.getLogger('field_friend.system')
         self.is_real = rosys.hardware.SerialCommunication.is_possible()
         self.AUTOMATION_CHANGED: Event[str] = Event()
-        self.config = get_config(self.robot_id)
+        self.GNSS_REFERENCE_CHANGED: Event[[]] = Event()
 
         self.camera_provider = self.setup_camera_provider()
         self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
@@ -55,9 +56,11 @@ class System(rosys.persistence.Persistable):
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation | None = None
         self.field_friend: FieldFriend
-        self._current_navigation: Navigation | None = None
+        self._current_navigation: WaypointNavigation | None = None
         self.implements: dict[str, Implement] = {}
-        self.navigation_strategies: dict[str, Navigation] = {}
+        self.navigation_strategies: dict[str, WaypointNavigation] = {}
+        self.mjpeg_camera_provider: rosys.vision.MjpegCameraProvider | None = None
+        self.circle_sight_detector: rosys.vision.DetectorHardware | None = None
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware(self.config)
@@ -80,11 +83,14 @@ class System(rosys.persistence.Persistable):
             rosys.on_startup(self.setup_simulated_usb_camera)
             if self.camera_provider is not None:
                 self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
-
+        self.GNSS_REFERENCE_CHANGED.register(self.robot_locator.reset)
+        self.capture = Capture(self)
         if self.config.camera is not None:
             assert self.camera_provider is not None
-            self.camera_configurator = CameraConfigurator(
-                self.camera_provider, robot_locator=self.robot_locator, robot_id=self.robot_id, camera_config=self.config.camera)
+            self.camera_configurator = CameraConfigurator(self.camera_provider,
+                                                          robot_locator=self.robot_locator,
+                                                          robot_id=self.robot_id,
+                                                          camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
         self.plant_provider = PlantProvider().persistent()
@@ -103,11 +109,12 @@ class System(rosys.persistence.Persistable):
 
         rosys.on_repeat(watch_robot, 1.0)
 
-        self.path_provider: PathProvider = PathProvider().persistent()
         self.field_provider: FieldProvider = FieldProvider().persistent()
-        self.setup_shape()
         self.automator: rosys.automation.Automator = rosys.automation.Automator(
-            self.steerer, on_interrupt=self.field_friend.stop)
+            self.steerer,
+            on_interrupt=self.field_friend.stop,
+            notify=False,
+        )
         self.automation_watcher: AutomationWatcher = AutomationWatcher(self)
 
         self.setup_timelapse()
@@ -123,7 +130,7 @@ class System(rosys.persistence.Persistable):
             assert isinstance(self.field_friend, FieldFriendHardware)
             if self.field_friend.battery_control:
                 self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
-            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend)
+            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, capture=self.capture)
             rosys.on_repeat(self.log_status, 60 * 5)
         rosys.on_repeat(self._garbage_collection, 60*5)
         rosys.config.garbage_collection_mbyte_limit = 0
@@ -177,11 +184,11 @@ class System(rosys.persistence.Persistable):
         self.log.debug(f'selected implement: {implement.name}')
 
     @property
-    def current_navigation(self) -> Navigation | None:
+    def current_navigation(self) -> WaypointNavigation | None:
         return self._current_navigation
 
     @current_navigation.setter
-    def current_navigation(self, navigation: Navigation) -> None:
+    def current_navigation(self, navigation: WaypointNavigation) -> None:
         old_navigation = self._current_navigation
         if old_navigation is not None and self.current_implement is not None:
             implement = self.current_implement
@@ -206,35 +213,24 @@ class System(rosys.persistence.Persistable):
         self.driver.parameters.minimum_drive_distance = 0.005
         self.driver.parameters.throttle_at_end_min_speed = 0.05
 
-    def setup_shape(self) -> None:
-        width = 0.64
-        length = 0.78
-        offset = 0.36
-        height = 0.67
-        self.shape = rosys.geometry.Prism(
-            outline=[
-                (-offset, -width/2),
-                (length - offset, -width/2),
-                (length - offset, width/2),
-                (-offset, width/2)
-            ],
-            height=height)
-
     def setup_implements(self) -> None:
         persistence_key = 'field_friend.automations.implements.weeding'
         implements: list[Implement] = []
         match self.field_friend.implement_name:
             case 'tornado':
                 implements.append(Recorder(self))
-                implements.append(Tornado(self).persistent(key=persistence_key, ))
+                implements.append(Tornado(self).persistent(key=persistence_key))
             case 'weed_screw':
                 implements.append(Recorder(self))
-                implements.append(WeedingScrew(self).persistent(key=persistence_key, ))
+                implements.append(WeedingScrew(self).persistent(key=persistence_key))
             case 'dual_mechanism':
                 # implements.append(WeedingScrew(self))
                 # implements.append(ChopAndScrew(self))
                 self.log.error('Dual mechanism not implemented')
                 implements.append(Recorder(self))
+            case 'sprayer':
+                implements.append(Recorder(self))
+                implements.append(WeedingSprayer(self))
             case 'recorder':
                 implements.append(Recorder(self))
             case None:
@@ -247,11 +243,11 @@ class System(rosys.persistence.Persistable):
         first_implement = next(iter(self.implements.values()))
         self.straight_line_navigation = StraightLineNavigation(self, first_implement).persistent()
         self.field_navigation = FieldNavigation(self, first_implement).persistent() if self.gnss is not None else None
-        self.crossglide_demo_navigation = CrossglideDemoNavigation(self, first_implement).persistent() \
-            if isinstance(self.field_friend.y_axis, AxisD1) else None
+        self.implement_demo_navigation = ImplementDemoNavigation(self, first_implement).persistent() \
+            if isinstance(self.field_friend.y_axis, Axis) else None
         self.navigation_strategies = {n.name: n for n in [self.straight_line_navigation,
                                                           self.field_navigation,
-                                                          self.crossglide_demo_navigation,
+                                                          self.implement_demo_navigation,
                                                           ] if n is not None}
         self.current_navigation = self.straight_line_navigation
 
@@ -295,10 +291,13 @@ class System(rosys.persistence.Persistable):
             return None
         if self.is_real:
             gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.antenna_pose)
-            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.1
+            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.25
             return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
-        return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
+        if rosys.is_test:
+            # NOTE: quick fix for https://github.com/zauberzeug/field_friend/issues/348
+            return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
+        return GnssSimulation(wheels=wheels, lat_std_dev=1e-5, lon_std_dev=1e-5, heading_std_dev=1e-5)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
         if reference is None:
@@ -312,6 +311,7 @@ class System(rosys.persistence.Persistable):
                                      direction=self.gnss.last_measurement.heading)
         self.log.debug('Updating GNSS reference to %s', reference)
         GeoReference.update_current(reference)
+        self.GNSS_REFERENCE_CHANGED.emit()
         self.request_backup()
 
     def get_jetson_cpu_temperature(self):

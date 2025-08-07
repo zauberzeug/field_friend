@@ -8,14 +8,9 @@ D1_STEPS_P_M = 100000
 
 
 class AxisD1(Axis, rosys.hardware.ModuleHardware):
-    def __init__(self, config: AxisD1Configuration, robot_brain: rosys.hardware.RobotBrain, *, can: rosys.hardware.CanHardware, **kwargs) -> None:
-        """Rosys module to control the Igus D1 motor controller.
+    """Rosys module to control the Igus D1 motor controller."""
 
-        :param: robot_brain: The RobotBrain object.
-        :param name: The name of the axis (default: 'axis_D1').
-        :param can: The CAN hardware object.
-        :param can_address: The CAN address of the axis (default: 0x60).
-        """
+    def __init__(self, config: AxisD1Configuration, robot_brain: rosys.hardware.RobotBrain, *, can: rosys.hardware.CanHardware, **kwargs) -> None:
         self.config = config
         self.statusword: int = 0
         self.steps: int = 0

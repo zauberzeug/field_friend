@@ -50,16 +50,16 @@ class Tornado(WeedingImplement):
         except Exception as e:
             raise ImplementException('Error while tornado Workflow') from e
 
-    def _has_plants_to_handle(self) -> bool:
-        super()._has_plants_to_handle()
+    def has_plants_to_handle(self) -> bool:
+        super().has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
             return False
         return True
 
     @track
-    async def get_move_target(self) -> Point | None: # pylint: disable=too-many-return-statements
+    async def get_target(self) -> Point | None:  # pylint: disable=too-many-return-statements
         """Return the target position to drive to."""
-        self._has_plants_to_handle()
+        self.has_plants_to_handle()
         if len(self.crops_to_handle) == 0:
             self.log.debug('No crops to handle')
             return None
@@ -87,7 +87,7 @@ class Tornado(WeedingImplement):
             self.log.debug('Skipping crop %s because it is behind the robot', closest_crop_id)
             return None
         self.log.debug('Targeting crop %s which is %.2f away at world: %s, local: %s',
-                      closest_crop_id, relative_x, closest_crop_world_position, closest_crop_position)
+                       closest_crop_id, relative_x, closest_crop_world_position, closest_crop_position)
         self.next_punch_y_position = closest_crop_position.y
         return closest_crop_world_position.projection()
 
