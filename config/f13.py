@@ -1,5 +1,4 @@
-
-from field_friend.config.configuration import (  # ImuConfiguration,
+from field_friend.config.configuration import (
     BumperConfiguration,
     CameraConfiguration,
     CircleSightPositions,

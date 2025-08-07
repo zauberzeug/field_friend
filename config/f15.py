@@ -1,6 +1,4 @@
-# from rosys.geometry import Rotation
-
-from field_friend.config.configuration import (  # ImuConfiguration,
+from field_friend.config.configuration import (
     AxisD1Configuration,
     BumperConfiguration,
     CameraConfiguration,

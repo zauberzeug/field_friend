@@ -1,6 +1,4 @@
-# from rosys.geometry import Rotation
-
-from field_friend.config import (  # ImuConfiguration,
+from field_friend.config import (
     BumperConfiguration,
     CircleSightPositions,
     FieldFriendConfiguration,
