@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator, Generator
 import pytest
 import rosys
 from rosys.geometry import GeoPoint, GeoReference, Pose
-from rosys.hardware import GnssSimulation, WheelsSimulation
+from rosys.hardware import GnssSimulation, ImuSimulation, WheelsSimulation
 from rosys.testing import forward, helpers
 
 from field_friend.automations import Field, Row
@@ -77,6 +77,12 @@ async def system_with_acceleration(rosys_integration) -> AsyncGenerator[System, 
 def gnss(system: System) -> GnssSimulation:
     assert isinstance(system.gnss, GnssSimulation)
     return system.gnss
+
+
+@pytest.fixture
+def imu(system: System) -> ImuSimulation:
+    assert isinstance(system.field_friend.imu, ImuSimulation)
+    return system.field_friend.imu
 
 
 class TestField:
