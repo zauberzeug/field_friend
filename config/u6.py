@@ -17,7 +17,8 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='uckerbot-u6',
-    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=['orin', 'v05'], enable_esp_on_startup=True, use_espresso=True),
+    robot_brain=RobotBrainConfiguration(name='rb34', flash_params=[
+                                        'orin', 'v05'], enable_esp_on_startup=True, use_espresso=True),
     tool='weed_screw',
     measurements=MeasurementsConfiguration(tooth_count=17, pitch=0.041, work_x=0.085),
     camera=CameraConfiguration(
@@ -76,7 +77,12 @@ config = FieldFriendConfiguration(
         min_position=-0.197,
         version='z_axis_canopen',
     ),
-    circle_sight_positions=CircleSightPositions(),
+    circle_sight_positions=CircleSightPositions(
+        right='-1',
+        back='-3',
+        front='-2',
+        left='-4',
+    ),
     gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.6006605, 0.0242387, 0.0)),
 )

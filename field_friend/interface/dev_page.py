@@ -82,6 +82,10 @@ class DevPage:
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
                     self.system.field_friend.imu.developer_ui()
+            if self.system.is_real:
+                with ui.card():
+                    self.system.charging_station.developer_ui()
+
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
             with ui.row():
                 with ui.card().style('min-width: 200px;'):
