@@ -1,5 +1,3 @@
-from rosys.geometry import Pose, Rotation
-
 from field_friend.config.configuration import (
     BumperConfiguration,
     CameraConfiguration,
@@ -8,7 +6,6 @@ from field_friend.config.configuration import (
     FieldFriendConfiguration,
     FlashlightConfiguration,
     GnssConfiguration,
-    ImuConfiguration,
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     TornadoConfiguration,
@@ -18,7 +15,10 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='uckerbot-u4',
-    robot_brain=RobotBrainConfiguration(name='rb28', flash_params=['orin'], enable_esp_on_startup=True, use_espresso=True),
+    robot_brain=RobotBrainConfiguration(name='rb28',
+                                        flash_params=['orin'],
+                                        enable_esp_on_startup=True,
+                                        use_espresso=True),
     tool='tornado',
     measurements=MeasurementsConfiguration(
         tooth_count=17,
@@ -89,6 +89,8 @@ config = FieldFriendConfiguration(
         turn_speed_limit=1.3,
         odrive_version=6,
     ),
-    gnss=GnssConfiguration(antenna_pose=Pose(x=0.041, y=-0.255, yaw=0.0)),
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.570796, 0, 0)),
+    gnss=GnssConfiguration(),
+    # TODO: IMU configuration is probably wrong. Check https://github.com/zauberzeug/field_friend/pull/361
+    # imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.570796, 0, 0)),
+    imu=None,
 )
