@@ -72,9 +72,12 @@ class DevPage:
             with ui.card():
                 self.system.robot_locator.developer_ui()
             with ui.card():
-                self.odometer_ui()
-                if isinstance(self.system.field_friend.wheels, rosys.hardware.WheelsSimulation):
-                    self.wheels_ui()
+                with ui.row():
+                    with ui.column():
+                        if isinstance(self.system.field_friend.wheels, rosys.hardware.WheelsSimulation):
+                            self.wheels_ui()
+                    with ui.column():
+                        self.odometer_ui()
             if self.system.gnss is not None:
                 with ui.card():
                     self.system.gnss.developer_ui()
@@ -120,7 +123,7 @@ class DevPage:
 
     def wheels_ui(self) -> None:
         assert isinstance(self.system.field_friend.wheels, rosys.hardware.WheelsSimulation)
-        with ui.column().classes('w-32'):
+        with ui.column():
             ui.label('Wheels').classes('text-center text-bold')
             ui.label().bind_text_from(self.system.field_friend.wheels, 'pose',
                                       backward=lambda pose: f'x: {pose.x:.3f} m')
@@ -130,7 +133,7 @@ class DevPage:
                                       backward=lambda pose: f'yaw: {np.rad2deg(eliminate_2pi(pose.yaw)):.2f} °')
             ui.number('slip_factor_right', min=-1, max=1, step=0.01, value=0, format='%.2f') \
                 .bind_value(self.system.field_friend.wheels, 'slip_factor_right') \
-                .classes('w-full')
+                .classes('w-24')
             ui.number('slip_factor_left', min=-1, max=1, step=0.01, value=0, format='%.2f') \
                 .bind_value(self.system.field_friend.wheels, 'slip_factor_left') \
-                .classes('w-full')
+                .classes('w-24')

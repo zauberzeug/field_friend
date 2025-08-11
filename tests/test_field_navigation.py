@@ -192,10 +192,10 @@ async def test_bed_crops(system: System, field_with_beds: Field):
     assert isinstance(system.current_implement, WeedingImplement)
     driven_segments = 0
 
-    def count_driven_segments():
+    def count_driven_segments(_: DriveSegment) -> None:
         nonlocal driven_segments
         driven_segments += 1
-    system.current_navigation.WAYPOINT_REACHED.register(count_driven_segments)
+    system.current_navigation.SEGMENT_COMPLETED.register(count_driven_segments)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: driven_segments == 1)

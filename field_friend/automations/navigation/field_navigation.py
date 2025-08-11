@@ -31,7 +31,8 @@ class FieldNavigation(WaypointNavigation):
         self.automator = system.automator
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
-        self.WAYPOINT_REACHED.register(self._handle_waypoint_reached)
+
+        self.SEGMENT_STARTED.register(self._handle_segment_started)
 
     @property
     def field(self) -> Field | None:
@@ -41,10 +42,7 @@ class FieldNavigation(WaypointNavigation):
     def current_row(self) -> Row | None:
         return self.current_segment.row if isinstance(self.current_segment, RowSegment) else None
 
-    def _handle_waypoint_reached(self) -> None:
-        segment = self.current_segment
-        if segment is None:
-            return
+    def _handle_segment_started(self, segment: DriveSegment) -> None:
         if isinstance(segment, RowSegment) and isinstance(self.implement, WeedingImplement):
             self.log.debug(f'Setting crop to {segment.row.crop}')
             self.implement.cultivated_crop = segment.row.crop
