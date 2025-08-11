@@ -82,9 +82,14 @@ class DevPage:
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
                     self.system.field_friend.imu.developer_ui()
-            if self.system.is_real:
-                with ui.card():
-                    self.system.charging_station.developer_ui()
+
+        with ui.row():
+            with ui.card():
+                self.system.field_friend.bms.developer_ui()
+                if hasattr(self.system.field_friend, 'battery_control') and self.system.field_friend.battery_control is not None:
+                    ui.label('').tooltip('Battery Box out connectors 1-4') \
+                        .bind_text_from(self.system.field_friend.battery_control, 'status',
+                                        backward=lambda x: 'Out 1..4 is on' if x else 'Out 1..4 is off')
 
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
             with ui.row():
