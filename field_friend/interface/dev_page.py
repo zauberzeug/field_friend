@@ -95,8 +95,6 @@ class DevPage:
                                         backward=lambda x: 'Out 1..4 is on' if x else 'Out 1..4 is off')
             with ui.card():
                 self.system.charging_station.developer_ui()
-                if self.system.field_navigation is not None:
-                    ui.button('Drive to charge', on_click=self.system.field_navigation._run_charging)
 
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
             with ui.row():
