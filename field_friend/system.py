@@ -60,7 +60,6 @@ class System(rosys.persistence.Persistable):
         self.implements: dict[str, Implement] = {}
         self.navigation_strategies: dict[str, WaypointNavigation] = {}
         self.mjpeg_camera_provider: rosys.vision.MjpegCameraProvider | None = None
-        self.circle_sight_detector: rosys.vision.DetectorHardware | None = None
         if self.is_real:
             try:
                 self.field_friend = FieldFriendHardware(self.config)
@@ -73,7 +72,6 @@ class System(rosys.persistence.Persistable):
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = rosys.vision.DetectorHardware(port=8004)
             self.circle_sight_detector = rosys.vision.DetectorHardware(port=8005)
-            self.charging_station: ChargingStation = ChargingStation(self)
         else:
             self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
@@ -93,6 +91,7 @@ class System(rosys.persistence.Persistable):
                                                           camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
+        self.charging_station: ChargingStation = ChargingStation(self)
         self.plant_provider = PlantProvider().persistent()
         self.kpi_provider = KpiProvider().persistent()
         if not self.is_real:

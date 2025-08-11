@@ -38,6 +38,7 @@ class RobotScene:
                 plant_objects(self.system)
                 path_object(self.system)
                 field_object(self.system)
+                self.system.charging_station.scene_object()
                 self.scene.move_camera(-0.5, -1, 2)
 
         ui.timer(rosys.config.ui_update_interval, self.update)

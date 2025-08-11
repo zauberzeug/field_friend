@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Self
 
 import numpy as np
 import rosys
+from nicegui import ui
 from rosys import helpers
 from rosys.analysis import track
 from rosys.geometry import Pose
@@ -17,12 +18,16 @@ from .waypoint_navigation import DriveSegment, WaypointNavigation
 
 if TYPE_CHECKING:
     from ...system import System
+    from ..charging_station import ChargingStation
 
 
 class FieldNavigation(WaypointNavigation):
     MAX_START_DISTANCE = 2.0
     MAX_DISTANCE_DEVIATION = 0.1
     MAX_ANGLE_DEVIATION = np.deg2rad(15.0)
+    START_ROW_INDEX = 0
+    APPROACH_START_ROW = False
+    CHARGE_AUTOMATICALLY = False
 
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__(system, implement)
@@ -32,11 +37,20 @@ class FieldNavigation(WaypointNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
+        self.approach_start_row = self.APPROACH_START_ROW
+        self.start_row_index = self.START_ROW_INDEX
+        self.charge_automatically = self.CHARGE_AUTOMATICALLY
+
         self.SEGMENT_STARTED.register(self._handle_segment_started)
 
     @property
     def field(self) -> Field | None:
         return self.field_provider.selected_field
+
+    @property
+    def charging_station(self) -> ChargingStation | None:
+        # return self.field_provider.selected_field.charging_station if self.field_provider.selected_field else None
+        return self.system.charging_station
 
     @property
     def current_row(self) -> Row | None:
@@ -66,8 +80,17 @@ class FieldNavigation(WaypointNavigation):
             return []
         path_segments: list[DriveSegment | RowSegment] = []
         current_pose = self.system.robot_locator.pose
-        start_row_index = self._find_closest_row(rows_to_work_on)
-        row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
+        start_row_index: int
+        row_reversed: bool
+        if self.approach_start_row:
+            if self.start_row_index >= len(rows_to_work_on):
+                rosys.notify('Start row index is out of range', 'negative')
+                return []
+            start_row_index = self.start_row_index
+            row_reversed = False
+        else:
+            start_row_index = self._find_closest_row_index(rows_to_work_on)
+            row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
         for i, row in enumerate(rows_to_work_on):
             if i < start_row_index:
                 continue
@@ -78,13 +101,81 @@ class FieldNavigation(WaypointNavigation):
             current_pose = row_segment.end
             row_reversed = not row_reversed
 
-        current_pose = self.system.robot_locator.pose
-        t = path_segments[0].spline.closest_point(current_pose.x, current_pose.y, t_min=-0.1, t_max=1.1)
-        if t < 0:
-            path_segments.insert(0, DriveSegment.from_poses(self.system.robot_locator.pose, path_segments[0].start))
+        if self.charge_automatically:
+            assert self.charging_station is not None
+            assert self.charging_station.approach_pose is not None
+            approach_start: Pose
+            if row_reversed:
+                # NOTE: last row should not be reversed, but it is flipped at the end of the last loop
+                assert self.field_provider.selected_field is not None
+                end_pose = path_segments[-1].end
+                first_row = self.field_provider.selected_field.rows[0]
+                row_start = first_row.points[0].to_local()
+                row_end = first_row.points[-1].to_local()
+                row_end_pose = Pose(x=row_end.x, y=row_end.y, yaw=row_end.direction(row_start))
+                turn_segments = self._generate_three_point_turn(end_pose, row_end_pose)
+                drive_segment = RowSegment.from_row(first_row, reverse=True)
+                drive_segment.use_implement = False
+                path_segments = [*path_segments, *turn_segments, drive_segment]
+                approach_start = drive_segment.end
+            else:
+                approach_start = path_segments[-1].end
+            approach_pose = self.charging_station.approach_pose.to_local()
+            approach_segment = DriveSegment.from_poses(approach_start, approach_pose)
+            path_segments = [*path_segments, approach_segment]
+
+        assert isinstance(path_segments[0], RowSegment)
+        path_segments = self._generate_row_approach_path(path_segments[0].row) + path_segments
         return path_segments
 
-    def _find_closest_row(self, rows: list) -> int:
+    async def _run(self) -> None:
+        if self.charging_station:
+            if self._should_charge():
+                await self._run_charging(stop_after_charging=False)
+            if self.charging_station.is_charging:
+                await self.charging_station.undock()
+                while not isinstance(self.current_segment, RowSegment):
+                    self._upcoming_path.pop(0)
+                if isinstance(self.current_segment, RowSegment):
+                    self._upcoming_path = self._generate_row_approach_path(
+                        self.current_segment.row) + self._upcoming_path
+                    self.PATH_GENERATED.emit(self._upcoming_path)
+        await super()._run()
+        if not self.has_waypoints:
+            await self._run_charging(approach=False, stop_after_charging=True)
+
+    def _should_charge(self) -> bool:
+        if self.charging_station is None:
+            return False
+        if self.current_row:
+            self.log.debug('Not charging: Not allowed to charge on row')
+            return False
+        closest_row_index = self._find_closest_row_index(self.field_provider.get_rows_to_work_on())
+        closest_row = self.field_provider.get_rows_to_work_on()[closest_row_index]
+        closest_row_start = closest_row.points[0].to_local()
+        if closest_row_start.distance(self.system.robot_locator.pose.point) > 0.1:
+            return False
+        return self.system.field_friend.bms.is_below_percent(30.0)
+
+    async def _run_charging(self, *, approach: bool = True, stop_after_charging: bool = False) -> None:
+        assert self.field_provider.selected_field is not None
+        assert self.charging_station is not None
+        assert self.charging_station.approach_pose is not None
+        if approach:
+            while self.current_segment is not None and not isinstance(self.current_segment, RowSegment):
+                self._upcoming_path.pop(0)  # NOTE: pop unnecessary turn segments
+            approach_pose = self.charging_station.approach_pose.to_local()
+            approach_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
+            self._upcoming_path.insert(0, approach_segment)
+            self.PATH_GENERATED.emit(self._upcoming_path)
+            await self._drive_along_segment()
+        await self.charging_station.dock()
+        if stop_after_charging:
+            return
+        while self.system.field_friend.bms.is_below_percent(85.0):
+            await rosys.sleep(1)
+
+    def _find_closest_row_index(self, rows: list[Row]) -> int:
         """Find the index of the closest row to the current position"""
         robot_pose = self.system.robot_locator.pose
         shortest_row_distances = [min(robot_pose.distance(row.points[0].to_local()),
@@ -118,6 +209,8 @@ class FieldNavigation(WaypointNavigation):
         relative_end = current_pose.relative_point(first_row_segment.end.point)
         robot_on_headland = relative_start.x * relative_end.x > 0.0
         if robot_on_headland:
+            if self.approach_start_row:
+                return True
             if abs(current_pose.relative_direction(first_row_segment.start)) > self.MAX_ANGLE_DEVIATION:
                 rosys.notify('Robot is not aligned with the row', 'negative')
                 return False
@@ -135,6 +228,25 @@ class FieldNavigation(WaypointNavigation):
                 return False
         return True
 
+    def _generate_row_approach_path(self, row: Row, *, safety_padding: float = 0.1) -> list[DriveSegment]:
+        local_row_start = row.points[0].to_local()
+        local_row_end = row.points[-1].to_local()
+        row_start_pose = Pose(x=local_row_start.x, y=local_row_start.y, yaw=local_row_start.direction(local_row_end))
+        if self.charging_station is not None and self.charging_station.is_charging:
+            assert self.charging_station.approach_pose is not None
+            current_pose = self.charging_station.approach_pose.to_local()
+        else:
+            current_pose = self.system.robot_locator.pose
+        if current_pose.distance(row_start_pose) < safety_padding:
+            return [DriveSegment.from_poses(current_pose, row_start_pose)]
+        end_pose = row_start_pose.transform_pose(Pose(x=-safety_padding, y=0.0, yaw=0.0))
+        row_approach_segment = DriveSegment.from_poses(current_pose, end_pose)
+        DriveSegment.from_poses(row_approach_segment.end, row_start_pose)
+        return [
+            row_approach_segment,
+            DriveSegment.from_poses(row_approach_segment.end, row_start_pose),
+        ]
+
     def _generate_three_point_turn(self, end_pose_current_row: Pose, start_pose_next_row: Pose, radius: float = 1.5) -> list[DriveSegment]:
         direction_to_start = end_pose_current_row.relative_direction(start_pose_next_row)
         distance_to_start = end_pose_current_row.distance(start_pose_next_row)
@@ -148,6 +260,18 @@ class FieldNavigation(WaypointNavigation):
             DriveSegment.from_poses(first_turn_pose, back_up_pose, backward=True),
             DriveSegment.from_poses(back_up_pose, start_pose_next_row),
         ]
+
+    def settings_ui(self) -> None:
+        super().settings_ui()
+        ui.number('Start row', min=0, step=1, value=self.start_row_index, on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'start_row_index')
+        ui.checkbox('Approach start row', on_change=self.request_backup) \
+            .bind_value(self, 'approach_start_row')
+        ui.checkbox('Charge automatically', on_change=self.request_backup) \
+            .bind_value(self, 'charge_automatically') \
+            .bind_enabled_from(self, 'field', lambda field: field is not None)  # TODO: only if field has charging station
 
 
 @dataclass(slots=True, kw_only=True)
