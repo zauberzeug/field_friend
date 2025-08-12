@@ -133,12 +133,10 @@ class FieldNavigation(WaypointNavigation):
 
     async def _run(self) -> None:
         assert self.field is not None
-        if self.field.charge_dock_pose is not None:
+        if self.field.charge_dock_pose is not None and self.charge_automatically:
             if self._should_charge():
-                self.log.warning('Charging')
-                await self._run_charging(stop_after_charging=False)
+                await self._run_charging()
             if self.field.charge_dock_pose is not None and self.has_waypoints and self.system.field_friend.bms.state.is_charging:
-                self.log.warning('Undocking')
                 await self.undock()
                 while not isinstance(self.current_segment, RowSegment):
                     self._upcoming_path.pop(0)
@@ -147,11 +145,13 @@ class FieldNavigation(WaypointNavigation):
                         self.current_segment.row) + self._upcoming_path
                     self.PATH_GENERATED.emit(self._upcoming_path)
         await super()._run()
-        if not self.has_waypoints:
+        if self.charge_automatically and not self.has_waypoints:
             await self._run_charging(approach=False, stop_after_charging=True)
 
     def _should_charge(self) -> bool:
         assert self.field is not None
+        if not self.charge_automatically:
+            return False
         if self.field.charge_dock_pose is None:
             return False
         if self.current_row:
@@ -243,7 +243,9 @@ class FieldNavigation(WaypointNavigation):
         local_row_start = row.points[0].to_local()
         local_row_end = row.points[-1].to_local()
         row_start_pose = Pose(x=local_row_start.x, y=local_row_start.y, yaw=local_row_start.direction(local_row_end))
-        if self.field.charge_dock_pose is not None and self.field.charge_approach_pose is not None:
+        if self.charge_automatically:
+            assert self.field.charge_dock_pose is not None
+            assert self.field.charge_approach_pose is not None
             current_pose = self.field.charge_approach_pose.to_local()
         else:
             current_pose = self.system.robot_locator.pose
@@ -251,7 +253,6 @@ class FieldNavigation(WaypointNavigation):
             return [DriveSegment.from_poses(current_pose, row_start_pose)]
         end_pose = row_start_pose.transform_pose(Pose(x=-safety_padding, y=0.0, yaw=0.0))
         row_approach_segment = DriveSegment.from_poses(current_pose, end_pose)
-        DriveSegment.from_poses(row_approach_segment.end, row_start_pose)
         return [
             row_approach_segment,
             DriveSegment.from_poses(row_approach_segment.end, row_start_pose),
