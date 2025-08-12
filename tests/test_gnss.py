@@ -56,12 +56,13 @@ async def test_rtk_lost(gnss_driving: System, gnss: GnssSimulation):
     assert gnss_driving.robot_locator.pose.point.x > 2.5
 
 
-@pytest.mark.parametrize('direction', (-1, 1))
-async def test_height_correction(system: System, imu: ImuSimulation, direction: int):
+@pytest.mark.parametrize('roll_direction', (-1, 1))
+@pytest.mark.parametrize('pitch_direction', (-1, 1))
+async def test_height_correction(system: System, imu: ImuSimulation, roll_direction: int, pitch_direction: int):
     # pylint: disable=protected-access
-    imu.roll = np.deg2rad(10.0) * direction
-    imu.pitch = np.deg2rad(10.0) * direction
+    imu.roll = np.deg2rad(10.0) * roll_direction
+    imu.pitch = np.deg2rad(10.0) * pitch_direction
     await forward(1)
     corrected_pose = system.robot_locator._correct_gnss_with_imu(Pose(x=0.0, y=0.0, yaw=0.0))
-    assert corrected_pose.x == pytest.approx(direction * -0.108, abs=0.01)
-    assert corrected_pose.y == pytest.approx(direction * 0.112, abs=0.01)
+    assert corrected_pose.x == pytest.approx(pitch_direction * -0.108, abs=0.01)
+    assert corrected_pose.y == pytest.approx(roll_direction * 0.112, abs=0.01)

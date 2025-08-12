@@ -6,7 +6,7 @@ from rosys.geometry import Point3d, Pose, Rectangle, Rotation
 
 @dataclass(kw_only=True)
 class RobotBrainConfiguration:
-    """Configuration for the robot brain of the FieldFriend robot.
+    """Configuration for the robot brain of the Field Friend robot.
 
     Defaults:
         enable_esp_on_startup: None
@@ -19,7 +19,7 @@ class RobotBrainConfiguration:
 
 @dataclass(kw_only=True)
 class MeasurementsConfiguration:
-    """Configuration for the measurements of the FieldFriend robot.
+    """Configuration for the measurements of the Field Friend robot.
 
     Defaults:
         motor_gear_ratio: 12.52
@@ -45,7 +45,7 @@ class MeasurementsConfiguration:
 
 @dataclass(kw_only=True)
 class CropConfiguration:
-    """Configuration for the cropping of the camera of the FieldFriend robot."""
+    """Configuration for the cropping of the camera of the Field Friend robot."""
     left: int
     right: int
     up: int
@@ -70,7 +70,7 @@ class CircleSightPositions:
 
 @dataclass(kw_only=True)
 class CameraConfiguration:
-    """Configuration for the camera of the FieldFriend robot.
+    """Configuration for the camera of the Field Friend robot.
 
     Attributes:
         camera_type: default = 'CalibratableUsbCamera'
@@ -108,7 +108,7 @@ class CameraConfiguration:
 
 @dataclass(kw_only=True)
 class WheelsConfiguration:
-    """Configuration for the wheels of the FieldFriend robot.
+    """Configuration for the wheels of the Field Friend robot.
 
     Defaults:
         name: 'wheels'
@@ -129,7 +129,7 @@ class WheelsConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class CanConfiguration:
-    """Configuration for the can of the FieldFriend robot.
+    """Configuration for the can of the Field Friend robot.
 
     Defaults:
         name: 'can'
@@ -147,7 +147,7 @@ class CanConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class BumperConfiguration:
-    """Configuration for the bumper of the FieldFriend robot.
+    """Configuration for the bumper of the Field Friend robot.
 
     Defaults:
         name: 'bumper'
@@ -170,7 +170,7 @@ class BumperConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class BatteryControlConfiguration:
-    """Configuration for the battery control of the FieldFriend robot.
+    """Configuration for the battery control of the Field Friend robot.
 
     Defaults:
         name: 'battery_control'
@@ -186,7 +186,7 @@ class BatteryControlConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class BmsConfiguration:
-    """Configuration for the bms of the FieldFriend robot.
+    """Configuration for the bms of the Field Friend robot.
 
     Defaults:
         name: 'bms'
@@ -206,7 +206,7 @@ class BmsConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class EstopConfiguration:
-    """Configuration for the estop of the FieldFriend robot.
+    """Configuration for the estop of the Field Friend robot.
 
     Defaults:
         name: 'estop'
@@ -227,7 +227,7 @@ class EstopConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class FlashlightConfiguration:
-    """Configuration for the flashlight of the FieldFriend robot.
+    """Configuration for the flashlight of the Field Friend robot.
 
     Attributes:
         name: default = 'flashlight'
@@ -251,10 +251,11 @@ class FlashlightConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class GnssConfiguration:
-    """Configuration for the gnss of the FieldFriend robot.
+    """Configuration for the GNSS of the Field Friend robot.
 
-    X, Y, Z are the position of the main gnss antenna.
-    The yaw is the direction to the auxiliary antenna. It should be 90°, but the offset is configured in the septentrio software.
+    X, Y, Z are the position of the main GNSS antenna.
+    The yaw is the direction to the auxiliary antenna.
+    It should be 90°, but the offset is configured in the Septentrio software.
 
     Defaults:
         x: 0.041
@@ -278,7 +279,7 @@ class GnssConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class ImuConfiguration:
-    """Configuration for the IMU of the FieldFriend robot.
+    """Configuration for the IMU of the Field Friend robot.
 
     Defaults:
         name: 'imu'
@@ -470,7 +471,7 @@ class SprayerConfiguration:
 
 @dataclass(slots=True, kw_only=True)
 class FieldFriendConfiguration:
-    """Configuration for the FieldFriend robot.
+    """Configuration for the Field Friend robot.
 
     Defaults:
         can: CanConfiguration

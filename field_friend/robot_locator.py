@@ -17,7 +17,11 @@ class RobotLocator(rosys.persistence.Persistable):
     R_IMU_ANGULAR = 0.01
     ODOMETRY_ANGULAR_WEIGHT = 0.1
 
-    def __init__(self, wheels: Wheels, *, gnss: Gnss | None = None, imu: Imu | None = None, gnss_config: GnssConfiguration | None = None) -> None:
+    def __init__(self,
+                 wheels: Wheels, *,
+                 gnss: Gnss | None = None,
+                 imu: Imu | None = None,
+                 gnss_config: GnssConfiguration | None = None) -> None:
         """Robot Locator based on an extended Kalman filter."""
         super().__init__()
         self.log = logging.getLogger('field_friend.robot_locator')
@@ -38,7 +42,7 @@ class RobotLocator(rosys.persistence.Persistable):
 
         self._ignore_gnss = gnss is None
         self._ignore_imu = imu is None
-        self._use_height_correction = isinstance(imu, Imu) and not self._ignore_imu
+        self._auto_tilt_correction = True
         self._r_odom_linear = self.R_ODOM_LINEAR
         self._r_odom_angular = self.R_ODOM_ANGULAR
         self._r_imu_angular = self.R_IMU_ANGULAR
@@ -155,7 +159,7 @@ class RobotLocator(rosys.persistence.Persistable):
             # but the field friend needs the rtk accuracy to function properly
             return
         pose, r_xy, r_theta = self._get_local_pose_and_uncertainty(gnss_measurement)
-        if self._use_height_correction:
+        if self._auto_tilt_correction and isinstance(self._imu, Imu) and not self._ignore_imu:
             pose = self._correct_gnss_with_imu(pose)
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self._x[0, 0]], [self._x[1, 0]], [self._x[2, 0]]]
@@ -178,10 +182,9 @@ class RobotLocator(rosys.persistence.Persistable):
         roll = self._imu.last_measurement.rotation.roll
         pitch = self._imu.last_measurement.rotation.pitch
         antenna_roll_correction = Pose(x=0, y=self._gnss_config.y * (1 - np.cos(roll)), yaw=0)
-        height_correction = Pose(x=self._gnss_config.z * -np.sin(pitch),
+        height_correction = Pose(x=self._gnss_config.z * np.sin(-pitch),
                                  y=self._gnss_config.z * np.sin(roll), yaw=0)
-        pose = pose.transform_pose(antenna_roll_correction).transform_pose(height_correction)
-        return pose
+        return pose.transform_pose(antenna_roll_correction).transform_pose(height_correction)
 
     def _update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         S = H @ self._Sxx @ H.T + Q
@@ -242,8 +245,8 @@ class RobotLocator(rosys.persistence.Persistable):
                     .bind_value_to(self, '_ignore_gnss').tooltip('Ignore GNSS measurements. When deactivated, reset the filter for better positioning.')
                 ui.checkbox('Ignore IMU', value=self._ignore_imu).props('dense color=red').classes('col-span-2') \
                     .bind_value_to(self, '_ignore_imu')
-                ui.checkbox('Correct GNSS with IMU', value=self._use_height_correction).props('dense').classes('col-span-2') \
-                    .bind_value_to(self, '_use_height_correction')
+                ui.checkbox('Correct GNSS with IMU', value=self._auto_tilt_correction).props('dense').classes('col-span-2') \
+                    .bind_value_to(self, '_auto_tilt_correction')
                 with ui.column().classes('w-24 gap-0'):
                     ui.number(label='R v linear', min=0, step=0.01, format='%.3f', suffix='m/s', value=self._r_odom_linear, on_change=self.request_backup) \
                         .bind_value_to(self, '_r_odom_linear')
