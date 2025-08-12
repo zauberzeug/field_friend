@@ -8,6 +8,8 @@ from nicegui import ui
 from rosys.geometry import Pose, Pose3d, Rotation, Velocity
 from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels, WheelsSimulation
 
+from .config.configuration import GnssConfiguration
+
 
 class RobotLocator(rosys.persistence.Persistable):
     R_ODOM_LINEAR = 0.1
@@ -15,7 +17,11 @@ class RobotLocator(rosys.persistence.Persistable):
     R_IMU_ANGULAR = 0.01
     ODOMETRY_ANGULAR_WEIGHT = 0.1
 
-    def __init__(self, wheels: Wheels, gnss: Gnss | None = None, imu: Imu | None = None) -> None:
+    def __init__(self,
+                 wheels: Wheels, *,
+                 gnss: Gnss | None = None,
+                 imu: Imu | None = None,
+                 gnss_config: GnssConfiguration | None = None) -> None:
         """Robot Locator based on an extended Kalman filter."""
         super().__init__()
         self.log = logging.getLogger('field_friend.robot_locator')
@@ -23,6 +29,7 @@ class RobotLocator(rosys.persistence.Persistable):
         self._wheels = wheels
         self._gnss = gnss
         self._imu = imu
+        self._gnss_config = gnss_config
 
         self.pose_frame = Pose3d().as_frame('field_friend.robot_locator')
 
@@ -33,9 +40,9 @@ class RobotLocator(rosys.persistence.Persistable):
         # NOTE: the prediction step needs to be run once before the first GNSS update
         self._first_prediction_done = False
 
-        # bound attributes
         self._ignore_gnss = gnss is None
         self._ignore_imu = imu is None
+        self._auto_tilt_correction = True
         self._r_odom_linear = self.R_ODOM_LINEAR
         self._r_odom_angular = self.R_ODOM_ANGULAR
         self._r_imu_angular = self.R_IMU_ANGULAR
@@ -152,6 +159,8 @@ class RobotLocator(rosys.persistence.Persistable):
             # but the field friend needs the rtk accuracy to function properly
             return
         pose, r_xy, r_theta = self._get_local_pose_and_uncertainty(gnss_measurement)
+        if self._auto_tilt_correction and isinstance(self._imu, Imu) and not self._ignore_imu:
+            pose = self._correct_gnss_with_imu(pose)
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self._x[0, 0]], [self._x[1, 0]], [self._x[2, 0]]]
         H = np.eye(3)
@@ -165,6 +174,17 @@ class RobotLocator(rosys.persistence.Persistable):
         r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
         r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
         return pose, r_xy, r_theta
+
+    def _correct_gnss_with_imu(self, pose: Pose) -> Pose:
+        assert isinstance(self._imu, Imu)
+        assert self._imu.last_measurement is not None
+        assert self._gnss_config is not None
+        roll = self._imu.last_measurement.rotation.roll
+        pitch = self._imu.last_measurement.rotation.pitch
+        antenna_roll_correction = Pose(x=0, y=self._gnss_config.y * (1 - np.cos(roll)), yaw=0)
+        height_correction = Pose(x=self._gnss_config.z * np.sin(-pitch),
+                                 y=self._gnss_config.z * np.sin(roll), yaw=0)
+        return pose.transform_pose(antenna_roll_correction).transform_pose(height_correction)
 
     def _update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
         S = H @ self._Sxx @ H.T + Q
@@ -225,6 +245,8 @@ class RobotLocator(rosys.persistence.Persistable):
                     .bind_value_to(self, '_ignore_gnss').tooltip('Ignore GNSS measurements. When deactivated, reset the filter for better positioning.')
                 ui.checkbox('Ignore IMU', value=self._ignore_imu).props('dense color=red').classes('col-span-2') \
                     .bind_value_to(self, '_ignore_imu')
+                ui.checkbox('Correct GNSS with IMU', value=self._auto_tilt_correction).props('dense').classes('col-span-2') \
+                    .bind_value_to(self, '_auto_tilt_correction')
                 with ui.column().classes('w-24 gap-0'):
                     ui.number(label='R v linear', min=0, step=0.01, format='%.3f', suffix='m/s', value=self._r_odom_linear, on_change=self.request_backup) \
                         .bind_value_to(self, '_r_odom_linear')
