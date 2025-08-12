@@ -129,7 +129,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
         if not await self.implement.get_target():
             self.log.debug('No move target found, continuing...')
             await rosys.automation.parallelize(
-                self._drive_along_segment(),
+                self._drive_along_segment(linear_speed_limit=self.linear_speed_limit),
                 self._block_until_implement_has_target(),
                 return_when_first_completed=True,
             )
@@ -153,23 +153,21 @@ class WaypointNavigation(rosys.persistence.Persistable):
         gc.collect()  # NOTE: auto garbage collection is deactivated to avoid hiccups from Global Interpreter Lock (GIL) so we collect here to reduce memory pressure
 
     @track
-    async def _drive_along_segment(self) -> None:
+    async def _drive_along_segment(self, *, linear_speed_limit: float = 0.3) -> None:
         """Drive the robot to the next waypoint of the navigation"""
-        segment: DriveSegment | None
+        segment = self.current_segment
+        if segment is None:
+            return
         if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
             self.detector.simulated_objects.clear()
             if self.plant_provider is not None:
                 self.plant_provider.clear()
-            for segment in self._upcoming_path:
-                if segment.use_implement:
-                    self.create_segment_simulation(segment)
+            if segment.use_implement:
+                self.create_segment_simulation(segment)
 
-        segment = self.current_segment
-        if segment is None:
-            return
         self.SEGMENT_STARTED.emit(segment)
         stop_at_end = segment.stop_at_end or len(self._upcoming_path) == 1
-        with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit, can_drive_backwards=segment.backward):
+        with self.driver.parameters.set(linear_speed_limit=linear_speed_limit, can_drive_backwards=segment.backward):
             await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
         self._upcoming_path.pop(0)
         self.SEGMENT_COMPLETED.emit(segment)

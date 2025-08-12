@@ -8,7 +8,7 @@ import rosys
 from nicegui import ui
 from rosys import helpers
 from rosys.analysis import track
-from rosys.geometry import GeoPose, Pose, Spline
+from rosys.geometry import GeoPose, Pose
 from rosys.hardware import BmsSimulation
 from rosys.hardware.gnss import GpsQuality
 from shapely.geometry import Point as ShapelyPoint
@@ -164,6 +164,7 @@ class FieldNavigation(WaypointNavigation):
             return False
         return self.system.field_friend.bms.is_below_percent(self.BATTERY_WORKING_PERCENTAGE)
 
+    @track
     async def _run_charging(self, *, approach: bool = True, stop_after_charging: bool = False) -> None:
         assert self.field is not None
         assert self.field.charge_dock_pose is not None
@@ -268,14 +269,21 @@ class FieldNavigation(WaypointNavigation):
             DriveSegment.from_poses(back_up_pose, start_pose_next_row),
         ]
 
+    @track
     async def approach(self):
         assert self.field is not None
         assert self.field.charge_approach_pose is not None
         approach_pose = self.field.charge_approach_pose.to_local()
-        approach_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
-        with self.system.driver.parameters.set(linear_speed_limit=self.DOCKING_SPEED, can_drive_backwards=True):
-            await self.system.driver.drive_spline(approach_segment.spline)
+        forward_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
+        forward_length = forward_segment.spline.estimated_length()
+        backward_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose, backward=True)
+        backward_length = backward_segment.spline.estimated_length()
+        approach_segment = forward_segment if forward_length <= backward_length else backward_segment
+        self._upcoming_path.insert(0, approach_segment)
+        self.PATH_GENERATED.emit(self._upcoming_path)
+        await self._drive_along_segment(linear_speed_limit=self.DOCKING_SPEED)
 
+    @track
     async def dock(self):
         async def wait_for_charging():
             while not self.system.field_friend.bms.state.is_charging:
@@ -292,9 +300,10 @@ class FieldNavigation(WaypointNavigation):
             assert self.field.charge_dock_pose is not None
             self.log.warning(f'Moving to docked pose: {self.field.charge_dock_pose}')
             local_docked_pose = self.field.charge_dock_pose.to_local()
-            spline = Spline.from_poses(self.system.robot_locator.pose, local_docked_pose, backward=True)
-            with self.system.driver.parameters.set(can_drive_backwards=True, linear_speed_limit=self.DOCKING_SPEED):
-                await self.system.driver.drive_spline(spline, flip_hook=True)
+            docking_segment = DriveSegment.from_poses(self.system.robot_locator.pose, local_docked_pose, backward=True)
+            self._upcoming_path.insert(0, docking_segment)
+            self.PATH_GENERATED.emit(self._upcoming_path)
+            await self._drive_along_segment(linear_speed_limit=self.DOCKING_SPEED)
             if isinstance(self.system.field_friend.bms, BmsSimulation):
                 self.system.field_friend.bms.voltage_per_second = 0.03
 
@@ -306,6 +315,7 @@ class FieldNavigation(WaypointNavigation):
         )
         await self.system.field_friend.wheels.stop()
 
+    @track
     async def undock(self):
         assert self.field is not None
         assert self.field.charge_approach_pose is not None
@@ -316,13 +326,10 @@ class FieldNavigation(WaypointNavigation):
         undock_pose = self.field.charge_approach_pose.to_local()
         if isinstance(self.system.field_friend.bms, BmsSimulation):
             self.system.field_friend.bms.voltage_per_second = -0.01
-
         undock_segment = DriveSegment.from_poses(self.system.robot_locator.pose, undock_pose)
         self._upcoming_path.insert(0, undock_segment)
         self.PATH_GENERATED.emit(self._upcoming_path)
-        with self.system.driver.parameters.set(linear_speed_limit=self.DOCKING_SPEED):
-            await self.system.driver.drive_spline(undock_segment.spline)
-        self._upcoming_path.pop(0)
+        await self._drive_along_segment(linear_speed_limit=self.DOCKING_SPEED)
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
