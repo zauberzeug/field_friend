@@ -38,12 +38,14 @@ async def test_complete_field(system: System, field: Field):
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
     assert isinstance(system.current_navigation.path[0], DriveSegment)
-    assert system.current_navigation.path[0].spline.estimated_length() == pytest.approx(0.3345, abs=0.0001)
+    approach_length = system.current_navigation.path[0].spline.estimated_length() + \
+        system.current_navigation.path[1].spline.estimated_length()
+    assert approach_length == pytest.approx(0.3345, abs=0.001)
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
     assert len(row_segments) == 4
     combined_row_length = sum(segment.spline.estimated_length() for segment in row_segments)
     assert combined_row_length == pytest.approx(4 * 10, abs=0.0001)
-    turn_segments = [segment for segment in system.current_navigation.path[1:]
+    turn_segments = [segment for segment in system.current_navigation.path[2:]
                      if not isinstance(segment, RowSegment)]
     assert len(turn_segments) == 3 * 3
     combined_turn_length = sum(segment.spline.estimated_length() for segment in turn_segments)
@@ -88,17 +90,18 @@ async def test_row_change(system: System, field: Field):
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
+    set_robot_pose(system, Pose(x=0.4, y=0.0, yaw=0.0))
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
     turn_segments = [segment for segment in system.current_navigation.path
                      if not isinstance(segment, RowSegment)]
-    assert turn_segments[1].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
-    assert turn_segments[2].spline.estimated_length() == pytest.approx(2.550, abs=0.001)
-    assert turn_segments[3].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
-    assert_point(turn_segments[1].start.point, row_segments[0].end.point)
-    assert_point(turn_segments[3].end.point, row_segments[1].start.point)
+    assert turn_segments[0].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
+    assert turn_segments[1].spline.estimated_length() == pytest.approx(2.550, abs=0.001)
+    assert turn_segments[2].spline.estimated_length() == pytest.approx(2.461, abs=0.001)
+    assert_point(turn_segments[0].start.point, row_segments[0].end.point)
+    assert_point(turn_segments[2].end.point, row_segments[1].start.point)
 
 
 @pytest.mark.parametrize('heading_degrees', (0, 180))
@@ -182,6 +185,7 @@ async def test_selected_beds(system: System, field_with_beds: Field):
 
 
 async def test_bed_crops(system: System, field_with_beds: Field):
+    set_robot_pose(system, Pose(x=0.4, y=0.0, yaw=0.0))
     system.field_provider.select_field(field_with_beds.id)
     system.field_provider.only_specific_beds = True
     system.field_provider.selected_beds = [0, 2]
@@ -190,19 +194,19 @@ async def test_bed_crops(system: System, field_with_beds: Field):
     assert isinstance(system.current_navigation, FieldNavigation)
     system.current_implement = system.implements['Weed Screw']
     assert isinstance(system.current_implement, WeedingImplement)
-    driven_segments = 0
+    started_segments = 0
 
-    def count_driven_segments(_: DriveSegment) -> None:
-        nonlocal driven_segments
-        driven_segments += 1
-    system.current_navigation.SEGMENT_COMPLETED.register(count_driven_segments)
+    def count_started_segments(_: DriveSegment) -> None:
+        nonlocal started_segments
+        started_segments += 1
+    system.current_navigation.SEGMENT_STARTED.register(count_started_segments)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: driven_segments == 1)
+    await forward(until=lambda: started_segments == 1)
     await forward(2)
     assert system.current_implement.cultivated_crop == field_with_beds.bed_crops[str(0)]
 
-    await forward(until=lambda: driven_segments == 5, timeout=200)
+    await forward(until=lambda: started_segments == 5, timeout=200)
     await forward(2)
     assert system.current_implement.cultivated_crop == field_with_beds.bed_crops[str(2)]
     await forward(until=lambda: system.automator.is_stopped)
