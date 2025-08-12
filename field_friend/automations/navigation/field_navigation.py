@@ -312,8 +312,13 @@ class FieldNavigation(WaypointNavigation):
         undock_pose = self.field.charge_approach_pose.to_local()
         if isinstance(self.system.field_friend.bms, BmsSimulation):
             self.system.field_friend.bms.voltage_per_second = -0.01
+
+        undock_segment = DriveSegment.from_poses(self.system.robot_locator.pose, undock_pose)
+        self._upcoming_path.insert(0, undock_segment)
+        self.PATH_GENERATED.emit(self._upcoming_path)
         with self.system.driver.parameters.set(linear_speed_limit=self.DOCKING_SPEED):
-            await self.system.driver.drive_to(undock_pose.point)
+            await self.system.driver.drive_spline(undock_segment.spline)
+        self._upcoming_path.pop(0)
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
@@ -362,8 +367,8 @@ class FieldNavigation(WaypointNavigation):
                 assert self.field is not None
                 assert self.field.charge_dock_pose is not None
                 local_docked_pose = self.field.charge_dock_pose.to_local()
-                x = local_docked_pose.x - self.system.robot_locator.pose.x
-                y = local_docked_pose.y - self.system.robot_locator.pose.y
+                x = self.system.robot_locator.pose.x - local_docked_pose.x
+                y = self.system.robot_locator.pose.y - local_docked_pose.y
                 position_deviation_label.set_text(f'Position deviation: {x:.3f}m, {y:.3f}m')
             rosys.on_repeat(update_position_deviation, rosys.config.ui_update_interval)
 
