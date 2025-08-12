@@ -157,6 +157,8 @@ class FieldNavigation(WaypointNavigation):
         if self.current_row:
             self.log.debug('Not charging: Not allowed to charge on row')
             return False
+        if sum(1 for segment in self._upcoming_path if isinstance(segment, RowSegment)) == 0:
+            return False
         closest_row_index = self._find_closest_row_index(self.field_provider.get_rows_to_work_on())
         closest_row = self.field_provider.get_rows_to_work_on()[closest_row_index]
         closest_row_start = closest_row.points[0].to_local()
