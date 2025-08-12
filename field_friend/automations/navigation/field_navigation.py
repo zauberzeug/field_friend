@@ -162,7 +162,7 @@ class FieldNavigation(WaypointNavigation):
         closest_row_start = closest_row.points[0].to_local()
         if closest_row_start.distance(self.system.robot_locator.pose.point) > 0.1:
             return False
-        return self.system.field_friend.bms.is_below_percent(self.BATTERY_WORKING_PERCENTAGE)
+        return self.system.field_friend.bms.is_below_percent(self.BATTERY_CHARGE_PERCENTAGE)
 
     @track
     async def _run_charging(self, *, approach: bool = True, stop_after_charging: bool = False) -> None:
@@ -180,7 +180,7 @@ class FieldNavigation(WaypointNavigation):
         await self.dock()
         if stop_after_charging:
             return
-        while self.system.field_friend.bms.is_below_percent(self.BATTERY_CHARGE_PERCENTAGE):
+        while self.system.field_friend.bms.is_below_percent(self.BATTERY_WORKING_PERCENTAGE):
             await rosys.sleep(1)
 
     def _find_closest_row_index(self, rows: list[Row]) -> int:
