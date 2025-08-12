@@ -5,7 +5,7 @@ from typing import Any, Self
 
 import rosys
 import shapely
-from rosys.geometry import GeoPoint, Point
+from rosys.geometry import GeoPoint, GeoPose, Point
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 
@@ -52,7 +52,9 @@ class Field:
                  row_support_points: list[RowSupportPoint] | None = None,
                  bed_count: int = 1,
                  bed_spacing: float = 0.5,
-                 bed_crops: dict[str, str | None] | None = None) -> None:
+                 bed_crops: dict[str, str | None] | None = None,
+                 docking_distance: float = 3.0,
+                 charge_dock_pose: GeoPose | None = None) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
@@ -68,6 +70,10 @@ class Field:
         self.rows: list[Row] = []
         self.outline: list[GeoPoint] = []
         self.bed_crops: dict[str, str | None] = bed_crops or {str(i): None for i in range(bed_count)}
+        self.docking_distance: float = docking_distance
+        self._charge_dock_pose: GeoPose | None = None
+        self._charge_approach_pose: GeoPose | None = None
+        self.charge_dock_pose = charge_dock_pose or GeoPose.from_degrees(lat=51.983158, lon=7.434479, heading=40.9)
         self.refresh()
 
     @property
@@ -81,6 +87,19 @@ class Field:
     @property
     def outline_cartesian_as_tuples(self) -> list[tuple[float, float]]:
         return [p.tuple for p in self.outline_cartesian]
+
+    @property
+    def charge_dock_pose(self) -> GeoPose | None:
+        return self._charge_dock_pose
+
+    @charge_dock_pose.setter
+    def charge_dock_pose(self, pose: GeoPose) -> None:
+        self._charge_dock_pose = pose
+        self._charge_approach_pose = self._charge_dock_pose.relative_shift_by(x=self.docking_distance)
+
+    @property
+    def charge_approach_pose(self) -> GeoPose | None:
+        return self._charge_approach_pose
 
     def area(self) -> float:
         outline_cartesian = self.outline_cartesian
@@ -165,7 +184,9 @@ class Field:
             'row_support_points': [],
             'bed_count': 1,
             'bed_spacing': 1,
-            'bed_crops': {}
+            'bed_crops': {},
+            'docking_distance': 3.0,
+            'charge_dock_pose': None,
         }
         for key in defaults:
             if key in data:
@@ -179,6 +200,8 @@ class Field:
                                               lon=data[key]['lon'] if 'lon' in data[key] else data[key]['long'])
         data['row_support_points'] = [rosys.persistence.from_dict(RowSupportPoint, sp)
                                       for sp in data.get('row_support_points', [])]
+        charge_dock_tuple: tuple[float, float, float] | None = data.get('charge_dock_pose', None)
+        data['charge_dock_pose'] = GeoPose.from_degrees(*charge_dock_tuple) if charge_dock_tuple else None
         return cls(**cls.args_from_dict(data))
 
     def get_buffered_area(self) -> list[GeoPoint]:
@@ -216,5 +239,7 @@ class Field:
             'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
             'bed_count': self.bed_count,
             'bed_spacing': self.bed_spacing,
-            'bed_crops': self.bed_crops
+            'bed_crops': self.bed_crops,
+            'docking_distance': self.docking_distance,
+            'charge_dock_pose': self.charge_dock_pose.degree_tuple if self.charge_dock_pose is not None else None,
         }

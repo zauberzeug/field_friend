@@ -16,6 +16,7 @@ from .components.hardware_control import create_hardware_control_ui
 from .components.io_overview import IoOverview as io_overview
 from .components.log_monitor import LogMonitor
 from .components.settings import create_settings_ui
+from .components.status_bulb import StatusBulb as status_bulb
 from .components.status_dev import status_dev_page
 
 
@@ -87,14 +88,20 @@ class DevPage:
                     self.system.field_friend.imu.developer_ui()
 
         with ui.row():
+            if self.system.field_navigation is not None:
+                with ui.card():
+                    self.system.field_navigation.developer_ui()
+            if self.system.plant_locator is not None:
+                with ui.card():
+                    self.system.plant_locator.developer_ui()
+
+        with ui.row():
             with ui.card():
                 self.system.field_friend.bms.developer_ui()
                 if hasattr(self.system.field_friend, 'battery_control') and self.system.field_friend.battery_control is not None:
-                    ui.label('').tooltip('Battery Box out connectors 1-4') \
-                        .bind_text_from(self.system.field_friend.battery_control, 'status',
-                                        backward=lambda x: 'Out 1..4 is on' if x else 'Out 1..4 is off')
-            with ui.card():
-                self.system.charging_station.developer_ui()
+                    with ui.row():
+                        ui.label('Out 1..4 Status:').tooltip('Battery Box out connectors 1-4')
+                        status_bulb().bind_value_from(self.system.field_friend.battery_control, 'status')
 
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
             with ui.row():
@@ -104,11 +111,6 @@ class DevPage:
                 with ui.card().style('min-width: 200px;'):
                     esp_pins_p0 = self.system.field_friend.robot_brain.esp_pins_p0
                     esp_pins_p0.developer_ui()
-
-        if self.system.plant_locator is not None:
-            with ui.row():
-                with ui.card():
-                    self.system.plant_locator.developer_ui()
 
         with ui.card().classes('w-1/2'):
             self.log_monitor.ui()

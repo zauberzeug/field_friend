@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 
 import numpy as np
 import rosys
 from nicegui import ui
 from rosys import helpers
 from rosys.analysis import track
-from rosys.geometry import Pose
+from rosys.geometry import GeoPose, Pose, Spline
+from rosys.hardware import BmsSimulation
+from rosys.hardware.gnss import GpsQuality
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
@@ -18,13 +20,15 @@ from .waypoint_navigation import DriveSegment, WaypointNavigation
 
 if TYPE_CHECKING:
     from ...system import System
-    from ..charging_station import ChargingStation
 
 
 class FieldNavigation(WaypointNavigation):
     MAX_START_DISTANCE = 2.0
     MAX_DISTANCE_DEVIATION = 0.1
     MAX_ANGLE_DEVIATION = np.deg2rad(15.0)
+    DOCKING_SPEED = 0.1
+    BATTERY_CHARGE_PERCENTAGE = 30.0
+    BATTERY_WORKING_PERCENTAGE = 85.0
     START_ROW_INDEX = 0
     APPROACH_START_ROW = False
     CHARGE_AUTOMATICALLY = False
@@ -46,11 +50,6 @@ class FieldNavigation(WaypointNavigation):
     @property
     def field(self) -> Field | None:
         return self.field_provider.selected_field
-
-    @property
-    def charging_station(self) -> ChargingStation | None:
-        # return self.field_provider.selected_field.charging_station if self.field_provider.selected_field else None
-        return self.system.charging_station
 
     @property
     def current_row(self) -> Row | None:
@@ -102,8 +101,8 @@ class FieldNavigation(WaypointNavigation):
             row_reversed = not row_reversed
 
         if self.charge_automatically:
-            assert self.charging_station is not None
-            assert self.charging_station.approach_pose is not None
+            assert self.field is not None
+            assert self.field.charge_approach_pose is not None
             approach_start: Pose
             if row_reversed:
                 # NOTE: last row should not be reversed, but it is flipped at the end of the last loop
@@ -120,7 +119,7 @@ class FieldNavigation(WaypointNavigation):
                 approach_start = drive_segment.end
             else:
                 approach_start = path_segments[-1].end
-            approach_pose = self.charging_station.approach_pose.to_local()
+            approach_pose = self.field.charge_approach_pose.to_local()
             approach_segment = DriveSegment.from_poses(approach_start, approach_pose)
             path_segments = [*path_segments, approach_segment]
 
@@ -129,11 +128,14 @@ class FieldNavigation(WaypointNavigation):
         return path_segments
 
     async def _run(self) -> None:
-        if self.charging_station:
+        assert self.field is not None
+        if self.field.charge_dock_pose is not None:
             if self._should_charge():
+                self.log.warning('Charging')
                 await self._run_charging(stop_after_charging=False)
-            if self.charging_station.is_charging:
-                await self.charging_station.undock()
+            if self.field.charge_dock_pose is not None and self.has_waypoints and self.system.field_friend.bms.state.is_charging:
+                self.log.warning('Undocking')
+                await self.undock()
                 while not isinstance(self.current_segment, RowSegment):
                     self._upcoming_path.pop(0)
                 if isinstance(self.current_segment, RowSegment):
@@ -145,7 +147,8 @@ class FieldNavigation(WaypointNavigation):
             await self._run_charging(approach=False, stop_after_charging=True)
 
     def _should_charge(self) -> bool:
-        if self.charging_station is None:
+        assert self.field is not None
+        if self.field.charge_dock_pose is None:
             return False
         if self.current_row:
             self.log.debug('Not charging: Not allowed to charge on row')
@@ -155,24 +158,24 @@ class FieldNavigation(WaypointNavigation):
         closest_row_start = closest_row.points[0].to_local()
         if closest_row_start.distance(self.system.robot_locator.pose.point) > 0.1:
             return False
-        return self.system.field_friend.bms.is_below_percent(30.0)
+        return self.system.field_friend.bms.is_below_percent(self.BATTERY_WORKING_PERCENTAGE)
 
     async def _run_charging(self, *, approach: bool = True, stop_after_charging: bool = False) -> None:
-        assert self.field_provider.selected_field is not None
-        assert self.charging_station is not None
-        assert self.charging_station.approach_pose is not None
+        assert self.field is not None
+        assert self.field.charge_dock_pose is not None
+        assert self.field.charge_approach_pose is not None
         if approach:
             while self.current_segment is not None and not isinstance(self.current_segment, RowSegment):
                 self._upcoming_path.pop(0)  # NOTE: pop unnecessary turn segments
-            approach_pose = self.charging_station.approach_pose.to_local()
+            approach_pose = self.field.charge_approach_pose.to_local()
             approach_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
             self._upcoming_path.insert(0, approach_segment)
             self.PATH_GENERATED.emit(self._upcoming_path)
             await self._drive_along_segment()
-        await self.charging_station.dock()
+        await self.dock()
         if stop_after_charging:
             return
-        while self.system.field_friend.bms.is_below_percent(85.0):
+        while self.system.field_friend.bms.is_below_percent(self.BATTERY_CHARGE_PERCENTAGE):
             await rosys.sleep(1)
 
     def _find_closest_row_index(self, rows: list[Row]) -> int:
@@ -229,12 +232,12 @@ class FieldNavigation(WaypointNavigation):
         return True
 
     def _generate_row_approach_path(self, row: Row, *, safety_padding: float = 0.1) -> list[DriveSegment]:
+        assert self.field is not None
         local_row_start = row.points[0].to_local()
         local_row_end = row.points[-1].to_local()
         row_start_pose = Pose(x=local_row_start.x, y=local_row_start.y, yaw=local_row_start.direction(local_row_end))
-        if self.charging_station is not None and self.charging_station.is_charging:
-            assert self.charging_station.approach_pose is not None
-            current_pose = self.charging_station.approach_pose.to_local()
+        if self.field.charge_dock_pose is not None and self.field.charge_approach_pose is not None:
+            current_pose = self.field.charge_approach_pose.to_local()
         else:
             current_pose = self.system.robot_locator.pose
         if current_pose.distance(row_start_pose) < safety_padding:
@@ -261,6 +264,70 @@ class FieldNavigation(WaypointNavigation):
             DriveSegment.from_poses(back_up_pose, start_pose_next_row),
         ]
 
+    async def approach(self):
+        assert self.field is not None
+        assert self.field.charge_approach_pose is not None
+        approach_pose = self.field.charge_approach_pose.to_local()
+        approach_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
+        with self.system.driver.parameters.set(linear_speed_limit=self.DOCKING_SPEED, can_drive_backwards=True):
+            await self.system.driver.drive_spline(approach_segment.spline)
+
+    async def dock(self):
+        async def wait_for_charging():
+            while not self.system.field_friend.bms.state.is_charging:
+                await rosys.sleep(0.1)
+            self.log.warning('Charging station detected, stopping')
+
+        async def gnss_move():
+            assert self.system.gnss is not None
+            assert self.system.gnss.last_measurement is not None
+            if self.system.gnss.last_measurement.gps_quality != GpsQuality.RTK_FIXED:
+                self.log.error('No RTK fix, aborting')
+                return
+            assert self.field is not None
+            assert self.field.charge_dock_pose is not None
+            self.log.warning(f'Moving to docked pose: {self.field.charge_dock_pose}')
+            local_docked_pose = self.field.charge_dock_pose.to_local()
+            spline = Spline.from_poses(self.system.robot_locator.pose, local_docked_pose, backward=True)
+            with self.system.driver.parameters.set(can_drive_backwards=True, linear_speed_limit=self.DOCKING_SPEED):
+                await self.system.driver.drive_spline(spline, flip_hook=True)
+            if isinstance(self.system.field_friend.bms, BmsSimulation):
+                self.system.field_friend.bms.voltage_per_second = 0.03
+
+        rosys.notify('Docking to charging station')
+        await rosys.automation.parallelize(
+            gnss_move(),
+            wait_for_charging(),
+            return_when_first_completed=True,
+        )
+        await self.system.field_friend.wheels.stop()
+
+    async def undock(self):
+        assert self.field is not None
+        assert self.field.charge_approach_pose is not None
+        if self.field.charge_approach_pose is None:
+            rosys.notify('Record the docked position first', 'negative')
+            return
+        rosys.notify('Detaching from charging station')
+        undock_pose = self.field.charge_approach_pose.to_local()
+        if isinstance(self.system.field_friend.bms, BmsSimulation):
+            self.system.field_friend.bms.voltage_per_second = -0.01
+        with self.system.driver.parameters.set(linear_speed_limit=self.DOCKING_SPEED):
+            await self.system.driver.drive_to(undock_pose.point)
+
+    def backup_to_dict(self) -> dict[str, Any]:
+        return super().backup_to_dict() | {
+            'start_row_index': self.start_row_index,
+            'approach_start_row': self.approach_start_row,
+            'charge_automatically': self.charge_automatically,
+        }
+
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
+        self.start_row_index = data.get('start_row_index', self.START_ROW_INDEX)
+        self.approach_start_row = data.get('approach_start_row', self.APPROACH_START_ROW)
+        self.charge_automatically = data.get('charge_automatically', self.CHARGE_AUTOMATICALLY)
+
     def settings_ui(self) -> None:
         super().settings_ui()
         ui.number('Start row', min=0, step=1, value=self.start_row_index, on_change=self.request_backup) \
@@ -272,6 +339,33 @@ class FieldNavigation(WaypointNavigation):
         ui.checkbox('Charge automatically', on_change=self.request_backup) \
             .bind_value(self, 'charge_automatically') \
             .bind_enabled_from(self, 'field', lambda field: field is not None)  # TODO: only if field has charging station
+
+    def developer_ui(self):
+        def set_docked_position():
+            assert self.field is not None
+            self.field.charge_dock_pose = GeoPose.from_pose(self.system.robot_locator.pose)
+            self.field_provider.request_backup()
+            self.field_provider.FIELDS_CHANGED.emit()
+
+        with ui.column():
+            assert self.field is not None
+            ui.label('Field Navigation').classes('text-center text-bold')
+            ui.number(label='Docking distance', min=0, step=0.01, format='%.3f', suffix='m', value=self.field.docking_distance) \
+                .classes('w-4/5').bind_value_to(self.field, 'docking_distance')
+            ui.button('Approach', on_click=lambda: self.system.automator.start(self.approach()))
+            ui.button('Dock', on_click=lambda: self.system.automator.start(self.dock()))
+            ui.button('Undock', on_click=lambda: self.system.automator.start(self.undock()))
+            ui.button('Set Docked Position', on_click=set_docked_position)
+            position_deviation_label = ui.label()
+
+            def update_position_deviation():
+                assert self.field is not None
+                assert self.field.charge_dock_pose is not None
+                local_docked_pose = self.field.charge_dock_pose.to_local()
+                x = local_docked_pose.x - self.system.robot_locator.pose.x
+                y = local_docked_pose.y - self.system.robot_locator.pose.y
+                position_deviation_label.set_text(f'Position deviation: {x:.3f}m, {y:.3f}m')
+            rosys.on_repeat(update_position_deviation, rosys.config.ui_update_interval)
 
 
 @dataclass(slots=True, kw_only=True)

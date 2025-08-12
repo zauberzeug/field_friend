@@ -16,7 +16,6 @@ from .app_controls import AppControls as app_controls
 from .automations import (
     AutomationWatcher,
     BatteryWatcher,
-    ChargingStation,
     FieldProvider,
     KpiProvider,
     PlantLocator,
@@ -91,7 +90,6 @@ class System(rosys.persistence.Persistable):
                                                           camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
-        self.charging_station: ChargingStation = ChargingStation(self)
         self.plant_provider = PlantProvider().persistent()
         self.kpi_provider = KpiProvider().persistent()
         if not self.is_real:
