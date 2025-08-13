@@ -133,7 +133,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 self._block_until_implement_has_target(),
                 return_when_first_completed=True,
             )
-        if isinstance(self.implement, WeedingImplement):
+        if isinstance(self.implement, WeedingImplement) and self.current_segment is not None and self.current_segment.use_implement:
             implement_target = await self.implement.get_target()
             if not implement_target:
                 self.log.debug('Implement has no target anymore. Possibly overshot, continuing...')
