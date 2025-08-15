@@ -121,12 +121,12 @@ class WaypointNavigation(rosys.persistence.Persistable):
     async def _block_until_implement_has_target(self) -> Point:
         while True:
             assert isinstance(self.current_segment, DriveSegment)
-            if self.current_segment.use_implement and (target := await self.implement.get_target()):
+            if (target := await self._get_valid_implement_target()):
                 return target
             await rosys.sleep(0.1)
 
     async def _run(self) -> None:
-        if not await self.implement.get_target():
+        if not await self._get_valid_implement_target():
             self.log.debug('No move target found, continuing...')
             await rosys.automation.parallelize(
                 self._drive_along_segment(linear_speed_limit=self.linear_speed_limit),
@@ -137,7 +137,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
             return
         assert self.current_segment is not None
         if isinstance(self.implement, WeedingImplement) and self.current_segment.use_implement:
-            implement_target = await self.implement.get_target()
+            implement_target = await self._get_valid_implement_target()
             if not implement_target:
                 self.log.debug('Implement has no target anymore. Possibly overshot, continuing...')
                 return
@@ -200,25 +200,53 @@ class WaypointNavigation(rosys.persistence.Persistable):
         spline = current_segment.spline
         current_t = spline.closest_point(current_pose.x, current_pose.y)
         target_t = spline.closest_point(target.x, target.y, t_min=-0.2, t_max=1.2)
-        target_pose = spline.pose(target_t)
-        work_x_corrected_pose = target_pose + PoseStep(linear=-self.system.field_friend.WORK_X, angular=0, time=0)
+        work_x_corrected_pose = self._target_pose_on_current_segment(target)
         target_t = spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y, t_min=-0.2, t_max=1.2)
-        if target_t < current_t:
+        if target_t < current_t or target_t > 1.0:
             # TODO: we need a sturdy function to advance a certain distance on a spline, because this method is off by a tiny amount. That's why +0.00003
             # test_weeding.py::test_advance_when_target_behind_robot tests this case. The weed is skipped in this case
-            advance_distance = self.driver.parameters.minimum_drive_distance + 0.00003
-            target_pose = current_pose + PoseStep(linear=advance_distance, angular=0.0, time=0.0)
-            target_t = spline.closest_point(target_pose.x, target_pose.y)
-            advance_spline = sub_spline(spline, current_t, target_t)
+            advance_distance = self.driver.parameters.minimum_drive_distance
+            while True:
+                target_pose = current_pose + PoseStep(linear=advance_distance, angular=0.0, time=0.0)
+                target_t = spline.closest_point(target_pose.x, target_pose.y)
+                advance_spline = sub_spline(spline, current_t, target_t)
+                if advance_spline.estimated_length() > self.driver.parameters.minimum_drive_distance:
+                    break
+                advance_distance += 0.00001
             self.log.debug('Target behind robot, continue for %s meters', advance_distance)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
                 await self.driver.drive_spline(advance_spline, throttle_at_end=False, stop_at_end=False)
             return False
-        self.log.debug('Driving to %s from target %s', target_pose, target)
+        self.log.debug('Driving to %s from target %s', work_x_corrected_pose, target)
+        # TODO: spline could be too short, we need to check if the spline is too short and handle that
         target_spline = sub_spline(spline, current_t, target_t)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
             await self.driver.drive_spline(target_spline)
         return True
+
+    def _target_pose_on_current_segment(self, target: Point) -> Pose:
+        assert self.current_segment is not None
+        spline = self.current_segment.spline
+        target_t = spline.closest_point(target.x, target.y, t_min=-0.2, t_max=1.2)
+        target_pose = spline.pose(target_t)
+        return target_pose + PoseStep(linear=-self.system.field_friend.WORK_X, angular=0, time=0)
+
+    async def _get_valid_implement_target(self) -> Point | None:
+        if self.current_segment is None or not self.current_segment.use_implement:
+            return None
+        implement_target = await self.implement.get_target()
+        if not implement_target:
+            return None
+        t = self.current_segment.spline.closest_point(implement_target.x, implement_target.y)
+        if t in (0.0, 1.0):
+            self.log.warning('Target is on segment end, continuing...')
+            return None
+        work_x_corrected_pose = self._target_pose_on_current_segment(implement_target)
+        t = self.current_segment.spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y)
+        if t in (0.0, 1.0):
+            self.log.warning('WorkX corrected target is on segment end, continuing...')
+            return None
+        return implement_target
 
     def backup_to_dict(self) -> dict[str, Any]:
         return {
