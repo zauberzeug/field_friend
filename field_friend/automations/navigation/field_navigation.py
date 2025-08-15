@@ -44,6 +44,7 @@ class FieldNavigation(WaypointNavigation):
         self.approach_start_row = self.APPROACH_START_ROW
         self.start_row_index = self.START_ROW_INDEX
         self.charge_automatically = self.CHARGE_AUTOMATICALLY
+        self.force_charge = False
 
         self.SEGMENT_STARTED.register(self._handle_segment_started)
 
@@ -165,6 +166,8 @@ class FieldNavigation(WaypointNavigation):
         closest_row_start = closest_row.points[0].to_local()
         if closest_row_start.distance(self.system.robot_locator.pose.point) > 0.1:
             return False
+        if self.force_charge:
+            return True
         return self.system.field_friend.bms.is_below_percent(self.BATTERY_CHARGE_PERCENTAGE)
 
     @track
@@ -183,7 +186,7 @@ class FieldNavigation(WaypointNavigation):
         await self.dock()
         if stop_after_charging:
             return
-        while self.system.field_friend.bms.is_below_percent(self.BATTERY_WORKING_PERCENTAGE):
+        while self.system.field_friend.bms.is_below_percent(self.BATTERY_WORKING_PERCENTAGE) or self.force_charge:
             await rosys.sleep(1)
 
     def _find_closest_row_index(self, rows: list[Row]) -> int:
@@ -372,6 +375,8 @@ class FieldNavigation(WaypointNavigation):
             ui.label('Field Navigation').classes('text-center text-bold')
             ui.number(label='Docking distance', min=0, step=0.01, format='%.3f', suffix='m', value=self.field.docking_distance) \
                 .classes('w-4/5').bind_value_to(self.field, 'docking_distance')
+            ui.checkbox('Force charge', on_change=self.request_backup) \
+                .bind_value(self, 'force_charge')
             ui.button('Approach', on_click=lambda: self.system.automator.start(self.approach()))
             ui.button('Dock', on_click=lambda: self.system.automator.start(self.dock()))
             ui.button('Undock', on_click=lambda: self.system.automator.start(self.undock()))
