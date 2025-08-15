@@ -1,7 +1,7 @@
 fiona
 geopandas
 geopy
-git+https://github.com/zauberzeug/rosys.git@d692e7d86a8f121f000001613257fb70f94b6252
+git+https://github.com/zauberzeug/rosys.git@51a072d5a95bff5bd863a8b33611101e4698f88a
 icecream
 pillow
 prompt-toolkit # for lizard monitor
