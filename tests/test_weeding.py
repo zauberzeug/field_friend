@@ -13,6 +13,8 @@ async def test_working_with_weeding_screw(system: System, detector: rosys.vision
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.05, z=0)))
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.2, y=-0.08, z=0)))
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_implement = system.implements['Weed Screw']
     system.automator.start()

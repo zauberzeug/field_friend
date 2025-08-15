@@ -202,6 +202,10 @@ class WaypointNavigation(rosys.persistence.Persistable):
         target_t = spline.closest_point(target.x, target.y, t_min=-0.2, t_max=1.2)
         work_x_corrected_pose = self._target_pose_on_current_segment(target)
         target_t = spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y, t_min=-0.2, t_max=1.2)
+        if current_pose.distance(work_x_corrected_pose) < self.driver.parameters.minimum_drive_distance:
+            # TODO: also check drill radius
+            self.log.debug('Target close, working with out advancing...')
+            return True
         if target_t < current_t or target_t > 1.0:
             # TODO: we need a sturdy function to advance a certain distance on a spline, because this method is off by a tiny amount. That's why +0.00003
             # test_weeding.py::test_advance_when_target_behind_robot tests this case. The weed is skipped in this case
