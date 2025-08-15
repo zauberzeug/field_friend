@@ -170,8 +170,6 @@ async def test_implement_usage(system: System, detector: rosys.vision.DetectorSi
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    for sim_object in detector.simulated_objects:
-        print(sim_object.position)
     assert len(detector.simulated_objects) == len(keep_weeds)
 
 
