@@ -73,8 +73,7 @@ class Field:
         self.docking_distance: float = docking_distance
         self._charge_dock_pose: GeoPose | None = None
         self._charge_approach_pose: GeoPose | None = None
-        if charge_dock_pose:
-            self.charge_dock_pose = charge_dock_pose
+        self.charge_dock_pose = charge_dock_pose
         self.refresh()
 
     @property
@@ -94,9 +93,13 @@ class Field:
         return self._charge_dock_pose
 
     @charge_dock_pose.setter
-    def charge_dock_pose(self, pose: GeoPose) -> None:
-        self._charge_dock_pose = pose
-        self._charge_approach_pose = self._charge_dock_pose.relative_shift_by(x=self.docking_distance)
+    def charge_dock_pose(self, pose: GeoPose | None) -> None:
+        if pose:
+            self._charge_dock_pose = pose
+            self._charge_approach_pose = self._charge_dock_pose.relative_shift_by(x=self.docking_distance)
+        else:
+            self._charge_dock_pose = None
+            self._charge_approach_pose = None
 
     @property
     def charge_approach_pose(self) -> GeoPose | None:
