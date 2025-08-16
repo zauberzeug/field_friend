@@ -46,7 +46,9 @@ class Fields:
                         outline_buffer_width=field_data['outline_buffer_width'],
                         bed_count=field_data['bed_count'],
                         bed_spacing=field_data['bed_spacing'],
-                        bed_crops=field_data['bed_crops']
+                        bed_crops=field_data['bed_crops'],
+                        docking_distance=field_data['docking_distance'],
+                        charge_dock_pose=field_data['charge_dock_pose']
                     )
                 else:
                     self.system.field_provider.create_field(new_field)
@@ -80,7 +82,8 @@ class Fields:
                 bed_id = None
                 if is_inside:
                     row = min(field.rows, key=lambda r: r.line_segment().line.foot_point(
-                        self.system.robot_locator.pose.point).distance(self.system.robot_locator.pose.point))  # nearest row
+                        # nearest row
+                        self.system.robot_locator.pose.point).distance(self.system.robot_locator.pose.point))
                     row_index = int(row.id.split('_')[-1])
                     bed_id = int(row_index // field.row_count)
                 return JSONResponse(
