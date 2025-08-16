@@ -159,7 +159,7 @@ class RobotLocator(rosys.persistence.Persistable):
             # but the field friend needs the rtk accuracy to function properly
             return
         pose, r_xy, r_theta = self._get_local_pose_and_uncertainty(gnss_measurement)
-        if self._auto_tilt_correction and isinstance(self._imu, Imu) and not self._ignore_imu:
+        if self._auto_tilt_correction and isinstance(self._imu, Imu) and not self._ignore_imu and self._imu.last_measurement is not None:
             pose = self._correct_gnss_with_imu(pose)
         z = [[pose.x], [pose.y], [pose.yaw]]
         h = [[self._x[0, 0]], [self._x[1, 0]], [self._x[2, 0]]]

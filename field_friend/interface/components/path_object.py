@@ -30,16 +30,16 @@ class PathObject(ui.scene.group):
         if self.system.current_navigation is None:
             return
 
-        def update_upcoming_path() -> None:
+        def update_upcoming_path(_: DriveSegment) -> None:
             assert self.system.current_navigation is not None
             self.update(self.system.current_navigation.path)
-        self.system.current_navigation.WAYPOINT_REACHED.register_ui(update_upcoming_path)
+        self.system.current_navigation.SEGMENT_COMPLETED.register_ui(update_upcoming_path)
         self.system.current_navigation.PATH_GENERATED.register_ui(self.update)
 
     def update(self, path: list[DriveSegment]) -> None:
         self.clear_path()
         with self.scene or nullcontext():
-            for segment in path:
+            for segment in reversed(path):
                 color: str
                 if segment.use_implement:
                     color = '#ff0000'  # red

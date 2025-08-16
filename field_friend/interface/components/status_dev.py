@@ -81,16 +81,6 @@ def status_dev_page(robot: FieldFriend, system: System):
                 status_control_label = ui.label()
 
         with ui.row().classes('place-items-center'):
-            ui.label('Battery:').style('color: #EDF4FB').classes('font-bold')
-            ui.label().bind_text_from(robot.bms.state, 'last_update',
-                                      backward=lambda _: ', '.join([robot.bms.state.short_string,
-                                                                    'charging' if robot.bms.state.is_charging else '']))
-            if hasattr(robot, 'battery_control') and robot.battery_control is not None:
-                ui.label('').tooltip('Battery Box out connectors 1-4') \
-                    .bind_text_from(robot.battery_control, 'status',
-                                    backward=lambda x: 'Out 1..4 is on' if x else 'Out 1..4 is off')
-
-        with ui.row().classes('place-items-center'):
             ui.label('Axis:').style('color: #EDF4FB').classes('font-bold')
             axis_label = ui.label()
 
