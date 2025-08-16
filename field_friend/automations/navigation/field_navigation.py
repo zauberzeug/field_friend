@@ -381,16 +381,6 @@ class FieldNavigation(WaypointNavigation):
             ui.button('Dock', on_click=lambda: self.system.automator.start(self.dock()))
             ui.button('Undock', on_click=lambda: self.system.automator.start(self.undock()))
             ui.button('Set Docked Position', on_click=set_docked_position)
-            position_deviation_label = ui.label()
-
-            def update_position_deviation():
-                assert self.field is not None
-                assert self.field.charge_dock_pose is not None
-                local_docked_pose = self.field.charge_dock_pose.to_local()
-                x = self.system.robot_locator.pose.x - local_docked_pose.x
-                y = self.system.robot_locator.pose.y - local_docked_pose.y
-                position_deviation_label.set_text(f'Position deviation: {x:.3f}m, {y:.3f}m')
-            rosys.on_repeat(update_position_deviation, rosys.config.ui_update_interval)
 
 
 @dataclass(slots=True, kw_only=True)

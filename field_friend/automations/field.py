@@ -73,7 +73,8 @@ class Field:
         self.docking_distance: float = docking_distance
         self._charge_dock_pose: GeoPose | None = None
         self._charge_approach_pose: GeoPose | None = None
-        self.charge_dock_pose = charge_dock_pose or GeoPose.from_degrees(lat=51.983158, lon=7.434479, heading=40.9)
+        if charge_dock_pose:
+            self.charge_dock_pose = charge_dock_pose
         self.refresh()
 
     @property

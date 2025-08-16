@@ -175,7 +175,8 @@ class FieldCreator:
                       value=10, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
                 .tooltip('Set the number of rows (per bed, if multiple beds are selected).')\
-                .bind_value(self, 'row_count')
+                .bind_value(self, 'row_count') \
+                .bind_label_from(beds_switch, 'value', lambda v: 'Number of Rows (per Bed)' if v else 'Number of Rows')
             ui.number('Row Spacing', suffix='cm',
                       value=50, step=1, min=1) \
                 .props('dense outlined').classes('w-40') \
