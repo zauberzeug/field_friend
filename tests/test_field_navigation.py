@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from conftest import ROBOT_GEO_START_POSITION, set_robot_pose
 from rosys.geometry import Pose
+from rosys.hardware import BmsSimulation
 from rosys.testing import assert_point, forward
 
 from field_friend import System
@@ -209,4 +210,54 @@ async def test_bed_crops(system: System, field_with_beds: Field):
     await forward(until=lambda: started_segments == 5, timeout=200)
     await forward(2)
     assert system.current_implement.cultivated_crop == field_with_beds.bed_crops[str(2)]
+    await forward(until=lambda: system.automator.is_stopped)
+
+
+async def test_start_from_charging_station(system: System, field: Field):
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    assert system.current_navigation.field is not None
+    assert system.current_navigation.field.charge_dock_pose is not None
+    set_robot_pose(system, system.current_navigation.field.charge_dock_pose.to_local())
+    system.current_navigation.charge_automatically = True
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    assert system.current_navigation.path[0].spline.estimated_length() == pytest.approx(2.1461685074558305, abs=0.001)
+    assert system.current_navigation.path[1].spline.estimated_length() == pytest.approx(0.1, abs=0.001)
+
+
+async def test_charge_after_field(system: System, field: Field):
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    assert system.current_navigation.field is not None
+    assert system.current_navigation.field.charge_dock_pose is not None
+    set_robot_pose(system, system.current_navigation.field.charge_dock_pose.to_local())
+    system.current_navigation.charge_automatically = True
+    system.current_navigation.start_row_index = 2
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.field_friend.bms.state.is_charging, timeout=350)
+    await forward(until=lambda: system.automator.is_stopped)
+
+
+async def test_charge_in_between_rows(system: System, field: Field):
+    assert system.field_navigation is not None
+    system.current_navigation = system.field_navigation
+    assert isinstance(system.current_navigation, FieldNavigation)
+    assert isinstance(system.current_navigation.implement, Recorder)
+    assert system.current_navigation.field is not None
+    assert system.current_navigation.field.charge_dock_pose is not None
+    set_robot_pose(system, system.current_navigation.field.charge_dock_pose.to_local())
+    system.current_navigation.charge_automatically = True
+    assert isinstance(system.field_friend.bms, BmsSimulation)
+    system.field_friend.bms.voltage_per_second = -0.1
+    system.automator.start()
+    await forward(until=lambda: system.automator.is_running)
+    await forward(until=lambda: system.field_friend.bms.state.is_charging, timeout=350)
+    await forward(until=lambda: not system.field_friend.bms.state.is_charging, timeout=150)
+    await forward(until=lambda: system.field_friend.bms.state.is_charging, timeout=400)
     await forward(until=lambda: system.automator.is_stopped)
