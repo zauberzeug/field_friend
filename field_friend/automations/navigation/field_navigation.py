@@ -30,7 +30,6 @@ class FieldNavigation(WaypointNavigation):
     BATTERY_CHARGE_PERCENTAGE = 30.0
     BATTERY_WORKING_PERCENTAGE = 85.0
     START_ROW_INDEX = 0
-    APPROACH_START_ROW = False
     CHARGE_AUTOMATICALLY = False
 
     def __init__(self, system: System, implement: Implement) -> None:
@@ -41,7 +40,6 @@ class FieldNavigation(WaypointNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
-        self.approach_start_row = self.APPROACH_START_ROW
         self.start_row_index = self.START_ROW_INDEX
         self.charge_automatically = self.CHARGE_AUTOMATICALLY
         self.force_charge = False
@@ -82,7 +80,7 @@ class FieldNavigation(WaypointNavigation):
         current_pose = self.system.robot_locator.pose
         start_row_index: int
         row_reversed: bool
-        if self.approach_start_row:
+        if self.charge_automatically:
             if self.start_row_index >= len(rows_to_work_on):
                 rosys.notify('Start row index is out of range', 'negative')
                 return []
@@ -223,7 +221,7 @@ class FieldNavigation(WaypointNavigation):
         relative_end = current_pose.relative_point(first_row_segment.end.point)
         robot_on_headland = relative_start.x * relative_end.x > 0.0
         if robot_on_headland:
-            if self.approach_start_row:
+            if self.charge_automatically:
                 return True
             if abs(current_pose.relative_direction(first_row_segment.start)) > self.MAX_ANGLE_DEVIATION:
                 rosys.notify('Robot is not aligned with the row', 'negative')
@@ -247,7 +245,7 @@ class FieldNavigation(WaypointNavigation):
         local_row_start = row.points[0].to_local()
         local_row_end = row.points[-1].to_local()
         row_start_pose = Pose(x=local_row_start.x, y=local_row_start.y, yaw=local_row_start.direction(local_row_end))
-        if self.charge_automatically:
+        if self.charge_automatically and self.system.field_friend.bms.state.is_charging:
             assert self.field.charge_dock_pose is not None
             assert self.field.charge_approach_pose is not None
             current_pose = self.field.charge_approach_pose.to_local()
@@ -295,7 +293,7 @@ class FieldNavigation(WaypointNavigation):
         async def wait_for_charging():
             while not self.system.field_friend.bms.state.is_charging:
                 await rosys.sleep(0.1)
-            self.log.warning('Charging station detected, stopping')
+            self.log.debug('Charging station detected, stopping')
 
         async def gnss_move():
             assert self.system.gnss is not None
@@ -305,7 +303,7 @@ class FieldNavigation(WaypointNavigation):
                 return
             assert self.field is not None
             assert self.field.charge_dock_pose is not None
-            self.log.warning(f'Moving to docked pose: {self.field.charge_dock_pose}')
+            self.log.debug(f'Moving to docked pose: {self.field.charge_dock_pose}')
             local_docked_pose = self.field.charge_dock_pose.to_local()
             docking_segment = DriveSegment.from_poses(self.system.robot_locator.pose, local_docked_pose, backward=True)
             self._upcoming_path.insert(0, docking_segment)
@@ -341,14 +339,12 @@ class FieldNavigation(WaypointNavigation):
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
             'start_row_index': self.start_row_index,
-            'approach_start_row': self.approach_start_row,
             'charge_automatically': self.charge_automatically,
         }
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
         self.start_row_index = data.get('start_row_index', self.START_ROW_INDEX)
-        self.approach_start_row = data.get('approach_start_row', self.APPROACH_START_ROW)
         self.charge_automatically = data.get('charge_automatically', self.CHARGE_AUTOMATICALLY)
 
     def settings_ui(self) -> None:
@@ -356,12 +352,13 @@ class FieldNavigation(WaypointNavigation):
         ui.number('Start row', min=0, step=1, value=self.start_row_index, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-24') \
-            .bind_value(self, 'start_row_index')
-        ui.checkbox('Approach start row', on_change=self.request_backup) \
-            .bind_value(self, 'approach_start_row')
+            .bind_value(self, 'start_row_index') \
+            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None)
         ui.checkbox('Charge automatically', on_change=self.request_backup) \
-            .bind_value(self, 'charge_automatically') \
-            .bind_enabled_from(self, 'field', lambda field: field is not None)  # TODO: only if field has charging station
+            .bind_value(self, 'charge_automatically',
+                        forward=lambda v: v and self.field is not None and self.field.charge_dock_pose is not None,
+                        backward=lambda v: v and self.field is not None and self.field.charge_dock_pose is not None) \
+            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None)
 
     def developer_ui(self):
         ui.label('Field Navigation').classes('text-center text-bold')
