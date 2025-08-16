@@ -6,7 +6,7 @@ from uuid import uuid4
 import rosys
 from nicegui import app, ui
 from nicegui.elements.leaflet_layers import Marker
-from rosys.geometry import GeoPoint
+from rosys.geometry import GeoPoint, GeoPose
 from rosys.hardware import GnssMeasurement
 
 from field_friend.automations.field import Field
@@ -39,6 +39,8 @@ class FieldCreator:
         self.restore_saved_points()
         self.first_row_start: GeoPoint | None = None
         self.first_row_end: GeoPoint | None = None
+        self.docking_distance: float = 2.0
+        self.charge_dock_pose: GeoPose | None = None
         # default field values
         self.field_name: str = 'Field'
         self.row_spacing: float = 0.5
@@ -211,6 +213,26 @@ class FieldCreator:
                         .bind_value(self, 'bed_crops',
                                     forward=forward_func,
                                     backward=backward_func)
+        self.next = self.charging_station
+
+    def charging_station(self) -> None:
+        def set_docked_position():
+            self.charge_dock_pose = GeoPose.from_pose(self.system.robot_locator.pose)
+        self.headline.text = 'Charging Station'
+        self.content.clear()
+        with self.content:
+            rosys.driving.joystick(self.steerer, size=50, color='#6E93D6')
+            ui.label('This is an experimental feature. Please use with caution.') \
+                .classes('text-lg text-negative')
+            ui.label('1. Place your Charging station on the start side of the field, near the first row, but as far as possible to the edge of the field.')
+            ui.label('2. Dock the robot manually to the charging station.')
+            ui.label('3. Try to align the robot as straight and center as possible.')
+            ui.label('4. Set the docking location with the following button.')
+            ui.button('Set Docked Position', on_click=set_docked_position)
+            ui.label('5. The Robot will not approach the charging station directly but first drive in front of it to apporach it safely. Choose the distance from the charging station here.')
+            ui.number(label='Docking distance', min=0, step=0.01, format='%.2f', suffix='m', value=self.docking_distance) \
+                .classes('w-40') \
+                .bind_value_to(self, 'docking_distance')
         self.next = self.confirm_geometry
 
     def confirm_geometry(self) -> None:
@@ -253,7 +275,9 @@ class FieldCreator:
                                                    outline_buffer_width=self.outline_buffer_width,
                                                    bed_count=int(self.bed_count),
                                                    bed_spacing=self.bed_spacing,
-                                                   bed_crops=self.bed_crops))
+                                                   bed_crops=self.bed_crops,
+                                                   docking_distance=self.docking_distance,
+                                                   charge_dock_pose=self.charge_dock_pose))
         else:
             self.field_provider.create_field(Field(id=str(uuid4()),
                                                    name=self.field_name,
@@ -262,9 +286,12 @@ class FieldCreator:
                                                    row_spacing=self.row_spacing,
                                                    row_count=int(self.row_count),
                                                    outline_buffer_width=self.outline_buffer_width,
-                                                   bed_crops=self.bed_crops))
+                                                   bed_crops=self.bed_crops,
+                                                   docking_distance=self.docking_distance,
+                                                   charge_dock_pose=self.charge_dock_pose))
         self.first_row_start = None
         self.first_row_end = None
+        self.charge_dock_pose = None
         app.storage.general['field_creator_a_point'] = None
         app.storage.general['field_creator_b_point'] = None
 

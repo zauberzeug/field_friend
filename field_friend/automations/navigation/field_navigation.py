@@ -8,7 +8,7 @@ import rosys
 from nicegui import ui
 from rosys import helpers
 from rosys.analysis import track
-from rosys.geometry import GeoPose, Pose
+from rosys.geometry import Pose
 from rosys.hardware import BmsSimulation
 from rosys.hardware.gnss import GpsQuality
 from shapely.geometry import Point as ShapelyPoint
@@ -364,23 +364,12 @@ class FieldNavigation(WaypointNavigation):
             .bind_enabled_from(self, 'field', lambda field: field is not None)  # TODO: only if field has charging station
 
     def developer_ui(self):
-        def set_docked_position():
-            assert self.field is not None
-            self.field.charge_dock_pose = GeoPose.from_pose(self.system.robot_locator.pose)
-            self.field_provider.request_backup()
-            self.field_provider.FIELDS_CHANGED.emit()
-
-        with ui.column():
-            assert self.field is not None
-            ui.label('Field Navigation').classes('text-center text-bold')
-            ui.number(label='Docking distance', min=0, step=0.01, format='%.3f', suffix='m', value=self.field.docking_distance) \
-                .classes('w-4/5').bind_value_to(self.field, 'docking_distance')
-            ui.checkbox('Force charge', on_change=self.request_backup) \
-                .bind_value(self, 'force_charge')
-            ui.button('Approach', on_click=lambda: self.system.automator.start(self.approach()))
-            ui.button('Dock', on_click=lambda: self.system.automator.start(self.dock()))
-            ui.button('Undock', on_click=lambda: self.system.automator.start(self.undock()))
-            ui.button('Set Docked Position', on_click=set_docked_position)
+        ui.label('Field Navigation').classes('text-center text-bold')
+        ui.checkbox('Force charge', on_change=self.request_backup) \
+            .bind_value(self, 'force_charge')
+        ui.button('Approach', on_click=lambda: self.system.automator.start(self.approach()))
+        ui.button('Dock', on_click=lambda: self.system.automator.start(self.dock()))
+        ui.button('Undock', on_click=lambda: self.system.automator.start(self.undock()))
 
 
 @dataclass(slots=True, kw_only=True)
