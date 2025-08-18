@@ -159,7 +159,14 @@ class FieldNavigation(WaypointNavigation):
         closest_row_index = self._find_closest_row_index(self.field_provider.get_rows_to_work_on())
         closest_row = self.field_provider.get_rows_to_work_on()[closest_row_index]
         closest_row_start = closest_row.points[0].to_local()
-        if closest_row_start.distance(self.system.robot_locator.pose.point) > 0.1:
+        closest_row_end = closest_row.points[-1].to_local()
+        current_pose = self.system.robot_locator.pose
+        if closest_row_start.distance(current_pose.point) > 0.1:
+            return False
+        direction_to_start = current_pose.relative_direction(closest_row_start)
+        direction_to_end = current_pose.relative_direction(closest_row_end)
+        if helpers.angle(direction_to_start, direction_to_end) <= self.MAX_ANGLE_DEVIATION:
+            self.log.debug('Not charging: Robot in front of new row')
             return False
         if self.force_charge:
             return True
