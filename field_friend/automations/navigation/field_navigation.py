@@ -9,7 +9,7 @@ from nicegui import ui
 from rosys import helpers
 from rosys.analysis import track
 from rosys.geometry import Pose
-from rosys.hardware import BmsSimulation
+from rosys.hardware import BmsHardware, BmsSimulation
 from rosys.hardware.gnss import GpsQuality
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
@@ -317,11 +317,16 @@ class FieldNavigation(WaypointNavigation):
                 self.system.field_friend.bms.voltage_per_second = 0.03
 
         rosys.notify('Docking to charging station')
+        if isinstance(self.system.field_friend.bms, BmsHardware):
+            old_interval = self.system.field_friend.bms.UPDATE_INTERVAL
+            self.system.field_friend.bms.UPDATE_INTERVAL = 0.1
         await rosys.automation.parallelize(
             gnss_move(),
             wait_for_charging(),
             return_when_first_completed=True,
         )
+        if isinstance(self.system.field_friend.bms, BmsHardware):
+            self.system.field_friend.bms.UPDATE_INTERVAL = old_interval
         await self.system.field_friend.wheels.stop()
 
     @track
