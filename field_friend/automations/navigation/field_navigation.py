@@ -145,7 +145,7 @@ class FieldNavigation(WaypointNavigation):
                     self.PATH_GENERATED.emit(self._upcoming_path)
         await super()._run()
         if self.charge_automatically and not self.has_waypoints:
-            await self._run_charging(approach=False, stop_after_charging=True)
+            await self._run_charging(approach=False, stop_after_docking=True)
 
     def _should_charge(self) -> bool:
         assert self.field is not None
@@ -175,7 +175,7 @@ class FieldNavigation(WaypointNavigation):
         return self.system.field_friend.bms.is_below_percent(self.BATTERY_CHARGE_PERCENTAGE)
 
     @track
-    async def _run_charging(self, *, approach: bool = True, stop_after_charging: bool = False) -> None:
+    async def _run_charging(self, *, approach: bool = True, stop_after_docking: bool = False) -> None:
         assert self.field is not None
         assert self.field.charge_dock_pose is not None
         assert self.field.charge_approach_pose is not None
@@ -188,7 +188,7 @@ class FieldNavigation(WaypointNavigation):
             self.PATH_GENERATED.emit(self._upcoming_path)
             await self._drive_along_segment()
         await self.dock()
-        if stop_after_charging:
+        if stop_after_docking:
             return
         while self.system.field_friend.bms.is_below_percent(self.BATTERY_WORKING_PERCENTAGE) or self.force_charge:
             await rosys.sleep(1)
