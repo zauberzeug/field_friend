@@ -145,6 +145,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 assert isinstance(self.detector, rosys.vision.Detector)
                 await self.detector.NEW_DETECTIONS.emitted(5)
                 return
+            await self.driver.wheels.stop()
             self.implement.has_plants_to_handle()
             await self.implement.start_workflow()
             await self.implement.stop_workflow()
