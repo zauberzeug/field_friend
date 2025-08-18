@@ -281,7 +281,7 @@ class FieldNavigation(WaypointNavigation):
         ]
 
     @track
-    async def approach(self):
+    async def approach_dock(self):
         assert self.field is not None
         assert self.field.charge_approach_pose is not None
         approach_pose = self.field.charge_approach_pose.to_local()
@@ -375,7 +375,7 @@ class FieldNavigation(WaypointNavigation):
 
     def developer_ui(self):
         ui.label('Field Navigation').classes('text-center text-bold')
-        ui.button('Approach', on_click=lambda: self.system.automator.start(self.approach()))
+        ui.button('Approach', on_click=lambda: self.system.automator.start(self.approach_dock()))
         ui.button('Dock', on_click=lambda: self.system.automator.start(self.dock()))
         ui.button('Undock', on_click=lambda: self.system.automator.start(self.undock()))
         ui.number('Charge percentage', min=0, max=100, step=1, value=self.battery_charge_percentage, on_change=self.request_backup) \
