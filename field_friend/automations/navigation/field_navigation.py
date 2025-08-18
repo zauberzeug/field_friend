@@ -40,6 +40,8 @@ class FieldNavigation(WaypointNavigation):
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
+        self.battery_charge_percentage = self.BATTERY_CHARGE_PERCENTAGE
+        self.battery_working_percentage = self.BATTERY_WORKING_PERCENTAGE
         self.start_row_index = self.START_ROW_INDEX
         self.charge_automatically = self.CHARGE_AUTOMATICALLY
         self.force_charge = False
@@ -348,11 +350,15 @@ class FieldNavigation(WaypointNavigation):
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
             'charge_automatically': self.charge_automatically,
+            'battery_charge_percentage': self.battery_charge_percentage,
+            'battery_working_percentage': self.battery_working_percentage,
         }
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
         self.charge_automatically = data.get('charge_automatically', self.CHARGE_AUTOMATICALLY)
+        self.battery_charge_percentage = data.get('battery_charge_percentage', self.BATTERY_CHARGE_PERCENTAGE)
+        self.battery_working_percentage = data.get('battery_working_percentage', self.BATTERY_WORKING_PERCENTAGE)
 
     def settings_ui(self) -> None:
         super().settings_ui()
@@ -369,11 +375,22 @@ class FieldNavigation(WaypointNavigation):
 
     def developer_ui(self):
         ui.label('Field Navigation').classes('text-center text-bold')
-        ui.checkbox('Force charge', on_change=self.request_backup) \
-            .bind_value(self, 'force_charge')
         ui.button('Approach', on_click=lambda: self.system.automator.start(self.approach()))
         ui.button('Dock', on_click=lambda: self.system.automator.start(self.dock()))
         ui.button('Undock', on_click=lambda: self.system.automator.start(self.undock()))
+        ui.number('Charge percentage', min=0, max=100, step=1, value=self.battery_charge_percentage, on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-32') \
+            .bind_value(self, 'battery_charge_percentage') \
+            .tooltip('Battery charge percentage at which the robot should charge automatically')
+        ui.number('Working percentage', min=0, max=100, step=1, value=self.battery_working_percentage, on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-32') \
+            .bind_value(self, 'battery_working_percentage') \
+            .tooltip('Battery charge percentage at which the robot is allowed to stop charging and continue working')
+        ui.checkbox('Force charge', on_change=self.request_backup) \
+            .bind_value(self, 'force_charge') \
+            .tooltip('Force the robot to charge even if it is not below the working percentage')
 
 
 @dataclass(slots=True, kw_only=True)
