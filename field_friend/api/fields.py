@@ -81,9 +81,9 @@ class Fields:
                 is_inside = field_polygon.contains(shapely.geometry.Point(robot_position.lat, robot_position.lon))
                 bed_id = None
                 if is_inside:
-                    row = min(field.rows, key=lambda r: r.line_segment().line.foot_point(
-                        # nearest row
-                        self.system.robot_locator.pose.point).distance(self.system.robot_locator.pose.point))
+                    current_point = self.system.robot_locator.pose
+                    row = min(field.rows,
+                              key=lambda r: r.line_segment().line.foot_point(current_point).distance(current_point))
                     row_index = int(row.id.split('_')[-1])
                     bed_id = int(row_index // field.row_count)
                 return JSONResponse(
