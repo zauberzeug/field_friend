@@ -23,13 +23,13 @@ if TYPE_CHECKING:
 
 
 class FieldNavigation(WaypointNavigation):
-    MAX_START_DISTANCE = 2.0
+    MAX_START_DISTANCE = 0.5
     MAX_DISTANCE_DEVIATION = 0.1
     MAX_ANGLE_DEVIATION = np.deg2rad(15.0)
     DOCKING_SPEED = 0.1
     BATTERY_CHARGE_PERCENTAGE = 30.0
     BATTERY_WORKING_PERCENTAGE = 85.0
-    START_ROW_INDEX = 0
+    START_ROW_INDEX: int | None = None
     CHARGE_AUTOMATICALLY = False
 
     def __init__(self, system: System, implement: Implement) -> None:
@@ -80,15 +80,12 @@ class FieldNavigation(WaypointNavigation):
         current_pose = self.system.robot_locator.pose
         start_row_index: int
         row_reversed: bool
-        if self.charge_automatically:
-            if self.start_row_index >= len(rows_to_work_on):
-                rosys.notify('Start row index is out of range', 'negative')
-                return []
-            start_row_index = self.start_row_index
-            row_reversed = False
-        else:
-            start_row_index = self._find_closest_row_index(rows_to_work_on)
-            row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
+        start_row_index = int(self.start_row_index) if self.start_row_index is not None else \
+            self._find_closest_row_index(rows_to_work_on)
+        if start_row_index >= len(rows_to_work_on):
+            rosys.notify('Start row index is out of range', 'negative')
+            return []
+        row_reversed = self._is_row_reversed(rows_to_work_on[start_row_index])
 
         turn_start = current_pose
         for i, row in enumerate(rows_to_work_on):
@@ -338,19 +335,17 @@ class FieldNavigation(WaypointNavigation):
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
-            'start_row_index': self.start_row_index,
             'charge_automatically': self.charge_automatically,
         }
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
-        self.start_row_index = data.get('start_row_index', self.START_ROW_INDEX)
         self.charge_automatically = data.get('charge_automatically', self.CHARGE_AUTOMATICALLY)
 
     def settings_ui(self) -> None:
         super().settings_ui()
         ui.number('Start row', min=0, step=1, value=self.start_row_index, on_change=self.request_backup) \
-            .props('dense outlined') \
+            .props('dense outlined clearable') \
             .classes('w-24') \
             .bind_value(self, 'start_row_index') \
             .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None)
