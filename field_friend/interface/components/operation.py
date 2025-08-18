@@ -147,6 +147,7 @@ class Operation:
                     ui.input('Row Number (per Bed)', value=parameters['row_count']) \
                         .props('dense outlined').classes('w-full') \
                         .bind_value(parameters, 'row_count') \
+                        .bind_label_from(parameters, 'bed_count', lambda v: 'Number of Rows (per Bed)' if v > 1 else 'Number of Rows') \
                         .tooltip('Set the number of rows per bed.')
                     ui.number('Row Spacing', value=parameters['row_spacing'], suffix='cm', min=1, step=1) \
                         .props('dense outlined').classes('w-full') \

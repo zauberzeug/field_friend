@@ -53,7 +53,7 @@ class Field:
                  bed_count: int = 1,
                  bed_spacing: float = 0.5,
                  bed_crops: dict[str, str | None] | None = None,
-                 docking_distance: float = 3.0,
+                 docking_distance: float = 2.0,
                  charge_dock_pose: GeoPose | None = None) -> None:
         self.id: str = id
         self.name: str = name
@@ -94,12 +94,9 @@ class Field:
 
     @charge_dock_pose.setter
     def charge_dock_pose(self, pose: GeoPose | None) -> None:
-        if pose:
-            self._charge_dock_pose = pose
-            self._charge_approach_pose = self._charge_dock_pose.relative_shift_by(x=self.docking_distance)
-        else:
-            self._charge_dock_pose = None
-            self._charge_approach_pose = None
+        self._charge_dock_pose = pose
+        self._charge_approach_pose = self._charge_dock_pose.relative_shift_by(x=self.docking_distance) \
+            if isinstance(self._charge_dock_pose, GeoPose) else None
 
     @property
     def charge_approach_pose(self) -> GeoPose | None:
@@ -189,7 +186,7 @@ class Field:
             'bed_count': 1,
             'bed_spacing': 1,
             'bed_crops': {},
-            'docking_distance': 3.0,
+            'docking_distance': 2.0,
             'charge_dock_pose': None,
         }
         for key in defaults:

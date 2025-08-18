@@ -253,7 +253,8 @@ class FieldCreator:
                         ui.label(f'Bed {int(i)}: {crop_name}').classes('text-lg')
                 ui.separator()
                 ui.label(f'Row Spacing: {self.row_spacing*100} cm').classes('text-lg')
-                ui.label(f'Number of Rows (per Bed): {self.row_count}').classes('text-lg')
+                ui.label(f'Number of Rows (per Bed): {self.row_count}' if self.bed_count > 1 else
+                         f'Number of Rows: {self.row_count}').classes('text-lg')
                 ui.label(f'Outline Buffer Width: {self.outline_buffer_width} m').classes('text-lg')
             with ui.row().classes('items-center'):
                 ui.button('Cancel', on_click=self.dialog.close).props('color=red')
