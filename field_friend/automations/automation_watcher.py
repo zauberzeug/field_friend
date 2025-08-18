@@ -21,7 +21,7 @@ class AutomationWatcher:
 
     def __init__(self, system: System) -> None:
         self.log = logging.getLogger('field_friend.automation_watcher')
-
+        self.system = system
         self.automator = system.automator
         self.robot_locator = system.robot_locator
         self.field_friend = system.field_friend
@@ -165,6 +165,8 @@ class AutomationWatcher:
         """Update KPIs for time"""
         if not self.automator.is_running:
             self.start_time = None
+            return
+        if self.system.field_friend.bms.state.is_charging:
             return
         if self.start_time is None:
             self.start_time = rosys.time()
