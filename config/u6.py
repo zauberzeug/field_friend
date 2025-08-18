@@ -86,5 +86,5 @@ config = FieldFriendConfiguration(
         left='-4',
     ),
     gnss=GnssConfiguration(),
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.597158, 0.022681, 1.570198), min_gyro_calibration=0),
+    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.597158, 0.022681, 1.570198)),
 )
