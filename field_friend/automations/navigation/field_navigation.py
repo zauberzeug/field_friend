@@ -165,7 +165,7 @@ class FieldNavigation(WaypointNavigation):
             return False
         direction_to_start = current_pose.relative_direction(closest_row_start)
         direction_to_end = current_pose.relative_direction(closest_row_end)
-        if direction_to_start <= self.MAX_ANGLE_DEVIATION and direction_to_end <= self.MAX_ANGLE_DEVIATION:
+        if abs(direction_to_start) <= self.MAX_ANGLE_DEVIATION and abs(direction_to_end) <= self.MAX_ANGLE_DEVIATION:
             self.log.debug('Not charging: Robot in front of new row')
             return False
         if self.force_charge:
