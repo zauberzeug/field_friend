@@ -168,7 +168,7 @@ class WeedingImplement(Implement):
         # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
         self.weeds_to_handle = sorted_weeds
-        return True
+        return False
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
