@@ -139,8 +139,7 @@ class FieldNavigation(WaypointNavigation):
             while not isinstance(self.current_segment, RowSegment):
                 self._upcoming_path.pop(0)
             if isinstance(self.current_segment, RowSegment):
-                self._upcoming_path = self._generate_row_approach_path(
-                    self.current_segment.row) + self._upcoming_path
+                self._upcoming_path = self._generate_row_approach_path(self.current_segment.row) + self._upcoming_path
                 self.PATH_GENERATED.emit(self._upcoming_path)
         await super()._run()
         if self.charge_automatically and not self.has_waypoints:
