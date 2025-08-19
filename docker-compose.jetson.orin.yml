@@ -16,6 +16,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - ORGANIZATION=feldfreund
       - PROJECT=plants
+      - VERSION_CONTROL_DEFAULT=PAUSE
     volumes:
       - ~/data_plants:/data
 
@@ -30,6 +31,7 @@ services:
       - ORGANIZATION=zauberzeug
       - PROJECT=circlesight
       - NVIDIA_VISIBLE_DEVICES=all
+      - VERSION_CONTROL_DEFAULT=PAUSE
     volumes:
       - ~/data_circlesight:/data
 

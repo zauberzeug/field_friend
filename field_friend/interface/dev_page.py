@@ -95,6 +95,8 @@ class DevPage:
             with ui.row():
                 with ui.card():
                     self.system.plant_locator.developer_ui()
+                with ui.card():
+                    self.system.detector_watcher.developer_ui()
 
         with ui.card().classes('w-1/2'):
             self.log_monitor.ui()

@@ -16,6 +16,7 @@ from .app_controls import AppControls as app_controls
 from .automations import (
     AutomationWatcher,
     BatteryWatcher,
+    DetectorWatcher,
     FieldProvider,
     KpiProvider,
     PlantLocator,
@@ -88,6 +89,9 @@ class System(rosys.persistence.Persistable):
                 self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
         self.GNSS_REFERENCE_CHANGED.register(self.robot_locator.reset)
         self.capture = Capture(self)
+        self.detector_watcher = DetectorWatcher(self.field_friend.bms,
+                                                plant_detector=self.detector,
+                                                circle_sight_detector=self.circle_sight_detector)
         if self.config.camera is not None:
             assert self.camera_provider is not None
             self.camera_configurator = CameraConfigurator(self.camera_provider,
