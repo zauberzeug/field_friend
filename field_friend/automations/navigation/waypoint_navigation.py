@@ -118,13 +118,6 @@ class WaypointNavigation(rosys.persistence.Persistable):
             await self.implement.deactivate()
             await self.driver.wheels.stop()
 
-    async def _block_until_implement_has_target(self) -> Point:
-        while True:
-            assert isinstance(self.current_segment, DriveSegment)
-            if (target := await self._get_valid_implement_target()):
-                return target
-            await rosys.sleep(0.1)
-
     async def _run(self) -> None:
         if not await self._get_valid_implement_target():
             self.log.debug('No move target found, continuing...')
@@ -175,6 +168,13 @@ class WaypointNavigation(rosys.persistence.Persistable):
             await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
         self._upcoming_path.pop(0)
         self.SEGMENT_COMPLETED.emit(segment)
+
+    async def _block_until_implement_has_target(self) -> Point:
+        while True:
+            assert isinstance(self.current_segment, DriveSegment)
+            if (target := await self._get_valid_implement_target()):
+                return target
+            await rosys.sleep(0.1)
 
     def _remove_segments_behind_robot(self, path_segments: list[DriveSegment]) -> list[DriveSegment]:
         """Create new path (list of segments) starting at the closest segment to the current pose"""
