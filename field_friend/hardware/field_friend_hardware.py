@@ -146,6 +146,14 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             reset_pin=config.battery_control.reset_pin,
             status_pin=config.battery_control.status_pin,
         ) if config.battery_control else None
+        if self.battery_control:
+            async def wait_and_release_battery_relay():
+                assert isinstance(self.battery_control, rosys.hardware.BatteryControlHardware)
+                await rosys.sleep(15)
+                self.log.debug('releasing battery relay on rosys startup')
+                await self.battery_control.release_battery_relay()
+            bms.CHARGING_STOPPED.register(self.battery_control.release_battery_relay)
+            rosys.on_startup(wait_and_release_battery_relay)
 
         flashlight: FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None
         if not config.flashlight:
