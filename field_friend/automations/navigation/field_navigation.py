@@ -66,6 +66,7 @@ class FieldNavigation(WaypointNavigation):
         await super().prepare()
         if not self._is_allowed_to_start():
             return False
+        self.system.automation_watcher.gnss_watch_active = True
         return True
 
     def generate_path(self) -> list[DriveSegment | RowSegment]:
@@ -128,6 +129,11 @@ class FieldNavigation(WaypointNavigation):
         if distance > self.MAX_DISTANCE_DEVIATION:
             path_segments = self._generate_row_approach_path(path_segments[0].row) + path_segments
         return path_segments
+
+    @track
+    async def finish(self) -> None:
+        await super().finish()
+        self.system.automation_watcher.gnss_watch_active = False
 
     async def _run(self) -> None:
         assert self.field is not None
@@ -220,6 +226,9 @@ class FieldNavigation(WaypointNavigation):
     def _is_allowed_to_start(self) -> bool:
         first_row_segment = next((segment for segment in self._upcoming_path if isinstance(segment, RowSegment)), None)
         if first_row_segment is None:
+            return False
+        if not self.system.automation_watcher.is_gnss_ready():
+            rosys.notify('GNSS quality is not sufficient', 'negative')
             return False
         current_pose = self.system.robot_locator.pose
         assert self.field_provider.selected_field is not None
