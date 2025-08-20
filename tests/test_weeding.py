@@ -13,6 +13,8 @@ async def test_working_with_weeding_screw(system: System, detector: rosys.vision
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.05, z=0)))
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=0.2, y=-0.08, z=0)))
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_implement = system.implements['Weed Screw']
     system.automator.start()
@@ -137,24 +139,38 @@ async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_th
 
 
 async def test_implement_usage(system: System, detector: rosys.vision.DetectorSimulation):
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.4, y=0.0, z=0.0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.75, y=0.0, z=0.0)))
+    keep_weeds = [
+        rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(x=0.5, y=0, z=0)),
+        rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(x=2.05, y=0, z=0)),
+        rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(x=2.5, y=0, z=0)),
+        rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(x=3.1, y=0, z=0))
+    ]
+    destroy_weeds = [
+        rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(x=1.4, y=0, z=0)),
+        # TODO: targets directly on the end of a segment are not weeded. Will be fixed with https://github.com/zauberzeug/field_friend/pull/352
+        # rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(x=1.5, y=0, z=0)),
+        rosys.vision.SimulatedObject(category_name='weed', position=rosys.geometry.Point3d(x=1.9, y=0, z=0))
+    ]
+    detector.simulated_objects.extend(keep_weeds)
+    detector.simulated_objects.extend(destroy_weeds)
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_implement = system.implements['Weed Screw']
-    assert isinstance(system.current_navigation.implement, WeedingScrew)
-    pose1 = Pose(x=0.5, y=0.0, yaw=0.0)
-    pose2 = Pose(x=1.0, y=0.0, yaw=0.0)
-    system.current_navigation.generate_path = lambda: [  # type: ignore[assignment]
-        DriveSegment.from_poses(system.robot_locator.pose, pose1, stop_at_end=False),
-        DriveSegment.from_poses(pose1, pose2, use_implement=True),
-    ]
-    assert len(detector.simulated_objects) == 2
+    assert isinstance(system.current_implement, WeedingScrew)
+
+    def generate_path():
+        return [
+            DriveSegment.from_poses(Pose(x=1.0, y=0.0, yaw=0.0), Pose(x=1.5, y=0.0, yaw=0.0),
+                                    use_implement=True, stop_at_end=False),
+            DriveSegment.from_poses(Pose(x=1.5, y=0.0, yaw=0.0), Pose(x=2.0, y=0.0, yaw=0.0),
+                                    use_implement=True, stop_at_end=False),
+            DriveSegment.from_poses(Pose(x=2.0, y=0.0, yaw=0.0), Pose(x=3.0, y=0.0, yaw=0.0), use_implement=False)
+        ]
+    system.current_navigation.generate_path = generate_path  # type: ignore[assignment]
+    system.current_navigation.linear_speed_limit = 0.13
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert len(detector.simulated_objects) == 1
+    assert len(detector.simulated_objects) == len(keep_weeds)
 
 
 @pytest.mark.parametrize('work_x', (0.0, 0.3))

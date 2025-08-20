@@ -51,6 +51,9 @@ class YAxisCanOpenHardware(Axis, rosys.hardware.ModuleHardware):
             core_message_fields=core_message_fields)
 
     async def stop(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.warning('Robot brain not ready')
+            return
         await self.robot_brain.send(f'{self.config.name}_motor.set_ctrl_enable(false);')
 
     @track

@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import rosys
-from rosys.geometry import GeoPoint, GeoReference, Pose
+from rosys.geometry import GeoPoint, GeoPose, GeoReference, Pose
 from rosys.hardware import GnssSimulation, ImuSimulation, WheelsSimulation
 from rosys.testing import forward, helpers
 
@@ -99,6 +99,8 @@ class TestField:
         self.bed_crops = {
             '0': 'sugar_beet',
         }
+        self.docking_distance = 2.0
+        self.charge_dock_pose = GeoPose.from_degrees(51.98332541182115, 7.434223079593405, 86.69682979709266)
         self.row_support_points = []
         self.rows = [
             Row(id=f'field_{self.id}_row_0', name='row_0', points=[
@@ -143,7 +145,9 @@ async def field(system: System) -> AsyncGenerator[TestField, None]:
         bed_count=test_field.bed_count,
         bed_spacing=test_field.bed_spacing,
         bed_crops=test_field.bed_crops,
-        row_support_points=[]
+        row_support_points=[],
+        docking_distance=test_field.docking_distance,
+        charge_dock_pose=test_field.charge_dock_pose
     ))
     yield test_field
 
