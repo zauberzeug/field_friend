@@ -11,6 +11,7 @@ from rosys.helpers import eliminate_2pi
 
 from ..hardware.sprayer import Sprayer
 from ..system import System
+from ..vision.detector_hardware import DetectorHardware
 from .components import create_header
 from .components.hardware_control import create_hardware_control_ui
 from .components.io_overview import IoOverview as io_overview
@@ -116,8 +117,9 @@ class DevPage:
             with ui.row():
                 with ui.card():
                     self.system.plant_locator.developer_ui()
-                with ui.card():
-                    self.system.detector_watcher.developer_ui()
+                if isinstance(self.system.detector, DetectorHardware):
+                    with ui.card():
+                        self.system.detector.developer_ui()
 
         with ui.card().classes('w-1/2'):
             self.log_monitor.ui()
