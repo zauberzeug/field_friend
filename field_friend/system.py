@@ -13,15 +13,7 @@ from rosys.geometry import GeoPoint, GeoReference
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
 from .app_controls import AppControls as app_controls
-from .automations import (
-    AutomationWatcher,
-    BatteryWatcher,
-    FieldProvider,
-    KpiProvider,
-    PlantLocator,
-    PlantProvider,
-    Puncher,
-)
+from .automations import AutomationWatcher, FieldProvider, KpiProvider, PlantLocator, PlantProvider, Puncher
 from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
 from .automations.navigation import FieldNavigation, ImplementDemoNavigation, StraightLineNavigation, WaypointNavigation
 from .capture import Capture
@@ -131,8 +123,6 @@ class System(rosys.persistence.Persistable):
 
         if self.is_real:
             assert isinstance(self.field_friend, FieldFriendHardware)
-            if self.field_friend.battery_control:
-                self.battery_watcher = BatteryWatcher(self.field_friend, self.automator)
             app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, capture=self.capture)
             rosys.on_repeat(self.log_status, 60 * 5)
         rosys.on_repeat(self._garbage_collection, 60*5)
