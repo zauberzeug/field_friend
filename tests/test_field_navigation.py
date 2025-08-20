@@ -48,9 +48,9 @@ async def test_complete_field(system: System, field: Field):
     assert combined_row_length == pytest.approx(4 * 10, abs=0.0001)
     turn_segments = [segment for segment in system.current_navigation.path[2:]
                      if not isinstance(segment, RowSegment)]
-    assert len(turn_segments) == 3 * 3
+    assert len(turn_segments) == 4 * 3
     combined_turn_length = sum(segment.spline.estimated_length() for segment in turn_segments)
-    assert combined_turn_length == pytest.approx(3 * 2 * 2.461 + 3 * 2.550, abs=0.001)
+    assert combined_turn_length == pytest.approx(4 * 2 * 2.4611 + 3 * 2.550 + 1.65, abs=0.001)
 
 
 async def test_start_second_row(system: System, field: Field):
@@ -58,6 +58,7 @@ async def test_start_second_row(system: System, field: Field):
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
+    system.current_navigation.return_to_start = False
     set_robot_pose(system, Pose(x=1.0, y=-0.5, yaw=0.0))
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -193,6 +194,7 @@ async def test_bed_crops(system: System, field_with_beds: Field):
     assert system.field_navigation is not None
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
+    system.current_navigation.return_to_start = False
     system.current_implement = system.implements['Weed Screw']
     assert isinstance(system.current_implement, WeedingImplement)
     started_segments = 0

@@ -29,7 +29,7 @@ class FieldNavigation(WaypointNavigation):
     BATTERY_CHARGE_PERCENTAGE = 30.0
     BATTERY_WORKING_PERCENTAGE = 85.0
     START_ROW_INDEX = 0
-    RETURN_TO_START = False
+    RETURN_TO_START = True
     CHARGE_AUTOMATICALLY = False
 
     def __init__(self, system: System, implement: Implement) -> None:
@@ -108,19 +108,26 @@ class FieldNavigation(WaypointNavigation):
         if distance > self.MAX_DISTANCE_DEVIATION:
             path_segments = self._generate_row_approach_path(path_segments[0].row) + path_segments
 
-        if self.return_to_start and row_reversed:
-            # NOTE: last row should not be reversed, but it is flipped at the end of the last loop
-            assert self.field_provider.selected_field is not None
-            assert isinstance(path_segments[-1], RowSegment)
-            end_pose = path_segments[-1].end
-            first_row = self.field_provider.selected_field.rows[0]
-            row_start = first_row.points[0].to_local()
-            row_end = first_row.points[-1].to_local()
-            row_end_pose = Pose(x=row_end.x, y=row_end.y, yaw=row_end.direction(row_start))
-            turn_segments = self._generate_three_point_turn(end_pose, row_end_pose)
-            drive_segment = RowSegment.from_row(first_row, reverse=True)
-            drive_segment.use_implement = False
-            path_segments = [*path_segments, *turn_segments, drive_segment]
+        if self.return_to_start:
+            assert self.field is not None
+            first_row = self.field.rows[0]
+            if row_reversed:
+                # NOTE: last row should not be reversed, but it is flipped at the end of the last loop
+                assert self.field_provider.selected_field is not None
+                assert isinstance(path_segments[-1], RowSegment)
+                end_pose = path_segments[-1].end
+                row_start = first_row.points[0].to_local()
+                row_end = first_row.points[-1].to_local()
+                row_end_pose = Pose(x=row_end.x, y=row_end.y, yaw=row_end.direction(row_start))
+                turn_segments = self._generate_three_point_turn(end_pose, row_end_pose)
+                drive_segment = RowSegment.from_row(first_row, reverse=True)
+                drive_segment.use_implement = False
+                path_segments = [*path_segments, *turn_segments, drive_segment]
+
+            # NOTE: align with first row
+            first_row_segment = RowSegment.from_row(first_row)
+            turn_segments = self._generate_three_point_turn(path_segments[-1].end, first_row_segment.start)
+            path_segments = [*path_segments, *turn_segments]
         return path_segments
 
     @track
@@ -131,7 +138,8 @@ class FieldNavigation(WaypointNavigation):
     async def _run(self) -> None:
         assert self.field is not None
         if self._should_charge():
-            await self._run_charging()
+            no_more_rows = sum(1 for segment in self._upcoming_path if isinstance(segment, RowSegment)) == 0
+            await self._run_charging(stop_after_docking=no_more_rows)
         if self.field.charge_dock_pose is not None and self.has_waypoints and self.system.field_friend.bms.state.is_charging:
             await self.undock()
             while not isinstance(self.current_segment, RowSegment):
@@ -140,8 +148,6 @@ class FieldNavigation(WaypointNavigation):
                 self._upcoming_path = self._generate_row_approach_path(self.current_segment.row) + self._upcoming_path
                 self.PATH_GENERATED.emit(self._upcoming_path)
         await super()._run()
-        if self.charge_automatically and not self.has_waypoints:
-            await self._run_charging(stop_after_docking=True)
 
     def _should_charge(self) -> bool:
         assert self.field is not None
@@ -152,8 +158,6 @@ class FieldNavigation(WaypointNavigation):
         if self.current_row:
             self.log.debug('Not charging: Not allowed to charge on row')
             return False
-        if sum(1 for segment in self._upcoming_path if isinstance(segment, RowSegment)) == 0:
-            return False
         closest_row_index = self._find_closest_row_index(self.field_provider.get_rows_to_work_on())
         closest_row = self.field_provider.get_rows_to_work_on()[closest_row_index]
         closest_row_start = closest_row.points[0].to_local()
@@ -161,6 +165,8 @@ class FieldNavigation(WaypointNavigation):
         current_pose = self.system.robot_locator.pose
         if closest_row_start.distance(current_pose.point) > 0.1:
             return False
+        if sum(1 for segment in self._upcoming_path if isinstance(segment, RowSegment)) == 0:
+            return True
         direction_to_start = current_pose.relative_direction(closest_row_start)
         direction_to_end = current_pose.relative_direction(closest_row_end)
         if abs(direction_to_start) <= self.MAX_ANGLE_DEVIATION and abs(direction_to_end) <= self.MAX_ANGLE_DEVIATION:
@@ -264,15 +270,16 @@ class FieldNavigation(WaypointNavigation):
 
     def _generate_three_point_turn(self, end_pose_current_row: Pose, start_pose_next_row: Pose, radius: float = 1.5) -> list[DriveSegment]:
         direction_to_start = end_pose_current_row.relative_direction(start_pose_next_row)
-        distance_to_start = end_pose_current_row.distance(start_pose_next_row)
-        y_offset = max(radius, distance_to_start)
+        if end_pose_current_row.distance(start_pose_next_row) < 0.01:
+            direction_to_start = np.deg2rad(90)
         first_turn_pose = end_pose_current_row.transform_pose(
-            Pose(x=radius, y=y_offset * np.sign(direction_to_start), yaw=direction_to_start))
+            Pose(x=radius, y=radius * np.sign(direction_to_start), yaw=direction_to_start))
         back_up_pose = start_pose_next_row.transform_pose(
             Pose(x=-radius, y=radius * np.sign(direction_to_start), yaw=-direction_to_start))
+        backward = first_turn_pose.relative_pose(back_up_pose).x < 0
         return [
-            DriveSegment.from_poses(end_pose_current_row, first_turn_pose),
-            DriveSegment.from_poses(first_turn_pose, back_up_pose, backward=True),
+            DriveSegment.from_poses(end_pose_current_row, first_turn_pose, stop_at_end=backward),
+            DriveSegment.from_poses(first_turn_pose, back_up_pose, backward=backward, stop_at_end=backward),
             DriveSegment.from_poses(back_up_pose, start_pose_next_row),
         ]
 
@@ -364,12 +371,11 @@ class FieldNavigation(WaypointNavigation):
             .props('dense outlined') \
             .classes('w-20') \
             .bind_value(self, 'start_row_index', forward=int) \
-            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None) \
             .tooltip('The row index from which the robot should start working. If the robot is already on a row, it will start from it instead')
         ui.checkbox('Return to start', on_change=self.request_backup) \
             .bind_value(self, 'return_to_start') \
             .bind_value_from(self, 'charge_automatically', lambda value: True if value else self.return_to_start) \
-            .tooltip('The robot will return to the start side of the field')
+            .tooltip('The robot will return to the start row')
         ui.checkbox('Charge automatically', on_change=self.request_backup) \
             .bind_value(self, 'charge_automatically',
                         forward=lambda v: v and self.field is not None and self.field.charge_dock_pose is not None,
