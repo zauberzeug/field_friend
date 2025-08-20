@@ -10,7 +10,6 @@ from rosys import helpers
 from rosys.analysis import track
 from rosys.geometry import Pose
 from rosys.hardware import BmsHardware, BmsSimulation
-from rosys.hardware.gnss import GpsQuality
 from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon as ShapelyPolygon
 
@@ -301,7 +300,7 @@ class FieldNavigation(WaypointNavigation):
         async def gnss_move():
             assert self.system.gnss is not None
             assert self.system.gnss.last_measurement is not None
-            if self.system.gnss.last_measurement.gps_quality != GpsQuality.RTK_FIXED:
+            if not self.system.automation_watcher.is_gnss_ready():
                 self.log.error('No RTK fix, aborting')
                 return
             assert self.field is not None
