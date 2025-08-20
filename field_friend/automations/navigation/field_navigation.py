@@ -23,13 +23,13 @@ if TYPE_CHECKING:
 
 
 class FieldNavigation(WaypointNavigation):
-    MAX_START_DISTANCE = 0.5
+    MAX_START_DISTANCE = 1.0
     MAX_DISTANCE_DEVIATION = 0.1
     MAX_ANGLE_DEVIATION = np.deg2rad(15.0)
     DOCKING_SPEED = 0.1
     BATTERY_CHARGE_PERCENTAGE = 30.0
     BATTERY_WORKING_PERCENTAGE = 85.0
-    START_ROW_INDEX: int | None = None
+    START_ROW_INDEX = 0
     CHARGE_AUTOMATICALLY = False
 
     def __init__(self, system: System, implement: Implement) -> None:
@@ -80,10 +80,9 @@ class FieldNavigation(WaypointNavigation):
             return []
         path_segments: list[DriveSegment | RowSegment] = []
         current_pose = self.system.robot_locator.pose
-        start_row_index: int
-        row_reversed: bool
-        start_row_index = int(self.start_row_index) if self.start_row_index is not None else \
-            self._find_closest_row_index(rows_to_work_on)
+        closest_row_index = self._find_closest_row_index(rows_to_work_on)
+        distance_to_closest_row = self._distance_to_row(rows_to_work_on[closest_row_index])
+        start_row_index = closest_row_index if distance_to_closest_row <= self.MAX_START_DISTANCE else self.start_row_index
         if start_row_index >= len(rows_to_work_on):
             rosys.notify('Start row index is out of range', 'negative')
             return []
@@ -211,6 +210,13 @@ class FieldNavigation(WaypointNavigation):
             return distance_to_start > distance_to_end
         return relative_start.x > 0
 
+    def _distance_to_row(self, row: Row) -> float:
+        current_pose = self.system.robot_locator.pose
+        row_segment = RowSegment.from_row(row)
+        current_t = row_segment.spline.closest_point(current_pose.x, current_pose.y)
+        current_pose_on_row = row_segment.spline.pose(current_t)
+        return current_pose.distance(current_pose_on_row)
+
     def _is_allowed_to_start(self) -> bool:
         first_row_segment = next((segment for segment in self._upcoming_path if isinstance(segment, RowSegment)), None)
         if first_row_segment is None:
@@ -224,16 +230,7 @@ class FieldNavigation(WaypointNavigation):
         relative_start = current_pose.relative_point(first_row_segment.start.point)
         relative_end = current_pose.relative_point(first_row_segment.end.point)
         robot_on_headland = relative_start.x * relative_end.x > 0.0
-        if robot_on_headland:
-            if self.charge_automatically:
-                return True
-            if abs(current_pose.relative_direction(first_row_segment.start)) > self.MAX_ANGLE_DEVIATION:
-                rosys.notify('Robot is not aligned with the row', 'negative')
-                return False
-            if abs(relative_start.x) > self.MAX_START_DISTANCE:
-                rosys.notify('Robot is too far from the row', 'negative')
-                return False
-        else:
+        if not robot_on_headland:
             t = first_row_segment.spline.closest_point(current_pose.x, current_pose.y)
             spline_pose = first_row_segment.spline.pose(t)
             if current_pose.distance(spline_pose) > self.MAX_DISTANCE_DEVIATION:
@@ -361,15 +358,17 @@ class FieldNavigation(WaypointNavigation):
     def settings_ui(self) -> None:
         super().settings_ui()
         ui.number('Start row', min=0, step=1, value=self.start_row_index, on_change=self.request_backup) \
-            .props('dense outlined clearable') \
-            .classes('w-24') \
+            .props('dense outlined') \
+            .classes('w-20') \
             .bind_value(self, 'start_row_index') \
-            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None)
+            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None) \
+            .tooltip('The row index from which the robot should start working. If the robot is already on a row, it will start from it instead')
         ui.checkbox('Charge automatically', on_change=self.request_backup) \
             .bind_value(self, 'charge_automatically',
                         forward=lambda v: v and self.field is not None and self.field.charge_dock_pose is not None,
                         backward=lambda v: v and self.field is not None and self.field.charge_dock_pose is not None) \
-            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None)
+            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None) \
+            .tooltip('Let the robot charge automatically when a charging station is provided')
 
     def developer_ui(self):
         ui.label('Field Navigation').classes('text-center text-bold')
