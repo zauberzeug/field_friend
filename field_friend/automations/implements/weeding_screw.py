@@ -54,7 +54,10 @@ class WeedingScrew(WeedingImplement):
         if not weeds_in_range:
             self.log.debug('No weeds in range')
             return None
-        self.log.debug(f'Found {len(weeds_in_range)} weeds in range: {weeds_in_range}')
+
+        world_weeds = [position.in_frame(self.system.robot_locator.pose_frame).resolve()
+                       for position in weeds_in_range.values()]
+        self.log.debug('Found %s weeds in range: %s', len(weeds_in_range), world_weeds)
         for next_weed_id, next_weed_position in weeds_in_range.items():
             weed_world_position = self.system.robot_locator.pose.transform3d(next_weed_position)
             crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())

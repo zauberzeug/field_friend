@@ -3,6 +3,7 @@ from typing import Any
 
 import rosys
 from rosys.event import Event
+from rosys.geometry import GeoPose
 
 from .field import Field, Row, RowSupportPoint
 
@@ -117,7 +118,9 @@ class FieldProvider(rosys.persistence.Persistable):
                                 outline_buffer_width: float,
                                 bed_count: int,
                                 bed_spacing: float,
-                                bed_crops: dict[str, str | None]) -> None:
+                                bed_crops: dict[str, str | None],
+                                docking_distance: float,
+                                charge_dock_pose: GeoPose | None) -> None:
         field = self.get_field(field_id)
         if not field:
             self.log.warning('Field with id %s not found. Cannot update parameters.', field_id)
@@ -139,6 +142,8 @@ class FieldProvider(rosys.persistence.Persistable):
             field.bed_crops = bed_crops
         else:
             field.bed_crops = bed_crops
+        field.docking_distance = docking_distance
+        field.charge_dock_pose = charge_dock_pose
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
                       field.name, row_count, row_spacing)
         self.invalidate()

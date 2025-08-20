@@ -49,6 +49,9 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
             linear = -0.0
         if angular == 0.0:
             angular = -0.0  # TODO: Temp fix
+        if not self.robot_brain.is_ready:
+            self.log.warning('Robot brain not ready')
+            return
         await self.robot_brain.send(f'{self.config.name}.speed({linear}, {angular})')
 
     async def reset_motors(self) -> None:

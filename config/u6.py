@@ -79,7 +79,12 @@ config = FieldFriendConfiguration(
         min_position=-0.197,
         version='z_axis_canopen',
     ),
-    circle_sight_positions=CircleSightPositions(),
+    circle_sight_positions=CircleSightPositions(
+        right='-1',
+        back='-3',
+        front='-2',
+        left='-4',
+    ),
     gnss=GnssConfiguration(),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.597158, 0.022681, 1.570198)),
 )
