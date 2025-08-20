@@ -223,7 +223,6 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 await self.driver.drive_spline(advance_spline, throttle_at_end=False, stop_at_end=False)
             return False
         self.log.debug('Driving to %s from target %s', work_x_corrected_pose, target)
-        # TODO: spline could be too short, we need to check if the spline is too short and handle that
         target_spline = sub_spline(spline, current_t, target_t)
         with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
             await self.driver.drive_spline(target_spline)
