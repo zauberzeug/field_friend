@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-import aiohttp
 import rosys
 from nicegui import ui
-from rosys.vision import Autoupload, DetectorHardware, DetectorSimulation
+from rosys.vision import Autoupload, DetectorSimulation
 from rosys.vision.detections import Category
 from rosys.vision.detector import DetectorException, DetectorInfo
 
+from ..vision.detector_hardware import DetectorHardware
 from ..vision.zedxmini_camera import StereoCamera
 from .entity_locator import EntityLocator
 from .plant import Plant
@@ -47,8 +47,7 @@ class PlantLocator(EntityLocator):
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
         if isinstance(self.detector, DetectorHardware):
-            port = self.detector.port
-            rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=port), 1.0)
+            rosys.on_repeat(lambda: self.detector.set_outbox_mode(value=self.upload_images), 1.0)
         if system.is_real:
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
@@ -158,24 +157,6 @@ class PlantLocator(EntityLocator):
         if rosys.time() - self.last_detection_time <= 1.0 and self.detector_error:
             self.detector_error = False
             self.log.debug('Detection error resolved')
-
-    async def get_outbox_mode(self, port: int) -> bool | None:
-        # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
-        # TODO: active cleaner already has implemented this
-        url = f'http://localhost:{port}/outbox_mode'
-        async with aiohttp.request('GET', url) as response:
-            if response.status != 200:
-                self.log.error(f'Could not get outbox mode on port {port} - status code: {response.status}')
-                return None
-            response_text = await response.text()
-        return response_text == 'continuous_upload'
-
-    async def set_outbox_mode(self, value: bool, port: int) -> None:
-        url = f'http://localhost:{port}/outbox_mode'
-        async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
-            if response.status != 200:
-                self.log.error(f'Could not set outbox mode to {value} on port {port} - status code: {response.status}')
-                return
 
     def developer_ui(self) -> None:
         ui.label('Plant Locator').classes('text-center text-bold')

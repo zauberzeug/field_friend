@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
+import aiohttp
 import rosys
 from nicegui import ui
 
@@ -44,6 +45,23 @@ class DetectorHardware(rosys.vision.DetectorHardware):
         else:
             version = self._version_control_mode
         await self.set_model_version(version)
+
+    async def get_outbox_mode(self) -> bool | None:
+        url = f'http://{self.host}:{self.port}/outbox_mode'
+        async with aiohttp.request('GET', url) as response:
+            if response.status != 200:
+                self.log.error(f'Could not get outbox mode on port {self.port} - status code: {response.status}')
+                return None
+            response_text = await response.text()
+        return response_text == 'continuous_upload'
+
+    async def set_outbox_mode(self, value: bool) -> None:
+        url = f'http://{self.host}:{self.port}/outbox_mode'
+        async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
+            if response.status != 200:
+                self.log.error(
+                    f'Could not set outbox mode to {value} on port {self.port} - status code: {response.status}')
+                return
 
     def developer_ui(self) -> None:
         ui.label('Detector').classes('text-center text-bold')
