@@ -46,12 +46,15 @@ class PlantLocator(EntityLocator):
         self.crop_category_names: dict[str, str] = CROP_CATEGORY_NAME
         self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
         self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
-        if isinstance(self.detector, DetectorHardware):
-            rosys.on_repeat(lambda: self.detector.set_outbox_mode(value=self.upload_images), 1.0)
         if system.is_real:
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
             self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
+
+            async def set_outbox_mode() -> None:
+                assert isinstance(self.detector, DetectorHardware)
+                await self.detector.set_outbox_mode(value=self.upload_images)
+            rosys.on_repeat(set_outbox_mode, 1.0)
         self.detector_error = False
         self.last_detection_time = rosys.time()
         if self.camera_provider is None:
