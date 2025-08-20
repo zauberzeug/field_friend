@@ -179,9 +179,15 @@ class PlantLocator(EntityLocator):
                     .classes('w-28') \
                     .bind_value(self, 'autoupload') \
                     .tooltip('Set the autoupload for the weeding automation')
-                ui.button('Fetch detector info', on_click=self.fetch_detector_info)
-            ui.label().bind_text_from(self, 'detector_info',
-                                      backward=lambda info: f'Detector version: {info.current_version}/{info.target_version}' if info else 'Detector version: unknown')
+
+            if isinstance(self.detector, DetectorHardware):
+                ui.separator()
+                with ui.column().classes('w-full'):
+                    ui.button('Fetch detector info', on_click=self.fetch_detector_info)
+                    ui.label().bind_text_from(self, 'detector_info',
+                                              backward=lambda info: f'Detector version: {info.current_version}/{info.target_version}' if info else 'Detector version: unknown')
+                    self.detector.developer_ui()
+                ui.separator()
 
             @ui.refreshable
             def chips():

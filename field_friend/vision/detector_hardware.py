@@ -64,12 +64,9 @@ class DetectorHardware(rosys.vision.DetectorHardware):
                 return
 
     def developer_ui(self) -> None:
-        ui.label('Detector').classes('text-center text-bold')
-
-        with ui.column().classes('w-32'):
-            options = {'follow_loop': 'Follow Loop', 'pause': 'Pause', 'auto': 'Auto'}
-            ui.select(label='Version Control', options=options, value=self._version_control_mode,
-                      on_change=lambda e: self.set_version_control_mode(new_mode=e.value)) \
-                .classes('w-full') \
-                .bind_value_from(self, '_version_control_mode') \
-                .tooltip('Auto: Follow Loop if charging, Pause if not charging')
+        options = {'follow_loop': 'Follow Loop', 'pause': 'Pause', 'auto': 'Auto'}
+        ui.select(label='Version Control', options=options, value=self._version_control_mode,
+                  on_change=lambda e: self.set_version_control_mode(new_mode=e.value)) \
+            .classes('w-full') \
+            .bind_value_from(self, '_version_control_mode') \
+            .tooltip('Auto: Follow Loop if charging, Pause if not charging')
