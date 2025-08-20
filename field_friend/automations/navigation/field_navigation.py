@@ -30,6 +30,7 @@ class FieldNavigation(WaypointNavigation):
     BATTERY_CHARGE_PERCENTAGE = 30.0
     BATTERY_WORKING_PERCENTAGE = 85.0
     START_ROW_INDEX = 0
+    RETURN_TO_START = False
     CHARGE_AUTOMATICALLY = False
 
     def __init__(self, system: System, implement: Implement) -> None:
@@ -43,6 +44,7 @@ class FieldNavigation(WaypointNavigation):
         self.battery_charge_percentage = self.BATTERY_CHARGE_PERCENTAGE
         self.battery_working_percentage = self.BATTERY_WORKING_PERCENTAGE
         self.start_row_index = self.START_ROW_INDEX
+        self.return_to_start = self.RETURN_TO_START
         self.charge_automatically = self.CHARGE_AUTOMATICALLY
         self.force_charge = False
 
@@ -83,7 +85,8 @@ class FieldNavigation(WaypointNavigation):
         current_pose = self.system.robot_locator.pose
         closest_row_index = self._find_closest_row_index(rows_to_work_on)
         distance_to_closest_row = self._distance_to_row(rows_to_work_on[closest_row_index])
-        start_row_index = closest_row_index if distance_to_closest_row <= self.MAX_START_DISTANCE else self.start_row_index
+        start_row_index = closest_row_index if distance_to_closest_row <= self.MAX_START_DISTANCE else \
+            int(self.start_row_index)
         if start_row_index >= len(rows_to_work_on):
             rosys.notify('Start row index is out of range', 'negative')
             return []
@@ -100,34 +103,25 @@ class FieldNavigation(WaypointNavigation):
             turn_start = row_segment.end
             row_reversed = not row_reversed
 
-        if self.charge_automatically:
-            assert self.field is not None
-            assert self.field.charge_approach_pose is not None
-            approach_start: Pose
-            if row_reversed:
-                # NOTE: last row should not be reversed, but it is flipped at the end of the last loop
-                assert self.field_provider.selected_field is not None
-                end_pose = path_segments[-1].end
-                first_row = self.field_provider.selected_field.rows[0]
-                row_start = first_row.points[0].to_local()
-                row_end = first_row.points[-1].to_local()
-                row_end_pose = Pose(x=row_end.x, y=row_end.y, yaw=row_end.direction(row_start))
-                turn_segments = self._generate_three_point_turn(end_pose, row_end_pose)
-                drive_segment = RowSegment.from_row(first_row, reverse=True)
-                drive_segment.use_implement = False
-                path_segments = [*path_segments, *turn_segments, drive_segment]
-                approach_start = drive_segment.end
-            else:
-                approach_start = path_segments[-1].end
-            approach_pose = self.field.charge_approach_pose.to_local()
-            approach_segment = DriveSegment.from_poses(approach_start, approach_pose)
-            path_segments = [*path_segments, approach_segment]
-
         assert isinstance(path_segments[0], RowSegment)
         t = path_segments[0].spline.closest_point(current_pose.x, current_pose.y)
         distance = current_pose.distance(path_segments[0].spline.pose(t))
         if distance > self.MAX_DISTANCE_DEVIATION:
             path_segments = self._generate_row_approach_path(path_segments[0].row) + path_segments
+
+        if self.return_to_start and row_reversed:
+            # NOTE: last row should not be reversed, but it is flipped at the end of the last loop
+            assert self.field_provider.selected_field is not None
+            assert isinstance(path_segments[-1], RowSegment)
+            end_pose = path_segments[-1].end
+            first_row = self.field_provider.selected_field.rows[0]
+            row_start = first_row.points[0].to_local()
+            row_end = first_row.points[-1].to_local()
+            row_end_pose = Pose(x=row_end.x, y=row_end.y, yaw=row_end.direction(row_start))
+            turn_segments = self._generate_three_point_turn(end_pose, row_end_pose)
+            drive_segment = RowSegment.from_row(first_row, reverse=True)
+            drive_segment.use_implement = False
+            path_segments = [*path_segments, *turn_segments, drive_segment]
         return path_segments
 
     @track
@@ -148,7 +142,7 @@ class FieldNavigation(WaypointNavigation):
                 self.PATH_GENERATED.emit(self._upcoming_path)
         await super()._run()
         if self.charge_automatically and not self.has_waypoints:
-            await self._run_charging(approach=False, stop_after_docking=True)
+            await self._run_charging(stop_after_docking=True)
 
     def _should_charge(self) -> bool:
         assert self.field is not None
@@ -178,18 +172,17 @@ class FieldNavigation(WaypointNavigation):
         return self.system.field_friend.bms.is_below_percent(self.BATTERY_CHARGE_PERCENTAGE)
 
     @track
-    async def _run_charging(self, *, approach: bool = True, stop_after_docking: bool = False) -> None:
+    async def _run_charging(self, *, stop_after_docking: bool = False) -> None:
         assert self.field is not None
         assert self.field.charge_dock_pose is not None
         assert self.field.charge_approach_pose is not None
-        if approach:
-            while self.current_segment is not None and not isinstance(self.current_segment, RowSegment):
-                self._upcoming_path.pop(0)  # NOTE: pop unnecessary turn segments
-            approach_pose = self.field.charge_approach_pose.to_local()
-            approach_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
-            self._upcoming_path.insert(0, approach_segment)
-            self.PATH_GENERATED.emit(self._upcoming_path)
-            await self._drive_along_segment()
+        while self.current_segment is not None and not isinstance(self.current_segment, RowSegment):
+            self._upcoming_path.pop(0)  # NOTE: pop unnecessary turn segments
+        approach_pose = self.field.charge_approach_pose.to_local()
+        approach_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
+        self._upcoming_path.insert(0, approach_segment)
+        self.PATH_GENERATED.emit(self._upcoming_path)
+        await self._drive_along_segment()
         await self.dock()
         if stop_after_docking:
             return
@@ -353,6 +346,7 @@ class FieldNavigation(WaypointNavigation):
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
+            'return_to_start': self.return_to_start,
             'charge_automatically': self.charge_automatically,
             'battery_charge_percentage': self.battery_charge_percentage,
             'battery_working_percentage': self.battery_working_percentage,
@@ -360,6 +354,7 @@ class FieldNavigation(WaypointNavigation):
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
+        self.return_to_start = data.get('return_to_start', self.RETURN_TO_START)
         self.charge_automatically = data.get('charge_automatically', self.CHARGE_AUTOMATICALLY)
         self.battery_charge_percentage = data.get('battery_charge_percentage', self.BATTERY_CHARGE_PERCENTAGE)
         self.battery_working_percentage = data.get('battery_working_percentage', self.BATTERY_WORKING_PERCENTAGE)
@@ -369,9 +364,13 @@ class FieldNavigation(WaypointNavigation):
         ui.number('Start row', min=0, step=1, value=self.start_row_index, on_change=self.request_backup) \
             .props('dense outlined') \
             .classes('w-20') \
-            .bind_value(self, 'start_row_index') \
+            .bind_value(self, 'start_row_index', forward=int) \
             .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None) \
             .tooltip('The row index from which the robot should start working. If the robot is already on a row, it will start from it instead')
+        ui.checkbox('Return to start', on_change=self.request_backup) \
+            .bind_value(self, 'return_to_start') \
+            .bind_value_from(self, 'charge_automatically', lambda value: True if value else self.return_to_start) \
+            .tooltip('The robot will return to the start side of the field')
         ui.checkbox('Charge automatically', on_change=self.request_backup) \
             .bind_value(self, 'charge_automatically',
                         forward=lambda v: v and self.field is not None and self.field.charge_dock_pose is not None,
