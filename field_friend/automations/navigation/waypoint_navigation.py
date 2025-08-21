@@ -243,12 +243,12 @@ class WaypointNavigation(rosys.persistence.Persistable):
             return None
         t = self.current_segment.spline.closest_point(implement_target.x, implement_target.y)
         if t in (0.0, 1.0):
-            self.log.warning('Target is on segment end, continuing...')
+            self.log.debug('Target is on segment end, continuing...')
             return None
         work_x_corrected_pose = self._target_pose_on_current_segment(implement_target)
         t = self.current_segment.spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y)
         if t in (0.0, 1.0):
-            self.log.warning('WorkX corrected target is on segment end, continuing...')
+            self.log.debug('WorkX corrected target is on segment end, continuing...')
             return None
         return implement_target
 
