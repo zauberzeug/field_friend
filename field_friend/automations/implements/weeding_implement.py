@@ -19,7 +19,6 @@ class ImplementException(Exception):
 
 
 class WeedingImplement(Implement):
-    WORKING_DISTANCE = 0.15
     FLASHLIGHT_WAIT_TIME = 3.0
     LOCATOR_WAIT_TIME = 5.0
 
