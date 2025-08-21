@@ -120,6 +120,15 @@ class Tornado(WeedingImplement):
 
     def settings_ui(self):
         super().settings_ui()
+        ui.number('Drill depth', format='%.2f', step=0.01, on_change=self.request_backup) \
+            .props('dense outlined suffix=m') \
+            .classes('w-24') \
+            .bind_value(self, 'drill_depth') \
+            .bind_visibility_from(self.puncher, 'is_demo', backward=lambda x: not x) \
+            .tooltip(f'Set the depth for the tornado drill. 0 is at ground level and positive values are below ground level (default: {self.DRILL_DEPTH:.2f}m)')
+        ui.checkbox('Skip if no weeds') \
+            .bind_value(self, 'skip_if_no_weeds') \
+            .tooltip(f'Skip crops with no weeds in their vicinity (default: {self.SKIP_IF_NO_WEEDS})')
         with ui.card().props('flat bordered').classes('w-full'):
             ui.label('Tornado Angle')
             with ui.grid(columns=2).classes('w-full gap-0'):
@@ -145,15 +154,3 @@ class Tornado(WeedingImplement):
             ui.checkbox('Second drill with the biggest diameter', on_change=get_angle_label) \
                 .bind_value(self, 'drill_with_open_tornado') \
                 .tooltip(f'Drill a second time with 0° angle (default: {self.DRILL_WITH_OPEN_TORNADO})')
-
-        ui.number('Drill depth', format='%.2f', step=0.01, on_change=self.request_backup) \
-            .props('dense outlined suffix=m') \
-            .classes('w-24') \
-            .bind_value(self, 'drill_depth') \
-            .tooltip(f'Set the depth for the tornado drill. 0 is at ground level and positive values are below ground level (default: {self.DRILL_DEPTH:.2f}m)')
-        ui.checkbox('Skip if no weeds') \
-            .bind_value(self, 'skip_if_no_weeds') \
-            .tooltip(f'Skip crops with no weeds in their vicinity (default: {self.SKIP_IF_NO_WEEDS})')
-        # ui.checkbox('Drill between crops') \
-        #     .bind_value(self, 'drill_between_crops') \
-        #     .tooltip('Set the weeding automation to drill between crops')
