@@ -49,7 +49,8 @@ class Monitoring:
                     ui.interactive_image('assets/field_friend.webp').classes('w-full')
 
             with ui.column().classes('w-[calc(65%)] items-center'):
-                camera_card(self.system, shrink_factor=self.shrink_factor)
+                camera_card(self.system, shrink_factor=self.shrink_factor,
+                            show_plants=True, show_detections=True, show_plants_to_handle=True)
                 with ui.column().classes('w-full items-center'):
                     with ui.row().classes('w-full items-center'):
                         if self.monitoring_detector is not None:
