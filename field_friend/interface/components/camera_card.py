@@ -270,7 +270,7 @@ class CameraCard:
                         stroke-linejoin="round" stroke-width="{int(stroke_width / self.shrink_factor)}"/>'''
         return svg
 
-    def build_svg_for_plant_provider(self, *, radius: float = 15, stroke_width: int = 4) -> str:
+    def build_svg_for_plant_provider(self, *, radius: float = 15, stroke_width: int = 3) -> str:
         def draw_plant(plant: Plant, color: str, radius: float) -> str:
             assert self.camera is not None
             assert self.camera.calibration is not None
@@ -279,7 +279,7 @@ class CameraCard:
                 return ''
             svg = f'''<circle cx="{int(plant_2d.x/self.shrink_factor)}" cy="{int(plant_2d.y/self.shrink_factor)}"
                         r="{radius/self.shrink_factor}" fill="none"
-                        stroke="{color}" stroke-width="{int(stroke_width/self.shrink_factor)}" />'''
+                        stroke="{color}" stroke-width="{np.ceil(stroke_width/self.shrink_factor)}" />'''
             return svg
 
         if self.camera is None or self.camera.calibration is None:
@@ -294,7 +294,7 @@ class CameraCard:
             svg += draw_plant(crop, 'green', radius-3)
         return svg
 
-    def build_svg_for_tool_position(self, *, radius: float = 10, stroke_width: int = 2) -> str:
+    def build_svg_for_tool_position(self, *, radius: float = 10, stroke_width: int = 3) -> str:
         assert self.camera is not None
         assert self.camera.calibration is not None
         assert isinstance(self.field_friend.y_axis, Axis)
@@ -305,9 +305,9 @@ class CameraCard:
             return ''
         tool_2d = tool_2d / self.shrink_factor
         return f'''<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="{int(radius/self.shrink_factor)}"
-                    stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" fill="transparent"/>'''
+                    stroke="black" stroke-width="{np.ceil(stroke_width/self.shrink_factor)}" fill="transparent"/>'''
 
-    def build_svg_for_sprayer_position(self, *, radius: float = 10, stroke_width: int = 2) -> str:
+    def build_svg_for_sprayer_position(self, *, radius: float = 10, stroke_width: int = 3) -> str:
         assert self.camera is not None
         assert self.camera.calibration is not None
         assert isinstance(self.field_friend.z_axis, Sprayer)
@@ -318,9 +318,9 @@ class CameraCard:
             return ''
         tool_2d = tool_2d / self.shrink_factor
         return f'''<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="{int(radius/self.shrink_factor)}"
-                    stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" fill="transparent"/>'''
+                    stroke="black" stroke-width="{np.ceil(stroke_width/self.shrink_factor)}" fill="transparent"/>'''
 
-    def build_svg_for_tool_axis(self, *, stroke_width: int = 2) -> str:
+    def build_svg_for_tool_axis(self, *, stroke_width: int = 3) -> str:
         assert self.camera is not None
         assert self.camera.calibration is not None
         assert isinstance(self.field_friend.y_axis, Axis)
@@ -338,7 +338,7 @@ class CameraCard:
         max_tool_2d = max_tool_2d / self.shrink_factor
         return f'''<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}"
                     x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}"
-                    stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" />'''
+                    stroke="black" stroke-width="{np.ceil(stroke_width/self.shrink_factor)}" />'''
 
     def build_svg_for_plants_to_handle(self) -> str:
         assert self.camera is not None
@@ -395,10 +395,10 @@ class CameraCard:
             ends = (min_2d, max_2d)
             svg += f'''<line x1="{int(starts[0].x)}" y1="{int(starts[0].y)}"
                         x2="{int(ends[0].x)}" y2="{int(ends[0].y)}"
-                        stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" />'''
+                        stroke="black" stroke-width="{np.ceil(stroke_width/self.shrink_factor)}" />'''
             svg += f'''<line x1="{int(starts[1].x)}" y1="{int(starts[1].y)}"
                         x2="{int(ends[1].x)}" y2="{int(ends[1].y)}"
-                        stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" />'''
+                        stroke="black" stroke-width="{np.ceil(stroke_width/self.shrink_factor)}" />'''
             starts = (min_2d, max_2d)
         return svg
 
@@ -406,7 +406,7 @@ class CameraCard:
         def draw_point(point: Point, color: str) -> str:
             return f'''<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}"
                         r="{int(radius / self.shrink_factor)}" fill="none"
-                        stroke="{color}" stroke-width="{int(stroke_width / self.shrink_factor)}" />'''
+                        stroke="{color}" stroke-width="{np.ceil(stroke_width / self.shrink_factor)}" />'''
 
         assert self.camera is not None
         assert self.camera.calibration is not None
