@@ -65,7 +65,7 @@ class CameraCard:
     def use_camera(self, cam: CalibratableCamera) -> None:
         self.camera = cam
         self.camera_card.clear()
-        with self.camera_card.style('position: relative;'):
+        with self.camera_card:
             if self.field_friend.flashlight and isinstance(self.field_friend.flashlight, FlashlightPWM | FlashlightPWMV2):
                 self.flashlight_toggled = False
 
