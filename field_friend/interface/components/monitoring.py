@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 import rosys
 from nicegui import ui
 
-# from ...hardware import FlashlightPWM
 from .camera_card import CameraCard as camera_card
 from .key_controls import KeyControls
 
