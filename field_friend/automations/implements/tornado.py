@@ -71,18 +71,20 @@ class Tornado(WeedingImplement):
         if not self.system.field_friend.can_reach(closest_crop_position.projection()):
             self.log.debug('Target crop is not in the working area')
             return None
-        if self._crops_in_drill_range(closest_crop_id, closest_crop_position.projection(), self.tornado_angle):
-            self.log.debug('Crops in punch range')
-            return None
 
+        inner_diameter = self.field_friend.tornado_diameters(self.tornado_angle)[0]
         angle = 0 if self.drill_with_open_tornado else self.tornado_angle
-        tornado_outer_diameter = self.field_friend.tornado_diameters(angle)[1]
-        if self.skip_if_no_weeds and not any(closest_crop_position.distance(weed_position) < tornado_outer_diameter
+        outer_diameter = self.field_friend.tornado_diameters(angle)[1]
+        if self.skip_if_no_weeds and not any(closest_crop_position.distance(weed_position) < outer_diameter
                                              for weed_position in self.weeds_to_handle.values()):
             self.log.debug('Skipping crop because there are no weeds next to it.')
             return None
+        if self._crops_in_drill_range(closest_crop_id, closest_crop_position.projection(), inner_diameter, outer_diameter):
+            self.log.debug('Skipping because other crops in punch range')
+            return None
 
         relative_x = closest_crop_position.x - self.system.field_friend.WORK_X
+        # TODO: is drill radius even needed for tornado?
         if relative_x < - self.system.field_friend.DRILL_RADIUS:
             self.log.debug('Skipping crop %s because it is behind the robot', closest_crop_id)
             return None
@@ -91,14 +93,16 @@ class Tornado(WeedingImplement):
         self.next_punch_y_position = closest_crop_position.y
         return closest_crop_world_position.projection()
 
-    def _crops_in_drill_range(self, crop_id: str, crop_position: Point, angle: float) -> bool:
-        inner_diameter, outer_diameter = self.system.field_friend.tornado_diameters(angle)
+    def _crops_in_drill_range(self, crop_id: str, crop_position: Point, inner_diameter: float, outer_diameter: float) -> bool:
+        inner_radius = inner_diameter / 2
+        outer_radius = outer_diameter / 2
         crop_world_position = self.system.robot_locator.pose.transform(crop_position)
         for crop in self.system.plant_provider.crops:
-            if crop.id != crop_id:
-                distance = crop_world_position.distance(crop.position.projection())
-                if inner_diameter/2 <= distance <= outer_diameter/2:
-                    return True
+            if crop.id == crop_id:
+                continue
+            distance = crop_world_position.distance(crop.position.projection())
+            if inner_radius <= distance <= outer_radius:
+                return True
         return False
 
     def backup_to_dict(self) -> dict[str, Any]:
