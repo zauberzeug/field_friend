@@ -304,7 +304,7 @@ class FieldNavigation(WaypointNavigation):
                 await rosys.sleep(0.1)
             self.log.debug('Charging station detected, stopping')
 
-        async def gnss_move():
+        async def gnss_move(y_offset: float = 0.0):
             assert self.system.gnss is not None
             assert self.system.gnss.last_measurement is not None
             if not self.system.automation_watcher.is_gnss_ready():
@@ -313,7 +313,8 @@ class FieldNavigation(WaypointNavigation):
             assert self.field is not None
             assert self.field.charge_dock_pose is not None
             self.log.debug(f'Moving to docked pose: {self.field.charge_dock_pose}')
-            local_docked_pose = self.field.charge_dock_pose.to_local()
+            local_docked_pose = self.field.charge_dock_pose.to_local() \
+                .transform_pose(Pose(x=0.0, y=y_offset, yaw=0.0))
             docking_segment = DriveSegment.from_poses(self.system.robot_locator.pose, local_docked_pose, backward=True)
             self._upcoming_path.insert(0, docking_segment)
             self.PATH_GENERATED.emit(self._upcoming_path)
@@ -325,11 +326,23 @@ class FieldNavigation(WaypointNavigation):
         if isinstance(self.system.field_friend.bms, BmsHardware):
             old_interval = self.system.field_friend.bms.UPDATE_INTERVAL
             self.system.field_friend.bms.UPDATE_INTERVAL = 0.1
-        await rosys.automation.parallelize(
-            gnss_move(),
-            wait_for_charging(),
-            return_when_first_completed=True,
-        )
+        for y_offset in (0.0, 0.0, 0.005, -0.005, 0.01, -0.01, 0.015, -0.015, 0.02, -0.02):
+            await rosys.automation.parallelize(
+                gnss_move(y_offset),
+                wait_for_charging(),
+                return_when_first_completed=True,
+            )
+            await rosys.automation.parallelize(
+                rosys.sleep(10),
+                wait_for_charging(),
+                return_when_first_completed=True,
+            )
+            if self.system.field_friend.bms.state.is_charging:
+                rosys.notify('Docking successful', 'positive')
+                break
+            await self.undock()
+        else:
+            rosys.notify('Failed to dock', 'negative')
         if isinstance(self.system.field_friend.bms, BmsHardware):
             self.system.field_friend.bms.UPDATE_INTERVAL = old_interval
         await self.system.field_friend.wheels.stop()
