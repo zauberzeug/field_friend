@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import colorsys
 import logging
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -16,7 +17,8 @@ from rosys.vision import CalibratableCamera
 
 from ...automations.implements.tornado import Tornado as TornadoImplement
 from ...automations.implements.weeding_implement import WeedingImplement
-from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Sprayer, Tornado
+from ...automations.plant_locator import Plant
+from ...hardware import Axis, FlashlightPWM, FlashlightPWMV2, Sprayer
 from ...vision.zedxmini_camera import StereoCamera
 from .calibration_dialog import CalibrationDialog as calibration_dialog
 
@@ -25,9 +27,13 @@ if TYPE_CHECKING:
 
 
 class CameraCard:
-
-    def __init__(self, system: System) -> None:
+    def __init__(self, system: System, *,
+                 shrink_factor: float = 3.0,
+                 show_plants: bool = True,
+                 show_detections: bool = False,
+                 show_plants_to_handle: bool = False) -> None:
         self.log = logging.getLogger('field_friend.camera_card')
+        self.system = system
         self.automator = system.automator
         self.camera_provider = system.camera_provider
         self.detector = system.detector
@@ -36,13 +42,16 @@ class CameraCard:
         self.plant_locator = system.plant_locator
         self.plant_provider = system.plant_provider
         self.puncher = system.puncher
-        self.system = system
-        self.punching_enabled: bool = False
-        self.shrink_factor: float = 4.0
-        self.show_plants_to_handle: bool = False
+        self.shrink_factor: float = shrink_factor
+
+        self.show_plants: bool = show_plants
+        self.show_detections: bool = show_detections
+        self.show_plants_to_handle: bool = show_plants_to_handle
         self.show_mapping: bool = False
+
         self.camera: CalibratableCamera | None = None
         self.image_view: ui.interactive_image | None = None
+        self.mouse_over_context: ui.context_menu | None = None
         assert self.camera_provider is not None
         self.calibration_dialog = calibration_dialog(self.camera_provider, self.robot_locator)
         self.camera_card = ui.card()
@@ -82,38 +91,35 @@ class CameraCard:
                     .style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
                 with ui.menu():
                     with ui.menu_item():
-                        with ui.row():
-                            ui.checkbox('Punching').bind_value(self, 'punching_enabled').tooltip(
-                                'Enable punching mode').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
-                            if isinstance(self.field_friend.z_axis, Axis):
-                                self.depth = ui.number('depth', value=0.02, format='%.2f',
-                                                       step=0.01, min=self.field_friend.z_axis.max_position,
-                                                       max=-self.field_friend.z_axis.min_position).classes('w-16') \
-                                    .bind_visibility_from(self, 'punching_enabled')
-                            elif isinstance(self.field_friend.z_axis, Tornado):
-                                self.angle = ui.number('angle', value=180, format='%.0f', step=1, min=0, max=180) \
-                                    .classes('w-16').bind_visibility_from(self, 'punching_enabled')
-                    with ui.menu_item():
                         ui.checkbox('Detecting Plants').bind_value(self.plant_locator, 'is_paused',
                                                                    backward=lambda x: not x, forward=lambda x: not x) \
                             .tooltip('Pause plant locator').bind_enabled_from(self.automator, 'is_running', backward=lambda x: not x)
                     with ui.menu_item():
-                        ui.checkbox('Mapping').bind_value(self, 'show_mapping') \
-                            .tooltip('Show the mapping between camera and world coordinates')
+                        ui.checkbox('Show plants').bind_value(self, 'show_plants') \
+                            .tooltip('Show the plants in the image')
                     with ui.menu_item():
-                        ui.checkbox('Show plants to handle').bind_value_to(self, 'show_plants_to_handle') \
+                        ui.checkbox('Show detections').bind_value(self, 'show_detections') \
+                            .tooltip('Show the detections in the image')
+                    with ui.menu_item():
+                        ui.checkbox('Show weeding order').bind_value_to(self, 'show_plants_to_handle') \
+                            .tooltip('Show the order of the weeding implement targets')
+                    ui.separator()
+                    with ui.menu_item():
+                        ui.checkbox('Mapping').bind_value(self, 'show_mapping') \
                             .tooltip('Show the mapping between camera and world coordinates')
                     with ui.menu_item():
                         ui.button('calibrate', on_click=self.calibrate) \
                             .props('icon=straighten outline').tooltip('Calibrate camera')
 
-            events = ['mousemove', 'mouseout', 'mouseup']
-            self.image_view = ui.interactive_image('', cross=True, on_mouse=self.on_mouse_move, events=events) \
+            events = ['mousemove', 'mouseout', 'mouseup', 'contextmenu']
+            self.image_view = ui.interactive_image('', cross=True, on_mouse=self._on_mouse_move, events=events) \
                 .classes('w-full')
+            with self.image_view:
+                self.mouse_over_context = ui.context_menu()
             with ui.row():
-                self.debug_position = ui.label()
+                self.debug_position = ui.label('\u200b')
 
-    def on_mouse_move(self, e: MouseEventArguments):
+    def _on_mouse_move(self, e: MouseEventArguments):
         if self.camera is None:
             return
         if not isinstance(self.camera, CalibratableCamera):
@@ -142,21 +148,65 @@ class CameraCard:
             self.debug_position.set_text(f'{point2d} -> {point3d_in_locator_frame}')
         if e.type == 'mouseup':
             if self.camera.calibration is None:
-                self.debug_position.set_text(f'last punch: {point2d}')
                 return
-            if point3d is not None:
-                self.debug_position.set_text(f'last punch: {point2d} -> {point3d}')
-                if self.puncher is not None and self.punching_enabled:
-                    self.log.info(f'punching {point3d}')
-                    # TODO: how to call puncher here?
-                    if isinstance(self.field_friend.z_axis, Axis):
-                        self.log.info(f'should start punching at {point3d.x:.2f}, but puncher was reworked')
-                        # self.automator.start(self.puncher.drive_to_punch(point3d.x, point3d.y, self.depth.value))
-                    elif isinstance(self.field_friend.z_axis, Tornado):
-                        self.log.info(f'should start punching at {point3d.x:.2f}, but puncher was reworked')
-                        # self.automator.start(self.puncher.drive_to_punch(point3d.x, point3d.y, angle=self.angle.value))
         if e.type == 'mouseout':
-            self.debug_position.set_text('')
+            self.debug_position.set_text('\u200b')
+
+        if e.type == 'contextmenu' and point3d is not None:
+            self._plant_context_menu(point3d)
+
+    def _plant_context_menu(self, point3d: Point3d) -> None:
+        def format_time(timestamp: float) -> str:
+            dt = datetime.fromtimestamp(timestamp)
+            return dt.strftime('%H:%M:%S') + f':{int(dt.microsecond/1000):03d}'
+        if self.mouse_over_context is None:
+            return
+        self.mouse_over_context.clear()
+        plants = sorted(self.plant_provider.get_relevant_crops(point3d, max_distance=0.02, min_confidence=0.0) +
+                        self.plant_provider.get_relevant_weeds(point3d, max_distance=0.02, min_confidence=0.0),
+                        key=lambda plant: plant.position.distance(point3d))
+        if not plants:
+            self.mouse_over_context.close()
+            return
+        plant = plants[0]
+        with self.mouse_over_context.classes('p-2'):
+            ui.label(f'{plant.id}').classes('text-subtitle2')
+            with ui.grid(columns=2).classes('gap-0'):
+                ui.label('Type:').classes('text-subtitle2')
+                is_crop = plant.type in self.plant_locator.crop_category_names
+                ui.label(f'{plant.type}').style(f'color: {"green" if is_crop else "red"}') \
+                    .tooltip(f'The plant is a {"crop" if is_crop else "weed"}')
+                ui.label('Position:').classes('text-subtitle2')
+                position2d = plant.position.projection()
+                x_std = np.std([p.x for p in plant.positions], dtype=np.float64)
+                y_std = np.std([p.y for p in plant.positions], dtype=np.float64)
+                with ui.column().classes('gap-0'):
+                    ui.label(f'x: {position2d.x:.3f}m ± {x_std:.3f}')
+                    ui.label(f'y: {position2d.y:.3f}m ± {y_std:.3f}')
+                ui.label('Relative position:').classes('text-subtitle2')
+                relative_position = plant.position.relative_to(self.system.robot_locator.pose_frame)
+                with ui.column().classes('gap-0'):
+                    ui.label(f'x: {relative_position.x:.3f}m')
+                    ui.label(f'y: {relative_position.y:.3f}m')
+                ui.label('Detection time:').classes('text-subtitle2')
+                ui.label(f'{format_time(plant.detection_time)}')
+                ui.label('Detections:').classes('text-subtitle2')
+                ui.label(f'{len(plant.confidences)}')
+                ui.label('Confidence:').classes('text-subtitle2')
+                confidence = plant.confidence
+                combined_threshold = self.plant_provider.minimum_combined_crop_confidence if is_crop else \
+                    self.plant_provider.minimum_combined_weed_confidence
+                above_threshold = confidence > combined_threshold
+                ui.label(f'{confidence:.2f}').style(f'color: {"green" if above_threshold else "red"}') \
+                    .tooltip(f'The confidence is {"above" if above_threshold else "below"} the threshold of {combined_threshold}')
+                ui.label('Latest confidence:').classes('text-subtitle2')
+                mean_confidence = float(np.mean(plant.confidences))
+                std_confidence = float(np.std(plant.confidences))
+                threshold = self.plant_locator.minimum_crop_confidence if is_crop else self.plant_locator.minimum_weed_confidence
+                above_threshold = mean_confidence > threshold
+                ui.label(f'{mean_confidence:.2f} ± {std_confidence:.2f}') \
+                    .style(f'color: {"green" if above_threshold else "red"}') \
+                    .tooltip(f'The confidence is {"above" if above_threshold else "below"} the threshold of {threshold}')
 
     async def calibrate(self) -> None:
         assert self.camera_provider is not None
@@ -191,12 +241,12 @@ class CameraCard:
             return
         image = active_camera.latest_detected_image
         svg = ''
-        if image and image.detections:
-            svg += self.detections_to_svg(image.detections)
-
         if self.show_mapping:
             svg += self.build_svg_for_mapping()
-        svg += self.build_svg_for_plant_provider()
+        if self.show_plants:
+            svg += self.build_svg_for_plant_provider()
+        if self.show_detections and image and image.detections:
+            svg += self.detections_to_svg(image.detections)
 
         if isinstance(self.system.current_implement, WeedingImplement) and self.field_friend.y_axis is not None:
             svg += self.build_svg_for_work_area()
@@ -208,63 +258,87 @@ class CameraCard:
             svg += self.build_svg_for_sprayer_position()
         self.image_view.set_content(svg)
 
-    def draw_cross(self, point: Point, *, color: str = 'red', size: int = 5, width: int = 1) -> str:
-        svg = f'''<line x1="{int(point.x / self.shrink_factor) - size}" y1="{int(point.y / self.shrink_factor)}"
-                    x2="{int(point.x / self.shrink_factor) + size}" y2="{int(point.y / self.shrink_factor)}"
-                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>
-                    <line x1="{int(point.x / self.shrink_factor)}" y1="{int(point.y / self.shrink_factor) - size}"
-                    x2="{int(point.x / self.shrink_factor)}" y2="{int(point.y / self.shrink_factor) + size}"
-                    stroke="{color}" stroke-width="{width}" transform="rotate(45, {int(point.x / self.shrink_factor)}, {int(point.y / self.shrink_factor)})"/>'''
-        return svg
-
-    def detections_to_svg(self, detections: rosys.vision.Detections) -> str:
+    def detections_to_svg(self, detections: rosys.vision.Detections, *, radius: float = 25, stroke_width: int = 4) -> str:
         svg = ''
         for point in detections.points:
-            if point.category_name in self.plant_locator.crop_category_names:
-                svg += f'<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}" r="18" stroke-width="2" stroke="green" fill="none" />'
-            elif point.category_name in self.plant_locator.weed_category_names:
-                svg += self.draw_cross(point.center, color='red')
+            is_crop = point.category_name in self.plant_locator.crop_category_names
+            color = 'green' if is_crop else 'red'
+            _radius = (radius - 3) if is_crop else radius
+            svg += f'''<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}"
+                        r="{int(_radius / self.shrink_factor)}" stroke="{color}" fill="none"
+                        stroke-dasharray="{int(stroke_width / self.shrink_factor)}"
+                        stroke-linejoin="round" stroke-width="{int(stroke_width / self.shrink_factor)}"/>'''
         return svg
 
-    def build_svg_for_tool_position(self) -> str:
+    def build_svg_for_plant_provider(self, *, radius: float = 15, stroke_width: int = 4) -> str:
+        def draw_plant(plant: Plant, color: str, radius: float) -> str:
+            assert self.camera is not None
+            assert self.camera.calibration is not None
+            plant_2d = self.camera.calibration.project_to_image(plant.position)
+            if plant_2d is None:
+                return ''
+            svg = f'''<circle cx="{int(plant_2d.x/self.shrink_factor)}" cy="{int(plant_2d.y/self.shrink_factor)}"
+                        r="{radius/self.shrink_factor}" fill="none"
+                        stroke="{color}" stroke-width="{int(stroke_width/self.shrink_factor)}" />'''
+            return svg
+
+        if self.camera is None or self.camera.calibration is None:
+            return ''
+        position = Point3d(x=self.camera.calibration.extrinsics.translation[0],
+                           y=self.camera.calibration.extrinsics.translation[1],
+                           z=0).in_frame(self.robot_locator.pose_frame).resolve()
+        svg = ''
+        for weed in self.plant_provider.get_relevant_weeds(position):
+            svg += draw_plant(weed, 'red', radius)
+        for crop in self.plant_provider.get_relevant_crops(position):
+            svg += draw_plant(crop, 'green', radius-3)
+        return svg
+
+    def build_svg_for_tool_position(self, *, radius: float = 10, stroke_width: int = 2) -> str:
         assert self.camera is not None
         assert self.camera.calibration is not None
         assert isinstance(self.field_friend.y_axis, Axis)
         tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.position + self.field_friend.WORK_Y, z=0) \
             .in_frame(self.robot_locator.pose_frame).resolve().point_3d
         tool_2d = self.camera.calibration.project_to_image(tool_3d)
-        if tool_2d:
-            tool_2d = tool_2d / self.shrink_factor
-            return f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" stroke="black" stroke-width="1" fill="transparent"/>'
-        return ''
+        if tool_2d is None:
+            return ''
+        tool_2d = tool_2d / self.shrink_factor
+        return f'''<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="{int(radius/self.shrink_factor)}"
+                    stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" fill="transparent"/>'''
 
-    def build_svg_for_sprayer_position(self) -> str:
+    def build_svg_for_sprayer_position(self, *, radius: float = 10, stroke_width: int = 2) -> str:
         assert self.camera is not None
         assert self.camera.calibration is not None
         assert isinstance(self.field_friend.z_axis, Sprayer)
         tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.WORK_Y, z=0) \
             .in_frame(self.robot_locator.pose_frame).resolve().point_3d
         tool_2d = self.camera.calibration.project_to_image(tool_3d)
-        if tool_2d:
-            tool_2d = tool_2d / self.shrink_factor
-            return f'<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="10" stroke="black" stroke-width="1" fill="transparent"/>'
-        return ''
+        if tool_2d is None:
+            return ''
+        tool_2d = tool_2d / self.shrink_factor
+        return f'''<circle cx="{int(tool_2d.x)}" cy="{int(tool_2d.y)}" r="{int(radius/self.shrink_factor)}"
+                    stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" fill="transparent"/>'''
 
-    def build_svg_for_tool_axis(self) -> str:
+    def build_svg_for_tool_axis(self, *, stroke_width: int = 2) -> str:
         assert self.camera is not None
         assert self.camera.calibration is not None
         assert isinstance(self.field_friend.y_axis, Axis)
-        min_tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.min_position + self.field_friend.WORK_Y, z=0) \
-            .in_frame(self.robot_locator.pose_frame).resolve().point_3d
+        min_tool_3d = Pose3d(x=self.field_friend.WORK_X,
+                             y=self.field_friend.y_axis.min_position + self.field_friend.WORK_Y,
+                             z=0).in_frame(self.robot_locator.pose_frame).resolve().point_3d
         min_tool_2d = self.camera.calibration.project_to_image(min_tool_3d)
-        max_tool_3d = Pose3d(x=self.field_friend.WORK_X, y=self.field_friend.y_axis.max_position + self.field_friend.WORK_Y, z=0) \
-            .in_frame(self.robot_locator.pose_frame).resolve().point_3d
+        max_tool_3d = Pose3d(x=self.field_friend.WORK_X,
+                             y=self.field_friend.y_axis.max_position + self.field_friend.WORK_Y,
+                             z=0).in_frame(self.robot_locator.pose_frame).resolve().point_3d
         max_tool_2d = self.camera.calibration.project_to_image(max_tool_3d)
-        if min_tool_2d and max_tool_2d:
-            min_tool_2d = min_tool_2d / self.shrink_factor
-            max_tool_2d = max_tool_2d / self.shrink_factor
-            return f'<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}" x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}" stroke="black" stroke-width="1" />'
-        return ''
+        if min_tool_2d is None or max_tool_2d is None:
+            return ''
+        min_tool_2d = min_tool_2d / self.shrink_factor
+        max_tool_2d = max_tool_2d / self.shrink_factor
+        return f'''<line x1="{int(min_tool_2d.x)}" y1="{int(min_tool_2d.y)}"
+                    x2="{int(max_tool_2d.x)}" y2="{int(max_tool_2d.y)}"
+                    stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" />'''
 
     def build_svg_for_plants_to_handle(self) -> str:
         assert self.camera is not None
@@ -273,16 +347,21 @@ class CameraCard:
         plants_to_handle = self.system.current_implement.crops_to_handle \
             if isinstance(self.system.current_implement, TornadoImplement) else self.system.current_implement.weeds_to_handle
         svg = ''
-        for i, plant in enumerate(plants_to_handle.values()):
-            plant_3d = Point3d(x=plant.x, y=plant.y, z=0) \
-                .in_frame(self.robot_locator.pose_frame).resolve()
-            plant_2d = self.camera.calibration.project_to_image(plant_3d)
+        for i, plant_id in enumerate(plants_to_handle.keys()):
+            try:
+                # TODO: inefficient
+                plant = self.plant_provider.get_plant_by_id(plant_id)
+            except ValueError:
+                continue
+            plant_2d = self.camera.calibration.project_to_image(plant.position)
             if plant_2d is not None:
-                svg += f'<circle cx="{int(plant_2d.x/self.shrink_factor)}" cy="{int(plant_2d.y/self.shrink_factor)}" r="6" stroke="blue" fill="none" stroke-width="2" />'
-                svg += f'<text x="{int(plant_2d.x/self.shrink_factor)}" y="{int(plant_2d.y/self.shrink_factor)+4}" fill="blue" font-size="9" text-anchor="middle">{i}</text>'
+                svg += f'''<circle cx="{int(plant_2d.x/self.shrink_factor)}" cy="{int(plant_2d.y/self.shrink_factor)}"
+                            r="{int(8/self.shrink_factor)}" stroke="blue" fill="none" stroke-width="{int(1/self.shrink_factor)}" />'''
+                svg += f'''<text x="{int(plant_2d.x/self.shrink_factor)}" y="{int(plant_2d.y/self.shrink_factor) + 4}"
+                            fill="blue" font-size="9" text-anchor="middle">{i}</text>'''
         return svg
 
-    def build_svg_for_work_area(self) -> str:
+    def build_svg_for_work_area(self, *, stroke_width: int = 3) -> str:
         # TODO: use nicegui image_layers when they are available
         assert self.camera is not None
         assert self.camera.calibration is not None
@@ -314,31 +393,21 @@ class CameraCard:
                 starts = (min_2d, max_2d)
                 continue
             ends = (min_2d, max_2d)
-            svg += f'<line x1="{int(starts[0].x)}" y1="{int(starts[0].y)}" x2="{int(ends[0].x)}" y2="{int(ends[0].y)}" stroke="black" stroke-width="1" />'
-            svg += f'<line x1="{int(starts[1].x)}" y1="{int(starts[1].y)}" x2="{int(ends[1].x)}" y2="{int(ends[1].y)}" stroke="black" stroke-width="1" />'
+            svg += f'''<line x1="{int(starts[0].x)}" y1="{int(starts[0].y)}"
+                        x2="{int(ends[0].x)}" y2="{int(ends[0].y)}"
+                        stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" />'''
+            svg += f'''<line x1="{int(starts[1].x)}" y1="{int(starts[1].y)}"
+                        x2="{int(ends[1].x)}" y2="{int(ends[1].y)}"
+                        stroke="black" stroke-width="{int(stroke_width/self.shrink_factor)}" />'''
             starts = (min_2d, max_2d)
         return svg
 
-    def build_svg_for_plant_provider(self) -> str:
-        if self.camera is None or self.camera.calibration is None:
-            return ''
-        position = Point3d(x=self.camera.calibration.extrinsics.translation[0],
-                           y=self.camera.calibration.extrinsics.translation[1],
-                           z=0).in_frame(self.robot_locator.pose_frame).resolve()
-        svg = ''
-        for weed in self.plant_provider.get_relevant_weeds(position):
-            weed_2d = self.camera.calibration.project_to_image(weed.position)
-            if weed_2d is not None:
-                svg += f'<circle cx="{int(weed_2d.x/self.shrink_factor)}" cy="{int(weed_2d.y/self.shrink_factor)}" r="5" stroke="red" stroke-width="1" fill="none"/>'
-                # svg += f'<text x="{int(weed_2d.x/self.shrink_factor)}" y="{int(weed_2d.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{weed.id[:4]}</text>'
-        for crop in self.plant_provider.get_relevant_crops(position):
-            crop_2d = self.camera.calibration.project_to_image(crop.position)
-            if crop_2d is not None:
-                svg += f'<circle cx="{int(crop_2d.x/self.shrink_factor)}" cy="{int(crop_2d.y/self.shrink_factor)}" r="5" stroke="green" stroke-width="1" fill="none"/>'
-                # svg += f'<text x="{int(crop_2d.x/self.shrink_factor)}" y="{int(crop_2d.y/self.shrink_factor)+16}" fill="black" font-size="9" text-anchor="middle">{crop.id[:4]}</text>'
-        return svg
+    def build_svg_for_mapping(self, *, track_width: float = 0.10, radius: float = 3, stroke_width: int = 2) -> str:
+        def draw_point(point: Point, color: str) -> str:
+            return f'''<circle cx="{int(point.x / self.shrink_factor)}" cy="{int(point.y / self.shrink_factor)}"
+                        r="{int(radius / self.shrink_factor)}" fill="none"
+                        stroke="{color}" stroke-width="{int(stroke_width / self.shrink_factor)}" />'''
 
-    def build_svg_for_mapping(self, *, track_width: float = 0.10) -> str:
         assert self.camera is not None
         assert self.camera.calibration is not None
         top_point = Point(x=self.camera.calibration.intrinsics.size.width / 2, y=0)
@@ -357,5 +426,4 @@ class CameraCard:
         image_points = self.camera.calibration.project_to_image(world_points)
         colors_rgb = [colorsys.hsv_to_rgb(f, 1, 1) for f in np.linspace(0, 1, len(world_points))]
         colors_hex = [f'#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}' for rgb in colors_rgb]
-        return ''.join(f'<circle cx="{int(p.x / self.shrink_factor)}" cy="{int(p.y / self.shrink_factor)}" r="1" stroke="{color}" stroke-width="1" fill="none"/>'
-                       for p, color in zip(image_points, colors_hex, strict=False) if p is not None)
+        return ''.join(draw_point(p, color) for p, color in zip(image_points, colors_hex, strict=False) if p is not None)
