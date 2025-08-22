@@ -22,7 +22,7 @@ from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulat
 from .info import Info
 from .kpi_generator import generate_kpis
 from .robot_locator import RobotLocator
-from .vision import CalibratableUsbCameraProvider, CameraConfigurator
+from .vision import CalibratableUsbCameraProvider, CameraConfigurator, DetectorHardware
 from .vision.zedxmini_camera import ZedxminiCameraProvider
 
 icecream.install()
@@ -42,8 +42,8 @@ class System(rosys.persistence.Persistable):
         self.GNSS_REFERENCE_CHANGED: Event[[]] = Event()
 
         self.camera_provider = self.setup_camera_provider()
-        self.detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
-        self.circle_sight_detector: rosys.vision.DetectorHardware | rosys.vision.DetectorSimulation | None = None
+        self.detector: DetectorHardware | rosys.vision.DetectorSimulation | None = None
+        self.circle_sight_detector: DetectorHardware | rosys.vision.DetectorSimulation | None = None
         self.update_gnss_reference(reference=GeoReference(GeoPoint.from_degrees(51.983204032849706, 7.434321368936861)))
         self.gnss: GnssHardware | GnssSimulation | None = None
         self.field_friend: FieldFriend
@@ -64,8 +64,8 @@ class System(rosys.persistence.Persistable):
                                               imu=self.field_friend.imu,
                                               gnss_config=self.config.gnss).persistent()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
-            self.detector = rosys.vision.DetectorHardware(port=8004)
-            self.circle_sight_detector = rosys.vision.DetectorHardware(port=8005)
+            self.detector = DetectorHardware(self.field_friend.bms, port=8004)
+            self.circle_sight_detector = DetectorHardware(self.field_friend.bms, port=8005)
         else:
             self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)

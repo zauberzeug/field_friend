@@ -4,6 +4,7 @@ import logging
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+import numpy as np
 import rosys
 from rosys.geometry import GeoPoint, Pose
 from rosys.hardware.gnss import GpsQuality
@@ -107,7 +108,8 @@ class AutomationWatcher:
         return self.gnss.is_connected \
             and self.gnss.last_measurement is not None \
             and rosys.time() - self.gnss.last_measurement.time < 2.0 \
-            and self.gnss.last_measurement.gps_quality == GpsQuality.RTK_FIXED
+            and self.gnss.last_measurement.gps_quality == GpsQuality.RTK_FIXED \
+            and np.isfinite(self.gnss.last_measurement.heading_std_dev)
 
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active

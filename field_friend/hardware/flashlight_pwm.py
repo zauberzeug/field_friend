@@ -29,12 +29,18 @@ class FlashlightPWMHardware(FlashlightPWM, rosys.hardware.ModuleHardware):
         rosys.on_repeat(self._set_duty_cycle, 60.0)
 
     async def turn_on(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Turning on flashlight failed. Robot Brain is not ready.')
+            return
         await super().turn_on()
         await self.robot_brain.send(
             f'{self.config.name}.on()'
         )
 
     async def turn_off(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Turning off flashlight failed. Robot Brain is not ready.')
+            return
         await super().turn_off()
         await self.robot_brain.send(
             f'{self.config.name}.off()'

@@ -30,14 +30,23 @@ class FlashlightPWMHardwareV2(FlashlightPWMV2, rosys.hardware.ModuleHardware):
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 
     async def turn_on(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Turning on flashlight failed. Robot Brain is not ready.')
+            return
         await super().turn_on()
         await self.robot_brain.send(f'{self.config.name}.on()')
 
     async def turn_off(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Turning off flashlight failed. Robot Brain is not ready.')
+            return
         await super().turn_off()
         await self.robot_brain.send(f'{self.config.name}.off()')
 
     async def set_duty_cycle(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Setting duty cycle failed. Robot Brain is not ready.')
+            return
         # get a 8 bit value for the duty cycle (0-255) no negative values
         duty = int(self.duty_cycle * 255)
         await self.robot_brain.send(
