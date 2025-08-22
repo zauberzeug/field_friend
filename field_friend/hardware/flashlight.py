@@ -79,10 +79,16 @@ class FlashlightHardware(Flashlight, rosys.hardware.ModuleHardware):
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 
     async def turn_on(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Turning on flashlight failed. Robot Brain is not ready.')
+            return
         await super().turn_on()
         await self.robot_brain.send(f'{self.config.name}.off()')
 
     async def turn_off(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Turning on flashlight failed. Robot Brain is not ready.')
+            return
         await super().turn_off()
         await self.robot_brain.send(f'{self.config.name}.on()')
 
