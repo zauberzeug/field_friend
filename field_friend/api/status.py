@@ -25,11 +25,15 @@ class Status:
                 'paused' if self.system.automator.automation is not None and self.system.automator.automation.is_paused else \
                 'idle'
             if self.system.is_real:
-                lizard_firmware = cast(FieldFriendHardware, self.system.field_friend).robot_brain.lizard_firmware
-                await lizard_firmware.read_core_version()
-                await lizard_firmware.read_p0_version()
-                core_version = lizard_firmware.core_version
-                p0_version = lizard_firmware.p0_version
+                try:
+                    lizard_firmware = cast(FieldFriendHardware, self.system.field_friend).robot_brain.lizard_firmware
+                    await lizard_firmware.read_core_version()
+                    await lizard_firmware.read_p0_version()
+                    core_version = lizard_firmware.core_version
+                    p0_version = lizard_firmware.p0_version
+                except rosys.hardware.robot_brain.EspNotReadyException:
+                    core_version = 'unknown'
+                    p0_version = 'unknown'
             else:
                 core_version = 'simulation'
                 p0_version = 'simulation'
