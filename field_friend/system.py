@@ -64,8 +64,8 @@ class System(rosys.persistence.Persistable):
                                               imu=self.field_friend.imu,
                                               gnss_config=self.config.gnss).persistent()
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
-            self.detector = DetectorHardware(self, port=8004)
-            self.circle_sight_detector = DetectorHardware(self, port=8005)
+            self.detector = DetectorHardware(self.field_friend.bms, port=8004)
+            self.circle_sight_detector = DetectorHardware(self.field_friend.bms, port=8005)
         else:
             self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
             assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)

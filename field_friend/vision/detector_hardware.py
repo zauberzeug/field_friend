@@ -1,25 +1,21 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 import aiohttp
 import rosys
 from nicegui import ui
-
-if TYPE_CHECKING:
-    from ..system import System
+from rosys.hardware import Bms
 
 
 class DetectorHardware(rosys.vision.DetectorHardware):
     VERSION_CONTROL_MODES = Literal['auto', 'follow_loop', 'pause']
 
-    def __init__(self, system: System, **kwargs):
+    def __init__(self, bms: Bms, **kwargs):
         super().__init__(**kwargs)
-        self.system = system
-        self.bms = system.field_friend.bms
+        self.bms = bms
 
         self._version_control_mode: DetectorHardware.VERSION_CONTROL_MODES = 'auto'
-
         self.bms.CHARGING_STARTED.register(self._handle_charging)
         self.bms.CHARGING_STOPPED.register(self._handle_charging)
         rosys.on_startup(self._set_version_control_mode_on_startup)
@@ -35,6 +31,8 @@ class DetectorHardware(rosys.vision.DetectorHardware):
         await self.set_version_control_mode()
 
     async def set_version_control_mode(self, *, new_mode: DetectorHardware.VERSION_CONTROL_MODES | None = None) -> None:
+        if not self.is_connected:
+            return
         version: Literal['follow_loop', 'pause']
         if new_mode is not None:
             if new_mode == self._version_control_mode:
@@ -47,6 +45,8 @@ class DetectorHardware(rosys.vision.DetectorHardware):
         await self.set_model_version(version)
 
     async def get_outbox_mode(self) -> bool | None:
+        if not self.is_connected:
+            return None
         url = f'http://{self.host}:{self.port}/outbox_mode'
         async with aiohttp.request('GET', url) as response:
             if response.status != 200:
@@ -56,6 +56,8 @@ class DetectorHardware(rosys.vision.DetectorHardware):
         return response_text == 'continuous_upload'
 
     async def set_outbox_mode(self, value: bool) -> None:
+        if not self.is_connected:
+            return
         url = f'http://{self.host}:{self.port}/outbox_mode'
         async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
             if response.status != 200:
