@@ -6,7 +6,7 @@ services:
     privileged: true
 
   detector:
-    image: "zauberzeug/yolov5-detector:0.1.11-nlv0.14.0-35.4.1"
+    image: "zauberzeug/yolov5-detector:0.1.13-nlv0.15.0-35.4.1"
     restart: always
     ports:
       - "8004:80"
@@ -16,11 +16,12 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - ORGANIZATION=feldfreund
       - PROJECT=plants
+      - VERSION_CONTROL_DEFAULT=PAUSE
     volumes:
       - ~/data_plants:/data
 
   circle_sight:
-    image: "zauberzeug/yolov5-detector:0.1.11-nlv0.14.0-35.4.1"
+    image: "zauberzeug/yolov5-detector:0.1.13-nlv0.15.0-35.4.1"
     restart: always
     ports:
       - "8005:80"
@@ -30,6 +31,7 @@ services:
       - ORGANIZATION=zauberzeug
       - PROJECT=circlesight
       - NVIDIA_VISIBLE_DEVICES=all
+      - VERSION_CONTROL_DEFAULT=PAUSE
     volumes:
       - ~/data_circlesight:/data
 

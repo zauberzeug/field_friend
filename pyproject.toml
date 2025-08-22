@@ -66,6 +66,10 @@ select = [
     "PL", # pylint
     "N", # pep8-naming
 ]
+fixable = [
+    "I",  # isort
+    "RUF022", # `__all__` is not sorted
+]
 ignore = [
     "E501", # Line too long
     "N806", # variable should be lowercase
