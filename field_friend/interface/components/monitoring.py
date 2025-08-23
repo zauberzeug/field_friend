@@ -63,6 +63,8 @@ class Monitoring:
                 self.sights['back'] = ui.interactive_image('assets/field_friend.webp').classes('w-full')
                 self._circle_sight_text('Right')
                 self.sights['right'] = ui.interactive_image('assets/field_friend.webp').classes('w-full')
+                with ui.row():
+                    rosys.automation.automation_controls(self.automator)
         ui.timer(0.1, self._update_monitor_content)
 
     def _circle_sight_text(self, position: str) -> None:
