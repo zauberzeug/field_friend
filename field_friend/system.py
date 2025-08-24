@@ -20,7 +20,6 @@ from .capture import Capture
 from .config import get_config
 from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
 from .info import Info
-from .kpi_generator import generate_kpis
 from .robot_locator import RobotLocator
 from .vision import CalibratableUsbCameraProvider, CameraConfigurator, DetectorHardware
 from .vision.zedxmini_camera import ZedxminiCameraProvider
@@ -89,21 +88,8 @@ class System(rosys.persistence.Persistable):
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
         self.plant_provider = PlantProvider().persistent()
-        self.kpi_provider = KpiProvider().persistent()
-        if not self.is_real:
-            generate_kpis(self.kpi_provider)
-
-        def watch_robot() -> None:
-            if self.field_friend.bumper:
-                self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
-            if self.field_friend.bms:
-                self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
-
-        self.puncher: Puncher = Puncher(self.field_friend, self.driver)
+        self.puncher = Puncher(self.field_friend, self.driver)
         self.plant_locator: PlantLocator = PlantLocator(self).persistent()
-
-        rosys.on_repeat(watch_robot, 1.0)
-
         self.field_provider: FieldProvider = FieldProvider().persistent()
         self.automator: rosys.automation.Automator = rosys.automation.Automator(
             self.steerer,
@@ -113,6 +99,7 @@ class System(rosys.persistence.Persistable):
         self.automation_watcher: AutomationWatcher = AutomationWatcher(self)
 
         self.setup_timelapse()
+        self.setup_kpi()
         self.setup_implements()
         self.setup_navigations()
         self.info = Info(self)
@@ -277,6 +264,74 @@ class System(rosys.persistence.Persistable):
             tags: {", ".join(self.plant_locator.tags)}'''
         rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
+
+    def setup_kpi(self) -> None:
+        last_update = rosys.time()
+        last_position = self.robot_locator.pose
+        distance_sum = 0.0
+        self.kpi_provider = KpiProvider().persistent()
+        if not self.is_real:
+            self.kpi_provider.simulate_kpis()
+
+        if self.automator:
+            self.automator.AUTOMATION_STARTED \
+                .register(lambda: self.kpi_provider.increment_all_time_kpi('automation_started', 1))
+            self.automator.AUTOMATION_PAUSED \
+                .register(lambda _: self.kpi_provider.increment_all_time_kpi('automation_paused', 1))
+            self.automator.AUTOMATION_STOPPED \
+                .register(lambda _: self.kpi_provider.increment_all_time_kpi('automation_stopped', 1))
+            self.automator.AUTOMATION_FAILED \
+                .register(lambda _: self.kpi_provider.increment_all_time_kpi('automation_failed', 1))
+            self.automator.AUTOMATION_COMPLETED \
+                .register(lambda: self.kpi_provider.increment_all_time_kpi('automation_completed', 1))
+
+        if self.plant_provider:
+            # TODO: test, values too high
+            self.plant_provider.ADDED_NEW_WEED \
+                .register(lambda: self.kpi_provider.increment_all_time_kpi('weeds_detected', 1))
+            self.plant_provider.ADDED_NEW_CROP \
+                .register(lambda: self.kpi_provider.increment_all_time_kpi('crops_detected', 1))
+        if self.puncher:
+            self.puncher.PUNCHED.register(lambda: self.kpi_provider.increment_all_time_kpi('punches', 1))
+
+        if self.field_friend.bumper:
+            self.field_friend.bumper.BUMPER_TRIGGERED \
+                .register(lambda: self.kpi_provider.increment_all_time_kpi('bumps', 1))
+        if self.field_friend.estop:
+            self.field_friend.estop.ESTOP_TRIGGERED \
+                .register(lambda: self.kpi_provider.increment_all_time_kpi('e_stop_triggered', 1))
+
+        if self.automator:
+            def gnss_failed(reason: str) -> None:
+                if not reason == 'GNSS failed':
+                    return
+                self.kpi_provider.increment_all_time_kpi('gnss_failed', 1)
+            self.automator.AUTOMATION_PAUSED.register(gnss_failed)
+
+        def watch_robot() -> None:
+            nonlocal last_update, last_position, distance_sum
+            current_time = rosys.time()
+            time_since_last_update = current_time - last_update
+            if self.field_friend.bumper:
+                self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
+            if self.field_friend.bms:
+                self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
+
+            if self.automator.is_running and not self.field_friend.bms.state.is_charging:
+                self.kpi_provider.increment_all_time_kpi('time_working', time_since_last_update)
+            if self.field_friend.bms.state.is_charging:
+                self.kpi_provider.increment_all_time_kpi('time_charging', time_since_last_update)
+
+            # TODO: not working, distance in chart too high
+            distance = self.robot_locator.pose.distance(last_position)
+            if 0.0001 < distance < 1.0:  # NOTE: only use realistic movements, ignore i.e. gnss reference updates
+                self.kpi_provider.increment_all_time_kpi('distance', distance)
+                distance_sum += distance
+                self.log.warning(f'distance: {distance}, distance_sum: {distance_sum}')
+            last_position = self.robot_locator.pose
+            last_update = current_time
+
+        rosys.on_repeat(watch_robot, 1.0)
 
     def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation | None:
         if self.config.gnss is None:

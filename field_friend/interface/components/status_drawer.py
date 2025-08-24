@@ -163,7 +163,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-            kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_kpi()}'
+            kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_working_kpi()}'
 
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer
