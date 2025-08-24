@@ -96,16 +96,16 @@ class Monitoring:
         if self.monitoring_detector is None:
             return
         for camera in self.mjpg_camera_provider.cameras.values():
-            image = camera.latest_captured_image
-            if not image:
+            position = camera_id_to_position(camera.id)
+            if position is None:
                 continue
-            if self.monitoring_active and self.monitoring_detector.is_connected:
-                position = camera_id_to_position(camera.id)
-                if position is None:
-                    continue
+            image = camera.latest_captured_image
+            if image and self.monitoring_active and self.monitoring_detector.is_connected:
                 await self.monitoring_detector.detect(image, tags=[position], autoupload=rosys.vision.Autoupload.FILTERED)
                 if image.detections:
                     self.sights[position].set_content(self._to_svg(image.detections))
+                    continue
+            self.sights[position].set_content('')
 
     def _to_svg(self, detections: rosys.vision.Detections) -> str:
         def point_to_svg(point: rosys.vision.PointDetection, *, color: str, radius: float = 8) -> str:

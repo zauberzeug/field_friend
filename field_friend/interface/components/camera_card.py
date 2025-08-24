@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 
 
 class CameraCard:
+    MAX_DETECTION_AGE = 2.0
+
     def __init__(self, system: System, *,
                  shrink_factor: float = 3.0,
                  show_plants: bool = True,
@@ -245,7 +247,8 @@ class CameraCard:
             svg += self.build_svg_for_mapping()
         if self.show_plants:
             svg += self.build_svg_for_plant_provider()
-        if self.show_detections and image and image.detections:
+        image_age = rosys.time() - image.time if image else 0
+        if self.show_detections and image and image.detections and image_age < self.MAX_DETECTION_AGE:
             svg += self.detections_to_svg(image.detections)
 
         if isinstance(self.system.current_implement, WeedingImplement) and self.field_friend.y_axis is not None:
