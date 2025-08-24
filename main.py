@@ -32,6 +32,7 @@ def startup() -> None:
     interface.dev_page(system, log_monitor)  # /dev
     interface.monitor_page(system)  # /monitor
     interface.bms_page(system)  # /bms
+    interface.kpi_page(system)  # /kpi
     interface.low_bandwidth_page(system, log_monitor)  # /lb
     logging_page(['field_friend', 'rosys'])  # /logging
     videos_page()  # /videos
