@@ -20,7 +20,7 @@ class HeaderBar:
         self.STATUS_DRAWER_TOGGLED: Event = Event()
         '''tells if the status drawer is toggled or not.'''
 
-        with ui.header().classes('items-center'):
+        with ui.header().classes('items-center py-3'):
             with ui.link(target='/'):
                 ui.image('assets/zz_logo.png').tailwind.width('12')
             ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')

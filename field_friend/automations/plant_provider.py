@@ -136,11 +136,15 @@ class PlantProvider(rosys.persistence.Persistable):
         plant.positions.append(Point3d.from_point(prediction, 0))
         plant.confidences.append(self.prediction_confidence)
 
-    def get_relevant_crops(self, point: Point3d, *, max_distance=0.5) -> list[Plant]:
-        return [c for c in self.crops if c.position.distance(point) <= max_distance and c.confidence >= self.minimum_combined_crop_confidence]
+    def get_relevant_crops(self, point: Point3d, *, max_distance=0.5, min_confidence: float | None = None) -> list[Plant]:
+        if min_confidence is None:
+            min_confidence = self.minimum_combined_crop_confidence
+        return [c for c in self.crops if c.position.distance(point) <= max_distance and c.confidence >= min_confidence]
 
-    def get_relevant_weeds(self, point: Point3d, *, max_distance=0.5) -> list[Plant]:
-        return [w for w in self.weeds if w.position.distance(point) <= max_distance and w.confidence >= self.minimum_combined_weed_confidence]
+    def get_relevant_weeds(self, point: Point3d, *, max_distance=0.5, min_confidence: float | None = None) -> list[Plant]:
+        if min_confidence is None:
+            min_confidence = self.minimum_combined_weed_confidence
+        return [w for w in self.weeds if w.position.distance(point) <= max_distance and w.confidence >= min_confidence]
 
     def settings_ui(self) -> None:
         ui.number('Combined crop confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f', on_change=self.request_backup) \
