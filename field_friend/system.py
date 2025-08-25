@@ -296,14 +296,14 @@ class System(rosys.persistence.Persistable):
 
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED \
-                .register(lambda: self.kpi_provider.increment_all_time_kpi('bumps', 1))
+                .register(lambda _: self.kpi_provider.increment_all_time_kpi('bumps', 1))
         if self.field_friend.estop:
             self.field_friend.estop.ESTOP_TRIGGERED \
                 .register(lambda: self.kpi_provider.increment_all_time_kpi('e_stop_triggered', 1))
 
         if self.automator:
             def gnss_failed(reason: str) -> None:
-                if not reason == 'GNSS failed':
+                if 'GNSS' not in reason:
                     return
                 self.kpi_provider.increment_all_time_kpi('gnss_failed', 1)
             self.automator.AUTOMATION_PAUSED.register(gnss_failed)
@@ -322,12 +322,10 @@ class System(rosys.persistence.Persistable):
             if self.field_friend.bms.state.is_charging:
                 self.kpi_provider.increment_all_time_kpi('time_charging', time_since_last_update)
 
-            # TODO: not working, distance in chart too high
             distance = self.robot_locator.pose.distance(last_position)
             if 0.0001 < distance < 1.0:  # NOTE: only use realistic movements, ignore i.e. gnss reference updates
                 self.kpi_provider.increment_all_time_kpi('distance', distance)
                 distance_sum += distance
-                self.log.warning(f'distance: {distance}, distance_sum: {distance_sum}')
             last_position = self.robot_locator.pose
             last_update = current_time
 
