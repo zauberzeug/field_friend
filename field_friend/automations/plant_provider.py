@@ -67,10 +67,10 @@ class PlantProvider(rosys.persistence.Persistable):
         self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
         self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)
         self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
-        self.minimum_combined_crop_confidence = data.get(
-            'minimum_combined_crop_confidence', self.minimum_combined_crop_confidence)
-        self.minimum_combined_weed_confidence = data.get(
-            'minimum_combined_weed_confidence', self.minimum_combined_weed_confidence)
+        self.minimum_combined_crop_confidence = data.get('minimum_combined_crop_confidence',
+                                                         self.minimum_combined_crop_confidence)
+        self.minimum_combined_weed_confidence = data.get('minimum_combined_weed_confidence',
+                                                         self.minimum_combined_weed_confidence)
 
     def prune(self) -> None:
         weeds_max_age = 10.0
