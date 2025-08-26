@@ -9,9 +9,9 @@ from rosys.analysis import Day, KpiLogger, Month, date_to_str
 
 @dataclass(slots=True, kw_only=True)
 class KPIs:
-    distance: int = 0
-    time_working: int = 0
-    time_charging: int = 0
+    distance: float = 0
+    time_working: float = 0
+    time_charging: float = 0
 
     weeds_detected: int = 0
     crops_detected: int = 0
@@ -64,7 +64,7 @@ class KpiProvider(KpiLogger):
         setattr(self.all_time_kpis, indicator, new_value)
         self.invalidate()
 
-    def get_time_as_string(self, seconds: int) -> str:
+    def get_time_as_string(self, seconds: float) -> str:
         total_seconds = int(seconds)
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60

@@ -34,8 +34,8 @@ class Tornado(WeedingImplement):
         try:
             current_pose = self.system.robot_locator.pose
             # TODO: do we need to set self.next_crop_id = '' on every return?
-            punch_position = current_pose.transform(
-                Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
+            punch_position = current_pose.transform(Point(x=self.system.field_friend.WORK_X,
+                                                          y=self.next_punch_y_position))
             self.last_punches.append(Point3d.from_point(punch_position))
             self.log.debug('Drilling crop at %s with angle %.1f°', punch_position, self.tornado_angle)
             await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth,
