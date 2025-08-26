@@ -25,7 +25,9 @@ class HeaderBar:
                 ui.image('assets/zz_logo.png').tailwind.width('12')
             ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
 
-            with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto bg-red-500 text-white p-2 rounded-md'):
+            with ui.row().classes('mr-auto bg-red-500 text-white p-2 rounded-md') \
+                .bind_visibility_from(system.field_friend.estop, 'active',
+                                      backward=lambda active: active and not system.field_friend.estop.is_soft_estop_active):
                 ui.icon('report').props('size=md').classes('text-white').props('elevated')
                 ui.label().bind_text_from(system.field_friend.estop, 'pressed_estops',
                                           lambda e: f'Emergency stop {e} is pressed!') \

@@ -28,7 +28,7 @@ def status_dev_page(robot: FieldFriend, system: System):
         ui.label('Hardware').style('color: #6E93D6;').classes('w-full text-center font-bold')
         ui.separator()
 
-        with ui.row().bind_visibility_from(robot.estop, 'active'):
+        with ui.row().bind_visibility_from(robot.estop, 'active', backward=lambda active: active and not robot.estop.is_soft_estop_active):
             ui.icon('report').props('size=md').classes('text-red')
             ui.label('Emergency stop is pressed!').classes('text-red mt-1')
 

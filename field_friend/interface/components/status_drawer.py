@@ -37,7 +37,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
         ui.label('Hardware').style('color: #6E93D6').classes('w-full text-center font-bold')
         ui.separator()
 
-        with ui.row().bind_visibility_from(robot.estop, 'active'):
+        with ui.row().bind_visibility_from(robot.estop, 'active', backward=lambda active: active and not robot.estop.is_soft_estop_active):
             ui.icon('report').props('size=md').classes('text-red')
             ui.label('Emergency stop is pressed!').classes('text-red mt-1')
 
@@ -98,8 +98,14 @@ def create_status_drawer(system: System) -> ui.right_drawer:
         with ui.row().classes('place-items-center').bind_visibility_from(system.automator, 'is_running', backward=lambda x: not x):
             ui.label('No automation running').style('color: #6E93D6').classes('font-bold')
         with ui.row().classes('place-items-center'):
-            ui.label('Time in Automation').style('color: #6E93D6').classes('font-bold')
-            kpi_time_in_automation_off = ui.label()
+            ui.label('Time working').style('color: #6E93D6').classes('font-bold')
+            kpi_time_working = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.label('Time charging').style('color: #6E93D6').classes('font-bold')
+            kpi_time_charging = ui.label()
+        with ui.row().classes('place-items-center'):
+            ui.label('Distance driven').style('color: #6E93D6').classes('font-bold')
+            kpi_distance = ui.label()
 
         def update_status() -> None:
             if isinstance(robot.y_axis, ChainAxis):
@@ -163,7 +169,10 @@ def create_status_drawer(system: System) -> ui.right_drawer:
 
             if hasattr(robot, 'status_control') and robot.status_control is not None:
                 status_control_label.text = f'RDYP: {robot.status_control.rdyp_status}, VDP: {robot.status_control.vdp_status}, heap: {robot.status_control.heap}'
-            kpi_time_in_automation_off.text = f'{system.kpi_provider.get_time_working_kpi()}'
+            kpi_time_working.text = f'{system.kpi_provider.get_time_as_string(system.kpi_provider.all_time_kpis.time_working)}'
+            kpi_time_charging.text = f'{system.kpi_provider.get_time_as_string(system.kpi_provider.all_time_kpis.time_charging)}'
+            distance = system.kpi_provider.all_time_kpis.distance
+            kpi_distance.text = f'{distance:03.0f}m' if distance < 1000 else f'{(distance/1000):06.3f}km'
 
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer

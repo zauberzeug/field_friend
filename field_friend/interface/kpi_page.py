@@ -24,17 +24,19 @@ class KpiPage(kpi_page):
             'crops_detected': 'Crops detected',
             'punches': 'Punches'
         })
-        time = KpiChart(title='Working Time', unit='Seconds', indicators={
-            'time_working': 'Working',
-            'time_charging': 'Charging',
-        })
-        distance = KpiChart(title='Distance', unit='Meters', indicators={
-            'distance': 'Distance driven',
-        })
+        # TODO: not working, because only incidents are counted, not the values
+        # time = KpiChart(title='Working Time', unit='Seconds', indicators={
+        #     'time_working': 'Working',
+        #     'time_charging': 'Charging',
+        # })
+        # distance = KpiChart(title='Distance', unit='Meters', indicators={
+        #     'distance': 'Distance driven',
+        # })
         negatives = KpiChart(title='Exceptions', indicators={
             'bumps': 'Bumper',
             'e_stop_triggered': 'E-Stop',
-            'gnss_failed': 'GNSS failed'
+            'gnss_failed': 'GNSS failed',
+            'low_battery': 'Low battery'
         }, colormap='Reds')
         activities = KpiChart(title='Automation Statistics', indicators={
             'automation_started': 'Automation started',
@@ -43,7 +45,7 @@ class KpiPage(kpi_page):
             'automation_failed': 'Automation failed',
             'automation_completed': 'Automation completed'
         })
-        return [positives, time, distance, negatives, activities]
+        return [positives, negatives, activities]
 
     @property
     def timespans(self) -> dict[int, str]:

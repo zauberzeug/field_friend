@@ -293,7 +293,6 @@ class System(rosys.persistence.Persistable):
                 .register(lambda: self.kpi_provider.increment_all_time_kpi('crops_detected', 1))
         if self.puncher:
             self.puncher.PUNCHED.register(lambda: self.kpi_provider.increment_all_time_kpi('punches', 1))
-
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED \
                 .register(lambda _: self.kpi_provider.increment_all_time_kpi('bumps', 1))
@@ -312,8 +311,6 @@ class System(rosys.persistence.Persistable):
             nonlocal last_update, last_position, distance_sum
             current_time = rosys.time()
             time_since_last_update = current_time - last_update
-            if self.field_friend.bumper:
-                self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
             if self.field_friend.bms:
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
 

@@ -20,6 +20,7 @@ class KPIs:
     bumps: int = 0
     e_stop_triggered:  int = 0
     gnss_failed: int = 0
+    low_battery: int = 0
 
     automation_started: int = 0
     automation_paused: int = 0
@@ -56,8 +57,8 @@ class KpiProvider(KpiLogger):
         setattr(self.all_time_kpis, indicator, new_value)
         self.invalidate()
 
-    def get_time_working_kpi(self) -> str:
-        total_seconds = int(self.all_time_kpis.time_working)
+    def get_time_as_string(self, seconds: int) -> str:
+        total_seconds = int(seconds)
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
         seconds = total_seconds % 60
@@ -72,6 +73,7 @@ class KpiProvider(KpiLogger):
             'bumps': lambda: randint(0, 5),
             'e_stop_triggered': lambda: randint(0, 10),
             'gnss_failed': lambda: randint(0, 20),
+            'low_battery': lambda: randint(0, 10),
 
             'crops_detected': lambda: randint(0, 100),
             'weeds_detected': lambda: randint(0, 500),
