@@ -5,7 +5,7 @@ from typing import Any, Self
 
 import rosys
 import shapely
-from rosys.geometry import GeoPoint, GeoPose, Point
+from rosys.geometry import GeoPoint, GeoPose, GeoReference, Point
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 
@@ -101,6 +101,11 @@ class Field:
     @property
     def charge_approach_pose(self) -> GeoPose | None:
         return self._charge_approach_pose
+
+    @property
+    def geo_reference(self) -> GeoReference:
+        direction = self.first_row_start.direction(self.first_row_end)
+        return GeoReference(origin=self.first_row_start, direction=direction)
 
     def area(self) -> float:
         outline_cartesian = self.outline_cartesian
