@@ -288,9 +288,9 @@ class System(rosys.persistence.Persistable):
         if self.plant_provider:
             # TODO: test, values too high
             self.plant_provider.ADDED_NEW_WEED \
-                .register(lambda: self.kpi_provider.increment_all_time_kpi('weeds_detected', 1))
+                .register(lambda _: self.kpi_provider.increment_all_time_kpi('weeds_detected', 1))
             self.plant_provider.ADDED_NEW_CROP \
-                .register(lambda: self.kpi_provider.increment_all_time_kpi('crops_detected', 1))
+                .register(lambda _: self.kpi_provider.increment_all_time_kpi('crops_detected', 1))
         if self.puncher:
             self.puncher.PUNCHED.register(lambda: self.kpi_provider.increment_all_time_kpi('punches', 1))
         if self.field_friend.bumper:

@@ -16,7 +16,7 @@ class PuncherException(Exception):
 
 class Puncher:
     def __init__(self, field_friend: FieldFriend, driver: Driver) -> None:
-        self.PUNCHED: Event = Event()
+        self.PUNCHED: Event[[]] = Event()
         """A punch has been performed."""
 
         self.punch_allowed: str = 'waiting'
