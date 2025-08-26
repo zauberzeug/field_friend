@@ -88,6 +88,11 @@ class System(rosys.persistence.Persistable):
                                                           camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
+        self.automator: rosys.automation.Automator = rosys.automation.Automator(
+            self.steerer,
+            on_interrupt=self.field_friend.stop,
+            notify=False,
+        )
         self.plant_provider = PlantProvider().persistent()
         self.plant_locator: PlantLocator = PlantLocator(self).persistent()
         self.puncher: Puncher = Puncher(self.field_friend, self.driver)
@@ -104,11 +109,6 @@ class System(rosys.persistence.Persistable):
         rosys.on_repeat(watch_robot, 1.0)
 
         self.field_provider: FieldProvider = FieldProvider().persistent()
-        self.automator: rosys.automation.Automator = rosys.automation.Automator(
-            self.steerer,
-            on_interrupt=self.field_friend.stop,
-            notify=False,
-        )
         self.automation_watcher: AutomationWatcher = AutomationWatcher(self)
 
         self.setup_timelapse()
