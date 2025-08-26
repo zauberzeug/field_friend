@@ -268,7 +268,6 @@ class System(rosys.persistence.Persistable):
     def setup_kpi(self) -> None:
         last_update = rosys.time()
         last_position = self.robot_locator.pose
-        distance_sum = 0.0
         self.kpi_provider = KpiProvider().persistent()
         if not self.is_real:
             self.kpi_provider.simulate_kpis()
@@ -286,7 +285,6 @@ class System(rosys.persistence.Persistable):
                 .register(lambda: self.kpi_provider.increment_all_time_kpi('automation_completed', 1))
 
         if self.plant_provider:
-            # TODO: test, values too high
             self.plant_provider.ADDED_NEW_WEED \
                 .register(lambda _: self.kpi_provider.increment_all_time_kpi('weeds_detected', 1))
             self.plant_provider.ADDED_NEW_CROP \
@@ -308,7 +306,7 @@ class System(rosys.persistence.Persistable):
             self.automator.AUTOMATION_PAUSED.register(gnss_failed)
 
         def watch_robot() -> None:
-            nonlocal last_update, last_position, distance_sum
+            nonlocal last_update, last_position
             current_time = rosys.time()
             time_since_last_update = current_time - last_update
             if self.field_friend.bms:
@@ -322,7 +320,6 @@ class System(rosys.persistence.Persistable):
             distance = self.robot_locator.pose.distance(last_position)
             if 0.0001 < distance < 1.0:  # NOTE: only use realistic movements, ignore i.e. gnss reference updates
                 self.kpi_provider.increment_all_time_kpi('distance', distance)
-                distance_sum += distance
             last_position = self.robot_locator.pose
             last_update = current_time
 
