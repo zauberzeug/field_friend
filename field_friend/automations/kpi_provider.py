@@ -43,6 +43,13 @@ class KpiProvider(KpiLogger):
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
+        all_time_data = data.get('all_time_kpis', None)
+        if all_time_data is None:
+            return
+        if time := all_time_data.pop('time', None):
+            self.log.debug('time is deprecated, use time_working and time_charging instead')
+            all_time_data['time_working'] = time
+            all_time_data['time_charging'] = 0
         rosys.persistence.replace_dataclass(self.all_time_kpis, data.get('all_time_kpis', KPIs()))
 
     def invalidate(self) -> None:
