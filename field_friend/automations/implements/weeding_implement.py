@@ -67,7 +67,10 @@ class WeedingImplement(Implement):
     async def finish(self) -> None:
         self.system.plant_locator.pause()
         await self.system.field_friend.stop()
-        await self.puncher.clear_view()
+        try:
+            await self.puncher.clear_view()
+        except Exception as e:
+            self.log.error(f'Error clearing view: {e}')
         await self.system.timelapse_recorder.compress_video()
         await super().finish()
 
