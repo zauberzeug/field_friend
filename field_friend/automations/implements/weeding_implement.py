@@ -67,6 +67,7 @@ class WeedingImplement(Implement):
     async def finish(self) -> None:
         self.system.plant_locator.pause()
         await self.system.field_friend.stop()
+        await self.puncher.clear_view()
         await self.system.timelapse_recorder.compress_video()
         await super().finish()
 
