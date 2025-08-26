@@ -7,9 +7,16 @@ from rosys.event import Event
 
 from ...hardware import FieldFriend
 from .manual_steerer_dialog import ManualSteererDialog as manual_steerer_dialog
+from .status_drawer import create_status_drawer
 
 if TYPE_CHECKING:
     from ...system import System
+
+
+def create_header(system: System) -> None:
+    ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
+    drawer = create_status_drawer(system)
+    HeaderBar(system, drawer)
 
 
 class HeaderBar:
