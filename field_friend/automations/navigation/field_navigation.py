@@ -67,6 +67,8 @@ class FieldNavigation(WaypointNavigation):
         if not self._is_allowed_to_start():
             return False
         self.system.automation_watcher.gnss_watch_active = True
+        if self.current_segment is not None:
+            self._handle_segment_started(self.current_segment)
         return True
 
     def generate_path(self) -> list[DriveSegment | RowSegment]:

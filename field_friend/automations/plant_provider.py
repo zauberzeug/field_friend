@@ -40,13 +40,13 @@ class PlantProvider(rosys.persistence.Persistable):
         self.minimum_combined_crop_confidence: float = MINIMUM_COMBINED_CROP_CONFIDENCE
         self.minimum_combined_weed_confidence: float = MINIMUM_COMBINED_WEED_CONFIDENCE
 
-        self.PLANTS_CHANGED: Event = Event()
+        self.PLANTS_CHANGED: Event[[]] = Event()
         """The collection of plants has changed."""
 
-        self.ADDED_NEW_WEED: Event = Event()
+        self.ADDED_NEW_WEED: Event[Plant] = Event()
         """A new weed has been added."""
 
-        self.ADDED_NEW_CROP: Event = Event()
+        self.ADDED_NEW_CROP: Event[Plant] = Event()
         """A new crop has been added."""
 
         rosys.on_repeat(self.prune, 10.0)
@@ -67,10 +67,10 @@ class PlantProvider(rosys.persistence.Persistable):
         self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
         self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)
         self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
-        self.minimum_combined_crop_confidence = data.get(
-            'minimum_combined_crop_confidence', self.minimum_combined_crop_confidence)
-        self.minimum_combined_weed_confidence = data.get(
-            'minimum_combined_weed_confidence', self.minimum_combined_weed_confidence)
+        self.minimum_combined_crop_confidence = data.get('minimum_combined_crop_confidence',
+                                                         self.minimum_combined_crop_confidence)
+        self.minimum_combined_weed_confidence = data.get('minimum_combined_weed_confidence',
+                                                         self.minimum_combined_weed_confidence)
 
     def prune(self) -> None:
         weeds_max_age = 10.0
@@ -90,7 +90,7 @@ class PlantProvider(rosys.persistence.Persistable):
             return
         self.weeds.append(weed)
         self.PLANTS_CHANGED.emit()
-        self.ADDED_NEW_WEED.emit()
+        self.ADDED_NEW_WEED.emit(weed)
 
     def remove_weed(self, weed_id: str) -> None:
         self.weeds[:] = [weed for weed in self.weeds if weed.id != weed_id]
@@ -107,7 +107,7 @@ class PlantProvider(rosys.persistence.Persistable):
             self._add_crop_prediction(crop)
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
-        self.ADDED_NEW_CROP.emit()
+        self.ADDED_NEW_CROP.emit(crop)
 
     def remove_crop(self, crop_id: str) -> None:
         self.crops[:] = [c for c in self.crops if c.id != crop_id]

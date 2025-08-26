@@ -4,6 +4,7 @@ import os
 import rosys
 from rosys.analysis import track
 from rosys.driving import Driver
+from rosys.event import Event
 from rosys.geometry import Point
 
 from ..hardware import Axis, ChainAxis, FieldFriend, Tornado
@@ -15,6 +16,9 @@ class PuncherException(Exception):
 
 class Puncher:
     def __init__(self, field_friend: FieldFriend, driver: Driver) -> None:
+        self.PUNCHED: Event[[]] = Event()
+        """A punch has been performed."""
+
         self.punch_allowed: str = 'waiting'
         self.field_friend = field_friend
         self.driver = driver
@@ -106,6 +110,7 @@ class Puncher:
                 else:
                     await self.field_friend.z_axis.return_to_reference()
             self.log.debug('punched at %.2f with depth %.2f, now back to rest position "%s"', y, depth, rest_position)
+            self.PUNCHED.emit()
         except Exception as e:
             raise PuncherException('punching failed') from e
         finally:
