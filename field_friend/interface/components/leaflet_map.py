@@ -52,6 +52,7 @@ class LeafletMap:
         self.zoom_to_robot()
         self.field_provider.FIELDS_CHANGED.register_ui(self.update_layers)
         self.field_provider.FIELD_SELECTED.register_ui(self.update_layers)
+        self.system.GNSS_REFERENCE_CHANGED.register_ui(self.update_layers)
 
         if self.gnss is not None:
             self.gnss.NEW_MEASUREMENT.register_ui(self.update_robot_position)
