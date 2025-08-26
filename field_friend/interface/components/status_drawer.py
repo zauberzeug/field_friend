@@ -172,7 +172,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
             kpi_time_working.text = f'{system.kpi_provider.get_time_as_string(system.kpi_provider.all_time_kpis.time_working)}'
             kpi_time_charging.text = f'{system.kpi_provider.get_time_as_string(system.kpi_provider.all_time_kpis.time_charging)}'
             distance = system.kpi_provider.all_time_kpis.distance
-            kpi_distance.text = f'{distance:03.0f}m' if distance < 1000 else f'{(distance/1000):06.3f}km'
+            kpi_distance.text = f'{distance:3.0f} m' if distance < 1000 else f'{(distance/1000):6.3f} km'
 
         ui.timer(rosys.config.ui_update_interval, update_status)
     return status_drawer
