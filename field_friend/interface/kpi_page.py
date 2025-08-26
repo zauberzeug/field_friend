@@ -7,11 +7,11 @@ from .components import create_header
 class KpiPage(kpi_page):
     def __init__(self, system: System) -> None:
         super().__init__(system.kpi_provider)
-        create_header(system)
+        self.system = system
 
-    @property
-    def language(self) -> str:
-        return 'en'
+    def _content(self) -> None:
+        create_header(self.system)
+        super()._content()
 
     @property
     def title(self) -> str:
