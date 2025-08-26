@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import rosys
 from nicegui import ui
@@ -14,12 +14,6 @@ from ..vision.zedxmini_camera import StereoCamera
 from .entity_locator import EntityLocator
 from .plant import Plant
 
-WEED_CATEGORY_NAME = ['weed', 'weedy_area', 'coin', 'big_weed']
-CROP_CATEGORY_NAME: dict[str, str] = {}
-MINIMUM_CROP_CONFIDENCE = 0.3
-MINIMUM_WEED_CONFIDENCE = 0.3
-
-
 if TYPE_CHECKING:
     from ..system import System
 
@@ -29,6 +23,12 @@ class DetectorError(Exception):
 
 
 class PlantLocator(EntityLocator):
+    INTERVAL = 0.01
+    WEED_CATEGORY_NAME: ClassVar[list[str]] = ['weed', 'weedy_area', 'coin', 'big_weed']
+    CROP_CATEGORY_NAME: ClassVar[dict[str, str]] = {}
+    MINIMUM_CROP_CONFIDENCE = 0.3
+    MINIMUM_WEED_CONFIDENCE = 0.3
+
     def __init__(self, system: System) -> None:
         super().__init__(system)
         self.log = logging.getLogger('field_friend.plant_locator')
@@ -37,15 +37,18 @@ class PlantLocator(EntityLocator):
         self.plant_provider = system.plant_provider
         self.robot_locator = system.robot_locator
         self.robot_id = system.robot_id
+        self.automator = system.automator
+
         self.detector_info: DetectorInfo | None = None
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
         self.upload_images: bool = False
-        self.weed_category_names: list[str] = WEED_CATEGORY_NAME
-        self.crop_category_names: dict[str, str] = CROP_CATEGORY_NAME
-        self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
-        self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
+        self.interval = self.INTERVAL
+        self.weed_category_names: list[str] = self.WEED_CATEGORY_NAME
+        self.crop_category_names: dict[str, str] = self.CROP_CATEGORY_NAME
+        self.minimum_crop_confidence: float = self.MINIMUM_CROP_CONFIDENCE
+        self.minimum_weed_confidence: float = self.MINIMUM_WEED_CONFIDENCE
         if system.is_real:
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
@@ -61,10 +64,9 @@ class PlantLocator(EntityLocator):
             self.log.warning('no camera provider configured, cant locate plants')
             return
         assert self.detector is not None
-        self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
-        rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
         rosys.on_repeat(self._detection_watchdog, 0.5)
         rosys.on_startup(self.fetch_detector_info)
+        rosys.on_startup(self._detect_plants)
 
     def backup_to_dict(self) -> dict[str, Any]:
         self.log.debug(f'backup: autoupload: {self.autoupload}')
@@ -78,8 +80,8 @@ class PlantLocator(EntityLocator):
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
-        self.minimum_weed_confidence = data.get('minimum_weed_confidence', MINIMUM_WEED_CONFIDENCE)
-        self.minimum_crop_confidence = data.get('minimum_crop_confidence', MINIMUM_CROP_CONFIDENCE)
+        self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.MINIMUM_WEED_CONFIDENCE)
+        self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.MINIMUM_CROP_CONFIDENCE)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
             if 'autoupload' in data else Autoupload.DISABLED
         self.log.debug(f'self.autoupload: {self.autoupload}')
@@ -87,68 +89,72 @@ class PlantLocator(EntityLocator):
         self.tags = data.get('tags', self.tags)
 
     async def _detect_plants(self) -> None:
-        if self.is_paused:
-            await rosys.sleep(0.01)
-            return
-        t = rosys.time()
-        assert self.camera_provider is not None
-        camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
-        if not camera:
-            self.log.error('no connected camera found')
-            return
-        assert isinstance(camera, rosys.vision.CalibratableCamera)
-        if camera.calibration is None:
-            self.log.error(f'no calibration found for camera {camera.name}')
-            raise DetectorError()
-        if not self.crop_category_names:
-            self.log.warning('No crop categories defined')
-            await self.fetch_detector_info()
-        new_image = camera.latest_captured_image
-        if new_image is None or new_image.detections:
-            await rosys.sleep(0.01)
-            return
-        assert self.detector is not None
-        await self.detector.detect(new_image, autoupload=self.autoupload, tags=[*self.tags, self.robot_id, 'autoupload'], source=self.robot_id)
-        if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
-            await rosys.sleep(0.01 - (rosys.time() - t))
-        if not new_image.detections:
-            return
-
-        for d in new_image.detections.points:
-            if isinstance(self.detector, rosys.vision.DetectorSimulation):
-                # NOTE we drop detections at the edge of the vision because in reality they are blocked by the chassis
-                dead_zone = 80
-                if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
-                    continue
-            image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-            world_point_3d: rosys.geometry.Point3d | None = None
-            if isinstance(camera, StereoCamera):
-                world_point_3d = camera.calibration.project_from_image(image_point)
-                # TODO: 3d detection
-                # camera_point_3d: Point3d | None = await camera.get_point(
-                #     int(d.cx), int(d.cy))
-                # if camera_point_3d is None:
-                #     self.log.error('could not get a depth value for detection')
-                #     continue
-                # camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
-                #     'zedxmini').in_frame(self.robot_locator.pose_frame)
-                # world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
-            else:
-                world_point_3d = camera.calibration.project_from_image(image_point)
-            if world_point_3d is None:
-                self.log.error('Failed to generate world point from %s', image_point)
+        while True:
+            if self.is_paused or self.automator.is_paused:
+                await rosys.sleep(self.interval)
                 continue
-            plant = Plant(type=d.category_name,
-                          detection_time=rosys.time(),
-                          detection_image=new_image)
-            plant.positions.append(world_point_3d)
-            plant.confidences.append(d.confidence)
-            if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
-                await self.plant_provider.add_weed(plant)
-            elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
-                self.plant_provider.add_crop(plant)
-            elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
-                self.log.error('Detected category "%s" is unknown', d.category_name)
+            t = rosys.time()
+            t_difference = t - self.last_detection_time
+            if t_difference < self.interval:
+                await rosys.sleep(self.interval - t_difference)
+                continue
+            assert self.camera_provider is not None
+            camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
+            if not camera:
+                self.log.error('no connected camera found')
+                continue
+            assert isinstance(camera, rosys.vision.CalibratableCamera)
+            if camera.calibration is None:
+                self.log.error(f'no calibration found for camera {camera.name}')
+                raise DetectorError()
+            if not self.crop_category_names:
+                self.log.warning('No crop categories defined')
+                await self.fetch_detector_info()
+            new_image = camera.latest_captured_image
+            if new_image is None or new_image.detections:
+                await rosys.sleep(0.01)
+                continue
+            assert self.detector is not None
+            self.last_detection_time = rosys.time()
+            await self.detector.detect(new_image, autoupload=self.autoupload, tags=[*self.tags, self.robot_id, 'autoupload'], source=self.robot_id)
+            if not new_image.detections:
+                continue
+
+            for d in new_image.detections.points:
+                if isinstance(self.detector, rosys.vision.DetectorSimulation):
+                    # NOTE we drop detections at the edge of the vision because in reality they are blocked by the chassis
+                    dead_zone = 80
+                    if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
+                        continue
+                image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
+                world_point_3d: rosys.geometry.Point3d | None = None
+                if isinstance(camera, StereoCamera):
+                    world_point_3d = camera.calibration.project_from_image(image_point)
+                    # TODO: 3d detection
+                    # camera_point_3d: Point3d | None = await camera.get_point(
+                    #     int(d.cx), int(d.cy))
+                    # if camera_point_3d is None:
+                    #     self.log.error('could not get a depth value for detection')
+                    #     continue
+                    # camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
+                    #     'zedxmini').in_frame(self.robot_locator.pose_frame)
+                    # world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
+                else:
+                    world_point_3d = camera.calibration.project_from_image(image_point)
+                if world_point_3d is None:
+                    self.log.debug('Failed to generate world point from %s', image_point)
+                    continue
+                plant = Plant(type=d.category_name,
+                              detection_time=rosys.time(),
+                              detection_image=new_image)
+                plant.positions.append(world_point_3d)
+                plant.confidences.append(d.confidence)
+                if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
+                    await self.plant_provider.add_weed(plant)
+                elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
+                    self.plant_provider.add_crop(plant)
+                elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
+                    self.log.error('Detected category "%s" is unknown', d.category_name)
 
     def _detection_watchdog(self) -> None:
         if self.is_paused:
@@ -170,12 +176,12 @@ class PlantLocator(EntityLocator):
                     .props('dense outlined') \
                     .classes('w-28') \
                     .bind_value(self, 'minimum_crop_confidence') \
-                    .tooltip(f'Set the minimum crop confidence for the detection (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
+                    .tooltip(f'Set the minimum crop confidence for the detection (default: {self.MINIMUM_CROP_CONFIDENCE:.2f})')
                 ui.number('Min. weed confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
                     .props('dense outlined') \
                     .classes('w-28') \
                     .bind_value(self, 'minimum_weed_confidence') \
-                    .tooltip(f'Set the minimum weed confidence for the detection(default: {MINIMUM_WEED_CONFIDENCE: .2f})')
+                    .tooltip(f'Set the minimum weed confidence for the detection (default: {self.MINIMUM_WEED_CONFIDENCE:.2f})')
                 options = list(rosys.vision.Autoupload)
                 ui.select(options, label='Autoupload', on_change=self.request_backup) \
                     .props('dense outlined') \
@@ -241,7 +247,7 @@ class PlantLocator(EntityLocator):
             detector_info.current_version = 'simulation'
             detector_info.target_version = 'simulation'
         filtered_crops: list[str] = [
-            category.name for category in detector_info.categories if category.name not in WEED_CATEGORY_NAME]
+            category.name for category in detector_info.categories if category.name not in self.WEED_CATEGORY_NAME]
         self.crop_category_names.update({crop_name: crop_name.replace('_', ' ').title()
                                         for crop_name in filtered_crops})
         self.detector_info = detector_info

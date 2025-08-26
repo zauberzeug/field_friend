@@ -88,7 +88,15 @@ class System(rosys.persistence.Persistable):
                                                           camera_config=self.config.camera)
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
+        self.automator: rosys.automation.Automator = rosys.automation.Automator(
+            self.steerer,
+            on_interrupt=self.field_friend.stop,
+            notify=False,
+        )
         self.plant_provider = PlantProvider().persistent()
+        self.plant_locator: PlantLocator = PlantLocator(self).persistent()
+        self.puncher: Puncher = Puncher(self.field_friend, self.driver)
+
         self.kpi_provider = KpiProvider().persistent()
         if not self.is_real:
             generate_kpis(self.kpi_provider)
@@ -98,18 +106,9 @@ class System(rosys.persistence.Persistable):
                 self.kpi_provider.increment_on_rising_edge('bumps', bool(self.field_friend.bumper.active_bumpers))
             if self.field_friend.bms:
                 self.kpi_provider.increment_on_rising_edge('low_battery', self.field_friend.bms.is_below_percent(10.0))
-
-        self.puncher: Puncher = Puncher(self.field_friend, self.driver)
-        self.plant_locator: PlantLocator = PlantLocator(self).persistent()
-
         rosys.on_repeat(watch_robot, 1.0)
 
         self.field_provider: FieldProvider = FieldProvider().persistent()
-        self.automator: rosys.automation.Automator = rosys.automation.Automator(
-            self.steerer,
-            on_interrupt=self.field_friend.stop,
-            notify=False,
-        )
         self.automation_watcher: AutomationWatcher = AutomationWatcher(self)
 
         self.setup_timelapse()

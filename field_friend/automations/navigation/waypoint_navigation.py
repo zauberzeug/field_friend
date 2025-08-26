@@ -16,6 +16,7 @@ from rosys.event import Event
 from rosys.geometry import GeoReference, Point, Point3d, Pose, PoseStep, Spline
 from rosys.hardware import Gnss
 
+from ..entity_locator import EntityLocator
 from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
 
@@ -39,6 +40,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
         self.driver = system.driver
         self.gnss = system.gnss
         self.plant_provider = system.plant_provider
+        self.plant_locator = system.plant_locator
         self.robot_locator = system.robot_locator
 
         self.name = 'Waypoint Navigation'
@@ -54,6 +56,8 @@ class WaypointNavigation(rosys.persistence.Persistable):
         self.SEGMENT_COMPLETED = Event[DriveSegment]()
         """a waypoint has been reached"""
 
+        self.SEGMENT_STARTED.register(self._handle_segment_started)
+
     @property
     def path(self) -> list[DriveSegment]:
         return self._upcoming_path
@@ -68,6 +72,19 @@ class WaypointNavigation(rosys.persistence.Persistable):
     def has_waypoints(self) -> bool:
         """Returns True as long as there are waypoints to drive to"""
         return self.current_segment is not None
+
+    def _handle_segment_started(self, segment: DriveSegment) -> None:
+        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
+            self.detector.simulated_objects.clear()
+            if self.plant_provider is not None:
+                self.plant_provider.clear()
+            if segment.use_implement:
+                self.create_segment_simulation(segment)
+        if isinstance(self.plant_locator, EntityLocator):
+            if segment.use_implement:
+                self.plant_locator.resume()
+            else:
+                self.plant_locator.pause()
 
     @track
     async def prepare(self) -> bool:
@@ -106,6 +123,8 @@ class WaypointNavigation(rosys.persistence.Persistable):
             rosys.notify('Automation started')
             self.log.debug('Navigation started')
 
+            assert self.current_segment is not None
+            self.SEGMENT_STARTED.emit(self.current_segment)
             while self.has_waypoints:
                 await self._run()
                 await rosys.sleep(0.1)
@@ -155,19 +174,14 @@ class WaypointNavigation(rosys.persistence.Persistable):
         segment = self.current_segment
         if segment is None:
             return
-        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
-            self.detector.simulated_objects.clear()
-            if self.plant_provider is not None:
-                self.plant_provider.clear()
-            if segment.use_implement:
-                self.create_segment_simulation(segment)
-
-        self.SEGMENT_STARTED.emit(segment)
         stop_at_end = segment.stop_at_end or len(self._upcoming_path) == 1
         with self.driver.parameters.set(linear_speed_limit=linear_speed_limit, can_drive_backwards=segment.backward):
             await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
-        self._upcoming_path.pop(0)
         self.SEGMENT_COMPLETED.emit(segment)
+        self._upcoming_path.pop(0)
+        if self.has_waypoints:
+            assert self.current_segment is not None
+            self.SEGMENT_STARTED.emit(self.current_segment)
 
     async def _block_until_implement_has_target(self) -> Point:
         while True:
