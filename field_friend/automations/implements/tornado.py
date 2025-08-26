@@ -32,19 +32,24 @@ class Tornado(WeedingImplement):
     async def start_workflow(self) -> None:
         await super().start_workflow()
         try:
+            current_pose = self.system.robot_locator.pose
             # TODO: do we need to set self.next_crop_id = '' on every return?
-            punch_position = self.system.robot_locator.pose.transform(
-                Point(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position))
+            punch_position = current_pose.transform(Point(x=self.system.field_friend.WORK_X,
+                                                          y=self.next_punch_y_position))
             self.last_punches.append(Point3d.from_point(punch_position))
             self.log.debug('Drilling crop at %s with angle %.1f°', punch_position, self.tornado_angle)
-            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth, angle=self.tornado_angle, with_open_tornado=self.drill_with_open_tornado)
-            # TODO remove weeds from plant_provider
+            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth,
+                                            angle=self.tornado_angle, with_open_tornado=self.drill_with_open_tornado)
+
+            inner_diameter, outer_diameter = self.field_friend.tornado_diameters(self.tornado_angle)
+            if self.drill_with_open_tornado:
+                outer_diameter = self.field_friend.tornado_diameters(0)[1]
+            inner_radius = inner_diameter / 2
+            outer_radius = outer_diameter / 2
+            for weed in self.system.plant_provider.get_relevant_weeds(current_pose.point_3d()):
+                if inner_radius <= weed.position.projection().distance(punch_position) <= outer_radius:
+                    self.system.plant_provider.remove_weed(weed.id)
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
-                inner_diameter, outer_diameter = self.field_friend.tornado_diameters(self.tornado_angle)
-                if self.drill_with_open_tornado:
-                    outer_diameter = self.field_friend.tornado_diameters(0)[1]
-                inner_radius = inner_diameter / 2
-                outer_radius = outer_diameter / 2
                 self.system.detector.simulated_objects = [obj for obj in self.system.detector.simulated_objects
                                                           if not inner_radius <= obj.position.projection().distance(punch_position) <= outer_radius]
         except Exception as e:

@@ -47,8 +47,6 @@ class FieldNavigation(WaypointNavigation):
         self.charge_automatically = self.CHARGE_AUTOMATICALLY
         self.force_charge = False
 
-        self.SEGMENT_STARTED.register(self._handle_segment_started)
-
     @property
     def field(self) -> Field | None:
         return self.field_provider.selected_field
@@ -58,6 +56,7 @@ class FieldNavigation(WaypointNavigation):
         return self.current_segment.row if isinstance(self.current_segment, RowSegment) else None
 
     def _handle_segment_started(self, segment: DriveSegment) -> None:
+        super()._handle_segment_started(segment)
         if isinstance(segment, RowSegment) and isinstance(self.implement, WeedingImplement):
             self.log.debug(f'Setting crop to {segment.row.crop}')
             self.implement.cultivated_crop = segment.row.crop
@@ -68,6 +67,8 @@ class FieldNavigation(WaypointNavigation):
         if not self._is_allowed_to_start():
             return False
         self.system.automation_watcher.gnss_watch_active = True
+        if self.current_segment is not None:
+            self._handle_segment_started(self.current_segment)
         return True
 
     def generate_path(self) -> list[DriveSegment | RowSegment]:

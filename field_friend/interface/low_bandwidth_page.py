@@ -21,7 +21,6 @@ class LowBandwidthPage:
 
     def content(self, devmode: bool) -> None:
         page_height = '50vh' if devmode else 'calc(100vh - 170px)'
-        ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         with ui.row().style(f'height:{page_height}; width: calc(100vw - 2rem); flex-wrap: nowrap;'):
             operation(self.system)
             with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):

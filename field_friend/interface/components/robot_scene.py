@@ -24,14 +24,14 @@ class RobotScene:
         self.scene_look = False
         self.locked_view = True
 
-        with self.scene_card.tight().classes('w-full place-items-center').style('max-width: 100%; overflow: hidden;'):
+        with self.scene_card.tight().classes('w-full h-full place-items-center').style('max-width: 100%; max-height: 40%;'):
             def toggle_lock():
                 self.locked_view = not self.locked_view
                 self.lock_view_button.props(f'flat color={"primary" if self.locked_view else "grey"}')
             self.lock_view_button = ui.button(icon='sym_o_visibility_lock', on_click=toggle_lock).props('flat color=primary') \
                 .style('position: absolute; left: 1px; top: 1px; z-index: 500;').tooltip('Lock view to robot')
 
-            with ui.scene(200, 200, on_click=self.handle_click, grid=True).classes('w-full') as self.scene:
+            with ui.scene(200, 200, on_click=self.handle_click, grid=True).classes('w-full h-full') as self.scene:
                 field_friend_object(self.system.robot_locator, self.system.camera_provider,
                                     self.system.field_friend, width=self.system.config.measurements.wheel_distance)
                 rosys.driving.driver_object(self.system.driver)
