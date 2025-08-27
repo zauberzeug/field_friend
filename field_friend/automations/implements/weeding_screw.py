@@ -62,7 +62,8 @@ class WeedingScrew(WeedingImplement):
         for next_weed_id, next_weed_position in weeds_in_range.items():
             weed_world_position = self.system.robot_locator.pose.transform3d(next_weed_position)
             crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
-            if self.cultivated_crop and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
+            if self.cultivated_crop and self.max_crop_distance > 0 \
+                    and not any(c.position.distance(weed_world_position) < self.max_crop_distance for c in crops):
                 self.log.debug('Skipping weed because it is to far from the cultivated crops')
                 continue
             if any(p.distance(weed_world_position) < self.system.field_friend.DRILL_RADIUS for p in self.last_punches):
