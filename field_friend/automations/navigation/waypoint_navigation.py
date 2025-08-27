@@ -219,7 +219,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
         distance_to_target = current_pose.distance(work_x_corrected_pose)
         target_t = spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y, t_min=-0.2, t_max=1.2)
         if abs(distance_to_target) < self.driver.parameters.minimum_drive_distance:
-            # TODO: also check drill radius, currently only abs() is used
+            # TODO: quickfix for weeds behind the robot
             self.log.debug('Target close, working with out advancing... (%s m)', distance_to_target)
             return True
         if target_t < current_t or target_t > 1.0:
