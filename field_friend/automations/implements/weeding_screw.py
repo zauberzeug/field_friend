@@ -16,13 +16,15 @@ if TYPE_CHECKING:
 
 
 class WeedingScrew(WeedingImplement):
+    DRILL_DEPTH = 0.14
+    MAX_CROP_DISTANCE = 0.2
 
     def __init__(self, system: System) -> None:
         super().__init__('Weed Screw', system)
         self.relevant_weeds = system.plant_locator.weed_category_names
         self.log.debug('Using relevant weeds: %s', self.relevant_weeds)
-        self.weed_screw_depth: float = 0.13
-        self.max_crop_distance: float = 0.08
+        self.drill_depth: float = self.DRILL_DEPTH
+        self.max_crop_distance: float = self.MAX_CROP_DISTANCE
 
     async def start_workflow(self) -> None:
         await super().start_workflow()
@@ -30,11 +32,11 @@ class WeedingScrew(WeedingImplement):
             punch_position = self.system.robot_locator.pose.transform3d(
                 rosys.geometry.Point3d(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position, z=0))
             self.last_punches.append(punch_position)
-            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.weed_screw_depth)
-            punched_weeds = [weed.id for weed in self.system.plant_provider.get_relevant_weeds(self.system.robot_locator.pose.point_3d())
-                             if weed.position.distance(punch_position) <= self.system.field_friend.DRILL_RADIUS]
-            for weed_id in punched_weeds:
-                self.system.plant_provider.remove_weed(weed_id)
+            await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth)
+            for weed in self.system.plant_provider.get_relevant_weeds(self.system.robot_locator.pose.point_3d(), min_confidence=0.0):
+                if weed.position.distance(punch_position) > self.system.field_friend.DRILL_RADIUS:
+                    continue
+                self.system.plant_provider.remove_weed(weed.id)
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
                 self.log.debug(f'removing weeds at screw world position {punch_position} '
                                f'with radius {self.system.field_friend.DRILL_RADIUS}')
@@ -46,7 +48,7 @@ class WeedingScrew(WeedingImplement):
             raise ImplementException(f'Error in Weed Screw Workflow: {e}') from e
 
     @track
-    async def get_target(self) -> Point | None:  # pylint: disable=unused-argument
+    async def get_target(self) -> Point | None:
         """Return the target position to drive to."""
         self.has_plants_to_handle()
         weeds_in_range = {weed_id: position for weed_id, position in self.weeds_to_handle.items()
@@ -78,29 +80,28 @@ class WeedingScrew(WeedingImplement):
 
     def settings_ui(self):
         super().settings_ui()
-        if self.system.field_friend.z_axis:
-            assert isinstance(self.system.field_friend.z_axis, Axis)
-            ui.number('Drill depth', format='%.2f', step=0.01,
-                      min=self.system.field_friend.z_axis.max_position,
-                      max=self.system.field_friend.z_axis.min_position*-1,
-                      on_change=self.request_backup) \
-                .props('dense outlined suffix=°') \
-                .classes('w-24') \
-                .bind_value(self, 'weed_screw_depth') \
-                .tooltip('Set the drill depth for the weeding automation')
-        ui.number('Maximum weed distance from crop', step=0.001, min=0.001, max=1.00, format='%.3f', on_change=self.request_backup) \
+        assert isinstance(self.system.field_friend.z_axis, Axis)
+        ui.number('Drill depth', format='%.2f', step=0.01, suffix='m',
+                  min=self.system.field_friend.z_axis.max_position,
+                  max=self.system.field_friend.z_axis.min_position*-1,
+                  on_change=self.request_backup) \
+            .props('dense outlined') \
+            .classes('w-24') \
+            .bind_value(self, 'drill_depth') \
+            .tooltip(f'Set the drill depth for the weeding automation (default: {self.DRILL_DEPTH}m)')
+        ui.number('Maximum weed distance from crop', step=0.005, min=0.0, max=1.00, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-24') \
             .bind_value(self, 'max_crop_distance') \
-            .tooltip('Set the maximum distance a weed can be away from a crop to be considered for weeding')
+            .tooltip('Set the maximum distance a weed can be away from a crop to be considered for weeding. Set to 0 to disable.')
 
     def backup_to_dict(self) -> dict[str, Any]:
         return super().backup_to_dict() | {
-            'weed_screw_depth': self.weed_screw_depth,
+            'drill_depth': self.drill_depth,
             'max_crop_distance': self.max_crop_distance,
         }
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         super().restore_from_dict(data)
-        self.weed_screw_depth = data.get('weed_screw_depth', self.weed_screw_depth)
+        self.drill_depth = data.get('drill_depth', self.drill_depth)
         self.max_crop_distance = data.get('max_crop_distance', self.max_crop_distance)
