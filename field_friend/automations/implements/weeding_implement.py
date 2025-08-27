@@ -174,6 +174,7 @@ class WeedingImplement(Implement):
                     crop_position_2d = crop_position.projection()
                     safe_weed_position_2d = weed_position_2d.polar(offset, crop_position_2d.direction(weed_position_2d))
                     upcoming_weed_positions[weed] = Point3d.from_point(safe_weed_position_2d)
+                    self.log.debug('corrected weed position: %s -> %s', weed_position_2d, safe_weed_position_2d)
 
         # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))
