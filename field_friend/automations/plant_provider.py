@@ -13,8 +13,6 @@ MINIMUM_COMBINED_CROP_CONFIDENCE = 0.9
 MINIMUM_COMBINED_WEED_CONFIDENCE = 0.9
 MATCH_DISTANCE = 0.07
 CROP_SPACING = 0.18
-PREDICT_CROP_POSITION = False
-PREDICTION_CONFIDENCE = 0.3
 
 
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
@@ -37,8 +35,6 @@ class PlantProvider(rosys.persistence.Persistable):
 
         self.match_distance: float = MATCH_DISTANCE
         self.crop_spacing: float = CROP_SPACING
-        self.predict_crop_position: bool = PREDICT_CROP_POSITION
-        self.prediction_confidence: float = PREDICTION_CONFIDENCE
         self.minimum_combined_crop_confidence: float = MINIMUM_COMBINED_CROP_CONFIDENCE
         self.minimum_combined_weed_confidence: float = MINIMUM_COMBINED_WEED_CONFIDENCE
 
@@ -93,8 +89,6 @@ class PlantProvider(rosys.persistence.Persistable):
     def add_crop(self, crop: Plant) -> None:
         if check_if_plant_exists(crop, self.crops, self.match_distance):
             return
-        if self.predict_crop_position:
-            self._add_crop_prediction(crop)
         self.crops.append(crop)
         self.PLANTS_CHANGED.emit()
         self.ADDED_NEW_CROP.emit(crop)
@@ -115,21 +109,6 @@ class PlantProvider(rosys.persistence.Persistable):
         self.clear_weeds()
         self.clear_crops()
 
-    def _add_crop_prediction(self, plant: Plant) -> None:
-        sorted_crops = sorted(self.crops, key=lambda crop: crop.position.distance(plant.position))
-        if len(sorted_crops) < 2:
-            return
-        crop_1 = sorted_crops[0]
-        crop_2 = sorted_crops[1]
-
-        yaw = crop_2.position.projection().direction(crop_1.position.projection())
-        prediction = crop_1.position.projection().polar(self.crop_spacing, yaw)
-
-        if plant.position.projection().distance(prediction) > self.match_distance:
-            return
-        plant.positions.append(Point3d.from_point(prediction, 0))
-        plant.confidences.append(self.prediction_confidence)
-
     def get_relevant_crops(self, point: Point3d, *, max_distance=0.5, min_confidence: float | None = None) -> list[Plant]:
         if min_confidence is None:
             min_confidence = self.minimum_combined_crop_confidence
@@ -144,8 +123,6 @@ class PlantProvider(rosys.persistence.Persistable):
         data = {
             'match_distance': self.match_distance,
             'crop_spacing': self.crop_spacing,
-            'predict_crop_position': self.predict_crop_position,
-            'prediction_confidence': self.prediction_confidence,
             'minimum_combined_crop_confidence': self.minimum_combined_crop_confidence,
             'minimum_combined_weed_confidence': self.minimum_combined_weed_confidence,
         }
@@ -154,8 +131,6 @@ class PlantProvider(rosys.persistence.Persistable):
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         self.match_distance = data.get('match_distance', self.match_distance)
         self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
-        self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)
-        self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
         self.minimum_combined_crop_confidence = data.get('minimum_combined_crop_confidence',
                                                          self.minimum_combined_crop_confidence)
         self.minimum_combined_weed_confidence = data.get('minimum_combined_weed_confidence',
@@ -182,11 +157,3 @@ class PlantProvider(rosys.persistence.Persistable):
             .classes('w-24') \
             .bind_value(self, 'crop_spacing') \
             .tooltip(f'Spacing between crops needed for crop position prediction (default: {CROP_SPACING:.2f})')
-        ui.number('Crop prediction confidence', step=0.05, min=0.05, max=1.00, format='%.2f', on_change=self.request_backup) \
-            .props('dense outlined') \
-            .classes('w-24') \
-            .bind_value(self, 'prediction_confidence') \
-            .tooltip(f'Confidence of the crop prediction (default: {PREDICTION_CONFIDENCE:.2f})')
-        ui.checkbox('Crop Prediction', on_change=self.request_backup) \
-            .bind_value(self, 'predict_crop_position') \
-            .tooltip(f'Provides a confidence boost for crop detections that match the expected crop spacing (default: {PREDICT_CROP_POSITION})')
