@@ -39,7 +39,6 @@ class KpiPage(kpi_page):
             'low_battery': 'Low battery'
         }, colormap='Reds')
         activities = KpiChart(title='Automation Statistics', indicators={
-            'automation_started': 'Automation started',
             'automation_paused': 'Automation paused',
             'automation_stopped': 'Automation stopped',
             'automation_failed': 'Automation failed',

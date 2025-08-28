@@ -274,8 +274,6 @@ class System(rosys.persistence.Persistable):
             self.kpi_provider.simulate_kpis()
 
         if self.automator:
-            self.automator.AUTOMATION_STARTED \
-                .register(lambda: self.kpi_provider.increment_all_time_kpi('automation_started', 1))
             self.automator.AUTOMATION_PAUSED \
                 .register(lambda _: self.kpi_provider.increment_all_time_kpi('automation_paused', 1))
             self.automator.AUTOMATION_STOPPED \
