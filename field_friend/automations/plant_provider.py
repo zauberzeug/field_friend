@@ -51,27 +51,6 @@ class PlantProvider(rosys.persistence.Persistable):
 
         rosys.on_repeat(self.prune, 10.0)
 
-    def backup_to_dict(self) -> dict[str, Any]:
-        data = {
-            'match_distance': self.match_distance,
-            'crop_spacing': self.crop_spacing,
-            'predict_crop_position': self.predict_crop_position,
-            'prediction_confidence': self.prediction_confidence,
-            'minimum_combined_crop_confidence': self.minimum_combined_crop_confidence,
-            'minimum_combined_weed_confidence': self.minimum_combined_weed_confidence,
-        }
-        return data
-
-    def restore_from_dict(self, data: dict[str, Any]) -> None:
-        self.match_distance = data.get('match_distance', self.match_distance)
-        self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
-        self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)
-        self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
-        self.minimum_combined_crop_confidence = data.get('minimum_combined_crop_confidence',
-                                                         self.minimum_combined_crop_confidence)
-        self.minimum_combined_weed_confidence = data.get('minimum_combined_weed_confidence',
-                                                         self.minimum_combined_weed_confidence)
-
     def prune(self) -> None:
         weeds_max_age = 10.0
         crops_max_age = 60.0 * 300.0
@@ -145,6 +124,27 @@ class PlantProvider(rosys.persistence.Persistable):
         if min_confidence is None:
             min_confidence = self.minimum_combined_weed_confidence
         return [w for w in self.weeds if w.position.distance(point) <= max_distance and w.confidence >= min_confidence]
+
+    def backup_to_dict(self) -> dict[str, Any]:
+        data = {
+            'match_distance': self.match_distance,
+            'crop_spacing': self.crop_spacing,
+            'predict_crop_position': self.predict_crop_position,
+            'prediction_confidence': self.prediction_confidence,
+            'minimum_combined_crop_confidence': self.minimum_combined_crop_confidence,
+            'minimum_combined_weed_confidence': self.minimum_combined_weed_confidence,
+        }
+        return data
+
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        self.match_distance = data.get('match_distance', self.match_distance)
+        self.crop_spacing = data.get('crop_spacing', self.crop_spacing)
+        self.predict_crop_position = data.get('predict_crop_position', self.predict_crop_position)
+        self.prediction_confidence = data.get('prediction_confidence', self.prediction_confidence)
+        self.minimum_combined_crop_confidence = data.get('minimum_combined_crop_confidence',
+                                                         self.minimum_combined_crop_confidence)
+        self.minimum_combined_weed_confidence = data.get('minimum_combined_weed_confidence',
+                                                         self.minimum_combined_weed_confidence)
 
     def settings_ui(self) -> None:
         ui.number('Combined crop confidence threshold', step=0.05, min=0.05, max=5.00, format='%.2f', on_change=self.request_backup) \
