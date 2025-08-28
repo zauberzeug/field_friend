@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 class WeedingScrew(WeedingImplement):
     DRILL_DEPTH = 0.14
-    MAX_CROP_DISTANCE = 0.08
+    MAX_CROP_DISTANCE = 0.0
 
     def __init__(self, system: System) -> None:
         super().__init__('Weed Screw', system)
