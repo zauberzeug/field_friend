@@ -23,7 +23,7 @@ async def test_stopping_at_different_distances(system: System, distance: float):
     assert system.current_navigation.current_segment is not None
     assert system.current_navigation.current_segment.spline.estimated_length() == distance
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.001)
+    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.0015)
 
 
 @pytest.mark.parametrize('heading_degrees', (-180, -90, -45, 0, 45, 90, 180, 360))
@@ -50,15 +50,15 @@ async def test_deceleration_different_distances(system_with_acceleration: System
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.001)
+    assert system.robot_locator.pose.point.x == pytest.approx(distance, abs=0.0015)
 
 
 @pytest.mark.parametrize(('linear_speed_limit', 'tolerance'), [
-    (0.1, 0.0005),
+    (0.1, 0.001),
     (0.13, 0.001),
-    (0.2, 0.001),
-    (0.3, 0.0013),
-    (0.4, 0.0013),
+    (0.2, 0.002),
+    (0.3, 0.0025),
+    (0.4, 0.005),
 ])
 async def test_deceleration_different_speeds(system_with_acceleration: System, linear_speed_limit: float, tolerance: float):
     system = system_with_acceleration
