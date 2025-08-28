@@ -71,10 +71,10 @@ class WeedingScrew(WeedingImplement):
                 continue
             relative_x = next_weed_position.x - self.system.field_friend.WORK_X
             if relative_x < - self.system.field_friend.DRILL_RADIUS:
-                self.log.debug(f'Skipping weed {next_weed_id} because it is behind the robot')
+                self.log.debug(f'Skipping weed {next_weed_id} because it is behind the robot: {relative_x}m')
                 continue
             if relative_x < - self.system.driver.parameters.minimum_drive_distance:  # TODO: quickfix for weeds behind the robot
-                self.log.debug(f'Skipping weed {next_weed_id} because it is too far behind the robot')
+                self.log.debug(f'Skipping weed {next_weed_id} because it is too far behind the robot: {relative_x}m')
                 continue
             self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s',
                            next_weed_id, relative_x, weed_world_position, next_weed_position)

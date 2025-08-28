@@ -188,20 +188,22 @@ async def test_work_offset_navigation(system: System, detector: rosys.vision.Det
 
 
 async def test_advance_when_target_behind_robot(system: System, detector: rosys.vision.DetectorSimulation):
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='sugar_beet',
-                                                                   position=rosys.geometry.Point3d(x=0.742, y=0.117, z=0)))
+    # will be weeded normally
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
                                                                    position=rosys.geometry.Point3d(x=0.812, y=-0.008, z=0)))
+    # will be weeded although it is behind the robot, because it is very close to the robot
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.771, y=0.126, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=system.field_friend.WORK_X-0.004, y=0.1, z=0)))
+    # will be skipped because it is too far behind the robot
+    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
+                                                                   position=rosys.geometry.Point3d(x=system.field_friend.WORK_X-0.006, y=-0.1, z=0)))
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_implement = system.implements['Weed Screw']
     assert isinstance(system.current_navigation.implement, WeedingScrew)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: system.automator.is_stopped, timeout=1000)
-    # NOTE: due to the advance, one weed is skipped
-    assert len(detector.simulated_objects) == 2
+    assert len(detector.simulated_objects) == 1
 
 
 @pytest.mark.parametrize('system', ['u4'], indirect=True)

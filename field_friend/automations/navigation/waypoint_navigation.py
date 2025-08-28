@@ -261,8 +261,10 @@ class WaypointNavigation(rosys.persistence.Persistable):
             self.log.debug('Target is on segment end, continuing...')
             return None
         work_x_corrected_pose = self._target_pose_on_current_segment(implement_target)
+        distance_to_target = self.robot_locator.pose.distance(work_x_corrected_pose)
         t = self.current_segment.spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y)
-        if t in (0.0, 1.0):
+        if t in (0.0, 1.0) and abs(distance_to_target) > self.driver.parameters.minimum_drive_distance:
+            # TODO: quickfix for weeds behind the robot
             self.log.debug('WorkX corrected target is on segment end, continuing...')
             return None
         return implement_target
