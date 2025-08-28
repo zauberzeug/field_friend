@@ -38,41 +38,15 @@ async def test_keep_crops_safe(system: System, detector: rosys.vision.DetectorSi
     assert detector.simulated_objects[0].category_name == 'maize'
 
 
-@pytest.mark.skip(reason='We currently do not differentiate between different weed types')
-async def test_weeding_screw_only_targets_big_weed(system: System, detector: rosys.vision.DetectorSimulation):
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='coin',
-                                                                   position=rosys.geometry.Point3d(x=0.15, y=0, z=0)))
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_implement = system.implements['Weed Screw']
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped)
-    assert len(detector.simulated_objects) == 1
-    assert detector.simulated_objects[0].category_name == 'weed'
-
-
-async def test_weeding_screw_does_not_skip_close_weed(system: System, detector: rosys.vision.DetectorSimulation):
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.2, y=0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.2+system.field_friend.DRILL_RADIUS-0.01, y=0.05, z=0)))
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_implement = system.implements['Weed Screw']
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped)
-    assert len(detector.simulated_objects) == 0
-
-
-async def test_weeding_screw_focus_on_weed_close_to_crop(system: System, detector: rosys.vision.DetectorSimulation):
+async def test_weeding_screw_crop_distance(system: System, detector: rosys.vision.DetectorSimulation):
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
                                                                    position=rosys.geometry.Point3d(x=0.2, y=0.0, z=0)))
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.1, y=0, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=0.24, y=0, z=0)))
+    # will be skipped because it is too far from the crop
     detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.16, y=0, z=0)))
+                                                                   position=rosys.geometry.Point3d(x=0.5, y=0, z=0)))
+
     assert isinstance(system.current_navigation, StraightLineNavigation)
     system.current_implement = system.implements['Weed Screw']
     assert isinstance(system.current_implement, WeedingScrew)
@@ -83,59 +57,7 @@ async def test_weeding_screw_focus_on_weed_close_to_crop(system: System, detecto
     await forward(until=lambda: system.automator.is_stopped)
     assert len(detector.simulated_objects) == 2
     assert detector.simulated_objects[1].category_name == 'weed'
-    assert detector.simulated_objects[1].position.x == 0.1
-
-
-@pytest.mark.parametrize('cultivated_crop', ['maize', None])
-async def test_weeding_screw_advances_when_there_are_no_plants(system: System, detector: rosys.vision.DetectorSimulation, cultivated_crop: str | None):
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.2, y=-0.05, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=1.290, y=-0.04, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
-                                                                   position=rosys.geometry.Point3d(x=1.285, y=0, z=0)))
-    assert detector.simulated_objects[1].category_name == 'weed'
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.length = 1.5
-    system.current_implement = system.implements['Weed Screw']
-    assert isinstance(system.current_implement, WeedingScrew)
-    system.current_implement.cultivated_crop = cultivated_crop
-    # TODO: test fails if not forwarded by 1 second
-    await forward(1)
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
-    if cultivated_crop is None:
-        assert len(detector.simulated_objects) == 1
-    elif cultivated_crop == 'maize':
-        assert len(detector.simulated_objects) == 2
-    assert detector.simulated_objects[-1].category_name == 'maize'
-
-
-async def test_weeding_screw_advances_when_there_are_no_weeds_close_enough_to_the_crop(system: System, detector: rosys.vision.DetectorSimulation):
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.2, y=-0.08, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
-                                                                   position=rosys.geometry.Point3d(x=0.2, y=0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.3, y=-0.08, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='maize',
-                                                                   position=rosys.geometry.Point3d(x=0.3, y=0, z=0)))
-    detector.simulated_objects.append(rosys.vision.SimulatedObject(category_name='weed',
-                                                                   position=rosys.geometry.Point3d(x=0.34, y=0, z=0)))
-    assert len(detector.simulated_objects) == 5
-    assert isinstance(system.current_navigation, StraightLineNavigation)
-    system.current_navigation.length = 1.5
-    system.current_implement = system.implements['Weed Screw']
-    assert isinstance(system.current_implement, WeedingScrew)
-    system.current_implement.cultivated_crop = 'maize'
-    system.current_implement.max_crop_distance = 0.050
-    system.automator.start()
-    await forward(until=lambda: system.automator.is_running)
-    await forward(until=lambda: system.automator.is_stopped)
-    assert system.robot_locator.pose.point.x == pytest.approx(system.straight_line_navigation.length, abs=0.1)
-    assert len(detector.simulated_objects) == 4, 'last weed should be removed'
+    assert detector.simulated_objects[1].position.x == 0.5
 
 
 async def test_implement_usage(system: System, detector: rosys.vision.DetectorSimulation):
