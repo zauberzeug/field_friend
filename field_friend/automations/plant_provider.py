@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import rosys
@@ -30,6 +31,7 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
 class PlantProvider(rosys.persistence.Persistable):
     def __init__(self) -> None:
         super().__init__()
+        self.log = logging.getLogger('field_friend.plant_provider')
         self.weeds: list[Plant] = []
         self.crops: list[Plant] = []
 
@@ -54,8 +56,13 @@ class PlantProvider(rosys.persistence.Persistable):
     def prune(self) -> None:
         weeds_max_age = 10.0
         crops_max_age = 60.0 * 300.0
+        num_weeds_before = len(self.weeds)
+        num_crops_before = len(self.crops)
         self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - weeds_max_age]
         self.crops[:] = [crop for crop in self.crops if crop.detection_time > rosys.time() - crops_max_age]
+        self.log.debug('Pruned %s weeds and %s crops',
+                       num_weeds_before - len(self.weeds),
+                       num_crops_before - len(self.crops))
         self.PLANTS_CHANGED.emit()
 
     def get_plant_by_id(self, plant_id: str) -> Plant:
@@ -72,10 +79,14 @@ class PlantProvider(rosys.persistence.Persistable):
         self.ADDED_NEW_WEED.emit(weed)
 
     def remove_weed(self, weed_id: str) -> None:
+        num_weeds_before = len(self.weeds)
         self.weeds[:] = [weed for weed in self.weeds if weed.id != weed_id]
-        self.PLANTS_CHANGED.emit()
+        if len(self.weeds) < num_weeds_before:
+            self.log.debug('Removed weed %s', weed_id)
+            self.PLANTS_CHANGED.emit()
 
     def clear_weeds(self) -> None:
+        self.log.debug('Clearing all %s weeds', len(self.weeds))
         self.weeds.clear()
         self.PLANTS_CHANGED.emit()
 
@@ -89,10 +100,14 @@ class PlantProvider(rosys.persistence.Persistable):
         self.ADDED_NEW_CROP.emit(crop)
 
     def remove_crop(self, crop_id: str) -> None:
+        num_crops_before = len(self.crops)
         self.crops[:] = [c for c in self.crops if c.id != crop_id]
-        self.PLANTS_CHANGED.emit()
+        if len(self.crops) < num_crops_before:
+            self.log.debug('Removed crop %s', crop_id)
+            self.PLANTS_CHANGED.emit()
 
     def clear_crops(self) -> None:
+        self.log.debug('Clearing all %s crops', len(self.crops))
         self.crops.clear()
         self.PLANTS_CHANGED.emit()
 
