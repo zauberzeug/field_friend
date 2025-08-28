@@ -140,9 +140,10 @@ class WeedingImplement(Implement):
         return True
 
     def has_plants_to_handle(self) -> bool:
+        current_pose = self.system.robot_locator.pose
         relative_crop_positions = {
-            c.id: Point3d.from_point(self.system.robot_locator.pose.relative_point(c.position.projection()))
-            for c in self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
+            c.id: Point3d.from_point(current_pose.relative_point(c.position.projection()))
+            for c in self.system.plant_provider.get_relevant_crops(current_pose.point_3d())
             if self.cultivated_crop is None or c.type == self.cultivated_crop
         }
         upcoming_crop_positions = {
@@ -154,8 +155,8 @@ class WeedingImplement(Implement):
         self.crops_to_handle = sorted_crops
 
         relative_weed_positions = {
-            w.id: Point3d.from_point(self.system.robot_locator.pose.relative_point(w.position.projection()))
-            for w in self.system.plant_provider.get_relevant_weeds(self.system.robot_locator.pose.point_3d())
+            w.id: Point3d.from_point(current_pose.relative_point(w.position.projection()))
+            for w in self.system.plant_provider.get_relevant_weeds(current_pose.point_3d())
             if w.type in self.relevant_weeds
         }
         upcoming_weed_positions = {
