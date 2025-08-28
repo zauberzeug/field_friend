@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 class WeedingScrew(WeedingImplement):
     DRILL_DEPTH = 0.14
-    MAX_CROP_DISTANCE = 0.2
+    MAX_CROP_DISTANCE = 0.08
 
     def __init__(self, system: System) -> None:
         super().__init__('Weed Screw', system)
@@ -33,13 +33,13 @@ class WeedingScrew(WeedingImplement):
                 rosys.geometry.Point3d(x=self.system.field_friend.WORK_X, y=self.next_punch_y_position, z=0))
             self.last_punches.append(punch_position)
             await self.system.puncher.punch(y=self.next_punch_y_position, depth=self.drill_depth)
+            self.log.debug(f'removing weeds at screw world position {punch_position} '
+                           f'with radius {self.system.field_friend.DRILL_RADIUS}')
             for weed in self.system.plant_provider.get_relevant_weeds(self.system.robot_locator.pose.point_3d(), min_confidence=0.0):
                 if weed.position.distance(punch_position) > self.system.field_friend.DRILL_RADIUS:
                     continue
                 self.system.plant_provider.remove_weed(weed.id)
             if isinstance(self.system.detector, rosys.vision.DetectorSimulation):
-                self.log.debug(f'removing weeds at screw world position {punch_position} '
-                               f'with radius {self.system.field_friend.DRILL_RADIUS}')
                 self.system.detector.simulated_objects = [
                     obj for obj in self.system.detector.simulated_objects
                     if obj.position.projection().distance(punch_position.projection()) > self.system.field_friend.DRILL_RADIUS]
@@ -57,8 +57,8 @@ class WeedingScrew(WeedingImplement):
             self.log.debug('No weeds in range')
             return None
         self.log.debug('Found %s weeds in range: %s', len(weeds_in_range),
-                       (f'{weed_id} -> {position.x - self.system.field_friend.WORK_X} m'
-                        for weed_id, position in weeds_in_range.items()))
+                       ', '.join(f'{weed_id} -> {position.x - self.system.field_friend.WORK_X} m'
+                                 for weed_id, position in weeds_in_range.items()))
         for next_weed_id, next_weed_position in weeds_in_range.items():
             weed_world_position = self.system.robot_locator.pose.transform3d(next_weed_position)
             crops = self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
