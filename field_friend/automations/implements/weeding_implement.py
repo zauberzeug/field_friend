@@ -19,7 +19,6 @@ class ImplementException(Exception):
 
 
 class WeedingImplement(Implement):
-    WORKING_DISTANCE = 0.15
     FLASHLIGHT_WAIT_TIME = 3.0
     LOCATOR_WAIT_TIME = 5.0
 
@@ -215,9 +214,9 @@ class WeedingImplement(Implement):
             .classes('w-24') \
             .bind_value(self, 'crop_safety_distance') \
             .tooltip('Set the crop safety distance for the weeding automation')
-        ui.checkbox('Demo Mode', on_change=self.request_backup) \
-            .bind_value(self.puncher, 'is_demo') \
-            .tooltip('If active, stop right before the ground')
         ui.checkbox('record video', on_change=self.request_backup) \
             .bind_value(self, 'record_video') \
             .tooltip('Set the weeding automation to record video')
+        ui.checkbox('Demo Mode', on_change=self.request_backup) \
+            .bind_value(self.puncher, 'is_demo') \
+            .tooltip('If active, stop right before the ground')
