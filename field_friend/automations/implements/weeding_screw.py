@@ -59,7 +59,7 @@ class WeedingScrew(WeedingImplement):
             self.log.debug('No weeds in range')
             return None
         self.log.debug('Found %s weeds in range: %s', len(weeds_in_range),
-                       ', '.join(f'{weed_id} -> {position.x - self.system.field_friend.WORK_X} m'
+                       ', '.join(f'{weed_id[:8]}: {(position.x - self.system.field_friend.WORK_X):.6f} m'
                                  for weed_id, position in weeds_in_range.items()))
         for next_weed_id, next_weed_position in weeds_in_range.items():
             weed_world_position = current_pose.transform3d(next_weed_position)
@@ -73,13 +73,13 @@ class WeedingScrew(WeedingImplement):
                 continue
             relative_x = next_weed_position.x - self.system.field_friend.WORK_X
             if relative_x < - self.system.field_friend.DRILL_RADIUS:
-                self.log.debug(f'Skipping weed {next_weed_id} because it is behind the robot: {relative_x}m')
+                self.log.debug('Skipping weed %s. It is behind the robot: %.6f m', next_weed_id[:8], relative_x)
                 continue
             if relative_x < - self.system.driver.parameters.minimum_drive_distance:  # TODO: quickfix for weeds behind the robot
-                self.log.debug(f'Skipping weed {next_weed_id} because it is too far behind the robot: {relative_x}m')
+                self.log.debug('Skipping weed %s. It is too far behind the robot: %.6f m', next_weed_id[:8], relative_x)
                 continue
-            self.log.debug('Targeting weed %s which is %s away at world: %s, local: %s',
-                           next_weed_id, relative_x, weed_world_position, next_weed_position)
+            self.log.debug('Targeting weed %s which is %.6f m away at world: %s, local: %s',
+                           next_weed_id[:8], relative_x, weed_world_position, next_weed_position)
             self.next_punch_y_position = next_weed_position.y
             return weed_world_position.projection()
         return None

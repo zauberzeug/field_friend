@@ -78,7 +78,7 @@ class PlantProvider(rosys.persistence.Persistable):
         num_weeds_before = len(self.weeds)
         self.weeds[:] = [weed for weed in self.weeds if weed.id != weed_id]
         if len(self.weeds) < num_weeds_before:
-            self.log.debug('Removed weed %s', weed_id)
+            self.log.debug('Removed weed %s', weed_id[:8])
             self.PLANTS_CHANGED.emit()
 
     def clear_weeds(self) -> None:
@@ -97,7 +97,7 @@ class PlantProvider(rosys.persistence.Persistable):
         num_crops_before = len(self.crops)
         self.crops[:] = [c for c in self.crops if c.id != crop_id]
         if len(self.crops) < num_crops_before:
-            self.log.debug('Removed crop %s', crop_id)
+            self.log.debug('Removed crop %s', crop_id[:8])
             self.PLANTS_CHANGED.emit()
 
     def clear_crops(self) -> None:

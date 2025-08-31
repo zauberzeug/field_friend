@@ -220,7 +220,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
         target_t = spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y, t_min=-0.2, t_max=1.2)
         if abs(distance_to_target) < self.driver.parameters.minimum_drive_distance:
             # TODO: quickfix for weeds behind the robot
-            self.log.debug('Target close, working with out advancing... (%s m)', distance_to_target)
+            self.log.debug('Target close, working with out advancing... (%.6f m)', distance_to_target)
             return True
         if target_t < current_t or target_t > 1.0:
             # TODO: we need a sturdy function to advance a certain distance on a spline, because this method is off by a tiny amount. That's why +0.00003
@@ -233,7 +233,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 if advance_spline.estimated_length() > self.driver.parameters.minimum_drive_distance:
                     break
                 advance_distance += 0.00001
-            self.log.debug('Target behind robot, continue for %s meters', advance_distance)
+            self.log.debug('Target behind robot, continue for %.6f meters', advance_distance)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
                 await self.driver.drive_spline(advance_spline, throttle_at_end=False, stop_at_end=False)
             return False
