@@ -23,18 +23,19 @@ class PathObject(ui.scene.group):
         super().__init__()
         self.system = system
         self.height = height
-        self.system.automator.AUTOMATION_STARTED.register_ui(self.register)
-        self.system.automator.AUTOMATION_STOPPED.register_ui(lambda _: self.clear_path())
+        with self.scene or nullcontext():
+            self.system.automator.AUTOMATION_STARTED.register_ui(self.register)
+            self.system.automator.AUTOMATION_STOPPED.register_ui(lambda _: self.clear_path())
 
     def register(self) -> None:
-        if self.system.current_navigation is None:
-            return
-
         def update_upcoming_path(_: DriveSegment) -> None:
             assert self.system.current_navigation is not None
             self.update(self.system.current_navigation.path)
-        self.system.current_navigation.SEGMENT_COMPLETED.register_ui(update_upcoming_path)
-        self.system.current_navigation.PATH_GENERATED.register_ui(self.update)
+        if self.system.current_navigation is None:
+            return
+        with self.scene or nullcontext():
+            self.system.current_navigation.SEGMENT_COMPLETED.register_ui(update_upcoming_path)
+            self.system.current_navigation.PATH_GENERATED.register_ui(self.update)
 
     def update(self, path: list[DriveSegment]) -> None:
         self.clear_path()

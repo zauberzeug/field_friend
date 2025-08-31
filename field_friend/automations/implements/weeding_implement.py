@@ -7,7 +7,7 @@ from nicegui import ui
 from rosys.analysis import track
 from rosys.geometry import Point3d, Pose
 
-from ...hardware import ChainAxis
+from ...hardware import Axis, ChainAxis, Sprayer, Tornado
 from .implement import Implement
 
 if TYPE_CHECKING:
@@ -60,11 +60,16 @@ class WeedingImplement(Implement):
             rosys.notify('hardware is not ready')
             return False
         self.last_punches.clear()
+        await rosys.sleep(2.0)  # NOTE: _check_hardware_ready sometimes returns too early
         return True
 
     async def finish(self) -> None:
         self.system.plant_locator.pause()
         await self.system.field_friend.stop()
+        try:
+            await self.puncher.clear_view()
+        except Exception as e:
+            self.log.error(f'Error clearing view: {e}')
         await self.system.timelapse_recorder.compress_video()
         await super().finish()
 
@@ -114,24 +119,30 @@ class WeedingImplement(Implement):
         if hasattr(camera, 'calibration') and camera.calibration is None:
             rosys.notify('camera has no calibration')
             return False
-        if self.system.field_friend.y_axis and self.system.field_friend.y_axis.alarm:
-            rosys.notify('Y-Axis is in alarm, aborting', 'negative')
-            return False
-        if isinstance(self.system.field_friend.y_axis, ChainAxis):
-            if not self.system.field_friend.y_axis.ref_t:
-                rosys.notify('ChainAxis is not in top ref', 'negative')
+
+        z_axis = self.system.field_friend.z_axis
+        if isinstance(z_axis, Axis | Tornado | Sprayer):
+            if isinstance(z_axis, Axis) and z_axis.alarm:
+                rosys.notify('Z-Axis is in alarm, aborting', 'negative')
                 return False
-        if self.system.field_friend.y_axis is not None and not self.system.field_friend.y_axis.is_referenced and \
-           self.system.field_friend.z_axis is not None and not self.system.field_friend.z_axis.is_referenced and \
-           not await self.system.puncher.try_home():
-            rosys.notify('Puncher homing failed, aborting', 'negative')
-            return False
+            if not z_axis.is_referenced and not await z_axis.try_reference():
+                rosys.notify('Referencing Z-Axis failed, aborting', 'negative')
+                return False
+        y_axis = self.system.field_friend.y_axis
+        if isinstance(y_axis, Axis | ChainAxis):
+            if y_axis.alarm:
+                rosys.notify('Y-Axis is in alarm, aborting', 'negative')
+                return False
+            if not y_axis.is_referenced and not await y_axis.try_reference():
+                rosys.notify('Referencing Y-Axis failed, aborting', 'negative')
+                return False
         return True
 
     def has_plants_to_handle(self) -> bool:
+        current_pose = self.system.robot_locator.pose
         relative_crop_positions = {
-            c.id: Point3d.from_point(self.system.robot_locator.pose.relative_point(c.position.projection()))
-            for c in self.system.plant_provider.get_relevant_crops(self.system.robot_locator.pose.point_3d())
+            c.id: Point3d.from_point(current_pose.relative_point(c.position.projection()))
+            for c in self.system.plant_provider.get_relevant_crops(current_pose.point_3d())
             if self.cultivated_crop is None or c.type == self.cultivated_crop
         }
         upcoming_crop_positions = {
@@ -143,8 +154,8 @@ class WeedingImplement(Implement):
         self.crops_to_handle = sorted_crops
 
         relative_weed_positions = {
-            w.id: Point3d.from_point(self.system.robot_locator.pose.relative_point(w.position.projection()))
-            for w in self.system.plant_provider.get_relevant_weeds(self.system.robot_locator.pose.point_3d())
+            w.id: Point3d.from_point(current_pose.relative_point(w.position.projection()))
+            for w in self.system.plant_provider.get_relevant_weeds(current_pose.point_3d())
             if w.type in self.relevant_weeds
         }
         upcoming_weed_positions = {
@@ -163,6 +174,7 @@ class WeedingImplement(Implement):
                     crop_position_2d = crop_position.projection()
                     safe_weed_position_2d = weed_position_2d.polar(offset, crop_position_2d.direction(weed_position_2d))
                     upcoming_weed_positions[weed] = Point3d.from_point(safe_weed_position_2d)
+                    self.log.debug('corrected weed position: %s -> %s', weed_position_2d, safe_weed_position_2d)
 
         # Sort the upcoming positions so nearest comes first
         sorted_weeds = dict(sorted(upcoming_weed_positions.items(), key=lambda item: item[1].x))

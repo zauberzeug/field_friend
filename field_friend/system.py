@@ -191,7 +191,8 @@ class System(rosys.persistence.Persistable):
         self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
         self.driver.parameters.hook_bending_factor = 0.25
         self.driver.parameters.minimum_drive_distance = 0.005
-        self.driver.parameters.throttle_at_end_min_speed = 0.05
+        self.driver.parameters.throttle_at_end_distance = 0.2
+        self.driver.parameters.throttle_at_end_min_speed = 0.08
 
     def setup_implements(self) -> None:
         persistence_key = 'field_friend.automations.implements.weeding'
@@ -273,8 +274,6 @@ class System(rosys.persistence.Persistable):
             self.kpi_provider.simulate_kpis()
 
         if self.automator:
-            self.automator.AUTOMATION_STARTED \
-                .register(lambda: self.kpi_provider.increment_all_time_kpi('automation_started', 1))
             self.automator.AUTOMATION_PAUSED \
                 .register(lambda _: self.kpi_provider.increment_all_time_kpi('automation_paused', 1))
             self.automator.AUTOMATION_STOPPED \

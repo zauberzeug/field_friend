@@ -56,7 +56,7 @@ class Axis(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def try_reference(self) -> bool:
-        self.log.warning('try_reference')
+        self.log.debug('try_reference')
         return True
 
     @abc.abstractmethod

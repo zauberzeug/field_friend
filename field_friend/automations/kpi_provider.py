@@ -22,7 +22,6 @@ class KPIs:
     gnss_failed: int = 0
     low_battery: int = 0
 
-    automation_started: int = 0
     automation_paused: int = 0
     automation_stopped: int = 0
     automation_failed: int = 0
@@ -86,7 +85,6 @@ class KpiProvider(KpiLogger):
             'weeds_detected': lambda: randint(0, 500),
             'punches': lambda: randint(0, 200),
 
-            'automation_started': lambda: randint(0, 2),
             'automation_paused': lambda: randint(0, 2),
             'automation_stopped': lambda: randint(0, 2),
             'automation_failed': lambda: randint(0, 2),

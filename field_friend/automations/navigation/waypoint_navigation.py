@@ -216,10 +216,11 @@ class WaypointNavigation(rosys.persistence.Persistable):
         current_t = spline.closest_point(current_pose.x, current_pose.y)
         target_t = spline.closest_point(target.x, target.y, t_min=-0.2, t_max=1.2)
         work_x_corrected_pose = self._target_pose_on_current_segment(target)
+        distance_to_target = current_pose.distance(work_x_corrected_pose)
         target_t = spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y, t_min=-0.2, t_max=1.2)
-        if current_pose.distance(work_x_corrected_pose) < self.driver.parameters.minimum_drive_distance:
-            # TODO: also check drill radius
-            self.log.debug('Target close, working with out advancing...')
+        if abs(distance_to_target) < self.driver.parameters.minimum_drive_distance:
+            # TODO: quickfix for weeds behind the robot
+            self.log.debug('Target close, working with out advancing... (%.6f m)', distance_to_target)
             return True
         if target_t < current_t or target_t > 1.0:
             # TODO: we need a sturdy function to advance a certain distance on a spline, because this method is off by a tiny amount. That's why +0.00003
@@ -232,7 +233,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 if advance_spline.estimated_length() > self.driver.parameters.minimum_drive_distance:
                     break
                 advance_distance += 0.00001
-            self.log.debug('Target behind robot, continue for %s meters', advance_distance)
+            self.log.debug('Target behind robot, continue for %.6f meters', advance_distance)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
                 await self.driver.drive_spline(advance_spline, throttle_at_end=False, stop_at_end=False)
             return False
@@ -260,8 +261,10 @@ class WaypointNavigation(rosys.persistence.Persistable):
             self.log.debug('Target is on segment end, continuing...')
             return None
         work_x_corrected_pose = self._target_pose_on_current_segment(implement_target)
+        distance_to_target = self.robot_locator.pose.distance(work_x_corrected_pose)
         t = self.current_segment.spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y)
-        if t in (0.0, 1.0):
+        if t in (0.0, 1.0) and abs(distance_to_target) > self.driver.parameters.minimum_drive_distance:
+            # TODO: quickfix for weeds behind the robot
             self.log.debug('WorkX corrected target is on segment end, continuing...')
             return None
         return implement_target
