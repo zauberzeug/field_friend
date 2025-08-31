@@ -16,6 +16,7 @@ from rosys.event import Event
 from rosys.geometry import GeoReference, Point, Point3d, Pose, PoseStep, Spline
 from rosys.hardware import Gnss
 
+from ..entity_locator import EntityLocator
 from ..implements.implement import Implement
 from ..implements.weeding_implement import WeedingImplement
 
@@ -39,6 +40,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
         self.driver = system.driver
         self.gnss = system.gnss
         self.plant_provider = system.plant_provider
+        self.plant_locator = system.plant_locator
         self.robot_locator = system.robot_locator
 
         self.name = 'Waypoint Navigation'
@@ -54,6 +56,8 @@ class WaypointNavigation(rosys.persistence.Persistable):
         self.SEGMENT_COMPLETED = Event[DriveSegment]()
         """a waypoint has been reached"""
 
+        self.SEGMENT_STARTED.register(self._handle_segment_started)
+
     @property
     def path(self) -> list[DriveSegment]:
         return self._upcoming_path
@@ -68,6 +72,19 @@ class WaypointNavigation(rosys.persistence.Persistable):
     def has_waypoints(self) -> bool:
         """Returns True as long as there are waypoints to drive to"""
         return self.current_segment is not None
+
+    def _handle_segment_started(self, segment: DriveSegment) -> None:
+        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
+            self.detector.simulated_objects.clear()
+            if self.plant_provider is not None:
+                self.plant_provider.clear()
+            if segment.use_implement:
+                self.create_segment_simulation(segment)
+        if isinstance(self.plant_locator, EntityLocator):
+            if segment.use_implement:
+                self.plant_locator.resume()
+            else:
+                self.plant_locator.pause()
 
     @track
     async def prepare(self) -> bool:
@@ -106,6 +123,8 @@ class WaypointNavigation(rosys.persistence.Persistable):
             rosys.notify('Automation started')
             self.log.debug('Navigation started')
 
+            assert self.current_segment is not None
+            self.SEGMENT_STARTED.emit(self.current_segment)
             while self.has_waypoints:
                 await self._run()
                 await rosys.sleep(0.1)
@@ -155,19 +174,14 @@ class WaypointNavigation(rosys.persistence.Persistable):
         segment = self.current_segment
         if segment is None:
             return
-        if isinstance(self.detector, rosys.vision.DetectorSimulation) and not rosys.is_test:
-            self.detector.simulated_objects.clear()
-            if self.plant_provider is not None:
-                self.plant_provider.clear()
-            if segment.use_implement:
-                self.create_segment_simulation(segment)
-
-        self.SEGMENT_STARTED.emit(segment)
         stop_at_end = segment.stop_at_end or len(self._upcoming_path) == 1
         with self.driver.parameters.set(linear_speed_limit=linear_speed_limit, can_drive_backwards=segment.backward):
             await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
-        self._upcoming_path.pop(0)
         self.SEGMENT_COMPLETED.emit(segment)
+        self._upcoming_path.pop(0)
+        if self.has_waypoints:
+            assert self.current_segment is not None
+            self.SEGMENT_STARTED.emit(self.current_segment)
 
     async def _block_until_implement_has_target(self) -> Point:
         while True:
@@ -202,10 +216,11 @@ class WaypointNavigation(rosys.persistence.Persistable):
         current_t = spline.closest_point(current_pose.x, current_pose.y)
         target_t = spline.closest_point(target.x, target.y, t_min=-0.2, t_max=1.2)
         work_x_corrected_pose = self._target_pose_on_current_segment(target)
+        distance_to_target = current_pose.distance(work_x_corrected_pose)
         target_t = spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y, t_min=-0.2, t_max=1.2)
-        if current_pose.distance(work_x_corrected_pose) < self.driver.parameters.minimum_drive_distance:
-            # TODO: also check drill radius
-            self.log.debug('Target close, working with out advancing...')
+        if abs(distance_to_target) < self.driver.parameters.minimum_drive_distance:
+            # TODO: quickfix for weeds behind the robot
+            self.log.debug('Target close, working with out advancing... (%.6f m)', distance_to_target)
             return True
         if target_t < current_t or target_t > 1.0:
             # TODO: we need a sturdy function to advance a certain distance on a spline, because this method is off by a tiny amount. That's why +0.00003
@@ -218,7 +233,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 if advance_spline.estimated_length() > self.driver.parameters.minimum_drive_distance:
                     break
                 advance_distance += 0.00001
-            self.log.debug('Target behind robot, continue for %s meters', advance_distance)
+            self.log.debug('Target behind robot, continue for %.6f meters', advance_distance)
             with self.driver.parameters.set(linear_speed_limit=self.linear_speed_limit):
                 await self.driver.drive_spline(advance_spline, throttle_at_end=False, stop_at_end=False)
             return False
@@ -246,8 +261,10 @@ class WaypointNavigation(rosys.persistence.Persistable):
             self.log.debug('Target is on segment end, continuing...')
             return None
         work_x_corrected_pose = self._target_pose_on_current_segment(implement_target)
+        distance_to_target = self.robot_locator.pose.distance(work_x_corrected_pose)
         t = self.current_segment.spline.closest_point(work_x_corrected_pose.x, work_x_corrected_pose.y)
-        if t in (0.0, 1.0):
+        if t in (0.0, 1.0) and abs(distance_to_target) > self.driver.parameters.minimum_drive_distance:
+            # TODO: quickfix for weeds behind the robot
             self.log.debug('WorkX corrected target is on segment end, continuing...')
             return None
         return implement_target

@@ -1,5 +1,5 @@
 from .camera_card import CameraCard
-from .header import create_header
+from .header_bar import create_header
 from .key_controls import KeyControls
 from .leaflet_map import LeafletMap
 from .log_monitor import LogMonitor

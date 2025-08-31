@@ -75,14 +75,15 @@ class DevPage:
                 self.system.robot_locator.developer_ui()
             with ui.card():
                 with ui.row():
-                    with ui.column():
-                        if isinstance(self.system.field_friend.wheels, rosys.hardware.WheelsSimulation):
+                    if isinstance(self.system.field_friend.wheels, rosys.hardware.WheelsSimulation):
+                        with ui.column():
                             self.wheels_ui()
                     with ui.column():
                         self.odometer_ui()
             if self.system.gnss is not None:
                 with ui.card():
-                    self.system.gnss.developer_ui()
+                    with ui.row():
+                        self.system.gnss.developer_ui()
                     ui.button('Update reference', on_click=self.system.update_gnss_reference)
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
@@ -95,6 +96,10 @@ class DevPage:
             if self.system.plant_locator is not None:
                 with ui.card():
                     self.system.plant_locator.developer_ui()
+            if isinstance(self.system.circle_sight_detector, DetectorHardware):
+                with ui.card():
+                    ui.label('Circle Sight Detector').classes('text-center text-bold')
+                    self.system.circle_sight_detector.developer_ui()
 
         with ui.row():
             with ui.card():
@@ -112,14 +117,6 @@ class DevPage:
                 with ui.card().style('min-width: 200px;'):
                     esp_pins_p0 = self.system.field_friend.robot_brain.esp_pins_p0
                     esp_pins_p0.developer_ui()
-
-        if self.system.plant_locator is not None:
-            with ui.row():
-                with ui.card():
-                    self.system.plant_locator.developer_ui()
-                if isinstance(self.system.detector, DetectorHardware):
-                    with ui.card():
-                        self.system.detector.developer_ui()
 
         with ui.card().classes('w-1/2'):
             self.log_monitor.ui()

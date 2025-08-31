@@ -35,14 +35,11 @@ class AutomationWatcher:
         self.incidence_pose: Pose = Pose()
         self.resume_delay: float = self.DEFAULT_RESUME_DELAY
         self.field_polygon: ShapelyPolygon | None = None
-        self.kpi_provider = system.kpi_provider
 
         self.bumper_watch_active: bool = False
         self.gnss_watch_active: bool = False
         self.field_watch_active: bool = False
 
-        self.start_time: float | None = None
-        rosys.on_repeat(self._update_time, 0.1)
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
         rosys.on_repeat(self.check_gnss, 0.1)
@@ -162,17 +159,3 @@ class AutomationWatcher:
             if self.automator.is_running:
                 self.stop('robot is outside of field boundaries')
                 self.field_watch_active = False
-
-    def _update_time(self):
-        """Update KPIs for time"""
-        if not self.automator.is_running:
-            self.start_time = None
-            return
-        if self.system.field_friend.bms.state.is_charging:
-            return
-        if self.start_time is None:
-            self.start_time = rosys.time()
-        passed_time = rosys.time() - self.start_time
-        if passed_time > 1:
-            self.kpi_provider.increment_all_time_kpi('time', passed_time)
-            self.start_time = rosys.time()

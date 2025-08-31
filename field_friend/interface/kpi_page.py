@@ -5,15 +5,13 @@ from .components import create_header
 
 
 class KpiPage(kpi_page):
-    # currently not used
-
     def __init__(self, system: System) -> None:
         super().__init__(system.kpi_provider)
-        create_header(system)
+        self.system = system
 
-    @property
-    def language(self) -> str:
-        return 'en'
+    def _content(self) -> None:
+        create_header(self.system)
+        super()._content()
 
     @property
     def title(self) -> str:
@@ -22,28 +20,29 @@ class KpiPage(kpi_page):
     @property
     def charts(self) -> list[KpiChart]:
         positives = KpiChart(title='Weeding Statistics', indicators={
-            'rows_weeded': 'rows weeded',
-            'weeds_detected': 'weeds detected',
-            'crops_detected': 'crops detected',
-            'punches': 'punches'
+            'weeds_detected': 'Weeds detected',
+            'crops_detected': 'Crops detected',
+            'punches': 'Punches'
         })
+        # TODO: not working, because only incidents are counted, not the values
+        # time = KpiChart(title='Working Time', unit='Seconds', indicators={
+        #     'time_working': 'Working',
+        #     'time_charging': 'Charging',
+        # })
+        # distance = KpiChart(title='Distance', unit='Meters', indicators={
+        #     'distance': 'Distance driven',
+        # })
         negatives = KpiChart(title='Exceptions', indicators={
-            'automation_stopped': 'automation stopped',
-            'automation_failed': 'automation failed',
-            'bumps': 'bumps',
-            'wheels_blocking': 'wheels blocking',
-            'wheels_slipping': 'wheels slipping',
-            'low_battery': 'low battery',
-            'can_failure': 'can failure',
-            'workflow_problem': 'workflow problem',
-            'escape': 'escape',
-            'reference_tool_failed': 'reference tool failed',
-            'punching_failed': 'punching failed'
+            'bumps': 'Bumper',
+            'e_stop_triggered': 'E-Stop',
+            'gnss_failed': 'GNSS failed',
+            'low_battery': 'Low battery'
         }, colormap='Reds')
         activities = KpiChart(title='Automation Statistics', indicators={
-            'mowing_completed': 'mowing completed',
-            'weeding_completed': 'weeding completed',
-            'coin_collecting_completed': 'coin collecting completed'
+            'automation_paused': 'Automation paused',
+            'automation_stopped': 'Automation stopped',
+            'automation_failed': 'Automation failed',
+            'automation_completed': 'Automation completed'
         })
         return [positives, negatives, activities]
 
