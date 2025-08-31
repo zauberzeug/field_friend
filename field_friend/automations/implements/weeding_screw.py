@@ -94,11 +94,13 @@ class WeedingScrew(WeedingImplement):
             .props('dense outlined') \
             .classes('w-24') \
             .bind_value(self, 'drill_depth') \
+            .bind_visibility_from(self.puncher, 'is_demo', backward=lambda x: not x) \
             .tooltip(f'Set the drill depth for the weeding automation (default: {self.DRILL_DEPTH}m)')
         ui.number('Distance from crop', step=0.005, min=0.0, max=1.00, format='%.3f', on_change=self.request_backup) \
             .props('dense outlined suffix=m') \
             .classes('w-32') \
             .bind_value(self, 'max_crop_distance') \
+            .bind_visibility_from(self, 'cultivated_crop') \
             .tooltip('Set the maximum distance a weed can be away from a crop to be considered for weeding. Set to 0 to disable.')
 
     def backup_to_dict(self) -> dict[str, Any]:

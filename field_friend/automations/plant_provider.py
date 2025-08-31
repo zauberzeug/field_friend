@@ -11,7 +11,7 @@ from .plant import Plant
 # see field_friend/automations/plant_locator.py
 MINIMUM_COMBINED_CROP_CONFIDENCE = 0.9
 MINIMUM_COMBINED_WEED_CONFIDENCE = 0.9
-MATCH_DISTANCE = 0.07
+MATCH_DISTANCE = 0.05
 CROP_SPACING = 0.18
 
 
