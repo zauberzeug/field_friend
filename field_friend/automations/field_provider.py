@@ -187,6 +187,5 @@ class FieldProvider(rosys.persistence.Persistable):
 
     def update_gnss_reference(self) -> None:
         if self.selected_field is None:
-            self.system.update_gnss_reference()
             return
         self.system.update_gnss_reference(reference=self.selected_field.geo_reference)
