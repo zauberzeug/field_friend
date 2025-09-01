@@ -104,6 +104,10 @@ class Field:
 
     @property
     def geo_reference(self) -> GeoReference:
+        if self.rows:
+            first_row = self.rows[0]
+            direction = first_row.points[0].direction(first_row.points[-1])
+            return GeoReference(origin=first_row.points[0], direction=direction)
         direction = self.first_row_start.direction(self.first_row_end)
         return GeoReference(origin=self.first_row_start, direction=direction)
 
