@@ -55,20 +55,6 @@ class RobotLocator(rosys.persistence.Persistable):
             self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
         rosys.on_startup(self.reset)
 
-    def backup_to_dict(self) -> dict[str, Any]:
-        return {
-            'r_odom_linear': self._r_odom_linear,
-            'r_odom_angular': self._r_odom_angular,
-            'r_imu_angular': self._r_imu_angular,
-            'odometry_angular_weight': self._odometry_angular_weight,
-        }
-
-    def restore_from_dict(self, data: dict[str, Any]) -> None:
-        self._r_odom_linear = data.get('r_odom_linear', self.R_ODOM_LINEAR)
-        self._r_odom_angular = data.get('r_odom_angular', self.R_ODOM_ANGULAR)
-        self._r_imu_angular = data.get('r_imu_angular', self.R_IMU_ANGULAR)
-        self._odometry_angular_weight = data.get('odometry_angular_weight', self.ODOMETRY_ANGULAR_WEIGHT)
-
     @property
     def pose(self) -> Pose:
         return Pose(
@@ -228,6 +214,20 @@ class RobotLocator(rosys.persistence.Persistable):
         self._Sxx = np.diag(variance)
         self._update_frame()
         rosys.notify('Positioning initialized', 'positive')
+
+    def backup_to_dict(self) -> dict[str, Any]:
+        return {
+            'r_odom_linear': self._r_odom_linear,
+            'r_odom_angular': self._r_odom_angular,
+            'r_imu_angular': self._r_imu_angular,
+            'odometry_angular_weight': self._odometry_angular_weight,
+        }
+
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        self._r_odom_linear = data.get('r_odom_linear', self.R_ODOM_LINEAR)
+        self._r_odom_angular = data.get('r_odom_angular', self.R_ODOM_ANGULAR)
+        self._r_imu_angular = data.get('r_imu_angular', self.R_IMU_ANGULAR)
+        self._odometry_angular_weight = data.get('odometry_angular_weight', self.ODOMETRY_ANGULAR_WEIGHT)
 
     def developer_ui(self) -> None:
         with ui.column():
