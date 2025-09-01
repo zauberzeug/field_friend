@@ -1,14 +1,32 @@
 import logging
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Self
 
 import numpy as np
 import rosys
 import rosys.helpers
 from nicegui import ui
-from rosys.geometry import Pose, Pose3d, Rotation, Velocity
+from rosys.geometry import Point, Pose, Pose3d, Rotation, Velocity
 from rosys.hardware import Gnss, GnssMeasurement, Imu, ImuMeasurement, Wheels, WheelsSimulation
 
 from .config.configuration import GnssConfiguration
+
+
+@dataclass(slots=True, kw_only=True)
+class State:
+    timestamp: float
+    x: np.ndarray
+    sxx: np.ndarray
+
+    @staticmethod
+    def zero(size: int = 3) -> Self:
+        return State(timestamp=rosys.time(), x=np.zeros((size, 1)), sxx=np.zeros((size, size)))
+
+    def pose(self) -> Pose:
+        return Pose(x=self.x[0, 0], y=self.x[1, 0], yaw=self.x[2, 0], time=self.timestamp)
+
+    def point(self) -> Point:
+        return Point(x=self.x[0, 0], y=self.x[1, 0])
 
 
 class RobotLocator(rosys.persistence.Persistable):
@@ -32,13 +50,8 @@ class RobotLocator(rosys.persistence.Persistable):
         self._gnss_config = gnss_config
 
         self.pose_frame = Pose3d().as_frame('field_friend.robot_locator')
-
-        state_size = 3
-        self._x = np.zeros((state_size, 1))
-        self._Sxx = np.zeros((state_size, state_size))
-        self._pose_timestamp = rosys.time()
-        # NOTE: the prediction step needs to be run once before the first GNSS update
-        self._first_prediction_done = False
+        self._state = State.zero()
+        self._first_prediction_done = False  # NOTE: the prediction step needs to be run once before the first GNSS update
 
         self._ignore_gnss = gnss is None
         self._ignore_imu = imu is None
@@ -49,7 +62,6 @@ class RobotLocator(rosys.persistence.Persistable):
         self._odometry_angular_weight = self.ODOMETRY_ANGULAR_WEIGHT
 
         self._previous_imu_measurement: ImuMeasurement | None = None
-
         self._wheels.VELOCITY_MEASURED.register(self._handle_velocity_measurement)
         if self._gnss is not None:
             self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
@@ -57,12 +69,7 @@ class RobotLocator(rosys.persistence.Persistable):
 
     @property
     def pose(self) -> Pose:
-        return Pose(
-            x=self._x[0, 0],
-            y=self._x[1, 0],
-            yaw=self._x[2, 0],
-            time=self._pose_timestamp,
-        )
+        return self._state.pose()
 
     @property
     def prediction(self) -> Pose:
@@ -71,15 +78,13 @@ class RobotLocator(rosys.persistence.Persistable):
     async def _handle_velocity_measurement(self, velocities: list[Velocity]) -> None:
         """Implements the 'prediction' step of the Kalman filter."""
         for velocity in velocities:
-            dt = velocity.time - self._pose_timestamp
-            self._pose_timestamp = velocity.time
+            current_state = self._state
+            dt = velocity.time - current_state.timestamp
             if (not self._first_prediction_done) and (self._imu is not None):
                 self._previous_imu_measurement = self._imu.last_measurement
-
             if velocity.linear == 0 and velocity.angular == 0 and self._first_prediction_done:
                 # NOTE: The robot is not moving, so we don't need to update the state
                 continue
-
             v = velocity.linear
             omega = velocity.angular
             r_angular = self._r_odom_angular
@@ -90,26 +95,24 @@ class RobotLocator(rosys.persistence.Persistable):
                     r_angular = self._odometry_angular_weight * self._r_odom_angular + \
                         (1 - self._odometry_angular_weight) * self._r_imu_angular
 
-            theta = self._x[2, 0]
+            theta = current_state.x[2, 0]
             theta_new = theta + omega * dt
             theta_avg = (theta + theta_new) / 2  # Average orientation
-
-            self._x[0, 0] += v * np.cos(theta_avg) * dt
-            self._x[1, 0] += v * np.sin(theta_avg) * dt
-            self._x[2, 0] = theta_new
-
+            x_new = current_state.x[0, 0] + v * np.cos(theta_avg) * dt
+            y_new = current_state.x[1, 0] + v * np.sin(theta_avg) * dt
             F = np.array([
                 [1, 0, -v * np.sin(theta_avg) * dt],
                 [0, 1, v * np.cos(theta_avg) * dt],
                 [0, 0, 1],
             ])
-
             R = np.array([
                 [(self._r_odom_linear * dt * np.cos(theta_avg))**2, 0, 0],
                 [0, (self._r_odom_linear * dt * np.sin(theta_avg))**2, 0],
                 [0, 0, (r_angular * dt)**2]
             ])
-            self._Sxx = F @ self._Sxx @ F.T + R
+            sxx_new = F @ current_state.sxx @ F.T + R
+            self._state = State(timestamp=velocity.time, x=np.array(
+                [[x_new, y_new, theta_new]], dtype=float).T, sxx=sxx_new)
             self._update_frame()
             self._first_prediction_done = True
 
@@ -148,15 +151,17 @@ class RobotLocator(rosys.persistence.Persistable):
         if self._auto_tilt_correction and isinstance(self._imu, Imu) and not self._ignore_imu and self._imu.last_measurement is not None:
             pose = self._correct_gnss_with_imu(pose)
         z = [[pose.x], [pose.y], [pose.yaw]]
-        h = [[self._x[0, 0]], [self._x[1, 0]], [self._x[2, 0]]]
+        current_state = self._state
+        h = [[current_state.x[0, 0]], [current_state.x[1, 0]], [current_state.x[2, 0]]]
         H = np.eye(3)
         variance = np.array([r_xy, r_xy, r_theta], dtype=np.float64)**2
         Q = np.diag(variance)
         self._update(z=np.array(z), h=np.array(h), H=H, Q=Q)
 
     def _get_local_pose_and_uncertainty(self, gnss_measurement: GnssMeasurement) -> tuple[Pose, float, float]:
+        current_pose = self._state.pose()
         pose = gnss_measurement.pose.to_local()
-        pose.yaw = self._x[2, 0] + rosys.helpers.angle(self._x[2, 0], pose.yaw)
+        pose.yaw = current_pose.yaw + rosys.helpers.angle(current_pose.yaw, pose.yaw)
         r_xy = (gnss_measurement.latitude_std_dev + gnss_measurement.longitude_std_dev) / 2
         r_theta = np.deg2rad(gnss_measurement.heading_std_dev)
         return pose, r_xy, r_theta
@@ -173,23 +178,25 @@ class RobotLocator(rosys.persistence.Persistable):
         return pose.transform_pose(antenna_roll_correction).transform_pose(height_correction)
 
     def _update(self, *, z: np.ndarray, h: np.ndarray, H: np.ndarray, Q: np.ndarray) -> None:  # noqa: N803
-        S = H @ self._Sxx @ H.T + Q
-        # Use Cholesky decomposition for numerical stability
+        current_state = self._state
+        S = H @ current_state.sxx @ H.T + Q
         try:
-            L = np.linalg.cholesky(S)
-            K = self._Sxx @ H.T @ np.linalg.solve(L.T, np.linalg.solve(L, np.eye(S.shape[0])))
+            L = np.linalg.cholesky(S)  # Use Cholesky decomposition for numerical stability
+            K = current_state.sxx @ H.T @ np.linalg.solve(L.T, np.linalg.solve(L, np.eye(S.shape[0])))
         except np.linalg.LinAlgError:
             S += np.eye(S.shape[0]) * 1e-6
             L = np.linalg.cholesky(S)
-            K = self._Sxx @ H.T @ np.linalg.solve(L.T, np.linalg.solve(L, np.eye(S.shape[0])))
-        self._x = self._x + K @ (z - h)
-        self._Sxx = (np.eye(self._Sxx.shape[0]) - K @ H) @ self._Sxx
+            K = current_state.sxx @ H.T @ np.linalg.solve(L.T, np.linalg.solve(L, np.eye(S.shape[0])))
+        x_new = current_state.x + K @ (z - h)
+        sxx_new = (np.eye(current_state.sxx.shape[0]) - K @ H) @ current_state.sxx
+        self._state = State(timestamp=rosys.time(), x=x_new, sxx=sxx_new)
         self._update_frame()
 
     def _update_frame(self) -> None:
-        self.pose_frame.x = self._x[0, 0]
-        self.pose_frame.y = self._x[1, 0]
-        self.pose_frame.rotation = Rotation.from_euler(0, 0, self._x[2, 0])
+        pose = self._state.pose()
+        self.pose_frame.x = pose.x
+        self.pose_frame.y = pose.y
+        self.pose_frame.rotation = Rotation.from_euler(0, 0, pose.yaw)
 
     async def reset(self, *, gnss_timeout: float = 2.0) -> None:
         reset_pose = Pose(x=0.0, y=0.0, yaw=0.0)
@@ -209,9 +216,10 @@ class RobotLocator(rosys.persistence.Persistable):
                 self.log.error(
                     'GNSS measurement is not available while resetting position. Activate _ignore_gnss to use zero position.')
                 return
-        self._x = np.array([[reset_pose.x, reset_pose.y, reset_pose.yaw]], dtype=float).T
+        x = np.array([[reset_pose.x, reset_pose.y, reset_pose.yaw]], dtype=float).T
         variance = np.array([r_xy, r_xy, r_theta], dtype=np.float64)**2
-        self._Sxx = np.diag(variance)
+        sxx = np.diag(variance)
+        self._state = State(timestamp=rosys.time(), x=x, sxx=sxx)
         self._update_frame()
         rosys.notify('Positioning initialized', 'positive')
 

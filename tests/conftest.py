@@ -1,6 +1,7 @@
 import logging
 from collections.abc import AsyncGenerator, Generator
 
+import numpy as np
 import pytest
 import rosys
 from rosys.geometry import GeoPoint, GeoPose, GeoReference, Pose
@@ -10,6 +11,7 @@ from rosys.testing import forward, helpers
 from field_friend.automations import Field, Row
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 from field_friend.interface.components.field_creator import FieldCreator
+from field_friend.robot_locator import State
 from field_friend.system import System
 
 GEO_REFERENCE = GeoReference(GeoPoint.from_degrees(lat=51.98333489813455, lon=7.434242465994318))
@@ -256,9 +258,9 @@ def detector(system: System) -> Generator[rosys.vision.DetectorSimulation, None,
 def set_robot_pose(system: System, pose: Pose):
     # pylint: disable=protected-access
     assert isinstance(system.field_friend.wheels, WheelsSimulation)
-    system.robot_locator._x[0, 0] = pose.x
-    system.robot_locator._x[1, 0] = pose.y
-    system.robot_locator._x[2, 0] = pose.yaw
+    system.robot_locator._state = State(timestamp=rosys.time(),
+                                        x=np.array([[pose.x, pose.y, pose.yaw]], dtype=float).T,
+                                        sxx=np.zeros((3, 3)))
     system.field_friend.wheels.pose.x = pose.x
     system.field_friend.wheels.pose.y = pose.y
     system.field_friend.wheels.pose.yaw = pose.yaw
