@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import rosys
 from rosys.event import Event
@@ -9,14 +7,10 @@ from rosys.geometry import GeoPose
 
 from .field import Field, Row, RowSupportPoint
 
-if TYPE_CHECKING:
-    from ..system import System
-
 
 class FieldProvider(rosys.persistence.Persistable):
-    def __init__(self, system: System) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.system = system
         self.log = logging.getLogger('field_friend.field_provider')
         self.fields: list[Field] = []
         self.needs_backup: bool = False
@@ -113,7 +107,6 @@ class FieldProvider(rosys.persistence.Persistable):
     def select_field(self, id_: str | None) -> None:
         self.selected_field = self.get_field(id_)
         self.clear_selected_beds()
-        self.update_gnss_reference()
         self.FIELD_SELECTED.emit()
         self.request_backup()
 
@@ -184,8 +177,3 @@ class FieldProvider(rosys.persistence.Persistable):
             return False
         bed_index = row_index // self.selected_field.row_count
         return bed_index in self.selected_beds
-
-    def update_gnss_reference(self) -> None:
-        if self.selected_field is None:
-            return
-        self.system.update_gnss_reference(reference=self.selected_field.geo_reference)
