@@ -19,15 +19,31 @@ async def test_approach_first_row(system: System, field: Field):
     assert system.gnss is not None
     assert system.gnss.last_measurement is not None
     assert system.gnss.last_measurement.point.distance(ROBOT_GEO_START_POSITION) < 0.01
+    set_robot_pose(system, Pose(x=-1.0, y=0.0, yaw=0.0))
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
     first_row_start = field.first_row_start.to_local()
     first_row_end = field.first_row_end.to_local()
-    assert system.current_navigation.current_segment.end.x == pytest.approx(first_row_start.x, abs=0.1)
-    assert system.current_navigation.current_segment.end.y == pytest.approx(first_row_start.y, abs=0.1)
-    assert system.current_navigation.current_segment.end.yaw_deg == pytest.approx(
-        first_row_start.direction(first_row_end), abs=0.1)
+    row_direction = first_row_start.direction(first_row_end)
+
+    approach_segment = system.current_navigation.path[0]
+    approach_segment_end = first_row_start.polar(-0.1, row_direction)
+    assert approach_segment.end.x == pytest.approx(approach_segment_end.x, abs=0.1)
+    assert approach_segment.end.y == pytest.approx(approach_segment_end.y, abs=0.1)
+    assert approach_segment.end.yaw_deg == pytest.approx(row_direction, abs=0.1)
+
+    alignment_segment = system.current_navigation.path[1]
+    assert alignment_segment.start.x == pytest.approx(approach_segment_end.x, abs=0.1)
+    assert alignment_segment.start.y == pytest.approx(approach_segment_end.y, abs=0.1)
+    assert alignment_segment.end.x == pytest.approx(first_row_start.x, abs=0.1)
+    assert alignment_segment.end.y == pytest.approx(first_row_start.y, abs=0.1)
+    assert alignment_segment.end.yaw_deg == pytest.approx(row_direction, abs=0.1)
+
+    first_row_segment = system.current_navigation.path[2]
+    assert first_row_segment.start.x == pytest.approx(first_row_start.x, abs=0.1)
+    assert first_row_segment.start.y == pytest.approx(first_row_start.y, abs=0.1)
+    assert first_row_segment.start.yaw_deg == pytest.approx(row_direction, abs=0.1)
 
 
 async def test_complete_field(system: System, field: Field):
@@ -35,13 +51,14 @@ async def test_complete_field(system: System, field: Field):
     system.current_navigation = system.field_navigation
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
+    set_robot_pose(system, Pose(x=-1.0, y=0.0, yaw=0.0))
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     assert system.current_navigation.current_segment is not None
     assert isinstance(system.current_navigation.path[0], DriveSegment)
     approach_length = system.current_navigation.path[0].spline.estimated_length() + \
         system.current_navigation.path[1].spline.estimated_length()
-    assert approach_length == pytest.approx(0.3345, abs=0.001)
+    assert approach_length == pytest.approx(1.0, abs=0.001)
     row_segments = [segment for segment in system.current_navigation.path if isinstance(segment, RowSegment)]
     assert len(row_segments) == 4
     combined_row_length = sum(segment.spline.estimated_length() for segment in row_segments)

@@ -96,6 +96,7 @@ class System(rosys.persistence.Persistable):
         self.plant_locator: PlantLocator = PlantLocator(self).persistent()
         self.puncher: Puncher = Puncher(self.field_friend, self.driver)
         self.field_provider: FieldProvider = FieldProvider().persistent()
+        self.field_provider.FIELD_SELECTED.register(self.update_gnss_reference_from_field)
         self.automation_watcher: AutomationWatcher = AutomationWatcher(self)
 
         self.setup_timelapse()
@@ -351,6 +352,11 @@ class System(rosys.persistence.Persistable):
         GeoReference.update_current(reference)
         self.GNSS_REFERENCE_CHANGED.emit()
         self.request_backup()
+
+    def update_gnss_reference_from_field(self) -> None:
+        if self.field_provider.selected_field is None:
+            return
+        self.update_gnss_reference(reference=self.field_provider.selected_field.geo_reference)
 
     def get_jetson_cpu_temperature(self):
         with open('/sys/devices/virtual/thermal/thermal_zone0/temp') as f:
