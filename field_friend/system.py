@@ -36,7 +36,8 @@ class System(rosys.persistence.Persistable):
         assert self.robot_id != 'unknown'
         self.config = get_config(self.robot_id)
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
-        rosys.set_simulation(not rosys.hardware.SerialCommunication.is_possible())
+        if not rosys.hardware.SerialCommunication.is_possible():
+            rosys.enter_simulation()
         self.AUTOMATION_CHANGED: Event[str] = Event()
         self.GNSS_REFERENCE_CHANGED: Event[[]] = Event()
 
