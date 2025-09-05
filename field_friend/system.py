@@ -31,12 +31,13 @@ class System(rosys.persistence.Persistable):
 
     def __init__(self, robot_id: str, *, use_acceleration: bool = False) -> None:
         super().__init__()
+        self.log = logging.getLogger('field_friend.system')
         self.robot_id = robot_id
         assert self.robot_id != 'unknown'
         self.config = get_config(self.robot_id)
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
-        self.log = logging.getLogger('field_friend.system')
-        self.is_real = rosys.hardware.SerialCommunication.is_possible()
+        rosys.set_simulation(not rosys.hardware.SerialCommunication.is_possible())
+        self.is_real = not rosys.is_simulation()
         self.AUTOMATION_CHANGED: Event[str] = Event()
         self.GNSS_REFERENCE_CHANGED: Event[[]] = Event()
 
