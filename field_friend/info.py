@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+import rosys
 from nicegui import background_tasks, ui
 from nicegui.version import __version__ as nicegui_version
 from rosys.version import __version__ as rosys_version
@@ -31,7 +32,7 @@ class Info:
                 ui.label('NiceGUI:')
                 ui.label(nicegui_version)
 
-                if self.system.is_real:
+                if not rosys.is_simulation():
                     lizard_firmware = cast(FieldFriendHardware, self.system.field_friend).robot_brain.lizard_firmware
 
                     async def read_lizard_versions() -> None:
