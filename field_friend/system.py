@@ -37,7 +37,6 @@ class System(rosys.persistence.Persistable):
         self.config = get_config(self.robot_id)
         rosys.hardware.SerialCommunication.search_paths.insert(0, '/dev/ttyTHS0')
         rosys.set_simulation(not rosys.hardware.SerialCommunication.is_possible())
-        self.is_real = not rosys.is_simulation()
         self.AUTOMATION_CHANGED: Event[str] = Event()
         self.GNSS_REFERENCE_CHANGED: Event[[]] = Event()
 
@@ -51,7 +50,19 @@ class System(rosys.persistence.Persistable):
         self.implements: dict[str, Implement] = {}
         self.navigation_strategies: dict[str, WaypointNavigation] = {}
         self.mjpeg_camera_provider: rosys.vision.MjpegCameraProvider | None = None
-        if self.is_real:
+        if rosys.is_simulation():
+            self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
+            assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
+            self.gnss = self.setup_gnss(self.field_friend.wheels)
+            self.robot_locator = RobotLocator(self.field_friend.wheels,
+                                              gnss=self.gnss,
+                                              imu=self.field_friend.imu,
+                                              gnss_config=self.config.gnss).persistent()
+            # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
+            rosys.on_startup(self.setup_simulated_usb_camera)
+            if self.camera_provider is not None:
+                self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
+        else:
             try:
                 self.field_friend = FieldFriendHardware(self.config)
                 self.teltonika_router = TeltonikaRouter()
@@ -66,18 +77,6 @@ class System(rosys.persistence.Persistable):
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = DetectorHardware(self.field_friend.bms, port=8004)
             self.circle_sight_detector = DetectorHardware(self.field_friend.bms, port=8005)
-        else:
-            self.field_friend = FieldFriendSimulation(self.config, use_acceleration=use_acceleration)
-            assert isinstance(self.field_friend.wheels, rosys.hardware.WheelsSimulation)
-            self.gnss = self.setup_gnss(self.field_friend.wheels)
-            self.robot_locator = RobotLocator(self.field_friend.wheels,
-                                              gnss=self.gnss,
-                                              imu=self.field_friend.imu,
-                                              gnss_config=self.config.gnss).persistent()
-            # NOTE we run this in rosys.startup to enforce setup AFTER the persistence is loaded
-            rosys.on_startup(self.setup_simulated_usb_camera)
-            if self.camera_provider is not None:
-                self.detector = rosys.vision.DetectorSimulation(self.camera_provider)
         self.GNSS_REFERENCE_CHANGED.register(self.robot_locator.reset)
         self.capture = Capture(self)
         if self.config.camera is not None:
@@ -110,7 +109,7 @@ class System(rosys.persistence.Persistable):
         else:
             self.log.warning('Bumper is not available, does robot have bumpers?')
 
-        if self.is_real:
+        if not rosys.is_simulation():
             assert isinstance(self.field_friend, FieldFriendHardware)
             app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, capture=self.capture)
             rosys.on_repeat(self.log_status, 60 * 5)
@@ -235,7 +234,7 @@ class System(rosys.persistence.Persistable):
         self.current_navigation = self.straight_line_navigation
 
     def setup_camera_provider(self) -> CalibratableUsbCameraProvider | rosys.vision.SimulatedCameraProvider | ZedxminiCameraProvider | None:
-        if not self.is_real:
+        if rosys.is_simulation():
             return rosys.vision.SimulatedCameraProvider()
         if self.config.camera is None:
             self.log.warning('Camera is not configured, no camera provider will be used')
@@ -272,7 +271,7 @@ class System(rosys.persistence.Persistable):
         last_update = rosys.time()
         last_position = self.robot_locator.pose
         self.kpi_provider = KpiProvider().persistent()
-        if not self.is_real:
+        if rosys.is_simulation():
             self.kpi_provider.simulate_kpis()
 
         if self.automator:
@@ -329,7 +328,7 @@ class System(rosys.persistence.Persistable):
     def setup_gnss(self, wheels: rosys.hardware.WheelsSimulation | None = None) -> GnssHardware | GnssSimulation | None:
         if self.config.gnss is None:
             return None
-        if self.is_real:
+        if not rosys.is_simulation():
             gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.pose)
             gnss_hardware.MAX_TIMESTAMP_DIFF = 0.25
             return gnss_hardware

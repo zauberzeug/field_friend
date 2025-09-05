@@ -29,7 +29,7 @@ def create_status_drawer(system: System) -> ui.right_drawer:
                             .props('flat align=left').classes('w-full')
                     ui.separator()
                     ui.menu_item('Restart RoSys', on_click=system.restart)
-                    if system.is_real:
+                    if not rosys.is_simulation():
                         ui.menu_item('Restart Lizard', on_click=cast(FieldFriendHardware, robot).robot_brain.restart)
 
         ui.label('System Status').classes('text-xl')

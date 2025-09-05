@@ -49,7 +49,7 @@ class PlantLocator(EntityLocator):
         self.crop_category_names: dict[str, str] = self.CROP_CATEGORY_NAME
         self.minimum_crop_confidence: float = self.MINIMUM_CROP_CONFIDENCE
         self.minimum_weed_confidence: float = self.MINIMUM_WEED_CONFIDENCE
-        if system.is_real:
+        if not rosys.is_simulation():
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
             self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
