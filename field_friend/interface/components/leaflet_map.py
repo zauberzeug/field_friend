@@ -30,8 +30,6 @@ class LeafletMap:
             'edit': False,
         }
         center_point = GeoPoint.from_degrees(51.983159, 7.434212)
-        if self.system.gnss is not None and self.system.gnss.last_measurement is not None:
-            center_point = self.system.gnss.last_measurement.point
         self.m: ui.leaflet
         if draw_tools:
             self.m = ui.leaflet(center=center_point.degree_tuple, zoom=13, draw_control=self.draw_control)
@@ -44,11 +42,12 @@ class LeafletMap:
         self.robot_marker: Marker | None = None
         self.drawn_marker = None
         self.row_layers: list = []
-        self.update_layers()
-        self.zoom_to_robot()
         self.field_provider.FIELDS_CHANGED.register_ui(self.update_layers)
         self.field_provider.FIELD_SELECTED.register_ui(self.update_layers)
         self.system.GNSS_REFERENCE_CHANGED.register_ui(self.update_layers)
+        self.update_layers()
+        self.update_robot_position()
+        self.zoom_to_robot()
         ui.timer(5, self.update_robot_position)
 
     def buttons(self) -> None:
@@ -93,16 +92,16 @@ class LeafletMap:
             self.on_dialog_close()
             dialog.close()
         geo_point = GeoPoint.from_point(self.system.robot_locator.pose.point)
+        self.log.debug('Updating robot position: %s', geo_point)
         self.robot_marker = self.robot_marker or self.m.marker(latlng=geo_point.degree_tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
         self.robot_marker.move(*geo_point.degree_tuple)
 
     def zoom_to_robot(self) -> None:
-        if self.gnss is None or self.gnss.last_measurement is None:
-            self.log.debug('No GNSS position available, could not zoom to robot')
-            return
-        self.m.set_center(self.gnss.last_measurement.point.degree_tuple)
+        geo_point = GeoPoint.from_point(self.system.robot_locator.pose.point)
+        self.log.debug('Zooming to robot position: %s', geo_point)
+        self.m.set_center(geo_point.degree_tuple)
         if self.current_basemap is not None:
             self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)
 
@@ -112,6 +111,7 @@ class LeafletMap:
             return
         coords = [geo_point.degree_tuple for geo_point in field.outline]
         center = sum(lat for lat, _ in coords) / len(coords), sum(lon for _, lon in coords) / len(coords)
+        self.log.debug('Zooming to field boundaries: %s', center)
         self.m.set_center(center)
         if self.current_basemap is not None:
             self.m.set_zoom(self.current_basemap.options['maxZoom'] - 1)  # TODO use field boundaries to calculate zoom
