@@ -1,6 +1,8 @@
 # pylint: disable=broad-exception-raised
 # TODO: we need a useful exception here
 import rosys
+from rosys.analysis import track
+from rosys.automation import uninterruptible
 from rosys.helpers import remove_indentation
 
 from ..config import ZStepperConfiguration
@@ -48,6 +50,8 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
     async def stop(self) -> None:
         await self.robot_brain.send(f'{self.config.name}.stop()')
 
+    @track
+    @uninterruptible
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if speed is None:
             speed = self.max_speed
@@ -75,10 +79,13 @@ class ZAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
     async def reset_fault(self) -> None:
         raise NotImplementedError('reset_fault not implemented for y_axis_stepper_hardware')
 
+    @track
     async def recover(self) -> None:
         await self.stop()
         await self.try_reference()
 
+    @track
+    @uninterruptible
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
