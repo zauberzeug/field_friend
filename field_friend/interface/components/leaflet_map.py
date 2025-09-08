@@ -8,8 +8,6 @@ from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
 from rosys.geometry import GeoPoint
 from rosys.hardware import GnssMeasurement
 
-from .key_controls import KeyControls
-
 if TYPE_CHECKING:
     from ...system import System
 
@@ -19,7 +17,6 @@ class LeafletMap:
         self.log = logging.getLogger('field_friend.leaflet_map')
         self.system = system
         self.field_provider = system.field_provider
-        self.key_controls = KeyControls(self.system)
         self.draw_tools = draw_tools
         self.gnss = system.gnss
         self.draw_control = {
@@ -93,15 +90,16 @@ class LeafletMap:
                 row_points = [p.degree_tuple for p in row.points]
                 self.row_layers.append(self.m.generic_layer(name='polyline', args=[row_points, {'color': '#F2C037'}]))
 
-    def update_robot_position(self, measurement: GnssMeasurement, dialog=None) -> None:
+    def update_robot_position(self, _: GnssMeasurement, dialog=None) -> None:
         # TODO: where does the dialog come from?
         if dialog:
             self.on_dialog_close()
             dialog.close()
-        self.robot_marker = self.robot_marker or self.m.marker(latlng=measurement.point.degree_tuple)
+        geo_point = GeoPoint.from_point(self.system.robot_locator.pose.point)
+        self.robot_marker = self.robot_marker or self.m.marker(latlng=geo_point.degree_tuple)
         icon = 'L.icon({iconUrl: "assets/robot_position_side.png", iconSize: [50,50], iconAnchor:[20,20]})'
         self.robot_marker.run_method(':setIcon', icon)
-        self.robot_marker.move(*measurement.point.degree_tuple)
+        self.robot_marker.move(*geo_point.degree_tuple)
 
     def zoom_to_robot(self) -> None:
         if self.gnss is None or self.gnss.last_measurement is None:
