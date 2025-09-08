@@ -2,6 +2,7 @@ import abc
 
 import rosys
 from nicegui import ui
+from rosys.automation import uninterruptible
 from rosys.helpers import remove_indentation
 
 from ..config import SprayerConfiguration
@@ -28,6 +29,7 @@ class Sprayer(rosys.hardware.Module, abc.ABC):
     async def close_valve(self) -> None:
         pass
 
+    @uninterruptible
     async def stop(self) -> None:
         await self.close_valve()
         await self.deactivate_pump()
