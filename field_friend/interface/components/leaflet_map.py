@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from nicegui import app, ui
 from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
 from rosys.geometry import GeoPoint
-from rosys.hardware import GnssMeasurement
 
 if TYPE_CHECKING:
     from ...system import System
@@ -50,9 +49,7 @@ class LeafletMap:
         self.field_provider.FIELDS_CHANGED.register_ui(self.update_layers)
         self.field_provider.FIELD_SELECTED.register_ui(self.update_layers)
         self.system.GNSS_REFERENCE_CHANGED.register_ui(self.update_layers)
-
-        if self.gnss is not None:
-            self.gnss.NEW_MEASUREMENT.register_ui(self.update_robot_position)
+        ui.timer(5, self.update_robot_position)
 
     def buttons(self) -> None:
         """Builds additional buttons to interact with the map."""
@@ -90,7 +87,7 @@ class LeafletMap:
                 row_points = [p.degree_tuple for p in row.points]
                 self.row_layers.append(self.m.generic_layer(name='polyline', args=[row_points, {'color': '#F2C037'}]))
 
-    def update_robot_position(self, _: GnssMeasurement, dialog=None) -> None:
+    def update_robot_position(self, dialog=None) -> None:
         # TODO: where does the dialog come from?
         if dialog:
             self.on_dialog_close()
