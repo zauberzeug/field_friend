@@ -148,8 +148,12 @@ async def test_start_direction(system: System, field: Field, heading_degrees: fl
         raise ValueError('Invalid direction')
 
 
-@pytest.mark.parametrize('offset', (0, 0.10, 0.11))
+@pytest.mark.parametrize('offset', (0, 0.10, -0.10, 0.101))
 async def test_between_rows(system: System, field: Field, offset: float):
+    # pylint: disable=protected-access
+    system.gnss._lat_std_dev = 0.0
+    system.gnss._lon_std_dev = 0.0
+    system.gnss._heading_std_dev = 0.0
     first_row_start = field.first_row_start.to_local()
     first_row_end = field.first_row_end.to_local()
     direction = first_row_start.direction(first_row_end)
@@ -160,9 +164,8 @@ async def test_between_rows(system: System, field: Field, offset: float):
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     system.automator.start()
-    await forward(2)
     if offset <= FieldNavigation.MAX_DISTANCE_DEVIATION:
-        assert system.automator.is_running
+        await forward(until=lambda: system.automator.is_running)
     else:
         assert system.automator.is_stopped
 
