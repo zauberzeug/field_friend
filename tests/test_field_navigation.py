@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from conftest import ROBOT_GEO_START_POSITION, set_robot_pose
 from rosys.geometry import Pose
-from rosys.hardware import BmsSimulation
+from rosys.hardware import BmsSimulation, GnssSimulation
 from rosys.testing import assert_point, forward
 
 from field_friend import System
@@ -150,6 +150,7 @@ async def test_start_direction(system: System, field: Field, heading_degrees: fl
 
 @pytest.mark.parametrize('offset', (0, 0.10, -0.10, 0.101))
 async def test_between_rows(system: System, field: Field, offset: float):
+    assert isinstance(system.gnss, GnssSimulation)
     # pylint: disable=protected-access
     system.gnss._lat_std_dev = 0.0
     system.gnss._lon_std_dev = 0.0
