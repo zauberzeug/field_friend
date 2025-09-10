@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import uuid
 from dataclasses import dataclass
@@ -53,8 +55,7 @@ class Field:
                  bed_count: int = 1,
                  bed_spacing: float = 0.5,
                  bed_crops: dict[str, str | None] | None = None,
-                 docking_distance: float = 2.0,
-                 charge_dock_pose: GeoPose | None = None) -> None:
+                 charging_station: ChargingStation | None = None) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
@@ -70,10 +71,7 @@ class Field:
         self.rows: list[Row] = []
         self.outline: list[GeoPoint] = []
         self.bed_crops: dict[str, str | None] = bed_crops or {str(i): None for i in range(bed_count)}
-        self.docking_distance: float = docking_distance
-        self._charge_dock_pose: GeoPose | None = None
-        self._charge_approach_pose: GeoPose | None = None
-        self.charge_dock_pose = charge_dock_pose
+        self.charging_station = charging_station
         self.refresh()
 
     @property
@@ -87,20 +85,6 @@ class Field:
     @property
     def outline_cartesian_as_tuples(self) -> list[tuple[float, float]]:
         return [p.tuple for p in self.outline_cartesian]
-
-    @property
-    def charge_dock_pose(self) -> GeoPose | None:
-        return self._charge_dock_pose
-
-    @charge_dock_pose.setter
-    def charge_dock_pose(self, pose: GeoPose | None) -> None:
-        self._charge_dock_pose = pose
-        self._charge_approach_pose = self._charge_dock_pose.relative_shift_by(x=self.docking_distance) \
-            if isinstance(self._charge_dock_pose, GeoPose) else None
-
-    @property
-    def charge_approach_pose(self) -> GeoPose | None:
-        return self._charge_approach_pose
 
     @property
     def geo_reference(self) -> GeoReference:
@@ -195,8 +179,7 @@ class Field:
             'bed_count': 1,
             'bed_spacing': 1,
             'bed_crops': {},
-            'docking_distance': 2.0,
-            'charge_dock_pose': None,
+            'charging_station': None,
         }
         for key in defaults:
             if key in data:
@@ -210,8 +193,15 @@ class Field:
                                               lon=data[key]['lon'] if 'lon' in data[key] else data[key]['long'])
         data['row_support_points'] = [rosys.persistence.from_dict(RowSupportPoint, sp)
                                       for sp in data.get('row_support_points', [])]
-        charge_dock_tuple: tuple[float, float, float] | None = data.get('charge_dock_pose', None)
-        data['charge_dock_pose'] = GeoPose.from_degrees(*charge_dock_tuple) if charge_dock_tuple else None
+        if charge_dock_pose := data.get('charge_dock_pose', None):
+            # TODO: remove before merging
+            dock_pose = GeoPose.from_degrees(*charge_dock_pose)
+            old_charging_station = ChargingStation.from_dock_pose(dock_pose, docking_distance=data['docking_distance'])
+            data['charging_station'] = old_charging_station.to_dict()
+            del data['charge_dock_pose']
+            del data['docking_distance']
+        if charging_station := data.get('charging_station', None):
+            data['charging_station'] = ChargingStation.from_dict(charging_station)
         return cls(**cls.args_from_dict(data))
 
     def get_buffered_area(self) -> list[GeoPoint]:
@@ -250,6 +240,43 @@ class Field:
             'bed_count': self.bed_count,
             'bed_spacing': self.bed_spacing,
             'bed_crops': self.bed_crops,
-            'docking_distance': self.docking_distance,
-            'charge_dock_pose': self.charge_dock_pose.degree_tuple if self.charge_dock_pose is not None else None,
+            'charging_station': self.charging_station.to_dict() if self.charging_station else None,
         }
+
+
+@dataclass(slots=True, kw_only=True)
+class ChargingStation:
+    _dock_pose: GeoPose
+    _approach_pose: GeoPose
+    docking_distance: float
+    last_offset: float
+
+    @classmethod
+    def from_dock_pose(cls, dock_pose: GeoPose, *, docking_distance: float = 2.0, last_offset: float = 0.0) -> Self:
+        approach_pose = dock_pose.relative_shift_by(x=docking_distance)
+        return cls(_dock_pose=dock_pose, _approach_pose=approach_pose, docking_distance=docking_distance, last_offset=last_offset)
+
+    @property
+    def dock_pose(self) -> GeoPose:
+        return self._dock_pose
+
+    @dock_pose.setter
+    def dock_pose(self, pose: GeoPose) -> None:
+        self._dock_pose = pose
+        self._approach_pose = self._dock_pose.relative_shift_by(x=self.docking_distance)
+
+    @property
+    def approach_pose(self) -> GeoPose:
+        return self._approach_pose
+
+    def to_dict(self) -> dict:
+        return {
+            'docking_distance': self.docking_distance,
+            'dock_pose': self.dock_pose.degree_tuple,
+            'last_offset': self.last_offset,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        dock_pose = GeoPose.from_degrees(*data['dock_pose'])
+        return cls.from_dock_pose(dock_pose, docking_distance=data['docking_distance'], last_offset=data['last_offset'])
