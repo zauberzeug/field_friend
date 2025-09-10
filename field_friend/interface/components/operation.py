@@ -207,8 +207,6 @@ class Operation:
         with ui.row().style('width:100%;'):
             ui.button(icon='add_box', text='Field', on_click=lambda: FieldCreator(self.system)) \
                 .tooltip('Create a field with AB-line in a few simple steps')
-        if len(self.field_provider.fields) <= 0:
-            return
         with ui.row().classes('w-full mt-2'):
             self.field_select = ui.select(
                 value=self.field_provider.selected_field.id if self.field_provider.selected_field else None,
