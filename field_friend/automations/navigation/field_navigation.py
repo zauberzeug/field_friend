@@ -179,7 +179,6 @@ class FieldNavigation(WaypointNavigation):
     async def _run_charging(self, *, stop_after_docking: bool = False) -> None:
         assert self.field is not None
         assert self.field.charging_station is not None
-        assert self.field.charge_approach_pose is not None
         while self.current_segment is not None and not isinstance(self.current_segment, RowSegment):
             self._upcoming_path.pop(0)  # NOTE: pop unnecessary turn segments
         approach_pose = self.field.charging_station.approach_pose.to_local()
