@@ -41,14 +41,18 @@ class FieldProvider(rosys.persistence.Persistable):
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         fields_data: dict[str, dict] = data.get('fields', {})
+        if not fields_data:
+            return
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)
             self.fields.append(new_field)
-        selected_field_id: str | None = data.get('selected_field')
-        if selected_field_id:
-            self.select_field(selected_field_id)
+        selected_field_id: str | None = data.get('selected_field', None)
+        if selected_field_id is None:
+            selected_field_id = self.fields[0].id
+        self.select_field(selected_field_id)
         self.refresh_fields()
         self.FIELDS_CHANGED.emit()
+        self.FIELD_SELECTED.emit()
 
     def invalidate(self) -> None:
         self.request_backup()
