@@ -35,8 +35,6 @@ class FieldNavigation(WaypointNavigation):
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__(system, implement)
         self.name = 'Field Navigation'
-        self.gnss = system.gnss
-        self.automator = system.automator
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
