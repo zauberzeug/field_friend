@@ -299,6 +299,9 @@ class FieldNavigation(WaypointNavigation):
 
     @track
     async def dock(self):
+        assert self.field is not None
+        assert self.field.charging_station is not None
+
         async def wait_for_charging():
             while not self.system.field_friend.bms.state.is_charging:
                 await rosys.sleep(0.1)
@@ -327,7 +330,8 @@ class FieldNavigation(WaypointNavigation):
         if isinstance(self.system.field_friend.bms, BmsHardware):
             old_interval = self.system.field_friend.bms.UPDATE_INTERVAL
             self.system.field_friend.bms.UPDATE_INTERVAL = 0.1
-        for y_offset in (0.0, 0.0, 0.005, -0.005, 0.01, -0.01, 0.015, -0.015, 0.02, -0.02):
+        last_offset = self.field.charging_station.last_offset
+        for y_offset in (last_offset, 0.0, 0.005, -0.005, 0.01, -0.01, 0.015, -0.015, 0.02, -0.02):
             await rosys.automation.parallelize(
                 gnss_move(y_offset),
                 wait_for_charging(),
@@ -339,6 +343,8 @@ class FieldNavigation(WaypointNavigation):
                 return_when_first_completed=True,
             )
             if self.system.field_friend.bms.state.is_charging:
+                self.field.charging_station.last_offset = y_offset
+                self.field_provider.request_backup()
                 rosys.notify('Docking successful', 'positive')
                 break
             await self.undock()
