@@ -334,7 +334,7 @@ class FieldNavigation(WaypointNavigation):
                 return_when_first_completed=True,
             )
             await rosys.automation.parallelize(
-                rosys.sleep(10),
+                rosys.sleep(20),
                 wait_for_charging(),
                 return_when_first_completed=True,
             )
