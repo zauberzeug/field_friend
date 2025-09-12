@@ -15,7 +15,7 @@ from shapely.geometry import Polygon as ShapelyPolygon
 
 from ..field import Field, Row
 from ..implements import Implement, WeedingImplement
-from .waypoint_navigation import DriveSegment, WaypointNavigation
+from .waypoint_navigation import DriveSegment, WaypointNavigation, generate_three_point_turn
 
 if TYPE_CHECKING:
     from ...system import System
@@ -103,8 +103,8 @@ class FieldNavigation(WaypointNavigation):
                 continue
             row_segment = RowSegment.from_row(row, reverse=row_reversed)
             if path_segments:
-                path_segments.extend(self._generate_three_point_turn(turn_start, row_segment.start,
-                                                                     radius=self.turn_radius))
+                path_segments.extend(generate_three_point_turn(turn_start, row_segment.start,
+                                                               radius=self.turn_radius))
             path_segments.append(row_segment)
             turn_start = row_segment.end
             row_reversed = not row_reversed
@@ -126,15 +126,15 @@ class FieldNavigation(WaypointNavigation):
                 row_start = first_row.points[0].to_local()
                 row_end = first_row.points[-1].to_local()
                 row_end_pose = Pose(x=row_end.x, y=row_end.y, yaw=row_end.direction(row_start))
-                turn_segments = self._generate_three_point_turn(end_pose, row_end_pose, radius=self.turn_radius)
+                turn_segments = generate_three_point_turn(end_pose, row_end_pose, radius=self.turn_radius)
                 drive_segment = RowSegment.from_row(first_row, reverse=True)
                 drive_segment.use_implement = False
                 path_segments = [*path_segments, *turn_segments, drive_segment]
 
             # NOTE: align with first row
             first_row_segment = RowSegment.from_row(first_row)
-            turn_segments = self._generate_three_point_turn(path_segments[-1].end, first_row_segment.start,
-                                                            radius=self.turn_radius)
+            turn_segments = generate_three_point_turn(path_segments[-1].end, first_row_segment.start,
+                                                      radius=self.turn_radius)
             path_segments = [*path_segments, *turn_segments]
         return path_segments
 
@@ -274,21 +274,6 @@ class FieldNavigation(WaypointNavigation):
         return [
             row_approach_segment,
             DriveSegment.from_poses(row_approach_segment.end, row_start_pose),
-        ]
-
-    def _generate_three_point_turn(self, end_pose_current_row: Pose, start_pose_next_row: Pose, *, radius: float = 1.5) -> list[DriveSegment]:
-        direction_to_start = end_pose_current_row.relative_direction(start_pose_next_row)
-        if end_pose_current_row.distance(start_pose_next_row) < 0.01:
-            direction_to_start = np.deg2rad(90)
-        first_turn_pose = end_pose_current_row.transform_pose(
-            Pose(x=radius, y=radius * np.sign(direction_to_start), yaw=direction_to_start))
-        back_up_pose = start_pose_next_row.transform_pose(
-            Pose(x=-radius, y=radius * np.sign(direction_to_start), yaw=-direction_to_start))
-        backward = first_turn_pose.relative_pose(back_up_pose).x < 0
-        return [
-            DriveSegment.from_poses(end_pose_current_row, first_turn_pose, stop_at_end=backward),
-            DriveSegment.from_poses(first_turn_pose, back_up_pose, backward=backward, stop_at_end=backward),
-            DriveSegment.from_poses(back_up_pose, start_pose_next_row),
         ]
 
     @track
