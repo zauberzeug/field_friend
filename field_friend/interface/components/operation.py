@@ -119,17 +119,20 @@ class Operation:
     # TODO: move to field_creator or something
     @ui.refreshable
     def field_setting(self) -> None:
+        selected_field = self.field_provider.selected_field
+        if not selected_field:
+            return
         with ui.dialog() as self.edit_field_dialog, ui.card():
             parameters: dict = {
-                'name': self.field_provider.selected_field.name if self.field_provider.selected_field else '',
-                'row_count': self.field_provider.selected_field.row_count if self.field_provider.selected_field else 0,
-                'row_spacing': self.field_provider.selected_field.row_spacing if self.field_provider.selected_field else 0.0,
-                'outline_buffer_width': self.field_provider.selected_field.outline_buffer_width if self.field_provider.selected_field else 2.0,
-                'bed_count': self.field_provider.selected_field.bed_count if self.field_provider.selected_field else 1,
-                'bed_spacing': self.field_provider.selected_field.bed_spacing if self.field_provider.selected_field else 0.5,
-                'bed_crops': self.field_provider.selected_field.bed_crops if self.field_provider.selected_field else {'0': None},
-                'docking_distance': self.field_provider.selected_field.docking_distance if self.field_provider.selected_field else 2.0,
-                'charge_dock_pose': self.field_provider.selected_field.charge_dock_pose if self.field_provider.selected_field else None
+                'name': selected_field.name,
+                'row_count': selected_field.row_count,
+                'row_spacing': selected_field.row_spacing,
+                'outline_buffer_width': selected_field.outline_buffer_width,
+                'bed_count': selected_field.bed_count,
+                'bed_spacing': selected_field.bed_spacing,
+                'bed_crops': selected_field.bed_crops,
+                'docking_distance': selected_field.charging_station.docking_distance if selected_field.charging_station else 2.0,
+                'charge_dock_pose': selected_field.charging_station.dock_pose if selected_field.charging_station else None
             }
             with ui.tabs().classes('w-full') as tabs:
                 one = ui.tab('General')
@@ -204,8 +207,6 @@ class Operation:
         with ui.row().style('width:100%;'):
             ui.button(icon='add_box', text='Field', on_click=lambda: FieldCreator(self.system)) \
                 .tooltip('Create a field with AB-line in a few simple steps')
-        if len(self.field_provider.fields) <= 0:
-            return
         with ui.row().classes('w-full mt-2'):
             self.field_select = ui.select(
                 value=self.field_provider.selected_field.id if self.field_provider.selected_field else None,
