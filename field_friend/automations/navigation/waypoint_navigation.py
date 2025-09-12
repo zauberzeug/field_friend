@@ -375,3 +375,19 @@ def sub_spline(spline: Spline, t_min: float, t_max: float) -> Spline:
     s = (t_max - t_min) / (1 - t_min) if t_min != 1 else 0.0
     (R0, R1, R2, R3), _ = split_cubic(Q0, Q1, Q2, Q3, s)
     return Spline(start=R0, control1=R1, control2=R2, end=R3)
+
+
+def generate_three_point_turn(end_pose_current_row: Pose, start_pose_next_row: Pose, *, radius: float = 1.5) -> list[DriveSegment]:
+    direction_to_start = end_pose_current_row.relative_direction(start_pose_next_row)
+    if end_pose_current_row.distance(start_pose_next_row) < 0.01:
+        direction_to_start = np.deg2rad(90)
+    first_turn_pose = end_pose_current_row.transform_pose(
+        Pose(x=radius, y=radius * np.sign(direction_to_start), yaw=direction_to_start))
+    back_up_pose = start_pose_next_row.transform_pose(
+        Pose(x=-radius, y=radius * np.sign(direction_to_start), yaw=-direction_to_start))
+    backward = first_turn_pose.relative_pose(back_up_pose).x < 0
+    return [
+        DriveSegment.from_poses(end_pose_current_row, first_turn_pose, stop_at_end=backward),
+        DriveSegment.from_poses(first_turn_pose, back_up_pose, backward=backward, stop_at_end=backward),
+        DriveSegment.from_poses(back_up_pose, start_pose_next_row),
+    ]
