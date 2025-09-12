@@ -103,8 +103,8 @@ class FieldNavigation(WaypointNavigation):
                 continue
             row_segment = RowSegment.from_row(row, reverse=row_reversed)
             if path_segments:
-                path_segments.extend(self._generate_three_point_turn(
-                    turn_start, row_segment.start, radius=self.turn_radius))
+                path_segments.extend(self._generate_three_point_turn(turn_start, row_segment.start,
+                                                                     radius=self.turn_radius))
             path_segments.append(row_segment)
             turn_start = row_segment.end
             row_reversed = not row_reversed
@@ -133,8 +133,8 @@ class FieldNavigation(WaypointNavigation):
 
             # NOTE: align with first row
             first_row_segment = RowSegment.from_row(first_row)
-            turn_segments = self._generate_three_point_turn(
-                path_segments[-1].end, first_row_segment.start, radius=self.turn_radius)
+            turn_segments = self._generate_three_point_turn(path_segments[-1].end, first_row_segment.start,
+                                                            radius=self.turn_radius)
             path_segments = [*path_segments, *turn_segments]
         return path_segments
 
