@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Self
 
@@ -44,6 +45,21 @@ class FieldNavigation(WaypointNavigation):
         self.return_to_start = self.RETURN_TO_START
         self.charge_automatically = self.CHARGE_AUTOMATICALLY
         self.force_charge = False
+        self.loop_active = False
+        self.PATH_COMPLETED.register(self.handle_path_completed)
+
+    async def handle_path_completed(self) -> None:
+        if not self.loop_active:
+            return
+        gc.collect()
+        while True:
+            await rosys.sleep(10)
+            if self.system.field_friend.bms.is_below_percent(self.battery_working_percentage):
+                continue
+            if not isinstance(self.system.current_navigation, FieldNavigation):
+                continue
+            self.system.automator.start()
+            return
 
     @property
     def field(self) -> Field | None:
@@ -410,6 +426,9 @@ class FieldNavigation(WaypointNavigation):
                         backward=lambda v: v and self.field is not None and self.field.charging_station is not None) \
             .bind_visibility_from(self, 'field', lambda field: field is not None and field.charging_station is not None) \
             .tooltip('Let the robot charge automatically when a charging station is provided')
+        ui.checkbox('Loop active') \
+            .bind_value(self, 'loop_active') \
+            .tooltip('Whether the loop should run to check if the robot should charge automatically')
 
     def developer_ui(self):
         ui.label('Field Navigation').classes('text-center text-bold')
