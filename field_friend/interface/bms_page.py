@@ -11,6 +11,7 @@ from .components import create_header
 
 
 class BmsPage:
+    """The BMS page displays the robot's battery status and history."""
 
     def __init__(self, system: System) -> None:
         self.system = system
@@ -47,7 +48,7 @@ class BmsPage:
         show_bms_data()
         ui.timer(1.0, show_bms_data.refresh)
 
-        if self.system.is_real:
+        if not rosys.is_simulation():
             assert isinstance(bms, rosys.hardware.BmsHardware)
             assert isinstance(field_friend, rosys.hardware.RobotHardware)
             msg_0x04 = f'{bms.name}.send(0xdd, 0xa5, 0x04, 0x00, 0xff, 0xfc, 0x77)'

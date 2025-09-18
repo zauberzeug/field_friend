@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import rosys
 from nicegui import ui
 
 from ...hardware import Tornado, ZAxisCanOpenHardware
@@ -23,7 +24,7 @@ class IoOverview:
                 with ui.row():
                     status_bulb().bind_value_from(system.field_friend.estop, 'is_soft_estop_active')
                     ui.label('Soft E-Stop')
-                if system.is_real:
+                if not rosys.is_simulation():
                     with ui.row():
                         status_bulb().bind_value_from(system.field_friend.estop, 'pressed_estops', lambda pressed_estops: 0 in pressed_estops)
                         ui.label('Hard E-Stop 0')
@@ -125,7 +126,10 @@ class IoOverview:
             with ui.card().style('min-width: 200px; background-color: #3E63A6'):
                 ui.markdown('**Battery**').classes('w-full text-center')
                 ui.separator()
-                if self.system.is_real:
+                if rosys.is_simulation():
+                    ui.icon('link_off').props('size=lg').style(
+                        'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')
+                else:
                     with ui.row():
                         status_bulb().bind_value_from(
                             self.system.field_friend.bms.state, 'percentage', lambda x: x < 20 if x else False)
@@ -133,6 +137,3 @@ class IoOverview:
                     with ui.row():
                         status_bulb().bind_value_from(self.system.field_friend.bms.state, 'is_charging')
                         ui.label('Is Charging')
-                else:
-                    ui.icon('link_off').props('size=lg').style(
-                        'display: block; margin-left: auto; margin-right: auto; margin-top: 20px; margin-bottom: 20px;')

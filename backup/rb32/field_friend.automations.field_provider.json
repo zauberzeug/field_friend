@@ -1,33 +1,26 @@
 {
-    "fields": [
-        {
-            "id": "d58e0a14-15b6-4d0c-a259-f6fdff6e36ca",
-            "name": "d58e0a14-15b6-4d0c-a259-f6fdff6e36ca",
-            "outline_wgs84": [],
-            "reference_lat": 54.77082252006726,
-            "reference_lon": 9.101363228185734,
-            "visualized": false,
-            "obstacles": [],
-            "rows": [
-                {
-                    "id": "d0d5e4c7-163a-482e-96ba-610711ae44f8",
-                    "name": "b54b7dd5-ff74-4b9d-bed9-1c97b26e5bf0",
-                    "points_wgs84": [
-                        [
-                            54.77088151833333,
-                            9.102109713333334
-                        ],
-                        [
-                            54.770815201666665,
-                            9.102132628333333
-                        ]
-                    ],
-                    "reverse": false,
-                    "crops": []
-                }
-            ],
-            "area": null,
-            "working_area": null
+    "fields": {
+        "e140fe9a-fca8-4045-939a-e0a8e00ee211": {
+            "id": "e140fe9a-fca8-4045-939a-e0a8e00ee211",
+            "name": "recording field",
+            "first_row_start": {
+                "lat": 53.344452449744935,
+                "lon": 9.755682846594574
+            },
+            "first_row_end": {
+                "lat": 53.34656285029532,
+                "lon": 9.755577061232051
+            },
+            "row_spacing": 0.4,
+            "row_count": 1,
+            "outline_buffer_width": 2.0,
+            "row_support_points": [],
+            "bed_count": 1,
+            "bed_spacing": 1,
+            "bed_crops": {
+                "0": null
+            }
         }
-    ]
+    },
+    "selected_field": "e140fe9a-fca8-4045-939a-e0a8e00ee211"
 }

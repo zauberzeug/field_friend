@@ -2,15 +2,46 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from nicegui import app
 
+from field_friend.automations.navigation import RowSegment
 from field_friend.system import System
 
 
 class Automation:
+    """API endpoints for controlling the Field Friend's automation features.
+
+    This API allows controlling the basic automation control (start, stop, status) as well as the field navigation functionality for automated field operations via HTTP endpoints.
+    All endpoints return appropriate HTTP status codes and JSON responses.
+    """
+
     def __init__(self, system: System) -> None:
         self.system = system
 
+        @app.get('/api/automation/field_navigation/status')
+        async def get_field_navigation_status():
+            if self.system.field_navigation is None:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={'error': 'Field navigation is not available'}
+                )
+            distance_to_end = self.system.robot_locator.pose.point.distance(self.system.field_navigation.current_segment.end) \
+                if isinstance(self.system.field_navigation.current_segment, RowSegment) else None
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    'automation_running': self.system.automator.is_running,
+                    'current_row': f'{self.system.field_navigation.current_row.name}' if self.system.field_navigation.current_row else None,
+                    'field': f'{self.system.field_navigation.field.name}' if self.system.field_navigation.field else None,
+                    'distance_to_end': distance_to_end,
+                }
+            )
+
         @app.post('/api/automation/field_navigation/start')
         async def start_field_navigation(request: Request):
+            if self.system.field_navigation is None:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={'error': 'Field navigation is not available'}
+                )
             try:
                 request_data = await request.json()
                 if 'field_id' not in request_data or 'beds' not in request_data:
@@ -20,10 +51,8 @@ class Automation:
                     )
                 # Set up automation
                 self.system.current_navigation = self.system.field_navigation
-                self.system.field_navigation.field_id = request_data['field_id']
                 self.system.field_provider.select_field(request_data['field_id'])
                 self.system.field_provider.only_specific_beds = True
-                # TODO currently only one bed is supported
                 self.system.field_provider.selected_beds = [int(bed) for bed in request_data['beds']]
                 self.system.automator.start()
                 return JSONResponse(

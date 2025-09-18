@@ -2,22 +2,24 @@ import logging
 from typing import Any
 
 import rosys
+from rosys.event import Event
+from rosys.geometry import GeoPose
 
 from .field import Field, Row, RowSupportPoint
 
 
-class FieldProvider(rosys.persistence.PersistentModule):
+class FieldProvider(rosys.persistence.Persistable):
     def __init__(self) -> None:
         super().__init__()
         self.log = logging.getLogger('field_friend.field_provider')
         self.fields: list[Field] = []
         self.needs_backup: bool = False
 
-        self.FIELDS_CHANGED = rosys.event.Event()
+        self.FIELDS_CHANGED: Event = Event()
         """The dict of fields has changed."""
 
         self.selected_field: Field | None = None
-        self.FIELD_SELECTED = rosys.event.Event()
+        self.FIELD_SELECTED: Event = Event()
         """A field has been selected."""
 
         self.only_specific_beds: bool = False
@@ -31,13 +33,13 @@ class FieldProvider(rosys.persistence.PersistentModule):
     def selected_beds(self, value: list[int]) -> None:
         self._selected_beds = sorted(value)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'fields': {f.id: f.to_dict() for f in self.fields},
             'selected_field': self.selected_field.id if self.selected_field else None
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         fields_data: dict[str, dict] = data.get('fields', {})
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)
@@ -116,7 +118,9 @@ class FieldProvider(rosys.persistence.PersistentModule):
                                 outline_buffer_width: float,
                                 bed_count: int,
                                 bed_spacing: float,
-                                bed_crops: dict[str, str | None]) -> None:
+                                bed_crops: dict[str, str | None],
+                                docking_distance: float,
+                                charge_dock_pose: GeoPose | None) -> None:
         field = self.get_field(field_id)
         if not field:
             self.log.warning('Field with id %s not found. Cannot update parameters.', field_id)
@@ -138,6 +142,8 @@ class FieldProvider(rosys.persistence.PersistentModule):
             field.bed_crops = bed_crops
         else:
             field.bed_crops = bed_crops
+        field.docking_distance = docking_distance
+        field.charge_dock_pose = charge_dock_pose
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
                       field.name, row_count, row_spacing)
         self.invalidate()
@@ -160,7 +166,7 @@ class FieldProvider(rosys.persistence.PersistentModule):
         row_indices = []
         for bed in self.selected_beds:
             for row_index in range(self.selected_field.row_count):
-                row_indices.append((bed - 1) * self.selected_field.row_count + row_index)
+                row_indices.append(bed * self.selected_field.row_count + row_index)
         rows_to_work_on = [row for i, row in enumerate(self.selected_field.rows) if i in row_indices]
         return rows_to_work_on
 
@@ -169,5 +175,5 @@ class FieldProvider(rosys.persistence.PersistentModule):
             return True
         if self.selected_field is None:
             return False
-        bed_index = row_index // self.selected_field.row_count + 1
+        bed_index = row_index // self.selected_field.row_count
         return bed_index in self.selected_beds

@@ -1,24 +1,18 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
-import aiohttp
 import rosys
 from nicegui import ui
-from rosys.vision import Autoupload, DetectorHardware, DetectorSimulation
+from rosys.vision import Autoupload, DetectorSimulation
 from rosys.vision.detections import Category
 from rosys.vision.detector import DetectorException, DetectorInfo
 
+from ..vision.detector_hardware import DetectorHardware
 from ..vision.zedxmini_camera import StereoCamera
 from .entity_locator import EntityLocator
 from .plant import Plant
-
-WEED_CATEGORY_NAME = ['weed', 'weedy_area', 'coin', 'danger', 'big_weed']
-CROP_CATEGORY_NAME: dict[str, str] = {}
-MINIMUM_CROP_CONFIDENCE = 0.3
-MINIMUM_WEED_CONFIDENCE = 0.3
-
 
 if TYPE_CHECKING:
     from ..system import System
@@ -29,6 +23,12 @@ class DetectorError(Exception):
 
 
 class PlantLocator(EntityLocator):
+    INTERVAL = 0.01
+    WEED_CATEGORY_NAME: ClassVar[list[str]] = ['weed', 'weedy_area', 'coin', 'big_weed']
+    CROP_CATEGORY_NAME: ClassVar[dict[str, str]] = {}
+    MINIMUM_CROP_CONFIDENCE = 0.3
+    MINIMUM_WEED_CONFIDENCE = 0.3
+
     def __init__(self, system: System) -> None:
         super().__init__(system)
         self.log = logging.getLogger('field_friend.plant_locator')
@@ -36,33 +36,41 @@ class PlantLocator(EntityLocator):
         self.detector = system.detector
         self.plant_provider = system.plant_provider
         self.robot_locator = system.robot_locator
-        self.robot_name = system.version
+        self.robot_id = system.robot_id
+        self.automator = system.automator
+
         self.detector_info: DetectorInfo | None = None
         self.tags: list[str] = []
         self.is_paused = True
         self.autoupload: Autoupload = Autoupload.DISABLED
         self.upload_images: bool = False
-        self.weed_category_names: list[str] = WEED_CATEGORY_NAME
-        self.crop_category_names: dict[str, str] = CROP_CATEGORY_NAME
-        self.minimum_crop_confidence: float = MINIMUM_CROP_CONFIDENCE
-        self.minimum_weed_confidence: float = MINIMUM_WEED_CONFIDENCE
-        rosys.on_repeat(self._detect_plants, 0.01)  # as fast as possible, function will sleep if necessary
-        if isinstance(self.detector, DetectorHardware):
-            port = self.detector.port
-            rosys.on_repeat(lambda: self.set_outbox_mode(value=self.upload_images, port=port), 1.0)
-        if system.is_real:
+        self.interval = self.INTERVAL
+        self.weed_category_names: list[str] = self.WEED_CATEGORY_NAME
+        self.crop_category_names: dict[str, str] = self.CROP_CATEGORY_NAME
+        self.minimum_crop_confidence: float = self.MINIMUM_CROP_CONFIDENCE
+        self.minimum_weed_confidence: float = self.MINIMUM_WEED_CONFIDENCE
+        if not rosys.is_simulation():
             self.teltonika_router = system.teltonika_router
             self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
             self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
+
+            async def set_outbox_mode() -> None:
+                assert isinstance(self.detector, DetectorHardware)
+                await self.detector.set_outbox_mode(value=self.upload_images)
+            rosys.on_repeat(set_outbox_mode, 1.0)
         self.detector_error = False
         self.last_detection_time = rosys.time()
-        self.detector.NEW_DETECTIONS.register(lambda e: setattr(self, 'last_detection_time', rosys.time()))
+        if self.camera_provider is None:
+            self.log.warning('no camera provider configured, cant locate plants')
+            return
+        assert self.detector is not None
         rosys.on_repeat(self._detection_watchdog, 0.5)
         rosys.on_startup(self.fetch_detector_info)
+        rosys.on_startup(self._detect_plants)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict[str, Any]:
         self.log.debug(f'backup: autoupload: {self.autoupload}')
-        return super().backup() | {
+        return super().backup_to_dict() | {
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
             'autoupload': self.autoupload.value,
@@ -70,10 +78,10 @@ class PlantLocator(EntityLocator):
             'tags': self.tags,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
-        super().restore(data)
-        self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.minimum_weed_confidence)
-        self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.minimum_crop_confidence)
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
+        super().restore_from_dict(data)
+        self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.MINIMUM_WEED_CONFIDENCE)
+        self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.MINIMUM_CROP_CONFIDENCE)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
             if 'autoupload' in data else Autoupload.DISABLED
         self.log.debug(f'self.autoupload: {self.autoupload}')
@@ -81,63 +89,72 @@ class PlantLocator(EntityLocator):
         self.tags = data.get('tags', self.tags)
 
     async def _detect_plants(self) -> None:
-        if self.is_paused:
-            await rosys.sleep(0.01)
-            return
-        t = rosys.time()
-        camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
-        if not camera:
-            self.log.error('no connected camera found')
-            return
-        assert isinstance(camera, rosys.vision.CalibratableCamera)
-        if camera.calibration is None:
-            self.log.error(f'no calibration found for camera {camera.name}')
-            raise DetectorError()
-        new_image = camera.latest_captured_image
-        if new_image is None or new_image.detections:
-            await rosys.sleep(0.01)
-            return
-        await self.detector.detect(new_image, autoupload=self.autoupload, tags=[*self.tags, self.robot_name, 'autoupload'])
-        if rosys.time() - t < 0.01:  # ensure maximum of 100 Hz
-            await rosys.sleep(0.01 - (rosys.time() - t))
-        if not new_image.detections:
-            return
-
-        for d in new_image.detections.points:
-            if isinstance(self.detector, rosys.vision.DetectorSimulation):
-                # NOTE we drop detections at the edge of the vision because in reality they are blocked by the chassis
-                dead_zone = 80
-                if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
-                    continue
-            image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
-            world_point_3d: rosys.geometry.Point3d | None = None
-            if isinstance(camera, StereoCamera):
-                world_point_3d = camera.calibration.project_from_image(image_point)
-                # TODO: 3d detection
-                # camera_point_3d: Point3d | None = await camera.get_point(
-                #     int(d.cx), int(d.cy))
-                # if camera_point_3d is None:
-                #     self.log.error('could not get a depth value for detection')
-                #     continue
-                # camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
-                #     'zedxmini').in_frame(self.robot_locator.pose_frame)
-                # world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
-            else:
-                world_point_3d = camera.calibration.project_from_image(image_point)
-            if world_point_3d is None:
-                self.log.error('could not generate world point of detection, calibration error')
+        while True:
+            if self.is_paused or self.automator.is_paused:
+                await rosys.sleep(self.interval)
                 continue
-            plant = Plant(type=d.category_name,
-                          detection_time=rosys.time(),
-                          detection_image=new_image)
-            plant.positions.append(world_point_3d)
-            plant.confidences.append(d.confidence)
-            if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
-                await self.plant_provider.add_weed(plant)
-            elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
-                self.plant_provider.add_crop(plant)
-            elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
-                self.log.info(f'{d.category_name} not in categories')
+            t = rosys.time()
+            t_difference = t - self.last_detection_time
+            if t_difference < self.interval:
+                await rosys.sleep(self.interval - t_difference)
+                continue
+            assert self.camera_provider is not None
+            camera = next((camera for camera in self.camera_provider.cameras.values() if camera.is_connected), None)
+            if not camera:
+                self.log.error('no connected camera found')
+                continue
+            assert isinstance(camera, rosys.vision.CalibratableCamera)
+            if camera.calibration is None:
+                self.log.error(f'no calibration found for camera {camera.name}')
+                raise DetectorError()
+            if not self.crop_category_names:
+                self.log.warning('No crop categories defined')
+                await self.fetch_detector_info()
+            new_image = camera.latest_captured_image
+            if new_image is None or new_image.detections:
+                await rosys.sleep(0.01)
+                continue
+            assert self.detector is not None
+            self.last_detection_time = rosys.time()
+            await self.detector.detect(new_image, autoupload=self.autoupload, tags=[*self.tags, self.robot_id, 'autoupload'], source=self.robot_id)
+            if not new_image.detections:
+                continue
+
+            for d in new_image.detections.points:
+                if isinstance(self.detector, rosys.vision.DetectorSimulation):
+                    # NOTE we drop detections at the edge of the vision because in reality they are blocked by the chassis
+                    dead_zone = 80
+                    if d.cx < dead_zone or d.cx > new_image.size.width - dead_zone or d.cy < dead_zone:
+                        continue
+                image_point = rosys.geometry.Point(x=d.cx, y=d.cy)
+                world_point_3d: rosys.geometry.Point3d | None = None
+                if isinstance(camera, StereoCamera):
+                    world_point_3d = camera.calibration.project_from_image(image_point)
+                    # TODO: 3d detection
+                    # camera_point_3d: Point3d | None = await camera.get_point(
+                    #     int(d.cx), int(d.cy))
+                    # if camera_point_3d is None:
+                    #     self.log.error('could not get a depth value for detection')
+                    #     continue
+                    # camera.calibration.extrinsics = camera.calibration.extrinsics.as_frame(
+                    #     'zedxmini').in_frame(self.robot_locator.pose_frame)
+                    # world_point_3d = camera_point_3d.in_frame(camera.calibration.extrinsics).resolve()
+                else:
+                    world_point_3d = camera.calibration.project_from_image(image_point)
+                if world_point_3d is None:
+                    self.log.debug('Failed to generate world point from %s', image_point)
+                    continue
+                plant = Plant(type=d.category_name,
+                              detection_time=rosys.time(),
+                              detection_image=new_image)
+                plant.positions.append(world_point_3d)
+                plant.confidences.append(d.confidence)
+                if d.category_name in self.weed_category_names and d.confidence >= self.minimum_weed_confidence:
+                    await self.plant_provider.add_weed(plant)
+                elif d.category_name in self.crop_category_names and d.confidence >= self.minimum_crop_confidence:
+                    self.plant_provider.add_crop(plant)
+                elif d.category_name not in self.crop_category_names and d.category_name not in self.weed_category_names:
+                    self.log.error('Detected category "%s" is unknown', d.category_name)
 
     def _detection_watchdog(self) -> None:
         if self.is_paused:
@@ -150,25 +167,6 @@ class PlantLocator(EntityLocator):
             self.detector_error = False
             self.log.debug('Detection error resolved')
 
-    async def get_outbox_mode(self, port: int) -> bool | None:
-        # TODO: not needed right now, but can be used when this code is moved to the DetectorHardware code
-        # TODO: active cleaner already has implemented this
-        url = f'http://localhost:{port}/outbox_mode'
-        async with aiohttp.request('GET', url) as response:
-            if response.status != 200:
-                self.log.error(f'Could not get outbox mode on port {port} - status code: {response.status}')
-                return None
-            response_text = await response.text()
-        return response_text == 'continuous_upload'
-
-    async def set_outbox_mode(self, value: bool, port: int) -> None:
-        url = f'http://localhost:{port}/outbox_mode'
-        async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
-            if response.status != 200:
-                self.log.error(f'Could not set outbox mode to {value} on port {port} - status code: {response.status}')
-                return
-            self.log.debug(f'Outbox_mode was set to {value} on port {port}')
-
     def developer_ui(self) -> None:
         ui.label('Plant Locator').classes('text-center text-bold')
         super().developer_ui()
@@ -178,25 +176,32 @@ class PlantLocator(EntityLocator):
                     .props('dense outlined') \
                     .classes('w-28') \
                     .bind_value(self, 'minimum_crop_confidence') \
-                    .tooltip(f'Set the minimum crop confidence for the detection (default: {MINIMUM_CROP_CONFIDENCE:.2f})')
+                    .tooltip(f'Set the minimum crop confidence for the detection (default: {self.MINIMUM_CROP_CONFIDENCE:.2f})')
                 ui.number('Min. weed confidence', format='%.2f', step=0.05, min=0.0, max=1.0, on_change=self.request_backup) \
                     .props('dense outlined') \
                     .classes('w-28') \
                     .bind_value(self, 'minimum_weed_confidence') \
-                    .tooltip(f'Set the minimum weed confidence for the detection(default: {MINIMUM_WEED_CONFIDENCE: .2f})')
+                    .tooltip(f'Set the minimum weed confidence for the detection (default: {self.MINIMUM_WEED_CONFIDENCE:.2f})')
                 options = list(rosys.vision.Autoupload)
                 ui.select(options, label='Autoupload', on_change=self.request_backup) \
                     .props('dense outlined') \
                     .classes('w-28') \
                     .bind_value(self, 'autoupload') \
                     .tooltip('Set the autoupload for the weeding automation')
-            ui.label().bind_text_from(self, 'detector_info',
-                                      backward=lambda info: f'Detector version: {info.current_version}/{info.target_version}' if info else 'Detector version: unknown')
+
+            if isinstance(self.detector, DetectorHardware):
+                ui.separator()
+                with ui.column().classes('w-full'):
+                    ui.button('Fetch detector info', on_click=self.fetch_detector_info)
+                    ui.label().bind_text_from(self, 'detector_info',
+                                              backward=lambda info: f'Detector version: {info.current_version}/{info.target_version}' if info else 'Detector version: unknown')
+                    self.detector.developer_ui()
+                ui.separator()
 
             @ui.refreshable
             def chips():
                 with ui.row().classes('gap-0'):
-                    ui.chip(self.robot_name).props('outline')
+                    ui.chip(self.robot_id).props('outline')
 
                     def update_tags(tag_to_remove: str) -> None:
                         self.tags.remove(tag_to_remove)
@@ -230,6 +235,7 @@ class PlantLocator(EntityLocator):
             self.upload_images = False
 
     async def fetch_detector_info(self) -> bool:
+        assert self.detector is not None
         try:
             detector_info: DetectorInfo = await self.detector.fetch_detector_info()
         except DetectorException as e:
@@ -241,9 +247,9 @@ class PlantLocator(EntityLocator):
             detector_info.current_version = 'simulation'
             detector_info.target_version = 'simulation'
         filtered_crops: list[str] = [
-            category.name for category in detector_info.categories if category.name not in WEED_CATEGORY_NAME]
+            category.name for category in detector_info.categories if category.name not in self.WEED_CATEGORY_NAME]
         self.crop_category_names.update({crop_name: crop_name.replace('_', ' ').title()
                                         for crop_name in filtered_crops})
         self.detector_info = detector_info
-        self.log.debug('Fetched detector info: %s', detector_info)
+        self.log.debug('Fetched detector info: %s and crops: %s', detector_info, self.crop_category_names)
         return True

@@ -5,7 +5,7 @@ from typing import Any, Self
 
 import rosys
 import shapely
-from rosys.geometry import GeoPoint, Point
+from rosys.geometry import GeoPoint, GeoPose, GeoReference, Point
 from shapely import offset_curve
 from shapely.geometry import LineString, Polygon
 
@@ -52,7 +52,9 @@ class Field:
                  row_support_points: list[RowSupportPoint] | None = None,
                  bed_count: int = 1,
                  bed_spacing: float = 0.5,
-                 bed_crops: dict[str, str | None] | None = None) -> None:
+                 bed_crops: dict[str, str | None] | None = None,
+                 docking_distance: float = 2.0,
+                 charge_dock_pose: GeoPose | None = None) -> None:
         self.id: str = id
         self.name: str = name
         self.first_row_start: GeoPoint = first_row_start
@@ -68,6 +70,10 @@ class Field:
         self.rows: list[Row] = []
         self.outline: list[GeoPoint] = []
         self.bed_crops: dict[str, str | None] = bed_crops or {str(i): None for i in range(bed_count)}
+        self.docking_distance: float = docking_distance
+        self._charge_dock_pose: GeoPose | None = None
+        self._charge_approach_pose: GeoPose | None = None
+        self.charge_dock_pose = charge_dock_pose
         self.refresh()
 
     @property
@@ -81,6 +87,29 @@ class Field:
     @property
     def outline_cartesian_as_tuples(self) -> list[tuple[float, float]]:
         return [p.tuple for p in self.outline_cartesian]
+
+    @property
+    def charge_dock_pose(self) -> GeoPose | None:
+        return self._charge_dock_pose
+
+    @charge_dock_pose.setter
+    def charge_dock_pose(self, pose: GeoPose | None) -> None:
+        self._charge_dock_pose = pose
+        self._charge_approach_pose = self._charge_dock_pose.relative_shift_by(x=self.docking_distance) \
+            if isinstance(self._charge_dock_pose, GeoPose) else None
+
+    @property
+    def charge_approach_pose(self) -> GeoPose | None:
+        return self._charge_approach_pose
+
+    @property
+    def geo_reference(self) -> GeoReference:
+        if self.rows:
+            first_row = self.rows[0]
+            direction = first_row.points[0].direction(first_row.points[-1])
+            return GeoReference(origin=first_row.points[0], direction=direction)
+        direction = self.first_row_start.direction(self.first_row_end)
+        return GeoReference(origin=self.first_row_start, direction=direction)
 
     def area(self) -> float:
         outline_cartesian = self.outline_cartesian
@@ -139,7 +168,7 @@ class Field:
                 offset = base_offset + bed_offset
             offset_row_coordinated = offset_curve(ab_line_cartesian, -offset).coords
             row_points = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in offset_row_coordinated]
-            row = Row(id=f'field_{self.id}_row_{i + 1!s}', name=f'row_{i + 1}',
+            row = Row(id=f'field_{self.id}_row_{i}', name=f'row_{i}',
                       points=row_points, crop=self.bed_crops[str(bed_index)])
             rows.append(row)
         return rows
@@ -165,7 +194,9 @@ class Field:
             'row_support_points': [],
             'bed_count': 1,
             'bed_spacing': 1,
-            'bed_crops': {}
+            'bed_crops': {},
+            'docking_distance': 2.0,
+            'charge_dock_pose': None,
         }
         for key in defaults:
             if key in data:
@@ -179,6 +210,8 @@ class Field:
                                               lon=data[key]['lon'] if 'lon' in data[key] else data[key]['long'])
         data['row_support_points'] = [rosys.persistence.from_dict(RowSupportPoint, sp)
                                       for sp in data.get('row_support_points', [])]
+        charge_dock_tuple: tuple[float, float, float] | None = data.get('charge_dock_pose', None)
+        data['charge_dock_pose'] = GeoPose.from_degrees(*charge_dock_tuple) if charge_dock_tuple else None
         return cls(**cls.args_from_dict(data))
 
     def get_buffered_area(self) -> list[GeoPoint]:
@@ -192,10 +225,10 @@ class Field:
             outline_shape = Polygon([p.tuple for p in outline_unbuffered])
         else:
             outline_shape = LineString([p.tuple for p in outline_unbuffered])
-        bufferd_polygon = outline_shape.buffer(
+        buffered_polygon = outline_shape.buffer(
             self.outline_buffer_width, cap_style='square', join_style='mitre', mitre_limit=math.inf)
-        bufferd_polygon_coords = bufferd_polygon.exterior.coords
-        outline = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in bufferd_polygon_coords]
+        buffered_polygon_coords = buffered_polygon.exterior.coords
+        outline = [GeoPoint.from_point(Point(x=p[0], y=p[1])) for p in buffered_polygon_coords]
         return outline
 
     def to_dict(self) -> dict:
@@ -216,5 +249,7 @@ class Field:
             'row_support_points': [rosys.persistence.to_dict(sp) for sp in self.row_support_points],
             'bed_count': self.bed_count,
             'bed_spacing': self.bed_spacing,
-            'bed_crops': self.bed_crops
+            'bed_crops': self.bed_crops,
+            'docking_distance': self.docking_distance,
+            'charge_dock_pose': self.charge_dock_pose.degree_tuple if self.charge_dock_pose is not None else None,
         }

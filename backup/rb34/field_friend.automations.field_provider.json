@@ -1,306 +1,160 @@
 {
-    "fields": [
-        {
-            "id": "c3be3dd5-bb8c-4e30-9e2b-39ad124d53a9",
-            "name": "Field #2",
-            "points": [
-                {
-                    "lat": 51.63392058814559,
-                    "long": 8.297697657586907
-                },
-                {
-                    "lat": 51.6339107854391,
-                    "long": 8.297612104802273
-                },
-                {
-                    "lat": 51.63395157535874,
-                    "long": 8.297579545858067
-                },
-                {
-                    "lat": 51.633961378088905,
-                    "long": 8.297665098712425
-                }
-            ],
-            "reference": {
-                "lat": 51.63392538262116,
-                "long": 8.297662823529397
+    "fields": {
+        "1b0c872b-9772-4b46-a5c5-d831ab360715": {
+            "id": "1b0c872b-9772-4b46-a5c5-d831ab360715",
+            "name": "Field",
+            "first_row_start": {
+                "lat": 51.983063203733124,
+                "lon": 7.43431141665138
             },
-            "visualized": false,
-            "obstacles": [],
-            "rows": [
-                {
-                    "id": "393b1c16-130e-4647-83ee-782af3b6fe7a",
-                    "name": "Row #0",
-                    "points": [
-                        {
-                            "lat": 51.63392538262116,
-                            "long": 8.297662823529397
-                        },
-                        {
-                            "lat": 51.633920462566984,
-                            "long": 8.297619883963137
-                        }
-                    ],
-                    "reverse": false
-                },
-                {
-                    "id": "416b7dd2-c956-41b5-a2b7-5285302125b5",
-                    "name": "Row #1",
-                    "points": [
-                        {
-                            "lat": 51.63392940740777,
-                            "long": 8.297659610909747
-                        },
-                        {
-                            "lat": 51.63392448735242,
-                            "long": 8.297616671340034
-                        }
-                    ],
-                    "reverse": false
-                },
-                {
-                    "id": "6eb75d3f-4e40-4e8b-9498-2715411760aa",
-                    "name": "Row #2",
-                    "points": [
-                        {
-                            "lat": 51.63393343219428,
-                            "long": 8.297656398289531
-                        },
-                        {
-                            "lat": 51.633928512137764,
-                            "long": 8.297613458716365
-                        }
-                    ],
-                    "reverse": false
-                },
-                {
-                    "id": "8f9a2cd3-8c20-447d-8111-1da8b606e336",
-                    "name": "Row #3",
-                    "points": [
-                        {
-                            "lat": 51.6339374569807,
-                            "long": 8.297653185668745
-                        },
-                        {
-                            "lat": 51.63393253692303,
-                            "long": 8.297610246092125
-                        }
-                    ],
-                    "reverse": false
-                },
-                {
-                    "id": "87f76a44-b9e5-4f56-b5ec-ff06b582ce98",
-                    "name": "Row #4",
-                    "points": [
-                        {
-                            "lat": 51.63394148176704,
-                            "long": 8.29764997304739
-                        },
-                        {
-                            "lat": 51.633936561708175,
-                            "long": 8.297607033467317
-                        }
-                    ],
-                    "reverse": false
-                },
-                {
-                    "id": "8dd8db29-1d5c-457c-bf59-ed4b05dd4b79",
-                    "name": "Row #5",
-                    "points": [
-                        {
-                            "lat": 51.633945506553296,
-                            "long": 8.297646760425465
-                        },
-                        {
-                            "lat": 51.63394058649327,
-                            "long": 8.29760382084194
-                        }
-                    ],
-                    "reverse": false
-                },
-                {
-                    "id": "59a653cd-040f-4e0d-b334-ba8fbdb8b10a",
-                    "name": "Row #6",
-                    "points": [
-                        {
-                            "lat": 51.63394953133945,
-                            "long": 8.297643547802974
-                        },
-                        {
-                            "lat": 51.63394461127824,
-                            "long": 8.297600608215996
-                        }
-                    ],
-                    "reverse": false
-                }
-            ],
-            "crop": null
+            "first_row_end": {
+                "lat": 51.98307140055811,
+                "lon": 7.434357336341693
+            },
+            "row_spacing": 1.0,
+            "row_count": 4,
+            "outline_buffer_width": 5.0,
+            "row_support_points": [],
+            "bed_count": 1,
+            "bed_spacing": 0.5,
+            "bed_crops": {
+                "0": null
+            }
         },
-        {
-            "id": "e88f6e0f-5cc9-460a-bc8a-75c3900b966f",
-            "name": "Field Zauberzeug",
-            "points": [
-                {
-                    "lat": 51.98323286168432,
-                    "long": 7.434266819581134
-                },
-                {
-                    "lat": 51.983141931231444,
-                    "long": 7.434329741290544
-                },
-                {
-                    "lat": 51.9831006212419,
-                    "long": 7.434270811514319
-                },
-                {
-                    "lat": 51.98319155166395,
-                    "long": 7.434207889743467
-                }
-            ],
-            "reference": {
-                "lat": 51.98320958833333,
-                "long": 7.434268636666666
+        "64dd192c-19d0-4a14-be95-b4f409b9f2f4": {
+            "id": "64dd192c-19d0-4a14-be95-b4f409b9f2f4",
+            "name": "Werkstatt",
+            "first_row_start": {
+                "lat": 51.98252318130593,
+                "lon": 7.434185082799087
             },
-            "visualized": false,
-            "obstacles": [],
-            "rows": [
+            "first_row_end": {
+                "lat": 51.98251121344717,
+                "lon": 7.434150967517951
+            },
+            "row_spacing": 1.0,
+            "row_count": 4,
+            "outline_buffer_width": 5.0,
+            "row_support_points": [],
+            "bed_count": 1,
+            "bed_spacing": 0.5,
+            "bed_crops": {
+                "0": null
+            }
+        },
+        "9840b62b-aad8-4033-9256-c73a48a84416": {
+            "id": "9840b62b-aad8-4033-9256-c73a48a84416",
+            "name": "Demo_Field_Wiese",
+            "first_row_start": {
+                "lat": 51.983060005594936,
+                "lon": 7.43429935164995
+            },
+            "first_row_end": {
+                "lat": 51.98309139594606,
+                "lon": 7.434427929741843
+            },
+            "row_spacing": 0.6,
+            "row_count": 2,
+            "outline_buffer_width": 1.5,
+            "row_support_points": [],
+            "bed_count": 5,
+            "bed_spacing": 1.0,
+            "bed_crops": {
+                "0": "spinach",
+                "1": "spinach",
+                "2": "spinach",
+                "3": "spinach",
+                "4": "spinach"
+            }
+        },
+        "4dfaa6c6-5738-43e7-bc66-35d98fcb9781": {
+            "id": "4dfaa6c6-5738-43e7-bc66-35d98fcb9781",
+            "name": "Wiese_Dauertest",
+            "first_row_start": {
+                "lat": 51.98305041950666,
+                "lon": 7.434364629123981
+            },
+            "first_row_end": {
+                "lat": 51.98293931281105,
+                "lon": 7.434424292517144
+            },
+            "row_spacing": 1.5,
+            "row_count": 2,
+            "outline_buffer_width": 2.0,
+            "row_support_points": [],
+            "bed_count": 1,
+            "bed_spacing": 0.5,
+            "bed_crops": {
+                "0": "sugar_beet"
+            }
+        },
+        "30abef66-3c6f-40f9-a836-4e69bb296a43": {
+            "id": "30abef66-3c6f-40f9-a836-4e69bb296a43",
+            "name": "Spinat_Presentation",
+            "first_row_start": {
+                "lat": 51.96423229259619,
+                "lon": 7.444359652843175
+            },
+            "first_row_end": {
+                "lat": 51.96427979958883,
+                "lon": 7.444601089759028
+            },
+            "row_spacing": 0.6,
+            "row_count": 2,
+            "outline_buffer_width": 3.0,
+            "row_support_points": [
                 {
-                    "id": "c0b5553d-853c-4c04-82f2-470a81b7409e",
-                    "name": "Row #0",
-                    "points": [
-                        {
-                            "lat": 51.98320958833333,
-                            "long": 7.434268636666666
-                        },
-                        {
-                            "lat": 51.98314345166666,
-                            "long": 7.434314401666668
-                        }
-                    ],
-                    "reverse": false
+                    "lat": 0.9069473857610842,
+                    "lon": 0.12993131941286873,
+                    "row_index": 1
                 },
                 {
-                    "id": "27555a38-7de7-45c1-9582-bca8f6a2564a",
-                    "name": "Row #1",
-                    "points": [
-                        {
-                            "lat": 51.9832062162508,
-                            "long": 7.434263826298281
-                        },
-                        {
-                            "lat": 51.98314007958596,
-                            "long": 7.43430959130193
-                        }
-                    ],
-                    "reverse": false
+                    "lat": 0.9069468200409774,
+                    "lon": 0.12992931061964097,
+                    "row_index": 2
                 },
                 {
-                    "id": "3462a4a6-e320-4ec1-9dda-6821e2987460",
-                    "name": "Row #2",
-                    "points": [
-                        {
-                            "lat": 51.98320284416806,
-                            "long": 7.434259015930618
-                        },
-                        {
-                            "lat": 51.98313670750506,
-                            "long": 7.434304780937915
-                        }
-                    ],
-                    "reverse": false
+                    "lat": 0.9069467444176972,
+                    "lon": 0.12992941255443982,
+                    "row_index": 3
                 },
                 {
-                    "id": "91dd09dc-a6f2-4589-aecf-3a6e2efb1378",
-                    "name": "Row #3",
-                    "points": [
-                        {
-                            "lat": 51.98319947208513,
-                            "long": 7.434254205563676
-                        },
-                        {
-                            "lat": 51.98313333542396,
-                            "long": 7.434299970574622
-                        }
-                    ],
-                    "reverse": false
+                    "lat": 0.9069467589498723,
+                    "lon": 0.1299303781651155,
+                    "row_index": 4
                 },
                 {
-                    "id": "3bbc0357-bce9-4dfc-a382-6e796050cccb",
-                    "name": "Row #4",
-                    "points": [
-                        {
-                            "lat": 51.983196100002004,
-                            "long": 7.434249395197458
-                        },
-                        {
-                            "lat": 51.98312996334266,
-                            "long": 7.434295160212051
-                        }
-                    ],
-                    "reverse": false
+                    "lat": 0.9069465247481157,
+                    "lon": 0.12992954804215132,
+                    "row_index": 5
                 },
                 {
-                    "id": "f7ca0c15-a817-45a7-846d-33a8403cf342",
-                    "name": "Row #5",
-                    "points": [
-                        {
-                            "lat": 51.98319272791868,
-                            "long": 7.434244584831962
-                        },
-                        {
-                            "lat": 51.983126591261176,
-                            "long": 7.434290349850204
-                        }
-                    ],
-                    "reverse": false
+                    "lat": 0.9069467138148699,
+                    "lon": 0.129931358664516,
+                    "row_index": 6
                 },
                 {
-                    "id": "9cad7475-eae6-4271-91dd-f43af566035f",
-                    "name": "Row #6",
-                    "points": [
-                        {
-                            "lat": 51.983189355835165,
-                            "long": 7.434239774467189
-                        },
-                        {
-                            "lat": 51.983123219179475,
-                            "long": 7.434285539489078
-                        }
-                    ],
-                    "reverse": false
+                    "lat": 0.9069468735796427,
+                    "lon": 0.12993266666160985,
+                    "row_index": 7
                 },
                 {
-                    "id": "b87e4d0e-7def-4ca1-b0f5-320cc633cc51",
-                    "name": "Row #7",
-                    "points": [
-                        {
-                            "lat": 51.98318598375143,
-                            "long": 7.434234964103138
-                        },
-                        {
-                            "lat": 51.983119847097576,
-                            "long": 7.434280729128675
-                        }
-                    ],
-                    "reverse": false
-                },
-                {
-                    "id": "6c3bb8e4-4293-48d4-86e9-cc0f5b3d4a8e",
-                    "name": "Row #8",
-                    "points": [
-                        {
-                            "lat": 51.983182611667516,
-                            "long": 7.434230153739809
-                        },
-                        {
-                            "lat": 51.9831164750155,
-                            "long": 7.434275918768995
-                        }
-                    ],
-                    "reverse": false
+                    "lat": 0.9069460502624428,
+                    "lon": 0.12993055965790853,
+                    "row_index": 8
                 }
             ],
-            "crop": null
+            "bed_count": 6,
+            "bed_spacing": 1.0,
+            "bed_crops": {
+                "0": null,
+                "1": null,
+                "2": null,
+                "3": null,
+                "4": null,
+                "5": null
+            }
         }
-    ]
+    },
+    "selected_field": "30abef66-3c6f-40f9-a836-4e69bb296a43"
 }

@@ -1,4 +1,4 @@
-name: Upload Python Package
+name: Publish release
 
 on:
   workflow_dispatch:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   docs:
+    name: Build and publish docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -15,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           python3 -m pip install -r requirements.txt
@@ -32,16 +33,17 @@ jobs:
         with:
           branch: gh-pages
           folder: site
-      - name: set version
-        run: |
-          VERSION=${{ env.VERSION }}
-      - name: Create GitHub release entry
-        uses: softprops/action-gh-release@v2
-        id: create_release
-        with:
-          draft: false
-          prerelease: false
-          name: ${{ env.VERSION }}
-          tag_name: ${{ env.VERSION }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      # TODO: restructure in another PR
+      # - name: set version
+      #   run: |
+      #     VERSION=${{ env.VERSION }}
+      # - name: Create GitHub release entry
+      #   uses: softprops/action-gh-release@v2
+      #   id: create_release
+      #   with:
+      #     draft: false
+      #     prerelease: false
+      #     name: ${{ env.VERSION }}
+      #     tag_name: ${{ env.VERSION }}
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}

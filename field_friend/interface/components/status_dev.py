@@ -28,7 +28,7 @@ def status_dev_page(robot: FieldFriend, system: System):
         ui.label('Hardware').style('color: #6E93D6;').classes('w-full text-center font-bold')
         ui.separator()
 
-        with ui.row().bind_visibility_from(robot.estop, 'active'):
+        with ui.row().bind_visibility_from(robot.estop, 'active', backward=lambda active: active and not robot.estop.is_soft_estop_active):
             ui.icon('report').props('size=md').classes('text-red')
             ui.label('Emergency stop is pressed!').classes('text-red mt-1')
 
@@ -73,22 +73,12 @@ def status_dev_page(robot: FieldFriend, system: System):
 
         with ui.row().classes('place-items-center'):
             ui.label('Tool:').style('color: #EDF4FB').classes('font-bold')
-            ui.label(robot.implement_name)
+            ui.label(robot.implement_name or 'none installed')
 
         if hasattr(robot, 'status_control') and robot.status_control is not None:
             with ui.row().classes('place-items-center'):
                 ui.label('Status Control:').style('color: #EDF4FB').classes('font-bold')
                 status_control_label = ui.label()
-
-        with ui.row().classes('place-items-center'):
-            ui.label('Battery:').style('color: #EDF4FB').classes('font-bold')
-            ui.label().bind_text_from(robot.bms.state, 'last_update',
-                                      backward=lambda _: ', '.join([robot.bms.state.short_string,
-                                                                    'charging' if robot.bms.state.is_charging else '']))
-            if hasattr(robot, 'battery_control') and robot.battery_control is not None:
-                ui.label('').tooltip('Battery Box out connectors 1-4') \
-                    .bind_text_from(robot.battery_control, 'status',
-                                    backward=lambda x: 'Out 1..4 is on' if x else 'Out 1..4 is off')
 
         with ui.row().classes('place-items-center'):
             ui.label('Axis:').style('color: #EDF4FB').classes('font-bold')
@@ -107,22 +97,22 @@ def status_dev_page(robot: FieldFriend, system: System):
             with ui.row().classes('place-items-center'):
                 ui.label('Bumper:').style('color: #EDF4FB').classes('font-bold')
                 ui.label().bind_text_from(robot.bumper, 'active_bumpers', backward=', '.join)
-        if system.is_real and isinstance(robot.wheels, DoubleWheelsHardware):
+        if not rosys.is_simulation() and isinstance(robot.wheels, DoubleWheelsHardware):
             with ui.row().classes('place-items-center'):
                 ui.label('Motor Status:').style('color: #EDF4FB').classes('font-bold')
-                if robot.wheels.odrive_version == 6:
+                if robot.wheels.config.odrive_version == 6:
                     ui.label().bind_text_from(robot.wheels, 'l0_error', backward=lambda x: 'Error in l0' if x else 'No error')
                     ui.label().bind_text_from(robot.wheels, 'l1_error', backward=lambda x: 'Error in l1' if x else 'No error')
                     ui.label().bind_text_from(robot.wheels, 'r0_error', backward=lambda x: 'Error in r0' if x else 'No error')
                     ui.label().bind_text_from(robot.wheels, 'r1_error', backward=lambda x: 'Error in r1' if x else 'No error')
-                if robot.wheels.odrive_version == 4:
+                if robot.wheels.config.odrive_version == 4:
                     ui.label('cant read status update odrive to version 0.5.6')
                 ui.button('Reset motor errors', on_click=robot.wheels.reset_motors) \
                     .bind_visibility_from(robot.wheels, 'motor_error')
-        if system.is_real and isinstance(robot.z_axis, TornadoHardware):
+        if not rosys.is_simulation() and isinstance(robot.z_axis, TornadoHardware):
             with ui.row().classes('place-items-center'):
                 ui.label('Tornado motor status:').style('color: #EDF4FB').classes('font-bold')
-                if robot.z_axis.odrive_version == 6:
+                if robot.z_axis.config.odrive_version == 6:
                     ui.label().bind_text_from(robot.z_axis, 'turn_error', backward=lambda x: 'Error in turn motor' if x else 'No error')
                     ui.label().bind_text_from(robot.z_axis, 'z_error', backward=lambda x: 'Error in z motor' if x else 'No error')
                 else:

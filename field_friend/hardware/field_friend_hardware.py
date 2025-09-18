@@ -1,21 +1,29 @@
 import logging
 
+import numpy as np
 import rosys
-from rosys.hardware import ImuHardware
 
-import config.config_selection as config_selector
-
+from ..config import (
+    AxisD1Configuration,
+    ChainAxisConfiguration,
+    FieldFriendConfiguration,
+    SprayerConfiguration,
+    TornadoConfiguration,
+    YCanOpenConfiguration,
+    YStepperConfiguration,
+    ZCanOpenConfiguration,
+    ZStepperConfiguration,
+)
 from .axis_d1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
-from .flashlight import FlashlightHardware
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
-from .led_eyes import LedEyesHardware
 from .safety import SafetyHardware
+from .sprayer import SprayerHardware
 from .status_control import StatusControlHardware
 from .tornado import TornadoHardware
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
@@ -26,421 +34,182 @@ from .z_axis_stepper_hardware import ZAxisStepperHardware
 
 class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
-    def __init__(self) -> None:
-        self.log = logging.getLogger('field_friend.hardware')
-        config_hardware: dict = config_selector.import_config(module='hardware')
-        config_robotbrain: dict = config_selector.import_config(module='robotbrain')
-        config_params: dict = config_selector.import_config(module='params')
-        self.check_pins(config_hardware)
-        self.MOTOR_GEAR_RATIO: float = config_params['motor_gear_ratio']
-        self.THOOTH_COUNT: int = config_params['thooth_count']
-        self.PITCH: float = config_params['pitch']
-        self.WHEEL_DIAMETER: float = self.THOOTH_COUNT * self.PITCH
-        self.M_PER_TICK: float = self.WHEEL_DIAMETER / self.MOTOR_GEAR_RATIO
-        self.WHEEL_DISTANCE: float = config_params['wheel_distance']
+    def __init__(self, config: FieldFriendConfiguration) -> None:
+        self.log = logging.getLogger('field_friend.field_friend_hardware')
+        self.MOTOR_GEAR_RATIO: float = config.measurements.motor_gear_ratio
+        self.TOOTH_COUNT: int = config.measurements.tooth_count
+        self.PITCH: float = config.measurements.pitch
+        self.WHEEL_DIAMETER: float = self.TOOTH_COUNT * self.PITCH / np.pi
+        self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
+        self.WHEEL_DISTANCE: float = config.measurements.wheel_distance
+        self.ANTENNA_OFFSET: float = config.measurements.antenna_offset
         self.WORK_X: float
         self.DRILL_RADIUS: float
-        implement: str = config_params['tool']
-        if implement in ['tornado', 'weed_screw', 'none']:
-            self.WORK_X = config_params['work_x']
-            if 'work_y' in config_params:
-                self.WORK_Y: float = config_params['work_y']
-            self.DRILL_RADIUS = config_params['drill_radius']
+        implement: str | None = config.tool
+        if implement in ['tornado', 'weed_screw', None]:
+            self.WORK_X = config.measurements.work_x
+            if config.measurements.work_y:
+                self.WORK_Y: float = config.measurements.work_y
+            self.DRILL_RADIUS = config.measurements.drill_radius
         elif implement in ['dual_mechanism']:
-            self.WORK_X_CHOP: float = config_params['work_x_chop']
-            self.WORK_X = config_params['work_x_drill']
-            self.DRILL_RADIUS = config_params['drill_radius']
-            self.CHOP_RADIUS: float = config_params['chop_radius']
+            assert config.measurements.work_x_chop
+            self.WORK_X_CHOP: float = config.measurements.work_x_chop
+            self.WORK_X = config.measurements.work_x
+            self.DRILL_RADIUS = config.measurements.drill_radius
+            assert config.measurements.chop_radius
+            self.CHOP_RADIUS: float = config.measurements.chop_radius
         else:
             self.log.warning('Unknown implement: %s', implement)
 
         communication = rosys.hardware.SerialCommunication()
-        if 'enable_esp_on_startup' in config_robotbrain['robot_brain']:
-            robot_brain = rosys.hardware.RobotBrain(
-                communication, enable_esp_on_startup=config_robotbrain['robot_brain']['enable_esp_on_startup'])
-        else:
-            robot_brain = rosys.hardware.RobotBrain(communication)
+        robot_brain = rosys.hardware.RobotBrain(communication,
+                                                enable_esp_on_startup=config.robot_brain.enable_esp_on_startup,
+                                                use_espresso=config.robot_brain.use_espresso)
+        robot_brain.lizard_firmware.flash_params += config.robot_brain.flash_params
 
-        robot_brain.lizard_firmware.flash_params += config_robotbrain['robot_brain']['flash_params']
-        bluetooth = rosys.hardware.BluetoothHardware(
-            robot_brain,
-            name=config_hardware['bluetooth']['name'],
-        )
+        bluetooth = rosys.hardware.BluetoothHardware(robot_brain, name=config.name)
         serial = rosys.hardware.SerialHardware(robot_brain)
         expander = rosys.hardware.ExpanderHardware(robot_brain, serial=serial)
-        self.can = rosys.hardware.CanHardware(
-            robot_brain,
-            expander=expander if config_hardware['can']['on_expander'] else None,
-            name=config_hardware['can']['name'],
-            rx_pin=config_hardware['can']['rx_pin'],
-            tx_pin=config_hardware['can']['tx_pin'],
-            baud=config_hardware['can']['baud'],
-        )
+        self.can = rosys.hardware.CanHardware(robot_brain,
+                                              expander=expander if config.can.on_expander else None,
+                                              name=config.can.name,
+                                              rx_pin=config.can.rx_pin,
+                                              tx_pin=config.can.tx_pin,
+                                              baud=config.can.baud)
+
+        estop = rosys.hardware.EStopHardware(robot_brain, name=config.estop.name, pins=config.estop.pins)
+
         wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware
-        if config_hardware['wheels']['version'] == 'wheels':
-            wheels = rosys.hardware.WheelsHardware(
-                robot_brain,
-                can=self.can,
-                name=config_hardware['wheels']['name'],
-                left_can_address=config_hardware['wheels']['left_can_address'],
-                right_can_address=config_hardware['wheels']['right_can_address'],
-                m_per_tick=self.M_PER_TICK,
-                width=self.WHEEL_DISTANCE,
-                is_right_reversed=config_hardware['wheels']['is_right_reversed'],
-                is_left_reversed=config_hardware['wheels']['is_left_reversed'],
-            )
-        elif config_hardware['wheels']['version'] == 'double_wheels':
-            wheels = DoubleWheelsHardware(
-                robot_brain,
-                can=self.can,
-                name=config_hardware['wheels']['name'],
-                left_back_can_address=config_hardware['wheels']['left_back_can_address'],
-                right_back_can_address=config_hardware['wheels']['right_back_can_address'],
-                left_front_can_address=config_hardware['wheels']['left_front_can_address'],
-                right_front_can_address=config_hardware['wheels']['right_front_can_address'],
-                m_per_tick=self.M_PER_TICK,
-                width=self.WHEEL_DISTANCE,
-                is_right_reversed=config_hardware['wheels']['is_right_reversed'],
-                is_left_reversed=config_hardware['wheels']['is_left_reversed'],
-                odrive_version=config_hardware['wheels']['odrive_version']if 'odrive_version' in config_hardware['wheels'] else 4,
-            )
+        if config.wheels.version == 'wheels':
+            wheels = rosys.hardware.WheelsHardware(robot_brain,
+                                                   can=self.can,
+                                                   name=config.wheels.name,
+                                                   left_can_address=config.wheels.left_front_can_address,
+                                                   right_can_address=config.wheels.right_front_can_address,
+                                                   m_per_tick=self.M_PER_TICK,
+                                                   width=self.WHEEL_DISTANCE,
+                                                   is_right_reversed=config.wheels.is_right_reversed,
+                                                   is_left_reversed=config.wheels.is_left_reversed)
+        elif config.wheels.version == 'double_wheels':
+            wheels = DoubleWheelsHardware(config.wheels, robot_brain, estop, can=self.can,
+                                          m_per_tick=self.M_PER_TICK, width=self.WHEEL_DISTANCE)
         else:
-            raise NotImplementedError(f'Unknown wheels version: {config_hardware["wheels"]["version"]}')
+            raise NotImplementedError(f'Unknown wheels version: {config.wheels.version}')
 
-        if config_hardware['y_axis']['version'] in ('y_axis_canopen', 'axis_d1') or config_hardware['z_axis']['version'] in ('y_axis_canopen', 'axis_d1'):
-            can_open_master = CanOpenMasterHardware(robot_brain, can=self.can, name='master')
-        else:
-            can_open_master = None
-        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None = None
-        if config_hardware['y_axis']['version'] == 'axis_d1':
-            y_axis = AxisD1(
-                robot_brain,
-                can=self.can,
-                can_address=config_hardware['y_axis']['can_address'],
-                name=config_hardware['y_axis']['name'],
-                homing_acceleration=config_hardware['y_axis']['homing_acceleration'],
-                homing_velocity=config_hardware['y_axis']['homing_velocity'],
-                profile_acceleration=config_hardware['y_axis']['profile_acceleration'],
-                profile_velocity=config_hardware['y_axis']['profile_velocity'],
-                profile_deceleration=config_hardware['y_axis']['profile_deceleration'],
-                max_position=config_hardware['y_axis']['max_position'],
-                min_position=config_hardware['y_axis']['min_position'],
-                axis_offset=config_hardware['y_axis']['axis_offset'],
-                reverse_direction=config_hardware['y_axis']['reversed_direction'],)
-        elif config_hardware['y_axis']['version'] == 'chain_axis':
-            y_axis = ChainAxisHardware(
-                robot_brain,
-                expander=expander,
-                name=config_hardware['y_axis']['name'],
-                min_position=config_hardware['y_axis']['min_position'],
-                max_position=config_hardware['y_axis']['max_position'],
-                step_pin=config_hardware['y_axis']['step_pin'],
-                dir_pin=config_hardware['y_axis']['dir_pin'],
-                alarm_pin=config_hardware['y_axis']['alarm_pin'],
-                ref_t_pin=config_hardware['y_axis']['ref_t_pin'],
-                motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
-                end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
-            )
-        elif config_hardware['y_axis']['version'] == 'y_axis_stepper':
-            try:
-                alarm_inverted: bool = config_hardware['y_axis']['alarm_inverted']
-            except KeyError as e:
-                raise KeyError("'alarm_inverted' not found in config_hardware['y_axis']. Robots with a "
-                               'Closed-Loop-Step-Direction-Motor (U4 and before) has an inverted motor alarm input. '
-                               "Check your robot's setup.") from e
-            y_axis = YAxisStepperHardware(
-                robot_brain,
-                expander=expander,
-                name=config_hardware['y_axis']['name'],
-                max_speed=config_hardware['y_axis']['max_speed'],
-                reference_speed=config_hardware['y_axis']['reference_speed'],
-                min_position=config_hardware['y_axis']['min_position'],
-                max_position=config_hardware['y_axis']['max_position'],
-                axis_offset=config_hardware['y_axis']['axis_offset'],
-                steps_per_m=config_hardware['y_axis']['steps_per_m'],
-                step_pin=config_hardware['y_axis']['step_pin'],
-                dir_pin=config_hardware['y_axis']['dir_pin'],
-                alarm_pin=config_hardware['y_axis']['alarm_pin'],
-                alarm_inverted=alarm_inverted,
-                end_r_pin=config_hardware['y_axis']['end_r_pin'],
-                end_l_pin=config_hardware['y_axis']['end_l_pin'],
-                motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
-                end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
-                reversed_direction=config_hardware['y_axis']['reversed_direction'],
-                end_stops_inverted=config_hardware['y_axis']['end_stops_inverted'],
-            )
-        elif config_hardware['y_axis']['version'] == 'y_axis_canopen':
-            y_axis = YAxisCanOpenHardware(
-                robot_brain,
-                can=self.can,
-                can_address=config_hardware['y_axis']['can_address'],
-                expander=expander,
-                name=config_hardware['y_axis']['name'],
-                max_speed=config_hardware['y_axis']['max_speed'],
-                reference_speed=config_hardware['y_axis']['reference_speed'],
-                min_position=config_hardware['y_axis']['min_position'],
-                max_position=config_hardware['y_axis']['max_position'],
-                axis_offset=config_hardware['y_axis']['axis_offset'],
-                steps_per_m=config_hardware['y_axis']['steps_per_m'],
-                end_l_pin=config_hardware['y_axis']['end_l_pin'],
-                end_r_pin=config_hardware['y_axis']['end_r_pin'],
-                motor_on_expander=config_hardware['y_axis']['motor_on_expander'],
-                end_stops_on_expander=config_hardware['y_axis']['end_stops_on_expander'],
-                reversed_direction=config_hardware['y_axis']['reversed_direction'],
-                end_stops_inverted=config_hardware['y_axis']['end_stops_inverted'],
-            )
-        elif config_hardware['y_axis']['version'] == 'none':
-            pass
-        else:
-            self.log.warning('Unknown y_axis version: %s', config_hardware['y_axis']['version'])
+        can_open_master = CanOpenMasterHardware(robot_brain, can=self.can, name='master') \
+            if ((config.y_axis and config.y_axis.version in ('y_axis_canopen', 'axis_d1')) or
+                (config.z_axis and config.z_axis.version in ('z_axis_canopen', 'axis_d1'))) \
+            else None
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | None = None
-        if config_hardware['z_axis']['version'] == 'z_axis_stepper':
-            z_axis = ZAxisStepperHardware(
-                robot_brain,
-                expander=expander,
-                name=config_hardware['z_axis']['name'],
-                max_speed=config_hardware['z_axis']['max_speed'],
-                reference_speed=config_hardware['z_axis']['reference_speed'],
-                min_position=config_hardware['z_axis']['min_position'],
-                max_position=config_hardware['z_axis']['max_position'],
-                axis_offset=config_hardware['z_axis']['axis_offset'],
-                steps_per_m=config_hardware['z_axis']['steps_per_m'],
-                step_pin=config_hardware['z_axis']['step_pin'],
-                dir_pin=config_hardware['z_axis']['dir_pin'],
-                alarm_pin=config_hardware['z_axis']['alarm_pin'],
-                end_t_pin=config_hardware['z_axis']['end_t_pin'],
-                end_b_pin=config_hardware['z_axis']['end_b_pin'],
-                motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
-                end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
-                reversed_direction=config_hardware['z_axis']['reversed_direction'],
-                end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
-            )
-        elif config_hardware['z_axis']['version'] == 'axis_d1':
-            z_axis = AxisD1(
-                robot_brain,
-                can=self.can,
-                can_address=config_hardware['z_axis']['can_address'],
-                name=config_hardware['z_axis']['name'],
-                homing_acceleration=config_hardware['z_axis']['homing_acceleration'],
-                homing_velocity=config_hardware['z_axis']['homing_velocity'],
-                profile_acceleration=config_hardware['z_axis']['profile_acceleration'],
-                profile_velocity=config_hardware['z_axis']['profile_velocity'],
-                profile_deceleration=config_hardware['z_axis']['profile_deceleration'],
-                max_position=config_hardware['z_axis']['max_position'],
-                min_position=config_hardware['z_axis']['min_position'],
-                axis_offset=config_hardware['z_axis']['axis_offset'],
-                reverse_direction=config_hardware['z_axis']['reversed_direction'],)
-        elif config_hardware['z_axis']['version'] == 'tornado':
-            z_axis = TornadoHardware(
-                robot_brain,
-                expander=expander,
-                can=self.can,
-                name=config_hardware['z_axis']['name'],
-                min_position=config_hardware['z_axis']['min_position'],
-                z_can_address=config_hardware['z_axis']['z_can_address'],
-                turn_can_address=config_hardware['z_axis']['turn_can_address'],
-                m_per_tick=config_hardware['z_axis']['m_per_tick'],
-                end_top_pin=config_hardware['z_axis']['end_top_pin'],
-                end_bottom_pin=config_hardware['z_axis']['end_bottom_pin'],
-                ref_motor_pin=config_hardware['z_axis']['ref_motor_pin'],
-                ref_gear_pin=config_hardware['z_axis']['ref_gear_pin'],
-                ref_knife_stop_pin=config_hardware['z_axis']['ref_knife_stop_pin'],
-                ref_knife_ground_pin=config_hardware['z_axis']['ref_knife_ground_pin'],
-                motors_on_expander=config_hardware['z_axis']['motors_on_expander'],
-                end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
-                is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
-                is_turn_reversed=config_hardware['z_axis']['is_turn_reversed'],
-                speed_limit=config_hardware['z_axis']['speed_limit'],
-                turn_speed_limit=config_hardware['z_axis']['turn_speed_limit'],
-                current_limit=config_hardware['z_axis']['current_limit'],
-                z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
-                turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
-                odrive_version=config_hardware['z_axis']['odrive_version']if 'odrive_version' in config_hardware['z_axis'] else 4,
-            )
-        elif config_hardware['z_axis']['version'] == 'tornado v1.1':
-            z_axis = TornadoHardware(
-                robot_brain,
-                expander=expander,
-                can=self.can,
-                name=config_hardware['z_axis']['name'],
-                min_position=config_hardware['z_axis']['min_position'],
-                z_can_address=config_hardware['z_axis']['z_can_address'],
-                turn_can_address=config_hardware['z_axis']['turn_can_address'],
-                m_per_tick=config_hardware['z_axis']['m_per_tick'],
-                end_top_pin=config_hardware['z_axis']['end_top_pin'],
-                end_top_pin_expander=config_hardware['z_axis']['end_top_pin_expander'],
-                end_bottom_pin=config_hardware['z_axis']['end_bottom_pin'],
-                end_bottom_pin_expander=config_hardware['z_axis']['end_bottom_pin_expander'],
-                ref_motor_pin=config_hardware['z_axis']['ref_motor_pin'],
-                ref_gear_pin=config_hardware['z_axis']['ref_gear_pin'],
-                ref_gear_pin_expander=config_hardware['z_axis']['ref_gear_pin_expander'],
-                ref_knife_stop_pin=config_hardware['z_axis']['ref_knife_stop_pin'],
-                ref_knife_stop_pin_expander=config_hardware['z_axis']['ref_knife_stop_pin_expander'],
-                ref_knife_ground_pin=config_hardware['z_axis']['ref_knife_ground_pin'],
-                ref_knife_ground_pin_expander=config_hardware['z_axis']['ref_knife_ground_pin_expander'],
-                motors_on_expander=config_hardware['z_axis']['motors_on_expander'],
-                end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
-                is_z_reversed=config_hardware['z_axis']['is_z_reversed'],
-                is_turn_reversed=config_hardware['z_axis']['is_turn_reversed'],
-                speed_limit=config_hardware['z_axis']['speed_limit'],
-                turn_speed_limit=config_hardware['z_axis']['turn_speed_limit'],
-                current_limit=config_hardware['z_axis']['current_limit'],
-                z_reference_speed=config_hardware['z_axis']['z_reference_speed'],
-                turn_reference_speed=config_hardware['z_axis']['turn_reference_speed'],
-                odrive_version=config_hardware['z_axis']['odrive_version']if 'odrive_version' in config_hardware['z_axis'] else 4,
-            )
-        elif config_hardware['z_axis']['version'] == 'z_axis_canopen':
-            z_axis = ZAxisCanOpenHardware(
-                robot_brain,
-                can=self.can,
-                can_address=config_hardware['z_axis']['can_address'],
-                expander=expander,
-                name=config_hardware['z_axis']['name'],
-                max_speed=config_hardware['z_axis']['max_speed'],
-                reference_speed=config_hardware['z_axis']['reference_speed'],
-                min_position=config_hardware['z_axis']['min_position'],
-                max_position=config_hardware['z_axis']['max_position'],
-                axis_offset=config_hardware['z_axis']['axis_offset'],
-                steps_per_m=config_hardware['z_axis']['steps_per_m'],
-                end_t_pin=config_hardware['z_axis']['end_t_pin'],
-                end_b_pin=config_hardware['z_axis']['end_b_pin'],
-                motor_on_expander=config_hardware['z_axis']['motor_on_expander'],
-                end_stops_on_expander=config_hardware['z_axis']['end_stops_on_expander'],
-                reversed_direction=config_hardware['z_axis']['reversed_direction'],
-                end_stops_inverted=config_hardware['z_axis']['end_stops_inverted'],
-            )
-        elif config_hardware['z_axis']['version'] == 'none':
-            pass
+        y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None
+        if not config.y_axis:
+            y_axis = None
+        elif isinstance(config.y_axis, AxisD1Configuration) and config.y_axis.version == 'axis_d1':
+            y_axis = AxisD1(config.y_axis, robot_brain, can=self.can)
+        elif isinstance(config.y_axis, ChainAxisConfiguration) and config.y_axis.version == 'chain_axis':
+            y_axis = ChainAxisHardware(config.y_axis, robot_brain, expander=expander)
+        elif isinstance(config.y_axis, YStepperConfiguration) and config.y_axis.version == 'y_axis_stepper':
+            y_axis = YAxisStepperHardware(config.y_axis, robot_brain, expander=expander)
+        elif isinstance(config.y_axis, YCanOpenConfiguration) and config.y_axis.version == 'y_axis_canopen':
+            y_axis = YAxisCanOpenHardware(config.y_axis, robot_brain, can=self.can, expander=expander)
         else:
-            self.log.warning('Unknown z_axis version: %s', config_hardware['z_axis']['version'])
+            raise NotImplementedError(f'Unknown y_axis version: {config.y_axis.version}')
 
-        estop = rosys.hardware.EStopHardware(
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | SprayerHardware | None
+        if not config.z_axis:
+            z_axis = None
+        elif isinstance(config.z_axis, ZStepperConfiguration) and config.z_axis.version == 'z_axis_stepper':
+            z_axis = ZAxisStepperHardware(config.z_axis, robot_brain, expander=expander)
+        elif isinstance(config.z_axis, AxisD1Configuration) and config.z_axis.version == 'axis_d1':
+            z_axis = AxisD1(config.z_axis, robot_brain, can=self.can)
+        elif isinstance(config.z_axis, TornadoConfiguration) and config.z_axis.version == 'tornado':
+            z_axis = TornadoHardware(config.z_axis, robot_brain, expander=expander, can=self.can)
+        elif isinstance(config.z_axis, ZCanOpenConfiguration) and config.z_axis.version == 'z_axis_canopen':
+            z_axis = ZAxisCanOpenHardware(config.z_axis, robot_brain, can=self.can, expander=expander)
+        elif isinstance(config.z_axis, SprayerConfiguration) and config.z_axis.version == 'sprayer':
+            z_axis = SprayerHardware(config.z_axis, robot_brain, expander=expander)
+        else:
+            raise NotImplementedError(f'Unknown z_axis version: {config.z_axis.version}')
+
+        bms = rosys.hardware.BmsHardware(robot_brain,
+                                         expander=expander if config.bms.on_expander else None,
+                                         name=config.bms.name,
+                                         rx_pin=config.bms.rx_pin,
+                                         tx_pin=config.bms.tx_pin,
+                                         baud=config.bms.baud,
+                                         num=config.bms.num)
+
+        self.battery_control = rosys.hardware.BatteryControlHardware(
             robot_brain,
-            name=config_hardware['estop']['name'],
-            pins=config_hardware['estop']['pins'],
-        )
+            expander=expander if config.battery_control.on_expander else None,
+            name=config.battery_control.name,
+            reset_pin=config.battery_control.reset_pin,
+            status_pin=config.battery_control.status_pin,
+        ) if config.battery_control else None
+        if self.battery_control:
+            async def wait_and_release_battery_relay():
+                assert isinstance(self.battery_control, rosys.hardware.BatteryControlHardware)
+                await rosys.sleep(15)
+                self.log.debug('releasing battery relay on rosys startup')
+                await self.battery_control.release_battery_relay()
+            bms.CHARGING_STOPPED.register(self.battery_control.release_battery_relay)
+            rosys.on_startup(wait_and_release_battery_relay)
 
-        bms = rosys.hardware.BmsHardware(
-            robot_brain,
-            expander=expander if config_hardware['bms']['on_expander'] else None,
-            name=config_hardware['bms']['name'],
-            rx_pin=config_hardware['bms']['rx_pin'],
-            tx_pin=config_hardware['bms']['tx_pin'],
-            baud=config_hardware['bms']['baud'],
-            num=config_hardware['bms']['num'],
-        )
-        self.battery_control: rosys.hardware.BatteryControlHardware | None = None
-        if 'battery_control' in config_hardware:
-            self.battery_control = rosys.hardware.BatteryControlHardware(
-                robot_brain, expander=expander if config_hardware['battery_control']['on_expander'] else None,
-                name=config_hardware['battery_control']['name'],
-                reset_pin=config_hardware['battery_control']['reset_pin'],
-                status_pin=config_hardware['battery_control']['status_pin'],
-            )
-
-        flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None = None
-        if config_hardware['flashlight']['version'] == 'flashlight':
-            flashlight = FlashlightHardware(
-                robot_brain,
-                expander=expander if config_hardware['flashlight']['on_expander'] else None,
-                name=config_hardware['flashlight']['name'],
-                pin=config_hardware['flashlight']['pin'],
-            )
-        elif config_hardware['flashlight']['version'] == 'flashlight_v2':
-            flashlight = FlashlightHardwareV2(
-                robot_brain,
-                expander=expander if config_hardware['flashlight']['on_expander'] else None,
-                name=config_hardware['flashlight']['name'],
-                front_pin=config_hardware['flashlight']['front_pin'],
-                back_pin=config_hardware['flashlight']['back_pin'],
-            )
-        elif config_hardware['flashlight']['version'] == 'flashlight_pwm':
-            flashlight = FlashlightPWMHardware(
-                robot_brain,
-                bms,
-                expander=expander if config_hardware['flashlight']['on_expander'] else None,
-                name=config_hardware['flashlight']['name'],
-                pin=config_hardware['flashlight']['pin'],
-                rated_voltage=config_hardware['flashlight']['rated_voltage'],
-            )
-        elif config_hardware['flashlight']['version'] == 'flashlight_pwm_v2':
-            flashlight = FlashlightPWMHardwareV2(
-                robot_brain,
-                bms,
-                expander=expander if config_hardware['flashlight']['on_expander'] else None,
-                name=config_hardware['flashlight']['name'],
-                front_pin=config_hardware['flashlight']['front_pin'],
-                back_pin=config_hardware['flashlight']['back_pin'],
-            )
-        elif config_hardware['flashlight']['version'] == 'none':
-            pass
+        flashlight: FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None
+        if not config.flashlight:
+            flashlight = None
+        elif config.flashlight.version == 'flashlight':
+            raise NotImplementedError('This flashlight version is no longer supported.')
+        elif config.flashlight.version == 'flashlight_v2':
+            assert config.flashlight.front_pin is not None
+            assert config.flashlight.back_pin is not None
+            flashlight = FlashlightHardwareV2(config.flashlight, robot_brain,
+                                              expander=expander if config.flashlight.on_expander else None)
+        elif config.flashlight.version == 'flashlight_pwm':
+            assert config.flashlight.pin is not None
+            assert config.flashlight.rated_voltage is not None
+            flashlight = FlashlightPWMHardware(config.flashlight, robot_brain, bms,
+                                               expander=expander if config.flashlight.on_expander else None)
+        elif config.flashlight.version == 'flashlight_pwm_v2':
+            assert config.flashlight.front_pin is not None
+            assert config.flashlight.back_pin is not None
+            flashlight = FlashlightPWMHardwareV2(config.flashlight, robot_brain, bms,
+                                                 expander=expander if config.flashlight.on_expander else None)
         else:
-            self.log.warning('Unknown Flashlight version: %s', config_hardware['flashlight']['version'])
+            raise NotImplementedError(f'Unknown Flashlight version: {config.flashlight.version}')
 
-        bumper: rosys.hardware.BumperHardware | None = None
-        if 'bumper' in config_hardware:
-            bumper = rosys.hardware.BumperHardware(
-                robot_brain,
-                expander=expander if config_hardware['bumper']['on_expander'] else None,
-                estop=estop,
-                name=config_hardware['bumper']['name'],
-                pins=config_hardware['bumper']['pins'],
-            )
+        bumper = rosys.hardware.BumperHardware(robot_brain,
+                                               expander=expander if config.bumper.on_expander else None,
+                                               estop=estop,
+                                               name=config.bumper.name,
+                                               pins=config.bumper.pins) if config.bumper else None
 
-        imu: rosys.hardware.Imu | None = None
-        if 'imu' in config_hardware:
-            imu = ImuHardware(
-                robot_brain=robot_brain,
-                name=config_hardware['imu']['name'],
-                offset_rotation=rosys.geometry.Rotation.from_euler(
-                    *config_hardware['imu']['offset_rotation']),
-                min_gyro_calibration=config_hardware['imu'].get('min_gyro_calibration', 0.0)
-            )
+        imu = rosys.hardware.ImuHardware(robot_brain,
+                                         name=config.imu.name,
+                                         offset_rotation=config.imu.offset_rotation,
+                                         min_gyro_calibration=config.imu.min_gyro_calibration) if config.imu else None
 
-        eyes: LedEyesHardware | None = None
-        if 'eyes' in config_hardware:
-            eyes = LedEyesHardware(
-                robot_brain,
-                expander=expander if config_hardware['eyes']['on_expander'] else None,
-                name=config_hardware['eyes']['name'],
-                eyes_pin=config_hardware['eyes']['eyes_pin'],
-            )
-
-        self.status_control: StatusControlHardware | None = None
-        if 'status_control' in config_hardware:
-            self.status_control = StatusControlHardware(
-                robot_brain,
-                expander=expander,
-                rdyp_pin=39,
-                vdp_pin=39,
-            )
+        self.status_control = StatusControlHardware(robot_brain,
+                                                    expander=expander,
+                                                    rdyp_pin=39,
+                                                    vdp_pin=39) if config.has_status_control else None
 
         safety: SafetyHardware = SafetyHardware(robot_brain, estop=estop, wheels=wheels, bumper=bumper,
                                                 y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 
-        modules = [bluetooth, self.can, wheels, serial, expander, can_open_master, y_axis,
-                   z_axis, flashlight, bms, estop, self.battery_control, bumper, imu, eyes, self.status_control, safety]
+        modules = [bluetooth, self.can, wheels, serial, expander, can_open_master, y_axis, z_axis,
+                   flashlight, bms, estop, self.battery_control, bumper, imu, self.status_control, safety]
+
         active_modules = [module for module in modules if module is not None]
-
-        super().__init__(
-            implement_name=implement,
-            wheels=wheels,
-            y_axis=y_axis,
-            z_axis=z_axis,
-            estop=estop,
-            bumper=bumper,
-            bms=bms,
-            safety=safety,
-            flashlight=flashlight,
-            imu=imu,
-            modules=active_modules,
-            robot_brain=robot_brain
-        )
-
-    def check_pins(self, d):
-        for key, value in d.items():
-            if isinstance(value, dict):
-                self.check_pins(value)  # Recurse into sub-dict
-            elif (key.endswith('pin') or key in ['boot', 'enable']) and value == 6:
-                raise ValueError(f'Pin 6 is used in {key}')
+        super().__init__(implement_name=implement,
+                         wheels=wheels,
+                         y_axis=y_axis,
+                         z_axis=z_axis,
+                         estop=estop,
+                         bumper=bumper,
+                         bms=bms,
+                         safety=safety,
+                         flashlight=flashlight,
+                         imu=imu,
+                         modules=active_modules,
+                         robot_brain=robot_brain)

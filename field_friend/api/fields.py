@@ -9,6 +9,12 @@ from field_friend.system import System
 
 
 class Fields:
+    """API endpoints for managing field data.
+
+    This API allows creating, retrieving, and updating field definitions, as well as
+    checking if the robot is inside a specific field. Fields contain information about
+    row and bed configurations, spacing, and geographical outlines.
+    """
 
     def __init__(self, system: System) -> None:
         self.system = system
@@ -40,7 +46,9 @@ class Fields:
                         outline_buffer_width=field_data['outline_buffer_width'],
                         bed_count=field_data['bed_count'],
                         bed_spacing=field_data['bed_spacing'],
-                        bed_crops=field_data['bed_crops']
+                        bed_crops=field_data['bed_crops'],
+                        docking_distance=field_data['docking_distance'],
+                        charge_dock_pose=field_data['charge_dock_pose']
                     )
                 else:
                     self.system.field_provider.create_field(new_field)
@@ -73,10 +81,11 @@ class Fields:
                 is_inside = field_polygon.contains(shapely.geometry.Point(robot_position.lat, robot_position.lon))
                 bed_id = None
                 if is_inside:
-                    row = min(field.rows, key=lambda r: r.line_segment().line.foot_point(
-                        self.system.robot_locator.pose.point).distance(self.system.robot_locator.pose.point))  # nearest row
-                    row_index = int(row.id.split('_')[-1]) - 1  # -1 because row IDs start at 1
-                    bed_id = int(row_index // field.row_count) + 1  # +1 because bed IDs start at 1
+                    current_point = self.system.robot_locator.pose.point
+                    row = min(field.rows,
+                              key=lambda r: r.line_segment().line.foot_point(current_point).distance(current_point))
+                    row_index = int(row.id.split('_')[-1])
+                    bed_id = int(row_index // field.row_count)
                 return JSONResponse(
                     content={'status': 'ok', 'inside': is_inside, 'beds': [bed_id]},
                     status_code=200

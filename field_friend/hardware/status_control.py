@@ -5,6 +5,7 @@ from rosys.helpers import remove_indentation
 
 
 class StatusControlHardware(ModuleHardware):
+    """Reads the status of the robot's power distribution."""
 
     def __init__(self, robot_brain: RobotBrain, *,
                  expander: ExpanderHardware,

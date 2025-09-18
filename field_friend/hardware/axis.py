@@ -1,9 +1,12 @@
 import abc
 
 import rosys
+from rosys.analysis import track
+from rosys.automation import uninterruptible
 
 
 class Axis(rosys.hardware.Module, abc.ABC):
+    """Abstract base class for linear axis modules."""
 
     def __init__(self, *,
                  max_speed: int,
@@ -41,10 +44,12 @@ class Axis(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def move_to(self, position: float, speed: int | None = None) -> None:
+        if self.alarm:
+            raise RuntimeError('axis is in alarm state')
         if speed is None:
             speed = self.max_speed
         if not self.is_referenced:
-            raise RuntimeError('zaxis is not referenced, reference first')
+            raise RuntimeError('axis is not referenced, reference first')
         if speed > self.max_speed:
             raise RuntimeError(f'axis speed is too high, max speed is {self.max_speed}')
         if not self.min_position <= position <= self.max_position:
@@ -53,13 +58,18 @@ class Axis(rosys.hardware.Module, abc.ABC):
 
     @abc.abstractmethod
     async def try_reference(self) -> bool:
+        self.log.debug('try_reference')
         return True
 
-    def compute_steps(self, position: float) -> int:
-        """Compute the number of steps to move the axis to the given position.
+    @abc.abstractmethod
+    async def reset_fault(self) -> None:
+        pass
 
-        The position is given in meters.
-        """
+    @abc.abstractmethod
+    async def recover(self) -> None:
+        pass
+
+    def compute_steps(self, position: float) -> int:
         return int((position + self.axis_offset) * self.steps_per_m) * (-1 if self.reversed_direction else 1)
 
     def compute_position(self, steps: int) -> float:
@@ -77,8 +87,7 @@ class Axis(rosys.hardware.Module, abc.ABC):
 
 
 class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
-    '''The z axis simulation module is a simple example for a representation of simulated robot hardware.
-    '''
+    """The z axis simulation module is a simple example for a representation of simulated robot hardware."""
 
     def __init__(self, *,
                  max_speed: int = 80_000,
@@ -105,19 +114,19 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
         self.speed = 0
         self.target_steps = None
 
+    @track
+    @uninterruptible
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if speed is None:
             speed = self.max_speed
-        try:
-            await super().move_to(position, speed)
-        except RuntimeError as e:
-            self.log.error(f'could not move axis to {position} because of {e}')
-            return
+        await super().move_to(position, speed)
         self.target_steps = self.compute_steps(position)
         self.speed = speed if self.target_steps > self.steps else speed * -1
         while self.target_steps is not None:
             await rosys.sleep(0.2)
 
+    @track
+    @uninterruptible
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
@@ -127,6 +136,16 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
 
     async def reset_fault(self) -> None:
         self.alarm = False
+
+    def set_alarm(self) -> None:
+        self.alarm = True
+
+    @track
+    @uninterruptible
+    async def recover(self) -> None:
+        self.log.debug('recovering axis')
+        await rosys.run.retry(self.reset_fault, max_timeout=2.0)
+        await self.try_reference()
 
     async def step(self, dt: float) -> None:
         await super().step(dt)

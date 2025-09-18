@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from nicegui import app, events, ui
+from rosys.geometry import GeoPose
 
 from .field_creator import FieldCreator
 from .key_controls import KeyControls
@@ -41,8 +42,9 @@ class Operation:
                         self.navigation_settings = ui.row().classes('items-center')
                     with ui.expansion('Implement').classes('w-full').bind_value(app.storage.user, 'show_implement_settings'):
                         self.implement_settings = ui.row().classes('items-center')
-                    with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row().classes('items-center'):
-                        self.plant_provider.settings_ui()
+                    if self.plant_locator is not None:
+                        with ui.expansion('Plant Provider').classes('w-full').bind_value(app.storage.user, 'show_plant_provider_settings'), ui.row().classes('items-center'):
+                            self.plant_provider.settings_ui()
 
         with activities:
             self.navigation_selection = ui.select(
@@ -94,7 +96,9 @@ class Operation:
                 outline_buffer_width=float(parameters['outline_buffer_width']),
                 bed_count=int(parameters['bed_count']),
                 bed_spacing=float(parameters['bed_spacing']),
-                bed_crops=parameters['bed_crops']
+                bed_crops=parameters['bed_crops'],
+                docking_distance=float(parameters['docking_distance']),
+                charge_dock_pose=parameters['charge_dock_pose']
             )
             ui.notify(f'Parameters of Field "{name}" has been changed')
         else:
@@ -123,11 +127,14 @@ class Operation:
                 'outline_buffer_width': self.field_provider.selected_field.outline_buffer_width if self.field_provider.selected_field else 2.0,
                 'bed_count': self.field_provider.selected_field.bed_count if self.field_provider.selected_field else 1,
                 'bed_spacing': self.field_provider.selected_field.bed_spacing if self.field_provider.selected_field else 0.5,
-                'bed_crops': self.field_provider.selected_field.bed_crops if self.field_provider.selected_field else {'0': None}
+                'bed_crops': self.field_provider.selected_field.bed_crops if self.field_provider.selected_field else {'0': None},
+                'docking_distance': self.field_provider.selected_field.docking_distance if self.field_provider.selected_field else 2.0,
+                'charge_dock_pose': self.field_provider.selected_field.charge_dock_pose if self.field_provider.selected_field else None
             }
             with ui.tabs().classes('w-full') as tabs:
                 one = ui.tab('General')
                 two = ui.tab('Beds')
+                three = ui.tab('Charging')
             with ui.tab_panels(tabs, value=two).classes('w-full'):
                 with ui.tab_panel(one):
                     ui.input('Field Name', value=parameters['name']) \
@@ -140,6 +147,7 @@ class Operation:
                     ui.input('Row Number (per Bed)', value=parameters['row_count']) \
                         .props('dense outlined').classes('w-full') \
                         .bind_value(parameters, 'row_count') \
+                        .bind_label_from(parameters, 'bed_count', lambda v: 'Number of Rows (per Bed)' if v > 1 else 'Number of Rows') \
                         .tooltip('Set the number of rows per bed.')
                     ui.number('Row Spacing', value=parameters['row_spacing'], suffix='cm', min=1, step=1) \
                         .props('dense outlined').classes('w-full') \
@@ -156,16 +164,34 @@ class Operation:
                         .bind_value(parameters, 'bed_count') \
                         .tooltip('Set the number of beds')
                     ui.separator()
-                    with ui.column().classes('w-full').style('max-height: 500px; overflow-y: auto;'):
-                        for i in range(parameters['bed_count']):
-                            with ui.row().classes('w-full item-center'):
-                                ui.label(f'Bed {i + 1}:').classes('text-lg')
-                                ui.select(self.plant_locator.crop_category_names) \
-                                    .props('dense outlined').classes('w-40') \
-                                    .bind_value(parameters, 'bed_crops',
-                                                forward=lambda v, idx=i: {
-                                                    **parameters.get('bed_crops', {}), str(idx): v},
-                                                backward=lambda v, idx=i: v.get(str(idx)))
+                    if self.plant_locator is not None:
+                        with ui.column().classes('w-full').style('max-height: 500px; overflow-y: auto;'):
+                            for i in range(parameters['bed_count']):
+                                with ui.row().classes('w-full item-center'):
+                                    ui.label(f'Bed {i}:').classes('text-lg')
+
+                                    def forward_func(v, idx=i):
+                                        return {**parameters.get('bed_crops', {}), str(idx): v}
+
+                                    def backward_func(v, idx=i):
+                                        return v.get(str(idx))
+                                    ui.select(self.plant_locator.crop_category_names) \
+                                        .props('dense outlined').classes('w-40') \
+                                        .bind_value(parameters, 'bed_crops',
+                                                    forward=forward_func,
+                                                    backward=backward_func)
+                with ui.tab_panel(three):
+                    def set_docked_position():
+                        parameters['charge_dock_pose'] = GeoPose.from_pose(self.system.robot_locator.pose)
+
+                    def clear_docked_position():
+                        parameters['charge_dock_pose'] = None
+                    ui.button('Set Docked Position', on_click=set_docked_position)
+                    ui.button('Clear Docked Position', on_click=clear_docked_position, color='red')
+                    ui.number('Docking distance', value=parameters['docking_distance'], min=0, step=0.01, format='%.3f', suffix='m') \
+                        .props('dense outlined').classes('w-full') \
+                        .bind_value(parameters, 'docking_distance') \
+                        .tooltip('Set the distance from the charging station to the robot')
             with ui.row():
                 ui.button('Cancel', on_click=self.edit_field_dialog.close)
                 ui.button('Apply', on_click=lambda: self.edit_selected_field(parameters))
@@ -200,7 +226,7 @@ class Operation:
                         beds_checkbox = ui.checkbox('Select specific beds').classes('w-full') \
                             .bind_value(self.system.field_provider, 'only_specific_beds')
                         with ui.row().bind_visibility_from(beds_checkbox, 'value').classes('w-full'):
-                            ui.select(list(range(1, int(self.field_provider.selected_field.bed_count) + 1)),
+                            ui.select(list(range(0, int(self.field_provider.selected_field.bed_count))),
                                       multiple=True, label='selected beds', clearable=True) \
                                 .classes('grow').props('use-chips') \
                                 .bind_value(self.field_provider, 'selected_beds')

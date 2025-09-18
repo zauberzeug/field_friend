@@ -3,6 +3,7 @@ from rosys.helpers import remove_indentation
 
 
 class CanOpenMasterHardware(rosys.hardware.ModuleHardware):
+    """RoSys module to control the CANOpen master Lizard module."""
 
     def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
                  can: rosys.hardware.CanHardware,

@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import rosys
 from nicegui import binding, ui
 
@@ -10,6 +11,10 @@ from .components import create_header
 
 
 class MainPage:
+    """The main page of the Field Friend robot.
+
+    The main page displays the robot's current status and allows the control of the robot's automations.
+    """
 
     def __init__(self, system: System) -> None:
         self.system = system
@@ -21,7 +26,6 @@ class MainPage:
 
     def content(self, devmode: bool) -> None:
         page_height = '50vh' if devmode else 'calc(100vh - 170px)'
-        ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
         with ui.row().style(f'height:{page_height}; width: calc(100vw - 2rem); flex-wrap: nowrap;'):
             with ui.column().classes('h-full w-1/2 p-2'):
                 leaflet = leaflet_map(self.system, False)
@@ -33,7 +37,8 @@ class MainPage:
             with ui.row().classes('h-full ml-2 m-2').style('width: calc(100% - 1rem)'):
                 operation(self.system)
                 with ui.column().classes('h-full').style('width: calc(45% - 2rem); flex-wrap: nowrap;'):
-                    camera_card(self.system)
+                    if self.system.camera_provider is not None:
+                        camera_card(self.system)
                     robot_scene(self.system)
                     with ui.row().style('margin: 1rem; width: calc(100% - 2rem);'):
                         with ui.column():

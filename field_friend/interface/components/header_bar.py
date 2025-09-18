@@ -4,12 +4,20 @@ from typing import TYPE_CHECKING
 
 import rosys
 from nicegui import ui
+from rosys.event import Event
 
 from ...hardware import FieldFriend
 from .manual_steerer_dialog import ManualSteererDialog as manual_steerer_dialog
+from .status_drawer import create_status_drawer
 
 if TYPE_CHECKING:
     from ...system import System
+
+
+def create_header(system: System) -> None:
+    ui.colors(primary='#6E93D6', secondary='#53B689', accent='#111B1E', positive='#53B689')
+    drawer = create_status_drawer(system)
+    HeaderBar(system, drawer)
 
 
 class HeaderBar:
@@ -17,15 +25,17 @@ class HeaderBar:
         self.system = system
         self.drawer_icon = 'expand_more'
         self.toggled = False
-        self.STATUS_DRAWER_TOGGLED = rosys.event.Event()
+        self.STATUS_DRAWER_TOGGLED: Event = Event()
         '''tells if the status drawer is toggled or not.'''
 
-        with ui.header().classes('items-center'):
+        with ui.header().classes('items-center py-3'):
             with ui.link(target='/'):
                 ui.image('assets/zz_logo.png').tailwind.width('12')
             ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
 
-            with ui.row().bind_visibility_from(system.field_friend.estop, 'active').classes('mr-auto bg-red-500 text-white p-2 rounded-md'):
+            with ui.row().classes('mr-auto bg-red-500 text-white p-2 rounded-md') \
+                .bind_visibility_from(system.field_friend.estop, 'active',
+                                      backward=lambda active: active and not system.field_friend.estop.is_soft_estop_active):
                 ui.icon('report').props('size=md').classes('text-white').props('elevated')
                 ui.label().bind_text_from(system.field_friend.estop, 'pressed_estops',
                                           lambda e: f'Emergency stop {e} is pressed!') \
@@ -38,13 +48,14 @@ class HeaderBar:
             with ui.row():
                 # ui.link('Field planner', '/field').classes('text-white text-lg !no-underline')
                 ui.link('Circle Sight', '/monitor').classes('text-white text-lg !no-underline')
-                # ui.link('Development', '/dev').classes('text-white text-lg !no-underline')
+                ui.link('Low Bandwidth', '/lb').classes('text-white text-lg !no-underline')
+                ui.link('KPI', '/kpis').classes('text-white text-lg !no-underline')
 
             ui.button('Manual Steering', on_click=lambda system=system: manual_steerer_dialog(system)).tooltip(
                 'Open the manual steering window to move the robot with a joystick.')
 
             self.internet_status = ui.icon('wifi', size='sm')
-            if system.is_real:
+            if not rosys.is_simulation():
                 self._update_internet_status()
                 self.system.teltonika_router.CONNECTION_CHANGED.register_ui(self._update_internet_status)
 

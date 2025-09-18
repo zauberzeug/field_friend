@@ -3,6 +3,8 @@ import abc
 import rosys
 from rosys.helpers import remove_indentation
 
+from ..config import FlashlightConfiguration
+
 
 class Flashlight(rosys.hardware.Module, abc.ABC):
     MAX_HOT_DURATION = 10.0
@@ -65,26 +67,30 @@ class Flashlight(rosys.hardware.Module, abc.ABC):
 
 class FlashlightHardware(Flashlight, rosys.hardware.ModuleHardware):
 
-    def __init__(self, robot_brain: rosys.hardware.RobotBrain, *,
-                 expander: rosys.hardware.ExpanderHardware | None,
-                 name: str = 'flashlight',
-                 pin: int = 5) -> None:
-        self.name = name
+    def __init__(self, config: FlashlightConfiguration, robot_brain: rosys.hardware.RobotBrain,
+                 expander: rosys.hardware.ExpanderHardware | None) -> None:
+        self.config = config
         self.expander = expander
         # TODO: is this always on the expander? otherwise it will break
         lizard_code = remove_indentation(f'''
-            {name} = {expander.name + "." if expander else ""}Output({pin})
-            {name}.on()
+            {config.name} = {expander.name + "." if expander else ""}Output({config.pin})
+            {config.name}.on()
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 
     async def turn_on(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Turning on flashlight failed. Robot Brain is not ready.')
+            return
         await super().turn_on()
-        await self.robot_brain.send(f'{self.name}.off()')
+        await self.robot_brain.send(f'{self.config.name}.off()')
 
     async def turn_off(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Turning on flashlight failed. Robot Brain is not ready.')
+            return
         await super().turn_off()
-        await self.robot_brain.send(f'{self.name}.on()')
+        await self.robot_brain.send(f'{self.config.name}.on()')
 
 
 class FlashlightSimulation(Flashlight, rosys.hardware.ModuleSimulation):

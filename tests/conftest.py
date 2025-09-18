@@ -1,14 +1,14 @@
-
 import logging
 from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import rosys
-from rosys.geometry import GeoPoint, GeoReference
-from rosys.hardware import GnssSimulation
+from rosys.geometry import GeoPoint, GeoPose, GeoReference, Pose
+from rosys.hardware import GnssSimulation, ImuSimulation, WheelsSimulation
 from rosys.testing import forward, helpers
 
 from field_friend.automations import Field, Row
+from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.system import System
 
@@ -23,13 +23,11 @@ log = logging.getLogger('field_friend.testing')
 
 @pytest.fixture
 async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
-    System.version = getattr(request, 'param', 'rb34')
-    System.robot_id = 'u6'
-    s = System()
-    helpers.odometer = s.robot_locator  # type: ignore
+    s = System(getattr(request, 'param', 'u6'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -42,12 +40,29 @@ async def system(rosys_integration, request) -> AsyncGenerator[System, None]:
 
 @pytest.fixture
 async def system_with_tornado(rosys_integration, request) -> AsyncGenerator[System, None]:
-    System.version = getattr(request, 'param', 'rb28')
-    System.robot_id = 'u4'
-    s = System()
+    s = System(getattr(request, 'param', 'u4'))
     assert isinstance(s.detector, rosys.vision.DetectorSimulation)
     s.detector.detection_delay = 0.1
     GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.robot_locator
+    helpers.driver = s.driver
+    helpers.automator = s.automator
+    await forward(3)
+    assert s.gnss.is_connected, 'device should be created'
+    assert s.gnss.last_measurement is not None
+    assert GeoReference.current is not None
+    assert s.gnss.last_measurement.point.distance(GeoReference.current.origin) == pytest.approx(0, abs=1e-8)
+    yield s
+
+
+@pytest.fixture
+async def system_with_acceleration(rosys_integration) -> AsyncGenerator[System, None]:
+    s = System('u4', use_acceleration=True)
+    assert isinstance(s.field_friend.wheels, WheelsSimulationWithAcceleration)
+    assert isinstance(s.detector, rosys.vision.DetectorSimulation)
+    s.detector.detection_delay = 0.1
+    GeoReference.update_current(GEO_REFERENCE)
+    helpers.odometer = s.robot_locator
     helpers.driver = s.driver
     helpers.automator = s.automator
     await forward(3)
@@ -64,6 +79,12 @@ def gnss(system: System) -> GnssSimulation:
     return system.gnss
 
 
+@pytest.fixture
+def imu(system: System) -> ImuSimulation:
+    assert isinstance(system.field_friend.imu, ImuSimulation)
+    return system.field_friend.imu
+
+
 class TestField:
     def __init__(self):
         self.id = 'test_field_id'
@@ -78,21 +99,23 @@ class TestField:
         self.bed_crops = {
             '0': 'sugar_beet',
         }
+        self.docking_distance = 2.0
+        self.charge_dock_pose = GeoPose.from_degrees(51.98332541182115, 7.434223079593405, 86.69682979709266)
         self.row_support_points = []
         self.rows = [
-            Row(id=f'field_{self.id}_row_1', name='row_1', points=[
+            Row(id=f'field_{self.id}_row_0', name='row_0', points=[
                 self.first_row_start,
                 self.first_row_end
             ], crop=self.bed_crops['0']),
-            Row(id=f'field_{self.id}_row_2', name='row_2', points=[
+            Row(id=f'field_{self.id}_row_1', name='row_1', points=[
                 self.first_row_start.shift_by(x=0, y=-0.45),
                 self.first_row_end.shift_by(x=0, y=-0.45)
             ], crop=self.bed_crops['0']),
-            Row(id=f'field_{self.id}_row_3', name='row_3', points=[
+            Row(id=f'field_{self.id}_row_2', name='row_2', points=[
                 self.first_row_start.shift_by(x=0, y=-0.9),
                 self.first_row_end.shift_by(x=0, y=-0.9)
             ], crop=self.bed_crops['0']),
-            Row(id=f'field_{self.id}_row_4', name='row_4', points=[
+            Row(id=f'field_{self.id}_row_3', name='row_3', points=[
                 self.first_row_start.shift_by(x=0, y=-1.35),
                 self.first_row_end.shift_by(x=0, y=-1.35)
             ], crop=self.bed_crops['0'])
@@ -122,7 +145,9 @@ async def field(system: System) -> AsyncGenerator[TestField, None]:
         bed_count=test_field.bed_count,
         bed_spacing=test_field.bed_spacing,
         bed_crops=test_field.bed_crops,
-        row_support_points=[]
+        row_support_points=[],
+        docking_distance=test_field.docking_distance,
+        charge_dock_pose=test_field.charge_dock_pose
     ))
     yield test_field
 
@@ -226,3 +251,14 @@ def gnss_driving(system: System) -> Generator[System, None, None]:
 def detector(system: System) -> Generator[rosys.vision.DetectorSimulation, None, None]:
     assert isinstance(system.detector, rosys.vision.DetectorSimulation)
     yield system.detector
+
+
+def set_robot_pose(system: System, pose: Pose):
+    # pylint: disable=protected-access
+    assert isinstance(system.field_friend.wheels, WheelsSimulation)
+    system.robot_locator._x[0, 0] = pose.x
+    system.robot_locator._x[1, 0] = pose.y
+    system.robot_locator._x[2, 0] = pose.yaw
+    system.field_friend.wheels.pose.x = pose.x
+    system.field_friend.wheels.pose.y = pose.y
+    system.field_friend.wheels.pose.yaw = pose.yaw

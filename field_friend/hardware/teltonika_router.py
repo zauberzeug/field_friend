@@ -6,6 +6,7 @@ import httpx
 import rosys
 from dotenv import load_dotenv
 from nicegui import ui
+from rosys.event import Event
 
 load_dotenv('.env')
 
@@ -14,10 +15,12 @@ ADMIN_PASSWORD = os.environ.get('TELTONIKA_PASSWORD')
 
 
 class TeltonikaRouter:
+    """Implements the api of the built in RUT955 router."""
+
     def __init__(self) -> None:
         super().__init__()
         self.current_connection: str = 'disconnected'
-        self.CONNECTION_CHANGED = rosys.event.Event()
+        self.CONNECTION_CHANGED: Event = Event()
 
         self.log = logging.getLogger('hardware.teltonika_router')
 
@@ -26,7 +29,7 @@ class TeltonikaRouter:
         self.token_time: float = 0.0
         self.connection_check_running = False
         self.mobile_upload_permission = False
-        self.MOBILE_UPLOAD_PERMISSION_CHANGED = rosys.event.Event()
+        self.MOBILE_UPLOAD_PERMISSION_CHANGED: Event = Event()
         if ADMIN_PASSWORD:
             self.log.info('Connecting to Teltonika router...')
             rosys.on_repeat(self.get_current_connection, 1.0)

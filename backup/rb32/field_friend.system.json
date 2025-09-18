@@ -1,3 +1,8 @@
 {
-    "automation": "collecting (demo)"
+    "navigation": "Field Navigation",
+    "implement": "Tornado",
+    "gnss_reference": [
+        53.344676773587935,
+        9.755695271535638
+    ]
 }
