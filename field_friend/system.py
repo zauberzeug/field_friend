@@ -199,7 +199,6 @@ class System(rosys.persistence.Persistable):
     def setup_implements(self) -> None:
         persistence_key = 'field_friend.automations.implements.weeding'
         implements: list[Implement] = []
-        self.log.warning(f'Setting up implements for {self.field_friend.implement_name}')
         match self.field_friend.implement_name:
             case 'delta_arm':
                 implements.append(Recorder(self))
