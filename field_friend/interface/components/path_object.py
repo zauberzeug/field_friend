@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from contextlib import nullcontext
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
-from nicegui import ui
-from nicegui.elements.scene_objects import Curve
+from nicegui.elements.scene_objects import Curve, Group
 
 from ...automations.navigation import DriveSegment
 
@@ -12,7 +10,7 @@ if TYPE_CHECKING:
     from ... import System
 
 
-class PathObject(ui.scene.group):
+class PathObject(Group):
     """
     A path object that displays the upcoming path of the robot.
 
@@ -23,29 +21,28 @@ class PathObject(ui.scene.group):
         super().__init__()
         self.system = system
         self.height = height
-        with self.scene or nullcontext():
-            self.system.automator.AUTOMATION_STARTED.register_ui(self.register)
-            self.system.automator.AUTOMATION_STOPPED.register_ui(lambda _: self.clear_path())
+        assert self.system.current_navigation is not None
+        self.clear_path()
 
-    def register(self) -> None:
-        def update_upcoming_path(_: DriveSegment) -> None:
-            assert self.system.current_navigation is not None
+    def visible(self, value: bool = True) -> Self:
+        assert self.system.current_navigation is not None
+        if value:
             self.update(self.system.current_navigation.path)
-        if self.system.current_navigation is None:
-            return
-        with self.scene or nullcontext():
-            self.system.current_navigation.SEGMENT_COMPLETED.register_ui(update_upcoming_path)
-            self.system.current_navigation.PATH_GENERATED.register_ui(self.update)
+            with self:
+                self.system.current_navigation.SEGMENT_COMPLETED.register_ui(self.update_upcoming_segment)
+                self.system.current_navigation.PATH_GENERATED.register_ui(self.update)
+        else:
+            self.system.current_navigation.SEGMENT_COMPLETED.unregister(self.update_upcoming_segment)
+            self.system.current_navigation.PATH_GENERATED.unregister(self.update)
+        super().visible(value)
+        return self
 
     def update(self, path: list[DriveSegment]) -> None:
         self.clear_path()
-        with self.scene or nullcontext():
+        with self:
             for segment in reversed(path):
-                color: str
-                if segment.use_implement:
-                    color = '#ff0000'  # red
-                else:
-                    color = '#87ceeb'  # light blue
+                # NOTE: red for implement use, light blue for no implement use
+                color = '#ff0000' if segment.use_implement else '#87ceeb'
                 Curve(
                     [segment.spline.start.x, segment.spline.start.y, self.height],
                     [segment.spline.control1.x, segment.spline.control1.y, self.height],
@@ -53,7 +50,14 @@ class PathObject(ui.scene.group):
                     [segment.spline.end.x, segment.spline.end.y, self.height],
                 ).material(color).with_name('path')
 
+    def update_upcoming_segment(self, _: DriveSegment | None) -> None:
+        # NOTE: just a wrapper for update, because SEGMENT_COMPLETED has a payload
+        with self:
+            assert self.system.current_navigation is not None
+            self.update(self.system.current_navigation.path)
+
     def clear_path(self) -> None:
-        for obj in list(self.scene.objects.values()):
-            if obj.name == 'path':
-                obj.delete()
+        with self:
+            for obj in list(self.scene.objects.values()):
+                if obj.name == 'path':
+                    obj.delete()
