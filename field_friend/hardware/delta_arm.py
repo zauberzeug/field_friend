@@ -170,7 +170,12 @@ class DeltaArm(rosys.hardware.Module, ABC):
             ui.button(icon='chevron_right', on_click=lambda: self.move_relative(-step_input.value, 0))
 
     def scene_object(self) -> None:
-        frame_3d_object(self.base_frame, name='Base Frame', show_x=False, length=self.b)
+        with frame_3d_object(self.base_frame, name='Base Frame', show_x=False, length=self.b):
+            ui.scene.sphere(0.01).material('#4488ff') \
+                .move(*self.servo_frame_left.relative_to(self.base_frame).translation)
+            ui.scene.sphere(0.01).material('#4488ff') \
+                .move(*self.servo_frame_right.relative_to(self.base_frame).translation)
+
         frame_3d_object(self.l1_left_frame, name='L1 Left', show_x=False, show_z=False, length=self.l1)
         frame_3d_object(self.l1_right_frame, name='L1 Right', show_x=False, show_z=False, length=self.l1)
         frame_3d_object(self.l2_left_frame, name='L2 Left', show_x=False, show_z=False, length=self.l2)
