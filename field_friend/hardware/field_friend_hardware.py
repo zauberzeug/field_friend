@@ -6,6 +6,7 @@ import rosys
 from ..config import (
     AxisD1Configuration,
     ChainAxisConfiguration,
+    DeltaArmConfiguration,
     FieldFriendConfiguration,
     SprayerConfiguration,
     TornadoConfiguration,
@@ -17,6 +18,7 @@ from ..config import (
 from .axis_d1 import AxisD1
 from .can_open_master import CanOpenMasterHardware
 from .chain_axis import ChainAxisHardware
+from .delta_arm import DeltaArmHardware
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
 from .flashlight_pwm import FlashlightPWMHardware
@@ -115,9 +117,11 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown y_axis version: {config.y_axis.version}')
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | SprayerHardware | None
+        z_axis: DeltaArmHardware | TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | SprayerHardware | None
         if not config.z_axis:
             z_axis = None
+        elif isinstance(config.z_axis, DeltaArmConfiguration) and config.z_axis.version == 'delta_arm':
+            z_axis = DeltaArmHardware(config.z_axis, robot_brain, self.can)
         elif isinstance(config.z_axis, ZStepperConfiguration) and config.z_axis.version == 'z_axis_stepper':
             z_axis = ZAxisStepperHardware(config.z_axis, robot_brain, expander=expander)
         elif isinstance(config.z_axis, AxisD1Configuration) and config.z_axis.version == 'axis_d1':
