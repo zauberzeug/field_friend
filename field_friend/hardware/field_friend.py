@@ -3,7 +3,6 @@ import rosys
 
 from .axis import Axis
 from .chain_axis import ChainAxis
-from .delta_arm import DeltaArm
 from .flashlight import Flashlight
 from .flashlight_pwm import FlashlightPWM
 from .flashlight_v2 import FlashlightV2
@@ -31,7 +30,7 @@ class FieldFriend(rosys.hardware.Robot):
             wheels: rosys.hardware.Wheels,
             flashlight: Flashlight | FlashlightV2 | FlashlightPWM | None,
             y_axis: Axis | ChainAxis | None,
-            z_axis: Axis | Tornado | DeltaArm | None,
+            z_axis: Axis | Tornado | None,
             imu: rosys.hardware.Imu | None,
             estop: rosys.hardware.EStop,
             bumper: rosys.hardware.Bumper | None,

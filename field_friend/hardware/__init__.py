@@ -1,7 +1,6 @@
 from .axis import Axis
 from .axis_d1 import AxisD1
 from .chain_axis import ChainAxis
-from .delta_arm import DeltaArm, DeltaArmHardware, DeltaArmSimulation
 from .double_wheels import DoubleWheelsHardware
 from .field_friend import FieldFriend
 from .field_friend_hardware import FieldFriendHardware
@@ -18,9 +17,6 @@ __all__ = [
     'Axis',
     'AxisD1',
     'ChainAxis',
-    'DeltaArm',
-    'DeltaArmHardware',
-    'DeltaArmSimulation',
     'DoubleWheelsHardware',
     'FieldFriend',
     'FieldFriendHardware',
