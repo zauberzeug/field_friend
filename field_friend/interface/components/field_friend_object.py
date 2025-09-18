@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import rosys
 from nicegui.elements.scene_objects import Box, Cylinder, Extrusion, Group, Stl
 from rosys.driving import robot_object
 from rosys.geometry import Prism
@@ -13,7 +14,10 @@ from ...robot_locator import RobotLocator
 class FieldFriendObject(robot_object):
     DEFAULT_WIDTH = 0.47
 
-    def __init__(self, robot_locator: RobotLocator, camera_provider: CameraProvider | None, field_friend: FieldFriend, *, width: float = DEFAULT_WIDTH) -> None:
+    def __init__(self, robot_locator: RobotLocator,
+                 camera_provider: CameraProvider | None,
+                 field_friend: FieldFriend, *,
+                 width: float = DEFAULT_WIDTH) -> None:
         super().__init__(Prism(outline=[], height=0), robot_locator)  # type: ignore
         self.robot = field_friend
         if width == self.DEFAULT_WIDTH:
@@ -23,7 +27,10 @@ class FieldFriendObject(robot_object):
             self.with_xl_stl(width=width, color='#6E93D6', opacity=0.7)
 
         if camera_provider is not None:
-            camera_objects(camera_provider, CameraProjector(camera_provider, interval=0.1), interval=0.1)
+            self.camera_objects = camera_objects(camera_provider,
+                                                 CameraProjector(camera_provider,
+                                                                 interval=rosys.config.ui_update_interval),
+                                                 interval=rosys.config.ui_update_interval)
         with self:
             if isinstance(self.robot.y_axis, Axis):
                 with Group() as self.tool:
