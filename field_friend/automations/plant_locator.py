@@ -56,7 +56,7 @@ class PlantLocator(EntityLocator):
 
             async def set_outbox_mode() -> None:
                 assert isinstance(self.detector, DetectorHardware)
-                await self.detector.set_outbox_mode(value=self.upload_images)
+                await self.detector.set_outbox_mode(mode='continuous_upload' if self.upload_images else 'stopped')
             rosys.on_repeat(set_outbox_mode, 1.0)
         self.detector_error = False
         self.last_detection_time = rosys.time()
