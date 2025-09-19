@@ -1,7 +1,7 @@
 fiona
 geopandas
 geopy
-git+https://github.com/zauberzeug/rosys.git@85a5947e46a73a4ca2a9c4d3611f94f6a358059d
+git+https://github.com/zauberzeug/rosys.git@31092d8588b28131002cec130d91c1ef8daf5f96
 icecream
 nicegui == 2.24.1
 pillow

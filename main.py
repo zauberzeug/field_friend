@@ -4,7 +4,6 @@ import os
 
 from dotenv import load_dotenv
 from nicegui import app, ui
-from rosys.analysis import logging_page, videos_page
 
 from field_friend import api, interface, log_configuration
 from field_friend.interface.components.log_monitor import LogMonitor
@@ -34,8 +33,8 @@ def startup() -> None:
     interface.bms_page(system)  # /bms
     interface.kpi_page(system)  # /kpi
     interface.low_bandwidth_page(system, log_monitor)  # /lb
-    logging_page(['field_friend', 'rosys'])  # /logging
-    videos_page()  # /videos
+    interface.logging_page(system, ['field_friend', 'rosys'])  # /logging
+    interface.videos_page(system)  # /videos
 
     # API Endpoints
     api.Online()  # get /api/online
