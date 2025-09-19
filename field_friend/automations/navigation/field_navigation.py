@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Self
 
@@ -35,8 +36,6 @@ class FieldNavigation(WaypointNavigation):
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__(system, implement)
         self.name = 'Field Navigation'
-        self.gnss = system.gnss
-        self.automator = system.automator
         self.automation_watcher = system.automation_watcher
         self.field_provider = system.field_provider
 
@@ -46,6 +45,21 @@ class FieldNavigation(WaypointNavigation):
         self.return_to_start = self.RETURN_TO_START
         self.charge_automatically = self.CHARGE_AUTOMATICALLY
         self.force_charge = False
+        self.loop_active = False
+        self.PATH_COMPLETED.register(self.handle_path_completed)
+
+    async def handle_path_completed(self) -> None:
+        if not self.loop_active:
+            return
+        gc.collect()
+        while True:
+            await rosys.sleep(10)
+            if self.system.field_friend.bms.is_below_percent(self.battery_working_percentage):
+                continue
+            if not isinstance(self.system.current_navigation, FieldNavigation):
+                continue
+            self.system.automator.start()
+            return
 
     @property
     def field(self) -> Field | None:
@@ -141,7 +155,7 @@ class FieldNavigation(WaypointNavigation):
         if self._should_charge():
             no_more_rows = sum(1 for segment in self._upcoming_path if isinstance(segment, RowSegment)) == 0
             await self._run_charging(stop_after_docking=no_more_rows)
-        if self.field.charge_dock_pose is not None and self.has_waypoints and self.system.field_friend.bms.state.is_charging:
+        if self.field.charging_station is not None and self.has_waypoints and self.system.field_friend.bms.state.is_charging:
             await self.undock()
             while not isinstance(self.current_segment, RowSegment):
                 self._upcoming_path.pop(0)
@@ -154,7 +168,7 @@ class FieldNavigation(WaypointNavigation):
         assert self.field is not None
         if not self.charge_automatically:
             return False
-        if self.field.charge_dock_pose is None:
+        if self.field.charging_station is None:
             return False
         if self.current_row:
             self.log.debug('Not charging: Not allowed to charge on row')
@@ -180,11 +194,10 @@ class FieldNavigation(WaypointNavigation):
     @track
     async def _run_charging(self, *, stop_after_docking: bool = False) -> None:
         assert self.field is not None
-        assert self.field.charge_dock_pose is not None
-        assert self.field.charge_approach_pose is not None
+        assert self.field.charging_station is not None
         while self.current_segment is not None and not isinstance(self.current_segment, RowSegment):
             self._upcoming_path.pop(0)  # NOTE: pop unnecessary turn segments
-        approach_pose = self.field.charge_approach_pose.to_local()
+        approach_pose = self.field.charging_station.approach_pose.to_local()
         approach_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
         self._upcoming_path.insert(0, approach_segment)
         self.PATH_GENERATED.emit(self._upcoming_path)
@@ -255,9 +268,8 @@ class FieldNavigation(WaypointNavigation):
         local_row_end = row.points[-1].to_local()
         row_start_pose = Pose(x=local_row_start.x, y=local_row_start.y, yaw=local_row_start.direction(local_row_end))
         if self.charge_automatically and self.system.field_friend.bms.state.is_charging:
-            assert self.field.charge_dock_pose is not None
-            assert self.field.charge_approach_pose is not None
-            current_pose = self.field.charge_approach_pose.to_local()
+            assert self.field.charging_station is not None
+            current_pose = self.field.charging_station.approach_pose.to_local()
         else:
             current_pose = self.system.robot_locator.pose
         if current_pose.distance(row_start_pose) < safety_padding:
@@ -287,8 +299,8 @@ class FieldNavigation(WaypointNavigation):
     @track
     async def approach_dock(self):
         assert self.field is not None
-        assert self.field.charge_approach_pose is not None
-        approach_pose = self.field.charge_approach_pose.to_local()
+        assert self.field.charging_station is not None
+        approach_pose = self.field.charging_station.approach_pose.to_local()
         forward_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose)
         forward_length = forward_segment.spline.estimated_length()
         backward_segment = DriveSegment.from_poses(self.system.robot_locator.pose, approach_pose, backward=True)
@@ -300,6 +312,9 @@ class FieldNavigation(WaypointNavigation):
 
     @track
     async def dock(self):
+        assert self.field is not None
+        assert self.field.charging_station is not None
+
         async def wait_for_charging():
             while not self.system.field_friend.bms.state.is_charging:
                 await rosys.sleep(0.1)
@@ -312,9 +327,10 @@ class FieldNavigation(WaypointNavigation):
                 self.log.error('No RTK fix, aborting')
                 return
             assert self.field is not None
-            assert self.field.charge_dock_pose is not None
-            self.log.debug(f'Moving to docked pose: {self.field.charge_dock_pose}')
-            local_docked_pose = self.field.charge_dock_pose.to_local() \
+            assert self.field.charging_station is not None
+            self.log.debug('Moving to docked pose: %s with y_offset: %s',
+                           self.field.charging_station.dock_pose, y_offset)
+            local_docked_pose = self.field.charging_station.dock_pose.to_local() \
                 .transform_pose(Pose(x=0.0, y=y_offset, yaw=0.0))
             docking_segment = DriveSegment.from_poses(self.system.robot_locator.pose, local_docked_pose, backward=True)
             self._upcoming_path.insert(0, docking_segment)
@@ -323,27 +339,41 @@ class FieldNavigation(WaypointNavigation):
             if isinstance(self.system.field_friend.bms, BmsSimulation):
                 self.system.field_friend.bms.voltage_per_second = 0.03
 
+        async def _dock() -> bool:
+            assert self.field is not None
+            assert self.field.charging_station is not None
+            last_offset = self.field.charging_station.last_offset
+            for y_offset in (last_offset, 0.0, 0.005, -0.005, 0.01, -0.01, 0.015, -0.015, 0.02, -0.02):
+                await rosys.automation.parallelize(
+                    gnss_move(y_offset),
+                    wait_for_charging(),
+                    return_when_first_completed=True,
+                )
+                await rosys.automation.parallelize(
+                    rosys.sleep(20),
+                    wait_for_charging(),
+                    return_when_first_completed=True,
+                )
+                if self.system.field_friend.bms.state.is_charging:
+                    self.field.charging_station.last_offset = y_offset
+                    self.field_provider.request_backup()
+                    return True
+                await self.undock()
+            return False
+
         rosys.notify('Docking to charging station')
         if isinstance(self.system.field_friend.bms, BmsHardware):
             old_interval = self.system.field_friend.bms.UPDATE_INTERVAL
             self.system.field_friend.bms.UPDATE_INTERVAL = 0.1
-        for y_offset in (0.0, 0.0, 0.005, -0.005, 0.01, -0.01, 0.015, -0.015, 0.02, -0.02):
-            await rosys.automation.parallelize(
-                gnss_move(y_offset),
-                wait_for_charging(),
-                return_when_first_completed=True,
-            )
-            await rosys.automation.parallelize(
-                rosys.sleep(10),
-                wait_for_charging(),
-                return_when_first_completed=True,
-            )
-            if self.system.field_friend.bms.state.is_charging:
-                rosys.notify('Docking successful', 'positive')
+        while True:
+            self.log.debug('Starting docking')
+            if await _dock():
                 break
-            await self.undock()
-        else:
-            rosys.notify('Failed to dock', 'negative')
+            self.log.warning('Docking failed, resetting robot locator and retrying')
+            # TODO: test this reset
+            await self.robot_locator.reset()
+            await rosys.sleep(10)
+        rosys.notify('Docking successful', 'positive')
         if isinstance(self.system.field_friend.bms, BmsHardware):
             self.system.field_friend.bms.UPDATE_INTERVAL = old_interval
         await self.system.field_friend.wheels.stop()
@@ -351,12 +381,12 @@ class FieldNavigation(WaypointNavigation):
     @track
     async def undock(self):
         assert self.field is not None
-        assert self.field.charge_approach_pose is not None
-        if self.field.charge_approach_pose is None:
+        assert self.field.charging_station is not None
+        if self.field.charging_station.approach_pose is None:
             rosys.notify('Record the docked position first', 'negative')
             return
         rosys.notify('Detaching from charging station')
-        undock_pose = self.field.charge_approach_pose.to_local()
+        undock_pose = self.field.charging_station.approach_pose.to_local()
         if isinstance(self.system.field_friend.bms, BmsSimulation):
             self.system.field_friend.bms.voltage_per_second = -0.01
         undock_segment = DriveSegment.from_poses(self.system.robot_locator.pose, undock_pose)
@@ -392,10 +422,13 @@ class FieldNavigation(WaypointNavigation):
             .tooltip('The robot will return to the start row')
         ui.checkbox('Charge automatically', on_change=self.request_backup) \
             .bind_value(self, 'charge_automatically',
-                        forward=lambda v: v and self.field is not None and self.field.charge_dock_pose is not None,
-                        backward=lambda v: v and self.field is not None and self.field.charge_dock_pose is not None) \
-            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charge_dock_pose is not None) \
+                        forward=lambda v: v and self.field is not None and self.field.charging_station is not None,
+                        backward=lambda v: v and self.field is not None and self.field.charging_station is not None) \
+            .bind_visibility_from(self, 'field', lambda field: field is not None and field.charging_station is not None) \
             .tooltip('Let the robot charge automatically when a charging station is provided')
+        ui.checkbox('Loop active') \
+            .bind_value(self, 'loop_active') \
+            .tooltip('The automation will start over after it is done')
 
     def developer_ui(self):
         ui.label('Field Navigation').classes('text-center text-bold')

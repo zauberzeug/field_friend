@@ -242,8 +242,8 @@ async def test_start_from_charging_station(system: System, field: Field):
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     assert system.current_navigation.field is not None
-    assert system.current_navigation.field.charge_dock_pose is not None
-    set_robot_pose(system, system.current_navigation.field.charge_dock_pose.to_local())
+    assert system.current_navigation.field.charging_station is not None
+    set_robot_pose(system, system.current_navigation.field.charging_station.dock_pose.to_local())
     system.current_navigation.charge_automatically = True
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
@@ -257,8 +257,8 @@ async def test_charge_after_field(system: System, field: Field):
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     assert system.current_navigation.field is not None
-    assert system.current_navigation.field.charge_dock_pose is not None
-    set_robot_pose(system, system.current_navigation.field.charge_dock_pose.to_local())
+    assert system.current_navigation.field.charging_station is not None
+    set_robot_pose(system, system.current_navigation.field.charging_station.dock_pose.to_local())
     system.current_navigation.charge_automatically = True
     system.current_navigation.start_row_index = 2
     system.automator.start()
@@ -273,8 +273,8 @@ async def test_charge_in_between_rows(system: System, field: Field):
     assert isinstance(system.current_navigation, FieldNavigation)
     assert isinstance(system.current_navigation.implement, Recorder)
     assert system.current_navigation.field is not None
-    assert system.current_navigation.field.charge_dock_pose is not None
-    set_robot_pose(system, system.current_navigation.field.charge_dock_pose.to_local())
+    assert system.current_navigation.field.charging_station is not None
+    set_robot_pose(system, system.current_navigation.field.charging_station.dock_pose.to_local())
     system.current_navigation.charge_automatically = True
     assert isinstance(system.field_friend.bms, BmsSimulation)
     system.field_friend.bms.voltage_per_second = -0.1

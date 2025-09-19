@@ -32,14 +32,33 @@ class RobotScene:
                 .style('position: absolute; left: 1px; top: 1px; z-index: 500;').tooltip('Lock view to robot')
 
             with ui.scene(200, 200, on_click=self.handle_click, grid=True).classes('w-full h-full') as self.scene:
-                field_friend_object(self.system.robot_locator, self.system.camera_provider,
-                                    self.system.field_friend, width=self.system.config.measurements.wheel_distance)
-                rosys.driving.driver_object(self.system.driver)
-                plant_objects(self.system)
-                path_object(self.system)
+                self.field_friend_object = field_friend_object(self.system.robot_locator,
+                                                               self.system.camera_provider,
+                                                               self.system.field_friend,
+                                                               width=self.system.config.measurements.wheel_distance)
+                self.driver_object = rosys.driving.driver_object(self.system.driver)
+                self.plant_objects = plant_objects(self.system, visible=False)
+                self.path_object = path_object(self.system, visible=True)
                 field_object(self.system)
                 self.scene.move_camera(-0.5, -1, 2)
 
+            with ui.button(icon='menu').props('flat color=primary') \
+                    .style('position: absolute; right: 1px; top: 1px; z-index: 500;'):
+                self.field_friend_object.camera_objects.visible(False)
+                self.driver_object.visible(False)
+                with ui.menu().classes('w-48'):
+                    with ui.menu_item():
+                        ui.checkbox('Camera projection', value=self.field_friend_object.camera_objects.visible_,
+                                    on_change=lambda e: self.field_friend_object.camera_objects.visible(e.value))
+                    with ui.menu_item():
+                        ui.checkbox('Driver', value=self.driver_object.visible_,
+                                    on_change=lambda e: self.driver_object.visible(e.value))
+                    with ui.menu_item():
+                        ui.checkbox('Plant objects', value=self.plant_objects.visible_,
+                                    on_change=lambda e: self.plant_objects.visible(e.value))
+                    with ui.menu_item():
+                        ui.checkbox('Path object', value=self.path_object.visible_,
+                                    on_change=lambda e: self.path_object.visible(e.value))
         ui.timer(rosys.config.ui_update_interval, self.update)
 
     def handle_click(self, event: events.SceneClickEventArguments) -> None:
