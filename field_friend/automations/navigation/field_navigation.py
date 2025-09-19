@@ -428,7 +428,7 @@ class FieldNavigation(WaypointNavigation):
             .tooltip('Let the robot charge automatically when a charging station is provided')
         ui.checkbox('Loop active') \
             .bind_value(self, 'loop_active') \
-            .tooltip('Whether the automation should start over after it is done')
+            .tooltip('The automation will start over after it is done')
 
     def developer_ui(self):
         ui.label('Field Navigation').classes('text-center text-bold')
