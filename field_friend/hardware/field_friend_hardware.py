@@ -7,6 +7,7 @@ from ..config import (
     AxisD1Configuration,
     ChainAxisConfiguration,
     FieldFriendConfiguration,
+    MowerConfiguration,
     SprayerConfiguration,
     TornadoConfiguration,
     YCanOpenConfiguration,
@@ -22,6 +23,7 @@ from .field_friend import FieldFriend
 from .flashlight_pwm import FlashlightPWMHardware
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2
 from .flashlight_v2 import FlashlightHardwareV2
+from .mower import MowerHardware
 from .safety import SafetyHardware
 from .sprayer import SprayerHardware
 from .status_control import StatusControlHardware
@@ -115,7 +117,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         else:
             raise NotImplementedError(f'Unknown y_axis version: {config.y_axis.version}')
 
-        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | SprayerHardware | None
+        z_axis: TornadoHardware | ZAxisCanOpenHardware | ZAxisStepperHardware | AxisD1 | SprayerHardware | MowerHardware | None
         if not config.z_axis:
             z_axis = None
         elif isinstance(config.z_axis, ZStepperConfiguration) and config.z_axis.version == 'z_axis_stepper':
@@ -128,6 +130,8 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
             z_axis = ZAxisCanOpenHardware(config.z_axis, robot_brain, can=self.can, expander=expander)
         elif isinstance(config.z_axis, SprayerConfiguration) and config.z_axis.version == 'sprayer':
             z_axis = SprayerHardware(config.z_axis, robot_brain, expander=expander)
+        elif isinstance(config.z_axis, MowerConfiguration) and config.z_axis.version == 'mower':
+            z_axis = MowerHardware(config.z_axis, robot_brain, expander=expander)
         else:
             raise NotImplementedError(f'Unknown z_axis version: {config.z_axis.version}')
 

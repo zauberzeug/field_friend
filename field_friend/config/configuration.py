@@ -68,6 +68,24 @@ class CircleSightPositions:
     left: str = '-4'
 
 
+@dataclass(slots=True, kw_only=True)
+class MowerConfiguration:
+    """Configuration for an external mower of a FieldFriend robot.
+    Defaults:
+        name: 'mower'
+        enable_pin: 4
+        enable_on_expander: False
+        pwm_pin: 5
+        pwm_on_expander: False
+    """
+    name: str = 'mower'
+    enable_pin: int = 4
+    enable_on_expander: bool = False
+    pwm_pin: int = 5
+    pwm_on_expander: bool = False
+    version: Literal['mower'] = 'mower'
+
+
 @dataclass(kw_only=True)
 class CameraConfiguration:
     """Configuration for the camera of the Field Friend robot.
@@ -483,14 +501,14 @@ class FieldFriendConfiguration:
     """
     name: str
     robot_brain: RobotBrainConfiguration
-    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'sprayer', 'recorder'] | None
+    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'sprayer', 'recorder', 'mower'] | None
     measurements: MeasurementsConfiguration
     wheels: WheelsConfiguration
     has_status_control: bool
     camera: CameraConfiguration | None
     circle_sight_positions: CircleSightPositions | None
     y_axis: AxisD1Configuration | ChainAxisConfiguration | YStepperConfiguration | YCanOpenConfiguration | None
-    z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | SprayerConfiguration | None
+    z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | SprayerConfiguration | MowerConfiguration | None
     can: CanConfiguration = field(default_factory=CanConfiguration)
     bms: BmsConfiguration = field(default_factory=BmsConfiguration)
     estop: EstopConfiguration = field(default_factory=EstopConfiguration)

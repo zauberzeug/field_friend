@@ -216,6 +216,8 @@ class System(rosys.persistence.Persistable):
                 implements.append(WeedingSprayer(self))
             case 'recorder':
                 implements.append(Recorder(self))
+            case 'mower':
+                implements.append(Recorder(self))
             case None:
                 implements.append(Implement())
             case _:

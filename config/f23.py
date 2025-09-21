@@ -9,6 +9,7 @@ from field_friend.config.configuration import (
     GnssConfiguration,
     ImuConfiguration,
     MeasurementsConfiguration,
+    MowerConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
 )
@@ -16,7 +17,7 @@ from field_friend.config.configuration import (
 config = FieldFriendConfiguration(
     name='fieldfriend-f23',
     robot_brain=RobotBrainConfiguration(name='rb57', flash_params=['orin', 'v05', 'nand'], use_espresso=True),
-    tool=None,
+    tool='mower',
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033),
     camera=CameraConfiguration(
         width=1280,
@@ -43,7 +44,7 @@ config = FieldFriendConfiguration(
     ),
     bumper=BumperConfiguration(pin_front_top=21, pin_front_bottom=35, pin_back=18),
     y_axis=None,
-    z_axis=None,
+    z_axis=MowerConfiguration(),
     circle_sight_positions=CircleSightPositions(),
     gnss=GnssConfiguration(),
     imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.603092, 0.020933, 1.570120), min_gyro_calibration=0.0),
