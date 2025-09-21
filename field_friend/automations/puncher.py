@@ -3,6 +3,7 @@ import os
 
 import rosys
 from rosys.analysis import track
+from rosys.automation import uninterruptible
 from rosys.driving import Driver
 from rosys.event import Event
 from rosys.geometry import Point
@@ -63,6 +64,7 @@ class Puncher:
             await self.driver.drive_to(world_target, backward=axis_distance < 0)
 
     @track
+    @uninterruptible
     async def punch(self,
                     y: float, *,
                     depth: float = 0.01,
@@ -118,6 +120,7 @@ class Puncher:
             await self.field_friend.z_axis.stop()
 
     @track
+    @uninterruptible
     async def clear_view(self) -> None:
         if self.field_friend.y_axis is None:
             rosys.notify('no y axis', 'negative')

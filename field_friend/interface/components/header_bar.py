@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import rosys
 from nicegui import ui
 from rosys.event import Event
 
@@ -54,7 +55,7 @@ class HeaderBar:
                 'Open the manual steering window to move the robot with a joystick.')
 
             self.internet_status = ui.icon('wifi', size='sm')
-            if system.is_real:
+            if not rosys.is_simulation():
                 self._update_internet_status()
                 self.system.teltonika_router.CONNECTION_CHANGED.register_ui(self._update_internet_status)
 

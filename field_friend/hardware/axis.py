@@ -1,6 +1,8 @@
 import abc
 
 import rosys
+from rosys.analysis import track
+from rosys.automation import uninterruptible
 
 
 class Axis(rosys.hardware.Module, abc.ABC):
@@ -112,6 +114,8 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
         self.speed = 0
         self.target_steps = None
 
+    @track
+    @uninterruptible
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if speed is None:
             speed = self.max_speed
@@ -121,6 +125,8 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
         while self.target_steps is not None:
             await rosys.sleep(0.2)
 
+    @track
+    @uninterruptible
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False
@@ -134,6 +140,8 @@ class AxisSimulation(Axis, rosys.hardware.ModuleSimulation):
     def set_alarm(self) -> None:
         self.alarm = True
 
+    @track
+    @uninterruptible
     async def recover(self) -> None:
         self.log.debug('recovering axis')
         await rosys.run.retry(self.reset_fault, max_timeout=2.0)

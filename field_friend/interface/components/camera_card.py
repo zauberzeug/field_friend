@@ -61,7 +61,7 @@ class CameraCard:
         with self.camera_card.tight().classes('w-full'):
             ui.label('no camera available').classes('text-center')
             ui.image('assets/field_friend.webp').classes('w-full')
-        ui.timer(0.2 if system.is_real else 0.05, self.update_content)
+        ui.timer(0.2, self.update_content)
 
     # TODO: refactor this and use refreshable, remove pylint ignore at top
     def use_camera(self, cam: CalibratableCamera) -> None:

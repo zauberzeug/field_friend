@@ -2,6 +2,7 @@
 # TODO: refactor this and z_axis_stepper_hardware.py
 import rosys
 from rosys.analysis import track
+from rosys.automation import uninterruptible
 from rosys.helpers import remove_indentation
 
 from ..config import YStepperConfiguration
@@ -48,6 +49,7 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.config.name}.stop()')
 
     @track
+    @uninterruptible
     async def move_to(self, position: float, speed: int | None = None) -> None:
         if not speed:
             speed = self.max_speed
@@ -83,6 +85,7 @@ class YAxisStepperHardware(Axis, rosys.hardware.ModuleHardware):
         await self.try_reference()
 
     @track
+    @uninterruptible
     async def try_reference(self) -> bool:
         if not await super().try_reference():
             return False

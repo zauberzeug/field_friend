@@ -97,7 +97,7 @@ def status_dev_page(robot: FieldFriend, system: System):
             with ui.row().classes('place-items-center'):
                 ui.label('Bumper:').style('color: #EDF4FB').classes('font-bold')
                 ui.label().bind_text_from(robot.bumper, 'active_bumpers', backward=', '.join)
-        if system.is_real and isinstance(robot.wheels, DoubleWheelsHardware):
+        if not rosys.is_simulation() and isinstance(robot.wheels, DoubleWheelsHardware):
             with ui.row().classes('place-items-center'):
                 ui.label('Motor Status:').style('color: #EDF4FB').classes('font-bold')
                 if robot.wheels.config.odrive_version == 6:
@@ -109,7 +109,7 @@ def status_dev_page(robot: FieldFriend, system: System):
                     ui.label('cant read status update odrive to version 0.5.6')
                 ui.button('Reset motor errors', on_click=robot.wheels.reset_motors) \
                     .bind_visibility_from(robot.wheels, 'motor_error')
-        if system.is_real and isinstance(robot.z_axis, TornadoHardware):
+        if not rosys.is_simulation() and isinstance(robot.z_axis, TornadoHardware):
             with ui.row().classes('place-items-center'):
                 ui.label('Tornado motor status:').style('color: #EDF4FB').classes('font-bold')
                 if robot.z_axis.config.odrive_version == 6:
