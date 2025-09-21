@@ -7,7 +7,7 @@ import icecream
 import numpy as np
 import psutil
 import rosys
-from rosys.driving import Odometer
+from rosys.driving import DriveParameters, Driver, Odometer, Steerer
 from rosys.event import Event
 from rosys.geometry import GeoPoint, GeoReference
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
@@ -182,19 +182,20 @@ class System(rosys.persistence.Persistable):
 
     def setup_driver(self) -> None:
         self.odometer = Odometer(self.field_friend.wheels)
-        self.steerer = rosys.driving.Steerer(self.field_friend.wheels, speed_scaling=0.25)
-        self.driver = rosys.driving.Driver(self.field_friend.wheels, self.robot_locator)
-        self.driver.parameters.linear_speed_limit = 0.3
-        self.driver.parameters.angular_speed_limit = 0.3
-        self.driver.parameters.can_drive_backwards = False
-        self.driver.parameters.minimum_turning_radius = 0.01
-        self.driver.parameters.hook_offset = 0.20
-        self.driver.parameters.carrot_distance = 0.15
-        self.driver.parameters.carrot_offset = self.driver.parameters.hook_offset + self.driver.parameters.carrot_distance
-        self.driver.parameters.hook_bending_factor = 0.25
-        self.driver.parameters.minimum_drive_distance = 0.005
-        self.driver.parameters.throttle_at_end_distance = 0.2
-        self.driver.parameters.throttle_at_end_min_speed = 0.08
+        self.steerer = Steerer(self.field_friend.wheels, speed_scaling=0.25)
+        drive_parameters = DriveParameters(linear_speed_limit=0.3,
+                                           angular_speed_limit=0.3,
+                                           can_drive_backwards=False,
+                                           minimum_turning_radius=0.01,
+                                           hook_offset=0.20,
+                                           carrot_distance=0.15,
+                                           carrot_offset=0.35,
+                                           hook_bending_factor=0.25,
+                                           minimum_drive_distance=0.005,
+                                           throttle_at_end_distance=0.2,
+                                           throttle_at_end_min_speed=0.08)
+        self.driver = Driver(self.field_friend.wheels, self.robot_locator, parameters=drive_parameters) \
+            .persistent(key='field_friend.driver')
 
     def setup_implements(self) -> None:
         persistence_key = 'field_friend.automations.implements.weeding'
