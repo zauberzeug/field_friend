@@ -1,7 +1,6 @@
 from rosys.geometry import Rotation
 
-from field_friend.config.configuration import (
-    BumperConfiguration,
+from field_friend.config.configuration import (  # BumperConfiguration,
     CameraConfiguration,
     CircleSightPositions,
     FieldFriendConfiguration,
@@ -42,7 +41,8 @@ config = FieldFriendConfiguration(
         on_expander=True,
         rated_voltage=23.0,
     ),
-    bumper=BumperConfiguration(pin_front_top=21, pin_front_bottom=35, pin_back=18),
+    # bumper=BumperConfiguration(pin_front_top=21, pin_front_bottom=35, pin_back=18),
+    bumper=None,
     y_axis=None,
     z_axis=MowerConfiguration(),
     circle_sight_positions=CircleSightPositions(),

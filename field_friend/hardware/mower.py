@@ -9,7 +9,6 @@ from ..config.configuration import MowerConfiguration
 
 class Mower(abc.ABC):
     def __init__(self, config: MowerConfiguration) -> None:
-        super().__init__()
         self.config = config
         self.name = config.name
 
@@ -48,8 +47,7 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
             {self.enable_name} = {expander.name + "." if expander and config.enable_on_expander else ""}Output({config.enable_pin})
             {self.enable_name}.off()
         ''')
-        rosys.hardware.ModuleHardware.__init__(self, robot_brain=robot_brain,
-                                               lizard_code=lizard_code)
+        rosys.hardware.ModuleHardware.__init__(self, robot_brain, lizard_code)
 
     async def turn_on(self) -> None:
         await self.robot_brain.send(f'{self.pwm_name}.on()')

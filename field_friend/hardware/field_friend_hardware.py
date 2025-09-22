@@ -48,7 +48,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         self.WORK_X: float
         self.DRILL_RADIUS: float
         implement: str | None = config.tool
-        if implement in ['tornado', 'weed_screw', None]:
+        if implement in ['tornado', 'weed_screw', 'mower', None]:
             self.WORK_X = config.measurements.work_x
             if config.measurements.work_y:
                 self.WORK_Y: float = config.measurements.work_y
