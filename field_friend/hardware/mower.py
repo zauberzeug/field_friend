@@ -43,9 +43,8 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         lizard_code = remove_indentation(f'''
             {self.pwm_name} = {expander.name + "." if expander and config.pwm_on_expander else ""}PwmOutput({config.pwm_pin})
             {self.pwm_name}.duty = 0
-            {self.pwm_name}.off()
+            {self.pwm_name}.frequency = 1000
             {self.enable_name} = {expander.name + "." if expander and config.enable_on_expander else ""}Output({config.enable_pin})
-            {self.enable_name}.off()
         ''')
         rosys.hardware.ModuleHardware.__init__(self, robot_brain, lizard_code)
 
@@ -60,10 +59,17 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
     async def set_duty_cycle(self, duty_cycle: int) -> None:
         await self.robot_brain.send(f'{self.pwm_name}.duty={duty_cycle}')
 
+    async def set_frequency(self, frequency: int) -> None:
+        await self.robot_brain.send(f'{self.pwm_name}.frequency={frequency}')
+
     def developer_ui(self):
         super().developer_ui()
-        ui.label('Duty Cycle:')
-        ui.slider(value=0, min=0, max=255, on_change=lambda e: self.set_duty_cycle(int(e.value)))
+        with ui.row():
+            number_pwm = ui.number('Duty Cycle', value=0, min=0, max=255)
+            ui.button('Set Duty Cycle', on_click=lambda: self.set_duty_cycle(int(number_pwm.value)))
+        with ui.row():
+            number_frequency = ui.number('Frequency', value=1000, min=0, max=2000)
+            ui.button('Set Frequency', on_click=lambda: self.set_frequency(int(number_frequency.value)))
 
 
 class MowerSimulation(Mower, rosys.hardware.ModuleSimulation):
