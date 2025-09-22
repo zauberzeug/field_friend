@@ -79,9 +79,9 @@ class MowerConfiguration:
         pwm_on_expander: False
     """
     name: str = 'mower'
-    enable_pin: int = 4
+    enable_pin: int = 5
     enable_on_expander: bool = False
-    pwm_pin: int = 5
+    pwm_pin: int = 4
     pwm_on_expander: bool = False
     version: Literal['mower'] = 'mower'
 
