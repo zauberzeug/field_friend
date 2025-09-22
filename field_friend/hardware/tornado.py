@@ -4,6 +4,7 @@ import abc
 
 import rosys
 from rosys.analysis import track
+from rosys.automation import uninterruptible
 from rosys.helpers import remove_indentation
 
 from ..config import TornadoConfiguration
@@ -180,6 +181,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.config.name}_motor_turn.speed(0)')
 
     @track
+    @uninterruptible
     async def move_to(self, position: float) -> None:
         try:
             await super().move_to(position)
@@ -193,6 +195,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.log.info(f'z axis moved to {position}')
 
     @track
+    @uninterruptible
     async def move_down_until_reference(self, *, min_position: float | None = None) -> None:
         try:
             await super().move_down_until_reference()
@@ -237,6 +240,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             )
 
     @track
+    @uninterruptible
     async def turn_by(self, turns: float) -> None:
         try:
             await super().turn_by(turns)
@@ -248,6 +252,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             await rosys.sleep(0.5)
 
     @track
+    @uninterruptible
     async def turn_knifes_to(self, angle: float) -> None:
         try:
             await super().turn_knifes_to(angle)
@@ -265,6 +270,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
         self.last_angle = angle
 
     @track
+    @uninterruptible
     async def try_reference_z(self) -> bool:
         if not await super().try_reference_z():
             return False
@@ -328,6 +334,7 @@ class TornadoHardware(Tornado, rosys.hardware.ModuleHardware):
             return False
 
     @track
+    @uninterruptible
     async def try_reference_turn(self) -> bool:
         if not await super().try_reference_turn():
             return False

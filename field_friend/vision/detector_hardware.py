@@ -55,14 +55,15 @@ class DetectorHardware(rosys.vision.DetectorHardware):
             response_text = await response.text()
         return response_text == 'continuous_upload'
 
-    async def set_outbox_mode(self, value: bool) -> None:
+    async def set_outbox_mode(self, mode: Literal['continuous_upload', 'stopped']) -> None:
         if not self.is_connected:
             return
+        assert mode in ('continuous_upload', 'stopped')
         url = f'http://{self.host}:{self.port}/outbox_mode'
-        async with aiohttp.request('PUT', url, data='continuous_upload' if value else 'stopped') as response:
+        async with aiohttp.request('PUT', url, data=mode) as response:
             if response.status != 200:
-                self.log.error(
-                    f'Could not set outbox mode to {value} on port {self.port} - status code: {response.status}')
+                self.log.error('Could not set outbox mode to %s on port %s - status code: %s',
+                               mode, self.port, response.status)
                 return
 
     def developer_ui(self) -> None:

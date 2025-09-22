@@ -1,4 +1,6 @@
 import rosys
+from rosys.analysis import track
+from rosys.automation import uninterruptible
 from rosys.helpers import remove_indentation
 
 from ..config import AxisD1Configuration
@@ -64,6 +66,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
     async def stop(self):
         pass
 
+    @track
+    @uninterruptible
     async def move_to(self, position: float, speed: int | None = None) -> None:
         await super().move_to(position)
         if not self._valid_status():
@@ -74,6 +78,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
             await self.robot_brain.send(f'{self.config.name}_motor.profile_position({self.compute_steps(position)});')
             await rosys.sleep(0.1)
 
+    @track
+    @uninterruptible
     async def set_speed_parameters(self):
         await self.robot_brain.send(f'{self.config.name}_motor.homing_acceleration = {self.config.homing_acceleration};')
         await self.robot_brain.send(f'{self.config.name}_motor.switch_search_speed = {self.config.homing_velocity};')
@@ -81,6 +87,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.config.name}_motor.profile_acceleration = {self.config.profile_acceleration};')
         await self.robot_brain.send(f'{self.config.name}_motor.profile_deceleration = {self.config.profile_deceleration};')
 
+    @track
+    @uninterruptible
     async def enable_motor(self):
         if self.fault:
             await self.reset_fault()
@@ -89,6 +97,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         await rosys.sleep(2.0)
         self.log.debug(f'AxisD1 {self.config.name} motor.setup() done')
 
+    @track
+    @uninterruptible
     async def reset_fault(self):
         if self.fault:
             self.log.debug(f'AxisD1 {self.config.name} motor.reset()')
@@ -98,6 +108,8 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
         else:
             self.log.error(f'AxisD1 {self.config.name} is not in fault state')
 
+    @track
+    @uninterruptible
     async def try_reference(self) -> bool:
         if not self._valid_status():
             await self.enable_motor()
@@ -112,10 +124,13 @@ class AxisD1(Axis, rosys.hardware.ModuleHardware):
                 await rosys.sleep(0.1)
         return self.is_referenced
 
+    @track
     async def recover(self):
         await self.reset_fault()
         await self.try_reference()
 
+    @track
+    @uninterruptible
     async def speed_mode(self, speed: int):
         if not self._valid_status():
             await self.enable_motor()
