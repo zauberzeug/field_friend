@@ -35,6 +35,7 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
 
     on and off commands are forwarded to a given Robot Brain.
     """
+    START_DUTY_CYCLE = 25
 
     def __init__(self, config: MowerConfiguration, robot_brain: rosys.hardware.RobotBrain, *, expander: rosys.hardware.ExpanderHardware | None) -> None:
         Mower.__init__(self, config)
@@ -49,8 +50,11 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         rosys.hardware.ModuleHardware.__init__(self, robot_brain, lizard_code)
 
     async def turn_on(self) -> None:
+        await self.set_duty_cycle(12)
         await self.robot_brain.send(f'{self.pwm_name}.on()')
         await self.robot_brain.send(f'{self.enable_name}.on()')
+        await rosys.sleep(1)
+        await self.set_duty_cycle(self.START_DUTY_CYCLE)
 
     async def turn_off(self) -> None:
         await self.robot_brain.send(f'{self.enable_name}.off()')
@@ -65,11 +69,11 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
     def developer_ui(self):
         super().developer_ui()
         with ui.row():
-            number_pwm = ui.number('Duty Cycle', value=0, min=0, max=255)
-            ui.button('Set Duty Cycle', on_click=lambda: self.set_duty_cycle(int(number_pwm.value)))
-        with ui.row():
-            number_frequency = ui.number('Frequency', value=1000, min=0, max=2000)
-            ui.button('Set Frequency', on_click=lambda: self.set_frequency(int(number_frequency.value)))
+            async def set_duty_cycle(e):
+                await self.set_duty_cycle(int(e.value))
+            slider = ui.slider(min=self.START_DUTY_CYCLE, max=255,
+                               value=self.START_DUTY_CYCLE, on_change=set_duty_cycle)
+            ui.label().bind_text_from(slider, 'value', backward=lambda value: f'Duty Cycle: {value}')
 
 
 class MowerSimulation(Mower, rosys.hardware.ModuleSimulation):
