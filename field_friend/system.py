@@ -18,7 +18,7 @@ from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, 
 from .automations.navigation import FieldNavigation, ImplementDemoNavigation, StraightLineNavigation, WaypointNavigation
 from .capture import Capture
 from .config import get_config
-from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulation, TeltonikaRouter
+from .hardware import Axis, FieldFriend, FieldFriendHardware, FieldFriendSimulation, Mower, TeltonikaRouter
 from .info import Info
 from .robot_locator import RobotLocator
 from .vision import CalibratableUsbCameraProvider, CameraConfigurator, DetectorHardware
@@ -112,7 +112,8 @@ class System(rosys.persistence.Persistable):
 
         if not rosys.is_simulation():
             assert isinstance(self.field_friend, FieldFriendHardware)
-            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, capture=self.capture)
+            app_controls(self.field_friend.robot_brain, self.automator, self.field_friend, capture=self.capture,
+                         mower=self.field_friend.z_axis if isinstance(self.field_friend.z_axis, Mower) else None)
             rosys.on_repeat(self.log_status, 60 * 5)
         rosys.on_repeat(self._garbage_collection, 60*5)
         rosys.config.garbage_collection_mbyte_limit = 0

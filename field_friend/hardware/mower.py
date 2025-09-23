@@ -47,6 +47,7 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
             {self.pwm_name}.frequency = 1000
             {self.enable_name} = {expander.name + "." if expander and config.enable_on_expander else ""}Output({config.enable_pin})
         ''')
+        self._is_running = False
         rosys.hardware.ModuleHardware.__init__(self, robot_brain, lizard_code)
 
     async def turn_on(self) -> None:
@@ -55,10 +56,18 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         await self.robot_brain.send(f'{self.enable_name}.on()')
         await rosys.sleep(1)
         await self.set_duty_cycle(self.START_DUTY_CYCLE)
+        self._is_running = True
 
     async def turn_off(self) -> None:
         await self.robot_brain.send(f'{self.enable_name}.off()')
         await self.robot_brain.send(f'{self.pwm_name}.off()')
+        self._is_running = False
+
+    async def toggle(self) -> None:
+        if self._is_running:
+            await self.turn_off()
+        else:
+            await self.turn_on()
 
     async def set_duty_cycle(self, duty_cycle: int) -> None:
         await self.robot_brain.send(f'{self.pwm_name}.duty={duty_cycle}')
@@ -71,7 +80,7 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         with ui.row():
             async def set_duty_cycle(e):
                 await self.set_duty_cycle(int(e.value))
-            slider = ui.slider(min=self.START_DUTY_CYCLE, max=255,
+            slider = ui.slider(min=self.START_DUTY_CYCLE, max=170,
                                value=self.START_DUTY_CYCLE, on_change=set_duty_cycle)
             ui.label().bind_text_from(slider, 'value', backward=lambda value: f'Duty Cycle: {value}')
 
