@@ -88,8 +88,6 @@ class DevPage:
             if isinstance(self.system.field_friend.imu, rosys.hardware.Imu):
                 with ui.card():
                     self.system.field_friend.imu.developer_ui()
-            with ui.card():
-                self.system.driver.developer_ui()
 
         with ui.row():
             if self.system.field_navigation is not None:
