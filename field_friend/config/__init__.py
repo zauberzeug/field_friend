@@ -24,6 +24,7 @@ from .configuration import (
     YStepperConfiguration,
     ZCanOpenConfiguration,
     ZStepperConfiguration,
+    create_drive_parameters,
 )
 
 
@@ -60,5 +61,6 @@ __all__ = [
     'YStepperConfiguration',
     'ZCanOpenConfiguration',
     'ZStepperConfiguration',
+    'create_drive_parameters',
     'get_config',
 ]
