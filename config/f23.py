@@ -16,7 +16,7 @@ from field_friend.config.configuration import (  # BumperConfiguration,
 config = FieldFriendConfiguration(
     name='fieldfriend-f23',
     robot_brain=RobotBrainConfiguration(name='rb57', flash_params=['orin', 'v05', 'nand'], use_espresso=True),
-    tool='mower',
+    tool=None,
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033),
     camera=CameraConfiguration(
         width=1280,
