@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
+from rosys.driving import DriveParameters
 from rosys.geometry import Point3d, Pose, Rectangle, Rotation
 
 
@@ -469,6 +470,24 @@ class SprayerConfiguration:
     spray_radius: float = 0.15
 
 
+def create_drive_parameters(*, linear_speed_limit: float = 0.3,
+                            angular_speed_limit: float = 0.3,
+                            minimum_turning_radius: float = 0.01,
+                            can_drive_backwards: bool = False,
+                            hook_offset: float = 0.20,
+                            carrot_distance: float = 0.15,
+                            carrot_offset: float = 0.35,
+                            hook_bending_factor: float = 0.25,
+                            minimum_drive_distance: float = 0.005,
+                            throttle_at_end_distance: float = 0.2,
+                            throttle_at_end_min_speed: float = 0.08,
+                            **kwargs) -> DriveParameters:
+    # pylint: disable=unused-argument
+    arguments = locals()
+    arguments.pop('kwargs')
+    return DriveParameters(**arguments, **kwargs)
+
+
 @dataclass(slots=True, kw_only=True)
 class FieldFriendConfiguration:
     """Configuration for the Field Friend robot.
@@ -499,3 +518,4 @@ class FieldFriendConfiguration:
     flashlight: FlashlightConfiguration | None = None
     gnss: GnssConfiguration | None = None
     imu: ImuConfiguration | None = None
+    driver: DriveParameters = field(default_factory=create_drive_parameters)
