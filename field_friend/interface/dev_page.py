@@ -110,9 +110,8 @@ class DevPage:
                         ui.label('Out 1..4 Status:').tooltip('Battery Box out connectors 1-4')
                         status_bulb().bind_value_from(self.system.field_friend.battery_control, 'status')
 
-            if self.system.config.tool == 'mower':
+            if self.system.field_friend.z_axis is not None and isinstance(self.system.field_friend.z_axis, Mower):
                 with ui.card():
-                    assert isinstance(self.system.field_friend.z_axis, Mower)
                     self.system.field_friend.z_axis.developer_ui()
 
         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):

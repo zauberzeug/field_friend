@@ -35,8 +35,9 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
 
     on and off commands are forwarded to a given Robot Brain.
     """
-    START_DUTY_CYCLE = 25
+    INIT_DUTY_CYCLE = 12
     TARGET_DUTY_CYCLE = 165
+    MIN_DUTY_CYCLE = 50
     MAX_DUTY_CYCLE = 170
 
     def __init__(self, config: MowerConfiguration, robot_brain: rosys.hardware.RobotBrain, *, expander: rosys.hardware.ExpanderHardware | None) -> None:
@@ -50,15 +51,16 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
             {self.enable_name} = {expander.name + "." if expander and config.enable_on_expander else ""}Output({config.enable_pin})
         ''')
         self._is_running = False
+        self._init_duty_cycle = self.INIT_DUTY_CYCLE
         self._target_duty_cycle = self.TARGET_DUTY_CYCLE
         rosys.hardware.ModuleHardware.__init__(self, robot_brain, lizard_code)
 
     async def turn_on(self) -> None:
-        await self.set_duty_cycle(12)
+        await self._set_duty_cycle(self._init_duty_cycle)
         await self.robot_brain.send(f'{self.pwm_name}.on()')
         await self.robot_brain.send(f'{self.enable_name}.on()')
         await rosys.sleep(1)
-        await self.set_duty_cycle(self._target_duty_cycle)
+        await self._set_duty_cycle(int(self._target_duty_cycle))
         self._is_running = True
 
     async def turn_off(self) -> None:
@@ -72,19 +74,19 @@ class MowerHardware(Mower, rosys.hardware.ModuleHardware):
         else:
             await self.turn_on()
 
-    async def set_duty_cycle(self, duty_cycle: int) -> None:
-        self._target_duty_cycle = duty_cycle
-        await self.robot_brain.send(f'{self.pwm_name}.duty={duty_cycle}')
+    async def _set_duty_cycle(self, duty_cycle: int) -> None:
+        await self.robot_brain.send(f'{self.pwm_name}.duty={int(duty_cycle)}')
 
-    async def set_frequency(self, frequency: int) -> None:
+    async def _set_frequency(self, frequency: int) -> None:
         await self.robot_brain.send(f'{self.pwm_name}.frequency={frequency}')
 
     def developer_ui(self):
         super().developer_ui()
         with ui.row():
             async def set_duty_cycle(e):
-                await self.set_duty_cycle(int(e.value))
-            slider = ui.slider(min=self.START_DUTY_CYCLE, max=self.MAX_DUTY_CYCLE,
+                self._target_duty_cycle = int(e.value)
+                await self._set_duty_cycle(self._target_duty_cycle)
+            slider = ui.slider(min=self.MIN_DUTY_CYCLE, max=self.MAX_DUTY_CYCLE,
                                value=self._target_duty_cycle, on_change=set_duty_cycle)
             ui.label().bind_text_from(slider, 'value', backward=lambda value: f'Duty Cycle: {value}')
 
