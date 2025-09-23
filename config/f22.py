@@ -4,6 +4,7 @@ from field_friend.config.configuration import (
     MeasurementsConfiguration,
     RobotBrainConfiguration,
     WheelsConfiguration,
+    create_drive_parameters,
 )
 
 config = FieldFriendConfiguration(
@@ -32,4 +33,5 @@ config = FieldFriendConfiguration(
     # TODO: IMU configuration is probably wrong. Check https://github.com/zauberzeug/field_friend/pull/361
     # imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.5804, 0.00506, 0.0)),
     imu=None,
+    driver=create_drive_parameters(carrot_distance=0.3, carrot_offset=0.5)
 )
