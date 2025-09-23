@@ -482,10 +482,18 @@ def create_drive_parameters(*, linear_speed_limit: float = 0.3,
                             throttle_at_end_distance: float = 0.2,
                             throttle_at_end_min_speed: float = 0.08,
                             **kwargs) -> DriveParameters:
-    # pylint: disable=unused-argument
-    arguments = locals()
-    arguments.pop('kwargs')
-    return DriveParameters(**arguments, **kwargs)
+    return DriveParameters(linear_speed_limit=linear_speed_limit,
+                           angular_speed_limit=angular_speed_limit,
+                           minimum_turning_radius=minimum_turning_radius,
+                           can_drive_backwards=can_drive_backwards,
+                           hook_offset=hook_offset,
+                           carrot_distance=carrot_distance,
+                           carrot_offset=carrot_offset,
+                           hook_bending_factor=hook_bending_factor,
+                           minimum_drive_distance=minimum_drive_distance,
+                           throttle_at_end_distance=throttle_at_end_distance,
+                           throttle_at_end_min_speed=throttle_at_end_min_speed,
+                           **kwargs)
 
 
 @dataclass(slots=True, kw_only=True)
