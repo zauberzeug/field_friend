@@ -402,8 +402,12 @@ class DeltaArmConfiguration(BaseAxisConfiguration):
     b: float = 0.06
     p: float = 0.07
     height: float = 0.40
-    # Optional symmetric Y-limit for allowed workspace; if None, use full kinematic reach
-    y_limit: float = 0.08
+    # Optional symmetric Y-limit for allowed workspace (meters)
+    y_limit: float = 0.08  # guessed pi * thumb width
+    # Hardware parameters (optional for simulation)
+    left_can_address: int | None = None
+    right_can_address: int | None = None
+    motor_ratio: int = 9
 
 
 @dataclass(slots=True, kw_only=True)
