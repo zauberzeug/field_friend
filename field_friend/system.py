@@ -100,7 +100,8 @@ class System(rosys.persistence.Persistable):
             min_ = np.min(self.gnss.diffs)
             last = self.gnss.diffs[-1]
             too_late = sum(1 for diff in self.gnss.diffs if abs(diff) > self.gnss.MAX_TIMESTAMP_DIFF)
-            last_measurement = self.gnss.last_measurement.time - self.gnss.last_measurement.gnss_time
+            last_measurement = round(((self.gnss.last_measurement.gnss_time -
+                                     self.gnss.last_measurement.time + 43200) % 86400) - 43200, 3)
             self.log.info(
                 f"GNSS - mean: {mean:.3f} ± {std:.3f} - max: {max_:.3f} - min: {min_:.3f} - last: {last:.3f} - too late: {too_late} / {len(self.gnss.diffs)} - last measurement: {last_measurement:.3f}s"
             )
@@ -337,7 +338,7 @@ class System(rosys.persistence.Persistable):
             return None
         if not rosys.is_simulation():
             gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.pose)
-            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.1
+            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.15
             return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
         if rosys.is_test:
