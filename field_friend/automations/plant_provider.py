@@ -18,6 +18,12 @@ CROP_SPACING = 0.18
 def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) -> bool:
     for p in plants:
         if p.position.distance(plant.position) < distance and p.type == plant.type:
+            # TODO: hacky for now, remove when parallax error is fixed
+            is_weed = plant.type in ('weed', 'weedy_area', 'coin', 'big_weed')
+            if is_weed and p.confidence >= MINIMUM_COMBINED_WEED_CONFIDENCE:
+                return True
+            if not is_weed and p.confidence >= MINIMUM_COMBINED_CROP_CONFIDENCE:
+                return True
             p.confidences.append(plant.confidence)
             p.positions.append(plant.position)
             p.detection_image = plant.detection_image

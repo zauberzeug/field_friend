@@ -43,6 +43,7 @@ class AutomationWatcher:
         rosys.on_repeat(self.try_resume, 0.1)
         rosys.on_repeat(self.check_field_bounds, 1.0)
         rosys.on_repeat(self.check_gnss, 0.1)
+        rosys.on_repeat(self.check_robot_locator, 0.1)
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
         self.steerer.STEERING_STARTED.register(lambda: self.pause('steering started'))
@@ -100,6 +101,11 @@ class AutomationWatcher:
         self.incidence_time = rosys.time()
         self.incidence_pose = deepcopy(self.robot_locator.pose)
 
+    def is_robot_locator_ready(self) -> bool:
+        # TODO: better values
+        return all(np.isfinite(uncertainty) for uncertainty in self.robot_locator.uncertainty) \
+            and all(uncertainty < 1000.0 for uncertainty in self.robot_locator.uncertainty)
+
     def is_gnss_ready(self) -> bool:
         assert self.gnss is not None
         return self.gnss.is_connected \
@@ -110,19 +116,22 @@ class AutomationWatcher:
 
     def try_resume(self) -> None:
         # Set conditions to True by default, which means they don't block the process if the watch is not active
-        bumper_condition = self.field_friend.bumper is None or not self.bumper_watch_active or not self.field_friend.bumper.active_bumpers
+        bumper_condition = self.field_friend.bumper is None or \
+            not self.bumper_watch_active or \
+            not self.field_friend.bumper.active_bumpers
         gnss_condition = self.is_gnss_ready() if self.gnss_watch_active else True
+        robot_locator_condition = self.is_robot_locator_ready()
 
         # Enable automator only if all relevant conditions are True
-        self.automator.enabled = bumper_condition and gnss_condition
-
-        if self.try_resume_active and self.automator.is_running:
+        self.automator.enabled = bumper_condition and gnss_condition and robot_locator_condition
+        if self.try_resume_active and self.automator.is_running and \
+                not (self.automator.is_stopping or self.automator.is_pausing):
             self.log.info('disabling auto-resume because automation is already running again')
             self.try_resume_active = False
 
         if self.try_resume_active and rosys.time() > self.incidence_time + self.resume_delay:
-            if not bumper_condition or not gnss_condition:
-                self.log.info(f'waiting for conditions to be met: bumper={bumper_condition}, gnss={gnss_condition}')
+            if not bumper_condition or not gnss_condition or not robot_locator_condition:
+                self.log.info(f'waiting for: {bumper_condition=}, {gnss_condition=}, {robot_locator_condition=}')
                 self.resume_delay += 2
                 return
             self.log.info(f'resuming automation after {self.resume_delay:.0f}s')
@@ -141,6 +150,11 @@ class AutomationWatcher:
     def stop_field_watch(self) -> None:
         self.field_watch_active = False
         self.field_polygon = None
+
+    def check_robot_locator(self) -> None:
+        if self.is_robot_locator_ready():
+            return
+        self.stop('Position accuracy too low')
 
     def check_gnss(self) -> None:
         if not self.gnss_watch_active:

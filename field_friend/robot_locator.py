@@ -82,6 +82,10 @@ class RobotLocator(rosys.persistence.Persistable):
     def prediction(self) -> Pose:
         return self.pose
 
+    @property
+    def uncertainty(self) -> tuple[float, float, float]:
+        return self._Sxx[0, 0], self._Sxx[1, 1], self._Sxx[2, 2]
+
     async def _handle_velocity_measurement(self, velocities: list[Velocity]) -> None:
         """Implements the 'prediction' step of the Kalman filter."""
         for velocity in velocities:

@@ -56,6 +56,8 @@ class WaypointNavigation(rosys.persistence.Persistable):
         self.SEGMENT_COMPLETED = Event[DriveSegment]()
         """a waypoint has been reached"""
 
+        self.PATH_COMPLETED = Event[[]]()
+
         self.SEGMENT_STARTED.register(self._handle_segment_started)
 
     @property
@@ -129,8 +131,10 @@ class WaypointNavigation(rosys.persistence.Persistable):
                 await self._run()
                 await rosys.sleep(0.1)
             rosys.notify('Automation finished', 'positive')
-        except WorkflowException as e:
-            rosys.notify(f'Automation failed: {e}', 'negative')
+            self.PATH_COMPLETED.emit()
+        except Exception as e:
+            rosys.notify('Automation failed', 'negative')
+            self.log.exception('Navigation failed: %s', e)
         finally:
             await self.implement.finish()
             await self.finish()
@@ -177,8 +181,8 @@ class WaypointNavigation(rosys.persistence.Persistable):
         stop_at_end = segment.stop_at_end or len(self._upcoming_path) == 1
         with self.driver.parameters.set(linear_speed_limit=linear_speed_limit, can_drive_backwards=segment.backward):
             await self.driver.drive_spline(segment.spline, flip_hook=segment.backward, throttle_at_end=stop_at_end, stop_at_end=stop_at_end)
-        self.SEGMENT_COMPLETED.emit(segment)
         self._upcoming_path.pop(0)
+        self.SEGMENT_COMPLETED.emit(segment)
         if self.has_waypoints:
             assert self.current_segment is not None
             self.SEGMENT_STARTED.emit(self.current_segment)
