@@ -53,11 +53,16 @@ class FieldNavigation(WaypointNavigation):
         self.PATH_COMPLETED.register(self.handle_path_completed)
 
     async def handle_path_completed(self) -> None:
+        await rosys.sleep(10)
+        if self.estop_charge and self.system.field_friend.bms.state.is_charging:
+            await self.system.field_friend.estop.set_soft_estop(True)
         if not self.loop_active:
             return
         gc.collect()
         while True:
             await rosys.sleep(10)
+            if not self.loop_active:
+                return
             if self.system.field_friend.bms.is_below_percent(self.battery_working_percentage):
                 continue
             if not isinstance(self.system.current_navigation, FieldNavigation):
@@ -378,9 +383,6 @@ class FieldNavigation(WaypointNavigation):
         if isinstance(self.system.field_friend.bms, BmsHardware):
             self.system.field_friend.bms.UPDATE_INTERVAL = old_interval
         await self.system.field_friend.wheels.stop()
-        if self.estop_charge:
-            await rosys.sleep(10)
-            await self.system.field_friend.estop.set_soft_estop(True)
 
     @track
     async def undock(self):
