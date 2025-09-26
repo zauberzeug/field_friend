@@ -10,6 +10,7 @@ from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
 from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
 from .flashlight_pwm_v2 import FlashlightPWMHardwareV2, FlashlightPWMSimulationV2, FlashlightPWMV2
 from .flashlight_v2 import FlashlightHardwareV2, FlashlightSimulationV2, FlashlightV2
+from .mower import MowerHardware
 from .sprayer import Sprayer, SprayerHardware, SprayerSimulation
 from .tornado import Tornado, TornadoHardware, TornadoSimulation
 from .y_axis_canopen_hardware import YAxisCanOpenHardware
@@ -66,6 +67,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                 lizard_code += f'{z_axis.config.name}_motor.disable();'
             elif isinstance(z_axis, SprayerHardware):
                 lizard_code += f'{z_axis.config.name}_pump.disable(); {z_axis.config.name}_valve.disable();'
+            elif isinstance(z_axis, MowerHardware):
+                lizard_code += f'{z_axis.config.name}_pwm.disable(); {z_axis.config.name}_enable.disable();'
             else:
                 lizard_code += f' {z_axis.config.name}.disable();'
         if isinstance(flashlight, FlashlightHardware):
@@ -88,6 +91,8 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                 lizard_code += f'{z_axis.config.name}_motor.enable();'
             elif isinstance(z_axis, SprayerHardware):
                 lizard_code += f'{z_axis.config.name}_pump.enable(); {z_axis.config.name}_valve.enable();'
+            elif isinstance(z_axis, MowerHardware):
+                lizard_code += f'{z_axis.config.name}_pwm.enable(); {z_axis.config.name}_enable.enable();'
             else:
                 lizard_code += f' {z_axis.config.name}.enable();'
         if isinstance(flashlight, FlashlightHardware):

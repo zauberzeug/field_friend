@@ -5,6 +5,7 @@ from rosys.hardware import RobotBrain
 
 from .capture import Capture
 from .hardware.field_friend import FieldFriend
+from .hardware.mower import Mower
 
 
 class AppControls(RosysAppControls):
@@ -15,10 +16,12 @@ class AppControls(RosysAppControls):
                  field_friend: FieldFriend,
                  *,
                  capture: Capture | None = None,
+                 mower: Mower | None = None,
                  ) -> None:
         super().__init__(robot_brain, automator)
         self.field_friend = field_friend
         self.capture = capture
+        self.mower = mower
         self.last_battery_percentage: float | None = self.field_friend.bms.state.percentage
         self.last_charging: bool | None = self.field_friend.bms.state.is_charging
         self.last_estops_pressed: list[int] = []
@@ -30,6 +33,8 @@ class AppControls(RosysAppControls):
             self.extra_buttons['front'] = \
                 AppButton('file_upload', released=self.capture.front)
             self.extra_buttons['inner'] = AppButton('file_download', released=self.capture.inner)
+        if self.mower:
+            self.extra_buttons['mower_toggle'] = AppButton('grass', released=self.mower.toggle)
         rosys.on_repeat(self.check_status, 2.0)
 
     async def check_status(self) -> None:

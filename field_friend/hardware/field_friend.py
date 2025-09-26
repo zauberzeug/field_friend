@@ -6,6 +6,7 @@ from .chain_axis import ChainAxis
 from .flashlight import Flashlight
 from .flashlight_pwm import FlashlightPWM
 from .flashlight_v2 import FlashlightV2
+from .mower import Mower
 from .safety import Safety
 from .sprayer import Sprayer
 from .tornado import Tornado
@@ -31,7 +32,7 @@ class FieldFriend(rosys.hardware.Robot):
             wheels: rosys.hardware.Wheels,
             flashlight: Flashlight | FlashlightV2 | FlashlightPWM | None,
             y_axis: Axis | ChainAxis | None,
-            z_axis: Axis | Tornado | Sprayer | None,
+            z_axis: Axis | Tornado | Sprayer | Mower | None,
             imu: rosys.hardware.Imu | None,
             estop: rosys.hardware.EStop,
             bumper: rosys.hardware.Bumper | None,

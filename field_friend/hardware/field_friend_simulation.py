@@ -8,6 +8,7 @@ import rosys
 from ..config import (
     AxisD1Configuration,
     FieldFriendConfiguration,
+    MowerConfiguration,
     SprayerConfiguration,
     TornadoConfiguration,
     ZCanOpenConfiguration,
@@ -20,6 +21,7 @@ from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
 from .flashlight_pwm_v2 import FlashlightPWMSimulationV2
 from .flashlight_v2 import FlashlightSimulationV2
+from .mower import MowerSimulation
 from .safety import SafetySimulation
 from .sprayer import SprayerSimulation
 from .tornado import TornadoSimulation
@@ -49,7 +51,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             self.CHOP_RADIUS = config.measurements.chop_radius
         else:
             logging.warning('Unknown FieldFriend tool: %s', tool)
-        wheels = WheelsSimulationWithAcceleration(self.WHEEL_DISTANCE) if use_acceleration else rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
+        wheels = WheelsSimulationWithAcceleration(self.WHEEL_DISTANCE) if use_acceleration  \
+            else rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
 
         y_axis: AxisSimulation | ChainAxisSimulation | None
         if not config.y_axis:
@@ -65,7 +68,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown Y-Axis version: {config.y_axis.version}')
 
-        z_axis: AxisSimulation | TornadoSimulation | SprayerSimulation | None
+        z_axis: AxisSimulation | TornadoSimulation | SprayerSimulation | MowerSimulation | None
         if not config.z_axis:
             z_axis = None
         elif isinstance(config.z_axis, ZStepperConfiguration | ZCanOpenConfiguration | AxisD1Configuration):
@@ -78,6 +81,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             z_axis = TornadoSimulation(config=config.z_axis)
         elif isinstance(config.z_axis, SprayerConfiguration):
             z_axis = SprayerSimulation()
+        elif isinstance(config.z_axis, MowerConfiguration):
+            z_axis = MowerSimulation(config=config.z_axis)
         else:
             raise NotImplementedError(f'Unknown Z-Axis version: {config.z_axis.version}')
 
