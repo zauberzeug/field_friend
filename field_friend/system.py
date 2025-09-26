@@ -14,7 +14,7 @@ from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
 from .app_controls import AppControls as app_controls
 from .automations import AutomationWatcher, FieldProvider, KpiProvider, PlantLocator, PlantProvider, Puncher
-from .automations.implements import Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
+from .automations.implements import DeltaArm, Implement, Recorder, Tornado, WeedingScrew, WeedingSprayer
 from .automations.navigation import FieldNavigation, ImplementDemoNavigation, StraightLineNavigation, WaypointNavigation
 from .capture import Capture
 from .config import get_config
@@ -189,6 +189,10 @@ class System(rosys.persistence.Persistable):
         persistence_key = 'field_friend.automations.implements.weeding'
         implements: list[Implement] = []
         match self.field_friend.implement_name:
+            case 'delta_arm':
+                implements.append(Recorder(self))
+                implements.append(DeltaArm(self))
+                self.field_friend.z_axis.base_frame.in_frame(self.robot_locator.pose_frame)  # type: ignore
             case 'tornado':
                 implements.append(Recorder(self))
                 implements.append(Tornado(self).persistent(key=persistence_key))
