@@ -325,8 +325,12 @@ class FieldNavigation(WaypointNavigation):
             local_docked_pose = self.field.charging_station.dock_pose.to_local() \
                 .transform_pose(Pose(x=0.0, y=y_offset, yaw=0.0))
             docking_segment = DriveSegment.from_poses(self.system.robot_locator.pose, local_docked_pose, backward=True)
-            self._upcoming_path.insert(0, docking_segment)
+            advance_pose = local_docked_pose.transform_pose(Pose(x=0.01, y=0.0, yaw=0.0))
+            advance_segment = DriveSegment.from_poses(local_docked_pose, advance_pose)
+            self._upcoming_path = [docking_segment, advance_segment, *self._upcoming_path]
             self.PATH_GENERATED.emit(self._upcoming_path)
+            await self._drive_along_segment(linear_speed_limit=self.DOCKING_SPEED)
+            await rosys.sleep(1)
             await self._drive_along_segment(linear_speed_limit=self.DOCKING_SPEED)
             if isinstance(self.system.field_friend.bms, BmsSimulation):
                 self.system.field_friend.bms.voltage_per_second = 0.03
