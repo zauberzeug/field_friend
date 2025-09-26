@@ -33,6 +33,7 @@ class FieldNavigation(WaypointNavigation):
     START_ROW_INDEX = 0
     RETURN_TO_START = True
     CHARGE_AUTOMATICALLY = False
+    ESTOP_CHARGE = False
 
     def __init__(self, system: System, implement: Implement) -> None:
         super().__init__(system, implement)
@@ -46,6 +47,7 @@ class FieldNavigation(WaypointNavigation):
         self.start_row_index = self.START_ROW_INDEX
         self.return_to_start = self.RETURN_TO_START
         self.charge_automatically = self.CHARGE_AUTOMATICALLY
+        self.estop_charge = self.ESTOP_CHARGE
         self.force_charge = False
         self.loop_active = False
         self.PATH_COMPLETED.register(self.handle_path_completed)
@@ -60,6 +62,9 @@ class FieldNavigation(WaypointNavigation):
                 continue
             if not isinstance(self.system.current_navigation, FieldNavigation):
                 continue
+            if self.estop_charge:
+                await self.system.field_friend.estop.set_soft_estop(False)
+                await rosys.sleep(5)
             self.system.automator.start()
             return
 
@@ -373,6 +378,9 @@ class FieldNavigation(WaypointNavigation):
         if isinstance(self.system.field_friend.bms, BmsHardware):
             self.system.field_friend.bms.UPDATE_INTERVAL = old_interval
         await self.system.field_friend.wheels.stop()
+        if self.estop_charge:
+            await rosys.sleep(10)
+            await self.system.field_friend.estop.set_soft_estop(True)
 
     @track
     async def undock(self):
@@ -397,6 +405,7 @@ class FieldNavigation(WaypointNavigation):
             'charge_automatically': self.charge_automatically,
             'battery_charge_percentage': self.battery_charge_percentage,
             'battery_working_percentage': self.battery_working_percentage,
+            'estop_charge': self.estop_charge,
         }
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
@@ -406,6 +415,7 @@ class FieldNavigation(WaypointNavigation):
         self.charge_automatically = data.get('charge_automatically', self.CHARGE_AUTOMATICALLY)
         self.battery_charge_percentage = data.get('battery_charge_percentage', self.BATTERY_CHARGE_PERCENTAGE)
         self.battery_working_percentage = data.get('battery_working_percentage', self.BATTERY_WORKING_PERCENTAGE)
+        self.estop_charge = data.get('estop_charge', self.ESTOP_CHARGE)
 
     def settings_ui(self) -> None:
         super().settings_ui()
@@ -448,7 +458,10 @@ class FieldNavigation(WaypointNavigation):
             .classes('w-32') \
             .bind_value(self, 'battery_working_percentage') \
             .tooltip('Battery charge percentage at which the robot is allowed to stop charging and continue working')
-        ui.checkbox('Force charge', on_change=self.request_backup) \
+        ui.checkbox('E-stop charge', on_change=self.request_backup) \
+            .bind_value(self, 'estop_charge') \
+            .tooltip('Activate the software e-stop when the robot is charging to limit power consumption')
+        ui.checkbox('Force charge') \
             .bind_value(self, 'force_charge') \
             .tooltip('Force the robot to charge even if it is not below the working percentage')
 
