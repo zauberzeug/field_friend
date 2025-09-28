@@ -53,13 +53,15 @@ class FieldNavigation(WaypointNavigation):
         self.PATH_COMPLETED.register(self.handle_path_completed)
 
     async def handle_path_completed(self) -> None:
-        await rosys.sleep(10)
+        while self.loop_active and self.system.automator.is_running:
+            await rosys.sleep(1)
         if self.estop_charge and self.system.field_friend.bms.state.is_charging:
             await self.system.field_friend.estop.set_soft_estop(True)
         if not self.loop_active:
             return
         gc.collect()
         while True:
+            self.log.debug('Waiting in loop to start over')
             await rosys.sleep(10)
             if not self.loop_active:
                 return
@@ -184,8 +186,10 @@ class FieldNavigation(WaypointNavigation):
     def _should_charge(self) -> bool:
         assert self.field is not None
         if not self.charge_automatically:
+            self.log.debug('Charging is disabled')
             return False
         if self.field.charging_station is None:
+            self.log.debug('No charging station set up')
             return False
         if self.current_row:
             self.log.debug('Not charging: Not allowed to charge on row')
@@ -196,8 +200,10 @@ class FieldNavigation(WaypointNavigation):
         closest_row_end = closest_row.points[-1].to_local()
         current_pose = self.system.robot_locator.pose
         if closest_row_start.distance(current_pose.point) > 0.1:
+            self.log.debug('Not charging: Robot too far from row')
             return False
         if sum(1 for segment in self._upcoming_path if isinstance(segment, RowSegment)) == 0:
+            self.log.debug('Charging: No more rows to work on')
             return True
         direction_to_start = current_pose.relative_direction(closest_row_start)
         direction_to_end = current_pose.relative_direction(closest_row_end)
@@ -206,7 +212,9 @@ class FieldNavigation(WaypointNavigation):
             return False
         if self.force_charge:
             return True
-        return self.system.field_friend.bms.is_below_percent(self.BATTERY_CHARGE_PERCENTAGE)
+        self.log.debug('Charging: Battery is below %s. Currently at %s',
+                       self.battery_charge_percentage, self.system.field_friend.bms.state.percentage)
+        return self.system.field_friend.bms.is_below_percent(self.battery_charge_percentage)
 
     @track
     async def _run_charging(self, *, stop_after_docking: bool = False) -> None:
@@ -222,8 +230,14 @@ class FieldNavigation(WaypointNavigation):
         await self.dock()
         if stop_after_docking:
             return
-        while self.system.field_friend.bms.is_below_percent(self.BATTERY_WORKING_PERCENTAGE) or self.force_charge:
+        self.log.debug('Waiting for battery to be above %s. Currently at %s',
+                       self.battery_working_percentage, self.system.field_friend.bms.state.percentage)
+        while self.system.field_friend.bms.is_below_percent(self.battery_working_percentage) or self.force_charge:
             await rosys.sleep(1)
+        self.log.debug('Battery is above %s. Continuing', self.battery_working_percentage)
+        if self.estop_charge:
+            await self.system.field_friend.estop.set_soft_estop(True)
+            await rosys.sleep(10)
 
     def _find_closest_row_index(self, rows: list[Row]) -> int:
         """Find the index of the closest row to the current position"""
@@ -255,6 +269,7 @@ class FieldNavigation(WaypointNavigation):
     def _is_allowed_to_start(self) -> bool:
         first_row_segment = next((segment for segment in self._upcoming_path if isinstance(segment, RowSegment)), None)
         if first_row_segment is None:
+            self.log.warning('No row segment found')
             return False
         if not self.system.automation_watcher.is_gnss_ready():
             rosys.notify('GNSS quality is not sufficient', 'negative')
