@@ -19,15 +19,17 @@ def check_if_plant_exists(plant: Plant, plants: list[Plant], distance: float) ->
     for p in plants:
         if p.position.distance(plant.position) < distance and p.type == plant.type:
             # TODO: hacky for now, remove when parallax error is fixed
-            is_weed = plant.type in ('weed', 'weedy_area', 'coin', 'big_weed')
-            if is_weed and p.confidence >= MINIMUM_COMBINED_WEED_CONFIDENCE:
-                return True
-            if not is_weed and p.confidence >= MINIMUM_COMBINED_CROP_CONFIDENCE:
+            p.detection_image = plant.detection_image
+            p.detection_time = plant.detection_time
+            if len(p.confidences) >= Plant.DEQUE_MAXLEN:
                 return True
             p.confidences.append(plant.confidence)
             p.positions.append(plant.position)
-            p.detection_image = plant.detection_image
-            p.detection_time = plant.detection_time
+            # is_weed = plant.type in ('weed', 'weedy_area', 'coin', 'big_weed')
+            # if is_weed and p.confidence >= MINIMUM_COMBINED_WEED_CONFIDENCE:
+            #     return True
+            # if not is_weed and p.confidence >= MINIMUM_COMBINED_CROP_CONFIDENCE:
+            #     return True
             return True
     return False
 
@@ -56,8 +58,8 @@ class PlantProvider(rosys.persistence.Persistable):
         rosys.on_repeat(self.prune, 10.0)
 
     def prune(self) -> None:
-        weeds_max_age = 10.0
-        crops_max_age = 60.0 * 300.0
+        weeds_max_age = 60.0
+        crops_max_age = 60.0
         num_weeds_before = len(self.weeds)
         num_crops_before = len(self.crops)
         self.weeds[:] = [weed for weed in self.weeds if weed.detection_time > rosys.time() - weeds_max_age]
