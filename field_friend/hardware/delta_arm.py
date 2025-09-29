@@ -10,8 +10,8 @@ from ..config import DeltaArmConfiguration
 
 
 class DeltaArm(rosys.hardware.Module, ABC):
-    def __init__(self, config: DeltaArmConfiguration):
-        super().__init__()
+    def __init__(self, config: DeltaArmConfiguration, **kwargs):
+        super().__init__(**kwargs)
         self.config = config
         self.l1 = self.config.l1
         self.l2 = self.config.l2
@@ -253,8 +253,8 @@ class DeltaArmHardware(DeltaArm, rosys.hardware.ModuleHardware):
             f'{name}_left.position:3',
             f'{name}_right.position:3',
         ]
-        rosys.hardware.ModuleHardware.__init__(self, robot_brain, lizard_code, core_message_fields)
-        DeltaArm.__init__(self, config)
+        DeltaArm.__init__(self, config, robot_brain=robot_brain, lizard_code=lizard_code,
+                          core_message_fields=core_message_fields)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         # positions in degrees as exposed by RmdMotor properties
@@ -284,6 +284,8 @@ class DeltaArmHardware(DeltaArm, rosys.hardware.ModuleHardware):
 
         # Send like tornado; keep synchronous method by using io-bound dispatch
         self.log.debug('Move RMDs to L=%.2f°, R=%.2f° @ %.1f deg/s', left_deg, right_deg, speed_deg_s)
+        print(f'Move RMDs to L={left_deg:.2f}°, R={right_deg:.2f}° @ {speed_deg_s:.1f} deg/s', flush=True)
+        print(f'command: {self.name}_left.position({left_deg:.3f}, {speed_deg_s:.1f});{self.name}_right.position({right_deg:.3f}, {speed_deg_s:.1f});', flush=True)
         await self.robot_brain.send(
             f'{self.name}_left.position({left_deg:.3f}, {speed_deg_s:.1f});{self.name}_right.position({right_deg:.3f}, {speed_deg_s:.1f});'
         )

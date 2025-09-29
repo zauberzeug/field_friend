@@ -16,7 +16,7 @@ from field_friend.config.configuration import (
 
 config = FieldFriendConfiguration(
     name='fieldfriend-f24',
-    robot_brain=RobotBrainConfiguration(name='rbTODO', flash_params=['orin', 'v05', 'nand'], use_espresso=True),
+    robot_brain=RobotBrainConfiguration(name='rb12', flash_params=['nano', 'nand'], use_espresso=True),
     tool='delta_arm',
     measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033),
     camera=CameraConfiguration(
@@ -35,19 +35,19 @@ config = FieldFriendConfiguration(
         odrive_version=6
     ),
     has_status_control=True,
-    flashlight=FlashlightConfiguration(
-        version='flashlight_pwm_v2',
-        front_pin=12,
-        back_pin=23,
-        on_expander=True,
-        rated_voltage=23.0,
-    ),
-    bumper=BumperConfiguration(pin_front_top=21, pin_front_bottom=35, pin_back=18),
+    # flashlight=FlashlightConfiguration(
+    #     version='flashlight_pwm_v2',
+    #     front_pin=12,
+    #     back_pin=23,
+    #     on_expander=True,
+    #     rated_voltage=23.0,
+    # ),
+    # bumper=BumperConfiguration(pin_front_top=21, pin_front_bottom=35, pin_back=18),
     y_axis=None,
     z_axis=DeltaArmConfiguration(
         # TODO
         version='delta_arm',
-        name='delta_arm',
+        name='delta_arm_left',
         max_position=0.1,
         min_position=-0.1,
         left_can_address=1,
@@ -55,6 +55,6 @@ config = FieldFriendConfiguration(
         motor_ratio=9,
     ),
     circle_sight_positions=CircleSightPositions(),
-    gnss=GnssConfiguration(),
-    imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.603092, 0.020933, 1.570120), min_gyro_calibration=0.0),
+    # gnss=GnssConfiguration(),
+    # imu=ImuConfiguration(offset_rotation=Rotation.from_euler(-1.603092, 0.020933, 1.570120), min_gyro_calibration=0.0),
 )
