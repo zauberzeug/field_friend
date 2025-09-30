@@ -253,8 +253,8 @@ class DeltaArmHardware(DeltaArm, rosys.hardware.ModuleHardware):
             f'{name}_left.position:3',
             f'{name}_right.position:3',
         ]
-        DeltaArm.__init__(self, config, robot_brain=robot_brain, lizard_code=lizard_code,
-                          core_message_fields=core_message_fields)
+        super().__init__(config, robot_brain=robot_brain, lizard_code=lizard_code,
+                         core_message_fields=core_message_fields)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         # positions in degrees as exposed by RmdMotor properties
