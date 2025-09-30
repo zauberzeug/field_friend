@@ -5,6 +5,7 @@ import rosys
 from .axis import Axis, AxisSimulation
 from .axis_d1 import AxisD1
 from .chain_axis import ChainAxis, ChainAxisHardware, ChainAxisSimulation
+from .delta_arm import DeltaArm, DeltaArmHardware, DeltaArmSimulation
 from .double_wheels import DoubleWheelsHardware
 from .flashlight import Flashlight, FlashlightHardware, FlashlightSimulation
 from .flashlight_pwm import FlashlightPWM, FlashlightPWMHardware, FlashlightPWMSimulation
@@ -25,7 +26,7 @@ class Safety(rosys.hardware.Module, abc.ABC):
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
                  y_axis: Axis | ChainAxis | None = None,
-                 z_axis: Axis | Tornado | Sprayer | None = None,
+                 z_axis: Axis | Tornado | Sprayer | DeltaArm | None = None,
                  flashlight: Flashlight | FlashlightV2 | FlashlightPWM | FlashlightPWMV2 | None = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
@@ -46,7 +47,7 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
                  estop: rosys.hardware.EStopHardware,
                  bumper: rosys.hardware.BumperHardware | None = None,
                  y_axis: ChainAxisHardware | YAxisStepperHardware | YAxisCanOpenHardware | AxisD1 | None = None,
-                 z_axis: ZAxisCanOpenHardware | ZAxisStepperHardware | TornadoHardware | SprayerHardware | ZAxisCanOpenHardware | AxisD1 | None = None,
+                 z_axis: ZAxisCanOpenHardware | ZAxisStepperHardware | TornadoHardware | SprayerHardware | ZAxisCanOpenHardware | AxisD1 | DeltaArmHardware | None = None,
                  flashlight: FlashlightHardware | FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None,
                  ) -> None:
         self.estop_active = False
@@ -166,7 +167,7 @@ class SafetySimulation(Safety, rosys.hardware.ModuleSimulation):
                  wheels: rosys.hardware.Wheels,
                  estop: rosys.hardware.EStop,
                  y_axis: AxisSimulation | ChainAxisSimulation | None = None,
-                 z_axis: AxisSimulation | TornadoSimulation | SprayerSimulation | None = None,
+                 z_axis: AxisSimulation | TornadoSimulation | SprayerSimulation | DeltaArmSimulation | None = None,
                  flashlight: FlashlightSimulation | FlashlightSimulationV2 | FlashlightPWMSimulation | FlashlightPWMSimulationV2 | None) -> None:
         super().__init__(wheels=wheels, estop=estop, y_axis=y_axis, z_axis=z_axis, flashlight=flashlight)
 

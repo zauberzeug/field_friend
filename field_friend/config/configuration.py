@@ -297,6 +297,7 @@ class BaseAxisConfiguration:
     min_position: float
     version: Literal['axis_d1',
                      'chain_axis',
+                     'delta_arm',
                      'y_axis_stepper',
                      'y_axis_canopen',
                      'tornado',
@@ -384,6 +385,30 @@ class YCanOpenConfiguration(BaseAxisConfiguration,
                             YAxisConfiguration,
                             AxisOffsetConfiguration):
     pass
+
+
+@dataclass(slots=True, kw_only=True)
+class DeltaArmConfiguration(BaseAxisConfiguration):
+    """Delta Arm Configuration
+
+    Defaults:
+        l1: 0.13
+        l2: 0.30
+        b: 0.06
+        p: 0.07
+        height: 0.40
+    """
+    l1: float = 0.13
+    l2: float = 0.30
+    b: float = 0.06
+    p: float = 0.07
+    height: float = 0.40
+    # Optional symmetric Y-limit for allowed workspace (meters)
+    y_limit: float = 0.08  # guessed pi * thumb width
+    # Hardware parameters (optional for simulation)
+    left_can_address: int | None = None
+    right_can_address: int | None = None
+    motor_ratio: int = 9
 
 
 @dataclass(slots=True, kw_only=True)
@@ -510,14 +535,14 @@ class FieldFriendConfiguration:
     """
     name: str
     robot_brain: RobotBrainConfiguration
-    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'sprayer', 'recorder'] | None
+    tool: Literal['tornado', 'weed_screw', 'dual_mechanism', 'sprayer', 'recorder', 'delta_arm'] | None
     measurements: MeasurementsConfiguration
     wheels: WheelsConfiguration
     has_status_control: bool
     camera: CameraConfiguration | None
     circle_sight_positions: CircleSightPositions | None
     y_axis: AxisD1Configuration | ChainAxisConfiguration | YStepperConfiguration | YCanOpenConfiguration | None
-    z_axis: AxisD1Configuration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | SprayerConfiguration | None
+    z_axis: AxisD1Configuration | DeltaArmConfiguration | TornadoConfiguration | ZStepperConfiguration | ZCanOpenConfiguration | SprayerConfiguration | None
     can: CanConfiguration = field(default_factory=CanConfiguration)
     bms: BmsConfiguration = field(default_factory=BmsConfiguration)
     estop: EstopConfiguration = field(default_factory=EstopConfiguration)

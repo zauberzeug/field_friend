@@ -7,6 +7,7 @@ import rosys
 # change the config to the config of simulated Robot
 from ..config import (
     AxisD1Configuration,
+    DeltaArmConfiguration,
     FieldFriendConfiguration,
     SprayerConfiguration,
     TornadoConfiguration,
@@ -15,6 +16,7 @@ from ..config import (
 )
 from .axis import AxisSimulation
 from .chain_axis import ChainAxisSimulation
+from .delta_arm import DeltaArmSimulation
 from .double_wheels import WheelsSimulationWithAcceleration
 from .field_friend import FieldFriend
 from .flashlight import FlashlightSimulation
@@ -35,7 +37,7 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
         self.WHEEL_DISTANCE = config.measurements.wheel_distance
         tool = config.tool
-        if tool in ['tornado', 'weed_screw', 'sprayer', None]:
+        if tool in ['tornado', 'weed_screw', 'sprayer', 'delta_arm', None]:
             self.WORK_X = config.measurements.work_x
             if config.measurements.work_y:
                 self.WORK_Y = config.measurements.work_y
@@ -49,7 +51,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             self.CHOP_RADIUS = config.measurements.chop_radius
         else:
             logging.warning('Unknown FieldFriend tool: %s', tool)
-        wheels = WheelsSimulationWithAcceleration(self.WHEEL_DISTANCE) if use_acceleration else rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
+        wheels = WheelsSimulationWithAcceleration(self.WHEEL_DISTANCE) if use_acceleration \
+            else rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
 
         y_axis: AxisSimulation | ChainAxisSimulation | None
         if not config.y_axis:
@@ -65,9 +68,11 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
         else:
             raise NotImplementedError(f'Unknown Y-Axis version: {config.y_axis.version}')
 
-        z_axis: AxisSimulation | TornadoSimulation | SprayerSimulation | None
+        z_axis: AxisSimulation | DeltaArmSimulation | TornadoSimulation | SprayerSimulation | None
         if not config.z_axis:
             z_axis = None
+        elif isinstance(config.z_axis, DeltaArmConfiguration):
+            z_axis = DeltaArmSimulation(config=config.z_axis)
         elif isinstance(config.z_axis, ZStepperConfiguration | ZCanOpenConfiguration | AxisD1Configuration):
             z_axis = AxisSimulation(
                 min_position=config.z_axis.min_position,

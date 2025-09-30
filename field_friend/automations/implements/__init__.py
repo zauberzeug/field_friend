@@ -1,3 +1,4 @@
+from .delta_arm import DeltaArm
 from .implement import Implement
 from .recorder import Recorder
 from .tornado import Tornado
@@ -6,6 +7,7 @@ from .weeding_screw import WeedingScrew
 from .weeding_sprayer import WeedingSprayer
 
 __all__ = [
+    'DeltaArm',
     'Implement',
     'ImplementException',
     'Recorder',
