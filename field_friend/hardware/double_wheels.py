@@ -6,7 +6,7 @@ from ..config import WheelsConfiguration
 
 class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware):
     """Expands the RoSys wheels hardware to control the field friend's tracked wheels with dual motors."""
-    MAX_VALID_LINEAR_VELOCITY = 2.0
+    MAX_VALID_LINEAR_VELOCITY = 3.0
     MAX_VALID_ANGULAR_VELOCITY = 3.5
 
     def __init__(self, config: WheelsConfiguration, robot_brain: rosys.hardware.RobotBrain, estop: rosys.hardware.EStopHardware, *,
