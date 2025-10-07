@@ -6,7 +6,6 @@ from ..config import WheelsConfiguration
 
 class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware):
     """Expands the RoSys wheels hardware to control the field friend's tracked wheels with dual motors."""
-    SANITY_CHECK_LINEAR = 1.0
 
     def __init__(self, config: WheelsConfiguration, robot_brain: rosys.hardware.RobotBrain, estop: rosys.hardware.EStopHardware, *,
                  can: rosys.hardware.CanHardware,
@@ -71,11 +70,7 @@ class DoubleWheelsHardware(rosys.hardware.Wheels, rosys.hardware.ModuleHardware)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         velocity = rosys.geometry.Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time)
-        if abs(velocity.linear) <= self.SANITY_CHECK_LINEAR:
-            self.VELOCITY_MEASURED.emit([velocity])
-        else:
-            self.log.error('Velocity is too high: (%s, %s)', velocity.linear, velocity.angular)
-
+        self.VELOCITY_MEASURED.emit([velocity])
         if self.config.odrive_version == 6:
             self.motor_error = any([self.l0_error, self.r0_error, self.l1_error, self.r1_error])
             self.l0_error = int(words.pop(0))
