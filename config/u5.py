@@ -23,6 +23,7 @@ config = FieldFriendConfiguration(
     measurements=MeasurementsConfiguration(
         tooth_count=17,
         pitch=0.041,
+        wheel_distance=0.512,
         work_x=0.093,
     ),
     camera=CameraConfiguration(

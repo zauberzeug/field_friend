@@ -22,7 +22,12 @@ config = FieldFriendConfiguration(
                                         enable_esp_on_startup=True,
                                         use_espresso=True),
     tool='weed_screw',
-    measurements=MeasurementsConfiguration(tooth_count=17, pitch=0.041, work_x=0.085),
+    measurements=MeasurementsConfiguration(
+        tooth_count=17,
+        pitch=0.041,
+        wheel_distance=0.512,
+        work_x=0.085
+    ),
     camera=CameraConfiguration(
         width=1280,
         height=720,

@@ -15,7 +15,7 @@ config = FieldFriendConfiguration(
     name='fieldfriend-f21',
     robot_brain=RobotBrainConfiguration(name='rb54', flash_params=['orin', 'v05', 'nand'], use_espresso=True),
     tool='sprayer',
-    measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033),
+    measurements=MeasurementsConfiguration(),
     camera=CameraConfiguration(
         width=1280,
         height=720,

@@ -24,7 +24,7 @@ class MeasurementsConfiguration:
 
     Defaults:
         motor_gear_ratio: 12.52
-        wheel_distance: 0.47
+        wheel_distance: 0.502
         antenna_offset: 0.205
         work_x: 0.0, for dual mechanism, this is work_x_drill
         drill_radius: 0.025
@@ -32,10 +32,10 @@ class MeasurementsConfiguration:
         chop_radius: None
         work_y: None
     """
-    tooth_count: int
-    pitch: float
+    tooth_count: int = 15
+    pitch: float = 0.033
     motor_gear_ratio: float = 12.52
-    wheel_distance: float = 0.47
+    wheel_distance: float = 0.502
     drill_radius: float = 0.025
     antenna_offset: float = 0.205  # only u1, u2 and f10 are missing this
     work_x: float = 0.0  # this is work_x_drill for dual mechanism
