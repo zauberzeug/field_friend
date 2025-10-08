@@ -16,7 +16,6 @@ from .components import create_header
 from .components.hardware_control import create_hardware_control_ui
 from .components.io_overview import IoOverview as io_overview
 from .components.log_monitor import LogMonitor
-from .components.settings import create_settings_ui
 from .components.status_bulb import StatusBulb as status_bulb
 from .components.status_dev import status_dev_page
 
@@ -52,7 +51,6 @@ class DevPage:
         with ui.card().style('background-color: #2E5396; width: 100%;'):
             with ui.column().style('width: 100%;'):
                 ui.label('Development Tools').style('font-size: 1.5rem; color: white;')
-                create_settings_ui(self.system)
                 with ui.row().style('width: 100%'):
                     with ui.card().style('background-color: #3E63A6; color: white;'):
                         if isinstance(self.system.field_friend, rosys.hardware.RobotHardware):
