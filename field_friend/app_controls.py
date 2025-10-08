@@ -26,8 +26,6 @@ class AppControls(RosysAppControls):
         self.last_bumpers_active: list[str] = []
         self.last_info: str = ''
         self.APP_CONNECTED.register(self.reset)
-        if self.field_friend.estop:
-            self.extra_buttons['estop'] = AppButton('warning', released=self._toggle_estop)
         if self.capture:
             self.extra_buttons['front'] = \
                 AppButton('file_upload', released=self.capture.front)
@@ -69,6 +67,3 @@ class AppControls(RosysAppControls):
 
     def reset(self) -> None:
         self.last_info = 'loading'
-
-    async def _toggle_estop(self):
-        await self.field_friend.estop.set_soft_estop(not self.field_friend.estop.is_soft_estop_active)
