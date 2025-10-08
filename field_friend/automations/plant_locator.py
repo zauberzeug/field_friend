@@ -205,7 +205,10 @@ class PlantLocator(EntityLocator):
                         ui.chip(tag, removable=True).props('outline') \
                             .on('remove', lambda t=tag: update_tags(t))
 
+            label_input: ui.input | None = None
+
             def add_chip():
+                assert label_input is not None
                 self.tags.append(label_input.value)
                 self.request_backup()
                 chips.refresh()
