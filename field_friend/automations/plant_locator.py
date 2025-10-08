@@ -42,39 +42,31 @@ class PlantLocator(EntityLocator):
         self.detector_info: DetectorInfo | None = None
         self.tags: list[str] = []
         self.is_paused = True
-        self.autoupload: Autoupload = Autoupload.DISABLED
-        self.upload_images: bool = False
+        self.autoupload: Autoupload = Autoupload.FILTERED
+        self._mobile_upload_permission = False
         self.interval = self.INTERVAL
         self.weed_category_names: list[str] = self.WEED_CATEGORY_NAME
         self.crop_category_names: dict[str, str] = self.CROP_CATEGORY_NAME
         self.minimum_crop_confidence: float = self.MINIMUM_CROP_CONFIDENCE
         self.minimum_weed_confidence: float = self.MINIMUM_WEED_CONFIDENCE
-        if not rosys.is_simulation():
-            self.teltonika_router = system.teltonika_router
-            self.teltonika_router.CONNECTION_CHANGED.register(self.set_upload_images)
-            self.teltonika_router.MOBILE_UPLOAD_PERMISSION_CHANGED.register(self.set_upload_images)
-
-            async def set_outbox_mode() -> None:
-                assert isinstance(self.detector, DetectorHardware)
-                await self.detector.set_outbox_mode(mode='continuous_upload' if self.upload_images else 'stopped')
-            rosys.on_repeat(set_outbox_mode, 1.0)
         self.detector_error = False
         self.last_detection_time = rosys.time()
         if self.camera_provider is None:
             self.log.warning('no camera provider configured, cant locate plants')
             return
+        if not rosys.is_simulation():
+            self.teltonika_router = system.teltonika_router
+            self.teltonika_router.CONNECTION_CHANGED.register(self._set_outbox_mode)
         assert self.detector is not None
         rosys.on_repeat(self._detection_watchdog, 0.5)
-        rosys.on_startup(self.fetch_detector_info)
+        rosys.on_startup(self._detector_startup)
         rosys.on_startup(self._detect_plants)
 
     def backup_to_dict(self) -> dict[str, Any]:
-        self.log.debug(f'backup: autoupload: {self.autoupload}')
         return super().backup_to_dict() | {
             'minimum_weed_confidence': self.minimum_weed_confidence,
             'minimum_crop_confidence': self.minimum_crop_confidence,
             'autoupload': self.autoupload.value,
-            'upload_images': self.upload_images,
             'tags': self.tags,
         }
 
@@ -83,9 +75,7 @@ class PlantLocator(EntityLocator):
         self.minimum_weed_confidence = data.get('minimum_weed_confidence', self.MINIMUM_WEED_CONFIDENCE)
         self.minimum_crop_confidence = data.get('minimum_crop_confidence', self.MINIMUM_CROP_CONFIDENCE)
         self.autoupload = Autoupload(data.get('autoupload', self.autoupload)) \
-            if 'autoupload' in data else Autoupload.DISABLED
-        self.log.debug(f'self.autoupload: {self.autoupload}')
-        self.upload_images = data.get('upload_images', self.upload_images)
+            if 'autoupload' in data else Autoupload.FILTERED
         self.tags = data.get('tags', self.tags)
 
     async def _detect_plants(self) -> None:
@@ -188,6 +178,9 @@ class PlantLocator(EntityLocator):
                     .classes('w-28') \
                     .bind_value(self, 'autoupload') \
                     .tooltip('Set the autoupload for the weeding automation')
+                ui.checkbox('Mobile upload', value=self._mobile_upload_permission, on_change=self._set_outbox_mode) \
+                    .bind_value_to(self, '_mobile_upload_permission') \
+                    .tooltip('Allow upload of images on a mobile network')
 
             if isinstance(self.detector, DetectorHardware):
                 ui.separator()
@@ -226,13 +219,19 @@ class PlantLocator(EntityLocator):
             with ui.row().classes('items-center'):
                 chips()
 
-    def set_upload_images(self):
-        if self.teltonika_router.mobile_upload_permission:
-            self.upload_images = True
-        elif self.teltonika_router.current_connection in ['wifi', 'ether']:
-            self.upload_images = True
-        else:
-            self.upload_images = False
+    async def _detector_startup(self) -> None:
+        if isinstance(self.detector, DetectorHardware):
+            while not self.detector.is_connected:
+                await rosys.sleep(1)
+            await self._set_outbox_mode()
+        await self.fetch_detector_info()
+
+    async def _set_outbox_mode(self) -> None:
+        assert isinstance(self.detector, DetectorHardware)
+        upload_images = self._mobile_upload_permission or \
+            self.teltonika_router.current_connection in ['wifi', 'ether']
+        self.log.debug('Setting outbox mode to %s', upload_images)
+        await self.detector.set_outbox_mode('continuous_upload' if upload_images else 'stopped')
 
     async def fetch_detector_info(self) -> bool:
         assert self.detector is not None
