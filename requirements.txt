@@ -1,10 +1,6 @@
-fiona
-geopandas
-geopy
 git+https://github.com/zauberzeug/rosys.git@80819516bf5c124581a8f4772e039dd2cf1057b8
 icecream
-pillow
+pandas
 prompt-toolkit # for lizard monitor
-pynmea2
 shapely
 uvicorn == 0.28.1
