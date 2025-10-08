@@ -1,6 +1,5 @@
 import logging
 
-import numpy as np
 import rosys
 
 from ..config import (
@@ -36,12 +35,6 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
 
     def __init__(self, config: FieldFriendConfiguration) -> None:
         self.log = logging.getLogger('field_friend.field_friend_hardware')
-        self.MOTOR_GEAR_RATIO: float = config.measurements.motor_gear_ratio
-        self.TOOTH_COUNT: int = config.measurements.tooth_count
-        self.PITCH: float = config.measurements.pitch
-        self.WHEEL_DIAMETER: float = self.TOOTH_COUNT * self.PITCH / np.pi
-        self.M_PER_TICK: float = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
-        self.WHEEL_DISTANCE: float = config.measurements.wheel_distance
         self.ANTENNA_OFFSET: float = config.measurements.antenna_offset
         self.WORK_X: float
         self.DRILL_RADIUS: float
@@ -80,19 +73,21 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
         estop = rosys.hardware.EStopHardware(robot_brain, name=config.estop.name, pins=config.estop.pins)
 
         wheels: rosys.hardware.WheelsHardware | DoubleWheelsHardware
+        m_per_tick = config.measurements.m_per_tick
+        wheel_distance = config.measurements.wheel_distance
         if config.wheels.version == 'wheels':
             wheels = rosys.hardware.WheelsHardware(robot_brain,
                                                    can=self.can,
                                                    name=config.wheels.name,
                                                    left_can_address=config.wheels.left_front_can_address,
                                                    right_can_address=config.wheels.right_front_can_address,
-                                                   m_per_tick=self.M_PER_TICK,
-                                                   width=self.WHEEL_DISTANCE,
+                                                   m_per_tick=m_per_tick,
+                                                   width=wheel_distance,
                                                    is_right_reversed=config.wheels.is_right_reversed,
                                                    is_left_reversed=config.wheels.is_left_reversed)
         elif config.wheels.version == 'double_wheels':
             wheels = DoubleWheelsHardware(config.wheels, robot_brain, estop, can=self.can,
-                                          m_per_tick=self.M_PER_TICK, width=self.WHEEL_DISTANCE)
+                                          m_per_tick=m_per_tick, width=wheel_distance)
         else:
             raise NotImplementedError(f'Unknown wheels version: {config.wheels.version}')
 

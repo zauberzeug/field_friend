@@ -43,6 +43,10 @@ class MeasurementsConfiguration:
     chop_radius: float | None = None  # only u2 and u3 have this
     work_y: float | None = None  # only f16 and f15 have this
 
+    @property
+    def m_per_tick(self) -> float:
+        return self.tooth_count * self.pitch / self.motor_gear_ratio
+
 
 @dataclass(kw_only=True)
 class CropConfiguration:
