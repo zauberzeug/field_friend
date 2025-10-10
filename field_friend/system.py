@@ -7,6 +7,7 @@ import icecream
 import numpy as np
 import psutil
 import rosys
+from rosys.automation import Automator
 from rosys.driving import Driver, Odometer, Steerer
 from rosys.event import Event
 from rosys.geometry import GeoPoint, GeoReference
@@ -86,13 +87,30 @@ class System(rosys.persistence.Persistable):
                                                           robot_locator=self.robot_locator,
                                                           robot_id=self.robot_id,
                                                           camera_config=self.config.camera)
+
+        def log_gnss_diff() -> None:
+            assert self.gnss is not None
+            assert isinstance(self.gnss, GnssHardware)
+            if not self.gnss.diffs:
+                return
+            assert self.gnss.last_measurement is not None
+            mean = np.mean(self.gnss.diffs)
+            std = np.std(self.gnss.diffs)
+            max_ = np.max(self.gnss.diffs)
+            min_ = np.min(self.gnss.diffs)
+            last = self.gnss.diffs[-1]
+            too_late = sum(1 for diff in self.gnss.diffs if abs(diff) > self.gnss.MAX_TIMESTAMP_DIFF)
+            last_measurement = round(((self.gnss.last_measurement.gnss_time -
+                                     self.gnss.last_measurement.time + 43200) % 86400) - 43200, 3)
+            self.log.info(
+                f"GNSS - mean: {mean:.3f} ± {std:.3f} - max: {max_:.3f} - min: {min_:.3f} - last: {last:.3f} - too late: {too_late} / {len(self.gnss.diffs)} - last measurement: {last_measurement:.3f}s"
+            )
+        if isinstance(self.gnss, GnssHardware):
+            rosys.on_repeat(log_gnss_diff, 10.0)
+
         self.odometer = Odometer(self.field_friend.wheels)
         self.setup_driver()
-        self.automator: rosys.automation.Automator = rosys.automation.Automator(
-            self.steerer,
-            on_interrupt=self.field_friend.stop,
-            notify=False,
-        )
+        self.automator = Automator(self.steerer, on_interrupt=self.field_friend.stop, notify=False)
         self.plant_provider = PlantProvider().persistent()
         self.plant_locator: PlantLocator = PlantLocator(self).persistent()
         self.puncher: Puncher = Puncher(self.field_friend, self.driver)
@@ -320,13 +338,12 @@ class System(rosys.persistence.Persistable):
             return None
         if not rosys.is_simulation():
             gnss_hardware = GnssHardware(antenna_pose=self.config.gnss.pose)
-            gnss_hardware.MAX_TIMESTAMP_DIFF = 0.25
             return gnss_hardware
         assert isinstance(wheels, rosys.hardware.WheelsSimulation)
         if rosys.is_test:
             # NOTE: quick fix for https://github.com/zauberzeug/field_friend/issues/348
             return GnssSimulation(wheels=wheels, lat_std_dev=1e-10, lon_std_dev=1e-10, heading_std_dev=1e-10)
-        return GnssSimulation(wheels=wheels, lat_std_dev=1e-5, lon_std_dev=1e-5, heading_std_dev=1e-5)
+        return GnssSimulation(wheels=wheels, lat_std_dev=0.008, lon_std_dev=0.008, heading_std_dev=0.01, interval=0.1, latency=0.1)
 
     def update_gnss_reference(self, *, reference: GeoReference | None = None) -> None:
         if reference is None:
@@ -366,4 +383,5 @@ class System(rosys.persistence.Persistable):
     def _garbage_collection(self):
         if self.automator.is_running:
             return
+        self.log.info('Running garbage collection')
         gc.collect()

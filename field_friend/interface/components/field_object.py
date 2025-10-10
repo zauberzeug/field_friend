@@ -92,11 +92,10 @@ class FieldObject(Group):
                 self.scene.text('Bed ' + bed_index, style='font-size: 0.6em;') \
                     .move(x=bed_point.x, y=bed_point.y, z=0.01).with_name(f'bed_{bed_index}_label')
 
-        if active_field.charge_dock_pose is not None:
-            assert active_field.charge_approach_pose is not None
-            local_docked_pose = active_field.charge_dock_pose.to_local()
+        if active_field.charging_station is not None:
+            local_docked_pose = active_field.charging_station.dock_pose.to_local()
             Sphere(radius=0.05).move(x=local_docked_pose.x, y=local_docked_pose.y, z=0.1) \
                 .material('#ff0000').with_name('docking_station')
-            local_approach_pose = active_field.charge_approach_pose.to_local()
+            local_approach_pose = active_field.charging_station.approach_pose.to_local()
             Sphere(radius=0.05).move(x=local_approach_pose.x, y=local_approach_pose.y, z=0.1) \
                 .material('#008000').with_name('docking_approach')

@@ -9,7 +9,7 @@ from nicegui.elements.leaflet_layers import Marker
 from rosys.geometry import GeoPoint, GeoPose
 from rosys.hardware import GnssMeasurement
 
-from field_friend.automations.field import Field
+from field_friend.automations.field import ChargingStation, Field
 
 if TYPE_CHECKING:
     from ...system import System
@@ -266,6 +266,8 @@ class FieldCreator:
         if self.first_row_start is None or self.first_row_end is None:
             ui.notify('No valid field parameters.')
             return
+        charging_station = ChargingStation.from_dock_pose(self.charge_dock_pose, docking_distance=self.docking_distance) \
+            if self.charge_dock_pose is not None else None
         if self.bed_count > 1:
             self.field_provider.create_field(Field(id=str(uuid4()),
                                                    name=self.field_name,
@@ -277,8 +279,7 @@ class FieldCreator:
                                                    bed_count=int(self.bed_count),
                                                    bed_spacing=self.bed_spacing,
                                                    bed_crops=self.bed_crops,
-                                                   docking_distance=self.docking_distance,
-                                                   charge_dock_pose=self.charge_dock_pose))
+                                                   charging_station=charging_station))
         else:
             self.field_provider.create_field(Field(id=str(uuid4()),
                                                    name=self.field_name,
@@ -288,8 +289,7 @@ class FieldCreator:
                                                    row_count=int(self.row_count),
                                                    outline_buffer_width=self.outline_buffer_width,
                                                    bed_crops=self.bed_crops,
-                                                   docking_distance=self.docking_distance,
-                                                   charge_dock_pose=self.charge_dock_pose))
+                                                   charging_station=charging_station))
         self.first_row_start = None
         self.first_row_end = None
         self.charge_dock_pose = None

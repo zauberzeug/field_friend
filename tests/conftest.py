@@ -7,7 +7,7 @@ from rosys.geometry import GeoPoint, GeoPose, GeoReference, Pose
 from rosys.hardware import GnssSimulation, ImuSimulation, WheelsSimulation
 from rosys.testing import forward, helpers
 
-from field_friend.automations import Field, Row
+from field_friend.automations import ChargingStation, Field, Row
 from field_friend.hardware.double_wheels import WheelsSimulationWithAcceleration
 from field_friend.interface.components.field_creator import FieldCreator
 from field_friend.system import System
@@ -99,8 +99,9 @@ class TestField:
         self.bed_crops = {
             '0': 'sugar_beet',
         }
-        self.docking_distance = 2.0
-        self.charge_dock_pose = GeoPose.from_degrees(51.98332541182115, 7.434223079593405, 86.69682979709266)
+        self.charging_station = ChargingStation.from_dock_pose(GeoPose.from_degrees(51.98332541182115,
+                                                                                    7.434223079593405,
+                                                                                    86.69682979709266))
         self.row_support_points = []
         self.rows = [
             Row(id=f'field_{self.id}_row_0', name='row_0', points=[
@@ -146,8 +147,7 @@ async def field(system: System) -> AsyncGenerator[TestField, None]:
         bed_spacing=test_field.bed_spacing,
         bed_crops=test_field.bed_crops,
         row_support_points=[],
-        docking_distance=test_field.docking_distance,
-        charge_dock_pose=test_field.charge_dock_pose
+        charging_station=test_field.charging_station
     ))
     yield test_field
 

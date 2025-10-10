@@ -5,7 +5,7 @@ import rosys
 from rosys.event import Event
 from rosys.geometry import GeoPose
 
-from .field import Field, Row, RowSupportPoint
+from .field import ChargingStation, Field, Row, RowSupportPoint
 
 
 class FieldProvider(rosys.persistence.Persistable):
@@ -41,14 +41,18 @@ class FieldProvider(rosys.persistence.Persistable):
 
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         fields_data: dict[str, dict] = data.get('fields', {})
+        if not fields_data:
+            return
         for field in list(fields_data.values()):
             new_field = Field.from_dict(field)
             self.fields.append(new_field)
-        selected_field_id: str | None = data.get('selected_field')
-        if selected_field_id:
-            self.select_field(selected_field_id)
+        selected_field_id: str | None = data.get('selected_field', None)
+        if selected_field_id is None:
+            selected_field_id = self.fields[0].id
+        self.select_field(selected_field_id)
         self.refresh_fields()
         self.FIELDS_CHANGED.emit()
+        self.FIELD_SELECTED.emit()
 
     def invalidate(self) -> None:
         self.request_backup()
@@ -142,8 +146,8 @@ class FieldProvider(rosys.persistence.Persistable):
             field.bed_crops = bed_crops
         else:
             field.bed_crops = bed_crops
-        field.docking_distance = docking_distance
-        field.charge_dock_pose = charge_dock_pose
+        field.charging_station = ChargingStation.from_dock_pose(charge_dock_pose, docking_distance=docking_distance) \
+            if charge_dock_pose is not None else None
         self.log.info('Updated parameters for field %s: row number = %d, row spacing = %f',
                       field.name, row_count, row_spacing)
         self.invalidate()

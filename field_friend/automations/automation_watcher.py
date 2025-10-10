@@ -116,7 +116,8 @@ class AutomationWatcher:
         # Enable automator only if all relevant conditions are True
         self.automator.enabled = bumper_condition and gnss_condition
 
-        if self.try_resume_active and self.automator.is_running:
+        if self.try_resume_active and self.automator.is_running and \
+                not (self.automator.is_stopping or self.automator.is_pausing):
             self.log.info('disabling auto-resume because automation is already running again')
             self.try_resume_active = False
 

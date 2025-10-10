@@ -1,5 +1,6 @@
 from collections import deque
 from dataclasses import dataclass, field
+from typing import ClassVar
 from uuid import uuid4
 
 from rosys.geometry import Point3d
@@ -8,11 +9,12 @@ from rosys.vision import Image
 
 @dataclass(slots=True, kw_only=True)
 class Plant:
+    DEQUE_MAXLEN: ClassVar[int] = 20
     id: str = field(default_factory=lambda: str(uuid4()))
     type: str
-    positions: deque[Point3d] = field(default_factory=lambda: deque(maxlen=20))
+    positions: deque[Point3d] = field(default_factory=lambda: deque(maxlen=Plant.DEQUE_MAXLEN))
     detection_time: float
-    confidences: deque[float] = field(default_factory=lambda: deque(maxlen=20))
+    confidences: deque[float] = field(default_factory=lambda: deque(maxlen=Plant.DEQUE_MAXLEN))
     detection_image: Image | None = None
 
     @property
