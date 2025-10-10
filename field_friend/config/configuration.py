@@ -408,6 +408,9 @@ class DeltaArmConfiguration(BaseAxisConfiguration):
     left_can_address: int | None = None
     right_can_address: int | None = None
     motor_ratio: int = 9
+    # Motor polarity inversion (set True if motor rotates opposite to desired direction)
+    invert_left_motor: bool = False
+    invert_right_motor: bool = False
 
 
 @dataclass(slots=True, kw_only=True)

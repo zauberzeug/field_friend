@@ -53,6 +53,7 @@ config = FieldFriendConfiguration(
         left_can_address=1,
         right_can_address=2,
         motor_ratio=9,
+        invert_left_motor=True,  # left motor wired with opposite polarity
     ),
     circle_sight_positions=CircleSightPositions(),
     # gnss=GnssConfiguration(),

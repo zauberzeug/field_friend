@@ -23,6 +23,18 @@ class DeltaArm(rosys.hardware.Module, ABC):
         # latest motor readings (degrees); only populated on hardware
         self.left_motor_deg: float | None = None
         self.right_motor_deg: float | None = None
+        # raw multi-turn positions from firmware (not normalized)
+        self.left_motor_deg_raw: float = 0.0
+        self.right_motor_deg_raw: float = 0.0
+        # optional telemetry populated on hardware
+        self.left_motor_torque: float | None = None
+        self.right_motor_torque: float | None = None
+        self.left_motor_speed: float | None = None
+        self.right_motor_speed: float | None = None
+
+        # zero reference for reporting tool position (y,z) after calibration
+        self.tool_zero_y: float = 0.0
+        self.tool_zero_z: float = 0.0
 
         self.angle_offset_left = np.deg2rad(0)
         self.angle_offset_right = np.deg2rad(0)
@@ -50,7 +62,8 @@ class DeltaArm(rosys.hardware.Module, ABC):
 
     @property
     def tool_position(self) -> tuple[float, float]:
-        return projection_yz(self.end_effector_frame.relative_to(self.base_frame).point_3d).tuple
+        raw = projection_yz(self.end_effector_frame.relative_to(self.base_frame).point_3d)
+        return (raw.x - self.tool_zero_y, raw.y - self.tool_zero_z)
 
     def move_to_angles(self, theta_left: float, theta_right: float) -> bool:
         self.servo_frame_left.rotation = Rotation.from_euler(theta_left + self.angle_offset_left, 0, 0)
@@ -154,24 +167,7 @@ class DeltaArm(rosys.hardware.Module, ABC):
         return -np.pi <= theta_left <= np.pi and -np.pi <= theta_right <= np.pi
 
     async def calibrate(self) -> None:
-        # At calibration time, user puts end-effector at lowest-left inside bounds.
-        # Use current motor angles (if available) as zero offsets against our IK angles for that pose.
-        if not isinstance(self, DeltaArmHardware) or self.left_motor_deg is None or self.right_motor_deg is None:
-            rosys.notify('Motor positions not available. Move slightly with arrows or by hand, then try again.', 'warning')
-            return
-        # Define the canonical calibration pose
-        y_cal = -float(self.y_limit) if self.y_limit is not None else -(self.b + self.l1)
-        z_cal = -float(self.height)
-        # Compute expected IK angles for that pose
-        theta_left, theta_right = self.calculate_angles(y_cal, z_cal)
-        # Convert current motor readings to radians
-        motor_left = np.deg2rad(self.left_motor_deg)
-        motor_right = np.deg2rad(self.right_motor_deg)
-        # Set offsets so that commanded angle + offset equals current motor angle at this pose
-        self.angle_offset_left = motor_left - theta_left
-        self.angle_offset_right = motor_right - theta_right
-        self.is_calibrated = True
-        rosys.notify('Delta arm calibrated at lowest-left.', 'positive')
+        rosys.notify('Calibration is available on hardware only.', 'warning')
 
     def developer_ui(self) -> None:
         ui.label('Info').classes('text-center text-bold')
@@ -188,9 +184,19 @@ class DeltaArm(rosys.hardware.Module, ABC):
         with ui.row():
             ui.button('Reset', on_click=self.reset)
 
-            async def _calibrate_here() -> None:
-                await self.calibrate()
-            ui.button('Calibrate here (lowest-left)', on_click=_calibrate_here)
+            async def _calibrate_right() -> None:
+                if isinstance(self, DeltaArmHardware):
+                    await self.calibrate_right()
+                else:
+                    await self.calibrate()
+            ui.button('Calibrate Right (torque)', on_click=_calibrate_right)
+
+            async def _calibrate_left() -> None:
+                if isinstance(self, DeltaArmHardware):
+                    await self.calibrate_left()
+                else:
+                    await self.calibrate()
+            ui.button('Calibrate Left (torque)', on_click=_calibrate_left)
             ui.label('').bind_text_from(self, 'is_calibrated',
                                         lambda v: 'Calibrated' if v else 'Not calibrated').classes('ml-2')
 
@@ -243,23 +249,111 @@ class DeltaArmHardware(DeltaArm, rosys.hardware.ModuleHardware):
             raise ValueError('DeltaArmConfiguration requires left_can_address and right_can_address for hardware')
 
         lizard_code = remove_indentation(f'''
-            {name}_left = RmdMotor({can.name}, {config.left_can_address}, {config.motor_ratio})
-            {name}_right = RmdMotor({can.name}, {config.right_can_address}, {config.motor_ratio})
-
-            {name}_left.set_acceleration(60000, 60000, 60000, 60000)
-            {name}_right.set_acceleration(60000, 60000, 60000, 60000)
+            {name}_left = RmdMotor({can.name}, {config.left_can_address}, {config.motor_ratio},true)
+            {name}_right = RmdMotor({can.name}, {config.right_can_address}, {config.motor_ratio},true)
         ''')
         core_message_fields: list[str] = [
             f'{name}_left.position:3',
             f'{name}_right.position:3',
+            f'{name}_left.torque:3',
+            f'{name}_right.torque:3',
+            f'{name}_left.speed:3',
+            f'{name}_right.speed:3',
         ]
         super().__init__(config, robot_brain=robot_brain, lizard_code=lizard_code,
                          core_message_fields=core_message_fields)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        # positions in degrees as exposed by RmdMotor properties
-        self.left_motor_deg = float(words.pop(0))
-        self.right_motor_deg = float(words.pop(0))
+        # positions in degrees and telemetry as exposed by RmdMotor properties
+        self.left_motor_deg_raw = float(words.pop(0))
+        self.right_motor_deg_raw = float(words.pop(0))
+        # normalize to [-180, 180] for display/IK (but keep raw for calibration stepping)
+        self.left_motor_deg = ((self.left_motor_deg_raw + 180.0) % 360.0) - 180.0
+        self.right_motor_deg = ((self.right_motor_deg_raw + 180.0) % 360.0) - 180.0
+        self.left_motor_torque = float(words.pop(0))
+        self.right_motor_torque = float(words.pop(0))
+        self.left_motor_speed = float(words.pop(0))
+        self.right_motor_speed = float(words.pop(0))
+
+    async def calibrate(self) -> None:
+        # Torque-based calibration: move only the RIGHT motor slowly until torque threshold is reached, then save offset
+        if self.right_motor_deg_raw == 0.0:
+            rosys.notify('Motor positions not available yet. Move slightly, then try again.', 'warning')
+            return
+        torque_threshold_right = 1.8
+        output_speed = 100.0  # deg/s at output shaft
+        step_deg = 5.0  # output shaft degrees per step
+
+        hit = False
+        for _ in range(200):
+            output_pos = float(self.right_motor_deg_raw)
+            output_target = output_pos + step_deg
+            print(
+                f'calibrate RIGHT: current={output_pos:.2f}° target={output_target:.2f}° speed={output_speed:.1f}°/s', flush=True)
+            await self.robot_brain.send(f'{self.name}_right.position({output_target:.3f}, {output_speed:.1f});')
+            await rosys.sleep(0.08)
+            if self.right_motor_torque is not None and abs(self.right_motor_torque) >= torque_threshold_right:
+                await self.stop()
+                hit = True
+                break
+
+        if not hit:
+            await self.stop()
+            rosys.notify('Calibration failed: right torque threshold not reached.', 'warning')
+            return
+
+        current_roll_right = self.servo_frame_right.rotation.roll
+        motor_right_rad = np.deg2rad(self.right_motor_deg_raw)
+        self.angle_offset_right = self.angle_offset_right + (motor_right_rad - current_roll_right)
+        # set current tool position as new zero reference (top-most contact treated as 0,0)
+        zero_raw = projection_yz(self.end_effector_frame.relative_to(self.base_frame).point_3d)
+        self.tool_zero_y = zero_raw.x
+        self.tool_zero_z = zero_raw.y
+        self.is_calibrated = True
+        rosys.notify('Delta arm calibrated (right motor contact).', 'positive')
+
+    async def calibrate_right(self) -> None:
+        await self.calibrate()
+
+    async def calibrate_left(self) -> None:
+        # Move LEFT motor clockwise (negative rotor steps), stop on torque threshold, and save left offset
+        if self.left_motor_deg_raw == 0.0:
+            rosys.notify('Motor positions not available yet. Move slightly, then try again.', 'warning')
+            return
+        torque_threshold_left = 1.8
+        output_speed = 100.0  # deg/s at output shaft
+        # If motor inverted: negate both position and step to reverse physical direction
+        step_deg = -5.0 if self.config.invert_left_motor else 5.0
+
+        hit = False
+        for _ in range(200):
+            output_pos = float(self.left_motor_deg_raw)
+            if self.config.invert_left_motor:
+                output_pos = -output_pos
+            output_target = output_pos + step_deg
+            print(
+                f'calibrate LEFT: current={output_pos:.2f}° target={output_target:.2f}° speed={output_speed:.1f}°/s', flush=True)
+            await self.robot_brain.send(f'{self.name}_left.position({output_target:.3f}, {output_speed:.1f});')
+            await rosys.sleep(0.08)
+            if self.left_motor_torque is not None and abs(self.left_motor_torque) >= torque_threshold_left:
+                await self.stop()
+                hit = True
+                break
+
+        if not hit:
+            await self.stop()
+            rosys.notify('Calibration failed: left torque threshold not reached.', 'warning')
+            return
+
+        current_roll_left = self.servo_frame_left.rotation.roll
+        motor_left_rad = np.deg2rad(self.left_motor_deg_raw)
+        self.angle_offset_left = self.angle_offset_left + (motor_left_rad - current_roll_left)
+        # set current tool position as new zero reference (top-most contact treated as 0,0)
+        zero_raw = projection_yz(self.end_effector_frame.relative_to(self.base_frame).point_3d)
+        self.tool_zero_y = zero_raw.x
+        self.tool_zero_z = zero_raw.y
+        self.is_calibrated = True
+        rosys.notify('Delta arm calibrated (left motor contact).', 'positive')
 
     async def move_to_position(self, y: float, z: float) -> bool:
         # Guard physical bounds first
@@ -276,20 +370,37 @@ class DeltaArmHardware(DeltaArm, rosys.hardware.ModuleHardware):
         self.end_effector_frame.z = z
         self.move_to_angles(theta_left, theta_right)
 
-        # Convert to motor units (degrees), include calibration offsets
+        # Convert to motor units (output shaft degrees), include calibration offsets
         left_deg = float(np.rad2deg(theta_left + self.angle_offset_left))
         right_deg = float(np.rad2deg(theta_right + self.angle_offset_right))
-        # Choose a conservative default speed (deg/s) for RMD
+        # Choose a conservative default speed (deg/s) at output shaft
         speed_deg_s = 180.0
 
-        # Send like tornado; keep synchronous method by using io-bound dispatch
-        self.log.debug('Move RMDs to L=%.2f°, R=%.2f° @ %.1f deg/s', left_deg, right_deg, speed_deg_s)
-        print(f'Move RMDs to L={left_deg:.2f}°, R={right_deg:.2f}° @ {speed_deg_s:.1f} deg/s', flush=True)
-        print(f'command: {self.name}_left.position({left_deg:.3f}, {speed_deg_s:.1f});{self.name}_right.position({right_deg:.3f}, {speed_deg_s:.1f});', flush=True)
+        # RmdMotor firmware handles gear ratio internally; we send output-shaft degrees directly
+        # Apply inversion for left motor if configured
+        left_deg_cmd = -left_deg if self.config.invert_left_motor else left_deg
+        right_deg_cmd = right_deg
+
+        # Limit each command to at most one revolution relative to current state
+        if self.left_motor_deg_raw != 0.0:
+            d_left = left_deg_cmd - self.left_motor_deg_raw
+            d_left = float(np.clip(d_left, -360.0, 360.0))
+            left_deg_cmd = self.left_motor_deg_raw + d_left
+        if self.right_motor_deg_raw != 0.0:
+            d_right = right_deg_cmd - self.right_motor_deg_raw
+            d_right = float(np.clip(d_right, -360.0, 360.0))
+            right_deg_cmd = self.right_motor_deg_raw + d_right
+
+        self.log.debug('Move RMDs to L=%.2f°, R=%.2f° @ %.1f deg/s',
+                       left_deg_cmd, right_deg_cmd, speed_deg_s)
         await self.robot_brain.send(
-            f'{self.name}_left.position({left_deg:.3f}, {speed_deg_s:.1f});{self.name}_right.position({right_deg:.3f}, {speed_deg_s:.1f});'
+            f'{self.name}_left.position({left_deg_cmd:.3f}, {speed_deg_s:.1f});{self.name}_right.position({right_deg_cmd:.3f}, {speed_deg_s:.1f});'
         )
         return True
+
+    async def stop(self) -> None:
+        # send stop commands to both RMD motors
+        await self.robot_brain.send(f'{self.name}_left.stop();{self.name}_right.stop();')
 
 
 class DeltaArmSimulation(DeltaArm, rosys.hardware.ModuleSimulation):
