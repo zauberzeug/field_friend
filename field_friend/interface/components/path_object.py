@@ -4,7 +4,7 @@ from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
 from nicegui import ui
-from nicegui.elements.scene_objects import Curve
+from nicegui.elements.scene.scene_objects import Curve
 
 from ...automations.navigation import DriveSegment
 

@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 import rosys
-from nicegui.elements.scene_objects import Group, Sphere
+from nicegui.elements.scene.scene_objects import Group, Sphere
 
 if TYPE_CHECKING:
     from ...system import System

@@ -4,7 +4,7 @@ from itertools import pairwise
 from typing import TYPE_CHECKING
 
 import numpy as np
-from nicegui.elements.scene_objects import Box, Curve, Cylinder, Group, Sphere
+from nicegui.elements.scene.scene_objects import Box, Curve, Cylinder, Group, Sphere
 from rosys.geometry import Point, Spline
 
 from ...automations import Field, FieldProvider

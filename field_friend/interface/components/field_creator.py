@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import rosys
 from nicegui import app, ui
-from nicegui.elements.leaflet_layers import Marker
+from nicegui.elements.leaflet.leaflet_layers import Marker
 from rosys.geometry import GeoPoint, GeoPose
 from rosys.hardware import GnssMeasurement
 

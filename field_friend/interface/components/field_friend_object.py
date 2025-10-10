@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from nicegui.elements.scene_objects import Box, Cylinder, Extrusion, Group, Stl
+from nicegui.elements.scene.scene_objects import Box, Cylinder, Extrusion, Group, Stl
 from rosys.driving import robot_object
 from rosys.geometry import Prism
 from rosys.vision import CameraProjector, CameraProvider, camera_objects

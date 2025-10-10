@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from nicegui import app, ui
-from nicegui.elements.leaflet_layers import GenericLayer, Marker, TileLayer
+from nicegui.elements.leaflet.leaflet_layers import GenericLayer, Marker, TileLayer
 from rosys.geometry import GeoPoint
 
 if TYPE_CHECKING:
