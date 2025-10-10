@@ -29,7 +29,7 @@ class HeaderBar:
 
         with ui.header().classes('items-center py-3'):
             with ui.link(target='/'):
-                ui.image('assets/zz_logo.png').tailwind.width('12')
+                ui.image('assets/zz_logo.png').classes('w-12')
             ui.link('FIELD FRIEND', '/').classes('text-2xl text-white !no-underline mr-auto')
 
             with ui.row().classes('mr-auto bg-red-500 text-white p-2 rounded-md') \
