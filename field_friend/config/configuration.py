@@ -24,7 +24,7 @@ class MeasurementsConfiguration:
 
     Defaults:
         motor_gear_ratio: 12.52
-        wheel_distance: 0.47
+        wheel_distance: 0.502
         antenna_offset: 0.205
         work_x: 0.0, for dual mechanism, this is work_x_drill
         drill_radius: 0.025
@@ -32,16 +32,20 @@ class MeasurementsConfiguration:
         chop_radius: None
         work_y: None
     """
-    tooth_count: int
-    pitch: float
+    tooth_count: int = 15
+    pitch: float = 0.033
     motor_gear_ratio: float = 12.52
-    wheel_distance: float = 0.47
+    wheel_distance: float = 0.502
     drill_radius: float = 0.025
     antenna_offset: float = 0.205  # only u1, u2 and f10 are missing this
     work_x: float = 0.0  # this is work_x_drill for dual mechanism
     work_x_chop: float | None = None  # only u2 and u3 have this
     chop_radius: float | None = None  # only u2 and u3 have this
     work_y: float | None = None  # only f16 and f15 have this
+
+    @property
+    def m_per_tick(self) -> float:
+        return self.tooth_count * self.pitch / self.motor_gear_ratio
 
 
 @dataclass(kw_only=True)

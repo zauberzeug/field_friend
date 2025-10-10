@@ -16,11 +16,7 @@ config = FieldFriendConfiguration(
     name='fieldfriend-f12',
     robot_brain=RobotBrainConfiguration(name='rb32', flash_params=['orin', 'v05'], enable_esp_on_startup=True),
     tool='tornado',
-    measurements=MeasurementsConfiguration(
-        tooth_count=15,
-        pitch=0.033,
-        work_x=0.04
-    ),
+    measurements=MeasurementsConfiguration(work_x=0.04),
     camera=CameraConfiguration(
         width=1280,
         height=720,

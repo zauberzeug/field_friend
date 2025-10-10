@@ -12,7 +12,7 @@ config = FieldFriendConfiguration(
     name='fieldfriend-f20',
     robot_brain=RobotBrainConfiguration(name='rb39', flash_params=['orin', 'v05', 'nand']),
     tool=None,
-    measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033, work_x=0.47),
+    measurements=MeasurementsConfiguration(work_x=0.47),
     camera=None,
     wheels=WheelsConfiguration(
         is_left_reversed=True,
