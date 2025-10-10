@@ -39,13 +39,7 @@ RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install rosys==0.25.0
 # we also preinstall some other dependencies of Field Friend which take quite some time to compile and do not change often
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
-    python3 -m pip install pillow
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
     python3 -m pip install pyudev
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
-    python3 -m pip install geopandas
-RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \
-    python3 -m pip install fiona
 
 COPY requirements.txt ./
 RUN --mount=type=cache,target=/home/zauberzeug/.cache/pip \

@@ -18,13 +18,9 @@ check_untyped_defs = true
 [[tool.mypy.overrides]]
 module = [
     "coloredlogs.*",
-    "fiona.*",
     "icecream.*",
-    "geopandas.*",
-    "pynmea2.*",
     "serial.*",
     "shapely.*",
-    "geographiclib.*",
 ]
 ignore_missing_imports = true
 
