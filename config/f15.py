@@ -16,13 +16,7 @@ config = FieldFriendConfiguration(
     name='fieldfriend-f15',
     robot_brain=RobotBrainConfiguration(name='rb52', flash_params=['orin', 'v05', 'nand'], enable_esp_on_startup=False),
     tool='weed_screw',
-    measurements=MeasurementsConfiguration(
-        tooth_count=15,
-        pitch=0.033,
-        work_x=0.086,
-        work_y=0.0096,
-        wheel_distance=0.47,
-    ),
+    measurements=MeasurementsConfiguration(work_x=0.086, work_y=0.0096),
     camera=CameraConfiguration(
         width=1280,
         height=720,

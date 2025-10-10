@@ -15,7 +15,7 @@ config = FieldFriendConfiguration(
     name='fieldfriend-f19',
     robot_brain=RobotBrainConfiguration(name='rb48', flash_params=['orin', 'v05', 'nand']),
     tool='recorder',
-    measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033, work_x=0.12),
+    measurements=MeasurementsConfiguration(work_x=0.12),
     camera=CameraConfiguration(
         width=1280,
         height=720,

@@ -11,15 +11,16 @@ from ...robot_locator import RobotLocator
 
 
 class FieldFriendObject(robot_object):
-    DEFAULT_WIDTH = 0.47
+    MAX_NORMAL_FIELD_FRIEND_WIDTH = 0.52
 
-    def __init__(self, robot_locator: RobotLocator,
+    def __init__(self,
+                 robot_locator: RobotLocator,
                  camera_provider: CameraProvider | None,
                  field_friend: FieldFriend, *,
-                 width: float = DEFAULT_WIDTH) -> None:
+                 width: float = MAX_NORMAL_FIELD_FRIEND_WIDTH) -> None:
         super().__init__(Prism(outline=[], height=0), robot_locator)  # type: ignore
         self.robot = field_friend
-        if width == self.DEFAULT_WIDTH:
+        if width <= self.MAX_NORMAL_FIELD_FRIEND_WIDTH:
             self.with_stl('assets/field_friend.stl', x=-0.365, y=-0.3,
                           z=0.06, scale=0.001, color='#6E93D6', opacity=0.7)
         else:

@@ -1,7 +1,6 @@
 
 import logging
 
-import numpy as np
 import rosys
 
 # change the config to the config of simulated Robot
@@ -28,12 +27,6 @@ from .tornado import TornadoSimulation
 class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
 
     def __init__(self, config: FieldFriendConfiguration, *, use_acceleration: bool = False) -> None:
-        self.MOTOR_GEAR_RATIO = config.measurements.motor_gear_ratio
-        self.TOOTH_COUNT = config.measurements.tooth_count
-        self.PITCH = config.measurements.pitch
-        self.WHEEL_DIAMETER = self.TOOTH_COUNT * self.PITCH / np.pi
-        self.M_PER_TICK = self.WHEEL_DIAMETER * np.pi / self.MOTOR_GEAR_RATIO
-        self.WHEEL_DISTANCE = config.measurements.wheel_distance
         tool = config.tool
         if tool in ['tornado', 'weed_screw', 'sprayer', None]:
             self.WORK_X = config.measurements.work_x
@@ -49,7 +42,8 @@ class FieldFriendSimulation(FieldFriend, rosys.hardware.RobotSimulation):
             self.CHOP_RADIUS = config.measurements.chop_radius
         else:
             logging.warning('Unknown FieldFriend tool: %s', tool)
-        wheels = WheelsSimulationWithAcceleration(self.WHEEL_DISTANCE) if use_acceleration else rosys.hardware.WheelsSimulation(self.WHEEL_DISTANCE)
+        wheels = WheelsSimulationWithAcceleration(config.measurements.wheel_distance) if use_acceleration \
+            else rosys.hardware.WheelsSimulation(config.measurements.wheel_distance)
 
         y_axis: AxisSimulation | ChainAxisSimulation | None
         if not config.y_axis:

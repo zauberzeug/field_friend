@@ -11,7 +11,7 @@ config = FieldFriendConfiguration(
     name='fieldfriend-f22',
     robot_brain=RobotBrainConfiguration(name='rb55', flash_params=['orin', 'v05', 'nand']),
     tool=None,
-    measurements=MeasurementsConfiguration(tooth_count=15, pitch=0.033, work_x=0, wheel_distance=1.49),
+    measurements=MeasurementsConfiguration(wheel_distance=1.49),
     camera=None,
     wheels=WheelsConfiguration(
         is_left_reversed=True,

@@ -179,7 +179,8 @@ class PlantLocator(EntityLocator):
                     .bind_value(self, 'autoupload') \
                     .tooltip('Set the autoupload for the weeding automation')
                 ui.checkbox('Mobile upload', value=self._mobile_upload_permission, on_change=self._set_outbox_mode) \
-                    .bind_value_to(self, '_mobile_upload_permission')
+                    .bind_value_to(self, '_mobile_upload_permission') \
+                    .tooltip('Allow upload of images on a mobile network')
 
             if isinstance(self.detector, DetectorHardware):
                 ui.separator()
@@ -204,17 +205,18 @@ class PlantLocator(EntityLocator):
                         ui.chip(tag, removable=True).props('outline') \
                             .on('remove', lambda t=tag: update_tags(t))
 
-            def add_chip():
-                self.tags.append(label_input.value)
+            def add_chip(input_: ui.input):
+                self.tags.append(input_.value)
                 self.request_backup()
                 chips.refresh()
-                label_input.value = ''
+                input_.value = ''
 
             with ui.row().classes('items-center'):
-                label_input = ui.input().on('keydown.enter', add_chip).classes('w-24').props('dense') \
+                label_input = ui.input().classes('w-24').props('dense') \
                     .tooltip('Add a tag for the Learning Loop')
+                label_input.on('keydown.enter', lambda: add_chip(label_input))
                 with label_input.add_slot('append'):
-                    ui.button(icon='add', on_click=add_chip).props('round dense flat')
+                    ui.button(icon='add', on_click=lambda: add_chip(label_input)).props('round dense flat')
             with ui.row().classes('items-center'):
                 chips()
 
