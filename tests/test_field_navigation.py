@@ -223,7 +223,7 @@ async def test_bed_crops(system: System, field_with_beds: Field):
     def count_started_segments(_: DriveSegment) -> None:
         nonlocal started_segments
         started_segments += 1
-    system.current_navigation.SEGMENT_STARTED.register(count_started_segments)
+    system.current_navigation.SEGMENT_STARTED.subscribe(count_started_segments)
     system.automator.start()
     await forward(until=lambda: system.automator.is_running)
     await forward(until=lambda: started_segments == 1)

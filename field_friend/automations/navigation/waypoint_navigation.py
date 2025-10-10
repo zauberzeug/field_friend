@@ -10,9 +10,8 @@ from typing import TYPE_CHECKING, Any, Self
 import numpy as np
 import rosys
 import rosys.geometry
-from nicegui import ui
+from nicegui import Event, ui
 from rosys.analysis import track
-from rosys.event import Event
 from rosys.geometry import GeoReference, Point, Point3d, Pose, PoseStep, Spline
 from rosys.hardware import Gnss
 
@@ -56,7 +55,7 @@ class WaypointNavigation(rosys.persistence.Persistable):
         self.SEGMENT_COMPLETED = Event[DriveSegment]()
         """a waypoint has been reached"""
 
-        self.SEGMENT_STARTED.register(self._handle_segment_started)
+        self.SEGMENT_STARTED.subscribe(self._handle_segment_started)
 
     @property
     def path(self) -> list[DriveSegment]:

@@ -7,8 +7,8 @@ import icecream
 import numpy as np
 import psutil
 import rosys
+from nicegui import Event
 from rosys.driving import Driver, Odometer, Steerer
-from rosys.event import Event
 from rosys.geometry import GeoPoint, GeoReference
 from rosys.hardware.gnss import GnssHardware, GnssSimulation
 
@@ -78,7 +78,7 @@ class System(rosys.persistence.Persistable):
             self.mjpeg_camera_provider = rosys.vision.MjpegCameraProvider(username='root', password='zauberzg!')
             self.detector = DetectorHardware(self.field_friend.bms, port=8004)
             self.circle_sight_detector = DetectorHardware(self.field_friend.bms, port=8005)
-        self.GNSS_REFERENCE_CHANGED.register(self.robot_locator.reset)
+        self.GNSS_REFERENCE_CHANGED.subscribe(self.robot_locator.reset)
         self.capture = Capture(self)
         if self.config.camera is not None:
             assert self.camera_provider is not None
@@ -97,7 +97,7 @@ class System(rosys.persistence.Persistable):
         self.plant_locator: PlantLocator = PlantLocator(self).persistent()
         self.puncher: Puncher = Puncher(self.field_friend, self.driver)
         self.field_provider: FieldProvider = FieldProvider().persistent()
-        self.field_provider.FIELD_SELECTED.register(self.update_gnss_reference_from_field)
+        self.field_provider.FIELD_SELECTED.subscribe(self.update_gnss_reference_from_field)
         self.automation_watcher: AutomationWatcher = AutomationWatcher(self)
 
         self.setup_timelapse()
@@ -254,7 +254,7 @@ class System(rosys.persistence.Persistable):
         self.timelapse_recorder = rosys.analysis.TimelapseRecorder()
         self.timelapse_recorder.frame_info_builder = lambda _: f'''{self.robot_id}, {self.current_navigation.name if self.current_navigation is not None else 'No Navigation'}, \
             tags: {", ".join(self.plant_locator.tags)}'''
-        rosys.NEW_NOTIFICATION.register(self.timelapse_recorder.notify)
+        rosys.NEW_NOTIFICATION.subscribe(self.timelapse_recorder.notify)
         rosys.on_startup(self.timelapse_recorder.compress_video)  # NOTE: cleanup JPEGs from before last shutdown
 
     def setup_kpi(self) -> None:
@@ -266,34 +266,34 @@ class System(rosys.persistence.Persistable):
 
         if self.automator:
             self.automator.AUTOMATION_PAUSED \
-                .register(lambda _: self.kpi_provider.increment_all_time_kpi('automation_paused', 1))
+                .subscribe(lambda _: self.kpi_provider.increment_all_time_kpi('automation_paused', 1))
             self.automator.AUTOMATION_STOPPED \
-                .register(lambda _: self.kpi_provider.increment_all_time_kpi('automation_stopped', 1))
+                .subscribe(lambda _: self.kpi_provider.increment_all_time_kpi('automation_stopped', 1))
             self.automator.AUTOMATION_FAILED \
-                .register(lambda _: self.kpi_provider.increment_all_time_kpi('automation_failed', 1))
+                .subscribe(lambda _: self.kpi_provider.increment_all_time_kpi('automation_failed', 1))
             self.automator.AUTOMATION_COMPLETED \
-                .register(lambda: self.kpi_provider.increment_all_time_kpi('automation_completed', 1))
+                .subscribe(lambda: self.kpi_provider.increment_all_time_kpi('automation_completed', 1))
 
         if self.plant_provider:
             self.plant_provider.ADDED_NEW_WEED \
-                .register(lambda _: self.kpi_provider.increment_all_time_kpi('weeds_detected', 1))
+                .subscribe(lambda _: self.kpi_provider.increment_all_time_kpi('weeds_detected', 1))
             self.plant_provider.ADDED_NEW_CROP \
-                .register(lambda _: self.kpi_provider.increment_all_time_kpi('crops_detected', 1))
+                .subscribe(lambda _: self.kpi_provider.increment_all_time_kpi('crops_detected', 1))
         if self.puncher:
-            self.puncher.PUNCHED.register(lambda: self.kpi_provider.increment_all_time_kpi('punches', 1))
+            self.puncher.PUNCHED.subscribe(lambda: self.kpi_provider.increment_all_time_kpi('punches', 1))
         if self.field_friend.bumper:
             self.field_friend.bumper.BUMPER_TRIGGERED \
-                .register(lambda _: self.kpi_provider.increment_all_time_kpi('bumps', 1))
+                .subscribe(lambda _: self.kpi_provider.increment_all_time_kpi('bumps', 1))
         if self.field_friend.estop:
             self.field_friend.estop.ESTOP_TRIGGERED \
-                .register(lambda: self.kpi_provider.increment_all_time_kpi('e_stop_triggered', 1))
+                .subscribe(lambda: self.kpi_provider.increment_all_time_kpi('e_stop_triggered', 1))
 
         if self.automator:
             def gnss_failed(reason: str) -> None:
                 if 'GNSS' not in reason:
                     return
                 self.kpi_provider.increment_all_time_kpi('gnss_failed', 1)
-            self.automator.AUTOMATION_PAUSED.register(gnss_failed)
+            self.automator.AUTOMATION_PAUSED.subscribe(gnss_failed)
 
         def watch_robot() -> None:
             nonlocal last_update, last_position

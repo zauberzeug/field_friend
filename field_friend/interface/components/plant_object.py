@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 import rosys
-from nicegui.elements.scene_objects import Group, Sphere
+from nicegui.elements.scene.scene_objects import Group, Sphere
 
 if TYPE_CHECKING:
     from ...system import System
@@ -17,7 +17,7 @@ class PlantObjects(Group):
         self.plant_locator = system.plant_locator
         self.log = logging.getLogger('field_friend.plant_objects')
         self.update()
-        self.plant_provider.PLANTS_CHANGED.register_ui(self.update)
+        self.plant_provider.PLANTS_CHANGED.subscribe(self.update)
 
     def update(self) -> None:
         origin = rosys.geometry.Point3d(x=0, y=0, z=0)

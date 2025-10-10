@@ -24,8 +24,8 @@ class Operation:
         self.field_provider = system.field_provider
         self.field = None
         self.key_controls = KeyControls(self.system)
-        self.field_provider.FIELDS_CHANGED.register_ui(self.field_setting.refresh)
-        self.field_provider.FIELD_SELECTED.register_ui(self.field_setting.refresh)
+        self.field_provider.FIELDS_CHANGED.subscribe(self.field_setting.refresh)
+        self.field_provider.FIELD_SELECTED.subscribe(self.field_setting.refresh)
         self.selected_beds: set[int] = set()
         self.delete_field_dialog: ui.dialog | None = None
         self.edit_field_dialog: ui.dialog | None = None

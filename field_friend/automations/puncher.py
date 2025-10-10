@@ -2,10 +2,10 @@ import logging
 import os
 
 import rosys
+from nicegui import Event
 from rosys.analysis import track
 from rosys.automation import uninterruptible
 from rosys.driving import Driver
-from rosys.event import Event
 from rosys.geometry import Point
 
 from ..hardware import Axis, ChainAxis, FieldFriend, Tornado

@@ -31,7 +31,7 @@ class MainPage:
                 leaflet = leaflet_map(self.system, False)
                 leaflet.m.classes('h-full w-full')
                 binding.bind_to(self.system.field_navigation, 'field', leaflet, 'active_field',
-                                lambda f: f.id if f else None)
+                                lambda f: f.id if f else None, other_strict=False)
                 with ui.row():
                     leaflet.buttons()
             with ui.row().classes('h-full ml-2 m-2').style('width: calc(100% - 1rem)'):

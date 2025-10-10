@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 import rosys
-from rosys.event import Event
+from nicegui import Event
 from rosys.geometry import GeoPose
 
 from .field import Field, Row, RowSupportPoint

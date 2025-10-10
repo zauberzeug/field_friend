@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import rosys
 from nicegui import app, ui
-from nicegui.elements.leaflet_layers import Marker
+from nicegui.elements.leaflet.leaflet_layers import Marker
 from rosys.geometry import GeoPoint, GeoPose
 from rosys.hardware import GnssMeasurement
 
@@ -33,7 +33,7 @@ class FieldCreator:
         self.field_provider = system.field_provider
         self.m: ui.leaflet
         self.robot_marker: Marker | None = None
-        self.gnss.NEW_MEASUREMENT.register_ui(self._new_gnss_measurement)
+        self.gnss.NEW_MEASUREMENT.subscribe(self._new_gnss_measurement)
         self.saved_row_start: GeoPoint | None = None
         self.saved_row_end: GeoPoint | None = None
         self.restore_saved_points()

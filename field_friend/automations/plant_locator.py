@@ -56,7 +56,7 @@ class PlantLocator(EntityLocator):
             return
         if not rosys.is_simulation():
             self.teltonika_router = system.teltonika_router
-            self.teltonika_router.CONNECTION_CHANGED.register(self._set_outbox_mode)
+            self.teltonika_router.CONNECTION_CHANGED.subscribe(self._set_outbox_mode)
         assert self.detector is not None
         rosys.on_repeat(self._detection_watchdog, 0.5)
         rosys.on_startup(self._detector_startup)

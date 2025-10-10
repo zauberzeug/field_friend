@@ -50,9 +50,9 @@ class RobotLocator(rosys.persistence.Persistable):
 
         self._previous_imu_measurement: ImuMeasurement | None = None
 
-        self._wheels.VELOCITY_MEASURED.register(self._handle_velocity_measurement)
+        self._wheels.VELOCITY_MEASURED.subscribe(self._handle_velocity_measurement)
         if self._gnss is not None:
-            self._gnss.NEW_MEASUREMENT.register(self._handle_gnss_measurement)
+            self._gnss.NEW_MEASUREMENT.subscribe(self._handle_gnss_measurement)
         rosys.on_startup(self.reset)
 
     def backup_to_dict(self) -> dict[str, Any]:
