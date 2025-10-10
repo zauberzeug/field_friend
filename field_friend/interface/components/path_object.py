@@ -24,21 +24,21 @@ class PathObject(ui.scene.group):
         self.system = system
         self.height = height
         with self.scene or nullcontext():
-            self.system.automator.AUTOMATION_STARTED.register_ui(self.register)
-            self.system.automator.AUTOMATION_STOPPED.register_ui(lambda _: self.clear_path())
+            self.system.automator.AUTOMATION_STARTED.subscribe(self._subscribe)
+            self.system.automator.AUTOMATION_STOPPED.subscribe(lambda _: self._clear_path())
 
-    def register(self) -> None:
+    def _subscribe(self) -> None:
         def update_upcoming_path(_: DriveSegment) -> None:
             assert self.system.current_navigation is not None
-            self.update(self.system.current_navigation.path)
+            self._update(self.system.current_navigation.path)
         if self.system.current_navigation is None:
             return
         with self.scene or nullcontext():
-            self.system.current_navigation.SEGMENT_COMPLETED.register_ui(update_upcoming_path)
-            self.system.current_navigation.PATH_GENERATED.register_ui(self.update)
+            self.system.current_navigation.SEGMENT_COMPLETED.subscribe(update_upcoming_path)
+            self.system.current_navigation.PATH_GENERATED.subscribe(self._update)
 
-    def update(self, path: list[DriveSegment]) -> None:
-        self.clear_path()
+    def _update(self, path: list[DriveSegment]) -> None:
+        self._clear_path()
         with self.scene or nullcontext():
             for segment in reversed(path):
                 color: str
@@ -53,7 +53,7 @@ class PathObject(ui.scene.group):
                     [segment.spline.end.x, segment.spline.end.y, self.height],
                 ).material(color).with_name('path')
 
-    def clear_path(self) -> None:
+    def _clear_path(self) -> None:
         for obj in list(self.scene.objects.values()):
             if obj.name == 'path':
                 obj.delete()

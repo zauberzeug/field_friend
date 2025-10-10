@@ -42,9 +42,9 @@ class LeafletMap:
         self.robot_marker: Marker | None = None
         self.drawn_marker = None
         self.row_layers: list = []
-        self.field_provider.FIELDS_CHANGED.register_ui(self.update_layers)
-        self.field_provider.FIELD_SELECTED.register_ui(self.update_layers)
-        self.system.GNSS_REFERENCE_CHANGED.register_ui(self.update_layers)
+        self.field_provider.FIELDS_CHANGED.subscribe(self.update_layers)
+        self.field_provider.FIELD_SELECTED.subscribe(self.update_layers)
+        self.system.GNSS_REFERENCE_CHANGED.subscribe(self.update_layers)
         self.update_layers()
         self.update_robot_position()
         self.zoom_to_robot()

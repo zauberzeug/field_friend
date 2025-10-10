@@ -3,8 +3,7 @@ from datetime import datetime
 from typing import Any
 
 import rosys
-from nicegui import ui
-from rosys.event import Event
+from nicegui import Event, ui
 
 
 class LogMonitor(rosys.persistence.Persistable):
@@ -18,7 +17,7 @@ class LogMonitor(rosys.persistence.Persistable):
         self.NEW_LINE: Event[str] = Event()
         """a new line was added to the log (argument: line)"""
 
-        rosys.NEW_NOTIFICATION.register(self.handle_notification)
+        rosys.NEW_NOTIFICATION.subscribe(self.handle_notification)
 
     def handle_notification(self, message: str) -> None:
         line = f'{datetime.now():%m/%d/%Y %H:%M:%S} {message}'
@@ -41,5 +40,5 @@ class LogMonitor(rosys.persistence.Persistable):
         ui.label('Log Monitor').classes('text-center text-bold')
         with ui.log(max_lines=self.max_lines).classes('text-xs') as log:
             log.push('\n'.join(self.lines))
-            self.NEW_LINE.register_ui(log.push)
+            self.NEW_LINE.subscribe(log.push)
             ui.run_javascript(f'getElement({log.id}).scrollTop = getElement({log.id}).scrollHeight')

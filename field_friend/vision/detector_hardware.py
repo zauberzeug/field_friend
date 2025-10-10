@@ -16,8 +16,8 @@ class DetectorHardware(rosys.vision.DetectorHardware):
         self.bms = bms
 
         self._version_control_mode: DetectorHardware.VERSION_CONTROL_MODES = 'auto'
-        self.bms.CHARGING_STARTED.register(self._handle_charging)
-        self.bms.CHARGING_STOPPED.register(self._handle_charging)
+        self.bms.CHARGING_STARTED.subscribe(self._handle_charging)
+        self.bms.CHARGING_STOPPED.subscribe(self._handle_charging)
         rosys.on_startup(self._set_version_control_mode_on_startup)
 
     async def _handle_charging(self) -> None:

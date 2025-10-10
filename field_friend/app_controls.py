@@ -25,7 +25,7 @@ class AppControls(RosysAppControls):
         self.last_estop_soft_active: bool = self.field_friend.estop.is_soft_estop_active
         self.last_bumpers_active: list[str] = []
         self.last_info: str = ''
-        self.APP_CONNECTED.register(self.reset)
+        self.APP_CONNECTED.subscribe(self.reset)
         if self.field_friend.estop:
             self.extra_buttons['estop'] = AppButton('warning', released=self._toggle_estop)
         if self.capture:

@@ -2,8 +2,7 @@ import logging
 from typing import Any
 
 import rosys
-from nicegui import ui
-from rosys.event import Event
+from nicegui import Event, ui
 from rosys.geometry import Point3d
 
 from .plant import Plant

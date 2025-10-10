@@ -126,10 +126,10 @@ class SafetyHardware(Safety, rosys.hardware.ModuleHardware):
         lizard_code += 'when core.last_message_age > 20000 then disable(); end\n'
 
         if bumper is not None:
-            bumper.BUMPER_TRIGGERED.register(self.bumper_safety_notifications)
+            bumper.BUMPER_TRIGGERED.subscribe(self.bumper_safety_notifications)
         if estop is not None:
-            estop.ESTOP_TRIGGERED.register(self.estop_triggered_safety_notifications)
-            estop.ESTOP_RELEASED.register(self.estop_released_safety_notifications)
+            estop.ESTOP_TRIGGERED.subscribe(self.estop_triggered_safety_notifications)
+            estop.ESTOP_RELEASED.subscribe(self.estop_released_safety_notifications)
 
         super().__init__(wheels=wheels,
                          estop=estop,

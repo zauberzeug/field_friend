@@ -147,7 +147,7 @@ class FieldFriendHardware(FieldFriend, rosys.hardware.RobotHardware):
                 await rosys.sleep(15)
                 self.log.debug('releasing battery relay on rosys startup')
                 await self.battery_control.release_battery_relay()
-            bms.CHARGING_STOPPED.register(self.battery_control.release_battery_relay)
+            bms.CHARGING_STOPPED.subscribe(self.battery_control.release_battery_relay)
             rosys.on_startup(wait_and_release_battery_relay)
 
         flashlight: FlashlightHardwareV2 | FlashlightPWMHardware | FlashlightPWMHardwareV2 | None

@@ -20,9 +20,9 @@ class FieldObject(Group):
         self.system = system
         self.field_provider: FieldProvider = system.field_provider
         self._update()
-        self.field_provider.FIELDS_CHANGED.register_ui(self._update)
-        self.field_provider.FIELD_SELECTED.register_ui(self._update)
-        self.system.GNSS_REFERENCE_CHANGED.register_ui(self._update)
+        self.field_provider.FIELDS_CHANGED.subscribe(self._update)
+        self.field_provider.FIELD_SELECTED.subscribe(self._update)
+        self.system.GNSS_REFERENCE_CHANGED.subscribe(self._update)
 
     def create_fence(self, start, end):
         height = 0.12

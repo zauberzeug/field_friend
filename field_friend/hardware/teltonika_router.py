@@ -5,8 +5,7 @@ import httpcore
 import httpx
 import rosys
 from dotenv import load_dotenv
-from nicegui import ui
-from rosys.event import Event
+from nicegui import Event, ui
 
 load_dotenv('.env')
 

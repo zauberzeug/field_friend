@@ -44,12 +44,12 @@ class AutomationWatcher:
         rosys.on_repeat(self.check_field_bounds, 1.0)
         rosys.on_repeat(self.check_gnss, 0.1)
         if self.field_friend.bumper:
-            self.field_friend.bumper.BUMPER_TRIGGERED.register(lambda name: self.pause(f'Bumper {name} was triggered'))
-        self.steerer.STEERING_STARTED.register(lambda: self.pause('steering started'))
-        # self.field_friend.estop.ESTOP_TRIGGERED.register(lambda: self.stop('emergency stop triggered'))
-        self.automator.AUTOMATION_PAUSED.register(self._handle_pause)
-        self.automator.AUTOMATION_RESUMED.register(self._handle_resume)
-        self.automator.AUTOMATION_STOPPED.register(self._handle_stop)
+            self.field_friend.bumper.BUMPER_TRIGGERED.subscribe(lambda name: self.pause(f'Bumper {name} was triggered'))
+        self.steerer.STEERING_STARTED.subscribe(lambda: self.pause('steering started'))
+        # self.field_friend.estop.ESTOP_TRIGGERED.subscribe(lambda: self.stop('emergency stop triggered'))
+        self.automator.AUTOMATION_PAUSED.subscribe(self._handle_pause)
+        self.automator.AUTOMATION_RESUMED.subscribe(self._handle_resume)
+        self.automator.AUTOMATION_STOPPED.subscribe(self._handle_stop)
 
     def _handle_pause(self, reason: str) -> None:
         rosys.notify('Automation paused')

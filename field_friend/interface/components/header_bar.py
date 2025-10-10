@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import rosys
-from nicegui import ui
-from rosys.event import Event
+from nicegui import Event, ui
 
 from ...hardware import FieldFriend
 from .manual_steerer_dialog import ManualSteererDialog as manual_steerer_dialog
@@ -57,7 +56,7 @@ class HeaderBar:
             self.internet_status = ui.icon('wifi', size='sm')
             if not rosys.is_simulation():
                 self._update_internet_status()
-                self.system.teltonika_router.CONNECTION_CHANGED.register_ui(self._update_internet_status)
+                self.system.teltonika_router.CONNECTION_CHANGED.subscribe(self._update_internet_status)
 
             self._show_battery(system.field_friend)
 
@@ -74,7 +73,7 @@ class HeaderBar:
                     self.drawer_icon = 'chevron_right'
                 ui.button(on_click=handle_toggle).props(f'icon={self.drawer_icon} flat color=white')
             change_drawer_icon()
-            self.STATUS_DRAWER_TOGGLED.register_ui(change_drawer_icon.refresh)
+            self.STATUS_DRAWER_TOGGLED.subscribe(change_drawer_icon.refresh)
 
     def _show_battery(self, robot: FieldFriend) -> ui.row:
         with ui.row().classes('items-center gap-1') as row:
